@@ -74,7 +74,7 @@
       "wait_bars": 8
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -85,7 +85,7 @@
       "wait_bars": 12
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -96,7 +96,7 @@
       "wait_bars": 8
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -107,7 +107,7 @@
       "wait_bars": 12
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -118,7 +118,7 @@
       "wait_bars": 8
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -129,7 +129,73 @@
       "wait_bars": 12
     },
     "source_hypothesis": "ext_github_XAUUSD_session_range_breakout",
-    "source_url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "source_url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_reddit_EURUSD_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -139,8 +205,8 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -150,8 +216,8 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -161,8 +227,8 @@
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -172,8 +238,8 @@
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -183,8 +249,8 @@
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "USDJPY",
@@ -194,206 +260,734 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_USDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_reddit_USDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CADJPY",
+    "symbol": "USDCHF",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CADJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_USDCHF_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "NZDJPY",
+    "symbol": "GBPUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_NZDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "AUDUSD",
     "family": "session_range_breakout",
     "family_func": "family_session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_CHFJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NAS100_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "USDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_USDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_US500_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDNZD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDNZD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_AUDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_EURAUD_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -403,8 +997,8 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -414,8 +1008,8 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -425,8 +1019,8 @@
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -436,8 +1030,8 @@
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -447,8 +1041,8 @@
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "AUDJPY",
@@ -458,8 +1052,206 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_AUDJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_AUDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CADJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "CHFJPY",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_CHFJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -469,8 +1261,8 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -480,8 +1272,8 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -491,8 +1283,8 @@
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -502,8 +1294,8 @@
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -513,8 +1305,8 @@
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -524,8 +1316,8 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -535,8 +1327,8 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -546,8 +1338,8 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -557,8 +1349,8 @@
       "rr": 2.0,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -568,8 +1360,8 @@
       "rr": 2.0,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -579,8 +1371,8 @@
       "rr": 2.5,
       "wait_bars": 8
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
   },
   {
     "symbol": "EURJPY",
@@ -590,7 +1382,403 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "source_hypothesis": "ext_central_bank_EURJPY_central_bank_reaction",
-    "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source_hypothesis": "ext_forexfactory_EURJPY_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDCAD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_forexfactory_NZDCAD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "BTCUSD",
+    "family": "session_range_breakout",
+    "family_func": "family_session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_seasonality_BTCUSD_session_range_breakout",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_US500_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NAS100",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NAS100_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "AUDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_AUDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
+  },
+  {
+    "symbol": "NZDUSD",
+    "family": "asia_momentum",
+    "family_func": "",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "source_hypothesis": "ext_shipping_NZDUSD_momentum_basic",
+    "source_url": ""
   }
 ]

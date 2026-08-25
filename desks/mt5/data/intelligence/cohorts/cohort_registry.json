@@ -1,0 +1,4176 @@
+{
+"4437f1857b78baf9": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+"url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+"text": "MT5 market watch WinForms dashboard with multi-asset live charts, symbol cards, timeframe filters, and WebSocket bridge for forex, metals, crypto, and indices.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:55:25Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fed9042c8348f74c": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ZovraT/MT5-volume-profile-indicator",
+"url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+"text": "MQL5 volume profile indicator for MT5 \u2014 maps high-volume nodes, value areas, and price acceptance zones to identify institutional supply & demand levels. Built for SMC and ICT traders who confluence volume with market structure.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-25T20:55:24Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"14ac4252155ad990": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
+"url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
+"text": "Ultra-low-latency master-slave trade MetaTrader copier for MT5 / MT4. Replicates orders across unlimited slave accounts and brokers with lot scaling, symbol mapping, reverse mode, partial-close sync and per-slave risk filters.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-25T20:51:04Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"25f0aca67644c5ce": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+"url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+"text": "TradingView-to-MT5 webhook bridge. Receives MetaTrader JSON alerts from Pine Script strategies, validates each payload with a passphrase and forwards BUY / SELL orders to MT5 / MT4 via named pipe in milliseconds for automated alert execution.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:50:49Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2759920f1f175450": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Quorvathz/MT5-Gateway-Trend-Classifier",
+"url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
+"text": "Institutional MT5 gateway dashboard with secure login, multi-asset trend classification, long/short regime cards, and WebSocket market stream parsing on Windows.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:50:36Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b662155836577a21": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
+"url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
+"text": "Equity guard and drawdown protector MetaTrader for MT5 / MT4 prop firm traders. Enforces daily loss limits, trailing or static max drawdown, hard kill-switch and FTMO / MyForexFunds / FundedNext rule presets to keep funded accounts alive.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-25T20:50:33Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"837490433110ab1b": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+"url": "https://github.com/Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+"text": "Smart Money Concepts (SMC) MetaTrader scanner for MT5 / MT4. Auto-detects order blocks, fair value gaps, liquidity sweeps, equal highs / lows and BOS / CHoCH structure shifts across multiple symbols and timeframes for ICT-style traders.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:50:02Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e130980ecae8679b": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+"url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+"text": "Telegram-to-MT5 signal auto-trader for forex channel MetaTrader followers. Parses BUY / SELL / LONG / SHORT messages with regex templates, extracts entry, SL and TP levels, sizes the lot and pushes orders to MT5 / MT4 via named pipe.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 3,
+"star_delta": 0,
+"pushed": "2026-08-25T20:49:43Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c5609e3f9b5c690d": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+"url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+"text": "Real-time order-flow MetaTrader footprint chart engine for MT5 / MT4. Renders bid x ask volume clusters, delta heatmaps, imbalance stacks and absorption zones from streaming tick data, built for tape-reading and microstructure traders.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-25T20:49:42Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fb735229f48976cd": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+"url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+"text": "Real-time multi-symbol correlation matrix, MetaTrader currency strength meter and basket exposure heatmap for MT5 / MT4. Exposes hidden cross-pair risk, hedged positions and redundant trades across an entire forex portfolio.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:48:05Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0b559fd2152a0538": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Quorvathz/Prop-Matrix-Engine",
+"url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+"text": "Multi-account MT5 risk command center with global drawdown guard, kill-switch, equity sync, SignalR terminals, and chart-line pending order copy for prop firms.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:48:02Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8e87faf199e335cd": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ZovraT/MT5-MT4-Close-Orders-Script",
+"url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
+"text": "MQL5 script for MT5 \u2014 closes all, profitable, or losing orders instantly with one click. Lightweight utility with no setup required, built for traders who need fast manual exit control during volatile market conditions.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T20:47:08Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a09cbaa517be5863": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
+"url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
+"text": "Bar-by-bar replay engine and MetaTrader live forward-test platform for MT5 / MT4. Replays history at adjustable speed, runs strategies on streaming feeds, and reports equity curve, drawdown, profit factor and Sharpe ratio side by side.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-25T20:46:55Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"72daf4be041bc8e8": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ZrakD/MT5-Risk-Management-EA",
+"url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+"text": "MQL5 risk management EA for MT5 \u2014 automates breakeven, trailing stop, partial close, and equity protection across all open positions. Designed to run alongside any strategy or EA without interfering with entry logic.",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-25T20:44:46Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c3075cddfaa9e421": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "masdevid/mt5-quant",
+"url": "https://github.com/masdevid/mt5-quant",
+"text": "Open-source MCP server for MetaTrader 5 backtesting, optimization & analytics \u2014 pure Rust",
+"symbols": [],
+"found_at": "2026-08-25T20:57:57+00:00",
+"topic": "mql5",
+"stars": 27,
+"star_delta": 0,
+"pushed": "2026-08-25T20:41:09Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b0f217bc61988c67": {
+"t0": "2026-08-25T21:03:36+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Vandoriz/MT5-Economic-News-Filter",
+"url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+"text": "Real-time economic calendar and news-lock MetaTrader engine for MT5 / MT4. Tracks NFP, FOMC and central-bank releases, auto-pauses trading inside red-folder event windows, and aligns pre / post news cool-downs to broker time.",
+"symbols": [],
+"found_at": "2026-08-25T20:58:01+00:00",
+"topic": "forex-trading",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-25T20:38:05Z"
+},
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bf9a6898682daf0d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2304847",
+"symbols": [
+"AUDCAD",
+"OSMOSE",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"algo_survivor",
+"gold"
+],
+"ev_score": 269.898,
+"growth_pct": 20291.15,
+"weeks": 92.0,
+"pf": 1.9,
+"max_dd_pct": null,
+"trades": 2959.0,
+"win_pct": 2275.0,
+"algo_pct": 96.0,
+"subscribers": 24.0,
+"hour_histogram": {
+"15": 2,
+"13": 2,
+"20": 5,
+"21": 2,
+"09": 1,
+"12": 2,
+"19": 3,
+"23": 2,
+"14": 1,
+"06": 2,
+"17": 1,
+"07": 2,
+"05": 3,
+"18": 2,
+"10": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1b6bd31e8fe3e69c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2379208",
+"symbols": [
+"BEFORE",
+"BROKER"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"high_pf",
+"algo_survivor"
+],
+"ev_score": 41.82,
+"growth_pct": 3436.68,
+"weeks": 77.0,
+"pf": 2.0,
+"max_dd_pct": null,
+"trades": 4027.0,
+"win_pct": 3318.0,
+"algo_pct": 100.0,
+"subscribers": 65.0,
+"hour_histogram": {
+"10": 2,
+"16": 2,
+"15": 1,
+"17": 1,
+"08": 2,
+"22": 6,
+"12": 1,
+"02": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6f8bef6ddb0a17c9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2375343",
+"symbols": [
+"AUDCAD",
+"AUDJPY",
+"AUDNZD",
+"AUDUSD",
+"CADCHF",
+"EURJPY",
+"EURNZD",
+"EURUSD",
+"GBPAUD",
+"GBPCAD",
+"GBPNZD",
+"GBPUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"algo_survivor",
+"multi_fx"
+],
+"ev_score": 34.151,
+"growth_pct": 3153.14,
+"weeks": 61.0,
+"pf": 1.36,
+"max_dd_pct": null,
+"trades": 499.0,
+"win_pct": 302.0,
+"algo_pct": 92.0,
+"subscribers": 10.0,
+"hour_histogram": {
+"08": 2,
+"13": 3,
+"15": 2,
+"14": 1,
+"06": 1,
+"02": 2,
+"05": 1,
+"01": 1,
+"12": 2,
+"07": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d58eea03fecf2a2e": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2262642",
+"symbols": [
+"AUDCAD",
+"SIGNAL"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived"
+],
+"ev_score": 46.121,
+"growth_pct": 2099.26,
+"weeks": 251.0,
+"pf": 1.7,
+"max_dd_pct": null,
+"trades": 5857.0,
+"win_pct": 3745.0,
+"algo_pct": 14.0,
+"subscribers": 73.0,
+"hour_histogram": {
+"16": 3,
+"13": 5,
+"05": 2,
+"03": 2,
+"09": 3,
+"06": 1,
+"08": 1,
+"17": 3,
+"23": 2,
+"18": 2,
+"07": 2,
+"02": 1,
+"10": 4,
+"15": 2,
+"21": 1,
+"12": 1,
+"01": 2,
+"04": 1,
+"20": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0cf46cc529ab04ce": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2231030",
+"symbols": [
+"CHOICE",
+"SIGNAL",
+"STRESS",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"high_pf",
+"algo_survivor",
+"gold",
+"multi_fx"
+],
+"ev_score": 21.341,
+"growth_pct": 1387.58,
+"weeks": 123.0,
+"pf": 3.22,
+"max_dd_pct": null,
+"trades": 1077.0,
+"win_pct": 889.0,
+"algo_pct": 96.0,
+"subscribers": 26.0,
+"hour_histogram": {
+"06": 2,
+"17": 1,
+"15": 1,
+"20": 6,
+"16": 2,
+"00": 3,
+"19": 4,
+"04": 1,
+"22": 1,
+"01": 1,
+"03": 1,
+"23": 1,
+"21": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"383cd550279df227": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2356441",
+"symbols": [
+"AUDCAD",
+"AUDJPY",
+"AUDUSD",
+"CADCHF",
+"CADJPY",
+"EURJPY",
+"EURNZD",
+"EURUSD",
+"GBPAUD",
+"GBPCAD",
+"GBPNZD",
+"GBPUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"high_pf",
+"algo_survivor",
+"multi_fx"
+],
+"ev_score": 14.395,
+"growth_pct": 1277.7,
+"weeks": 66.0,
+"pf": 2.69,
+"max_dd_pct": null,
+"trades": 316.0,
+"win_pct": 237.0,
+"algo_pct": 87.0,
+"subscribers": 10.0,
+"hour_histogram": {
+"07": 4,
+"14": 1,
+"02": 1,
+"09": 1,
+"15": 1,
+"11": 1,
+"16": 3,
+"20": 1,
+"13": 1,
+"12": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f06ae4e57d16dbe": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/1988269",
+"symbols": [
+"AUDCAD",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"gold"
+],
+"ev_score": 18.338,
+"growth_pct": 1023.29,
+"weeks": 167.0,
+"pf": 1.78,
+"max_dd_pct": null,
+"trades": 1660.0,
+"win_pct": 1322.0,
+"algo_pct": 73.0,
+"subscribers": 10.0,
+"hour_histogram": {
+"09": 1,
+"14": 3,
+"05": 3,
+"10": 2,
+"22": 1,
+"15": 1,
+"13": 1,
+"06": 1,
+"21": 1,
+"12": 1,
+"20": 3,
+"08": 2,
+"11": 1,
+"16": 3,
+"03": 1,
+"19": 7,
+"17": 1,
+"07": 2,
+"00": 2,
+"02": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"de0d564f4d1eae01": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2371777",
+"symbols": [
+"AUDNZD",
+"CHFJPY",
+"EURCAD",
+"EURGBP",
+"EURJPY",
+"EURUSD",
+"GBPJPY",
+"GBPUSD",
+"USDCAD",
+"USDJPY"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"new_fast_growth",
+"high_pf",
+"multi_fx"
+],
+"ev_score": 3.855,
+"growth_pct": 579.65,
+"weeks": 23.0,
+"pf": 2.08,
+"max_dd_pct": null,
+"trades": 606.0,
+"win_pct": 470.0,
+"algo_pct": 76.0,
+"subscribers": 29.0,
+"hour_histogram": {
+"11": 2,
+"15": 3,
+"18": 1,
+"20": 1,
+"19": 1,
+"03": 1,
+"02": 2,
+"01": 3,
+"14": 3,
+"08": 2,
+"07": 1,
+"06": 1,
+"04": 1,
+"16": 1,
+"05": 1,
+"00": 2
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5cbc551a20db18e2": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2329290",
+"symbols": [
+"AUDUSD",
+"EURUSD",
+"XAUEUR",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"algo_survivor",
+"gold",
+"multi_fx"
+],
+"ev_score": 4.708,
+"growth_pct": 475.36,
+"weeks": 51.0,
+"pf": 1.43,
+"max_dd_pct": null,
+"trades": 788.0,
+"win_pct": 461.0,
+"algo_pct": 98.0,
+"subscribers": 17.0,
+"hour_histogram": {
+"08": 1,
+"13": 4,
+"10": 2,
+"09": 2,
+"16": 1,
+"11": 5,
+"17": 1,
+"06": 2,
+"14": 4,
+"18": 1,
+"03": 1,
+"22": 2,
+"21": 1,
+"15": 1,
+"19": 2,
+"12": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ad4200ce750422e8": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2265877",
+"symbols": [
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"high_pf",
+"algo_survivor",
+"gold"
+],
+"ev_score": 4.035,
+"growth_pct": 298.53,
+"weeks": 95.0,
+"pf": 2.33,
+"max_dd_pct": null,
+"trades": 847.0,
+"win_pct": 611.0,
+"algo_pct": 99.0,
+"subscribers": 34.0,
+"hour_histogram": {
+"15": 1,
+"17": 3,
+"10": 4,
+"06": 1,
+"05": 5,
+"01": 2,
+"08": 1,
+"09": 2,
+"04": 2,
+"19": 4,
+"22": 3,
+"16": 1,
+"13": 1,
+"14": 2,
+"23": 1,
+"18": 1,
+"02": 2,
+"03": 1,
+"11": 1,
+"20": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d279b22863cc0395": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2271402",
+"symbols": [
+"AUDCAD",
+"AUDNZD",
+"EURGBP",
+"NZDCAD",
+"USDJPY",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"algo_survivor",
+"gold",
+"multi_fx"
+],
+"ev_score": 144.626,
+"growth_pct": 6289.0,
+"weeks": 275.0,
+"pf": 1.87,
+"max_dd_pct": null,
+"trades": 1849.0,
+"win_pct": 1369.0,
+"algo_pct": 99.0,
+"subscribers": 2.0,
+"hour_histogram": {
+"11": 4,
+"22": 2,
+"14": 5,
+"12": 2,
+"08": 2,
+"21": 3,
+"15": 4,
+"10": 7,
+"04": 1,
+"09": 2,
+"07": 2,
+"06": 1,
+"01": 1,
+"16": 2,
+"13": 2,
+"17": 2
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7199e193c3682d19": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2339082",
+"symbols": [
+"XAUUAD",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"high_pf",
+"algo_survivor",
+"gold"
+],
+"ev_score": 7.965,
+"growth_pct": 712.44,
+"weeks": 65.0,
+"pf": 4.37,
+"max_dd_pct": null,
+"trades": 276.0,
+"win_pct": 263.0,
+"algo_pct": 99.0,
+"subscribers": 46.0,
+"hour_histogram": {
+"19": 6,
+"06": 2,
+"07": 5,
+"18": 5,
+"08": 2,
+"02": 1,
+"14": 1,
+"01": 2,
+"13": 1,
+"20": 2,
+"12": 2,
+"22": 1,
+"10": 1,
+"15": 2
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bbb537cf73a71400": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2300694",
+"symbols": [
+"AUDCAD",
+"AUDNZD",
+"BTCUSD",
+"EURAUD",
+"EURUSD",
+"NZDCAD",
+"NZDUSD",
+"USDCAD",
+"XAGUSD",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"algo_survivor",
+"gold",
+"multi_fx"
+],
+"ev_score": 40.173,
+"growth_pct": 2074.53,
+"weeks": 195.0,
+"pf": 1.96,
+"max_dd_pct": null,
+"trades": 1842.0,
+"win_pct": 1353.0,
+"algo_pct": 94.0,
+"subscribers": 4.0,
+"hour_histogram": {
+"10": 3,
+"14": 2,
+"19": 1,
+"17": 1,
+"16": 1,
+"22": 1,
+"05": 1,
+"09": 1,
+"15": 1,
+"07": 1,
+"23": 1,
+"02": 1,
+"00": 1,
+"01": 1,
+"12": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"71631e3e23d9fd39": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2222743",
+"symbols": [
+"BTCUSD",
+"EURUSD",
+"USDJPY",
+"XAUEUR",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"algo_survivor",
+"gold",
+"multi_fx"
+],
+"ev_score": 51.521,
+"growth_pct": 3245.99,
+"weeks": 131.0,
+"pf": 1.33,
+"max_dd_pct": null,
+"trades": 5230.0,
+"win_pct": 2083.0,
+"algo_pct": 82.0,
+"subscribers": 0.0,
+"hour_histogram": {
+"02": 1,
+"20": 1,
+"13": 1,
+"03": 1,
+"11": 3,
+"15": 2,
+"09": 1,
+"01": 1,
+"23": 1,
+"21": 1,
+"05": 1,
+"04": 2,
+"06": 1,
+"17": 2,
+"12": 1,
+"07": 2,
+"14": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"baf474499aec6949": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2204998",
+"symbols": [
+"AUDCAD",
+"AUDJPY",
+"AUDNZD",
+"AUDUSD",
+"BTCUSD",
+"CADCHF",
+"CHFJPY",
+"EURAUD",
+"EURCAD",
+"EURJPY",
+"EURNZD",
+"EURUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"long_lived",
+"algo_survivor",
+"multi_fx"
+],
+"ev_score": 19.698,
+"growth_pct": 982.54,
+"weeks": 209.0,
+"pf": 1.2,
+"max_dd_pct": null,
+"trades": 7846.0,
+"win_pct": 4878.0,
+"algo_pct": 95.0,
+"subscribers": 1.0,
+"hour_histogram": {
+"14": 2,
+"23": 1,
+"20": 2,
+"16": 1,
+"04": 1,
+"06": 6,
+"08": 2,
+"12": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9c9d7c538a99c876": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2308095",
+"symbols": [
+"AUDCAD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"high_pf",
+"algo_survivor"
+],
+"ev_score": 1.158,
+"growth_pct": 101.98,
+"weeks": 67.0,
+"pf": 2.05,
+"max_dd_pct": null,
+"trades": 568.0,
+"win_pct": 405.0,
+"algo_pct": 97.0,
+"subscribers": 9.0,
+"hour_histogram": {
+"06": 7,
+"00": 2,
+"12": 2,
+"11": 1,
+"05": 2,
+"13": 1,
+"10": 1,
+"22": 1,
+"14": 1,
+"03": 1,
+"19": 2
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0e5e1c998f78718c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2367701",
+"symbols": [
+"AUDCAD",
+"AUDCHF",
+"AUDJPY",
+"AUDNZD",
+"AUDUSD",
+"BTCUSD",
+"CADCHF",
+"CADJPY",
+"CHFJPY",
+"EURAUD",
+"EURCAD",
+"EURCHF"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"algo_survivor",
+"multi_fx"
+],
+"ev_score": 5.063,
+"growth_pct": 538.3,
+"weeks": 46.0,
+"pf": 1.9,
+"max_dd_pct": null,
+"trades": 2609.0,
+"win_pct": 2063.0,
+"algo_pct": 84.0,
+"subscribers": 6.0,
+"hour_histogram": {
+"22": 1,
+"02": 1,
+"13": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a2ea5a54b4e52000": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "mql5_survivors",
+"kind": "track_record",
+"title": "",
+"url": "https://www.mql5.com/en/signals/2307342",
+"symbols": [
+"BTCUSD",
+"US500",
+"XAUUSD"
+],
+"found_at": "2026-08-25T21:07:59+00:00",
+"platform": "mt5",
+"phenotypes": [
+"max_growth",
+"low_dd_high_return",
+"algo_survivor",
+"gold"
+],
+"ev_score": 12.073,
+"growth_pct": 857.83,
+"weeks": 103.0,
+"pf": 1.31,
+"max_dd_pct": null,
+"trades": 4497.0,
+"win_pct": 3118.0,
+"algo_pct": 100.0,
+"subscribers": 4.0,
+"hour_histogram": {
+"11": 4,
+"16": 2,
+"19": 4,
+"17": 2,
+"14": 2,
+"07": 3,
+"21": 9,
+"15": 4,
+"12": 4,
+"01": 1,
+"06": 1,
+"13": 2,
+"23": 1,
+"02": 1
+}
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ef9b1ce205bfdcf6": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1430068/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1430068/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c98d8988a914107c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1384990/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1384990/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4b895d907dd1a49e": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1229530/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1229530/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a2dbd002b0b10680": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1388367/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1388367/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b652ad678a93f8a3": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1138236/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1138236/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"44eaf75398922db0": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ecbd9e86878467d6": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6e35bb63dc388de5": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8d5c91bd12af395f": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ef56d067a1cce554": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1103609/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1103609/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ae3da2de30a5e4bb": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"957ae44604f3927c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"12f36e5adb8c300b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1111877/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1111877/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4f2b188cefd49700": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1418830/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1418830/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"92e446dd109bc9e4": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3f21ff447a8d568a": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1197228/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1197228/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"eafde6dd09b2971b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c9a3425d0c9bb708": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1439202/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1439202/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"210cc64b1ce31b47": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1182356/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1182356/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"52fbaf1478422ec5": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8a4f4c682ec06b7f": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"63912e5be471d905": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1103608/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1103608/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6923b6af1d8462ce": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5ae06b51208f11cb": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"aa8c689f9c25a8e3": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c0272134498669d7": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7b842859d1dc9a98": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c69ed42ef979dafd": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1120503/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1120503/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5e0526ae883e304a": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1185038/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1185038/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a5f73171ceb637e8": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy974339/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy974339/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3604c65a77daeb2c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1171380/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1171380/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b02f928d1051370d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1187258/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1187258/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ec427162d48f8912": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1418015/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1418015/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"234ed2c57d416253": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1147804/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1147804/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c951e9d47cc725a6": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1073852/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1073852/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"527e4c8ca9ffc7ca": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1419316/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1419316/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3f0f735d8b8eb397": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1147807/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1147807/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dfa7035844205ba4": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1255157/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1255157/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"970183f46e9265f2": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"41e735257c5142f2": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"318add2b809cea9f": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1197231/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1197231/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e7223dc96c8b002e": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1173792/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1173792/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"298f78d8f1bb1751": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"60a15a1b2f6a7450": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"877e9ef012dbaddb": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a2777126eb298bea": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2d54c63007362d3d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"82a50588cf9ae746": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fcb3e400eae73822": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6fa7a5483d42976d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1254212/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1254212/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e9fa5b0dc23f84fb": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9e3bac61dfe8fa31": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1185041/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1185041/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2d2ec1f3d50ccd59": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"971fdd9a8ecf1906": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"378fdddfe5c669c0": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"36372cffd47e8cdc": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4db6965e1edbfd17": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"600852a62a0897e9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"98949e237ce6f90c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3d51e390e49aff54": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f927aa4afc6f01da": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3750455c775da265": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a0491af0d0fa775b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"513c879868d27222": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c137b56306a5fbb3": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a1f659cbb8649354": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f2058f3dc49b7cde": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"97bf8059313c1484": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"641e32f27aeb61b9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1206690/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1206690/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e4cfcdadf32adfce": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d60c991494296847": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ef67c47843503655": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"72bf13a048ca78f9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"db1bc6fae53fe7c5": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1206693/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1206693/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"03f0f7dfd087cc4e": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b5e4171a1d836e8b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f4926a93454937d9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"92334b75a5e5141d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2db05bcfe85174c1": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2dd4580005a93e90": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"78e825fc82492e4c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"40fffaff923de973": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fa96138262a634bd": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f547d074a0d1644": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1433204/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1433204/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d5d7ec2eac90e2c8": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"14d8131d9425faf0": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e47b7cf28bc72b06": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1200146/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1200146/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8934b4e9574f3835": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4e9db19165af4b20": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1435143/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1435143/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"90a09f7028019397": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1437742/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1437742/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"10cbceb73408434c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"65a26109fd5bcaf9": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e7bd015e695f16ee": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a0c63bd3e156401f": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1231164/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1231164/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3dcfe69dc64ee3a5": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1245070/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1245070/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"17b46709824f0ebd": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1365195/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1365195/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"70327f1101e08de2": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"05468fc348672bf5": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"14178a6b393bc473": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1437978/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1437978/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"133bdf56302a356c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1441927/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1441927/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bfe0b96cf333fc87": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1353023/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1353023/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"71b98a3173a66b28": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"70d7785a5a1bdd5d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1438375/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1438375/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ab2be0deab536153": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1419458/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1419458/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"685c38cd55db3662": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"65bc03a9f5aa2447": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"821e1191a5fbb158": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1431729/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1431729/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f34422942c9b3916": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1436005/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1436005/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f5cec1f98a5a4943": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"152f5f1d58d872cb": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"af4f546cc2290936": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:17:51+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fbb8a94a80986f26": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "instaforex_copy",
+"kind": "track_record",
+"title": "ForexCopy System",
+"url": "https://www.instaforex.com/forexcopy_system?mid=statcont",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:13+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"49e87289df0d56e8": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "instaforex_copy",
+"kind": "track_record",
+"title": "ForexCopy System",
+"url": "https://www.instaforex.com/forexcopy_system",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:13+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"23f5d866d555738c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "instaforex_copy",
+"kind": "track_record",
+"title": "ForexCopy",
+"url": "https://www.instaforex.com/forexcopy_system",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:13+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b4b098c3aa79ccb0": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "instaforex_copy",
+"kind": "track_record",
+"title": "ForexCopy system",
+"url": "https://www.instaforex.com/forexcopy_system",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:13+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bfc6bfffaf187021": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+"url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+"text": "AutoTrade Forex Signals: Telegram to MT5 EA 2026 Strategy",
+"symbols": [],
+"found_at": "2026-08-25T21:24:06+00:00",
+"topic": "mql5",
+"stars": 118,
+"star_delta": 0,
+"pushed": "2026-08-25T21:18:59Z"
+},
+"mechanism_tags": [
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"12392f3f7de5778c": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
+"url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+"text": "Top Prop Firm Drawdown Protector EA 2026: FTMO & MyForexFunds Risk Manager",
+"symbols": [],
+"found_at": "2026-08-25T21:24:06+00:00",
+"topic": "mql5",
+"stars": 118,
+"star_delta": 0,
+"pushed": "2026-08-25T21:18:58Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8cf527c940fedaca": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Aloni-zin/Equity-Ray-Tracer",
+"url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
+"text": "Advanced Equity Line Strategy 2026: MT4/MT5 Multi-Timeframe Profit Visualizer",
+"symbols": [],
+"found_at": "2026-08-25T21:24:06+00:00",
+"topic": "mql5",
+"stars": 116,
+"star_delta": 0,
+"pushed": "2026-08-25T21:17:52Z"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8e7c05c671c983c7": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
+"url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
+"text": "Best Multi-Asset Correlation Heatmap & Risk Matrix for MetaTrader 2026",
+"symbols": [],
+"found_at": "2026-08-25T21:24:06+00:00",
+"topic": "mql5",
+"stars": 117,
+"star_delta": 0,
+"pushed": "2026-08-25T21:16:59Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d2788cea156bc34d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "tharindu2028/Trade-Terminator-Closer",
+"url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
+"text": "Best MT4 MT5 Close All Orders Script 2026 Automated Position Management",
+"symbols": [],
+"found_at": "2026-08-25T21:24:06+00:00",
+"topic": "mql5",
+"stars": 115,
+"star_delta": 0,
+"pushed": "2026-08-25T21:16:06Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"606d4f8a96d3b094": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ajayprabhuraj/institutional-orderflow-mt5",
+"url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
+"text": "2026 SMC Trading Toolkit: Real-Time Order Blocks & Fair Value Gaps for MT5",
+"symbols": [],
+"found_at": "2026-08-25T21:24:08+00:00",
+"topic": "metatrader5",
+"stars": 121,
+"star_delta": 0,
+"pushed": "2026-08-25T21:21:14Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d33421ce11785f42": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+"url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+"text": "MQL5 Advanced Risk Manager EA 2026 \u2013 Breakeven, Trailing Stop & Partial Close",
+"symbols": [],
+"found_at": "2026-08-25T21:24:08+00:00",
+"topic": "metatrader5",
+"stars": 118,
+"star_delta": 0,
+"pushed": "2026-08-25T21:19:20Z"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4a54029f33ff53c1": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "BrockStar3540/mr-scrooge-v6",
+"url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+"text": "Open-source algorithmic forex trading bot for OANDA (Python) \u2014 cell-based execution, wide-stop ratchet exits, a full backtesting research program, and a live control-panel dashboard. Strategy-neutral by design; publishes its wins and its losses. Practice-account first. Active $10,000 winning strategy contest!",
+"symbols": [],
+"found_at": "2026-08-25T21:24:09+00:00",
+"topic": "forex-trading",
+"stars": 7,
+"star_delta": 0,
+"pushed": "2026-08-25T21:15:26Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"88cf9b3fa1fa203b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Nosotros",
+"url": "https://trading-latam.com/nosotros-trading-latam/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5e4e59a8330189a1": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Nuestros Eventos",
+"url": "https://trading-latam.com/eventos-capacitacion-entrenamiento/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"715ce3b41d543dd3": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Elecci\u00f3n de broker",
+"url": "https://trading-latam.com/eleccion-de-broker/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8487d6eda7913852": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Cursos",
+"url": "https://trading-latam.com/educacion-financiera/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"409d3a8f4f65b385": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Blog",
+"url": "https://trading-latam.com/blog-trading-latam/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"aef753449f3b5f04": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Blog de Trading Latam",
+"url": "https://trading-latam.com/blog-trading-latam/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"53176943e8948bde": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Scanner Pro",
+"url": "https://trading-latam.com/scanner/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c171940c0589ddf6": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Terminal de Inversi\u00f3n",
+"url": "https://trading-latam.com/terminal/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"212e1b5a897f2d0e": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Calculadora de trading",
+"url": "https://trading-latam.com/calculadora-de-trading/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4d66a086382f23c3": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Sal\u00f3n de la Fama",
+"url": "https://trading-latam.com/ranking-toptraders/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b002c7362289cb94": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Ranking de Traders",
+"url": "https://trading-latam.com/ranking-toptraders/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"52c9f8483622b904": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Audita tu Cuenta",
+"url": "https://trading-latam.com/auditor/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c699b144acfb6783": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Iniciar sesi\u00f3n",
+"url": "https://trading-latam.com/iniciar-sesion/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2532c8dee743d93d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Escritorio",
+"url": "https://trading-latam.com/escritorio/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"55fe55fb505e8577": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Quiero entrar al ranking",
+"url": "https://trading-latam.com/auditor/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [
+"100",
+"100",
+"100",
+"100"
+],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"90cc1fb50a29dafd": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Conoce m\u00e1s sobre nosotros \u2192",
+"url": "https://trading-latam.com/nosotros-trading-latam/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b8d3bd488e1ad64b": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Calculadora",
+"url": "https://trading-latam.com/calculadora-de-trading/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2cf66e49b3765589": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Auditor de Cuentas",
+"url": "https://trading-latam.com/auditor/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"899bed71a7b50f5d": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Brokers",
+"url": "https://trading-latam.com/eleccion-de-broker/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4401eb6ab1843391": {
+"t0": "2026-08-25T21:24:12+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Ver cat\u00e1logo de copytrading",
+"url": "https://trading-latam.com/copytrading/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-25T21:22:04+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [
+"copy_trading"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+}
+}

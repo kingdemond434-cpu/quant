@@ -1,0 +1,14 @@
+{
+ "updated_at": "2026-08-25T21:24:12+00:00",
+ "supreme_metric": "validated incremental E[log W] per unit of survivor-hunting capacity -- everything below is diagnostic, never the objective",
+ "cohort_registry": 177,
+ "cohort_alive": 177,
+ "cohort_dead": 0,
+ "credible_shortlist": 18,
+ "external_stageA_survivors": 29,
+ "promoted_to_gauntlet_queue": 8,
+ "exact_certificates": 1,
+ "frozen_clones": 0,
+ "forward_clone_match_rate": null,
+ "fusion_forward_survivors": null
+}

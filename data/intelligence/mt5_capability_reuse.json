@@ -1,0 +1,4312 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-08-25T16:30:06.908430+00:00",
+  "scope": "ALL_SHARED_LIBS_TO_MT5",
+  "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
+  "counts": {
+    "REACHABLE_MT5_STATIC": 63,
+    "UNWIRED_REVIEW": 535,
+    "VENUE_SPECIFIC_REVIEW": 11
+  },
+  "rows": [
+    {
+      "module": "libs.alpha.card",
+      "path": "libs/alpha/card.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.decay",
+      "path": "libs/alpha/decay.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.errors",
+      "path": "libs/alpha/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.health",
+      "path": "libs/alpha/health.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.manager",
+      "path": "libs/alpha/manager.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.ranking",
+      "path": "libs/alpha/ranking.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.registry",
+      "path": "libs/alpha/registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.state",
+      "path": "libs/alpha/state.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha.successor",
+      "path": "libs/alpha/successor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.alpha_discovery_engine",
+      "path": "libs/alpha_factory/alpha_discovery_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.alpha_dna",
+      "path": "libs/alpha_factory/alpha_dna.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.alpha_embedding_engine",
+      "path": "libs/alpha_factory/alpha_embedding_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.alpha_factory_controller",
+      "path": "libs/alpha_factory/alpha_factory_controller.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.alpha_family_tree",
+      "path": "libs/alpha_factory/alpha_family_tree.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.capacity_intelligence",
+      "path": "libs/alpha_factory/capacity_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.combination_engine",
+      "path": "libs/alpha_factory/combination_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.concept_evolution_engine",
+      "path": "libs/alpha_factory/concept_evolution_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.crowding_intelligence",
+      "path": "libs/alpha_factory/crowding_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.errors",
+      "path": "libs/alpha_factory/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.evaluator",
+      "path": "libs/alpha_factory/evaluator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.hypothesis_engine",
+      "path": "libs/alpha_factory/hypothesis_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.hypothesis_novelty",
+      "path": "libs/alpha_factory/hypothesis_novelty.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.hypothesis_render",
+      "path": "libs/alpha_factory/hypothesis_render.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.idea_ranking_engine",
+      "path": "libs/alpha_factory/idea_ranking_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.independence",
+      "path": "libs/alpha_factory/independence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.models",
+      "path": "libs/alpha_factory/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_allocator",
+      "path": "libs/alpha_factory/research_allocator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_attribution",
+      "path": "libs/alpha_factory/research_attribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_budget",
+      "path": "libs/alpha_factory/research_budget.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_dashboard_exports",
+      "path": "libs/alpha_factory/research_dashboard_exports.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_graph",
+      "path": "libs/alpha_factory/research_graph.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_memory",
+      "path": "libs/alpha_factory/research_memory.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_roi_engine",
+      "path": "libs/alpha_factory/research_roi_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.research_score_engine",
+      "path": "libs/alpha_factory/research_score_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.strategy_similarity_engine",
+      "path": "libs/alpha_factory/strategy_similarity_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.alpha_factory.wq_operators",
+      "path": "libs/alpha_factory/wq_operators.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.capacity_screen",
+      "path": "libs/autodiscovery/capacity_screen.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.crypto_adapter",
+      "path": "libs/autodiscovery/crypto_adapter.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/side_channels/test_cot_flow.py",
+        "desks/mt5/side_channels/verify_offset.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.data_opportunity",
+      "path": "libs/autodiscovery/data_opportunity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.errors",
+      "path": "libs/autodiscovery/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.extraction_parity",
+      "path": "libs/autodiscovery/extraction_parity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.generation_roi",
+      "path": "libs/autodiscovery/generation_roi.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.generators",
+      "path": "libs/autodiscovery/generators.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/side_channels/test_cot_flow.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.lifecycle",
+      "path": "libs/autodiscovery/lifecycle.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.memory",
+      "path": "libs/autodiscovery/memory.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.models",
+      "path": "libs/autodiscovery/models.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.novelty",
+      "path": "libs/autodiscovery/novelty.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.orchestrator",
+      "path": "libs/autodiscovery/orchestrator.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.prioritization",
+      "path": "libs/autodiscovery/prioritization.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.regime",
+      "path": "libs/autodiscovery/regime.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.reports",
+      "path": "libs/autodiscovery/reports.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.research_roi",
+      "path": "libs/autodiscovery/research_roi.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.autodiscovery.validation",
+      "path": "libs/autodiscovery/validation.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.cross_engine",
+      "path": "libs/backtest/cross_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.engine",
+      "path": "libs/backtest/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.errors",
+      "path": "libs/backtest/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.events",
+      "path": "libs/backtest/events.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.fills",
+      "path": "libs/backtest/fills.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.metrics",
+      "path": "libs/backtest/metrics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.orders",
+      "path": "libs/backtest/orders.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.portfolio",
+      "path": "libs/backtest/portfolio.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.queue_fill",
+      "path": "libs/backtest/queue_fill.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.backtest.strategy",
+      "path": "libs/backtest/strategy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.coerce",
+      "path": "libs/core/coerce.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.config",
+      "path": "libs/core/config.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.enums",
+      "path": "libs/core/enums.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.errors",
+      "path": "libs/core/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.ids",
+      "path": "libs/core/ids.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.logging",
+      "path": "libs/core/logging.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.reproducibility",
+      "path": "libs/core/reproducibility.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.secrets",
+      "path": "libs/core/secrets.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.core.time",
+      "path": "libs/core/time.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.errors",
+      "path": "libs/costs/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.execution_gap",
+      "path": "libs/costs/execution_gap.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.gap",
+      "path": "libs/costs/gap.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.model",
+      "path": "libs/costs/model.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.mt5_calibration",
+      "path": "libs/costs/mt5_calibration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.params",
+      "path": "libs/costs/params.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.costs.scenarios",
+      "path": "libs/costs/scenarios.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.asymmetry",
+      "path": "libs/data/asymmetry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.bilibili",
+      "path": "libs/data/bilibili.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.calendar",
+      "path": "libs/data/calendar.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.cleaning",
+      "path": "libs/data/cleaning.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.cn_sources",
+      "path": "libs/data/cn_sources.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.cot_source",
+      "path": "libs/data/cot_source.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.crypto_source",
+      "path": "libs/data/crypto_source.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.decay",
+      "path": "libs/data/decay.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.deribit",
+      "path": "libs/data/deribit.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.duckdb_client",
+      "path": "libs/data/duckdb_client.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.errors",
+      "path": "libs/data/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.foreign_sources",
+      "path": "libs/data/foreign_sources.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.freesources",
+      "path": "libs/data/freesources.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.funding_caps",
+      "path": "libs/data/funding_caps.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.instruments",
+      "path": "libs/data/instruments.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.lake",
+      "path": "libs/data/lake.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.medallion",
+      "path": "libs/data/medallion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.mt5_research",
+      "path": "libs/data/mt5_research.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.mt5_source",
+      "path": "libs/data/mt5_source.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.multiexchange",
+      "path": "libs/data/multiexchange.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.onchain_flows",
+      "path": "libs/data/onchain_flows.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.papers",
+      "path": "libs/data/papers.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.paywall",
+      "path": "libs/data/paywall.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.prediction_markets",
+      "path": "libs/data/prediction_markets.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.quality",
+      "path": "libs/data/quality.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.render_fetch",
+      "path": "libs/data/render_fetch.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.schema",
+      "path": "libs/data/schema.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.source_promotion",
+      "path": "libs/data/source_promotion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.timeframe",
+      "path": "libs/data/timeframe.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/side_channels/verify_offset.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.universe",
+      "path": "libs/data/universe.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.venue_http",
+      "path": "libs/data/venue_http.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.wallet_graph",
+      "path": "libs/data/wallet_graph.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.data.xls_reader",
+      "path": "libs/data/xls_reader.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.cagr_optimizer",
+      "path": "libs/discovery/cagr_optimizer.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.capacity",
+      "path": "libs/discovery/capacity.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.errors",
+      "path": "libs/discovery/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.monte_carlo_survival",
+      "path": "libs/discovery/monte_carlo_survival.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.objective",
+      "path": "libs/discovery/objective.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.portfolio_geometry",
+      "path": "libs/discovery/portfolio_geometry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.regime_diversification",
+      "path": "libs/discovery/regime_diversification.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.research_roi",
+      "path": "libs/discovery/research_roi.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.stress_scenario",
+      "path": "libs/discovery/stress_scenario.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discovery.tail_risk",
+      "path": "libs/discovery/tail_risk.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discretionary.rules",
+      "path": "libs/discretionary/rules.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.discretionary.tape",
+      "path": "libs/discretionary/tape.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.allocate",
+      "path": "libs/doctrine/allocate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.commitments",
+      "path": "libs/doctrine/commitments.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.constitution",
+      "path": "libs/doctrine/constitution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.contribution",
+      "path": "libs/doctrine/contribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.enforcement",
+      "path": "libs/doctrine/enforcement.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.estimate",
+      "path": "libs/doctrine/estimate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.portfolio_law",
+      "path": "libs/doctrine/portfolio_law.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.prompt_ratchet",
+      "path": "libs/doctrine/prompt_ratchet.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.doctrine.ratchet",
+      "path": "libs/doctrine/ratchet.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.algos",
+      "path": "libs/execution/algos.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.binance_live",
+      "path": "libs/execution/binance_live.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.binance_margin_live",
+      "path": "libs/execution/binance_margin_live.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.binance_spot_live",
+      "path": "libs/execution/binance_spot_live.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.binance_spot_testnet",
+      "path": "libs/execution/binance_spot_testnet.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.binance_testnet",
+      "path": "libs/execution/binance_testnet.py",
+      "status": "VENUE_SPECIFIC_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.book_walk",
+      "path": "libs/execution/book_walk.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.broker",
+      "path": "libs/execution/broker.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.canary",
+      "path": "libs/execution/canary.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.carry_accounting",
+      "path": "libs/execution/carry_accounting.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.collateral",
+      "path": "libs/execution/collateral.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.discretionary_sleeve",
+      "path": "libs/execution/discretionary_sleeve.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.ea_bridge",
+      "path": "libs/execution/ea_bridge.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.economics",
+      "path": "libs/execution/economics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.engine",
+      "path": "libs/execution/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.errors",
+      "path": "libs/execution/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.event_guard",
+      "path": "libs/execution/event_guard.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.excitation",
+      "path": "libs/execution/excitation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.exec_monitor",
+      "path": "libs/execution/exec_monitor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.execution_tape",
+      "path": "libs/execution/execution_tape.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.idempotency",
+      "path": "libs/execution/idempotency.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.journal",
+      "path": "libs/execution/journal.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.leg_modes",
+      "path": "libs/execution/leg_modes.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.leverage_policy",
+      "path": "libs/execution/leverage_policy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.maker",
+      "path": "libs/execution/maker.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.maker_first",
+      "path": "libs/execution/maker_first.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.opportunity_surface",
+      "path": "libs/execution/opportunity_surface.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.paper_broker",
+      "path": "libs/execution/paper_broker.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.passive_impact",
+      "path": "libs/execution/passive_impact.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.protective_stops",
+      "path": "libs/execution/protective_stops.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.ramp_gate",
+      "path": "libs/execution/ramp_gate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.retry",
+      "path": "libs/execution/retry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.ruin_rail",
+      "path": "libs/execution/ruin_rail.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.short_order_path",
+      "path": "libs/execution/short_order_path.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.spot_order_path",
+      "path": "libs/execution/spot_order_path.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.staging",
+      "path": "libs/execution/staging.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.sub_accounts",
+      "path": "libs/execution/sub_accounts.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.tca",
+      "path": "libs/execution/tca.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.execution.wallet",
+      "path": "libs/execution/wallet.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.factory.registry",
+      "path": "libs/factory/registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.builtin",
+      "path": "libs/features/builtin.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.causal_guard",
+      "path": "libs/features/causal_guard.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.definition",
+      "path": "libs/features/definition.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.errors",
+      "path": "libs/features/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.labels",
+      "path": "libs/features/labels.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.pit",
+      "path": "libs/features/pit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.registry",
+      "path": "libs/features/registry.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.features.validation",
+      "path": "libs/features/validation.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.emergence",
+      "path": "libs/hypmax/emergence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.evig",
+      "path": "libs/hypmax/evig.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.fast_screen",
+      "path": "libs/hypmax/fast_screen.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.genealogy",
+      "path": "libs/hypmax/genealogy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.hypothesis_max",
+      "path": "libs/hypmax/hypothesis_max.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.invention",
+      "path": "libs/hypmax/invention.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.laboratory",
+      "path": "libs/hypmax/laboratory.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.manufacture",
+      "path": "libs/hypmax/manufacture.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.moat_features",
+      "path": "libs/hypmax/moat_features.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.moat_mine",
+      "path": "libs/hypmax/moat_mine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.hypmax.ontology",
+      "path": "libs/hypmax/ontology.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ict.canonical",
+      "path": "libs/ict/canonical.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ict.cross_sectional",
+      "path": "libs/ict/cross_sectional.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ict.crypto",
+      "path": "libs/ict/crypto.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ict.patterns",
+      "path": "libs/ict/patterns.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ict.strategy",
+      "path": "libs/ict/strategy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.llm.effort",
+      "path": "libs/llm/effort.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.llm.market",
+      "path": "libs/llm/market.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.llm.push",
+      "path": "libs/llm/push.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.llm.second_opinion",
+      "path": "libs/llm/second_opinion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.metrics.verified",
+      "path": "libs/metrics/verified.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.monitoring.alerting",
+      "path": "libs/monitoring/alerting.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.monitoring.metrics_store",
+      "path": "libs/monitoring/metrics_store.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.monitoring.models",
+      "path": "libs/monitoring/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.monitoring.monitor",
+      "path": "libs/monitoring/monitor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.agent_authority",
+      "path": "libs/ops/agent_authority.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.alert_channels",
+      "path": "libs/ops/alert_channels.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.alert_ledger",
+      "path": "libs/ops/alert_ledger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.attrition",
+      "path": "libs/ops/attrition.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.backup",
+      "path": "libs/ops/backup.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.blind_trigger",
+      "path": "libs/ops/blind_trigger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.campaign_queue",
+      "path": "libs/ops/campaign_queue.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.carryover",
+      "path": "libs/ops/carryover.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.claim_registry",
+      "path": "libs/ops/claim_registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.controller_continuity",
+      "path": "libs/ops/controller_continuity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.cycle_evidence",
+      "path": "libs/ops/cycle_evidence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.deferral",
+      "path": "libs/ops/deferral.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.denominator",
+      "path": "libs/ops/denominator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.deploy_plan",
+      "path": "libs/ops/deploy_plan.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.derisk_ladder",
+      "path": "libs/ops/derisk_ladder.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.desk_host",
+      "path": "libs/ops/desk_host.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.disk",
+      "path": "libs/ops/disk.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.doc_citations",
+      "path": "libs/ops/doc_citations.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.errors",
+      "path": "libs/ops/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.fence_exit",
+      "path": "libs/ops/fence_exit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.fresh",
+      "path": "libs/ops/fresh.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.host_resources",
+      "path": "libs/ops/host_resources.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.input_provenance",
+      "path": "libs/ops/input_provenance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.law_police",
+      "path": "libs/ops/law_police.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.lawful",
+      "path": "libs/ops/lawful.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.llm_route",
+      "path": "libs/ops/llm_route.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.llm_seat",
+      "path": "libs/ops/llm_seat.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.model_chain",
+      "path": "libs/ops/model_chain.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.organ_catchup",
+      "path": "libs/ops/organ_catchup.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.platform_paths",
+      "path": "libs/ops/platform_paths.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.principal_page",
+      "path": "libs/ops/principal_page.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.production_contract",
+      "path": "libs/ops/production_contract.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.protected_artifacts",
+      "path": "libs/ops/protected_artifacts.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.remediation",
+      "path": "libs/ops/remediation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.repair_mode",
+      "path": "libs/ops/repair_mode.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.research_daemon",
+      "path": "libs/ops/research_daemon.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.shared_tree",
+      "path": "libs/ops/shared_tree.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.watchdog",
+      "path": "libs/ops/watchdog.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.workers",
+      "path": "libs/ops/workers.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.alpha_reserve_bank",
+      "path": "libs/portfolio/alpha_reserve_bank.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.analytics",
+      "path": "libs/portfolio/analytics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.auto_promotion",
+      "path": "libs/portfolio/auto_promotion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.capacity_allocation",
+      "path": "libs/portfolio/capacity_allocation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.capital_competition",
+      "path": "libs/portfolio/capital_competition.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.capital_recycling",
+      "path": "libs/portfolio/capital_recycling.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.concentration",
+      "path": "libs/portfolio/concentration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.constraints",
+      "path": "libs/portfolio/constraints.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.construction",
+      "path": "libs/portfolio/construction.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.covariance",
+      "path": "libs/portfolio/covariance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.decision_intelligence",
+      "path": "libs/portfolio/decision_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.diversification",
+      "path": "libs/portfolio/diversification.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.engine",
+      "path": "libs/portfolio/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.errors",
+      "path": "libs/portfolio/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.exposures",
+      "path": "libs/portfolio/exposures.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.factor_model",
+      "path": "libs/portfolio/factor_model.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.hrp",
+      "path": "libs/portfolio/hrp.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.lifecycle",
+      "path": "libs/portfolio/lifecycle.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.live_book",
+      "path": "libs/portfolio/live_book.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.margin_topology",
+      "path": "libs/portfolio/margin_topology.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.models",
+      "path": "libs/portfolio/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.multiperiod",
+      "path": "libs/portfolio/multiperiod.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.optimize",
+      "path": "libs/portfolio/optimize.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.portfolio_monte_carlo",
+      "path": "libs/portfolio/portfolio_monte_carlo.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.rebalance",
+      "path": "libs/portfolio/rebalance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.return_engines",
+      "path": "libs/portfolio/return_engines.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.risk_parity",
+      "path": "libs/portfolio/risk_parity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.strategy_pool",
+      "path": "libs/portfolio/strategy_pool.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.portfolio.wealth_retention",
+      "path": "libs/portfolio/wealth_retention.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.regime.bayesian",
+      "path": "libs/regime/bayesian.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.regime.engine",
+      "path": "libs/regime/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.regime.features",
+      "path": "libs/regime/features.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.regime.gmm",
+      "path": "libs/regime/gmm.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.regime.hmm",
+      "path": "libs/regime/hmm.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.alpha_economics",
+      "path": "libs/research/alpha_economics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.alpha_frontier",
+      "path": "libs/research/alpha_frontier.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.alpha_frontier_gaps",
+      "path": "libs/research/alpha_frontier_gaps.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.alpha_retention",
+      "path": "libs/research/alpha_retention.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.alpha_state",
+      "path": "libs/research/alpha_state.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.announcement_diffusion",
+      "path": "libs/research/announcement_diffusion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.anytime_valid",
+      "path": "libs/research/anytime_valid.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.axis_integrity",
+      "path": "libs/research/axis_integrity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.axis_screen",
+      "path": "libs/research/axis_screen.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.book_microstructure",
+      "path": "libs/research/book_microstructure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.breadth",
+      "path": "libs/research/breadth.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cadence_alignment",
+      "path": "libs/research/cadence_alignment.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cadence_roi",
+      "path": "libs/research/cadence_roi.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.campaign_retention",
+      "path": "libs/research/campaign_retention.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.capability_ratchet",
+      "path": "libs/research/capability_ratchet.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.capacity_policy",
+      "path": "libs/research/capacity_policy.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.capital_basis",
+      "path": "libs/research/capital_basis.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cashcarry",
+      "path": "libs/research/cashcarry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.citation_integrity",
+      "path": "libs/research/citation_integrity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.claim_screen",
+      "path": "libs/research/claim_screen.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.clock_provenance",
+      "path": "libs/research/clock_provenance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.clock_registry",
+      "path": "libs/research/clock_registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.clock_retirement",
+      "path": "libs/research/clock_retirement.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cohort_independence",
+      "path": "libs/research/cohort_independence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.collapse_detector",
+      "path": "libs/research/collapse_detector.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.competitor_coverage",
+      "path": "libs/research/competitor_coverage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.completion_ledger",
+      "path": "libs/research/completion_ledger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.completion_program_gaps",
+      "path": "libs/research/completion_program_gaps.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.conservation",
+      "path": "libs/research/conservation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.convergence",
+      "path": "libs/research/convergence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.conversion_ledger",
+      "path": "libs/research/conversion_ledger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.conversion_max",
+      "path": "libs/research/conversion_max.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.conversion_velocity",
+      "path": "libs/research/conversion_velocity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cro_role",
+      "path": "libs/research/cro_role.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.cross_section_floor",
+      "path": "libs/research/cross_section_floor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crossasset",
+      "path": "libs/research/crossasset.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crowding",
+      "path": "libs/research/crowding.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crowding_hazard",
+      "path": "libs/research/crowding_hazard.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crypto_regime",
+      "path": "libs/research/crypto_regime.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crypto_sleeves",
+      "path": "libs/research/crypto_sleeves.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.crypto_xsec",
+      "path": "libs/research/crypto_xsec.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.data_registry",
+      "path": "libs/research/data_registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.decision_ledger",
+      "path": "libs/research/decision_ledger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.decision_review",
+      "path": "libs/research/decision_review.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.decline_detector",
+      "path": "libs/research/decline_detector.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.decline_value",
+      "path": "libs/research/decline_value.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.desk_coverage",
+      "path": "libs/research/desk_coverage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.desk_economics",
+      "path": "libs/research/desk_economics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.desk_memory",
+      "path": "libs/research/desk_memory.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.difference_engine",
+      "path": "libs/research/difference_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.dip_ladder",
+      "path": "libs/research/dip_ladder.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.dist_shift",
+      "path": "libs/research/dist_shift.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.donated_survivor",
+      "path": "libs/research/donated_survivor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.drawdown_rebound",
+      "path": "libs/research/drawdown_rebound.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.earnability",
+      "path": "libs/research/earnability.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.edge_intake",
+      "path": "libs/research/edge_intake.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.event_calendar",
+      "path": "libs/research/event_calendar.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.event_density",
+      "path": "libs/research/event_density.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.evidence_clock",
+      "path": "libs/research/evidence_clock.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.evidence_tier",
+      "path": "libs/research/evidence_tier.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.execution_quality",
+      "path": "libs/research/execution_quality.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.external_benchmark",
+      "path": "libs/research/external_benchmark.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.external_intelligence",
+      "path": "libs/research/external_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.extractor_invariants",
+      "path": "libs/research/extractor_invariants.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.failed_breakout",
+      "path": "libs/research/failed_breakout.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.failure_bands",
+      "path": "libs/research/failure_bands.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.fee_attribution",
+      "path": "libs/research/fee_attribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.finding_registry",
+      "path": "libs/research/finding_registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.frontier",
+      "path": "libs/research/frontier.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.funding_clock",
+      "path": "libs/research/funding_clock.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.funding_mechanics",
+      "path": "libs/research/funding_mechanics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.funnel",
+      "path": "libs/research/funnel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.fusion_search",
+      "path": "libs/research/fusion_search.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.gap_contract",
+      "path": "libs/research/gap_contract.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.hunt_frontier",
+      "path": "libs/research/hunt_frontier.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.ic",
+      "path": "libs/research/ic.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.idle_yield",
+      "path": "libs/research/idle_yield.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.index_reconstitution",
+      "path": "libs/research/index_reconstitution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.information_rate",
+      "path": "libs/research/information_rate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.information_value",
+      "path": "libs/research/information_value.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.intermarket",
+      "path": "libs/research/intermarket.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.intraday_rotation",
+      "path": "libs/research/intraday_rotation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.kill_audit",
+      "path": "libs/research/kill_audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.label_factory",
+      "path": "libs/research/label_factory.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.leaderboard_panel",
+      "path": "libs/research/leaderboard_panel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.lending_haircut",
+      "path": "libs/research/lending_haircut.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.liq_heatmap",
+      "path": "libs/research/liq_heatmap.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.liquidation_brief",
+      "path": "libs/research/liquidation_brief.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.liquidation_mechanism",
+      "path": "libs/research/liquidation_mechanism.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.list_order",
+      "path": "libs/research/list_order.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.listing_events",
+      "path": "libs/research/listing_events.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.live_ladder",
+      "path": "libs/research/live_ladder.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.marginal_admission",
+      "path": "libs/research/marginal_admission.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.market_breadth",
+      "path": "libs/research/market_breadth.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.mechanism_census",
+      "path": "libs/research/mechanism_census.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.mechanism_fingerprint",
+      "path": "libs/research/mechanism_fingerprint.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.mechanism_ontology",
+      "path": "libs/research/mechanism_ontology.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.microstructure",
+      "path": "libs/research/microstructure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.mine_conversion",
+      "path": "libs/research/mine_conversion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.moat_microstructure",
+      "path": "libs/research/moat_microstructure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.moat_utilisation",
+      "path": "libs/research/moat_utilisation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.natural_experiment",
+      "path": "libs/research/natural_experiment.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.near_survivor",
+      "path": "libs/research/near_survivor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.oi_divergence",
+      "path": "libs/research/oi_divergence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.operators",
+      "path": "libs/research/operators.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.order_sensitive_decay",
+      "path": "libs/research/order_sensitive_decay.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.orderbook_state",
+      "path": "libs/research/orderbook_state.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.orphan_scan",
+      "path": "libs/research/orphan_scan.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.overlays",
+      "path": "libs/research/overlays.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.panel_breadth",
+      "path": "libs/research/panel_breadth.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.panel_diversity",
+      "path": "libs/research/panel_diversity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.paper_sleeves",
+      "path": "libs/research/paper_sleeves.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.participant_phenotype",
+      "path": "libs/research/participant_phenotype.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.path_refs",
+      "path": "libs/research/path_refs.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.payoff_selection",
+      "path": "libs/research/payoff_selection.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.pdf_text",
+      "path": "libs/research/pdf_text.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.positioning",
+      "path": "libs/research/positioning.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.practitioner_corpus",
+      "path": "libs/research/practitioner_corpus.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.pre_filter",
+      "path": "libs/research/pre_filter.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.primary_market_flow",
+      "path": "libs/research/primary_market_flow.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.print_impact",
+      "path": "libs/research/print_impact.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.profit_retention",
+      "path": "libs/research/profit_retention.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.promotion_history",
+      "path": "libs/research/promotion_history.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.promotion_latency",
+      "path": "libs/research/promotion_latency.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.public_strategy_hunter",
+      "path": "libs/research/public_strategy_hunter.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.recommendation_forecast",
+      "path": "libs/research/recommendation_forecast.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.regime_coverage",
+      "path": "libs/research/regime_coverage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.regime_trend",
+      "path": "libs/research/regime_trend.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.repair_capacity",
+      "path": "libs/research/repair_capacity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.research_control",
+      "path": "libs/research/research_control.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.return_claims",
+      "path": "libs/research/return_claims.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.review_rubric",
+      "path": "libs/research/review_rubric.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.rfb_panel",
+      "path": "libs/research/rfb_panel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.root_cause",
+      "path": "libs/research/root_cause.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.screen_conversion",
+      "path": "libs/research/screen_conversion.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.search_strategy",
+      "path": "libs/research/search_strategy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.second_family",
+      "path": "libs/research/second_family.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.sleeve_allocation",
+      "path": "libs/research/sleeve_allocation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.sleeve_allocations",
+      "path": "libs/research/sleeve_allocations.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.sleeve_universe",
+      "path": "libs/research/sleeve_universe.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.sleeves",
+      "path": "libs/research/sleeves.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.slot_admission",
+      "path": "libs/research/slot_admission.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.slot_displacement",
+      "path": "libs/research/slot_displacement.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.slot_registry",
+      "path": "libs/research/slot_registry.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.source_alternatives",
+      "path": "libs/research/source_alternatives.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.source_backlog",
+      "path": "libs/research/source_backlog.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.source_health",
+      "path": "libs/research/source_health.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.source_roi",
+      "path": "libs/research/source_roi.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.spot_momentum",
+      "path": "libs/research/spot_momentum.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.stationarity",
+      "path": "libs/research/stationarity.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.strategic_director",
+      "path": "libs/research/strategic_director.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.survivor_panel",
+      "path": "libs/research/survivor_panel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.tail_funding",
+      "path": "libs/research/tail_funding.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.transcript_candidates",
+      "path": "libs/research/transcript_candidates.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.unknowns",
+      "path": "libs/research/unknowns.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.unlock_calendar",
+      "path": "libs/research/unlock_calendar.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.unlock_supply_series",
+      "path": "libs/research/unlock_supply_series.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.untrusted",
+      "path": "libs/research/untrusted.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.upbit_data",
+      "path": "libs/research/upbit_data.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.variation_blocker",
+      "path": "libs/research/variation_blocker.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.vault_index",
+      "path": "libs/research/vault_index.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.venue_subsidy",
+      "path": "libs/research/venue_subsidy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.video_intelligence",
+      "path": "libs/research/video_intelligence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.video_triage",
+      "path": "libs/research/video_triage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.vintage",
+      "path": "libs/research/vintage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.vol_risk_premium",
+      "path": "libs/research/vol_risk_premium.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.vol_target",
+      "path": "libs/research/vol_target.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.volatility_signals",
+      "path": "libs/research/volatility_signals.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.capital_events",
+      "path": "libs/risk/capital_events.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.config",
+      "path": "libs/risk/config.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.correlation",
+      "path": "libs/risk/correlation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.crisis",
+      "path": "libs/risk/crisis.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.drawdown",
+      "path": "libs/risk/drawdown.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.dynamic_leverage",
+      "path": "libs/risk/dynamic_leverage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.edge_gate",
+      "path": "libs/risk/edge_gate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.errors",
+      "path": "libs/risk/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.factor_caps",
+      "path": "libs/risk/factor_caps.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.gate",
+      "path": "libs/risk/gate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.growth_leverage",
+      "path": "libs/risk/growth_leverage.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.heat",
+      "path": "libs/risk/heat.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.instruments",
+      "path": "libs/risk/instruments.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.kelly",
+      "path": "libs/risk/kelly.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.kelly_shrink",
+      "path": "libs/risk/kelly_shrink.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.overlays",
+      "path": "libs/risk/overlays.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.preservation",
+      "path": "libs/risk/preservation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.risk_budget",
+      "path": "libs/risk/risk_budget.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.risk_controls",
+      "path": "libs/risk/risk_controls.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.scaling",
+      "path": "libs/risk/scaling.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.sizing",
+      "path": "libs/risk/sizing.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.sleeve_allocation",
+      "path": "libs/risk/sleeve_allocation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.stress",
+      "path": "libs/risk/stress.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.tail",
+      "path": "libs/risk/tail.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.vol_headroom",
+      "path": "libs/risk/vol_headroom.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.vol_target",
+      "path": "libs/risk/vol_target.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.adaptive_thresholds",
+      "path": "libs/self_improvement/adaptive_thresholds.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.audit",
+      "path": "libs/self_improvement/audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.capability_regression",
+      "path": "libs/self_improvement/capability_regression.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.capital_reallocator",
+      "path": "libs/self_improvement/capital_reallocator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.controller",
+      "path": "libs/self_improvement/controller.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.decay_engine",
+      "path": "libs/self_improvement/decay_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.dormancy",
+      "path": "libs/self_improvement/dormancy.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.drift_detector",
+      "path": "libs/self_improvement/drift_detector.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.ensemble_optimizer",
+      "path": "libs/self_improvement/ensemble_optimizer.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.errors",
+      "path": "libs/self_improvement/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.forecast_calibration",
+      "path": "libs/self_improvement/forecast_calibration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.health_monitor",
+      "path": "libs/self_improvement/health_monitor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.kill_switch",
+      "path": "libs/self_improvement/kill_switch.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.lifecycle_actions",
+      "path": "libs/self_improvement/lifecycle_actions.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.marketplace",
+      "path": "libs/self_improvement/marketplace.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.meta_learning",
+      "path": "libs/self_improvement/meta_learning.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.models",
+      "path": "libs/self_improvement/models.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.research_priority",
+      "path": "libs/self_improvement/research_priority.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.self_improvement.weight_optimizer",
+      "path": "libs/self_improvement/weight_optimizer.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.aggregation",
+      "path": "libs/signal_engine/aggregation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.alpha_competition_engine",
+      "path": "libs/signal_engine/alpha_competition_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.alpha_weighting",
+      "path": "libs/signal_engine/alpha_weighting.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.attribution",
+      "path": "libs/signal_engine/attribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.audit",
+      "path": "libs/signal_engine/audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.capacity",
+      "path": "libs/signal_engine/capacity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.champion_challenger",
+      "path": "libs/signal_engine/champion_challenger.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.confidence_engine",
+      "path": "libs/signal_engine/confidence_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.crowding",
+      "path": "libs/signal_engine/crowding.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.decay",
+      "path": "libs/signal_engine/decay.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.edge_estimator",
+      "path": "libs/signal_engine/edge_estimator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.engine",
+      "path": "libs/signal_engine/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.errors",
+      "path": "libs/signal_engine/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.execution",
+      "path": "libs/signal_engine/execution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.expected_value",
+      "path": "libs/signal_engine/expected_value.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.factor_exposure",
+      "path": "libs/signal_engine/factor_exposure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.governance",
+      "path": "libs/signal_engine/governance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.institutional_score",
+      "path": "libs/signal_engine/institutional_score.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.meta_model",
+      "path": "libs/signal_engine/meta_model.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.models",
+      "path": "libs/signal_engine/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.monitoring",
+      "path": "libs/signal_engine/monitoring.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.persistence",
+      "path": "libs/signal_engine/persistence.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.portfolio_context",
+      "path": "libs/signal_engine/portfolio_context.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.quality",
+      "path": "libs/signal_engine/quality.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.ranking",
+      "path": "libs/signal_engine/ranking.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.regime",
+      "path": "libs/signal_engine/regime.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.selection",
+      "path": "libs/signal_engine/selection.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.shadow",
+      "path": "libs/signal_engine/shadow.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.signal_embedding_engine",
+      "path": "libs/signal_engine/signal_embedding_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.stress_signal_engine",
+      "path": "libs/signal_engine/stress_signal_engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.signal_engine.uncertainty",
+      "path": "libs/signal_engine/uncertainty.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.allocation",
+      "path": "libs/stage14/allocation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.analytics",
+      "path": "libs/stage14/analytics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.attribution",
+      "path": "libs/stage14/attribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.audit",
+      "path": "libs/stage14/audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.capacity",
+      "path": "libs/stage14/capacity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.engine",
+      "path": "libs/stage14/engine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.errors",
+      "path": "libs/stage14/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.governance",
+      "path": "libs/stage14/governance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.growth",
+      "path": "libs/stage14/growth.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.kelly",
+      "path": "libs/stage14/kelly.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.models",
+      "path": "libs/stage14/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.score",
+      "path": "libs/stage14/score.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14.state_machine",
+      "path": "libs/stage14/state_machine.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.concentration",
+      "path": "libs/stage14_5/concentration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.correlation_shock",
+      "path": "libs/stage14_5/correlation_shock.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.crisis_alpha",
+      "path": "libs/stage14_5/crisis_alpha.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.errors",
+      "path": "libs/stage14_5/errors.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.factor_exposure",
+      "path": "libs/stage14_5/factor_exposure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.hedging",
+      "path": "libs/stage14_5/hedging.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.models",
+      "path": "libs/stage14_5/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.regime_exposure",
+      "path": "libs/stage14_5/regime_exposure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage14_5.tail_risk",
+      "path": "libs/stage14_5/tail_risk.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.audit",
+      "path": "libs/stage15/audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.contribution",
+      "path": "libs/stage15/contribution.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.economic_mechanism",
+      "path": "libs/stage15/economic_mechanism.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.governance",
+      "path": "libs/stage15/governance.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.models",
+      "path": "libs/stage15/models.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.orchestrator",
+      "path": "libs/stage15/orchestrator.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.priority",
+      "path": "libs/stage15/priority.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.regime_validation",
+      "path": "libs/stage15/regime_validation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.stage15.scoring",
+      "path": "libs/stage15/scoring.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.audit",
+      "path": "libs/store/audit.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.config_versions",
+      "path": "libs/store/config_versions.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.connection",
+      "path": "libs/store/connection.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.hashchain",
+      "path": "libs/store/hashchain.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.migrations",
+      "path": "libs/store/migrations.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.models",
+      "path": "libs/store/models.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.registries",
+      "path": "libs/store/registries.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.snapshots",
+      "path": "libs/store/snapshots.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.trading",
+      "path": "libs/store/trading.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.store.trials",
+      "path": "libs/store/trials.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.testing.equivalent_mutants",
+      "path": "libs/testing/equivalent_mutants.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.admission_power",
+      "path": "libs/validation/admission_power.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.bar_permutation",
+      "path": "libs/validation/bar_permutation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.baselines",
+      "path": "libs/validation/baselines.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.bootstrap",
+      "path": "libs/validation/bootstrap.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.brain_calibration",
+      "path": "libs/validation/brain_calibration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.campaign_design",
+      "path": "libs/validation/campaign_design.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.campaign_window",
+      "path": "libs/validation/campaign_window.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.cpcv",
+      "path": "libs/validation/cpcv.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/qquant_gates.py",
+        "desks/mt5/research/universal_gate.py",
+        "desks/mt5/side_channels/gate_calibration.py",
+        "desks/mt5/side_channels/ug_remote.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.drawdown_metrics",
+      "path": "libs/validation/drawdown_metrics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.dsr",
+      "path": "libs/validation/dsr.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/full_hunt.py",
+        "desks/mt5/research/hunt_deflate.py",
+        "desks/mt5/research/qquant_gates.py",
+        "desks/mt5/research/scalp_reverse_engineering.py",
+        "desks/mt5/research/universal_gate.py",
+        "desks/mt5/side_channels/gate_calibration.py",
+        "desks/mt5/side_channels/ug_remote.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.economic_prior",
+      "path": "libs/validation/economic_prior.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.effective_sample",
+      "path": "libs/validation/effective_sample.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.ensemble_gate",
+      "path": "libs/validation/ensemble_gate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.errors",
+      "path": "libs/validation/errors.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.event_study",
+      "path": "libs/validation/event_study.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.family_multiplicity",
+      "path": "libs/validation/family_multiplicity.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.fdr",
+      "path": "libs/validation/fdr.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.forward_stats",
+      "path": "libs/validation/forward_stats.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.gate_calibration",
+      "path": "libs/validation/gate_calibration.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.gate_power",
+      "path": "libs/validation/gate_power.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.gauntlet",
+      "path": "libs/validation/gauntlet.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.lockbox",
+      "path": "libs/validation/lockbox.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.lookahead_audit",
+      "path": "libs/validation/lookahead_audit.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.near_miss",
+      "path": "libs/validation/near_miss.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.partition_power",
+      "path": "libs/validation/partition_power.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.pbo",
+      "path": "libs/validation/pbo.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/qquant_gates.py",
+        "desks/mt5/research/universal_gate.py",
+        "desks/mt5/side_channels/gate_calibration.py",
+        "desks/mt5/side_channels/ug_remote.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.per_candidate",
+      "path": "libs/validation/per_candidate.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.positive_control",
+      "path": "libs/validation/positive_control.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.random_baseline",
+      "path": "libs/validation/random_baseline.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.reality_check",
+      "path": "libs/validation/reality_check.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/qquant_gates.py",
+        "desks/mt5/research/universal_gate.py",
+        "desks/mt5/side_channels/gate_calibration.py",
+        "desks/mt5/side_channels/ug_remote.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.reject_rescore",
+      "path": "libs/validation/reject_rescore.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.rejection_shadow",
+      "path": "libs/validation/rejection_shadow.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.report",
+      "path": "libs/validation/report.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.research_diagnostics",
+      "path": "libs/validation/research_diagnostics.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.revalidation",
+      "path": "libs/validation/revalidation.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/qquant_gates.py",
+        "desks/mt5/research/universal_gate.py",
+        "desks/mt5/side_channels/gate_calibration.py",
+        "desks/mt5/side_channels/ug_remote.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.robustness_filters",
+      "path": "libs/validation/robustness_filters.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.screen_admission",
+      "path": "libs/validation/screen_admission.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.screen_select",
+      "path": "libs/validation/screen_select.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.state_conditional",
+      "path": "libs/validation/state_conditional.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.stepwise",
+      "path": "libs/validation/stepwise.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.stress_costs",
+      "path": "libs/validation/stress_costs.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.track_record",
+      "path": "libs/validation/track_record.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.type2_cost",
+      "path": "libs/validation/type2_cost.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.validation.walk_forward",
+      "path": "libs/validation/walk_forward.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    }
+  ],
+  "interpretation": "REACHABLE_MT5_STATIC proves a code path only, never runtime or economic value. UNWIRED_REVIEW is the nightly positive-EV triage queue. VENUE_SPECIFIC_REVIEW requires an MT5-equivalence proof or an explicit block/archive disposition."
+}

@@ -13,7 +13,7 @@
     "profit_factor": 1.248,
     "win_rate": 0.5064,
     "source": "ext_github_XAUUSD_session_range_breakout",
-    "url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -23,13 +23,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.144,
+    "exp_r": 0.1439,
     "max_dd_r": -24.24,
     "t_stat": 6.33,
     "profit_factor": 1.359,
     "win_rate": 0.524,
     "source": "ext_github_XAUUSD_session_range_breakout",
-    "url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -39,13 +39,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.1702,
+    "exp_r": 0.1701,
     "max_dd_r": -25.6,
     "t_stat": 6.75,
     "profit_factor": 1.409,
     "win_rate": 0.5017,
     "source": "ext_github_XAUUSD_session_range_breakout",
-    "url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -55,13 +55,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.1941,
+    "exp_r": 0.194,
     "max_dd_r": -24.7,
     "t_stat": 7.18,
-    "profit_factor": 1.462,
+    "profit_factor": 1.461,
     "win_rate": 0.4955,
     "source": "ext_github_XAUUSD_session_range_breakout",
-    "url": "https://github.com/n30dyn4m1c/gold-pro-scalper"
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "USDJPY",
@@ -76,8 +76,8 @@
     "t_stat": 3.18,
     "profit_factor": 1.18,
     "win_rate": 0.5122,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -92,8 +92,8 @@
     "t_stat": 5.32,
     "profit_factor": 1.315,
     "win_rate": 0.5278,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -108,8 +108,8 @@
     "t_stat": 3.33,
     "profit_factor": 1.198,
     "win_rate": 0.5005,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -124,8 +124,8 @@
     "t_stat": 5.68,
     "profit_factor": 1.356,
     "win_rate": 0.5192,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -140,8 +140,8 @@
     "t_stat": 3.18,
     "profit_factor": 1.194,
     "win_rate": 0.4944,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -156,8 +156,88 @@
     "t_stat": 5.65,
     "profit_factor": 1.367,
     "win_rate": 0.5145,
-    "source": "ext_central_bank_USDJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "n": 2127,
+    "exp_r": 0.0777,
+    "max_dd_r": -18.69,
+    "t_stat": 3.97,
+    "profit_factor": 1.224,
+    "win_rate": 0.5068,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2127,
+    "exp_r": 0.0767,
+    "max_dd_r": -18.44,
+    "t_stat": 3.7,
+    "profit_factor": 1.217,
+    "win_rate": 0.4937,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPAUD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "n": 2127,
+    "exp_r": 0.0854,
+    "max_dd_r": -18.17,
+    "t_stat": 3.96,
+    "profit_factor": 1.242,
+    "win_rate": 0.4922,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2110,
+    "exp_r": 0.0517,
+    "max_dd_r": -25.95,
+    "t_stat": 2.59,
+    "profit_factor": 1.149,
+    "win_rate": 0.4844,
+    "source": "ext_forexfactory_EURAUD_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "EURAUD",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "n": 2110,
+    "exp_r": 0.0539,
+    "max_dd_r": -23.11,
+    "t_stat": 2.62,
+    "profit_factor": 1.154,
+    "win_rate": 0.4825,
+    "source": "ext_forexfactory_EURAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -167,13 +247,13 @@
       "wait_bars": 12
     },
     "n": 2142,
-    "exp_r": 0.0907,
+    "exp_r": 0.0908,
     "max_dd_r": -14.8,
-    "t_stat": 4.39,
-    "profit_factor": 1.242,
-    "win_rate": 0.5243,
-    "source": "ext_central_bank_CADJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "t_stat": 4.4,
+    "profit_factor": 1.243,
+    "win_rate": 0.5247,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -183,13 +263,13 @@
       "wait_bars": 8
     },
     "n": 2037,
-    "exp_r": 0.0614,
+    "exp_r": 0.0615,
     "max_dd_r": -22.08,
-    "t_stat": 2.59,
+    "t_stat": 2.6,
     "profit_factor": 1.144,
-    "win_rate": 0.4875,
-    "source": "ext_central_bank_CADJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "win_rate": 0.488,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -199,13 +279,13 @@
       "wait_bars": 12
     },
     "n": 2142,
-    "exp_r": 0.113,
+    "exp_r": 0.1131,
     "max_dd_r": -14.38,
     "t_stat": 5.06,
     "profit_factor": 1.298,
-    "win_rate": 0.5149,
-    "source": "ext_central_bank_CADJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "win_rate": 0.5154,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -215,13 +295,13 @@
       "wait_bars": 8
     },
     "n": 2037,
-    "exp_r": 0.0603,
+    "exp_r": 0.0604,
     "max_dd_r": -22.14,
-    "t_stat": 2.45,
+    "t_stat": 2.46,
     "profit_factor": 1.14,
-    "win_rate": 0.4806,
-    "source": "ext_central_bank_CADJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "win_rate": 0.4811,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -233,11 +313,11 @@
     "n": 2142,
     "exp_r": 0.1093,
     "max_dd_r": -18.79,
-    "t_stat": 4.72,
+    "t_stat": 4.73,
     "profit_factor": 1.285,
-    "win_rate": 0.5079,
-    "source": "ext_central_bank_CADJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "win_rate": 0.5084,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -252,8 +332,8 @@
     "t_stat": 4.26,
     "profit_factor": 1.23,
     "win_rate": 0.5009,
-    "source": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -268,8 +348,8 @@
     "t_stat": 4.19,
     "profit_factor": 1.237,
     "win_rate": 0.4843,
-    "source": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPJPY",
@@ -279,13 +359,13 @@
       "wait_bars": 12
     },
     "n": 2170,
-    "exp_r": 0.1014,
+    "exp_r": 0.1015,
     "max_dd_r": -21.57,
     "t_stat": 4.26,
     "profit_factor": 1.25,
     "win_rate": 0.4793,
-    "source": "ext_central_bank_GBPJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -300,8 +380,8 @@
     "t_stat": 3.16,
     "profit_factor": 1.171,
     "win_rate": 0.5031,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -316,8 +396,8 @@
     "t_stat": 4.89,
     "profit_factor": 1.276,
     "win_rate": 0.5209,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -332,8 +412,8 @@
     "t_stat": 3.2,
     "profit_factor": 1.181,
     "win_rate": 0.4926,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -348,8 +428,8 @@
     "t_stat": 5.02,
     "profit_factor": 1.298,
     "win_rate": 0.5121,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -364,8 +444,8 @@
     "t_stat": 2.77,
     "profit_factor": 1.16,
     "win_rate": 0.4873,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -380,7 +460,7 @@
     "t_stat": 4.65,
     "profit_factor": 1.282,
     "win_rate": 0.5074,
-    "source": "ext_central_bank_EURJPY_central_bank_reaction",
-    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm"
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   }
 ]

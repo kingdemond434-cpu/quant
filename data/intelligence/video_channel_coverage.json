@@ -27,5 +27,17 @@
     }
    ]
   }
- ]
+ ],
+ "last_sweep": "2026-08-25T20:37:58.041527+00:00",
+ "ts": "2026-08-25T20:37:58.041527+00:00",
+ "videos": 100,
+ "channels_swept": 2,
+ "new_links": 220,
+ "discovered_channels": 3,
+ "units_spent": 11,
+ "errors": [
+  "search Lewis Jackson trading: HTTP Error 429: Too Many Requests",
+  "channel Unbiased Trading: HTTP Error 404: Not Found"
+ ],
+ "transcripts": 0
 }

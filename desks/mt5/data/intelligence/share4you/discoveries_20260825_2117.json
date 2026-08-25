@@ -1,0 +1,13 @@
+[
+ {
+  "source": "share4you",
+  "kind": "fetch_error",
+  "title": "404 Client Error: Not Found for url: https://www.share4you.com/en/leaders?page=1",
+  "url": "https://www.share4you.com/en/leaders?page=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-25T21:17:20+00:00",
+  "region": "CIS/Asia",
+  "needs_selector_work": true
+ }
+]
