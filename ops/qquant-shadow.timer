@@ -1,0 +1,12 @@
+[Unit]
+Description=Evaluate all MT5 forward-shadow sleeves every 30 minutes
+
+[Timer]
+OnCalendar=*-*-* *:00/30:00
+Persistent=true
+AccuracySec=15s
+Unit=qquant-shadow.service
+
+[Install]
+WantedBy=timers.target
+

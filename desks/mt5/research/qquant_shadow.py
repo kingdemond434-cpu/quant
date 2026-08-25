@@ -15,9 +15,10 @@ for value in (BASE, BASE / "research"):
 
 from gate_policy import all_ten_pass, is_exact_policy  # noqa: E402
 from mt5desk.engine import Costs, run_backtest  # noqa: E402
-from research.h1_source import fetch_h1  # noqa: E402
 from run_hunt12 import day_states  # noqa: E402
 from run_hunt16 import FAMILIES, WINDOWS  # noqa: E402
+
+from research.h1_source import fetch_h1  # noqa: E402
 
 REPORTS = BASE / "reports"
 SHADOW = REPORTS / "shadow"
@@ -100,10 +101,17 @@ def main() -> int:
         signal_hour = WINDOWS[selector].get("signal_at") or WINDOWS[selector]["range_start"]
         signals = [s for s in FAMILIES[family](h1, side) if s.time.hour == signal_hour]
         condition = spec.get("condition")
+        decision_bars = h1[
+            (h1.index > frozen_at) & (h1.index.hour == signal_hour)
+        ]
         if condition:
             states = day_states(h1)
             signals = [s for s in signals
                        if states.get(pd.Timestamp(s.time).date()) == condition]
+            decision_bars = decision_bars[
+                [states.get(ts.date()) == condition for ts in decision_bars.index]
+            ]
+        forward_signals = [s for s in signals if pd.Timestamp(s.time) > frozen_at]
         meta = _read(BASE / "data" / "universe" / "universe.json")
         costs = Costs.from_symbol(meta.get(str(spec["symbol"]), {}), mult=2.0)
         result = run_backtest(h1, signals, costs)
@@ -124,6 +132,12 @@ def main() -> int:
         row.update({
             "n": len(values), "cum_r": sum(values), "exp_r": expectancy,
             "max_dd_r": _max_drawdown(values), "days_active": days,
+            "forward_bars_evaluated": int((h1.index > frozen_at).sum()),
+            "forward_decision_bars": len(decision_bars),
+            "forward_eligible_signals": len(forward_signals),
+            "last_evaluated_bar": (
+                None if h1.empty else pd.Timestamp(h1.index.max()).isoformat()
+            ),
             "ledger": str(ledger.relative_to(BASE)),
             "promotion_authority": bars.promotion_authority,
         })
@@ -133,7 +147,11 @@ def main() -> int:
             row["why"] = "forward rows are not Fusion-native and cannot promote"
         elif not ready:
             row["status"] = "ACTIVE"
-            row["why"] = f"accruing: {len(values)}/{FULL_TRADES} trades; {days}/{MIN_DAYS} days"
+            row["why"] = (
+                f"accruing: {len(values)}/{FULL_TRADES} closed trades; "
+                f"{days}/{MIN_DAYS} days; {len(decision_bars)} forward decision bars "
+                f"evaluated; {len(forward_signals)} eligible signals"
+            )
         elif expectancy > 0 and row["max_dd_r"] > -25.0:
             row["status"] = "PROMOTION_CANDIDATE"
             row["why"] = (
