@@ -1047,3 +1047,58 @@ STARVED rows (17): named as next-cycle triage debt -- this cycle's budget went t
 window (52 ledger dispositions, CI restoration, 2 collector/organ outage fixes). They are NOT
 silently carried: the mechanical pass re-lists them daily and the next cycle owes their pass
 first (§37 will show this paragraph as the dated ack).
+
+## 2026-08-25T23:45Z status update (weekly gap-fixer/wirer cycle — liveness sweep + repairs)
+
+**Root-cause of the week, repaired in userland: root `cron.service` OOM-died 2026-08-20 20:48 and
+took ~12 organs' cadence with it silently** (cost_hunt/cost_identification tol 3h → 122h stale,
+alert_canary 127h, drills/moat_backup 139h, live_guard, watchdog, growth_audit, organ_catchup,
+certify_gauntlet, regime_monitor, daily-cycle fallbacks). Restored as ops/quant-*.{timer,service}
+user units (commit d3f03564) with manifest cadences + flocks preserved; forced first runs verified:
+alert_canary_state/cost_surface/cost_hunt 23:28Z, drill_report 23:30Z (10/10 derisk, 4/4
+ruin-rail), gauntlet_certification written. `watchdog.py` deliberately NOT restored — it
+supervises retired crypto processes against the RECORDERS_OFF mandate. Root units remain the
+principal's console block (below).
+
+- **#125 → AUDITED, mechanism named** (rule 9): Monday-side `dow_effect` R is denominator-inflated
+  — `stop_dist = 1.2×ATR(20)` EWM decays over weekend bars at the Mon 00:00 entry (implied stop
+  4.9 pips Mon vs 32.3 pips Thu on the same sleeve) AND replay charges zero cost (exact ratio
+  0.2866/0.0493 = 5.81 ⇒ per_oz_cost=0). Full audit: reports/shadow/AUDIT_NZDJPY_dow_effect.md.
+  Family fix = new preregistered construction (stop floored economically); NOT hot-patched — the
+  promoter/shadow_admission files are under active sibling edit. Same exposure: `monday_gap`.
+- **#128 → PARTIAL**: stale `.strategy-test.VnDxMI` + `.codex-conversion-test` worktrees REMOVED
+  (both inert: no files newer than 08-24, no open handles, no processes rooted there). Fence
+  remains the guard; 22:33Z breach coincided with the hourly research sweep, so a cross-box/organ
+  writer is still a suspect — fence log is the falsifier from here.
+- **#129 → CLAIM STALE, needs pinning not scheduling**: the certificate writer produced at
+  22:33Z and again 23:38Z tonight (UNIVERSAL_SURVIVORS.json mtimes) — something live already runs
+  it on this box. Remaining owed: identify THE runner, pin it in the scheduler manifest, and keep
+  the Windows-box 00:45 paste only if the desk wants the second box redundant.
+- **#130 → FIXED + WIRED**: regime_monitor rebuilt — wake driven by zero-capital shadow replay
+  (41 sleeves populated from reports/shadow/ledger_*.json; state was `{}` since 08-20 because the
+  monitor pointed at a live_ledger that does not exist on this box and had lost its scheduler).
+  Hibernate still needs LIVE evidence; wake fires on shadow n≥30 ∧ exp≥−0.05 (warn-bar
+  hysteresis, economically keyed). 5 regression tests incl. the shadow-tag misfiling
+  (`shadow|SYM|win` → parent sleeve, was merging sessions into `shadow|SYM`). Scheduled:
+  quant-regime-monitor.timer (30min). Follow-up carded: shadow-only hibernation authority is a
+  policy extension, deliberately not taken.
+- **§33 T2 converted**: KRT COT position-CHANGE screen preregistered + run → SCREEN-KILL
+  (pooled Δ1w NW t=−0.41, n=12,356, 26 trials, 10 assets; recent-24m sign flips positive).
+  COT positioning now dead on desk data in BOTH constructions. mine_gate: BACKLOG-CLEAR.
+- **Fleet hygiene**: 900MB tmpfs freed (5-day-old research leftovers, no open handles);
+  memecoin-shadow desk (banned crypto-native ground, 239MB resident + 377MB hourly spikes,
+  trainer self-reporting DATA_BLOCKED) stopped + disabled, files preserved for principal review.
+  Box had THREE research-organ OOM-kills today on 245MB free + zero swap.
+
+**PRINCIPAL CONSOLE BLOCK (root, unreachable from user quant — each is one command):**
+1. `systemctl restart cron` — dead since 08-20 (OOM); nothing on the box restarts it.
+2. Root research units OOM-killed today: quant-cro 09:10, quant-frontier 16:17,
+   quant-prospector 18:36 (timers will refire; the memory freed tonight helps, but…)
+3. …add swap: a 4GB swapfile on a 3.8GB-RAM box running this fleet is the cheapest
+   ruin-probability reduction available (`fallocate -l 4G /swapfile && mkswap && swapon`).
+4. quant-dataaxis (exit 1, 14:00) + quant-cro-ai (exit 1, 09:10) + quant-blindrediscovery
+   (dead since 08-01) want a journal look from root.
+5. Codex midnight quota: exhausted nightly since 08-22 (resets ~00:29); the reasoner has been
+   dark 4 nights. Buy quota, or bless the free-path (DeepSeek flywheel) as the midnight fallback.
+6. Crypto root units (cashcarry executor 144MB, recorders ~150MB) still resident under the MT5
+   mandate — final removal via console is now also a MEMORY fix, not just hygiene.
