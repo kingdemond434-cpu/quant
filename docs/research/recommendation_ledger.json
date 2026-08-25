@@ -8301,6 +8301,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0652",
+   "source": "prospector",
+   "summary": "PRINCIPAL SEED DROP IS INVISIBLE TO THE QUEUE IT WAS ROUTED THROUGH (prospector 2026-08-25, found minutes after d317925d landed): the seed cards use '### S1.'-style headings but libs/research/source_backlog.py _CARD_RE is r'^### (\\d+)\\.' — DIGITS ONLY — so source_backlog_next.py parses ZERO of them and prints 'backlog clear' over a live principal order (WS-005: absence reads as clean; verified by running the tool post-drop = 0 pending while the S-cards carry 'pending verification' / 'needs-legitimacy-review' grades, incl. the S5 Truth Social legitimacy DECIDE). EXACT PATCH, either side: (a) docs-side — renumber S-cards to the next free integer ids (43+) keeping grades verbatim (one sed, zero code); or (b) parser-side — widen _CARD_RE to accept an optional letter prefix (engineering-owned, R0617's owner already holds this parser). Owner should coordinate with the seed-drop session if still live; do NOT let the daily cycles keep reading 'backlog clear' while the principal's hunt seeds sit unserved.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T18:31:06.806795+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

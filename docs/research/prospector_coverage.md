@@ -7315,3 +7315,15 @@ RUN CLOSE 2026-08-25: items 0–2 closed to depth, item 3 rolled; 5-card verify+
 0 (verified from the tool's own re-run); 2 graveyard rows; 3+3 rm rows; R0616 disposed, R0650 +
 R0651 raised; watchlist 3/5 with every entry MT5-shaped; cadence stamped; honest zeros: 0 cards,
 0 trials, 0 video locks, 0 non-EN ground this run.
+POST-CLOSE ADDENDUM (landing forensics + one defect caught): sibling commit d317925d ("principal
+seed drop", 18:27:20Z) landed BETWEEN this session's watchlist edits and its commit on the shared
+tree, sweeping the 5 card re-grades into itself (R0423 class — content intact in history, 0 lines
+lost, provenance smeared; recorded here as the attribution of record). The drop adds 8 principal
+seed cards (S1 MQL5 … S8 KR) to data_axis_watchlist — and its routing claim is FALSE AS WRITTEN:
+source_backlog.py _CARD_RE requires numeric ids (r"^### (\d+)\.") so ALL 8 S-prefixed cards are
+INVISIBLE to source_backlog_next.py, which prints "backlog clear" over a live principal order
+(verified by post-drop tool run; WS-005 shape, incl. the S5 legitimacy DECIDE). → **R0652** raised
+with the exact patch both ways (renumber to integer ids docs-side, or widen the regex,
+engineering/R0617-owner side); not hot-edited here because the seed-drop session was live minutes
+ago (mid-write collision risk outranks a few hours of latency on a chased row). My "verify queue
+5→0" claim stands as measured pre-drop AND post-drop (the S-cards never enter the parse).
