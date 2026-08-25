@@ -106,8 +106,31 @@ async def _run() -> None:
             ping_task.cancel()
 
 
+async def _switch_wait(label: str) -> None:
+    """Pause while data/RECORDERS_OFF exists. See scripts/run_recorder_bybit.py._switch_wait.
+
+    Same switch as the three L2 recorders, spelled `async` because this listener owns an event
+    loop: the blocking `time.sleep` used there would hold the loop shut rather than idle it.
+    Deliberately does NOT exit -- quant-liquidations.service is Restart=always and the `quant`
+    user has no sudo, so an exit trades a full disk for a full journal every ten seconds.
+
+    Added 2026-08-25 under the MT5 UNIVERSE MANDATE: this listener hunts a crypto-exchange
+    universe (Bybit linear), which the mandate forbids outright, and it was the last crypto
+    collector with no non-root off switch.
+    """
+    flag = Path(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"
+    if not flag.exists():
+        return
+    print(f"{label}: data/RECORDERS_OFF present -- collection paused (not exiting;"
+          " systemd would restart an exit). Remove the file to resume.", flush=True)
+    while flag.exists():
+        await asyncio.sleep(30)
+    print(f"{label}: RECORDERS_OFF cleared -- resuming", flush=True)
+
+
 async def _main() -> None:
     while True:
+        await _switch_wait("liquidation listener")
         try:
             await _run()
         except Exception:  # network/timeout -> flush what we have and reconnect
