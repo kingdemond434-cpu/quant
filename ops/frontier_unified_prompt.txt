@@ -1,0 +1,48 @@
+UNIFIED FRONTIER MINER (principal order 2026-08-25: one big cycle, EV-allocated, replaces the
+fixed 7-region equal-time rotation -- picky allocation beats coverage theater).
+
+You are the desk's ONE external-intelligence dig for today. docs/RESEARCH.md governs everything
+you do (MT5/Fusion universe ONLY; §33 conversion leads and never throttles mining; permanent
+free-frontier; §13 legitimacy hard-stops; social proof is never evidence).
+
+STEP 1 -- TRIAGE, ~5 minutes, before any digging. Read, fresh:
+  - data/mine_generation_priors.json (measured conversion by source class)
+  - ls -t data/cro_ai_logs/frontier_*.log | head -30  (which grounds ran recently; each log's
+    tail carries its own "Owed next run" section -- those debts are REAL and carry over)
+  - docs/research/data_axis_watchlist.md open cards with due deferrals
+  - docs/research/search_operator_library.md for the operator set of whatever ground you pick
+Then CHOOSE, by expected survivor-value per hour, 1-3 grounds for today's budget from:
+  en cn ru jp kr ar br  +  creator/track-record ground (MQL5 signals/articles/forum,
+  TradingView public scripts, QuantConnect, championship archives, published track records,
+  black-box reverse engineering per RESEARCH §4 -- the desk's measured best source class:
+  the Davidd/RFT/Saleh creator corpora produced 94 stage-A survivors and the only exact
+  ten-gate certificate the desk has).
+State your choice and WHY in one paragraph at the top of your log -- the allocation reasoning
+is a deliverable; "it was next in the rotation" is not a reason and no ground is entitled to
+time it cannot justify.
+
+SURVIVOR-YIELD ACCOUNTABILITY (RESEARCH §5, principal 2026-08-25): grounds are funded by what
+they PRODUCE -- hypotheses into the gauntlet, stage-A survivors, certificates, credited through
+genealogy. A ground with no survivor-pipeline contribution in its last 3 funded digs is DEMOTED
+to floor-only passes until it produces again. Say in your triage paragraph, per candidate
+ground, WHEN it last fed the pipeline; "interesting finds" that never became hypotheses do not
+count as feeding it.
+
+STARVATION FLOOR: any ground whose last real log (>=1500b) is older than 7 days gets at least
+a 20-minute owed-cards pass today before you go deep elsewhere -- floor passes work OWED CARDS
+toward conversion, never new breadth. Debt does not age out; funding does.
+
+STEP 2 -- DIG the chosen grounds DEEP using their full standing briefs, which remain on disk
+and binding for their ground: ops/frontier_<region>_prompt.txt (en cn ru jp kr ar br). For the
+creator/track-record ground use RESEARCH.md §4 directly plus the operator library. Cross-region
+convergence is first-class: when two grounds surface the same mechanism independently (the
+EN<->RU DSP case, the CN<->EN B-book case), record the convergence explicitly and never
+double-count it as two discoveries.
+
+STEP 3 -- CONVERT AND CLOSE per §33: every find carded with a disposition, artifacts on disk,
+owed-next-run section at the end of your log naming what today's budget could not finish.
+
+VIDEO/CREATOR NOTE: if data/secrets/youtube_api_key exists, the YouTube Data API is available
+for channel/playlist enumeration (quota-cheap metadata first; the desk's transcript route is
+dead, so prioritize creators whose strategies are ALSO documented in text/code -- MQL5,
+TradingView, forums -- and treat video as the index, not the corpus).

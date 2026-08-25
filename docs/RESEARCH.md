@@ -107,7 +107,15 @@ the data nobody else can buy. Every owned dataset below 100% explored is a stand
   sooner?") feed the operator library.
 - **Cross-domain transfer:** a mechanism found on any ground is tested for MT5 transfer; the
   structure transfers even when the wrapper does not.
-- **New data sources are a logged per-dig deliverable**, screened in the SAME run
+- **SURVIVOR-YIELD ALLOCATION (principal 2026-08-25):** every research ground exists to produce
+  SURVIVORS — hypotheses fed into the gauntlet, stage-A passes, certificates — with credit
+  flowing back through genealogy (the creator corpora earned hunt16/19/20's yield). A ground
+  that has not fed the survivor pipeline within its last 3 funded digs is DEMOTED to the
+  starvation floor (minimal owed-cards passes only) while budget concentrates on measured
+  producers; it earns its slot back by producing, never by seniority. This is L1.14 opportunity
+  cost applied to attention — NOT a repeal of L1.25: demotion is re-allocation, not a verdict
+  that the ground is barren, and negative knowledge still counts as a deliverable — but a
+  ground yielding ONLY negative knowledge for months is, by measurement, a monthly ground.
   (screen-on-discovery duty): discovering a dataset is half a deliverable — the audited harness
   (`libs.research.axis_screen`) produces the survivor verdict, negative screens are first-class,
   every construction tried is logged (garden-of-forking-paths accounting), timestamp alignment

@@ -9,17 +9,18 @@
 # day's timer) continues the owed regions instead of re-digging en forever.
 set -uo pipefail
 cd /home/quant/quant-platform
-REGIONS=(en cn ru kr jp ar br)
+# UNIFIED CYCLE (principal 2026-08-25): ONE EV-allocated dig replaces the fixed 7-region
+# sequence -- the unified brain triages measured yields and owed cards, then digs the 1-3
+# highest-EV grounds deep (ops/frontier_unified_prompt.txt; starvation floor keeps every
+# ground's debt alive). The per-region briefs stay on disk and binding for whatever ground
+# it picks. Same resume rule: a real unified log today means done.
 TODAY="$(date -u +%Y%m%d)"
-for r in "${REGIONS[@]}"; do
-    # already produced a real dig today? skip -- this is the resume point
-    if find data/cro_ai_logs -name "frontier_${r}_${TODAY}T*.log" -size +1500c 2>/dev/null | grep -q .; then
-        echo "rotation: ${r} already produced today -- skipping (resume)"
-        continue
-    fi
-    echo "rotation: digging ${r}"
-    bash ops/run_frontier_miner.sh "$r" || echo "rotation: ${r} failed -- next invocation resumes it"
-done
+if find data/cro_ai_logs -name "frontier_unified_${TODAY}T*.log" -size +1500c 2>/dev/null | grep -q .; then
+    echo "rotation: unified dig already produced today -- skipping (resume)"
+else
+    echo "rotation: digging unified frontier"
+    bash ops/run_frontier_miner.sh "unified" || echo "rotation: unified failed -- next invocation resumes it"
+fi
 
 # BRAIN HUNTER -- same resume rule, its own ground. Runs AFTER the regions: it is the newest organ
 # and the regional grounds are the ones with standing coverage debt, so a credit death should cost
