@@ -2879,3 +2879,18 @@ touched. The consumer is the MT5 desk's execution-reality layer when it next fit
 > spread quality in the ±5min around top-tier calendar events vs quiet hours, from the desk's own
 > MT5 logs. A broker that degrades exactly when the desk's event edges would fire is a cost model
 > no quiet-hour fit can see.
+
+## 2026-08-25 PROSPECTOR — engine/method findings (full detail in research_memory, axis numerai_methodology / wctc_records)
+1. **|AR1| Smart-Sharpe screen diagnostic** — ledgered R-row this run (chased there, not here);
+   formula + abs(AR1) pitfall from Numerai 151 reply chain (rm-…-e7667f). Diagnostics only.
+2. **Feature-neutralization complexity inversion** (Numerai 899 #48, rm-…-9eb686): neutralization
+   helps simple models, HURTS advanced ones OOS — a regularizer, never a default-on step. Binds
+   any future exposure-control in the desk's cross-sectional MT5 factor work.
+3. **MDA feature-selection discipline** (Numerai 3170, rm-…-6c88ce): permutation importance
+   needs multiplicity correction + fold-stability (drop only features negative across ALL CV
+   folds); raw MDA under-ranks correlated groups (desk FX features are collinear — cluster
+   first). The thread's own #22 is the DSR argument in folk form.
+4. **Process corroboration from audited-forward ground** (WCTC, rm-…-05cbad): Davey's published
+   strategy-factory (mass-generate → walk-forward → incubation → small-live) and the repeat-winner
+   cohort's sizing-under-barrier solution independently converge on the desk's two-stage law +
+   robust-Kelly-with-rails. No action owed; citable when the architecture is next questioned.

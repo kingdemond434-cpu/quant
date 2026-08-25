@@ -1633,3 +1633,74 @@ naming rule quoted in the exposé; 清理整顿办公室 est. 2014-04-11.
 DERIVES-FROM: NONE between the CN and EN source families (checked both ways: the 2014 南都 exposé
 cites CN insiders and CCTV's 天交所 coverage; the HN threads cite no CN material).
 [§33: killed -> this entry]
+
+### kr_venue_state_layer — Upbit/Bithumb venue flags + announcement archive for a KR cohort the desk no longer hunts (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 26 (carded 2026-08-01, KR frontier miner s1) —
+four keyless first-party surfaces: Upbit announcements (737 trade events 2017-10-27→, ingested to
+data/upbit_trade_announcements.jsonl), Upbit/Bithumb warning+caution flags, Bithumb
+deposit/withdrawal rail state (collector live 08-12→08-20, data/kr_venue_flags.jsonl, stopped in
+the crypto retirement wave).
+MECHANISM OF DEATH: consumer removed, not the claim disproven. The MT5 UNIVERSE MANDATE
+(2026-08-18) bans crypto-exchange-native opportunity ground; every consumer this layer had —
+intra-KR venue basis (R0299 family), KR premium conditioning, the listing_comparables_repricing
+screen design (R0616, disposed same day) — is banned or re-graded. The card's measured traps are
+BANKED so any re-entry inherits them: GLOBAL_PRICE_DIFFERENCES fires 22% on all markets vs 0.4%
+on KRW (quote-currency artifact — split before reading any rate); key events on first_listed_at
+never listed_at (differ on 42.5% of rows, amendments rewrite listed_at); announcements are KST
+while Upbit daily closes 24:00 UTC (window starts NEXT UTC close or it is look-ahead).
+L1.16a RE-OPEN DOOR (named enabling change): the desk gains a KRW-linked MT5 instrument (e.g. a
+USD/KRW exotic added to the Fusion universe) AND a stated mechanism linking venue/rail state to
+it — or the universe mandate itself changes. The owed screen died UNRUN: no trial charged, no
+forward clock ever minted.
+
+### dex_wallet_tape_mining — vec-operator mining program over the owned GeckoTerminal DEX tape (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 37 (carded 2026-08-19, BRAIN hunter s4; ledger
+R0637) — data/geckoterminal_trades.jsonl, 322,187 signed wallet-resolved DEX trades (solana/eth,
+68 pools, 93,241 wallets), collector stopped 2026-08-20 (retirement wave), file frozen at 197MB
+spanning 2026-08-11→08-20.
+MECHANISM OF DEATH: the mining program (whale/retail mix, buy/sell asymmetry, wallet-cohort
+reductions over DEX pools) targets a crypto-exchange-native cross-section the 2026-08-18 mandate
+bans. Never screened, never a candidate (the card itself declared the panel unpowered under
+L1.62); no trial charged. The 9.5-day tape stays owned on disk as provenance.
+WHAT SURVIVES (not killed — lives in R0637, owner = brain seat, split prescribed brain-s5
+2026-08-20): (a) utilisation-meter blindness to registered-but-uncatalogued collectors — a meter
+defect, universe-independent; (b) the vec_*/reduce_* vector-operator gap (desk implements 0 of
+18) — the identical per-event data shape exists on the MT5 desk's own recorded tick tape, which
+is where that capability belongs now.
+L1.16a RE-OPEN DOOR: universe mandate change only.
+
+### wctc_leader_follower_replication — "contest/leaderboard returns are follower-replicable" (structural claim-class prior, prospector 2026-08-25)   [debias prior from operator + regulator text; NOT a statistical kill]
+SOURCE (all opened this run): worldcupchampionships.com (operator site, live read); CFTC Docket
+22-R009, Morris v. Robbins Futures Inc. d/b/a Robbins Trading, Initial Decision 2025-05-06
+(primary PDF, full text extracted); trading-tournaments.com champions archive 1984–2026.
+THE CLAIM CLASS KILLED: reading WCTC/leaderboard champion returns as follower-harvestable edge.
+STRUCTURAL MECHANISM, from the operator's and regulator's own text: (1) the operator EXPLICITLY
+permits multiple contest accounts per entrant and DISCLAIMS representativeness ("WCC competitors
+may control accounts that produce results substantially different than the results achieved in
+their WCC accounts. WCC entrants may trade more than one account in the competition") — champion
+returns are order statistics over max-leverage tickets (200:1 available non-US forex; $10k/$5k
+minimums; $3,999/yr entry), not skill estimates; (2) the contest feeds a monetized funnel — top
+performers "may join the WorldCupAdvisor.com advisory team" selling autotrade subscriptions, so
+the LEADER's contest account is an option (entry fee = premium; upside = advisory annuity) while
+the FOLLOWER holds the position with full downside; (3) the CFTC decision found the broker and
+the (unregistered) WCA advisors "entangled... evidenced by the fee structure and active
+communications" — an agency relationship — while dismissing the complaint (losses ≠ wrongdoing);
+the documented follower instance: $80,000 (funded from a Roth IRA) → −$29,129.44 in ~4 months
+across four Leader-Follower AutoTrade sub-accounts. (4) MEASURED THIS RUN: champion return
+values DISAGREE across mirrors (Davey 2006: 148% vs 107%; Unger 2012: 230% vs 82%) — even the
+headline numbers are marketing artifacts.
+WHAT THIS DOES NOT KILL: WCTC is the RARE forward-scored real-money contest (unlike
+backtest-scored leaderboards, cf. era_ta_indicator_stack_crypto: "treat any leaderboard/backtest
+result as in-sample until pre-registration is proven" — here forward IS proven). The bias
+channel is SELECTION, not overfit: repeat-density (Unger 4 titles incl. 3 consecutive; 10
+multi-title winners in the 1984–2026 panel; one cross-division champion) remains weak evidence
+that learnable mechanisms exist — but it is confounded by the multiple-account rule, and the
+REPEAT WINNERS' published mechanisms (Williams vol-breakout/COT/TDOM; Unger multi-system
+short-term futures; Davey trend across 8–12 markets; Hughes premium-selling) all fall in
+families this desk already killed on its own data (price-only breakout/trend, retail calendar,
+TA stacks) or rejected (COT direction, pooled NW t=−0.64, 41y). The durable transfer is
+PROCESS: winners solve max-growth-under-a-barrier (50% intraday-DD liquidation + $1.5k floor) —
+the desk's own robust-Kelly-with-rails objective, independently converged on.
+RELATED: cn_bucketshop_retail_loss_as_directional_signal (same debias-prior shape, CN s12
+2026-08-25); master-23 selection-bias defense now carries operator-text + regulator-text
+evidence.

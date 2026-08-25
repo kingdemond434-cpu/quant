@@ -7181,3 +7181,137 @@ NEXT UN-EXHAUSTED GROUND, in order (L1.35):
    silver/oil CFD conditioning.
 MANDATE-VOIDED (recorded, not next): 8btc board-2 April-2014 window, coinsbbs, btcicc article
 layer — graveyard/provenance value already banked; no further opportunity-mining there.
+
+### 2026-08-25 PROSPECTOR session (standing daily; brain seat, real egress) — IN PROGRESS (write-first note; updated as items resolve)
+PRIOR STATE: last coverage-doc prospector note 2026-08-18 (closed clean); an 08-19b prospector run
+stamped cadence (2026-08-19T20:40Z) and recorded to session memory + R0698–R0700 (MT5 breadth
+N_eff 12.01 measured; mql5.com ToS-closed to automation; COT-direction class rejected 41y) — no
+dead mid-work item to resurrect from it. MINE GATE at spawn: BACKLOG-CLEAR (14/14 disposed).
+RESUME(1) — verify queue RE-MEASURED card-by-card (the handed-queue staleness law): the 4+1 listed
+items are the SAME 5 stale-listed cards EN s-J and CN s12 flagged today — 23 (§33 screened
+2026-08-18, grade token unrecognized → fail-open), 25/26 (needs-monitoring with remainders owned
+by R0193 — scheduled/disposed-inconsistent, due 2026-08-24 = OVERDUE, subject now mandate-void),
+37 (§33 wired → R0637, still open, split prescribed by brain-s5 2026-08-20 unexecuted), 7
+(needs-legitimacy-review since 07-25). Parser fail-open is ledgered R0617 (engineering-owned, NOT
+poached). THIS RUN TAKES THE CARD-SIDE CLOSE as ITEM 0 — the JP-s5 bitbank / KR-s4 / EN-s-J
+cb74d2e0 precedent: mandate re-grade with named surviving halves + parser-terminal grade tokens.
+RESUME(2) — my 08-18 next-grounds re-graded under the MT5 mandate (litminer-r9 class: mandate
+voids crypto next-ground lists): #1 Numerai METHODOLOGY half KEEP (crypto-tournament threads
+VOID — the 7914 dispersion finding is banked, no further crypto-opportunity mining); #2 Kaggle
+G-R crypto post-mortems VOID as mechanism ground (methods lens optional, deprioritized); #3 NP
+forum-1 2013 + f12 147620 Kelly / 147696 DynCorr KEEP (tradfi-era, universe-independent); #4 4851
+residual optional (unchanged); #5 cards 27/28 DECIDE — RESOLVED, verified landed 2026-08-19 (GMO
+RESTRICTED-PENDING-CONSENT killed; bitbank LEGITIMATE wired) — carried side-check CLOSED; #6
+Wilmott live board WALLED ×4 (EN s-J 08-25) — Wayback curl-only route stands, no live re-probe
+this run.
+ITEMS THIS RUN (bounded per completion contract):
+0. **BACKLOG CLEAR (RESUME-1, worked first):** mandate re-grade + terminal-token close of
+   data_axis_watchlist cards 23 / 25 / 26 / 37 / 7, each with the surviving MT5 half named and
+   evidence cited; graveyard entries where the disposition is a kill (EN cb74d2e0 format);
+   STEP-0 re-grade of my own 5 active watchlist entries (all crypto-shaped); disposition of MY
+   R0616 (listing_comparables screen handoff rides card 26's Upbit archive + targets crypto
+   listings — un-runnable under mandate; alpha-screening must NOT burn it 09-01); one ledger row
+   chasing the CLASS of crypto-subject open/scheduled rows (R0462 COIN-M due 08-27, R0193
+   residual leg, R0637 split) for their owning seats.
+1. **Numerai methodology threads to depth** (899 feature-exposure, 3170 López de Prado feature
+   selection, 151 performance stationarity — Discourse JSON route verified 08-18): engine/method
+   ground, universe-independent, transfers to the desk's own factor/gauntlet work. Routing:
+   improvement_inbox + research_memory; cards unlikely and not forced.
+2. **RECORDS-FAMILY EXPANSION (≥25% quota): World Cup Trading Championships winner forensics
+   under the MT5 lens** — audited-contest ground (VERIFIED-grade provenance class), instruments
+   = futures/FX (exactly this desk's universe), never touched by this seat. Selection-bias
+   defense FIRST (master 23: contest winners are max-leverage lottery survivors); black-box
+   reverse engineering per RESEARCH §4. Hunt: repeat winners' stated mechanisms (repeatability
+   defeats the lottery null), teardown/failure layer, contest-structure mechanics.
+3. (stretch) NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation via CDX.
+STEP -1 DIVERGENT QUERIES (3 a different searcher would run; ≥2 spent): (a) CONTEST-ORGANIZER's
+query — WCTC rules/leverage/fee structure + how max-leverage selection manufactures winners (the
+anti-hype query, run BEFORE believing any mechanism); (b) RISK-DESK query — contest blow-ups,
+disqualifications, negative teardowns (failure intelligence, master 25); (c) REGULATOR query —
+NFA/CFTC actions naming contest operators/winners (regulatory filings leak mechanism +
+verification state).
+STATUS: items 0–3 OPEN.
+ITEM 0 RESOLVED (backlog clear, artifacts cited): cards 23/25/26/37/7 re-graded card-side under
+the mandate (surviving halves named: COT-BTC panel → BTCUSD/ETHUSD CFD positioning reference;
+stablecoin supply leg → episodic conditioning for Fusion crypto CFDs ONLY; card 7 §13 DECIDED —
+CC BY-NC bars production adoption, §38 hunt closed without successor because the consumer was
+removed, not the source). Kills → 2 graveyard entries (`kr_venue_state_layer`,
+`dex_wallet_tape_mining`, both "consumer removed by principal order, NOT refuted by data", both
+with L1.16a doors; the R0648 one-shot false mine-item-vanished per kill is pre-explained in that
+row). VERIFIED: source_backlog_next.py post-edit = "0 pending verification, 0 pending a
+legitimacy decision, 33 resolved" (was 4+1). STEP-0 watchlist review under mandate: 5/5 active
+entries were crypto-shaped → POC retest RE-SHAPED to MT5 (tick-volume-profile validity trigger),
+listing_comparables_repricing SPLIT (MT5 re-entry trigger = US-share-CFD/index-constituent data),
+SFD + coinm_rv + kr_rail DROPPED; 3/5 slots now open. Ledger: R0616 DISPOSED rejected (verified
+re-read: disposed=True — alpha-screening will not burn the 09-01 screen on banned ground);
+R0650 RAISED (chases R0462 due-08-27 banned fetch, R0193 inconsistent+overdue residual, R0637
+split) — the class fix routed to owning seats, not poached. Cards 27/28 DECIDE verified LANDED
+2026-08-19. Parser fail-open stays R0617 (engineering-owned).
+ITEM 1 RESOLVED (Numerai methodology trees, full depth): 899 = 44/44 posts, 3170 = 35/35,
+151 = 16/16 (Discourse JSON + posts.json chunking; gaps are deleted posts). What DEPTH surfaced
+that the surface never shows: the neutralization thread's load-bearing result sits at post #48
+of 44-visible (taori: helps simple models, HURTS advanced ones OOS); the MDA thread's own #22 is
+the multiplicity argument; the stationarity thread's abs(AR1) fix is a 3-post reply-chain
+consensus. Routed: rm ×3 (…-9eb686, …-6c88ce, …-e7667f), inbox items 1–3, ledger R0651
+(single-subject |AR1| diagnostic, engineering-owned). No card — engine ground, none forced.
+jefferythewind run-2 verdict probe: crypto-tournament half of the ground is MANDATE-VOID; probe
+dropped with the half, not rolled.
+ITEM 2 RESOLVED (WCTC Records expansion, ≥25% quota spent here): ground OPENED and closed to
+verdict depth. Divergent queries (a) organizer + (c) regulator both PAID: operator site yields
+the multiple-accounts rule + representativeness disclaimer verbatim; CFTC 22-R009 Initial
+Decision (2025-05-06) pulled as primary PDF and text-extracted WHOLE on-box (no pdf lib in venv —
+zlib stream extraction; clean text banked /tmp/morris_clean.txt this session). Champions panel
+1984–2026 banked (10 multi-title winners). Yield: graveyard `wctc_leader_follower_replication`
+(structural debias prior: leader-option/follower-tail funnel, fee entanglement per the regulator,
+−36%/4mo documented follower instance; return values disagree across mirrors — measured); rm ×3
+(mission …-2703aa, hypothesis-discard …-6897db, clustering …-05cbad); TDOM/turn-of-month
+candidate DISCARDED at graveyard stage (lit_retail_signal_families calendar-class match + hijri
+clustering prior — no screen, no trial, no card); repeat-winner clustering verdict = every
+signal family desk-dead, the cohort's real edge is sizing-under-barrier = the desk's own
+objective, corroboration not a card. New watchlist entry wctc_repeat_winner_mechanism_watch
+(slot 3) carries the named unmined residual (Scherman/Magala/Seibert).
+ITEM 3 (stretch) NOT TAKEN — bounded scope; rolls intact with route named (NP forum-1 f12
+147620 Kelly + 147696 Dynamic Correlation via CDX per-thread captures).
+STEP -1 ACCOUNTING: (a) organizer query SPENT (multiple-accounts rule = the run's single most
+load-bearing fact); (c) regulator query SPENT (CFTC primary = the run's best provenance); (b)
+risk-desk teardown query PARTIALLY spent (the CFTC case IS the teardown; no separate blown-
+account thread mined — rolls with the watchlist entry).
+FAMILIES THIS RUN: Records (WCTC — never-touched ground OPENED; ≥40% least-recently-covered bias
+satisfied), Forums/AI-docs (Numerai methodology, carried), Academic-adjacent (arXiv retail-
+signal-families row cited from graveyard, not re-read). Non-English: none this run — named
+honestly; the regional seats covered CN/JP/KR today (s12 note above); next-ground list keeps no
+standing non-EN debt for this seat beyond parity.
+VIDEO: 0 fetched, 0 locked — Unger/Davey interview content reached via text mirrors; no route
+tried-and-failed, so no video_locked line (log discipline).
+BREADTH-THEATER CHECK: 3 items taken (backlog clear + 2 grounds), all closed to
+verdict/full-tree depth; reply chains ≥2 mined (Numerai ×3 trees); citations chased (CFTC
+docket primary; champions archive); 0 surface-touched-and-abandoned.
+STRATEGY-FAMILY LINE: 0 new families hunted to trial (EVENT-AND-CALENDAR candidate discarded at
+graveyard stage, deliberately); 0 trials burned, 0 forward clocks minted; deliverables are
+negative-knowledge (2 graveyard rows), a claim-class debias prior, method findings, and queue
+hygiene (5-card backlog cleared, 2 ledger rows chased, 2 raised).
+VENUES/ROUTES DISCOVERED (3): trading-tournaments.com (champions archive, mirror-grade — return
+values UNRELIABLE, structure useful); CFTC reparations PDF corpus (cftc.gov/sites/default/files
+— primary teardown genre, text-extractable on-box via zlib streams, OP-candidate for the
+operator library); Discourse posts.json?post_ids[] chunking route (completes any partially-
+served thread — generalizes to every Discourse forum the desk mines).
+DISCOVERY COUNTERFACTUAL (charter §17): the multiple-accounts rule + disclaimer came from
+READING THE OPERATOR'S OWN SITE with an organizer's question — the mechanism-hunter's default
+query (winner interviews) would never have surfaced it; LOW counterfactual probability, and it
+reframes every WCTC-derived claim the desk will ever meet.
+NEXT UN-EXHAUSTED GROUND, in order (L1.35 — named before closing):
+1. WCTC residual: Scherman/Magala/Seibert published-mechanism reads (trigger-gated, watchlist
+   slot 3).
+2. NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation (CDX, carried).
+3. Numerai classic-methodology residue: 899-thread's jrb TensorFlow caching example + the
+   exposure-vs-churn question applied to the desk's own factor screens (engine ground).
+4. Podcasts/interviews family under MT5 lens: Chat With Traders / Better System Trader FX+futures
+   episodes of REPEAT WCTC winners only (text mirrors; selection frame applies) — the ex/solo-
+   quant hand-priority's MT5-native form.
+5. 4851 optional residual (pages ~38-40 Senate-PSI era) — unchanged.
+6. Wilmott: Wayback-curl-only route (live board WALLED ×4; do not re-probe live without new
+   egress).
+RUN CLOSE 2026-08-25: items 0–2 closed to depth, item 3 rolled; 5-card verify+decide backlog →
+0 (verified from the tool's own re-run); 2 graveyard rows; 3+3 rm rows; R0616 disposed, R0650 +
+R0651 raised; watchlist 3/5 with every entry MT5-shaped; cadence stamped; honest zeros: 0 cards,
+0 trials, 0 video locks, 0 non-EN ground this run.

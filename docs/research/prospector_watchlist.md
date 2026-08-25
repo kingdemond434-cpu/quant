@@ -804,3 +804,43 @@ these latency bots create; (3) the announcement-latency RACE itself is DOA for t
 selection) — the drift/unwind horizons the desk pre-registered are the uncontested part.
 Measurement caveats routed to improvement_inbox (announcement-endpoint event clock; symbol-regex
 variants). [§33: screened]
+
+## SESSION 2026-08-25 (PROSPECTOR standing daily) — STEP 0 WATCHLIST REVIEW under the MT5 mandate
+
+All five active entries were crypto-shaped; the 2026-08-18 universe order re-grades them
+(litminer-r9 class: the mandate voids crypto next-ground lists; one line each, trigger checked):
+- **POC retest — RE-SHAPED, HELD.** The mechanism (volume-profile point-of-control retest with
+  reaction-confirm/invalidation FSM) is universe-independent LEVEL-REACTION (THIN family). Crypto
+  application void. NEW TRIGGER: MT5 tick-volume-profile validity check on the desk's own
+  recorded tape (FX tick volume ≈ real volume in majors is a CLAIM to verify, never assume) OR a
+  free delayed CME futures-volume route; until one exists this holds.
+- **SFD cadence probe — DROPPED.** BitMEX SFD is crypto-exchange-native. No MT5 analogue (no
+  funding-settlement clock on CFDs; swap/rollover is the analogue and is already a first-class
+  MT5 axis). Trigger deleted; no residual.
+- **coinm_usdtm_basis_convexity_rv — DROPPED.** Binance COIN-M/USDT-M ground, banned. NOTE FOR
+  OWNER: R0462 (COIN-M backfill, scheduled, due 2026-08-27) has a banned subject — flagged in
+  the ledger sweep row raised this session; do not burn the fetch.
+- **kr_rail_state_transition_global_leg — DROPPED with door.** Same L1.16a door as graveyard
+  `kr_venue_state_layer` (KRW-linked MT5 instrument + stated mechanism). R0634's enumeration
+  result stays banked where it landed.
+- **listing_comparables_repricing — SPLIT (the R0637 precedent).** Crypto-listing application
+  VOID (it rides the killed card-26 archive; R0616 disposed this session so alpha-screening does
+  not burn a screen on banned ground on 09-01). The universe-independent mechanism — new issues
+  reprice the EXISTING comparable curve — survives as memory with NEW TRIGGER: US share CFD or
+  index-constituent data ingested on the MT5 desk (the 08-19b breadth memo names that ingestion
+  the top breadth action) → re-design on IPO/index-inclusion comparables, preregistered fresh.
+
+**WATCHLIST (max 5 — active entries after STEP 0): POC retest (held, re-shaped MT5),
+listing_comparables_repricing (held, MT5 re-entry trigger). 2/5 slots used; 3 open for this
+session's digging.**
+
+**NEW ENTRY (slot 3) — wctc_repeat_winner_mechanism_watch.** Seat memory, zero gauntlet cost.
+SINGLE TRIGGER: a WCTC multi-title winner's PUBLISHED mechanism falling OUTSIDE the desk-dead
+families {price-only breakout/trend, TA stacks, retail calendar rules, COT direction,
+options premium-selling} → card it with provenance + the wctc_leader_follower_replication
+selection-bias frame applied. Named unmined residual (routes known): Ivan Scherman 2023 futures
+(491.4%, public ML-systematic claims — interviews unread), Serghey Magala 2023+2024 consecutive
+forex (mechanism unpublished?), Stefan Seibert 2020+2022. Return NUMBERS are marketing artifacts
+(mirrors disagree, measured this run) — only mechanism text counts.
+**WATCHLIST after this session: POC retest (held, MT5 re-shape trigger), listing_comparables_
+repricing (held, MT5 data trigger), wctc_repeat_winner_mechanism_watch (NEW). 3/5 slots.**
