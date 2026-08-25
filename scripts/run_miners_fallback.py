@@ -41,11 +41,11 @@ def main() -> int:
     print(f"discoveries stale ({'never' if age is None else f'{age:.0f}min'}) -- "
           f"controller presumed down; running suite standalone")
     sys.path.insert(0, str(SIDE))
-    from run_all_miners import run_all_miners            # noqa: PLC0415
+    from run_all_miners import run_all_miners
     results = run_all_miners()
     summary = results.get("summary", {})
     try:
-        from convert_to_hypotheses import convert_discoveries  # noqa: PLC0415
+        from convert_to_hypotheses import convert_discoveries
         hyp = convert_discoveries()
         out = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "latest_external.json"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -53,7 +53,7 @@ def main() -> int:
         print(f"fallback: {summary.get('total_discoveries', 0)} discoveries from "
               f"{summary.get('successful_miners', 0)} miners; hypotheses written "
               f"at {datetime.now(tz=UTC).isoformat(timespec='seconds')}")
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         print(f"fallback: miners ran, hypothesis conversion failed ({exc}) -- "
               f"discoveries are on disk for the next converter pass")
     return 0
