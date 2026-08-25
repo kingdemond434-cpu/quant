@@ -232,7 +232,7 @@ def flatten_and_halt(reasons: list[str], dry_run: bool = True) -> None:
     PAUSED.parent.mkdir(parents=True, exist_ok=True)
     PAUSED.write_text(body, "utf-8")
     log(f"HALT FILE WRITTEN: {PAUSED}")
-    import MetaTrader5 as mt5                                            # noqa: PLC0415
+    import MetaTrader5 as mt5
     for p in mt5.positions_get() or []:
         tick = mt5.symbol_info_tick(p.symbol)
         if tick is None:
