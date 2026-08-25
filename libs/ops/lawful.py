@@ -35,6 +35,7 @@ organ that will never be told the laws it must obey cannot obey them.
 """
 from __future__ import annotations
 
+import hashlib
 import os
 import subprocess
 import sys
@@ -89,7 +90,16 @@ def _doctrine_carries_families(root: Path) -> tuple[bool, str]:
     try:
         sys.path.insert(0, str(root))
         from scripts.check_law_families import FAMILIES
+        # WHAT REACHES THE ORGAN IS DOCTRINE **+ docs/LAWS.md** since the 2026-08-25
+        # consolidation (ops/brain_env.sh cats both into the appended system prompt), so the
+        # family check must read the same concatenation the organ actually receives.
+        # MEASURED REGRESSION 2026-08-26: reading the doctrine alone reported all six families
+        # missing -- every law IS present, just in LAWS.md -- and each false gap paged, while
+        # every page spawns a repair_mode subprocess. Five concurrent at ~73MB drove the box
+        # back into OOM within hours. A verifier that reads less than the organ does is a
+        # verifier that reports on a prompt nobody is running.
         doctrine = (root / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
+        doctrine += (root / "docs/LAWS.md").read_text("utf-8", errors="ignore")
     except Exception as exc:                                  # unverifiable
         return False, f"doctrine/families unreadable: {exc}"
     gaps = [f"{fam}:{[m for m in members if m not in doctrine]}"
@@ -98,8 +108,31 @@ def _doctrine_carries_families(root: Path) -> tuple[bool, str]:
     return (not gaps), ("; ".join(gaps) if gaps else "")
 
 
+#: Same 6h window `_brain_page` itself uses. Duplicated HERE deliberately -- see below.
+_PAGE_DEDUPE_S = 6 * 3600
+
+
 def _page(msg: str) -> None:
-    """Best-effort page; never raises, never blocks the caller."""
+    """Best-effort page; never raises, never blocks the caller.
+
+    DEDUPE BEFORE SPAWNING, not after. `_brain_page` already suppresses identical text inside a
+    6h window -- but that check lives INSIDE the function, and reaching it costs a `bash -c
+    source ops/brain_env.sh`, which spawns `libs.ops.repair_mode` at source time (brain_env.sh
+    ~line 443). So a suppressed page still bought a ~73MB Python process, every call.
+
+    MEASURED 2026-08-26: a false DOCTRINE-GAP fired in a loop, five repair_mode processes ran
+    concurrently (324MB), and the box went back into OOM -- 292 kills in two hours -- while the
+    pager correctly sent almost nothing. The alert was quiet and the cost was invisible, which
+    is exactly why it ran for hours. The stamp file below is the same one `_brain_page` writes,
+    so the two agree by construction and neither can drift.
+    """
+    try:
+        stamp = (_ROOT / "data" / ".brain_page_stamps" /
+                 hashlib.sha1(f"LAW GUARD: {msg[:180]}".encode()).hexdigest()[:16])
+        if stamp.exists() and (time.time() - stamp.stat().st_mtime) < _PAGE_DEDUPE_S:
+            return                      # identical page already sent inside the window
+    except OSError:
+        pass                            # stamp unreadable -> fall through and let bash decide
     try:
         subprocess.run(["bash", "-c",
                         f'source {_ROOT}/ops/brain_env.sh 2>/dev/null && '
