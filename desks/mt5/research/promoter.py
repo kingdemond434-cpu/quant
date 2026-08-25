@@ -6,7 +6,7 @@ PROMOTE (fully automatic):
   - shadow verdict == PROMOTION CANDIDATE and not yet promoted:
     * XAUUSD challengers: promote only if their forward exp >= the armed gold
       sleeve's forward exp (live ledger, same window) - 0.02 margin; else KILL.
-    * JPY-cross sleeves: promote directly at PROMOTED_LOT.
+    * JPY-cross sleeves: promote directly at 3% base risk, gateway-sized and ramped.
   - promoted sleeves are written to data/sleeves.json (status LIVE) and the
     gateway picks them up on the next pass (< 1 min).
 
@@ -37,7 +37,12 @@ SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
 
-PROMOTED_LOT = 0.01
+# SIZING (principal 2026-08-25): the gateway sizes promoted sleeves at order time -- 3% of
+# equity base risk off the bracket's own stop distance (mt5desk/sizing.py), authority-ramped
+# 0.75%/1.5%/3% by live trade count. Raising a sleeve's risk_frac above the base requires
+# recorded economic justification and is capped at MAX_RISK_FRAC there.
+PROMOTED_RISK_FRAC = 0.03
+PROMOTED_LOT = 0.01     # legacy display value; sleeve_set() overrides lot to "auto_ramp"
 CHAMPION_MARGIN = 0.02   # challenger must beat armed forward exp by this much
 RETIRE_MIN_N = 10
 RETIRE_MAX_DD = -25.0
@@ -138,6 +143,79 @@ def sleeve_forward_stats(ledger: list[dict], name: str) -> dict:
             "roll20_exp": sum(roll) / len(roll)}
 
 
+def load_qquant_shadow() -> dict:
+    """The qquant (hunt-certified) forward clock, kept in its own state file."""
+    p = SHADOW_DIR / "qquant_shadow_state.json"
+    try:
+        v = json.loads(p.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def load_cert_specs() -> dict[str, dict]:
+    """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
+    from gate_policy import all_ten_pass, is_exact_policy  # noqa: PLC0415
+    p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
+    try:
+        certs = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not is_exact_policy(certs.get("gate_policy")):
+        return {}
+    out = {}
+    for key, cert in (certs.get("survivors") or {}).items():
+        if isinstance(cert, dict) and all_ten_pass(cert.get("gates")) \
+                and isinstance(cert.get("shadow_spec"), dict):
+            out[key] = cert["shadow_spec"]
+    return out
+
+
+def promote_generic(sleeves: list[dict], qshadow: dict, existing: set,
+                    gate_authority: set) -> bool:
+    """GAP 124: hunt-certified (qquant) candidates gain the same automatic door.
+
+    A qquant sleeve promotes when its OWN Fusion-native forward clock says
+    PROMOTION_CANDIDATE (the canon 50-trade / day-14-with-20 schedule lives in
+    qquant_shadow.py, not re-derived here) AND its certificate's published
+    shadow_spec is in the exact-policy authority set. The sleeve row carries
+    exec="family_market": the gateway executes it through the family-executor
+    path, which stays LOG-ONLY until data/GENERIC_EXEC_ENABLED exists -- wired
+    end to end, armed by one explicit human act (LAWS §4).
+    """
+    changed = False
+    cert_specs = load_cert_specs()
+    for key, row in qshadow.items():
+        if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
+            continue
+        if key in existing:
+            continue
+        spec = cert_specs.get(key)
+        if not spec:
+            plog(f"{key}: qquant PROMOTION_CANDIDATE but no exact-policy shadow_spec; refused")
+            continue
+        tup = (str(spec["symbol"]), str(spec["selector"]), spec.get("condition") or None,
+               str(spec["family"]), spec.get("is_universe") is True)
+        if tup not in gate_authority:
+            row["status"] = "BLOCKED_UNIVERSAL_GATES"
+            plog(f"{key}: qquant candidate refused -- spec not in exact-gate authority")
+            changed = True
+            continue
+        sleeves.append({"name": key, "symbol": tup[0], "selector": tup[1],
+                        "state": tup[2], "family": tup[3],
+                        "side": str(spec.get("side", "LONG")).upper(),
+                        "exec": "family_market",
+                        "lot": "auto_ramp", "risk_frac": PROMOTED_RISK_FRAC,
+                        "status": "LIVE",
+                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "shadow_exp": row.get("exp_r", 0.0)})
+        plog(f"AUTO-PROMOTED (generic) {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
+             f"ramped, exec=family_market (shadow exp={row.get('exp_r', 0.0):.3f}R "
+             f"n={row.get('n', 0)}) -- orders LOG-ONLY until data/GENERIC_EXEC_ENABLED")
+        changed = True
+    return changed
+
+
 def main() -> None:
     shadow = load_shadow()
     sleeves = load_sleeves()
@@ -145,6 +223,12 @@ def main() -> None:
     existing = {s["name"] for s in sleeves}
     gate_authority = authorized_specs(BASE)
     changed = False
+
+    qshadow = load_qquant_shadow()
+    if promote_generic(sleeves, qshadow, existing, gate_authority):
+        changed = True
+        (SHADOW_DIR / "qquant_shadow_state.json").write_text(
+            json.dumps(qshadow, indent=2), encoding="utf-8")
 
     for key, st in shadow.items():
         if not isinstance(st, dict):
@@ -187,10 +271,11 @@ def main() -> None:
                         # sleeve whose state it cannot confirm. Without this field the gateway
                         # would trade the UNCONDITIONED strategy under this sleeve's name.
                         "state": cond,
-                        "lot": PROMOTED_LOT, "status": "LIVE",
+                        "lot": PROMOTED_LOT, "risk_frac": PROMOTED_RISK_FRAC,
+                        "status": "LIVE",
                         "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
                         "shadow_exp": st.get("exp_r", 0.0)})
-        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_LOT} lot "
+        plog(f"AUTO-PROMOTED {key} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, ramped "
              f"(shadow exp={st.get('exp_r', 0.0):.3f}R n={st.get('n', 0)})")
         changed = True
 

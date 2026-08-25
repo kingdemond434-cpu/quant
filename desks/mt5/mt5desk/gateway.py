@@ -36,6 +36,7 @@ from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance as _prov  # noqa: E402
 from mt5desk.independence import measure_from_ledger  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
+from mt5desk.sizing import clamp_risk_frac  # noqa: E402
 
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
@@ -120,11 +121,17 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
 
 
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
-                 symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
-    """Dynamic lot for promoted sleeves: auto_lot(equity, dist) x ramp.
+                 symbol: str = GOLD_SYMBOL, info: object | None = None,
+                 risk_frac: float | None = None) -> float:
+    """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
 
-    Ramp earns full authority only with forward proof: 0.25x before 50 live
-    trades, 0.5x before 200, 1.0x after 200. Floor 0.01, cap 5.0.
+    RISK BASE (principal order 2026-08-25): promoted sleeves target
+    `clamp_risk_frac(risk_frac)` of equity per trade -- 3% base, dynamic-up to 10% only when
+    the promoter records the economic justification in the sleeve row. THE RAMP MULTIPLIES THE
+    RISK FRACTION, not the lot after the fact, so authority is expressed in equity terms:
+    0.75% effective before 50 live trades (the same neighbourhood as the armed book's derived
+    Q_OPT -- deliberate, per the estimation-fragility ladder above), 1.5% before 200, the full
+    base only after 200 forward-proven live trades. A sleeve reaches 3% by EARNING it.
 
     `dist_usd` is the sleeve's own stop and is passed through for the same reason
     `auto_lot` takes it: a promoted sleeve on a wide session runs the same 2.8x
@@ -137,7 +144,8 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     this path is always taken.
     """
     ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    lot = auto_lot(equity, dist_usd, symbol, info) * ramp
+    q_eff = clamp_risk_frac(risk_frac) * ramp
+    lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
     lot = math.floor(lot / 0.01 + 1e-9) * 0.01
@@ -272,8 +280,12 @@ def realised_q(equity: float, dist_usd: float | None = None,
 
 
 def auto_lot(equity: float, dist_usd: float | None = None,
-             symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+             symbol: str = GOLD_SYMBOL, info: object | None = None,
+             q: float | None = None) -> float:
     """Fixed-fractional sizing: Q_OPT of equity per trade, floored at the venue minimum.
+
+    `q` overrides Q_OPT for callers whose risk fraction is sleeve-specific (the promoted
+    path since 2026-08-25); None keeps the derived house Q_OPT for the armed book.
 
     `dist_usd` IS THE SLEEVE'S OWN STOP, AND PASSING IT IS NOT OPTIONAL IN THE LIVE PATH.
 
@@ -322,7 +334,8 @@ def auto_lot(equity: float, dist_usd: float | None = None,
     the caller instead of being inferred from a lot size after the fact.
     """
     d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
-    lot = _lot_steps(Q_OPT * equity / (d * _eur_per_price_unit(symbol, info)))
+    qq = float(q) if q and q > 0 else Q_OPT
+    lot = _lot_steps(qq * equity / (d * _eur_per_price_unit(symbol, info)))
     return float(min(max(lot, 0.01), 5.0))
 
 
@@ -438,6 +451,12 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     for s in sleeves:
         if per_sleeve_q is not None:
             qs.append(float(per_sleeve_q))
+            continue
+        # A sleeve annotated with its own effective fraction (risk_frac x ramp, set by the
+        # caller) is billed exactly that -- the sizing path and the heat path must price the
+        # same trade at the same number or the budget is fiction.
+        if s.get("q_charge") and float(s["q_charge"]) > 0:
+            qs.append(float(s["q_charge"]))
             continue
         try:
             d = s.get("dist")
@@ -1096,6 +1115,18 @@ def sleeve_set() -> list[dict]:
                         "window": label, "sig_hour": sig_hour, "rng": rng,
                         "lot": "auto", "status": "LIVE"})
     for s in load_sleeves():
+        # GENERIC FAMILY SLEEVES (GAP 124, 2026-08-25): hunt-certified sleeves the promoter
+        # admitted with exec="family_market" bypass the window whitelist -- their semantics
+        # come from the certified family's own replay code, not from session brackets. They
+        # are executed by run_family_sleeves(), which is LOG-ONLY until the human creates
+        # data/GENERIC_EXEC_ENABLED (arming stays a person's act; wiring does not wait for it).
+        if s.get("exec") == "family_market":
+            sleeves.append({"name": s["name"], "symbol": s["symbol"],
+                            "family": s.get("family"), "selector": s.get("selector"),
+                            "side": s.get("side", "LONG"), "state": s.get("state"),
+                            "risk_frac": s.get("risk_frac"), "exec": "family_market",
+                            "lot": "auto_ramp", "status": "LIVE"})
+            continue
         if s.get("window") not in {w[0] for w in GOLD_WINDOWS}:
             continue  # only validated window semantics
         sleeves.append({"name": s["name"], "symbol": s["symbol"],
@@ -1111,6 +1142,7 @@ def sleeve_set() -> list[dict]:
                         # an unvalidated one (+0.163R unconditioned against the +0.276R that
                         # earned promotion), and nothing would have said so.
                         "state": s.get("state"),
+                        "risk_frac": s.get("risk_frac"),
                         "lot": "auto_ramp", "status": "LIVE"})
     return sleeves
 
@@ -1134,6 +1166,131 @@ def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, s
     if got is None:
         return False, "state unknown for today; refusing to trade unconditioned"
     return (got == want), (f"state {got} != {want}" if got != want else "")
+
+
+#: The one-file arm switch for generic family execution. ABSENT = every family sleeve logs the
+#: exact order it would place and places nothing; the operator watches it be right, then
+#: `type nul > data\GENERIC_EXEC_ENABLED` is the deliberate human act that arms the lane.
+GENERIC_EXEC_ENABLED = BASE / "data" / "GENERIC_EXEC_ENABLED"
+
+
+def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
+    """Execute hunt-certified family sleeves with replay-faithful semantics (GAP 124).
+
+    FAITHFUL TO THE REPLAY OR NOT AT ALL: signals come from the SAME
+    `run_hunt16.FAMILIES[family]` code the forward clock replays, filtered to the same
+    selector hour and day-state condition; entry is market at the open following the signal
+    bar (the engine's fill rule); sl/tp are the Signal's own absolute levels; TTL closes the
+    position `ttl_bars` hours after entry. Anything this function cannot compute exactly is a
+    loud skip, never an approximation -- trading a lookalike strategy under a certified
+    sleeve's name is the defect class `state_allows` documents.
+    """
+    fam_sleeves = [s for s in sleeves if s.get("exec") == "family_market"]
+    if not fam_sleeves:
+        return
+    try:
+        from research.run_hunt12 import day_states                # noqa: PLC0415
+        from research.run_hunt16 import FAMILIES, WINDOWS         # noqa: PLC0415
+    except Exception as exc:                                      # noqa: BLE001
+        log(f"FAMILY-EXEC unavailable ({type(exc).__name__}: {exc}); "
+            f"{len(fam_sleeves)} certified sleeve(s) NOT traded this pass")
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists()
+    gstate = st.setdefault("generic", {})
+    now_utc = datetime.now(tz=UTC)
+    for s in fam_sleeves:
+        name, family, selector = s["name"], s.get("family"), s.get("selector")
+        side = 1 if str(s.get("side", "LONG")).upper() == "LONG" else -1
+        if family not in FAMILIES or selector not in WINDOWS:
+            log(f"[{name}] FAMILY-EXEC refused: family/selector has no exact executable")
+            continue
+        sig_hour = WINDOWS[selector].get("signal_at") or WINDOWS[selector]["range_start"]
+        h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+        if h1 is None or len(h1) < 60:
+            log(f"[{name}] FAMILY-EXEC: bars unavailable; skipped")
+            continue
+        df = pd.DataFrame(h1)
+        df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+        df = df.set_index("time").sort_index()
+        # The last CLOSED bar: current in-progress bar is excluded, exactly as replay sees it.
+        closed = df.iloc[:-1]
+        last_bar = closed.index[-1]
+        if last_bar.hour != sig_hour:
+            continue
+        srec = gstate.setdefault(name, {})
+        if srec.get("last_signal_bar") == str(last_bar):
+            continue                                   # this bar already considered
+        want_state = s.get("state")
+        if want_state:
+            got = day_states(closed).get(last_bar.date())
+            if got != want_state:
+                srec["last_signal_bar"] = str(last_bar)
+                log(f"[{name}] no trade: day state {got} != {want_state}")
+                continue
+        try:
+            sigs = [g for g in FAMILIES[family](closed, side)
+                    if pd.Timestamp(g.time) == last_bar]
+        except Exception as exc:                                  # noqa: BLE001
+            log(f"[{name}] FAMILY-EXEC signal computation failed ({exc}); skipped")
+            continue
+        srec["last_signal_bar"] = str(last_bar)
+        if not sigs:
+            continue
+        g = sigs[-1]
+        tick = mt5.symbol_info_tick(s["symbol"])
+        sym = mt5.symbol_info(s["symbol"])
+        if tick is None or sym is None:
+            log(f"[{name}] FAMILY-EXEC: no tick/symbol_info; skipped")
+            continue
+        entry_ref = float(tick.ask if side == 1 else tick.bid)
+        dist = abs(entry_ref - float(g.stop))
+        if not (dist > 0):
+            log(f"[{name}] FAMILY-EXEC: degenerate stop distance; skipped")
+            continue
+        try:
+            lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
+                               s.get("risk_frac"))
+        except Exception as exc:                                  # noqa: BLE001
+            log(f"[{name}] FAMILY-EXEC: cannot price risk ({exc}); skipped")
+            continue
+        ttl_until = (last_bar + pd.Timedelta(hours=int(g.ttl_bars) + 1)).isoformat()
+        order_desc = (f"{'BUY' if side == 1 else 'SELL'} {lot} {s['symbol']} @market"
+                      f" sl={float(g.stop):.5f} tp={float(g.target):.5f}"
+                      f" ttl_until={ttl_until}")
+        if not armed:
+            log(f"[{name}] WOULD PLACE (generic exec "
+                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
+                f"enable={GENERIC_EXEC_ENABLED.name}): {order_desc}")
+            continue
+        if not margin_ok(s["symbol"], lot, entry_ref):
+            log(f"[{name}] FAMILY-EXEC SKIPPED: margin tight (lot={lot})")
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": lot,
+            "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+            "price": entry_ref, "sl": float(g.stop), "tp": float(g.target),
+            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+        })
+        rc = res.retcode if res else None
+        _record_intent(sleeve=name, symbol=s["symbol"],
+                       side=("buy" if side == 1 else "sell"), lot=lot,
+                       intended=entry_ref, sl=float(g.stop), tp=float(g.target),
+                       ticket=(getattr(res, "order", None) if res else None), retcode=rc)
+        log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} {diagnose(rc, getattr(res, 'comment', '') or '')} "
+            f"| {order_desc}")
+        if rc in (10008, 10009):
+            srec["open_ttl_until"] = ttl_until
+    # TTL housekeeping: positions past their deadline are closed regardless of P&L -- the
+    # replay's ttl exit is part of the certified strategy, not an optional tidy-up.
+    for s in fam_sleeves:
+        srec = gstate.get(s["name"]) or {}
+        deadline = srec.get("open_ttl_until")
+        if deadline and now_utc.isoformat() >= deadline:
+            if st.get("armed") and GENERIC_EXEC_ENABLED.exists():
+                close_positions(st, s["symbol"])
+            else:
+                log(f"[{s['name']}] SHADOW would TTL-close open position(s)")
+            srec.pop("open_ttl_until", None)
 
 
 def main() -> None:
@@ -1221,11 +1378,28 @@ def main() -> None:
         _d = stop_distance(_spec) if _spec else None
         if _d:
             _s["dist"] = _d
+        # A risk_frac sleeve is BILLED its own effective fraction (base x ramp), not the house
+        # Q_OPT -- undercharging heat for the very sleeves running above Q_OPT would recreate
+        # the 2.94%-believed/22.2%-true defect documented on cap_by_heat.
+        if _s.get("lot") == "auto_ramp":
+            _ramp = 0.25 if sleeve_live_n(_s["name"]) < 50 else (
+                0.5 if sleeve_live_n(_s["name"]) < 200 else 1.0)
+            _s["q_charge"] = clamp_risk_frac(_s.get("risk_frac")) * _ramp
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
+    # Hunt-certified family sleeves run their own replay-faithful executor -- AFTER the heat
+    # cap, so an inadmissible sleeve never reaches it, and OUTSIDE the bracket loop, whose
+    # session-window semantics they do not share.
+    try:
+        run_family_sleeves(st, sleeves, equity)
+    except Exception as exc:                                        # noqa: BLE001
+        log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
+    save_state(st)
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
+            if s.get("exec") == "family_market":
+                continue
             if st["brackets"].get(s["name"]):
                 continue
             if hour < s["sig_hour"]:
@@ -1274,7 +1448,8 @@ def main() -> None:
             # trade, for the same reason a sleeve with no usable stop does not.
             try:
                 lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
-                    promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym)
+                    promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
+                                 s.get("risk_frac"))
                     if s["lot"] == "auto_ramp" else float(s["lot"]))
                 q_real = realised_q(equity, dist, s["symbol"], sym)
             except Exception as exc:                              # noqa: BLE001
