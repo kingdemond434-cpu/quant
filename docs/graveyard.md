@@ -1548,3 +1548,24 @@ not cover — the practitioner's fix was to move UPSTREAM of the vendor, which i
 free-first doctrine arriving from the retail side. DERIVES-FROM: NONE checked (own operation;
 post-2023 so LLM-assist UNVERIFIABLE per OP-072, but the module lifecycle is his own record).
 [§33: killed -> this entry]
+
+### coingecko_category_taxonomy — vendor sector map for a cross-section the desk no longer hunts (mandate kill 2026-08-25)   [consumer removed by principal order, NOT refuted by data]
+SOURCE: docs/research/data_axis_watchlist.md card 28 (carded 2026-08-11, brain-hunter seat) —
+CoinGecko `/coins/categories/list` + per-coin categories (keyless free tier) as the mechanism-based
+ORTHOGONAL fourth grouping map for card 27's `group_rank`/`group_zscore` inputs over the 296-symbol
+crypto D1 lake.
+MECHANISM OF DEATH: the consumer was removed, not the claim disproven. The MT5 UNIVERSE MANDATE
+(2026-08-18, CLAUDE.md standing order) bans hunting the crypto-exchange cross-section outright;
+card 27's group-transform program over 296 perps was this taxonomy's SOLE consumer. The surviving
+MT5 universe carries ~10 Fusion-executable crypto CFD majors (desks/mt5/mt5desk/universe.py
+`_CRYPTO`), which the desk's own asset-class grouping already covers — a vendor taxonomy of
+thousands of alts groups nothing the desk may trade. LICENCE STATE AT DEATH: UNREAD, attempted
+twice, not skipped (WS-005 discipline): coingecko.com/en/api_terms → HTTP 403 on 2026-08-11
+(brain-seat fetcher) AND 2026-08-25 (this box, WebFetch); web.archive.org route unreachable from
+this box's fetcher the same day.
+RE-OPEN CONDITION (L1.16a, narrow door): a principal order re-opening a crypto cross-sectional
+universe AND a completed api_terms read that permits desk use (row #79: read it, never assume in
+our favour). Free fallback if ever re-opened: card 27's proprietary maps + DeFiLlama protocol
+categories (licence equally unread — same read owed). DERIVES-FROM: NONE (checked — card 28 is the
+desk's own carding of a vendor API surface, no upstream writeup).
+[§33: killed -> this entry]

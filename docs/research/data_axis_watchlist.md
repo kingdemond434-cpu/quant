@@ -995,8 +995,21 @@ MEV/mempool; GitLab/StackOverflow/NPM = developer-activity factor #65; Telegram/
 retail-attention layer, **one** source was built (mechanism-first, not volume); the rest are logged
 here as excluded, not silently dropped (charter s27 "log every negative").
 
-### 21. NAVER DataLab (Korean search-attention) — grade: needs-legitimacy-review (account-gating: the SOLE blocker is a free NAVER Developers key = a human registration step, GAP #69; technical verification COMPLETE — endpoint live-confirmed keyless 401/errorCode 024 on 2026-07-25, 2026-07-26 and 2026-08-04; collector built+wired, zero code owed) [§33: deferred(2026-08-25) tier:3]
-> **§33 THIRD DEFERRAL 2026-08-11 (brain-hunter seat), blocker UNCHANGED and re-verified:**
+### 21. NAVER DataLab (Korean search-attention) — grade: needs-legitimacy-review (account-gating: the SOLE blocker is a free NAVER Developers key = a human registration step, GAP #69; technical verification COMPLETE — endpoint live-confirmed keyless 401/errorCode 024 on 2026-07-25, 2026-07-26 and 2026-08-04; collector built+wired, zero code owed) [§33: deferred(2026-09-08) tier:3]
+> **§33 FOURTH DEFERRAL + MANDATE RE-GRADE 2026-08-25 (EN frontier miner).** Blocker UNCHANGED
+> (key absent; the GAP #69 operator step has now lapsed TWICE — BY 08-09 and BY 08-19 both
+> passed). RE-GRADED under the MT5 universe order (2026-08-18), split per the R0637 precedent:
+> the value case that priced this key — kimchi-premium companion attention + KR CRYPTO community
+> grounds — is DEAD (banned universe; and no KRW/KOSPI instrument exists in the MT5 universe,
+> checked desks/mt5 this run). **WHAT SURVIVES, re-stated so the principal can re-price the
+> 5-minute step:** the same free key remains the ONLY §13-licensed route into Naver blogs/cafes
+> (robots.txt hard-stops every other path), and those cafes host Korea's retail 해외선물
+> (overseas-futures: gold, index, FX futures) communities — an MT5-NATIVE intelligence ground for
+> the KR seat — plus DataLab attention series on MT5 instruments (retail gold attention:
+> 금시세/금값 vs XAUUSD). Ceiling LOWER than the dead crypto case; still the only licensed door
+> into that ground. If registration proves Korea-resident-gated, kill with that mechanism (the
+> GAP row's own standing instruction). Re-check 2026-09-08; escalation stands via GAP #69
+> (re-dated this run).
 > `data/secrets/` listed this run — **no `naver.json`**, no `NAVER_*` env. The sole blocker
 > remains the principal's free NAVER Developers registration (GAP #69). Zero desk-side work owed;
 > deferral date is a re-check date, not a work estimate. Escalation stands via GAP #69.
@@ -1557,7 +1570,33 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
   alternative hunt. Enters the ordinary catalogue → verify → resolve queue. Cataloguing is not
   adoption.
 
-### 26. Kraken downloadable historical OHLCVT archive (2015→, all timeframes, free) — grade: verified-live (support article read 2026-08-11); licence UNSTATED, bulk ingest owed [§33: deferred(2026-08-25) tier:3]
+### 26. Kraken downloadable historical OHLCVT archive (2015→, all timeframes, free) — grade: verified-live + LICENCE READ DONE 2026-08-25 (ToS §8/§9: internal own-benefit use inside the grant, redistribution barred); uses re-scoped to MT5 crypto CFDs; bulk ingest owed [§33: deferred(2026-09-08) tier:3]
+> **§33 RE-GRADE + LICENCE READ 2026-08-25 (EN frontier miner).** (1) **THE LICENCE READ THE 08-11
+> DEFERRAL NAMED FIRST IS DONE** — kraken.com/legal/global-terms read this run. §8 "Content;
+> Feedback": *"We or our licensors own (1) our services and Platforms, (2) all content, materials,
+> software … So long as you comply with these Terms, you are permitted to use our services, and
+> Our Content made available to you as part of our services, but only for your own benefit. We can
+> take away this permission at any time."* §9 "Restrictions" bars *"web scraping, web harvesting,
+> or data extraction methods"*, bots/automation against Our Content, and *"use, license,
+> sublicense, sell, resell, transfer, assign, distribute or otherwise commercially exploit or make
+> available to any third party Our Content"*. **VERDICT: internal desk research on the archive
+> Kraken ITSELF offers for download (the support-article Google-Drive folders) sits inside the §8
+> own-benefit grant — downloading an offered file is not §9 scraping; ANY redistribution or
+> republication of the data or derived series is BARRED; the grant is revocable, so the lake copy
+> must carry a non-redistributable label.** Grey zone named, not assumed away (row #79):
+> "otherwise commercially exploit" is read as the third-party-conveyance class (ejusdem generis
+> with license/sell/distribute); if the desk ever wanted to PUBLISH derived data, that needs a
+> fresh read. (2) **MANDATE RE-GRADE (MT5 universe order 2026-08-18): all three declared uses are
+> STRUCK** — Kaiko reference-rate depth parity, ETH/BTC rotation second venue, and
+> pre-Binance-futures coverage are crypto-exchange-universe studies the desk may no longer hunt.
+> **SURVIVING USE, named and checked this run:** reference tape for the MT5 desk's OWN crypto CFD
+> instruments — BTCUSD_H1.parquet and ETHUSD_H1.parquet are live in the 19-symbol MT5 universe
+> (broker history 2018→ only, H1-and-coarser), and 8 more Fusion-executable crypto CFDs are
+> in-universe (universe.py `_CRYPTO`). Kraken OHLCVT extends exactly those symbols pre-2018 and
+> below-H1 (1/5/15/30m) — "crypto reference data informing an MT5 instrument", the one form the
+> mandate permits. (3) **STILL OWED:** the bulk Google-Drive pull + lake ingest needs a
+> collector-capable run with disk budget — deferred(2026-09-08), scoped to MT5-universe symbols
+> ONLY (a full-venue pull would be hunting the banned universe with extra steps).
 > **§33 VERIFICATION DONE 2026-08-11 (brain-hunter seat), ingest deferred:** the support article
 > EXISTS and matches the claim — OHLCVT CSVs in ZIP archives at **8 intervals (1/5/15/30/60/240/
 > 720/1440min)**, span "from each market's opening to the present", delivered via **Google Drive**
@@ -1651,7 +1690,16 @@ mechanism prior is CONFIRMED and the prize is MEASURED. `[§33: screened -> data
 > Same class as the desk's own `pct_circ_now` lesson — and that lesson records the direction that
 > makes this urgent: **it fails toward a FALSE NULL, the one direction no gate here catches.**
 
-### 28. CoinGecko category taxonomy (mechanism-based grouping: L1/L2/DeFi/meme/RWA) — grade: needs-legitimacy-review (ToS read FAILED this run, 403) [§33: deferred(2026-08-25) tier:4]
+### 28. CoinGecko category taxonomy (mechanism-based grouping: L1/L2/DeFi/meme/RWA) — grade: KILLED by mandate re-grade 2026-08-25 (sole consumer voided; licence still unread after two attempts) [§33: killed tier:4 -> docs/graveyard.md `coingecko_category_taxonomy`]
+> **§33 KILL 2026-08-25 (EN frontier miner) — MANDATE RE-GRADE, the R0637 precedent.** The MT5
+> UNIVERSE MANDATE (2026-08-18) bans the crypto-exchange cross-section; card 27's group-transform
+> program over 296 perps was this taxonomy's ONLY consumer, and the ~10 Fusion-executable crypto
+> CFDs that remain in-universe already carry the desk's own asset-class grouping
+> (desks/mt5/mt5desk/universe.py `_CRYPTO`). The licence read stays UNREAD — api_terms 403'd again
+> from this box 2026-08-25 and web.archive.org is unreachable from this fetcher — recorded as
+> attempted-twice, and moot while the consumer is dead. Mechanism + narrow re-open door in the
+> graveyard entry. A licence-read deferral on a dataset with no lawful consumer would have been
+> the treadmill §33 exists to stop.
 > **CARDED WITH ITS FAILED READ DOCUMENTED 2026-08-11 (brain-hunter seat):** the categories API
 > (`/coins/categories/list` + per-coin categories, keyless free tier) would give the
 > mechanism-based grouping (sector/narrative) that correlation clusters cannot express — an

@@ -8245,6 +8245,20 @@
    "commit": null,
    "due": "2026-09-01",
    "disposed": "2026-08-24T15:14:24.815431+00:00"
+  },
+  {
+   "id": "R0648",
+   "source": "cycle",
+   "summary": "S33 INSTRUMENT DEFECT (found by EN miner 2026-08-25 killing card 28): a [S33: killed] card fires a ONE-AUDIT FALSE mine-item-vanished on every box whose last conversion-log snapshot had it owing. Mechanism, verified live: source_backlog._classify returns resolved for verb==killed, and max_audit._mine_items filters resolved cards OUT of items -- so vanished() never sees the killed item in now_done (its legitimate-exit set) and reports an honest kill as an erasure; reproduced with vanished(items, ledger) returning the CoinGecko card 28 old name after its kill tag landed with a verified graveyard anchor. The two readers disagree about what killed means (L1.61 same-name-different-question class). EXACT PATCH, either arm: (a) in max_audit._mine_items, exempt cards whose S33 verb is killed from the resolved filter so they pass through as disposition=killed for their exit pass (vanished() then clears them via now_done, and conversion_report finally counts n_killed>0 -- today kill_share is structurally 0.0 because killed cards never reach the report, which also silently disarms the KILL_SHARE_BAR=0.60 mass-kill fence); or (b) in mine_conversion.vanished(), before reporting a key, re-check the current doc text for a killed tag with verified backing at that stable_key. Arm (a) is strictly better: it re-arms the kill-share fence. One transient false fire is cheap; a permanently-disarmed mass-kill fence is not (L1.49: the bar exists and nothing can ever trip it).",
+   "roi_bps": null,
+   "rank": 3.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-25T15:14:06.100296+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
