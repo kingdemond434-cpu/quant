@@ -1,5 +1,5 @@
 {
-"cursor": 15,
+"cursor": 16,
 "queries_done": {
 "zh": [
 "\u8ddf\u5355 MT4",
@@ -55,7 +55,10 @@
 "tr": [
 "kopya ticaret MT4",
 "kopya ticaret MT5",
-"kopya ticaret ranking"
+"kopya ticaret ranking",
+"sinyal MT4",
+"sinyal MT5",
+"sinyal ranking"
 ],
 "de": [
 "copy trading MT4",

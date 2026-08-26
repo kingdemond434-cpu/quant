@@ -1,0 +1,18 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoE",
+    "currency": "GBP",
+    "feed": "https://www.bankofengland.co.uk/rss/news",
+    "published_utc": "2026-04-30T11:00:00+00:00",
+    "title": "Bank Rate maintained at 3.75% - April 2026 Monetary Policy Summary and Minutes",
+    "link": "https://www.bankofengland.co.uk/monetary-policy-summary-and-minutes/2026/april-2026",
+    "policy_signals": [],
+    "instruments": [
+      "GBPUSD",
+      "GBPJPY",
+      "EURGBP",
+      "GBPAUD"
+    ]
+  }
+]

@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T11:25:25+00:00",
+ "rebuilt_at": "2026-08-26T12:24:47+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -562,6 +562,36 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "softwaredevelop": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "d8389bbb8633034e"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "nodalytics": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "fcdf4015c749b620"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
     "longevity_max_d": 0,
     "deleted_or_dead": 0,
     "mortality": 0.0

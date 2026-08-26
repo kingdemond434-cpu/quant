@@ -5155,5 +5155,50 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"d8389bbb8633034e": {
+"t0": "2026-08-26T12:24:45+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "softwaredevelop/mql5",
+"url": "https://github.com/softwaredevelop/mql5",
+"text": "Mirror of my ForgeMQL5 repository for MetaTrader 5. Synced to GitHub for backup and easier collaboration.",
+"symbols": [],
+"found_at": "2026-08-26T12:24:39+00:00",
+"topic": "mql5",
+"stars": 3,
+"star_delta": 0,
+"pushed": "2026-08-26T12:01:09Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fcdf4015c749b620": {
+"t0": "2026-08-26T12:24:45+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "nodalytics/till_infinity",
+"url": "https://github.com/nodalytics/till_infinity",
+"text": "Prices the market against a fair-value estimate built from where volatility turns, then takes a stance on the distance. No direction is forecast: fair value above the market is a long, below it is a short.",
+"symbols": [],
+"found_at": "2026-08-26T12:24:41+00:00",
+"topic": "metatrader5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-26T12:22:04Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

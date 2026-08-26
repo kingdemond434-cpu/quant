@@ -2209,5 +2209,241 @@
    "win_rate": null,
    "symbol": "EURGBP"
   }
+ },
+ {
+  "id": "ext-20260826-6528dc",
+  "geneology_id": "external:ext_github_XAUUSD_level_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD level_breakout params={'level': 'pdh', 'signal_hour': 7, 'wait_bars': 12, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2.0, 'vol_filter': 'all', 'vol_gate_q': 0.75, 'range_filter': 'all', 'spread_gate': False} screened at n=1272 exp=0.0677R t=None pf=None maxDD=-12.95R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "level_breakout",
+  "side": "BOTH",
+  "params": {
+   "level": "pdh",
+   "signal_hour": 7,
+   "wait_bars": 12,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2.0,
+   "vol_filter": "all",
+   "vol_gate_q": 0.75,
+   "range_filter": "all",
+   "spread_gate": false
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1272,
+   "exp_r": 0.0677,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -12.95,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-9e02a5",
+  "geneology_id": "external:ext_github_XAUUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD session_range_breakout params={'range_start': 7, 'range_end': None, 'signal_at': None, 'wait_bars': 8, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2, 'spread_gate': False, 'trend_filter': 'none', 'range_filter': 'all', 'vol_filter': 'all'} screened at n=1672 exp=0.1552R t=None pf=None maxDD=-28.87R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "range_start": 7,
+   "range_end": null,
+   "signal_at": null,
+   "wait_bars": 8,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2,
+   "spread_gate": false,
+   "trend_filter": "none",
+   "range_filter": "all",
+   "vol_filter": "all"
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1672,
+   "exp_r": 0.1552,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -28.87,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-6fc463",
+  "geneology_id": "external:ext_github_XAUUSD_volatility_squeeze",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD volatility_squeeze params={'bb_n': 20, 'bb_k': 2.0, 'squeeze_lookback': 20, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2.0} screened at n=469 exp=0.1105R t=None pf=None maxDD=-25.18R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "volatility_squeeze",
+  "side": "BOTH",
+  "params": {
+   "bb_n": 20,
+   "bb_k": 2.0,
+   "squeeze_lookback": 20,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2.0
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 469,
+   "exp_r": 0.1105,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -25.18,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-81e6f3",
+  "geneology_id": "external:ext_github_GBPUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPUSD session_range_breakout params={'range_start': 7, 'range_end': None, 'signal_at': None, 'wait_bars': 8, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2, 'spread_gate': False, 'trend_filter': 'none', 'range_filter': 'all', 'vol_filter': 'all'} screened at n=1357 exp=0.1253R t=None pf=None maxDD=-24.65R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "range_start": 7,
+   "range_end": null,
+   "signal_at": null,
+   "wait_bars": 8,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2,
+   "spread_gate": false,
+   "trend_filter": "none",
+   "range_filter": "all",
+   "vol_filter": "all"
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1357,
+   "exp_r": 0.1253,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -24.65,
+   "win_rate": null,
+   "symbol": "GBPUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-6528dc",
+  "geneology_id": "external:ext_mql5_forum_XAUUSD_level_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD level_breakout params={'level': 'pdh', 'signal_hour': 7, 'wait_bars': 12, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2.0, 'vol_filter': 'all', 'vol_gate_q': 0.75, 'range_filter': 'all', 'spread_gate': False} screened at n=1272 exp=0.0677R t=None pf=None maxDD=-12.95R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "level_breakout",
+  "side": "BOTH",
+  "params": {
+   "level": "pdh",
+   "signal_hour": 7,
+   "wait_bars": 12,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2.0,
+   "vol_filter": "all",
+   "vol_gate_q": 0.75,
+   "range_filter": "all",
+   "spread_gate": false
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1272,
+   "exp_r": 0.0677,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -12.95,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-9e02a5",
+  "geneology_id": "external:ext_mql5_forum_XAUUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD session_range_breakout params={'range_start': 7, 'range_end': None, 'signal_at': None, 'wait_bars': 8, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2, 'spread_gate': False, 'trend_filter': 'none', 'range_filter': 'all', 'vol_filter': 'all'} screened at n=1672 exp=0.1552R t=None pf=None maxDD=-28.87R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "range_start": 7,
+   "range_end": null,
+   "signal_at": null,
+   "wait_bars": 8,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2,
+   "spread_gate": false,
+   "trend_filter": "none",
+   "range_filter": "all",
+   "vol_filter": "all"
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1672,
+   "exp_r": 0.1552,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -28.87,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-6fc463",
+  "geneology_id": "external:ext_mql5_forum_XAUUSD_volatility_squeeze",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD volatility_squeeze params={'bb_n': 20, 'bb_k': 2.0, 'squeeze_lookback': 20, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2.0} screened at n=469 exp=0.1105R t=None pf=None maxDD=-25.18R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "volatility_squeeze",
+  "side": "BOTH",
+  "params": {
+   "bb_n": 20,
+   "bb_k": 2.0,
+   "squeeze_lookback": 20,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2.0
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 469,
+   "exp_r": 0.1105,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -25.18,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-b7d893",
+  "geneology_id": "external:ext_mql5_forum_EURUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURUSD session_range_breakout params={'range_start': 7, 'range_end': None, 'signal_at': None, 'wait_bars': 8, 'atr_n': 20, 'ttl_bars': 12, 'rr': 2, 'spread_gate': False, 'trend_filter': 'none', 'range_filter': 'all', 'vol_filter': 'all'} screened at n=1740 exp=0.1001R t=None pf=None maxDD=-23.19R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "range_start": 7,
+   "range_end": null,
+   "signal_at": null,
+   "wait_bars": 8,
+   "atr_n": 20,
+   "ttl_bars": 12,
+   "rr": 2,
+   "spread_gate": false,
+   "trend_filter": "none",
+   "range_filter": "all",
+   "vol_filter": "all"
+  },
+  "created_at": "2026-08-26T11:50:00.320208+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1740,
+   "exp_r": 0.1001,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": -23.19,
+   "win_rate": null,
+   "symbol": "EURUSD"
+  }
  }
 ]
