@@ -1,0 +1,12 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='export.arxiv.org', port=443): Read timed out. (read timeout=40)",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-26T17:25:39+00:00",
+  "needs_selector_work": true
+ }
+]

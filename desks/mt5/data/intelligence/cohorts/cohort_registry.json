@@ -5291,5 +5291,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"044fd1e2d0a0fb03": {
+"t0": "2026-08-26T17:25:48+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "mainpclab/metatrader5-websocket-tickers",
+"url": "https://github.com/mainpclab/metatrader5-websocket-tickers",
+"text": "A solution for streaming real-time ticker updates from MetaTrader 5 over WebSockets to any server.",
+"symbols": [],
+"found_at": "2026-08-26T17:25:42+00:00",
+"topic": "mql5",
+"stars": 24,
+"star_delta": 0,
+"pushed": "2026-08-26T16:51:10Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T16:24:38+00:00",
+ "rebuilt_at": "2026-08-26T17:25:48+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -633,6 +633,21 @@
    },
    "cohorts": [
     "190023b44515f562"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "mainpclab": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "044fd1e2d0a0fb03"
    ],
    "scores": {
     "independent_evidence": 1,
