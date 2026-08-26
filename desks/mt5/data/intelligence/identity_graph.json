@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T08:24:57+00:00",
+ "rebuilt_at": "2026-08-26T09:24:12+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -497,6 +497,21 @@
    },
    "cohorts": [
     "dc08b77ae7031618"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "metatradervps": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "c308bd7837c8e9c6"
    ],
    "scores": {
     "independent_evidence": 1,

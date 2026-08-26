@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 3600,
+"forextsd_offset": 3900,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -43,6 +43,7 @@
 "Wendy-Bay/PropFirm-Tracker-Elite": 116,
 "7skooooo/mql5-systems-mirror": 116,
 "Tyumex/tyumex-trading-terminal": 11,
-"RPNATION1/Tradingalgos": 4
+"RPNATION1/Tradingalgos": 4,
+"metatraderVPS/metatrader-broker-symbols": 0
 }
 }

@@ -108,6 +108,15 @@
    "graduated": 0,
    "last_swept": "2026-08-26T08:22:00+00:00",
    "native_terms_available": 10
+  },
+  "en": {
+   "region": "global",
+   "open_frontier": false,
+   "queries_exercised": 3,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-08-26T09:22:02+00:00",
+   "native_terms_available": 20
   }
  }
 }

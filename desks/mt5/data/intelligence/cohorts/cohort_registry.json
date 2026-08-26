@@ -5041,5 +5041,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"c308bd7837c8e9c6": {
+"t0": "2026-08-26T09:24:12+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "metatraderVPS/metatrader-broker-symbols",
+"url": "https://github.com/metatraderVPS/metatrader-broker-symbols",
+"text": "Measured MetaTrader symbol names across 241 MT4/MT5 brokers \u2014 gold alone has 44 spellings. Plus server-time (GMT) offsets, lot rules, and MQL4/MQL5/Python resolvers. Fixes \"symbol not found\". CC BY 4.0.",
+"symbols": [],
+"found_at": "2026-08-26T09:24:05+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T09:14:50Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
