@@ -138,7 +138,14 @@ def main() -> int:
         if not data:
             continue
         changed = False
-        for key, row in data.items():
+        # BOTH LAYERS. scalp_shadow keeps its rows under a `sleeves` sub-dict; iterating only
+        # data.items() left four live scalp clocks INVISIBLE to this reconciler while the
+        # dashboard still counted them -- an organ that cannot see a lane cannot govern it.
+        rows_here = [(k, v) for k, v in data.items() if isinstance(v, dict) and "status" in v]
+        sub = data.get("sleeves")
+        if isinstance(sub, dict):
+            rows_here += [(k, v) for k, v in sub.items() if isinstance(v, dict) and "status" in v]
+        for key, row in rows_here:
             if not isinstance(row, dict) or "status" not in row:
                 continue
             if str(row.get("status") or "").upper() in TERMINAL:
@@ -160,6 +167,27 @@ def main() -> int:
                 continue
 
             if has_cert:
+                continue
+
+            # A FULLY-SPECIFIED SLEEVE THIS GAUNTLET CANNOT JUDGE keeps measuring but loses its
+            # authority. The scalp lane carries complete params (family, session, stop/target
+            # ATR, max_hold) on M5/M15 -- reconstructible in principle, but the canonical
+            # gauntlet builds H1 session cells, so it cannot rule on them yet. Retiring them
+            # would destroy a live research line for a tooling gap, and the principal's standing
+            # rule is that caps never reduce discovery. Stripping PROMOTION AUTHORITY is the
+            # exact, minimal correction: evidence keeps accruing (free, useful), but the lane
+            # can no longer reach capital without passing the one door. Measured 2026-08-26:
+            # four scalp sleeves held `promotion_authority: true` with no certificate at all.
+            if row.get("choice") or row.get("timeframe"):
+                if row.get("promotion_authority") is not False:
+                    row["promotion_authority"] = False
+                    row["gate_reason"] = (
+                        "no canonical ten-gate certificate; promotion authority REVOKED until "
+                        "certified. The sleeve keeps accruing forward evidence -- that costs "
+                        "nothing and is never wasted -- but it cannot promote. Certifying it "
+                        "needs a gauntlet on its own timeframe (register #134).")
+                    actions.append({"key": key, "action": "AUTHORITY_REVOKED"})
+                    changed = True
                 continue
 
             # enrolled, running, no certificate -> it must face the gauntlet

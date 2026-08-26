@@ -34,7 +34,7 @@ import math
 import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -48,14 +48,15 @@ sys.path.insert(0, str(BASE / "research"))
 QP = Path(r"C:\Users\dell\quant-platform") if os.name == "nt" else Path.home() / "quant-platform"
 sys.path.insert(0, str(QP))
 
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
-
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from research.gate_policy import ATTESTATION, all_ten_pass, is_exact_policy  # noqa: E402
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
@@ -78,6 +79,28 @@ GATE_MODULES = {  # hunt -> module + report file
 }
 
 
+def retained_exact_survivors(path: Path) -> dict[str, dict]:
+    """Retain only already-attested exact passes during an incremental sweep.
+
+    Universal sweeps are incremental because DONE markers skip prior hunts. Starting the output
+    from an empty dict therefore deletes every prior survivor, and omitting the policy attestation
+    makes the shadow fail closed even when the individual certificate remains present.
+    """
+    try:
+        current = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not is_exact_policy(current.get("gate_policy")):
+        return {}
+    survivors = current.get("survivors")
+    if not isinstance(survivors, dict):
+        return {}
+    return {
+        str(key): row for key, row in survivors.items()
+        if isinstance(row, dict) and all_ten_pass(row.get("gates"))
+    }
+
+
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     m = meta.get(sym, {})
     return Costs(
@@ -95,7 +118,7 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
 
 
 class Cell:
-    __slots__ = ("id", "sym", "df", "sigs", "costs")
+    __slots__ = ("costs", "df", "id", "sigs", "sym")
 
     def __init__(self, cid: str, sym: str, df: pd.DataFrame, sigs: list, costs: Costs):
         self.id, self.sym, self.df, self.sigs, self.costs = cid, sym, df, sigs, costs
@@ -111,7 +134,6 @@ def iter_hunt_cells(modname: str, meta: dict) -> list[Cell]:
     all_cells = report.get("all", [])
     if not all_cells:
         return []
-    h1_cache: dict[str, pd.DataFrame] = {}
     h4_cache: dict[str, tuple[pd.DataFrame, pd.DataFrame]] = {}
     fams = getattr(mod, "FAMILIES", {})
     out: list[Cell] = []
@@ -199,7 +221,6 @@ def _ug_verdict(args) -> dict:
 
 
 def gauntlet(cells: list[Cell], hunt: str) -> dict:
-    import multiprocessing as mp
     import psutil as _ps
     avail_mb = _ps.virtual_memory().available / 1048576
     cap = 1 if os.name != "nt" and avail_mb < 1024 else (2 if os.name != "nt" else 8)
@@ -283,7 +304,7 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
         "hunt": hunt, "n_cells": len(cells), "n_trials": n_trials,
         "program_level": {"pbo": round(float(pbo.pbo), 4), "spa_p": round(float(spa.p_value), 4)},
         "survivors_passing_all": n_pass, "gate_fails": gate_fails, "verdicts": verdicts,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
+        "swept_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -296,7 +317,8 @@ def main() -> int:
             time.sleep(60)
         print("qquant gates done, starting universal gauntlet", flush=True)
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
-    survivors_all: dict[str, dict] = {}
+    survivor_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    survivors_all: dict[str, dict] = retained_exact_survivors(survivor_path)
     for hunt in HUNTS:
         marker = REPORTS / f"DONE_universal_{hunt}"
         if marker.exists():
@@ -319,9 +341,9 @@ def main() -> int:
                 survivors_all[f"{hunt}.{v['cell']}"] = {
                     "hunt": f"{hunt}.json", "cell": v["cell"], "sym": v["sym"],
                     "days": v["days"], "gates": v["stages"],
-                    "gated_at": datetime.now(timezone.utc).isoformat()}
+                    "gated_at": datetime.now(UTC).isoformat()}
         (REPORTS / f"DONE_universal_{hunt}").write_text(
-            datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+            datetime.now(UTC).isoformat(), encoding="utf-8")
     # hunt18 loop-experiment reports
     # Clear run_hunt17 anchor cache so it reloads fresh T10YIE
     import run_hunt17 as _rh17
@@ -339,7 +361,8 @@ def main() -> int:
         if not fam:
             print(f"{rp.stem}: no family key, skipping", flush=True)
             continue
-        from run_hunt17 import FAMILIES as F17, resample as r17resample
+        from run_hunt17 import FAMILIES as F17
+        from run_hunt17 import resample as r17resample
         fn = F17.get(fam)
         if not fn:
             continue
@@ -367,15 +390,21 @@ def main() -> int:
                 survivors_all[f"{rp.stem}.{v['cell']}"] = {
                     "hunt": rp.name, "cell": v["cell"], "sym": v["sym"],
                     "days": v["days"], "gates": v["stages"],
-                    "gated_at": datetime.now(timezone.utc).isoformat()}
+                    "gated_at": datetime.now(UTC).isoformat()}
         (REPORTS / f"DONE_universal_{rp.stem}").write_text(
-            datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+            datetime.now(UTC).isoformat(), encoding="utf-8")
 
-    (REPORTS / "UNIVERSAL_SURVIVORS.json").write_text(
+    # Re-read immediately before publication. Another certified producer (notably QQUANT) may
+    # have published while this expensive sweep was running; never erase that result.
+    latest = retained_exact_survivors(survivor_path)
+    latest.update(survivors_all)
+    survivors_all = latest
+    survivor_path.write_text(
         json.dumps({"n": len(survivors_all), "survivors": survivors_all,
+                    "gate_policy": ATTESTATION,
                     "note": "UNIVERSAL 10-GATE PASS ONLY. Placebo null + fragility "
                             "apply before portfolio entry.",
-                    "swept_at": datetime.now(timezone.utc).isoformat()},
+                    "swept_at": datetime.now(UTC).isoformat()},
                    indent=2, default=str), encoding="utf-8")
     ledger_path = REPORTS / "SURVIVORS_LEDGER.json"
     ledger: dict = {}
@@ -386,7 +415,7 @@ def main() -> int:
             ledger = {}
     for k, v in survivors_all.items():
         ledger[k] = {**v, "status": "UNIVERSAL",
-                     "updated_at": datetime.now(timezone.utc).isoformat()}
+                     "updated_at": datetime.now(UTC).isoformat()}
     ledger_path.write_text(
         json.dumps({"n": len(ledger), "claims": ledger}, indent=2, default=str),
         encoding="utf-8")
