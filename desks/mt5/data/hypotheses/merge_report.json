@@ -1,8 +1,8 @@
 {
- "merged_at": "2026-08-26T20:59:44+00:00",
- "pipeline_started_at": "2026-08-26T20:05:00+00:00",
+ "merged_at": "2026-08-26T22:00:02+00:00",
+ "pipeline_started_at": "2026-08-26T21:05:00+00:00",
  "per_source": {
-  "external_backtest_results.json": 132,
+  "external_backtest_results.json": 0,
   "edge_search_results.json": -2,
   "orthogonal_candidates.json": -2
  },
@@ -11,9 +11,7 @@
   "edge_search_results.json": "STALE_SKIPPED",
   "orthogonal_candidates.json": "STALE_SKIPPED"
  },
- "total": 132,
- "families": {
-  "session_range_breakout": 132
- },
+ "total": 0,
+ "families": {},
  "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
 }
