@@ -62,11 +62,11 @@
    "summary": "O3 data-moat: mechanism-priored cross-axis interaction screen (kimchi x funding, stablecoin x breadth, OI x regime); extraction law demands cross-feature interactions and no implementation exists; every cell a logged trial, no pair without written mechanism prior",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:42.148635+00:00",
-   "status": "scheduled",
-   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
+   "status": "rejected",
+   "reason": "MANDATE-VOID SUBJECT (MT5 universe order 2026-08-18, reaffirmed 08-25): all three named axis pairs (kimchi premium, perp funding, stablecoin supply, crypto OI) are crypto-exchange-native ground the desk may never hunt again. The universe-independent half -- mechanism-priored cross-axis interaction screening, every cell a DSR-counted logged trial, no pair without a written mechanism prior -- is re-raised as a fresh row scoped to MT5 axes (R0637-class split per the 08-20 precedent), so the discipline survives the subject.",
    "commit": null,
-   "due": "2026-08-21",
-   "disposed": "2026-08-11T16:02:13.159209+00:00"
+   "due": null,
+   "disposed": "2026-08-26T03:45:43.523584+00:00"
   },
   {
    "id": "R0006",
@@ -471,11 +471,11 @@
    "summary": "§35 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
-   "status": "scheduled",
-   "reason": "Recording work (4 already-decided findings need register rows, 1 needs a decision): scheduled behind R0422's hard calibration deadline; both are pure-recording passes that fit one cycle.",
-   "commit": null,
-   "due": "2026-08-14",
-   "disposed": "2026-08-11T16:10:00.798247+00:00"
+   "status": "implemented",
+   "reason": "Recording pass complete, re-measured first (67-78 percent of handed rows historically stale): coverage record already back at 1.0 (00:13Z today); of the 5 flagged findings, 4 verified traced in the register by grep (#79 job-market, #80 satellite, #48 as GAP 88, micro_audit_inbox 1 carry-funding); the one genuinely missing trace (#26 competitor-simulation) is now GAP register entry 137 recording BLOCKED-ON-FUNDING with the 120-dollar 402 blocker named.",
+   "commit": "ab3c41abe0c0e93f2b164ef23675701f3d553fd0",
+   "due": null,
+   "disposed": "2026-08-26T03:47:18.195920+00:00"
   },
   {
    "id": "R0036",
@@ -647,11 +647,11 @@
    "summary": "ENCODE THE REFUTED-AS-INVALID vs FAILED-ON-MERITS RULE (finding F0011). slot_registry drops a retired clock from the Holm denominator (onchain_activity_throughput precedent) while ADAPTIVE VALIDATION WINDOWS v2 says attrition must never lower the bar. Both are correct about different cases and the distinguishing rule is written nowhere: a trial voided by artifact/lookahead/misalignment must LEAVE the denominator (an invalid trial is not a trial); a candidate that legitimately accrued and lost must STAY (else the desk can kill losers to make winners promotable). Until written, a future cycle can justify either action by citing law -- which is how a gate gets loosened by someone who believes they are following precedent. Encode in slot_registry docstring + a max_audit check that a dropped clock carries a REFUTED registry decision.",
    "roi_bps": 1.0,
    "raised": "2026-07-30T12:22:53.179692+00:00",
-   "status": "scheduled",
-   "reason": "NOT BUILT, and deliberately not closed by a token edit. This is a validation-integrity rule governing the Holm denominator -- exactly the class where a half-written rule is worse than none, because its whole purpose is to stop a future cycle justifying either action by citing law. The build is a slot_registry docstring plus a max_audit check that a dropped clock carries a REFUTED registry decision; it needs the registry's decision vocabulary read properly, not a same-session guess. Held with a near due rather than snoozed: the distinguishing rule is real and unwritten, and the desk currently has 11 accruing clocks whose bar depends on it.",
-   "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-13T04:29:24.467638+00:00",
+   "status": "implemented",
+   "reason": "Already implemented 2026-08-18 in commit 95da9c34 and never disposed (the git log -S check the desk memory prescribes found it). Verified live this cycle: slot_registry.py:421-431 encodes the full F0011 distinction (REFUTED-AS-INVALID-MEASUREMENT may leave the Holm denominator because a void trial is not a trial; FAILED-ON-ITS-MERITS must keep counting or losers can be killed to promote winners) with the mechanical reconciliation (multiplicity_high_water can never fall, so even a merits retirement frees only the seat); clock_retirement.py carries the mechanism-of-death vocabulary; max_audit.py:8517 check_clock_retirement_mechanism is registered and enforces that every dropped clock carries its verdict+why.",
+   "commit": "95da9c343a14216152aa2cbd0f9ea9fa437970f3",
+   "due": null,
+   "disposed": "2026-08-26T03:49:02.161919+00:00",
    "schedule_history": [
     {
      "was_due": "2026-08-12",
@@ -3352,11 +3352,11 @@
    "summary": "L1.45 follow-on: the recorder universe is capped at 32 symbols by a 2400 weight/min Binance budget, and that constant silently sets the desk's tradeable universe (only recorded symbols can be cost-measured, and unmeasured names need ~4x funding to clear the entry gate). Nobody has computed the marginal bps of forgone carry from slot 33 -- a bandwidth constant is acting as a capacity policy.",
    "roi_bps": 20.0,
    "raised": "2026-08-01T06:03:38.201229+00:00",
-   "status": "scheduled",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] KEEP-OPEN: Unchanged: scripts/run_recorder.py:42 _MAX_SYMBOLS=32 with the 2400 weight/min budget arithmetic (:151-180); no shadow-price/marginal-bps-of-slot-33 computation exists anywhere (only the capability-hunt mention at 20260801_s4_proposals.md:69). The disposal reason still holds -- the binding constraint is fills while the book is frozen pre-REARM, so more recordable symbols would not yet produce more measurement. Re-rank when the book trades; due 08-13.",
+   "status": "rejected",
+   "reason": "MANDATE-VOID SUBJECT: the Binance recorder fleet is permanently idled (data/RECORDERS_OFF, 2026-08-25) and the cash-carry book it measured is retired by principal order (b0fe6f50) -- there is no slot 33 to price and no crypto carry gate left for unmeasured names to clear. The universe-independent lesson (a bandwidth constant silently acting as capacity policy) is already law (LAWS section 1 anti-hardcode / WS-005 class), and its MT5 application -- the moat recorder symbol coverage must be registry-driven with floored fenced coverage metrics -- is owned by open GAP register row 127.",
    "commit": null,
-   "due": "2026-08-13",
-   "disposed": "2026-08-01T06:04:03.295885+00:00"
+   "due": null,
+   "disposed": "2026-08-26T03:46:14.637471+00:00"
   },
   {
    "id": "R0252",
@@ -6559,11 +6559,11 @@
    "summary": "MONEY-PATH RESIDUAL of R0364, blocked on the L1.38 window: run_cashcarry_executor._emit publishes 'risk': rb.get('risk') and only _rebalance ever sets that key, so on every tick served by _book_snapshot() (which has NO risk key) the whole book is republished with the rail state blanked -- ~9 ticks in 10 at --interval 600 against _HB_TICK=60. Invisible today ONLY because data/CASHCARRY_KILL has stood since 2026-08-01 and the kill branch calls _rebalance every tick. Downstream cannot tell 'null' from 'no breach': check_idle_cost.py:188 reads live.get('risk') or {} -> action '' -> the rail clamp is recorded INACTIVE and priced at ZERO by the very L1.51 fence built to price clamps. FIX (two lines, no decision change): carry the last EVALUATED RiskDecision on the executor's state and publish it with the ISO timestamp of the evaluation that produced it, so a copy-forward is self-declaring; or publish an explicit UNEVALUATED marker on snapshot ticks. BLOCKED: scripts/run_cashcarry_executor.py is MONEY_PATH and check_change_window reports STERILE / RAIL_BREACH while CASHCARRY_KILL is present -- this is an IMPROVEMENT (observability), not a repair, so it waits. DETECTION IS ALREADY WIRED so the gap is not silent meanwhile: max_audit.check_rail_verdict_published (b2473964) fires rail-verdict-absent on the null case and rail-verdict-stale on the frozen case.",
    "roi_bps": 6.0,
    "raised": "2026-08-12T18:54:43.725419+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "MANDATE/RETIREMENT VOID: the cash-carry executor is retired (kill standing since 08-01, book retired b0fe6f50, RECORDERS_OFF permanent) -- no live money path publishes through _emit, so the rail-state blanking can never again mislead a reader. The class lesson (a publisher that blanks state on ticks lacking a key = absence read as clean) is the WS-005 class, already law (L1.28a).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:43.950678+00:00"
   },
   {
    "id": "R0511",
@@ -6679,11 +6679,11 @@
    "summary": "R0371 RESIDUAL, and it is bigger than the row that found it: the cash-carry tape accounts for only 7.1pct of the futures notional its own fee bill implies. Venue commission 1750.878 USDT at the account's measured 5bp taker rate implies ~3.50M USD of traded notional; the 500 tape rows total 248,404 USD. This is NOT a window or universe mismatch -- 99.1pct of commission falls inside the tape's window and on symbols the tape already knows, so the executor is failing to log trading it actually did. CANDIDATE MECHANISM, unproven and stated as such: run_cashcarry_executor.py's OPEN-FAIL / CLOSE-FAIL / TOPUP-FAIL paths all 'continue' BEFORE _log_trade, so an order that filled partially but never reached CONFIRMED-FILLED bills commission at the venue and leaves no tape row at all -- the verify-before-track guard (correctly) refuses to TRACK it and (incorrectly) also declines to RECORD it. NEXT STEP is diagnostic not structural: reconcile per-symbol venue notional (userTrades quoteQty) against per-symbol tape notional to see whether the gap concentrates in the four names that paid 86pct of the fees, which would confirm the failed-fill path; the alternative hypothesis is trading by other organs sharing the same testnet futures account. Until it is explained, every per-trade cost number the desk computes from its own tape describes 7pct of its trading.",
    "roi_bps": 60.0,
    "raised": "2026-08-12T19:54:44.033357+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "RETIRED-BOOK VOID: the tape will never grow and no forward decision reads it; completing a dead book buys zero E[log W]. The transferable check (fee-implied notional vs tape notional as a completeness cross-check) is exactly what the MT5 desk forward_reconcile/markout chain exists to do against broker deal history, where deals carry their own commission natively.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:47.102784+00:00"
   },
   {
    "id": "R0521",
@@ -6691,11 +6691,11 @@
    "summary": "R0371 SECOND HALF, staged behind the L1.38 change window: stamp per-leg commission onto the trade row at fill time. This is the half of R0371 that survives its own measurement -- per-ROUND-TRIP, per-MODE and per-HOLD-BUCKET fee attribution are impossible from the income ledger retrospectively (it emits one COMMISSION row per PARTIAL fill; up to 48 events share one timestamp and the median gap from an event to the nearest same-symbol tape fill instant is 4.3h, p95 22.8h, so a nearest-in-time join assigns fees at random) and can ONLY be recovered by recording the fee at the moment the fill happens. WHY IT IS NOT DONE NOW: run_cashcarry_executor.py and libs/execution/ are both MONEY_PATH and check_change_window reports STERILE/RAIL_BREACH -- CASHCARRY_KILL is latched and the book is unwinding, which is exactly the window L1.38 exists to protect. This is an IMPROVEMENT, not a repair, so it stages. CHEAPEST CORRECT IMPLEMENTATION, already scouted: the close/open/topup paths ALREADY call spot.avg_fill/fut.avg_fill, which fetch the very venue rows carrying commission and commissionAsset and then discard them -- a sibling returning (avg_price, commission) from the SAME fetch adds a stamp with no extra venue round-trip. TRAP TO HANDLE: on Binance spot a BUY is billed in the BASE asset, so commission must be converted at the fill price, and an unknown commissionAsset (e.g. BNB) must publish None, never 0 -- run_deadman_reconciliation.py:113 currently filters to USDT/BUSD only, which silently understates spot buy commission. LIFTING CONDITION (L1.51): check_change_window reports OPEN.",
    "roi_bps": 25.0,
    "raised": "2026-08-12T19:54:58.266298+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "RETIRED-EXECUTOR VOID: fill-time cost stamping for the Binance executor has no target left. The discipline is natively satisfied on the MT5 side: MT5 deal records carry commission/swap per deal at fill time, so retrospective attribution is not needed there.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:50.017409+00:00"
   },
   {
    "id": "R0522",
@@ -6703,11 +6703,11 @@
    "summary": "CARRY SLEEVE PER-SYMBOL NET, first time computable (unlocked by R0371's fee attribution): venue truth 2026-07-02..08-01 is funding +113.06 USDT against commission 1750.88 USDT = NET -1637.82, and only 6 of 83 symbols were net-positive after fees. The aggregate 'the carry loss is fees not thesis' was already known; the PER-SYMBOL decomposition is new and it inverts the selection logic. The four names that paid 86pct of the fee bill are among the largest deployed positions and each is catastrophically net-negative: COOKIEUSDT earned 7.01 in funding and paid 623.30 in fees (89x), 1000CATUSDT 4.29 vs 413.03 (96x), MOVEUSDT 3.29 vs 245.95 (75x), TSTUSDT 20.64 vs 221.54 (11x). Meanwhile XVGUSDT earned 21.49 against 18.09 of fees and is one of the six survivors. THE MECHANISM IS TURNOVER, NOT RATE: the executor ranks by _net_bps which prices a SINGLE round trip, so a name whose funding beats one round trip is selected and then re-traded until cumulative fees swamp cumulative funding -- the churn guard (_MIN_HOLD_H) bounds hold time but nothing prices CUMULATIVE fee against CUMULATIVE harvest per name. PROPOSED INSTRUMENT, cheap and Stage-A only: a per-symbol lifetime fee-vs-funding ledger from the income endpoint (both series already fetched by run_fee_attribution.py) feeding a re-entry veto on names whose realized net is negative over their own history -- the L1.16a re-entry condition the current cooldown set lacks, since cooldown expires on TIME and never on ECONOMICS. NOTE the denominator caveat before acting: fees are on cumulative traded notional while funding is on held notional, so the ratio is a turnover statistic, not a per-unit-time edge; and this is testnet execution, where fills and the 5bp taker rate may not reproduce live.",
    "roi_bps": 80.0,
    "raised": "2026-08-12T19:57:27.908195+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "RETIRED-BOOK VOID: the per-symbol decomposition was computed (numbers preserved in this row: net -1637.82 USDT, 6/83 net-positive) and the selection-logic inversion it implies applies to a book that no longer exists. Negative knowledge banked; nothing forward reads crypto carry selection.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:52.359833+00:00"
   },
   {
    "id": "R0523",
@@ -6715,11 +6715,11 @@
    "summary": "BR-19 SCREEN OWED: venue risk-parameter metadata (fundingIntervalHours 4h/8h/1h + adjustedFundingRateCap) as a carry conditioning variable, controlling for the funding level -- the exchange risk desk sets these from the full position/liquidation distribution nobody else sees, and the desk reads them as plumbing constants. Screening owner cycle org, Stage-A harness libs.research.axis_screen, data already on disk: data/funding_caps.json (747 symbols, ZERO consumers), data/jp_funding_clamp_census.json (interval_mix), data/funding_cross_section.jsonl (862 syms), data/lake/bronze/crypto/*/D1 (funding+basis, 300 syms). EV 0.0029 (funding_family+new_orthogonal_data, p 0.48), novelty 0.691 vs 251 priors. DUE 2026-08-26.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T20:11:38.911589+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "MANDATE-VOID SUBJECT (crypto venue risk parameters): funding caps/intervals are crypto-exchange-native ground. The universe-independent discipline -- broker risk-desk parameter changes as conditioning variables -- is re-raised in the MT5 split row created alongside this rejection (Fusion swap-schedule/margin conditioning).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:54.431033+00:00"
   },
   {
    "id": "R0524",
@@ -6727,11 +6727,11 @@
    "summary": "BR-21 SCREEN OWED: order-book replenishment half-life / withdrawal rate as an EX-ANTE cost prior for symbols the desk has NEVER traded -- breaks the L1.45 never-traded/never-recorded/never-measured exclusion cycle that realised-cost predictors (H1, denylist) cannot reach by construction. Screening owner cycle org, Stage-A harness libs.research.axis_screen, data already on disk: data/moat_series.jsonl (93,345 symbol-days of withdrawal_rate/book_slope/replenishment_halflife, ZERO consumers), validated against data/fee_attribution.json (top4_share 0.8589) and data/print_impact.json. EV 0.0044 (new_orthogonal_data only -- funding_family tag deliberately NOT applied, it would be tag-laundering a cost mechanism), novelty 0.721. DUE 2026-08-26.",
    "roi_bps": 35.0,
    "raised": "2026-08-12T20:11:40.842087+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "MANDATE-VOID SUBJECT (crypto moat orderbook series): 93k crypto symbol-days may not be hunted. The universe-independent discipline -- ex-ante cost priors for never-traded instruments, breaking the L1.45 exclusion cycle -- is re-raised in the same MT5 split row (spread/session-based priors for unexplored MT5 symbols).",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:56.399587+00:00"
   },
   {
    "id": "R0525",
@@ -6787,11 +6787,11 @@
    "summary": "BYBIT TAPE BLAST RADIUS beyond the screen fixed in R0378: build_bars.trades_from dropped 100pct of bybit prints (221,000 of 221,000 nested entries sampled, wrong field labels) and it has THREE production consumers -- build_bars.py:186 (the canonical bar builder), screen_moat.py:255 and screen_orderbook_state. Every bar, every moat screen result and every graveyard verdict computed over bybit since the recorder started is therefore built on ZERO trades for that venue, and each looked like a legitimate data-poor null rather than a parse failure. AUDIT AND RE-RUN: identify which committed results and graveyard rows rest on bybit tape and re-run them now the prints parse; a kill recorded on unreadable data is not a kill (L1.25 -- failure to discover is never evidence none exists, and the ordered diagnostic starts at 'is the instrument broken'). Also add the missing instrument: trades_from skips an unparseable entry silently, so a 100pct parse loss is indistinguishable from a quiet venue -- it must COUNT what it drops (L1.60 attrition) and a fence must fire when a venue's parse rate collapses.",
    "roi_bps": 22.0,
    "raised": "2026-08-12T21:01:45.151206+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "RETIRED-UNIVERSE CONTAINMENT: the bybit tape and its three consumers are dead ground; contaminated verdicts live only in crypto graveyard rows no future candidate will cite (universe banned). The parser-class fence shipped with R0378. Re-open only if crypto graveyard priors are ever consulted for MT5 transfer -- at which point the affected rows must be re-derived first.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T04:17:58.293791+00:00"
   },
   {
    "id": "R0530",
@@ -8397,6 +8397,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0657",
+   "source": "cycle",
+   "summary": "MT5 cross-axis interaction screen (split from mandate-voided R0005): mechanism-priored interaction cells over the desk MT5 axes -- COT positioning x regime state, session structure x volatility state, macro-calendar surprise x cross-asset lead-lag (h19-004 ground), swap/rollover x carry seasonality. Every cell a DSR-counted logged trial through the canonical ten gates; no pair without a written mechanism prior; screens sort and report, never decide (L1.60).",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-26T03:45:53.247085+00:00",
+   "status": "scheduled",
+   "reason": "Scheduled at measured build throughput (~2 majors/week): a real screen build over registry-driven MT5 axes, entering the same-day pipeline (L1.58) when built. Due chosen inside the L1.29 resolve window so the forecast grades on time.",
+   "commit": null,
+   "due": "2026-09-09",
+   "disposed": "2026-08-26T03:46:10.001085+00:00"
+  },
+  {
+   "id": "R0658",
+   "source": "cycle",
+   "summary": "MT5 broker-parameter conditioning + ex-ante cost priors (split from mandate-voided BR-19/R0523 and BR-21/R0524): (a) Fusion swap-schedule and margin-requirement CHANGES as preregistered conditioning variables -- the broker risk desk sets them from a book nobody else sees, the desk reads them as plumbing; (b) ex-ante spread/session cost priors for never-traded MT5 instruments from recorded quotes, breaking the L1.45 never-traded/never-measured exclusion cycle for universe expansion. Stage-A harness libs.research.axis_screen; every cell a DSR-counted trial; screens sort, the ten gates decide (L1.60).",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-26T04:18:00.213296+00:00",
+   "status": "scheduled",
+   "reason": "Scheduled at measured build throughput behind R0657: same Stage-A screen-build class, both feed the canonical gauntlet; due inside the L1.29 resolve window.",
+   "commit": null,
+   "due": "2026-09-09",
+   "disposed": "2026-08-26T04:18:08.424674+00:00"
   }
  ]
 }
