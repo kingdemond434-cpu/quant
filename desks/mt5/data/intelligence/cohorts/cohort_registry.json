@@ -4797,5 +4797,94 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"c9d216d871b52296": {
+"t0": "2026-08-26T01:24:32+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "shazzadu1/Trade-Halting-Safeguard",
+"url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
+"text": "Stop-Loss AI 2026: Automated Emergency Close & Trade Halt \u26a0\ufe0f\ud83d\udcc9",
+"symbols": [],
+"found_at": "2026-08-26T01:24:26+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T01:09:29Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"cc6563e27cefb7e9": {
+"t0": "2026-08-26T01:24:32+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "joni0108/joni0108",
+"url": "https://github.com/joni0108/joni0108",
+"text": "Coding or Trading! Depending on the hour.",
+"symbols": [],
+"found_at": "2026-08-26T01:24:26+00:00",
+"topic": "mql5",
+"stars": 4,
+"star_delta": 0,
+"pushed": "2026-08-26T00:46:44Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"de83d9303bd9ae0d": {
+"t0": "2026-08-26T01:24:32+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "youcefito/mt5-quiet-automata",
+"url": "https://github.com/youcefito/mt5-quiet-automata",
+"text": "Run MT5 as Stealth Windows Service for Automated Trading, 2026",
+"symbols": [],
+"found_at": "2026-08-26T01:24:28+00:00",
+"topic": "metatrader5",
+"stars": 124,
+"star_delta": 0,
+"pushed": "2026-08-26T01:21:53Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e00beabe43de10df": {
+"t0": "2026-08-26T01:24:32+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+"url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+"text": "OAK Gatekeeper trading command system: Tauri desktop + web Engine 5, MT5 profile monitoring, SL/TP, Telegram, Netting and cloud shadow migration.",
+"symbols": [],
+"found_at": "2026-08-26T01:24:28+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T01:11:53Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

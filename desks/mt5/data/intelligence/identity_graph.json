@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T00:24:44+00:00",
+ "rebuilt_at": "2026-08-26T01:24:32+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -332,6 +332,66 @@
    },
    "cohorts": [
     "4514ed78226989b4"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "shazzadu1": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "c9d216d871b52296"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "joni0108": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "cc6563e27cefb7e9"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "youcefito": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "de83d9303bd9ae0d"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "quachgia1994": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "e00beabe43de10df"
    ],
    "scores": {
     "independent_evidence": 1,
