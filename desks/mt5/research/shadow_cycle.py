@@ -112,6 +112,13 @@ def _read(path: Path) -> dict:
         return {}
 
 
+def _terminal_status(value: object) -> bool:
+    status = str(value or "").upper()
+    return any(status == prefix or status.startswith(prefix + "_") for prefix in (
+        "KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
+    ))
+
+
 def run() -> tuple[dict, int]:
     import promoter
     import qquant_shadow
@@ -141,14 +148,13 @@ def run() -> tuple[dict, int]:
     # The stamp is applied HERE -- by the orchestrator that owns these files -- so every engine,
     # present and future, is covered by one code path instead of each reimplementing it (the
     # one-pipeline law). First-seen-now is the only defensible stamp; backdating is fabrication.
-    _terminal = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED"}
     for _sf in ("shadow_state.json", "scalp_shadow_state.json", "qquant_shadow_state.json"):
         _p = BASE / "reports" / "shadow" / _sf
         _d = _read(_p)
         _stamped = 0
         for _row in list(_d.values()) + list((_d.get("sleeves") or {}).values()):
             if (isinstance(_row, dict) and ("status" in _row or "n" in _row)
-                    and str(_row.get("status") or "").upper() not in _terminal
+                    and not _terminal_status(_row.get("status"))
                     and not _row.get("forward_start")):
                 _row["forward_start"] = datetime.now(UTC).isoformat()
                 _stamped += 1
@@ -171,9 +177,8 @@ def run() -> tuple[dict, int]:
     rows = [legacy[key] for key in represented_legacy]
     rows += [(scalp.get("sleeves") or {})[key] for key in represented_scalp]
     rows += [qquant[key] for key in represented_qquant]
-    terminal_statuses = {"KILL", "RETIRED", "QUARANTINED_UNCERTIFIED"}
-    active_rows = [row for row in rows if row.get("status") not in terminal_statuses]
-    terminal_rows = [row for row in rows if row.get("status") in terminal_statuses]
+    active_rows = [row for row in rows if not _terminal_status(row.get("status"))]
+    terminal_rows = [row for row in rows if _terminal_status(row.get("status"))]
     certified = (int(legacy.get("configured_sleeves", 0) or 0)
                  + int(scalp.get("configured_sleeves", 0) or 0)
                  + int(qquant.get("certified_qquant_sleeves", 0) or 0))
