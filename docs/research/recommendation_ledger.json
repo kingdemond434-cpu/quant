@@ -8457,6 +8457,34 @@
    "commit": "6feb93e501f362f90abd09c79ba413d765c15257",
    "due": null,
    "disposed": "2026-08-26T07:30:24.768047+00:00"
+  },
+  {
+   "id": "R0660",
+   "source": "cycle",
+   "summary": "MQL5 collector produces ZERO usable data on 3 of 4 surfaces, 30/30 hourly runs (prospector 2026-08-26, measured). desks/mt5/side_channels/mql5_codebase.py scrapes /en/market/product/ + h3/desc regex but the free Codebase serves /en/code/NNNNN inside div.code-tile -> articles_*.json and codebase_*.json are literally \"[]\" in ALL 30 archived runs; the signals miner scrapes the FILTER SIDEBAR (rows named Filter / Broker server / Maximum profit / Reliability) with every profit+drawdown field empty; forum returns 2 title-only rows duplicated N times, no body, no reply layer. NOT A WALL: live probe today returned HTTP 200 / 81-165KB for /en/code, /en/signals/mt5/list, /en/articles from this box. FIX (each verified working today): (1) signals -> /en/signals/mt5/list/pageN, parse div.row signal -> 18 fields incl growth, profit/month, subscribers, funds, balance, weeks, EA%, trades, win%, activity, profit factor, expected payoff, maxDD, leverage, real-vs-demo AND a 20-point equity sparkline in the hidden input; 48 rows/page, pagination confirmed distinct across pages. (2) codebase -> /en/code/mt5/{experts,indicators,libraries,scripts}/pageN, parse div.code-tile -> id, title, full mechanism description, rating; 40/page. (3) forum -> needs thread-body + reply-layer fetch, currently title-only. ROBOTS BOUNDARY (read today): listing+detail ALLOWED for *; /*/signals/*/deals|positions|pending-orders/page*, /*/signals/*/reviews, /*/code/viewcode/*, /*/code/download/*/ are DISALLOWED -- mechanism text yes, source download and per-trade history no. This is the desks native MT5 ecosystem and the RESEARCH section-4 verified-track-record ground; it has been reporting live for 30 runs while archiving nothing.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-26T08:15:19.990786+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0661",
+   "source": "cycle",
+   "summary": "MT5-native EXECUTION instruments exist as free open-source MQL5 code and the desk has none of them wired (prospector 2026-08-26, from the 1715-row codebase harvest). Bottleneck law: the desk repeatedly names execution/cost as the binding constraint, and three of its exact instruments are sitting in the MQL5 Codebase as readable source-described utilities: (a) \"Round Trip Cost Reconciler MT5\" (code 76xxx, experts) -- groups PARTIAL FILLS by position identifier and separates gross result from costs; this is precisely the reconciliation the desks own carry_accounting lesson (\"measure BOTH legs the same way\") and L2.10 (backtest->shadow->paper->live->venue-truth compared at every link) demand, and partial-fill grouping is the failure mode that never throws. (b) \"CExecutionSafety\" (libraries) -- validates combined terminal ping + execution latency BEFORE a trade operation and refuses if over budget. (c) \"CLatencyMonitor\" (libraries) -- inter-tick latency with an ATR volatility gate to suppress false alarms. NOT a proposal to install third-party code (supply-chain rule: mine as TEXT only) -- the proposal is to read the described DESIGNS and check whether the desks own MT5 executor reconciles partial fills by position id at all, and whether it has any pre-trade latency refusal. Both are answerable by inspection today. Artifact: data/intelligence/mql5_prospector/codebase_catalog_20260826.json.",
+   "roi_bps": null,
+   "rank": 4.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-26T08:18:40.567987+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

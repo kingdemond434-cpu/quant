@@ -1,0 +1,108 @@
+{
+ "produced_by": "prospector 2026-08-26 (verification of watchlist card 41 [seed S1] / 49 [seed S9] MQL5)",
+ "utc": "2026-08-26",
+ "legitimacy": "\u00a713 PASS -- robots.txt read in full today; /en/code/*, /en/code/mt5/<section>/pageN, /en/signals/mt5/list/pageN, /en/articles all ALLOWED for User-agent *. DISALLOWED and NOT touched: /*/code/viewcode/*, /*/code/download/*/, /*/signals/*/deals|positions|pending-orders/page*, /*/signals/*/reviews, /*/search*, /data*.",
+ "codebase": {
+  "artifact": "codebase_catalog_20260826.json",
+  "n": 1715,
+  "sections": {
+   "experts": 600,
+   "indicators": 600,
+   "libraries": 395,
+   "scripts": 120
+  },
+  "route": "https://www.mql5.com/en/code/mt5/{experts,indicators,libraries,scripts}/pageN -- 40 tiles/page, div.code-tile, id+title+full mechanism description+rating",
+  "mechanism_tagging_first_pass": {
+   "trend/momentum": 397,
+   "mean-reversion": 230,
+   "options/vol-surface": 60,
+   "grid/martingale": 58,
+   "session/time-of-day": 47,
+   "volatility-regime": 34,
+   "ml/ai": 30,
+   "news/calendar": 28,
+   "carry/swap": 20,
+   "order-flow/volume": 20,
+   "correlation/pairs": 14,
+   "arbitrage/latency": 10,
+   "seasonality": 3,
+   "unmatched": 986
+  }
+ },
+ "signals": {
+  "artifact": "LOST -- see caveat",
+  "n_measured": 2529,
+  "pages": 53,
+  "page54": "HTTP 404 = population exhausted",
+  "route": "https://www.mql5.com/en/signals/mt5/list/pageN -- 48 rows/page, div.row signal",
+  "fields_per_row": [
+   "id",
+   "name",
+   "author",
+   "real_vs_demo",
+   "price",
+   "growth_pct",
+   "profit_month_pct",
+   "subscribers",
+   "funds_usd",
+   "balance_usd",
+   "weeks",
+   "ea_pct",
+   "trades",
+   "win_pct",
+   "activity_pct",
+   "profit_factor",
+   "expected_payoff",
+   "max_dd_pct",
+   "leverage",
+   "equity_curve_20pt (hidden input, sparkline series)"
+  ],
+  "measured_cross_section": {
+   "real_accounts": "2529/2529",
+   "growth_pct": {
+    "med": 29.0,
+    "p10": -13.0,
+    "p90": 288.0
+   },
+   "profit_month_pct": {
+    "med": 4.0,
+    "p10": -12.0,
+    "p90": 27.0
+   },
+   "weeks": {
+    "med": 23,
+    "p10": 4,
+    "p90": 102
+   },
+   "ea_pct": {
+    "med": 97,
+    "p10": 0,
+    "p90": 100
+   },
+   "trades": {
+    "med": 301.5,
+    "p10": 43,
+    "p90": 2427
+   },
+   "win_pct": {
+    "med": 68,
+    "p10": 44,
+    "p90": 88
+   },
+   "profit_factor": {
+    "med": 1.34,
+    "p10": 0.86,
+    "p90": 3.38
+   },
+   "max_dd_pct": {
+    "med": 25,
+    "p10": 5,
+    "p90": 63
+   },
+   "equity_curve_points": 20
+  },
+  "CAVEAT": "the 2529-row raw file was DESTROYED by my own re-run: a second crawl launched to fix two numeric-parse bugs (funds/balance/price) hit HTTP 403 on page 1 and wrote its empty result over the good artifact. The aggregate statistics above were computed from the full 2529 rows BEFORE the overwrite and are measured, not estimated; the row-level file must be re-crawled. Lesson: never let a re-run write to the path holding the only good harvest."
+ },
+ "rate_limit_finding": "MQL5 serves ~50-60 sequential list pages at 1.5s spacing, then 403s the IP. Confirmed still 403 on a single bare probe minutes later. Any production collector MUST pace (>=5s, or section-rotate across days) and MUST treat 403 as back-off, not as empty.",
+ "defect": "R0660 -- the existing hourly collector archived '[]' for articles+codebase in 30/30 runs and scraped the FILTER SIDEBAR for signals; not a wall, a wrong URL plus a wrong regex."
+}

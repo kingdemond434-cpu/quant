@@ -7327,3 +7327,113 @@ with the exact patch both ways (renumber to integer ids docs-side, or widen the 
 engineering/R0617-owner side); not hot-edited here because the seed-drop session was live minutes
 ago (mid-write collision risk outranks a few hours of latency on a chased row). My "verify queue
 5→0" claim stands as measured pre-drop AND post-drop (the S-cards never enter the parse).
+
+## SESSION 2026-08-26 (prospector, standing daily) — WRITE-FIRST NOTE
+
+RESUME STATE: source_backlog_next.py prints "backlog clear (0 pending)" while **24 principal
+seed cards S1–S24 sit at `pending verification`** in data_axis_watchlist.md, invisible to the
+parser (`libs/research/source_backlog.py:58 _CARD_RE` requires `^### (\d+)\.`). That is R0652,
+raised 2026-08-25 and still open. So the real backlog is 24, not 0.
+
+ITEMS TAKEN THIS RUN (bounded, closed to depth):
+0. R0652 docs-side fix — renumber S1–S24 to integer ids so the principal seed order becomes
+   visible to the backlog tool. (In-scope: docs/research only; the libs-side regex widening
+   stays with the engineering owner.)
+1. S1/S9 MQL5 — VERIFY the native MT5 ecosystem seed against the desk's OWN pre-fetched corpora
+   (desks/mt5/data/intelligence/mql5/, 30 hourly runs) before any live browsing.
+2. (rolls) NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation via CDX.
+
+### RESULT (all items closed)
+
+**ITEM 0 — R0652 FIXED (docs-side), and the fix changed the desk's measured backlog from a lie to
+a number.** The 24 principal seed cards were renumbered `S1..S24` → `41..64` (label preserved as
+`[seed SN]` in the title). `source_backlog_next.py` went from **"backlog clear: 0 pending"** to
+**68 catalogued / 23 pending verification / 1 pending a legitimacy decision**. This is the WS-005
+shape at full size: for a full day the desk's own queue tool printed a clean verdict over a live
+principal order because the parser (`libs/research/source_backlog.py:58`, `^### (\d+)\.`) could
+not see it. The libs-side regex widening stays with the engineering owner (R0652 remains open for
+that half); the docs-side half is landed and the queue is honest now.
+
+**ITEM 1 — MQL5 (cards 41 [seed S1] + 49 [seed S9]): VERIFIED-CLEAN, and the reason it was "the
+thinnest-covered major source" is a broken collector, not a wall → R0660.**
+Measured, from the desk's OWN archived corpora first (corpora-first, 30 hourly runs on disk):
+- `articles_*.json` = literally `[]` in **30/30** runs. `codebase_*.json` = `[]` in **30/30**.
+- `signals_*.json` = the **filter sidebar widget labels** scraped as signal names — rows called
+  `Filter`, `Broker server`, `Maximum profit`, `Reliability`, `Popular among subscribers`, every
+  `profit` and `drawdown` field empty. Identical 890 bytes in **30/30** runs.
+- `forum_*.json` = two title-only rows duplicated N times, no body, no reply layer.
+This is the desk's own **"heartbeat liveness ≠ data liveness"** lesson, on the MT5 universe's
+NATIVE ecosystem and on the RESEARCH §4 verified-track-record ground: 30 consecutive runs exited
+0, wrote a file, and archived nothing.
+NOT A WALL — live probe from this box today: `/en/code` 200/81KB, `/en/signals/mt5/list`
+200/137KB, `/en/articles` 200/165KB. Root cause is a wrong URL plus a wrong regex
+(`desks/mt5/side_channels/mql5_codebase.py:63` hunts `/en/market/product/` + `<h3>`/`class=desc`;
+the free Codebase serves `/en/code/NNNNN` inside `div.code-tile`). Exact working routes for all
+three surfaces are in **R0660**.
+HARVESTED to prove the ground rather than assert it: **1,715 free open-source Codebase entries**
+and the **FULL 2,529-signal population** (53 pages; page 54 = 404 = enumerated to exhaustion).
+
+**ITEM 2 — rolled unchanged** (NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation via CDX).
+
+### HONEST VERDICT: ZERO NEW CARDS. The ground is rich in DATA and poor in ALPHA, and that is now measured rather than assumed.
+Two candidate mechanisms were killed at the graveyard gate and are NOT re-logged:
+1. *Fade the MQL5 copy-trading crowd / subscriber-flow crowding* → pre-empted by
+   `cn_bucketshop_retail_loss_as_directional_signal`, whose graveyard row explicitly falsifies
+   **every** retail-sentiment-contrarian hypothesis, including the 反向跟单 reverse-copy industry.
+2. *Retail triangular FX arbitrage* (3 ring EAs in the corpus: EURUSD/USDJPY/EURJPY,
+   EURGBP/EURUSD/GBPUSD) → pre-empted by **WS-006, "the microstructure edge is real and smaller
+   than the spread."**
+A third lead was checked and found ALREADY HELD: the live-swap-panel genre implies a
+terminal-native carry route, and `desks/mt5/side_channels/seed_miners.py:238` already states and
+implements exactly it. Recorded on card 62 so no future run re-discovers it.
+The one thing worth taking forward is not alpha but the desk's own binding constraint —
+**R0661**: three MT5-native EXECUTION instruments (partial-fill round-trip cost reconciliation,
+pre-trade ping+latency refusal, inter-tick latency with an ATR false-alarm gate) exist as
+described open-source designs while the desk wires none. Mined as TEXT only; no third-party code
+goes near desk hardware.
+
+### DEPTH LINE
+- MQL5 Codebase: **EXHAUSTED for the listing layer** — all 4 MT5 sections walked to their last
+  page (600/600/395/120), every description read and tagged, not sampled. Detail pages and the
+  forum reply layer are named UNMINED, not claimed.
+- MQL5 Signals: **POPULATION-EXHAUSTED** — enumerated to the 404 boundary, not a top-N skim.
+- Depth surfaced what the surface could not: the *distribution* (986/1,715 unmatched; the thin
+  tails are ground the desk already holds) is what converts "MQL5 is under-covered" into
+  "MQL5 is a low-yield alpha source and a high-yield data source", and only a full walk shows it.
+- Reply chains ≥2: **0 this run** — named honestly; the forum layer is title-only until R0660
+  lands, which is itself the finding.
+- Citations/forks chased: 0 (wrong ground for it).
+
+### FAILURES AND SELF-INFLICTED DAMAGE (reported because it is mine)
+The 2,529-row signals artifact was **destroyed by my own re-run**: a second crawl launched to fix
+two numeric-parse bugs (`funds`/`balance`/`price` — `num()` choked on `"61K USD"`) hit the 403
+below and wrote its empty result over the only good harvest. All statistics on card 49 were
+computed from the full population before the overwrite and stand as measured; the row-level file
+needs a paced re-crawl. **Lesson: never point a re-run at the path holding the only good harvest.**
+
+### OPERATOR-LIBRARY ENTRIES (new, this run)
+- `https://www.mql5.com/en/code/mt5/{experts,indicators,libraries,scripts}/pageN` → 40 tiles/page,
+  `div.code-tile` → id + title + full mechanism description + rating. The free Codebase, not the
+  paid Market.
+- `https://www.mql5.com/en/signals/mt5/list/pageN` → 48 rows/page, `div.row signal` → 18 fields
+  **plus a 20-point equity sparkline in a hidden input**. Sort keys are exposed as
+  `?orderby=gain|drawdown|pf|weeks|trades|subscribers|...` — a free re-ranking of the same panel.
+- **MQL5 rate limit, measured:** ~50–60 sequential list pages at 1.5s spacing → HTTP 403 for the
+  IP, still 403 on a bare probe minutes later. Pace ≥5s or rotate sections across days, and treat
+  403 as BACK-OFF, never as an empty result. (This is the exact way a collector silently turns
+  into the `[]` archive above.)
+
+### NEXT UN-EXHAUSTED GROUND (L1.35 — named before closing)
+1. **MQL5 forum reply layer** — thread bodies ≥2 levels, ranked by mechanism-keyword density, not
+   by votes (desk lesson). Blocked on nothing but a paced fetcher; highest-yield MQL5 residual.
+2. **MQL5 `/en/articles`** — never once parsed by any desk organ; the teardown/refutation genre.
+3. Cards 42–48 [seeds S2/S3/S4/S6/S7/S8] now visible in the queue — S2 (GitHub systematic) next.
+4. NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation (CDX) — carried, unchanged.
+5. Numerai classic-methodology residue (jrb TensorFlow caching; exposure-vs-churn on desk screens).
+6. Wilmott: Wayback-curl-only (live board WALLED ×4 — do not re-probe live without new egress).
+
+**RUN CLOSE 2026-08-26:** items 0–1 closed to exhaustion, item 2 rolled; backlog 0(false) → 23
+real; 2 cards verified-clean, 1 route re-graded; R0660 + R0661 raised; R0652 half-landed;
+2 graveyard discards, 1 already-held lead; 3 operator-library routes.
+**Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forward clocks minted, 0 video fetched,
+0 video locked (no route tried-and-failed), 0 reply chains mined, 0 non-English ground this run.**

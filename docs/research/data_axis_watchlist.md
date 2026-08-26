@@ -3488,40 +3488,60 @@ find flows through the unchanged §13 legitimacy gate, screen-on-discovery, and 
 YouTube transcripts are EXCLUDED for now: transcript retrieval measured unreachable from this
 box (principal 2026-08-25) — re-probe quarterly like any walled source, do not burn daily budget.
 
-### S1. MQL5 full surface — grade: pending verification
+### 41. [seed S1] MQL5 full surface — grade: **verified-clean 2026-08-26 (prospector; live probe + robots read in full + 1,715-row harvest on disk). NOT walled — the desk's own collector was broken (R0660)** [§33: screened -> data/intelligence/mql5_prospector/]
+- **§13:** robots.txt read in full today. ALLOWED for `*`: `/en/code/*`, `/en/code/mt5/<section>/pageN`,
+  `/en/signals/mt5/list/pageN`, `/en/articles`, forum threads. DISALLOWED and untouched:
+  `/*/code/viewcode/*`, `/*/code/download/*/`, `/*/signals/*/deals|positions|pending-orders/page*`,
+  `/*/signals/*/reviews`, `/*/search*`, `/data*`. **Mechanism TEXT yes; source download and
+  per-trade history NO.**
+- **Measured:** `/en/code/mt5/{experts,indicators,libraries,scripts}` -> 1,715 free open-source
+  entries harvested (600/600/395/120), each with id + title + full mechanism description + rating;
+  40 tiles/page in `div.code-tile`. Artifact: `data/intelligence/mql5_prospector/codebase_catalog_20260826.json`.
+- **First-pass mechanism tagging (n=1,715):** trend/momentum 397 · mean-reversion 230 ·
+  options/vol 60 · grid-martingale 58 · session/time-of-day 47 · vol-regime 34 · ML/AI 30 ·
+  news/calendar 28 · carry-swap 20 · order-flow 20 · pairs/cointegration 14 · arbitrage/latency 10 ·
+  seasonality 3 · **unmatched 986**. The distribution is the finding: this ground is
+  overwhelmingly desk-dead families, and its thin tails (carry, session, pairs) are ground the
+  desk already holds. **Yield as an ALPHA source: LOW and now measured, not assumed.**
+- **Rate limit (operator-library entry):** ~50-60 sequential list pages at 1.5s then HTTP 403 for
+  the IP, persisting on a bare probe minutes later. A production collector must pace >=5s or
+  rotate sections across days, and must treat 403 as BACK-OFF, never as an empty result.
+- **Residual UNMINED:** forum reply layer (thread bodies, >=2 levels — the collector is title-only),
+  `/en/articles` (never once parsed), and per-signal detail roots.
+
 Codebase (public .mq4/.mq5), Articles, **Signals** (verified track records — RESEARCH §4
 black-box reverse-engineering ground), Forum reply layers, Market teardowns/reviews (refutation
 genre). The MT5 universe's NATIVE ecosystem; currently the thinnest-covered major source
 (1 doc mentions it vs 8+ for TradingView/CN grounds).
 
-### S2. GitHub code repos, systematic (not incidental) — grade: pending verification
+### 42. [seed S2] GitHub code repos, systematic (not incidental) — grade: pending verification
 Beyond ad-hoc searches: topic/language sweeps for MT5/MQL/FX strategy repos, fork graphs of
 high-star strategy repos, Issues/Discussions of broker-API wrappers, dead-repo archaeology
 (L1.11a). GitHub maximalism is already law; this seed makes the DAILY cycle own it.
 
-### S3. TradingView public scripts — grade: pending verification
+### 43. [seed S3] TradingView public scripts — grade: pending verification
 Pine Script public library: strategy scripts with visible logic + boosts/comments as a crowding
 signal. Already covered in 8 docs — the seed here is the DAILY cadence, not novelty.
 
-### S4. QuantConnect — grade: pending verification
+### 44. [seed S4] QuantConnect — grade: pending verification
 Public algorithms, forum, Alpha league results. Mechanism extraction + the failure genre
 (live-vs-backtest divergence threads are free execution-reality data).
 
-### S5. Trump Truth Social — grade: needs-legitimacy-review
+### 45. [seed S5] Trump Truth Social — grade: needs-legitimacy-review
 Macro/policy event source for the MT5 universe (DXY, gold, indices, energy): tariff/Fed/dollar
 statements move hunted instruments. Route: public web/archives only, timestamps preserved
 point-in-time; event-study gate (RESEARCH §6) is the ONLY admissible test shape.
 
-### S6. Central-bank statements, systematic — grade: pending verification
+### 46. [seed S6] Central-bank statements, systematic — grade: pending verification
 Fed/ECB/BoJ/BoE/SNB/RBA/RBNZ/BoC full text + minutes + speaker calendars, diffed
 statement-over-statement (hawkish/dovish delta as a data axis, ALFRED-style point-in-time).
 Macro is a first-class edge axis (RESEARCH §2); this is its primary free document stream.
 
-### S7. CN ground: Bilibili + Zhihu — grade: pending verification
+### 47. [seed S7] CN ground: Bilibili + Zhihu — grade: pending verification
 Already first-class in the CN miner (8–9 docs); seed confirms DAILY cadence and extends to the
 quant-video/column layers the frontier digs have not yet exhausted.
 
-### S8. KR ground continuation — grade: pending verification
+### 48. [seed S8] KR ground continuation — grade: pending verification
 Naver blogs/cafes covered (3 docs); extend to KR quant communities per the KR miner's existing
 operator set, daily.
 
@@ -3615,70 +3635,96 @@ produced 94 stage-A survivors and the desk's only exact certificate; build those
 Each card is a PYTHON-MINABLE enumeration target (token-free collector -> data/intelligence/*),
 with Claude judging afterward — the corpora-first split, by construction.
 
-### S9. MQL5 Signals leaderboard deep-miner — grade: pending verification
+### 49. [seed S9] MQL5 Signals leaderboard deep-miner — grade: **verified-clean 2026-08-26 (prospector; FULL population enumerated: 2,529 signals over 53 pages, page 54 = HTTP 404)** [§33: screened -> data/intelligence/mql5_prospector/verification_20260826.json]
+- **Route:** `https://www.mql5.com/en/signals/mt5/list/pageN`, 48 rows/page in `div.row signal`.
+  **18 fields per row plus a 20-point equity sparkline** carried in a hidden input: name, author,
+  real-vs-demo, price, total growth, profit/month, subscribers, funds, balance, weeks live,
+  %-traded-by-EA, trades, win%, activity%, profit factor, expected payoff, max drawdown, leverage.
+- **Measured cross-section (n=2,529, all REAL accounts):** growth med 29% (p10 -13, p90 288) ·
+  profit/month med 4% (p10 -12, p90 27) · weeks live med 23 (p10 4, p90 102) · EA-traded med 97% ·
+  trades med 302 (p90 2,427) · win% med 68 (p90 88) · profit factor med 1.34 (p10 0.86) ·
+  **max drawdown med 25%, p90 63%**. A survivorship-selected leaderboard whose MEDIAN member
+  runs 25% drawdown for 4%/month — the selection bias is the headline, and it is now quantified.
+- **NO CARD MINTED.** The obvious mechanism — fade the copy-trading crowd / trade subscriber-flow
+  crowding — is **pre-emptively graveyarded** by `cn_bucketshop_retail_loss_as_directional_signal`,
+  whose row states it falsifies *every* retail-sentiment-contrarian hypothesis including the
+  reverse-copy-trade (反向跟单) industry built on it. Discarded at the graveyard gate, not re-logged.
+- **CAVEAT, reported because it is mine:** the 2,529-row raw file was destroyed by my own re-run —
+  a second crawl launched to fix two numeric-parse bugs hit the 403 above and wrote its empty
+  result over the only good harvest. Every statistic above was computed from the full population
+  BEFORE the overwrite and is measured; the row-level file needs a paced re-crawl.
+
 Per-signal public stat pages: growth curve, drawdown, trade count, weekly history, subscriber
 count. LIVE verified track records on the desk's own platform — the single richest black-box
 reverse-engineering ground (RESEARCH §4). Extract stats + rank deltas; flag high-growth/low-dd
 signals for mechanism inference. [§33: deferred(2026-09-01) tier:1]
 
-### S10. Myfxbook public systems + community outlook — grade: pending verification
+### 50. [seed S10] Myfxbook public systems + community outlook — grade: pending verification
 Verified track records (equity curves, per-trade history where public) AND the community outlook
 endpoint (retail % long/short per pair) — the positioning axis, consumed WITH the standing
 B-book debias prior (retail ruin is cost extraction, never naive fade). [§33: deferred(2026-09-01) tier:1]
 
-### S11. Darwinex public DARWIN metrics — grade: pending verification
+### 51. [seed S11] Darwinex public DARWIN metrics — grade: pending verification
 Public API: d-scores, return series, investor capacity per DARWIN. A regulated, curated
 track-record universe with its own risk-normalization to reverse-engineer. [§33: deferred(2026-09-01) tier:1]
 
-### S12. TradingView public Pine library, systematic — grade: pending verification
+### 52. [seed S12] TradingView public Pine library, systematic — grade: pending verification
 Open-source script pages (full Pine source = direct strategy corpus), per-script boost/use
 counts, author graphs, per-symbol ideas streams. hunt16's families were TradingView-style
 indicator recreations — this is that ground, mined at the source. [§33: deferred(2026-09-01) tier:1]
 
-### S13. FX Blue public profiles — grade: pending verification
+### 53. [seed S13] FX Blue public profiles — grade: pending verification
 Public stats pages of live accounts (many prop-firm passers publish here). [§33: deferred(2026-09-05) tier:2]
 
-### S14. Collective2 public strategy leaderboards — grade: pending verification
+### 54. [seed S14] Collective2 public strategy leaderboards — grade: pending verification
 Cross-asset strategies with published records + fee/capacity data. [§33: deferred(2026-09-05) tier:2]
 
-### S15. QuantConnect forum + published algorithms — grade: pending verification
+### 55. [seed S15] QuantConnect forum + published algorithms — grade: pending verification
 Shared LEAN algorithms (source available), forum strategy threads, league rankings. [§33: deferred(2026-09-05) tier:2]
 
-### S16. ForexPeaceArmy performance tests + review corpus — grade: pending verification
+### 56. [seed S16] ForexPeaceArmy performance tests + review corpus — grade: pending verification
 The EN refutation genre (RU поделка analogue): independent live performance tests of EAs and
 signal services — free graveyard material + occasional real survivors. [§33: deferred(2026-09-05) tier:2]
 
-### S17. ForexFactory Trade Explorer public profiles — grade: pending verification
+### 57. [seed S17] ForexFactory Trade Explorer public profiles — grade: pending verification
 Live retail trade streams from linked accounts; plus PIT calendar REVISION capture (the
 existing calendar miner keeps only current values — vintages are the revision-aware layer
 h19-003 needs). [§33: deferred(2026-09-05) tier:2]
 
-### S18. Wayback CDX walker for dead EA forums — grade: pending verification
+### 58. [seed S18] Wayback CDX walker for dead EA forums — grade: pending verification
 Forex-TSD attachments corpus (OP-096b, already carded by the EN dig): flat CDX enumeration of
 .mq4 sources + posted MT4 statements from the pre-MQL5 era. Pure python; web.archive.org works
 via curl from this box (measured). [§33: deferred(2026-09-08) tier:2]
 
-### S19. quant.stackexchange full dump — grade: pending verification
+### 59. [seed S19] quant.stackexchange full dump — grade: pending verification
 Stack Exchange data dumps (CC BY-SA, archive.org): every quant Q&A ever, offline-minable —
 mechanism folklore + refutations at zero marginal cost. [§33: deferred(2026-09-08) tier:3]
 
-### S20. arXiv q-fin API daily feed — grade: pending verification
+### 60. [seed S20] arXiv q-fin API daily feed — grade: pending verification
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
 pre-built month instead of browsing. [§33: deferred(2026-09-08) tier:3]
 
-### S21. BIS central-banker speeches full-text — grade: pending verification
+### 61. [seed S21] BIS central-banker speeches full-text — grade: pending verification
 bis.org aggregates ALL central banks' speeches with dates — the PIT text layer behind h19-003's
 event trading, no per-CB scrapers needed. [§33: deferred(2026-09-08) tier:2]
 
-### S22. Broker swap/spread tables across MT5 brokers — grade: pending verification
+### 62. [seed S22] Broker swap/spread tables across MT5 brokers — grade: **route re-graded 2026-08-26 (prospector) — the SINGLE-broker half is ALREADY BUILT; only the CROSS-broker half is novel**
+- MQL5's codebase surfaces a whole genre of live swap panels (`Swap Meter`, `Swap Fee Monitor
+  Panel`, `Quantora Trading Cost Calculator`) that read swap from the terminal, not from broker
+  web tables. Checked against the desk: `desks/mt5/side_channels/seed_miners.py:238` already
+  states and implements exactly that — `symbol_info.swap_long/swap_short` as authoritative and
+  point-in-time — and `expand_universe.py:109` records it per symbol. **No finding; recorded so
+  no future run re-discovers it.** The card's remaining novelty is strictly the CROSS-BROKER
+  dispersion (one terminal cannot see another broker's swap menu).
+
 Extend broker_physics_miner: daily swap-table snapshots across brokers = the carry structure of
 the CFD universe (swap arbitrage/carry tilt axis) + spread menus for the cost surface. [§33: deferred(2026-09-08) tier:2]
 
-### S23. GitHub topic/star-delta novelty sweeps — grade: pending verification
+### 63. [seed S23] GitHub topic/star-delta novelty sweeps — grade: pending verification
 Systematic (not incidental) sweeps of mql4/mql5/pine/forex-ea/backtesting topics with star/fork
 DELTAS as the novelty signal; fork-graph expansion from any repo that converts. [§33: deferred(2026-09-08) tier:3]
 
-### S24. Prop-firm public leaderboards (FTMO et al.) — grade: pending verification
+### 64. [seed S24] Prop-firm public leaderboards (FTMO et al.) — grade: pending verification
 Passer/payout leaderboards + published stats where public: a survivorship-heavy but
 selection-documented track-record ground; selection-bias defense (master 23) mandatory. [§33: deferred(2026-09-08) tier:3]
 
