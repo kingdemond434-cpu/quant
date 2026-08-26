@@ -3391,7 +3391,7 @@ this sits unread is a day of an irreplaceable series that is mined by nobody and
 `data/moat/<venue>/<SYMBOL>/*.jsonl.gz` and therefore counts this file in neither numerator nor
 denominator); OP-093 (the reduce/vector shape); R0291 (the collector's origin).
 
-### 38. CN gold layer — SGE Au99.99/Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction — grade: **WIRED 2026-08-26: parser rebuilt for the real graph payload (R0649), both contracts recorded daily by quant-sge-premium.timer (07:45 UTC), first row on disk** [§33: wired tier:2 -> desks/mt5/data/lake/sge_daily.parquet]
+### 38. CN gold layer — SGE Au99.99/Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction — grade: **verified-clean 2026-08-26 (independent diff, free-data dig): endpoint keyless POST 2016-12→T-1, premium vs desk XAUUSD n=633 mean +36bps sd 78 AR1 0.907; fee direction closed via the Au(T+D)−Au99.99 basis. WIRED: quant-sge-premium.timer 07:45 UTC (R0649) — but its XAUUSD leg reads the wrong bar, see R0660** [§33: wired tier:2 -> desks/mt5/data/lake/sge_daily.parquet]
 
 **MT5-MANDATE NATIVE: this is an XAUUSD/XAGUSD conditioning layer, not a crypto axis.** First CN
 dig under the 2026-08-18 universe order. The MT5 desk already believed in this axis enough to build
@@ -3447,7 +3447,9 @@ below).
 - LIVE INTRADAY: `sge.com.cn/graph/quotations` HTTP 200 from this box — Au99.99 current-session
   minute tape `{times:[782],data:[floats],heyue:"Au99.99"}`, night session 19:50→02:30 books to
   next day (payload starts 20:00). This is the payload the existing collector cannot parse (R0649).
-- FEE DIRECTION: SGE daily notices (延期补偿费支付方向) — collector owed, named in R0649.
+- FEE DIRECTION: **CLOSED 2026-08-26 (free-data dig)** — notices route unreachable, but the fee's
+  price footprint is the Au(T+D)−Au99.99 basis from the SAME endpoint (mean −3.2bps, sd 7.6bps,
+  one extra POST). Original notices feed downgraded to residual/needs-monitoring (§38 hunt logged).
 - FX LEG: FRED DEXCHUS is **~2.5wk stale** (last 08-07 on 08-25) — fine for history, names the
   freshness cap; USDCNH absent from the 19-symbol MT5 universe (R0649 names the option).
 **CLOCKS (L1.46):** SGE venue-local CST trading-day labels; day close 15:30 CST = 07:30 UTC;
@@ -3523,7 +3525,7 @@ quant-video/column layers the frontier digs have not yet exhausted.
 Naver blogs/cafes covered (3 docs); extend to KR quant communities per the KR miner's existing
 operator set, daily.
 
-### 39. Session-fix / benchmark-auction window family (WMR 4pm London FX · LBMA gold-silver auctions · Tokyo 09:55 nakane) — grade: **literature CONVERGENT, mechanism EQUILIBRIUM-GRADE; desk's own gotobi screen: replicated 2018–2020, DEAD in current regime** [§33: screened -> data/gotobi_screen.json]
+### 39. Session-fix / benchmark-auction window family (WMR 4pm London FX · LBMA gold-silver auctions · Tokyo 09:55 nakane) — grade: **verified-clean 2026-08-26 (LBMA daily auction JSON, keyless, 1968→T-1, diffed against the desk XAUUSD tape); literature CONVERGENT, mechanism EQUILIBRIUM-GRADE; desk's own gotobi screen: replicated 2018–2020, DEAD in current regime; residual: IBA per-round reports** [§33: screened -> data/gotobi_screen.json]
 - **Provenance (litminer run 10, 2026-08-25):** Osler–Turnbull *JBF 2026* "Dealer misconduct and
   price dynamics at the fix" (WP: Brandeis 101R, 403-walled; EconPapers abstract read) — model:
   dealers holding advance client fix orders extract the signal; predicts pre-fix accelerating
@@ -3545,7 +3547,9 @@ operator set, daily.
   gross below the 1.02bp RT cost; current-regime NET-NEGATIVE.** Full-sample p=0.0499 knife-edge,
   carried entirely by the dead years → NOT queued to the gauntlet; graveyarded with re-open
   trigger (see `gotobi_nakane_drift`).
-- **Open ends, ranked:** (a) **LBMA auction path**: IBA per-round transparency reports (price,
+- **Open ends, ranked:** (a) **LBMA auction path**: DAILY LEG **VERIFIED-CLEAN 2026-08-26**
+  (prices.lbma.org.uk/json/{gold_am,gold_pm,silver}.json, keyless, 1968→T-1); residual is the
+  IBA per-round transparency reports (price,
   bid/offer volume, participants per 45s round) publish FREE same-day; **historical bulk is
   licence-gated (Historical Access License) — §13: bulk NOT touchable; daily-report reuse terms
   UNRESOLVED, read ICE ToU before any collector**; PRIMARY-source alternative needing no IBA data:
@@ -3677,3 +3681,84 @@ DELTAS as the novelty signal; fork-graph expansion from any repo that converts. 
 ### S24. Prop-firm public leaderboards (FTMO et al.) — grade: pending verification
 Passer/payout leaderboards + published stats where public: a survivorship-heavy but
 selection-documented track-record ground; selection-bias defense (master 23) mandatory. [§33: deferred(2026-09-08) tier:3]
+
+---
+
+## SESSION 2026-08-26 (free-data-alternatives miner) — IN PROGRESS
+
+Items taken this run (bounded per COMPLETION CONTRACT; both are the ONLY rows the source backlog
+lists as pending technical verification, so the backlog is cleared to zero pending this run):
+1. **CN gold layer** — SGE Au99.99 / Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction.
+2. **Session-fix / benchmark-auction window family** — WMR 4pm London FX · LBMA gold+silver
+   auctions · Tokyo 09:55 nakane (TTB/TTS fixing).
+Both are MT5-universe axes (XAUUSD, XAGUSD, FX majors) under the standing universe mandate.
+
+**RESULT: both items CLOSED verified-clean, backlog pending-verification -> 0. Plus one
+cross-cutting defect that neither item was looking for (R0660), which is the run's real find.**
+
+### THE FIND — the MT5 lake's timestamps are labelled UTC and are not UTC (R0660, ledgered)
+Verifying the LBMA auction against the desk's own XAUUSD tape is a CLOCK test before it is a
+price test, and the clock failed. LBMA PM is 15:00 London year-round. Fitting `XAUUSD_H1` closes
+to it (n=667, since 2024-01-01):
+
+| bar hour label | all | Jun-Aug | Dec-Feb |
+|---|---|---|---|
+| 15 | sd 45.0 bps | 37.7 | 40.3 |
+| **16** | **sd 21.0** | **11.3** | **19.9** |
+| 17 | — | 31.4 | 49.3 |
+
+Bar 16 wins in BOTH seasons, i.e. its CLOSE (17:00 server) is 14:00 UTC in summer and 15:00 UTC
+in winter — exactly EEST/EET (UTC+3 / UTC+2), the Fusion server clock. Corroborated independently
+and without any external data: EURUSD/USDJPY/XAUUSD all carry Friday bars at 21:00, 22:00 and
+23:00 "UTC" and zero Sunday bars, while FX actually shuts at 21:00 UTC — impossible under the
+label, exact under EET/EEST.
+
+**This is not latent.** `desks/mt5/research/fetch_sge_premium.py:190` takes `df.index.hour == 7`
+believing it is 07:00 UTC (the bar containing the 15:30 CST SGE close). The true bar is 10 (EEST)
+/ 9 (EET). Measured cost on that wired daily axis: swapping to the correct bar changes the leg by
+sd **17.14 USD/oz** (p95 34.2) against a premium whose own sd is **20.78 USD/oz** — about **40% of
+the wired premium's variance is pure clock artifact**. Every session/calendar/event-window study on
+this lake carries the same 2-3h misattribution, with a DST-dependent seam.
+FIX (research-freeze: named, not applied): one shared loader that does
+`idx.tz_localize(None).tz_localize('Europe/Athens').tz_convert('UTC')` at read time, plus a fence
+asserting no bar exists after Friday 21:00 UTC (the label's own contradiction). Routed to R0660.
+
+### Item 1 — CN gold layer (card 38) — CLOSED verified-clean
+Card 38 was WIRED this morning by the collector seat; what it lacked was an INDEPENDENT
+verification and a fee-direction feed. Both delivered:
+- `POST https://www.sge.com.cn/graph/Dailyhq` body `instid=Au99.99` (and `Au(T+D)`) — keyless,
+  2,350 rows 2016-12-16 -> 2026-08-25. **A GET returns an all-zeros skeleton rather than an
+  error** — the silent-null failure mode; a naive collector records a dead market and no gauge fires.
+- Premium vs desk XAUUSD with the ECB CNY leg: n=633 since 2024-01-01, mean **+36 bps**, sd 78,
+  **AR(1) 0.907**, max +283 bps. Persistent and shaped like the quota-gated arb card 38 describes.
+  Weak fwd-5d corr with XAUUSD (-0.069) — that is the gauntlet's verdict to make, not mine.
+- **递延费 gap closed WITHOUT the notices feed:** the 延期费 announcement route is not reachable
+  (`/sjzx/yqf` carries no fee table; `/protal/article/articleSearch` returns `code 9999` on every
+  payload shape tried). But the fee is *what makes the basis*: **Au(T+D) − Au99.99 = mean −3.2 bps,
+  sd 7.6 bps**, one extra POST to the same verified endpoint. Card 38's "collector owed — FEE
+  DIRECTION" no longer blocks the axis. Residual (the exact fee RATE) graded needs-monitoring with
+  a `replacement_hunts` entry (§38).
+- Schema drift caught in passing: `api.frankfurter.app` now **301s**; use `api.frankfurter.dev/v1`.
+  Without `-L` you get HTML and a collector that parses it as an outage.
+
+### Item 2 — Session-fix / benchmark-auction family (card 39) — data leg CLOSED verified-clean
+Card 39's open end (a) was "LBMA auction path". The data leg exists, keyless and complete:
+`https://prices.lbma.org.uk/json/{gold_am,gold_pm,silver}.json` — `[{d, v:[USD,GBP,EUR]}]`,
+**1968-01-02 -> 2026-08-25**, 14,669 / 14,821 / 14,832 rows, fresh to T-1, no auth, no throttle.
+That is a 58-year PIT benchmark-window series for XAUUSD/XAGUSD at zero cost — and, as above, a
+permanent independent **clock oracle** for any MT5 metals feed, which is worth more than the
+prices. Structural caveat: the auction is a discrete event, so a ~10-20 bps spot-vs-auction basis
+is real and is not error. Per-round transparency (price/volume by round) is still IBA-report-only
+and remains card 39's residual — NOT in this feed.
+
+**DEPTH:** item 1 exhausted (both contracts pulled to first row, three fee-notice routes probed
+and failed with their error codes recorded, premium computed and cross-checked against two
+independent USD legs); item 2 exhausted for the daily-benchmark layer, residual named (IBA
+per-round reports). Depth is what produced R0660 — a surface link-grab of the LBMA JSON would
+have adopted it and never diffed it.
+
+**NEXT UN-EXHAUSTED GROUND (next run):** (i) IBA per-round LBMA transparency reports — card 39
+residual; (ii) the same clock oracle applied to the FX legs (ECB 14:15 CET reference vs EURUSD,
+Tokyo 09:55 nakane vs USDJPY) to confirm R0660's offset symbol-wide and date the DST seams
+exactly; (iii) the 24-symbol lake vs the far larger universe registry — every axis above is
+gated on symbols the lake does not hold (no USDCNH is why item 1 needed an external FX leg).
