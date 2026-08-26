@@ -184,3 +184,9 @@ recorded in `max_audit.py` because they need code to be real. Zero remain ungove
 | Artifact | Class | Rationale | Staleness floor |
 |---|---|---|---|
 | `docs/MASTER_QUANT_CONSTITUTION.md` | **DOCTRINE** | Principal-supplied single top-level authority for the one 24/7 operation. It has no cadence and may change only through an explicit principal amendment. `scripts/check_constitution_core.py` seals its canonical SHA-256 and exact 0..217 section structure, every controller entry verifies it, and the midnight controller injects the verified text before mutation. Missing, truncated, unsealed, or drifted content fails closed without stopping controller-independent deterministic machinery. | never |
+
+### Added 2026-08-26 (MT5 data moat blueprint, classified on arrival)
+
+| Artifact | Class | Rationale | Staleness floor |
+|---|---|---|---|
+| `docs/research/MOAT_NODE_SPEC.md` | **DOCTRINE** | Principal blueprint (claimed under RESEARCH §2 and LAWS L1.11 in its own header) for the target Bronze/Silver/Gold data-moat topology and machine roles. It describes a target architecture and an interim reality, not a measurement -- there is nothing here that goes stale on a clock, only something that changes when the principal revises the plan or the build-out reaches the next stage. Superseding edits are the principal's act, same as the other DOCTRINE rows above. | never |

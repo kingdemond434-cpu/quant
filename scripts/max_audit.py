@@ -3661,6 +3661,14 @@ _TERMINAL_ARTIFACTS = {
         "already carries its disposition (BUILT / UPGRADED / BUILD / QUEUE / REJECT with reason), "
         "so the document IS the conversion record rather than inventory awaiting one. Rows that "
         "became work carry register rows; rows that were rejected carry their reason.",
+    "docs/research/MOAT_NODE_SPEC.md":
+        "PRINCIPAL BLUEPRINT (2026-08-25), claimed under RESEARCH §2 and LAWS L1.11 in its own "
+        "header -- same class as ELITE_QUANT_INTELLIGENCE_MANDATE.md above: standing doctrine, "
+        "terminal by nature rather than by exhaustion. It describes a target Bronze/Silver/Gold "
+        "data-moat topology and an interim reality, not a measurement -- nothing in it goes stale "
+        "on a clock. It changes only by principal revision of the plan, same as the other DOCTRINE "
+        "rows in docs/research/ARTIFACT_GOVERNANCE.md, where this classification is also recorded "
+        "in the human-readable table.",
 }
 
 
