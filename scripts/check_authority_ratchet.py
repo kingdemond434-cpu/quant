@@ -30,6 +30,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 FLOORS = ROOT / "data" / "authority_ratchet.json"
 ALARM = ROOT / "data" / "AUTHORITY_ALARM.txt"
+AUTHORITY_FILE = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
+CANON_FILE = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 
 #: artifact -> (path, how to count it). Each is EARNED evidence that time and compute produced.
 WATCH = {
@@ -55,8 +57,40 @@ def read(p: Path):
         return None
 
 
+def heal_canon() -> str | None:
+    """Canon may never be WORSE than the authority file. Restore it when it is.
+
+    An alarm was not enough. Measured twice on 2026-08-26: canon went 21 certificates (15
+    carrying their certified params) back to 14 with none, inside an automated commit, while the
+    authority file stayed correct -- so the desk's restore-source was the degraded copy and the
+    next reader would have enrolled 5 clocks instead of 15. Since canon exists purely as the
+    known-good copy OF the authority file, "authority is strictly better" is a contradiction that
+    can only be resolved one way, and resolving it needs no knowledge of which writer did it.
+
+    Strictly better means: more certificates, or the same number with more of them carrying the
+    params that make them runnable. Anything else is left alone -- this heals, it never overwrites
+    a canon that is ahead.
+    """
+    auth, canon = read(AUTHORITY_FILE), read(CANON_FILE)
+    if not isinstance(auth, dict) or not isinstance(canon, dict):
+        return None
+    a_rows = auth.get("survivors") or {}
+    c_rows = canon.get("survivors") or {}
+    a_par = sum(1 for v in a_rows.values() if (v.get("shadow_spec") or {}).get("params"))
+    c_par = sum(1 for v in c_rows.values() if (v.get("shadow_spec") or {}).get("params"))
+    if len(a_rows) > len(c_rows) or (len(a_rows) == len(c_rows) and a_par > c_par):
+        CANON_FILE.write_text(json.dumps(auth, indent=2, default=str), "utf-8")
+        return (f"canon healed from the authority file: {len(c_rows)} certs/{c_par} with params "
+                f"-> {len(a_rows)}/{a_par}. Canon is the known-good COPY of authority; it being "
+                f"behind is a contradiction, not a state to preserve.")
+    return None
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
+    healed = heal_canon()
+    if healed:
+        print(f"authority ratchet: {healed}")
     floors = read(FLOORS) or {"note": "earned-evidence floors; rise freely, fall only on an "
                                       "explicit recorded revocation", "counts": {}}
     breaches: list[str] = []

@@ -202,10 +202,36 @@ HEARTBEAT_PID=""
 # the P0 failed-unit channel with a state nobody on-box can repair (the fix is a principal quota
 # purchase or the free-path reasoner). Classify it so real crashes keep owning the red.
 QUOTA_HIT=0
-if [ "$CODEX_RC" -ne 0 ] && grep -qi "hit your usage limit" "$LOG"; then
+# Broadened from a single phrase: the vendor writes this several ways ("hit your usage limit",
+# "usage limit reached", "rate limit", "insufficient credits"), and last night's run DID contain
+# the quota error yet still recorded CONTROLLER_FAILED_CHECKPOINTED -- a quota ceiling reported as
+# a code failure sends someone debugging a bug that does not exist.
+if [ "$CODEX_RC" -ne 0 ] && grep -qiE "hit your usage limit|usage limit|rate limit|insufficient credit|quota" "$LOG"; then
     QUOTA_HIT=1
-    echo "midnight-codex: Codex usage quota exhausted (external resource); reasoning skipped this window" \
-        | tee -a "$LOG"
+    echo "midnight-codex: Codex usage quota exhausted (external resource)" | tee -a "$LOG"
+fi
+
+# FREE-PATH FALLBACK -- the night must still REASON (principal 2026-08-26: "midnight must finish
+# end-to-end successfully"). Recording QUOTA_EXHAUSTED and returning 0 makes the unit green while
+# the desk gets no reasoning at all, which is the same silent-success failure as a cron job that
+# exits 0 without doing its work. The desk already runs an independent free-tier brain with the
+# same refusal set (no promotion, no allocation, no policy override, donation only), so when the
+# paid reasoner is unavailable FOR ANY REASON, that one runs instead and the night completes with
+# real output. The gap register's own recommendation was "buy quota, or bless the free path";
+# this blesses it.
+FALLBACK_RC=-1
+FALLBACK_BRAIN="none"
+if [ "$CODEX_RC" -ne 0 ] && [ -x ops/run_deepseek_factory.sh ]; then
+    echo "midnight-codex: paid reasoner unavailable (rc=$CODEX_RC, quota=$QUOTA_HIT); routing this window to the FREE reasoner" | tee -a "$LOG"
+    if timeout 3600 bash ops/run_deepseek_factory.sh >>"$LOG" 2>&1; then
+        FALLBACK_RC=0
+        FALLBACK_BRAIN="deepseek-free"
+        echo "midnight-codex: free reasoner completed this window" | tee -a "$LOG"
+    else
+        FALLBACK_RC=$?
+        FALLBACK_BRAIN="deepseek-free"
+        echo "midnight-codex: free reasoner ALSO failed rc=$FALLBACK_RC -- the night has no reasoning; this is a real defect, not a quota ceiling" | tee -a "$LOG"
+    fi
 fi
 
 CHECKPOINT_RC=0
@@ -225,9 +251,12 @@ fi
 if [ "$CODEX_RC" -eq 0 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
     write_status "CHECKPOINTED_FOR_CLAUDE" "Midnight controller completed, checkpointed, and atomically transferred" 0
     FINAL_RC=0
-elif [ "$QUOTA_HIT" -eq 1 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
-    write_status "QUOTA_EXHAUSTED" "Codex usage limit hit; state checkpointed and transferred; reasoning skipped -- quota purchase/free-path routing is the principal-level fix" 0
+elif [ "$FALLBACK_RC" -eq 0 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
+    write_status "COMPLETED_ON_FREE_PATH" "Paid reasoner unavailable (rc=$CODEX_RC, quota=$QUOTA_HIT); the FREE reasoner completed this window and its findings were donated through the normal queues. The night reasoned; only the brand of brain changed." 0
     FINAL_RC=0
+elif [ "$QUOTA_HIT" -eq 1 ] && [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
+    write_status "QUOTA_EXHAUSTED_NO_FALLBACK" "Codex usage limit hit AND the free path did not run (rc=$FALLBACK_RC); state checkpointed, but this window produced NO reasoning -- that is a defect, not a clean skip" 1
+    FINAL_RC=1
 elif [ "$CHECKPOINT_RC" -eq 0 ] && [ "$TRANSFER_RC" -eq 0 ]; then
     write_status "CONTROLLER_FAILED_CHECKPOINTED" "Controller rc=$CODEX_RC; exact state checkpointed and transferred; inspect $LOG" "$CODEX_RC"
     FINAL_RC="$CODEX_RC"
