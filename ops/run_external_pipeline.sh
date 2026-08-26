@@ -45,6 +45,46 @@ remote_stage () {   # remote_stage <label> <remote command>
 # ---------------------------------------------------------------------------------------
 export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 
+# ---------------------------------------------------------------------------------------
+# STAGE 0: THE CODE THIS PIPELINE EXECUTES REMOTELY MUST BE THE CODE THAT WAS COMMITTED AND
+# GATED HERE. Until 2026-08-26 there was NO path -- `grep -rl contabo-mt5 ops/ scripts/
+# deploy/` found four files and not one of them pushed a line of Python. Data went TO the box
+# and artifacts came BACK; the modules the box actually runs arrived by some C:-side route
+# nobody here controls.
+#
+# So a fix to the heaviest organ on the desk was INERT the moment it was committed. Measured:
+# after committing the edge_search memory fix, `git hash-object` on the box still returned
+# 54021b40 -- byte-for-byte the PRE-FIX file -- and that path is not even tracked on the branch
+# the box has checked out (claude/llm-auto-upgrade-verify-gcjac3, which has diverged 348/233
+# from this one), so no `git pull` there would ever have delivered it.
+#
+# The VPS repo IS the source of truth for these modules and that is measured, not assumed:
+# orthogonal_sweep.py and external_gauntlet.py both hashed IDENTICAL on both boxes.
+#
+# VERIFIED BY HASH, NEVER BY EXIT CODE. scp exits 0 in cases that did not land, the same way
+# `git push` exits 0 on a remote reject -- this desk has been burned by exactly that. The
+# comparison is against `git hash-object` run on the box itself.
+echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk box"
+REMOTE_MODULES="desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
+for m in $REMOTE_MODULES; do
+  scp -q "$m" "contabo-mt5:C:/opt/quant/$m" 2>>"$LOGF" || echo "code sync scp FAILED: $m"
+done
+_want=$(git hash-object $REMOTE_MODULES | tr -d '\r')
+_have=$(timeout 120 ssh -o ConnectTimeout=20 contabo-mt5 \
+          "cd C:\opt\quant && git hash-object $REMOTE_MODULES" 2>/dev/null \
+        | grep -E '^[0-9a-f]{40}$' | tr -d '\r')
+if [ "$_want" = "$_have" ]; then
+  echo "code sync verified: $(echo "$_want" | wc -l) module(s) byte-identical on the desk box"
+else
+  # LOUD, and the pipeline continues: the box still holds runnable (older) code, so stopping
+  # here would trade a stale search for no search at all. But the verdicts of this run were
+  # produced by code that is NOT what was gated, and that must never be silent.
+  echo "CODE SYNC UNVERIFIED -- the desk box is running code that is NOT this repo's."
+  echo "  wanted: $(echo "$_want" | tr '\n' ' ')"
+  echo "  found : $(echo "$_have" | tr '\n' ' ')"
+fi
+# ---------------------------------------------------------------------------------------
+
 echo "[$(date -u +%FT%TZ)] stage 2: external backtest"
 $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc=$?)"
 
