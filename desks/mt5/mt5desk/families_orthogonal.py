@@ -415,6 +415,39 @@ def family_turn_of_month(
     return signals
 
 
+def family_calendar_month(
+    df: pd.DataFrame,
+    *,
+    active_month: int,
+    side_bias: int,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+    ttl_bars: int = 24,
+) -> list[Signal]:
+    """Test an explicitly mined month/direction claim without translating it to a breakout."""
+    if active_month not in range(1, 13) or side_bias not in (-1, 1):
+        return []
+    d = _h1(df)
+    atr = _atr(d, atr_n)
+    signals: list[Signal] = []
+    # One decision per UTC day during the specified month. The month and direction are source
+    # evidence, not searched parameters; all other defaults are frozen family policy.
+    for i in range(max(atr_n, 1), len(d) - 1):
+        ts = d.index[i]
+        if ts.month != active_month or ts.hour != 0:
+            continue
+        a = float(atr.iloc[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = float(d["close"].iloc[i])
+        signals.append(Signal(time=ts, side=side_bias,
+                              stop=px - side_bias * stop_atr * a,
+                              target=px + side_bias * stop_atr * a * rr,
+                              ttl_bars=ttl_bars, tag="calendar_month", trigger=px, wait_bars=0))
+    return signals
+
+
 def family_overnight_gap_decay(
     df: pd.DataFrame,
     *,
@@ -765,6 +798,7 @@ def family_drawdown_conditional(
 
 ORTHOGONAL_FAMILIES.update({
     "turn_of_month": family_turn_of_month,
+    "calendar_month": family_calendar_month,
     "overnight_gap_decay": family_overnight_gap_decay,
     "vol_mean_reversion": family_vol_mean_reversion,
     "correlation_regime": family_correlation_regime,
@@ -791,6 +825,7 @@ FAMILY_INPUTS = {
     "macro_conditional": ("a macro state series", "data/macro_state.json"),
     "event_reaction": ("an economic calendar", "data/intelligence/ff_calendar_vintage"),
     "turn_of_month": ("price only", None),
+    "calendar_month": ("source-specified calendar month and direction", None),
     "overnight_gap_decay": ("price only", None),
     "drawdown_conditional": ("price only", None),
 }

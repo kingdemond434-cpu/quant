@@ -32,6 +32,7 @@ TARGET = HYP / "external_survivors.json"
 #: source cannot go quietly unconsumed the way these two did.
 SOURCES = (
     ("external_backtest_results.json", None),
+    ("miner_candidates.json", "hypotheses"),
     ("edge_search_results.json", "hypotheses"),
     ("orthogonal_candidates.json", "hypotheses"),
 )

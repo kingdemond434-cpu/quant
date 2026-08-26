@@ -104,8 +104,23 @@ def _macro_series(index):
     return pd.Series(float(pairs[0][1]), index=index)
 
 
-def _cot_frame():
+@lru_cache(maxsize=None)
+def _cot_frame(symbol: str | None = None):
     import pandas as pd
+
+    # The repository already owns 26 years of point-in-time CFTC history. It was registered and
+    # screened elsewhere but this gauntlet reader ignored it, so a COT miner could produce a real
+    # candidate that always rebuilt with `cot=None`. Downsample the daily forward-filled cache to
+    # one weekly observation; repeated daily values must not masquerade as independent reports.
+    cache = BASE.parent.parent / "data" / "cot_zcache.parquet"
+    if symbol and cache.exists():
+        try:
+            frame = pd.read_parquet(cache, columns=[symbol])
+            series = frame[symbol].astype(float).dropna().resample("W-FRI").last().dropna()
+            if len(series) >= 52:
+                return series.rename("net").to_frame()
+        except Exception:
+            pass
     for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
         doc = _read(BASE / "data" / name)
         rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
@@ -168,7 +183,7 @@ def sweep() -> dict:
         factor_dfs = [f for f in (_bars(s) for s in peers[:2]) if f is not None]
         spread, flow = _tape_series(sym, df.index)
         macro = _macro_series(df.index)
-        cot = _cot_frame()
+        cot = _cot_frame(sym)
         events = _event_index()
 
         kwargs_by_family = {

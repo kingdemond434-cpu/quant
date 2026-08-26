@@ -96,6 +96,7 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "QUANT_PIPELINE_STARTED_AT" in script
     assert "desks/mt5/research/edge_search.py ||" not in script
     assert "orthogonal_candidates.json" in script
+    assert "miner_candidate_compiler.py" in script
     assert "merge_hypotheses.py" in script
 
 

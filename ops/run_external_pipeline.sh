@@ -103,6 +103,9 @@ $PY scripts/build_research_facts.py || echo "facts pack FAILED (rc=$?) -- contin
 
 echo "[$(date -u +%FT%TZ)] stage 2a: mined ground (miners + moat -> search targets)"
 $PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- continuing"
+echo "[$(date -u +%FT%TZ)] stage 2a.1: miner evidence -> executable candidates / deepening queue"
+$PY desks/mt5/research/miner_candidate_compiler.py \
+  || echo "miner candidate compiler FAILED (rc=$?) -- continuing"
 
 # Heavy discovery belongs on the MT5 desk box. Measured 2026-08-26: running edge_search here
 # OOM-killed this service after the 28-minute external screen, so neither search output reached
@@ -112,6 +115,9 @@ $PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- c
 echo "[$(date -u +%FT%TZ)] stage 2b: desk-box frontier search (family-free + orthogonal)"
 scp -q desks/mt5/data/hypotheses/mined_targets.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/mined_targets.json' 2>/dev/null || true
+# Small, durable point-in-time axes used by structured miner candidates travel with the run.
+scp -q data/cot_zcache.parquet \
+    contabo-mt5:'C:/opt/quant/data/cot_zcache.parquet' 2>/dev/null || true
 
 # These are independent discovery methods. Running them behind `A && B` made an OOM in the
 # family-free search suppress the much cheaper orthogonal sweep. Pull an artifact only when its

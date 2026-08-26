@@ -140,7 +140,7 @@ def build_cell(sym: str, family: str, params: dict, meta: dict):
             call_params["macro"] = inputs._macro_series(h1.index)
         elif family == "cot_positioning":
             call_params.pop("input_source", None)
-            call_params["cot"] = inputs._cot_frame()
+            call_params["cot"] = inputs._cot_frame(sym)
         elif family == "event_reaction":
             call_params.pop("input_source", None)
             call_params["events"] = inputs._event_index()
