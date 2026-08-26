@@ -1122,3 +1122,12 @@ H1/D1 loader imports is_out_of_calendar yet -- a "D1" bar holding 3 hours of mar
 reaches DSR/CPCV inputs unmarked. Wire the shared rule into desks/mt5 data loading; the two
 old-branch tests that asserted the CRYPTO breadth loader's wiring were dropped (retired
 machinery), the MT5 wiring test comes with the wiring.
+
+**#133 old branch is content-absorbed but history-unmergeable.**
+claude/llm-auto-upgrade-verify-gcjac3 is fully absorbed into desk-sync-clean at file level
+(68 files adopted 2026-08-26; the rest superseded). A history merge is IMPOSSIBLE: its commits
+contain backups/moat/sor_research at 275MB, which GitHub's 100MB blob limit rejects on push --
+an -s ours merge was attempted, made canon unpushable, and was rebased out the same hour.
+NEVER merge that branch, by any strategy. Disposition: principal deletes/archives the remote
+branch from the console (autonomous branch deletion is classifier-blocked); until then it is a
+dead branch no session may base work on.
