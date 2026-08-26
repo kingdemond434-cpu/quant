@@ -38,9 +38,11 @@ import os
 import secrets
 import socket
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 STATE = ROOT / "data" / "canon_lease.json"
@@ -62,7 +64,7 @@ def _now() -> datetime:
     return datetime.now(tz=UTC)
 
 
-def _read() -> dict:
+def _read() -> dict[str, Any]:
     try:
         value = json.loads(STATE.read_text("utf-8"))
         return value if isinstance(value, dict) else {}
@@ -70,7 +72,7 @@ def _read() -> dict:
         return {}
 
 
-def _write(state: dict) -> None:
+def _write(state: dict[str, Any]) -> None:
     """Atomic replace -- a half-written lease file is worse than no lease file."""
     STATE.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(dir=str(STATE.parent), prefix=".canon_lease.")
@@ -89,8 +91,8 @@ def _identity(holder: str) -> str:
 def acquire(artifact: str, holder: str) -> str | None:
     """Take the lease for `artifact`, or return None if someone else holds a live one."""
     state = _read()
-    leases = state.setdefault("leases", {})
-    row = leases.get(artifact) or {}
+    leases: dict[str, dict[str, Any]] = state.setdefault("leases", {})
+    row: dict[str, Any] = leases.get(artifact) or {}
     now = _now()
     expires = row.get("expires_at")
     if expires:
@@ -117,14 +119,16 @@ def valid(artifact: str, token: str | None) -> bool:
     """Is this token still the current epoch? A stale token must never author a write."""
     if not token:
         return False
-    row = (_read().get("leases") or {}).get(artifact) or {}
+    leases: dict[str, dict[str, Any]] = _read().get("leases") or {}
+    row: dict[str, Any] = leases.get(artifact) or {}
     return bool(row.get("token") == token)
 
 
 def heartbeat(artifact: str, token: str) -> bool:
     """Extend a lease you still hold. Returns False if it was lost -- stop writing."""
     state = _read()
-    row = (state.get("leases") or {}).get(artifact) or {}
+    leases: dict[str, dict[str, Any]] = state.get("leases") or {}
+    row: dict[str, Any] = leases.get(artifact) or {}
     if row.get("token") != token:
         return False
     row["expires_at"] = (_now() + timedelta(seconds=TTL_SECONDS)).isoformat(timespec="seconds")
@@ -135,7 +139,8 @@ def heartbeat(artifact: str, token: str) -> bool:
 def release(artifact: str, token: str) -> None:
     """Give the lease back early so the next writer does not wait out the TTL."""
     state = _read()
-    row = (state.get("leases") or {}).get(artifact) or {}
+    leases: dict[str, dict[str, Any]] = state.get("leases") or {}
+    row: dict[str, Any] = leases.get(artifact) or {}
     if row.get("token") == token:
         row["expires_at"] = _now().isoformat(timespec="seconds")
         row["released_at"] = row["expires_at"]
@@ -143,7 +148,7 @@ def release(artifact: str, token: str) -> None:
 
 
 @contextmanager
-def hold(artifact: str, holder: str, *, required: bool = True):
+def hold(artifact: str, holder: str, *, required: bool = True) -> Iterator[str | None]:
     """Scope a write to a lease.
 
     `required=False` lets a caller proceed unleased while still RECORDING that it did, which is
@@ -152,7 +157,8 @@ def hold(artifact: str, holder: str, *, required: bool = True):
     """
     token = acquire(artifact, holder)
     if token is None:
-        current = (_read().get("leases") or {}).get(artifact, {}).get("holder", "unknown")
+        _l: dict[str, dict[str, Any]] = _read().get("leases") or {}
+        current = (_l.get(artifact) or {}).get("holder", "unknown")
         if required:
             raise RuntimeError(
                 f"canon lease for {artifact} is held by {current}; refusing to write. This is the "
@@ -166,12 +172,13 @@ def hold(artifact: str, holder: str, *, required: bool = True):
         release(artifact, token)
 
 
-def audit() -> dict:
+def audit() -> dict[str, Any]:
     """Who holds what, for the next unexplained overwrite."""
     state = _read()
     now = _now()
-    rows = {}
-    for art, row in (state.get("leases") or {}).items():
+    rows: dict[str, dict[str, Any]] = {}
+    leases: dict[str, dict[str, Any]] = state.get("leases") or {}
+    for art, row in leases.items():
         try:
             live = datetime.fromisoformat(str(row.get("expires_at"))) > now
         except (TypeError, ValueError):
