@@ -26,8 +26,10 @@ LOG = ROOT / "data" / "moneypath_fence.log"
 #: also changes the protected file -- never automatic.
 CANON_COMMIT = "b239108d"
 
-#: file -> marker that exists ONLY in the canonical lineage of that file.
-PROTECTED = {
+#: file -> marker(s) that exist ONLY in the canonical lineage of that file. A tuple means
+#: EVERY marker must be present: one marker per protected property, because a trample can
+#: revert one property while keeping another (measured 2026-08-26 on shadow_forward.py).
+PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/mt5desk/gateway.py": "run_family_sleeves",
     "desks/mt5/mt5desk/sizing.py": "BASE_RISK_FRAC",
     "desks/mt5/research/promoter.py": "authorized_specs",
@@ -40,10 +42,19 @@ PROTECTED = {
     # never lose: the gauntlet's spec/attestation writer, the state builder's live MT5 snapshot.
     "desks/mt5/scripts/external_gauntlet.py": "ATTESTATION",
     "scripts/build_zentech_state.py": "_mt5_snapshot",
-    # the same-day engine's stamped clock + certificate auto-enrolment (RESEARCH 6d)
-    "desks/mt5/research/shadow_forward.py": "certified_sleeves",
+    # the same-day engine's stamped clock + certificate auto-enrolment (RESEARCH 6d), AND its
+    # broker-independent bar source. 2026-08-26: a sync trample stripped the h1_source repoint
+    # (a0c3de04) while KEEPING certified_sleeves, so a single marker read the file as healthy
+    # while the shadow engine was re-welded to a Windows terminal it does not have -- every
+    # protected property needs its own marker, hence tuples.
+    "desks/mt5/research/shadow_forward.py": (
+        "certified_sleeves", "from research.h1_source import fetch_h1"),
     "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
 }
+
+
+def _markers(spec: str | tuple[str, ...]) -> tuple[str, ...]:
+    return (spec,) if isinstance(spec, str) else spec
 
 
 def log(msg: str) -> None:
@@ -54,30 +65,32 @@ def log(msg: str) -> None:
     print(line)
 
 
-def git(*args: str) -> subprocess.CompletedProcess:
+def git(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True,
                           timeout=120, check=False)
 
 
-def head_has_marker(path: str, marker: str) -> bool:
+def head_has_marker(path: str, spec: str | tuple[str, ...]) -> bool:
     r = git("show", f"HEAD:{path}")
-    return r.returncode == 0 and marker in r.stdout
+    return r.returncode == 0 and all(m in r.stdout for m in _markers(spec))
 
 
 def main() -> int:
     breached: list[str] = []
-    for path, marker in PROTECTED.items():
+    for path, spec in PROTECTED.items():
         f = ROOT / path
         try:
-            ok = f.is_file() and marker in f.read_text("utf-8", errors="ignore")
+            text = f.read_text("utf-8", errors="ignore") if f.is_file() else ""
+            missing = [m for m in _markers(spec) if m not in text]
+            ok = f.is_file() and not missing
         except OSError:
-            ok = False
+            ok, missing = False, list(_markers(spec))
         if ok:
             continue
-        src = "HEAD" if head_has_marker(path, marker) else CANON_COMMIT
+        src = "HEAD" if head_has_marker(path, spec) else CANON_COMMIT
         r = git("checkout", src, "--", path)
         if r.returncode == 0:
-            log(f"BREACH+RESTORED {path}: marker '{marker}' missing; restored from {src}")
+            log(f"BREACH+RESTORED {path}: marker(s) {missing} missing; restored from {src}")
             breached.append(path)
         else:
             log(f"BREACH UNRESTORABLE {path}: {r.stderr.strip()[:200]}")
