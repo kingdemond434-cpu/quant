@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import UTC, datetime, timedelta
+import json
+import os
 import sys
 
 import numpy as np
@@ -11,6 +14,7 @@ if str(DESK) not in sys.path:
     sys.path.insert(0, str(DESK))
 
 from research import edge_search
+from research import merge_hypotheses
 from research.frontier_identity import cell_id, economic_prior
 from scripts import external_gauntlet
 
@@ -71,11 +75,39 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     root = Path(__file__).resolve().parents[3]
     script = (root / "ops" / "run_external_pipeline.sh").read_text("utf-8")
 
-    remote = "research\\edge_search.py && py -3 -W ignore research\\orthogonal_sweep.py"
-    assert remote in script
+    assert "research\\edge_search.py\"" in script
+    assert "research\\orthogonal_sweep.py\"" in script
+    assert "edge_search.py &&" not in script
+    assert "QUANT_PIPELINE_STARTED_AT" in script
     assert "desks/mt5/research/edge_search.py ||" not in script
     assert "orthogonal_candidates.json" in script
     assert "merge_hypotheses.py" in script
+
+
+def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) -> None:
+    hyp = tmp_path / "hypotheses"
+    hyp.mkdir()
+    row = {"symbol": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"}}
+    for name, key in merge_hypotheses.SOURCES:
+        payload = [row] if key is None else {key: [row]}
+        path = hyp / name
+        path.write_text(json.dumps(payload), "utf-8")
+
+    stale = hyp / "edge_search_results.json"
+    old = (datetime.now(tz=UTC) - timedelta(hours=2)).timestamp()
+    os.utime(stale, (old, old))
+    target = hyp / "external_survivors.json"
+    monkeypatch.setattr(merge_hypotheses, "HYP", hyp)
+    monkeypatch.setattr(merge_hypotheses, "TARGET", target)
+    monkeypatch.setenv("QUANT_PIPELINE_STARTED_AT", datetime.now(tz=UTC).isoformat())
+
+    assert merge_hypotheses.main() == 0
+    report = json.loads((hyp / "merge_report.json").read_text("utf-8"))
+    rows = json.loads(target.read_text("utf-8"))
+
+    assert report["source_state"]["edge_search_results.json"] == "STALE_SKIPPED"
+    assert report["per_source"]["edge_search_results.json"] == -2
+    assert all(row["producer"] != "edge_search_results.json" for row in rows)
 
 
 def test_mechanism_prior_is_not_invented_for_price_shape() -> None:

@@ -8,6 +8,7 @@ set -u
 cd /home/quant/quant-platform
 PY=.venv/bin/python
 LOGF=data/cro_ai_logs/external_pipeline_gauntlet.log
+export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 
 echo "[$(date -u +%FT%TZ)] stage 2: external backtest"
 $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc=$?)"
@@ -36,16 +37,30 @@ $PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- c
 echo "[$(date -u +%FT%TZ)] stage 2b: desk-box frontier search (family-free + orthogonal)"
 scp -q desks/mt5/data/hypotheses/mined_targets.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/mined_targets.json' 2>/dev/null || true
+
+# These are independent discovery methods. Running them behind `A && B` made an OOM in the
+# family-free search suppress the much cheaper orthogonal sweep. Pull an artifact only when its
+# own producer succeeds; merge_hypotheses also rejects any artifact older than this pipeline run.
 if ssh -o ConnectTimeout=20 contabo-mt5 \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py && py -3 -W ignore research\orthogonal_sweep.py" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py" \
+     >> "$LOGF" 2>&1; then
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
+      desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null \
+    && echo "orthogonal frontier artifact pulled" \
+    || echo "orthogonal frontier pull FAILED"
+else
+  echo "orthogonal frontier FAILED on the desk box -- see $LOGF"
+fi
+
+if ssh -o ConnectTimeout=20 contabo-mt5 \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py" \
      >> "$LOGF" 2>&1; then
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
-      desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null
-  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
-      desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null
-  echo "desk-box frontier artifacts pulled"
+      desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null \
+    && echo "family-free frontier artifact pulled" \
+    || echo "family-free frontier pull FAILED"
 else
-  echo "stage 2b FAILED on the desk box -- see $LOGF; prior artifacts remain provenance only"
+  echo "family-free frontier FAILED on the desk box -- see $LOGF"
 fi
 
 # STAGE 2c: merge every producer into the ONE file the gauntlet reads. Without this the search
