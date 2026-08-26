@@ -212,6 +212,16 @@ quantity a producer supplies. No screen, merge or searcher may attach a `search_
 reference scale or effective-N that a gate would consume as a stricter threshold: a bar hidden
 inside a gate is the same breach as one in front of it, and harder to see. Full text: RESEARCH §6d.
 
+**L1.61 UNIVERSAL GROUND, MINED FOREVER.** The hunted universe is every tradable Fusion symbol
+across every asset class, enumerated from the terminal each run — never a list in a file. No miner
+is scoped or hardcoded to anything; every literal is a declared bootstrap seed. Coverage is a
+CYCLE, not a sweep: a rotation cursor re-searches the whole universe on newer bars forever, so
+"exhausted" is never a state. Mining supplies ATTENTION (a pointer to ground), the searcher
+supplies hypotheses, the ten gates supply the verdict — and the desk's own MT5 moat tape is the
+heaviest pointer because nobody else has it. Selection optimises MARGINAL INDEPENDENCE directly, so
+a second copy of a held edge scores ~0; any cap on kept edges is a compute budget and must say so.
+Full text: RESEARCH §6c-bis.
+
 **Named absorbed laws (in force):** NO-CEILING ("we are at max" requires evidence);
 FREE-FRONTIER (a free alternative exists and has not been found yet; never English-only);
 MINING-NEVER-REGRESSES (volume, breadth, depth never fall; shrinking a denominator to fake a rate

@@ -356,6 +356,43 @@ DSR-counted trial, and a regime that cannot be computed live means the sleeve is
 appears is not specialization, it is the garden of forking paths, and the trial accounting is
 what separates the two.
 
+## 6c-bis. UNIVERSAL GROUND LAW — everything Fusion lists, mined forever, never exhausted
+(principal 2026-08-26)
+
+**THE HUNTED UNIVERSE IS EVERY TRADABLE FUSION SYMBOL, ENUMERATED FROM THE TERMINAL.** Not a
+list in a file. `expand_universe.py` asks the terminal each run, so a symbol Fusion adds is hunted
+without a code change and a symbol it delists stops being hunted the same way. *Measured
+2026-08-26: Fusion exposes 250 tradable symbols across NINE asset classes and the desk was hunting
+24 — 105 equities, 57 exotics, 16 indices, 12 commodities, 11 softs, 3 bonds and 3 energy had
+never been looked at.* Breadth of GROUND is upstream of breadth of mechanism: an equity CFD, a
+bond and a soft fail in regimes a JPY cross cannot, which is diversification no re-parameterising
+of a breakout can manufacture.
+
+**NO MINER IS LIMITED, SCOPED OR HARDCODED TO ANYTHING.** Every symbol list, channel list and
+source list is a bootstrap SEED that must say so where it is declared (LAWS §1 anti-hardcode). A
+literal that silently caps exploration is the WS-005 class.
+
+**MINING IS NEVER EXHAUSTED — COVERAGE IS A CYCLE, NOT A SWEEP.** A search that walks the universe
+once and stops has declared the universe finished, which is absence-read-as-verdict wearing a new
+costume. The searcher carries a rotation cursor: each run covers a budgeted slice, the cursor
+advances, and every symbol is re-searched on newer bars **forever**. A symbol that yielded nothing
+last month is looked at again with another month of data. "Exhausted" is never a state, only a
+per-axis measurement with a date on it (L1.51).
+
+**MINING SUPPLIES ATTENTION; THE SEARCHER SUPPLIES HYPOTHESES; THE TEN GATES SUPPLY THE VERDICT.**
+A mined discovery is a POINTER TO GROUND, never a strategy — 740 discovery files had reached the
+gates zero times because a web artefact is not a `(symbol, family, params)`. `mined_ground.py`
+ranks symbols by the attention miners and the **MT5 moat tape** paid them, the searcher hunts those
+first, and the same ten gates judge the result. The moat weighs heaviest because the desk's own
+broker-native tape is the one pointer nobody else can buy. *The moat had been pointed at
+`moat_series.jsonl` — 340MB of the RETIRED crypto moat, keyed `bybit/…`, containing no MT5 symbol
+— so it reported "found nothing" while the real tape sat unused beside it.*
+
+**EVERY UNCORRELATED EDGE, AND SELECTION OPTIMISES FOR THAT DIRECTLY.** Candidates are chosen
+greedily on MARGINAL INDEPENDENCE against everything already taken, so the second copy of a good
+idea scores near zero however profitable it is alone. Caps on how many edges may be kept are
+COMPUTE budgets and must be labelled as such — never a belief about where edges stop.
+
 ## 6d. SAME-DAY PIPELINE LAW — the front half has no waiting room (principal 2026-08-26)
 
 **UNIVERSAL AND CANON, FOR ALL, ALWAYS (principal 2026-08-26: "for all always canon universal").**

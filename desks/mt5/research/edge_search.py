@@ -62,12 +62,20 @@ FIT_FRACTION = 0.6
 MIN_OOS_OBS = 60
 #: Correlation above this to an already-selected edge means it is the same bet.
 REDUNDANCY_CORR = 0.5
-#: How many edges to select. Small on purpose: the output is hypotheses for the gauntlet, and
-#: flooding the gauntlet with near-duplicates is what the diversity objective exists to prevent.
-SELECT_K = 25
-#: How many primitives feed the pairwise interaction pool. Bounded on purpose: the pool grows
-#: quadratically, and an uncountable search is worse than a narrower honest one.
-INTERACTION_POOL = 14
+#: How many edges to keep PER SYMBOL. This is not a quality bar -- the diversity selector already
+#: refuses anything correlated with what it has taken, so raising it cannot admit near-duplicates,
+#: only genuinely distinct structure. It was 25 because the gauntlet ran on a 4GB box; the
+#: gauntlet now runs on the desk box, so the ceiling moves to where the diversity objective stops
+#: finding independent edges rather than where a machine ran out of memory (principal 2026-08-26:
+#: "maximum diversity, no limits, never exhausted").
+SELECT_K = 120
+#: Symbols searched per hourly run. A budget, not a boundary: the cursor below guarantees the
+#: rest are covered on following runs and then covered again.
+PER_RUN = 40
+#: Primitives feeding the pairwise interaction pool. Grows quadratically, so it stays bounded --
+#: but the bound is a COMPUTE budget, not a belief about where edges live, and it is stated as
+#: such so nobody reads it as "interactions beyond this do not matter".
+INTERACTION_POOL = 22
 
 
 def _read(p: Path):
@@ -447,6 +455,30 @@ def main(symbols: list[str] | None = None) -> int:
             seen = set(ranked)
             symbols = ranked + [s for s in symbols if s not in seen]
             print(f"  search order: {len(ranked)} mined-ground symbol(s) first")
+
+        # NEVER EXHAUSTED, BY CONSTRUCTION. A search that walks the universe once and stops has
+        # decided the universe is finished, which is the WS-005 error in a new costume: absence
+        # of a fresh look read as absence of an edge. Instead a cursor advances every run, so
+        # coverage is a CYCLE -- every symbol is re-searched on newer bars, forever, and a symbol
+        # that had nothing last month gets looked at again with another month of data. Mined
+        # ground still jumps the queue; the rotation governs everything behind it.
+        cursor_file = BASE / "data" / "hypotheses" / "search_cursor.json"
+        try:
+            cursor = int((_read(cursor_file) or {}).get("cursor", 0))
+        except (TypeError, ValueError):
+            cursor = 0
+        tail = symbols[len(ranked):]
+        if tail:
+            off = cursor % len(tail)
+            symbols = ranked + tail[off:] + tail[:off]
+            cursor_file.parent.mkdir(parents=True, exist_ok=True)
+            cursor_file.write_text(json.dumps({
+                "cursor": cursor + PER_RUN,
+                "note": "rotation cursor -- coverage is a cycle, never a completed sweep",
+            }), "utf-8")
+        symbols = symbols[:PER_RUN]
+        print(f"  covering {len(symbols)} symbol(s) this run; cursor advances so the whole "
+              f"universe is re-searched continuously")
     results, hypotheses = [], []
     total_trials = 0
     for sym in symbols:
@@ -470,8 +502,8 @@ def main(symbols: list[str] | None = None) -> int:
                                    "before this can certify -- a statistical edge with no story "
                                    "is a coincidence until someone shows otherwise."),
             })
-    # NO BAR IS COMPUTED HERE, AND NO DEFLATION INPUT LEAVES HERE (principal 2026-08-26: "never use or consider
-    # the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused
+    # NO BAR HERE, AND NO DEFLATION INPUT LEAVES HERE (principal 2026-08-26: "never use or
+    # consider the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused
     # as a filter, a threshold sitting next to the results is one a reader -- or a later edit --
     # will start treating as a verdict, and it competes with the only pipeline this desk has:
     # discovery -> backtest -> ten gates -> certificate -> forward -> live. The trial count is
