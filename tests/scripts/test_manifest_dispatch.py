@@ -171,3 +171,26 @@ def test_burst_cap_bounds_a_single_tick(tmp_path, monkeypatch) -> None:
     state = json.loads((tmp_path / "state.json").read_text("utf-8"))
     assert len(fired) == md.MAX_FIRES_PER_TICK
     assert len(state["pending"]) == 10 - md.MAX_FIRES_PER_TICK   # the rest queued, not dropped
+
+
+def test_dispatcher_unit_keeps_killmode_process() -> None:
+    """The dispatcher SPAWNS its rows and exits, so the unit must not take them down with it.
+
+    Measured 2026-08-26: systemd's default KillMode=control-group tears down the whole cgroup
+    when a Type=oneshot's main process exits, and `start_new_session=True` escapes the SESSION,
+    not the CGROUP. Every row this dispatcher fired was therefore killed milliseconds after being
+    spawned -- the state file recorded `fires=N` while the organs' own logs stayed days stale,
+    and the L1.50 coverage-floor stall the dispatcher was built to end never ended. Proven with a
+    probe unit: a detached `sleep 25; echo` child left no output under the default and SURVIVED
+    under KillMode=process.
+
+    Pinned as a file assertion because there is no way to observe systemd's cgroup teardown from
+    inside pytest, and this is one line that looks like boilerplate to anyone tidying the unit.
+    """
+    from pathlib import Path
+    unit = Path(__file__).resolve().parents[2] / "ops" / "quant-manifest-dispatch.service"
+    src = unit.read_text("utf-8")
+    assert "KillMode=process" in src, (
+        "quant-manifest-dispatch.service lost KillMode=process -- systemd will SIGKILL every "
+        "organ the dispatcher spawns the instant the dispatcher exits, and the state file will "
+        "go on reporting fires=N with nothing behind it.")

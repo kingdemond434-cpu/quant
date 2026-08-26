@@ -10,6 +10,16 @@ After=network-online.target
 
 [Service]
 Type=oneshot
+# KillMode=process IS LOad-BEARING, NOT TIDINESS (measured 2026-08-26). systemd's default
+# KillMode=control-group tears down the whole cgroup when a oneshot's main process exits, and
+# `start_new_session=True` escapes the SESSION, not the CGROUP. So every row this dispatcher
+# fired was SIGKILLed milliseconds after being spawned: the state file recorded `fires=N` while
+# the organs' logs stayed days stale, and the L1.50 coverage-floor stall the first wave was
+# built to end never ended. Proven with a probe unit: a detached `sleep 25; echo` child left no
+# output under the default and SURVIVED under KillMode=process.
+# This is the desk's most-repeated lesson in scheduler form -- `fires=N` is a heartbeat, the
+# organ's own artifact is the pipe, and only the second one is evidence.
+KillMode=process
 User=quant
 WorkingDirectory=/home/quant/quant-platform
 # No sandbox hardening HERE: fired rows inherit this service's restrictions, and pull_deploy
