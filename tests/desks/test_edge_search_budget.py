@@ -45,8 +45,54 @@ def test_per_run_budget_is_a_real_slice(tmp_path, monkeypatch, capsys):
                         lambda s: (searched.append(s), {"symbol": s, "trials": 1,
                                                         "selected": []})[1])
     edge_search.main()
-    assert len(searched) <= 20, f"budget not applied: {len(searched)} symbols attempted"
+    # EXACTLY PER_RUN, not "fewer than the registry". The first version of this fix computed
+    # `budget = PER_RUN + len(ranked)` and a loose bound passed it: nearly every symbol carries
+    # miner attention, so the mined head IS most of the registry and 295 became 175. The box
+    # climbed to 2.68GB and was still climbing. This assertion is the one that catches that.
+    assert len(searched) == edge_search.PER_RUN, (
+        f"budget is not a TOTAL: {len(searched)} searched, PER_RUN={edge_search.PER_RUN}")
     assert "budgeted slice" in capsys.readouterr().out
+
+
+def test_the_budget_holds_even_when_every_symbol_has_attention(tmp_path, monkeypatch):
+    """The exact shape that defeated the first fix: mined ground covering the whole registry."""
+    searched: list[str] = []
+    names = [f"SYM{i:03d}" for i in range(120)]
+    monkeypatch.setattr(edge_search, "PER_RUN", 8)
+    monkeypatch.setattr(edge_search, "BASE", tmp_path)
+    monkeypatch.setattr(edge_search, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(edge_search, "UNIVERSE", _universe(tmp_path, names))
+    hyp = tmp_path / "data" / "hypotheses"
+    hyp.mkdir(parents=True, exist_ok=True)
+    (hyp / "mined_targets.json").write_text(
+        json.dumps({"targets": [{"symbol": n} for n in names]}), "utf-8")
+    monkeypatch.setattr(edge_search, "search_symbol",
+                        lambda s: (searched.append(s), {"symbol": s, "trials": 1,
+                                                        "selected": []})[1])
+    edge_search.main()
+    assert len(searched) == 8, f"attention exempted the budget: {len(searched)} searched"
+
+
+def test_the_rotation_tail_is_reached_even_when_attention_is_large(tmp_path, monkeypatch):
+    """Spending the whole budget on the mined head would advance the cursor over symbols no run
+    ever searches -- a coverage claim the desk could not cash."""
+    searched: list[str] = []
+    names = [f"SYM{i:03d}" for i in range(120)]
+    monkeypatch.setattr(edge_search, "PER_RUN", 8)
+    monkeypatch.setattr(edge_search, "BASE", tmp_path)
+    monkeypatch.setattr(edge_search, "OUT", tmp_path / "out.json")
+    monkeypatch.setattr(edge_search, "UNIVERSE", _universe(tmp_path, names))
+    hyp = tmp_path / "data" / "hypotheses"
+    hyp.mkdir(parents=True, exist_ok=True)
+    # Attention on the first 100 only; the last 20 are reachable ONLY via the rotation tail.
+    (hyp / "mined_targets.json").write_text(
+        json.dumps({"targets": [{"symbol": n} for n in names[:100]]}), "utf-8")
+    monkeypatch.setattr(edge_search, "search_symbol",
+                        lambda s: (searched.append(s), {"symbol": s, "trials": 1,
+                                                        "selected": []})[1])
+    edge_search.main()
+    assert any(s in names[100:] for s in searched), (
+        f"the rotation tail was never reached: {searched}")
 
 
 def test_the_cursor_still_advances_so_coverage_is_a_cycle(tmp_path, monkeypatch):

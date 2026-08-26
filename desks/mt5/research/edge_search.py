@@ -638,15 +638,33 @@ def main(symbols: list[str] | None = None) -> int:
         # symbol-searches a day against the current zero. Coverage stays a CYCLE, never a
         # finished sweep (RESEARCH 6c-bis): the cursor advances every run, so every symbol is
         # re-searched on newer bars forever, and mined ground still jumps the queue ahead of it.
-        budget = PER_RUN + len(ranked)
-        if len(symbols) > budget:
-            print(f"  budgeted slice: {budget} of {len(symbols)} symbol(s) this run "
-                  f"({len(ranked)} mined-ground + {PER_RUN} on the rotation cursor at "
-                  f"{cursor}); the rest are covered by following runs and then covered again")
-            symbols = symbols[:budget]
+        # PER_RUN IS A TOTAL, NOT AN ALLOWANCE ON TOP OF THE MINED HEAD. A first version of this
+        # fix read `budget = PER_RUN + len(ranked)`, which bounded nothing: nearly every symbol
+        # carries some miner attention (measured: `search order: 135 mined-ground symbol(s)
+        # first`), so the head IS most of the registry and 295 became 175. The box climbed to
+        # 2.68GB and was still climbing.
+        #
+        # AND THE SPLIT IS NOT COSMETIC. Spending the whole budget on the mined head would mean
+        # the rotation tail is never reached while `ranked` exceeds PER_RUN -- the cursor would
+        # advance over symbols no run ever searches, which is a coverage claim the desk could not
+        # cash. So attention gets priority up to half the budget and the cursor gets the rest,
+        # each taking the other's slack when it is short. Attention decides ORDER; the cursor
+        # guarantees that every symbol still comes back (RESEARCH 6c-bis).
+        if len(symbols) > PER_RUN:
+            head_n = min(len(ranked), max(1, PER_RUN // 2))
+            head = symbols[:head_n]
+            tail_pick = [s for s in symbols[len(ranked):] if s not in set(head)][:PER_RUN - head_n]
+            # Slack in either direction is taken by the other, so the budget is always spent.
+            chosen = head + tail_pick
+            if len(chosen) < PER_RUN:
+                chosen += [s for s in symbols if s not in set(chosen)][:PER_RUN - len(chosen)]
+            print(f"  budgeted slice: {len(chosen)} of {len(symbols)} symbol(s) this run "
+                  f"({len(head)} by miner/moat attention + {len(tail_pick)} on the rotation "
+                  f"cursor at {cursor}); every symbol returns on a later run, forever")
+            symbols = chosen
         else:
             print(f"  covering {len(symbols)} symbol(s) this run (registry fits inside the "
-                  f"{budget}-symbol budget)")
+                  f"{PER_RUN}-symbol budget)")
     results, hypotheses = [], []
     total_trials = 0
     unsearched: list[dict[str, str]] = []
