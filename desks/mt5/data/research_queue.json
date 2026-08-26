@@ -2998,5 +2998,181 @@
    "win_rate": 0.4775,
    "symbol": "GBPJPY"
   }
+ },
+ {
+  "id": "ext-20260826-4c7d2c",
+  "geneology_id": "external:ext_forexfactory_USDCHF_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=1765 exp=0.1363R t=4.54 pf=1.291 maxDD=-25.88R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1765,
+   "exp_r": 0.1363,
+   "t_stat": 4.54,
+   "profit_factor": 1.291,
+   "max_dd_r": -25.88,
+   "win_rate": 0.4629,
+   "symbol": "USDCHF"
+  }
+ },
+ {
+  "id": "ext-20260826-cd7234",
+  "geneology_id": "external:ext_forexfactory_AUDUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=1685 exp=0.1073R t=4.54 pf=1.317 maxDD=-14.08R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1685,
+   "exp_r": 0.1073,
+   "t_stat": 4.54,
+   "profit_factor": 1.317,
+   "max_dd_r": -14.08,
+   "win_rate": 0.5169,
+   "symbol": "AUDUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-128514",
+  "geneology_id": "external:ext_forexfactory_USDCHF_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=1765 exp=0.1282R t=4.53 pf=1.279 maxDD=-24.9R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1765,
+   "exp_r": 0.1282,
+   "t_stat": 4.53,
+   "profit_factor": 1.279,
+   "max_dd_r": -24.9,
+   "win_rate": 0.4714,
+   "symbol": "USDCHF"
+  }
+ },
+ {
+  "id": "ext-20260826-48cadf",
+  "geneology_id": "external:ext_forexfactory_AUDJPY_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDJPY session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=1632 exp=0.1001R t=4.52 pf=1.327 maxDD=-23.64R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1632,
+   "exp_r": 0.1001,
+   "t_stat": 4.52,
+   "profit_factor": 1.327,
+   "max_dd_r": -23.64,
+   "win_rate": 0.5135,
+   "symbol": "AUDJPY"
+  }
+ },
+ {
+  "id": "ext-20260826-8a6c4e",
+  "geneology_id": "external:ext_forexfactory_USDCHF_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF session_range_breakout params={'rr': 1.5, 'wait_bars': 8} screened at n=1738 exp=0.1178R t=4.5 pf=1.264 maxDD=-21.38R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1738,
+   "exp_r": 0.1178,
+   "t_stat": 4.5,
+   "profit_factor": 1.264,
+   "max_dd_r": -21.38,
+   "win_rate": 0.4954,
+   "symbol": "USDCHF"
+  }
+ },
+ {
+  "id": "ext-20260826-884f90",
+  "geneology_id": "external:ext_forexfactory_GBPAUD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPAUD session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1636 exp=0.1135R t=4.39 pf=1.308 maxDD=-16.52R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1636,
+   "exp_r": 0.1135,
+   "t_stat": 4.39,
+   "profit_factor": 1.308,
+   "max_dd_r": -16.52,
+   "win_rate": 0.4994,
+   "symbol": "GBPAUD"
+  }
+ },
+ {
+  "id": "ext-20260826-21890c",
+  "geneology_id": "external:ext_forexfactory_CHFJPY_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1671 exp=0.1134R t=4.38 pf=1.289 maxDD=-16.25R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1671,
+   "exp_r": 0.1134,
+   "t_stat": 4.38,
+   "profit_factor": 1.289,
+   "max_dd_r": -16.25,
+   "win_rate": 0.4877,
+   "symbol": "CHFJPY"
+  }
+ },
+ {
+  "id": "ext-20260826-5f7c0d",
+  "geneology_id": "external:ext_forexfactory_GBPAUD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPAUD session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1636 exp=0.1076R t=4.34 pf=1.294 maxDD=-13.2R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T15:50:00.592810+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1636,
+   "exp_r": 0.1076,
+   "t_stat": 4.34,
+   "profit_factor": 1.294,
+   "max_dd_r": -13.2,
+   "win_rate": 0.5031,
+   "symbol": "GBPAUD"
+  }
  }
 ]
