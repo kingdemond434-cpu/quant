@@ -1,32 +1,14 @@
 {
- "merged_at": "2026-08-26T05:47:13+00:00",
+ "merged_at": "2026-08-26T07:23:09+00:00",
  "per_source": {
-  "external_backtest_results.json": 357,
-  "edge_search_results.json": 575,
+  "external_backtest_results.json": 114,
+  "edge_search_results.json": 2760,
   "orthogonal_candidates.json": -1
  },
- "total": 932,
+ "total": 2874,
  "families": {
-  "asia_momentum": 19,
-  "discovered": 575,
-  "dow_effect": 17,
-  "engulfing_reversal": 19,
-  "failed_breakout": 19,
-  "ict_fvg": 20,
-  "level_breakout": 19,
-  "london_close_momentum": 19,
-  "mean_reversion_bollinger": 19,
-  "mean_reversion_rsi": 19,
-  "momentum_volgate": 20,
-  "monday_gap": 17,
-  "overnight_drift": 17,
-  "pin_bar_reversal": 19,
-  "pullback_entry": 19,
-  "range_reversion": 19,
-  "session_range_breakout": 19,
-  "trend_ma_cross": 19,
-  "volatility_squeeze": 19,
-  "volume_spike": 19
+  "discovered": 2760,
+  "session_range_breakout": 114
  },
  "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
 }

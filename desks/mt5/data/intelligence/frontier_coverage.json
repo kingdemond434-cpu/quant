@@ -90,6 +90,15 @@
    "graduated": 0,
    "last_swept": "2026-08-26T06:22:01+00:00",
    "native_terms_available": 11
+  },
+  "de": {
+   "region": "DACH",
+   "open_frontier": true,
+   "queries_exercised": 3,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-08-26T07:22:01+00:00",
+   "native_terms_available": 10
   }
  }
 }
