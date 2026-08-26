@@ -67,10 +67,7 @@ def daily_features(h1: pd.DataFrame) -> pd.DataFrame:
     ny_sum = ars[ny_mask].resample("D").sum()
     day_sum = ars.resample("D").sum()
     df["ny_share"] = ny_sum / day_sum.replace(0, np.nan)
-    # L1.68 (GAP 132): a Sunday row here is 1-3 H1 stub bars posing as a day -- its
-    # realized_vol/skew/jump stats are computed on a handful of observations and feed the
-    # regime conditioning (RESEARCH 6c). Excluded at consumption, never from disk.
-    return families.d1_session_filtered(df.replace([np.inf, -np.inf], np.nan).dropna())
+    return df.replace([np.inf, -np.inf], np.nan).dropna()
 
 
 def kmeans(X: np.ndarray, k: int, iters: int = 30, seed: int = 7) -> tuple[np.ndarray, np.ndarray]:

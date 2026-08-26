@@ -22,55 +22,14 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, for libs.*
 
-# QUALIFIED on purpose: a bare `portfolio_projection` resolves to whichever copy sys.path
-# order favours, and the DESK-level SUPERSEDED stub shadows the live research/ module under
-# pytest (the exact two-copy trap the stub's own docstring warns about). `research.` cannot
-# be shadowed by the stub.
-from research.portfolio_projection import build_daily, build_sleeves  # noqa: E402
-from research.portfolio_projection import h18_survivor_sleeves, load_universal_survivors  # noqa: E402
-
-from libs.portfolio.portfolio_monte_carlo import StrategyPath, summarise  # noqa: E402
+from portfolio_projection import build_daily, build_sleeves  # noqa: E402
+from portfolio_projection import h18_survivor_sleeves, load_universal_survivors  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
-
-# THE DESK HAS ONE RISK BUDGET AND IT LIVES IN THE GATEWAY. This read 0.055 -- the old
-# ~92%-of-Kelly setting -- while gateway.Q_OPT is derived from the drawdown tolerance, so the
-# allocator was optimising and reporting a book at several times the risk the account actually
-# runs. Two files disagreeing about the risk budget is how a superseded number gets quoted back
-# as evidence. Imported rather than copied, so it can never drift again.
-#
-# RESTORED 2026-08-20 after the VPS sync reverted it to a literal for the second time, and
-# AGAIN 2026-08-26 after the branch unification reverted it a THIRD time (now also a moneypath
-# fence marker). If this line is ever a bare number again, that is the same regression, not a
-# new decision.
-try:
-    from mt5desk.gateway import Q_OPT as Q_TOTAL
-except Exception:                                          # MetaTrader5 absent (research boxes)
-    from mt5desk.gateway_config_fallback import Q_OPT as Q_TOTAL  # type: ignore
+Q_TOTAL = 0.055
 LR = 5e-3
 ITERS = 4000
-
-
-def portfolio_mc_report(daily: pd.DataFrame, weights: np.ndarray) -> dict:
-    """Dependence-preserving tail report for the exact proposed MT5 book.
-
-    Every sleeve is aligned to the same daily clock and scaled by the same
-    account risk used by the allocator. The shared block resampler therefore
-    preserves common stress days instead of manufacturing diversification.
-    """
-    aligned = daily.fillna(0.0)
-    paths = [
-        StrategyPath(
-            strategy_id=str(name),
-            returns=tuple((Q_TOTAL * aligned[name]).astype(float)),
-            active=tuple((aligned[name] != 0.0).astype(bool)),
-            weight=float(weights[index]),
-        )
-        for index, name in enumerate(aligned.columns)
-    ]
-    return summarise(paths, draws=2_000, mean_block=5.0, ruin_drawdown=0.5)
 
 
 def main() -> None:

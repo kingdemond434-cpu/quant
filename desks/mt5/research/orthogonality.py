@@ -17,9 +17,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# QUALIFIED: the DESK-level SUPERSEDED stub shadows the bare name under pytest (see
-# research/allocation.py); `research.` cannot be shadowed.
-from research.portfolio_projection import build_daily, build_sleeves  # noqa: E402
+from portfolio_projection import build_daily, build_sleeves  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 

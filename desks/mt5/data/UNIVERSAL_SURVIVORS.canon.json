@@ -1,5 +1,5 @@
 {
-  "n": 21,
+  "n": 14,
   "survivors": {
     "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
       "hunt": "hunt16.json",
@@ -385,13 +385,13 @@
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9989,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -399,39 +399,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1814,
+          "mean_oos_sharpe": 0.1813,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1921,
+          "oos_sharpe": 0.1919,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.1666
+          "exp_x3": 0.1665
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1921
+          "lockbox_sharpe": 0.1919
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.187
+          "ev": 0.1869
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109357+00:00",
+      "gated_at": "2026-08-25T23:14:25.488912+00:00",
       "shadow_spec": {
         "symbol": "XAUUSD",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.XAUUSD.session_range_breakout.rr=2.0_wb=12": {
@@ -450,13 +446,13 @@
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9996,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -464,39 +460,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1859,
+          "mean_oos_sharpe": 0.1858,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1929,
+          "oos_sharpe": 0.1928,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.1928
+          "exp_x3": 0.1927
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1929
+          "lockbox_sharpe": 0.1928
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2132
+          "ev": 0.2131
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109366+00:00",
+      "gated_at": "2026-08-25T23:14:25.488941+00:00",
       "shadow_spec": {
         "symbol": "XAUUSD",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.0,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.XAUUSD.session_range_breakout.rr=2.5_wb=12": {
@@ -511,17 +503,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1914
+          "sharpe": 0.1913
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9999,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -529,12 +521,12 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1926,
+          "mean_oos_sharpe": 0.1925,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.2013,
+          "oos_sharpe": 0.2012,
           "stability": 1.0
         },
         "stress_costs": {
@@ -543,25 +535,21 @@
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.2013
+          "lockbox_sharpe": 0.2012
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.2371
+          "ev": 0.237
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109372+00:00",
+      "gated_at": "2026-08-25T23:14:25.488949+00:00",
       "shadow_spec": {
         "symbol": "XAUUSD",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.5,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.USDJPY.session_range_breakout.rr=1.5_wb=12": {
@@ -576,17 +564,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1588
+          "sharpe": 0.1594
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9998,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9839,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -594,39 +582,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1589,
+          "mean_oos_sharpe": 0.1595,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1669,
+          "oos_sharpe": 0.1678,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0642
+          "exp_x3": 0.0649
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1669
+          "lockbox_sharpe": 0.1678
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.143
+          "ev": 0.1436
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109378+00:00",
+      "gated_at": "2026-08-25T23:14:25.488955+00:00",
       "shadow_spec": {
         "symbol": "USDJPY",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.USDJPY.session_range_breakout.rr=2.0_wb=12": {
@@ -641,17 +625,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1632
+          "sharpe": 0.164
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 1.0,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9921,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -659,39 +643,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1629,
+          "mean_oos_sharpe": 0.1637,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1755,
+          "oos_sharpe": 0.1765,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0798
+          "exp_x3": 0.0807
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1755
+          "lockbox_sharpe": 0.1765
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1586
+          "ev": 0.1595
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109383+00:00",
+      "gated_at": "2026-08-25T23:14:25.488960+00:00",
       "shadow_spec": {
         "symbol": "USDJPY",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.0,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.USDJPY.session_range_breakout.rr=2.5_wb=12": {
@@ -706,17 +686,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1605
+          "sharpe": 0.1614
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9999,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9902,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -724,39 +704,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1602,
+          "mean_oos_sharpe": 0.1611,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1729,
+          "oos_sharpe": 0.1741,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0842
+          "exp_x3": 0.0853
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1729
+          "lockbox_sharpe": 0.1741
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.163
+          "ev": 0.1641
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109388+00:00",
+      "gated_at": "2026-08-25T23:14:25.488969+00:00",
       "shadow_spec": {
         "symbol": "USDJPY",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.5,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.CADJPY.session_range_breakout.rr=2.0_wb=12": {
@@ -771,17 +747,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1575
+          "sharpe": 0.1577
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9999,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9828,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -789,39 +765,35 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1573,
+          "mean_oos_sharpe": 0.1574,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1602,
+          "oos_sharpe": 0.1604,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0624
+          "exp_x3": 0.0625
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1602
+          "lockbox_sharpe": 0.1604
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1631
+          "ev": 0.1632
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109400+00:00",
+      "gated_at": "2026-08-25T23:14:25.488979+00:00",
       "shadow_spec": {
         "symbol": "CADJPY",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.0,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     },
     "external.CADJPY.session_range_breakout.rr=2.5_wb=12": {
@@ -836,17 +808,17 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.1487
+          "sharpe": 0.1488
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9995,
-          "sr0": 0.0808,
-          "n_trials": 203
+          "dsr": 0.9574,
+          "sr0": 0.1132,
+          "n_trials": 378
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0462
+          "pbo": 0.0061
         },
         "reality_check_spa": {
           "passed": true,
@@ -854,499 +826,38 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.1483,
+          "mean_oos_sharpe": 0.1484,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.1511,
+          "oos_sharpe": 0.1513,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.0586
+          "exp_x3": 0.0587
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.1511
+          "lockbox_sharpe": 0.1513
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.1593
+          "ev": 0.1595
         }
       },
-      "gated_at": "2026-08-26T01:44:33.109406+00:00",
+      "gated_at": "2026-08-25T23:14:25.488984+00:00",
       "shadow_spec": {
         "symbol": "CADJPY",
         "selector": "asia",
         "family": "session_range_breakout",
         "is_universe": true,
         "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.5,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.XAUUSD.session_range_breakout.rr=1.5_wb=8": {
-      "hunt": "external_discoveries",
-      "cell": "XAUUSD.session_range_breakout.rr=1.5_wb=8",
-      "sym": "XAUUSD",
-      "days": 2046,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1422
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9975,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1433,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1519,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.13
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1519
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1508
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109329+00:00",
-      "shadow_spec": {
-        "symbol": "XAUUSD",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 8
-        }
-      }
-    },
-    "external.CADJPY.session_range_breakout.rr=1.5_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "CADJPY.session_range_breakout.rr=1.5_wb=12",
-      "sym": "CADJPY",
-      "days": 2142,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1473
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.999,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1472,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1588,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.04
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1588
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1408
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109395+00:00",
-      "shadow_spec": {
-        "symbol": "CADJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.GBPJPY.session_range_breakout.rr=1.5_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "GBPJPY.session_range_breakout.rr=1.5_wb=12",
-      "sym": "GBPJPY",
-      "days": 2170,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1171
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9563,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1174,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1333,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0625
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1333
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1154
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109412+00:00",
-      "shadow_spec": {
-        "symbol": "GBPJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.GBPJPY.session_range_breakout.rr=2.5_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "GBPJPY.session_range_breakout.rr=2.5_wb=12",
-      "sym": "GBPJPY",
-      "days": 2170,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1152
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9522,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1153,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.124,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0749
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.124
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1277
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109417+00:00",
-      "shadow_spec": {
-        "symbol": "GBPJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.5,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.rr=1.5_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.rr=1.5_wb=12",
-      "sym": "EURJPY",
-      "days": 2148,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1405
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9974,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1403,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1575,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0666
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1575
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1332
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109423+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 1.5,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.rr=2.0_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.rr=2.0_wb=12",
-      "sym": "EURJPY",
-      "days": 2148,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1409
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9979,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1405,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1566,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.076
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1566
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.1426
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109428+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.0,
-          "wait_bars": 12
-        }
-      }
-    },
-    "external.EURJPY.session_range_breakout.rr=2.5_wb=12": {
-      "hunt": "external_discoveries",
-      "cell": "EURJPY.session_range_breakout.rr=2.5_wb=12",
-      "sym": "EURJPY",
-      "days": 2148,
-      "gates": {
-        "economic_prior": {
-          "passed": true,
-          "message": "discovered via external channel"
-        },
-        "in_sample_screen": {
-          "passed": true,
-          "sharpe": 0.1319
-        },
-        "deflated_sharpe": {
-          "passed": true,
-          "dsr": 0.9932,
-          "sr0": 0.0808,
-          "n_trials": 203
-        },
-        "pbo": {
-          "passed": true,
-          "pbo": 0.0462
-        },
-        "reality_check_spa": {
-          "passed": true,
-          "p_value": 0.0
-        },
-        "cpcv": {
-          "passed": true,
-          "mean_oos_sharpe": 0.1314,
-          "folds": 15
-        },
-        "walk_forward": {
-          "passed": true,
-          "oos_sharpe": 0.1457,
-          "stability": 1.0
-        },
-        "stress_costs": {
-          "passed": true,
-          "exp_x3": 0.0714
-        },
-        "lockbox": {
-          "passed": true,
-          "lockbox_sharpe": 0.1457
-        },
-        "expected_value": {
-          "passed": true,
-          "ev": 0.138
-        }
-      },
-      "gated_at": "2026-08-26T01:44:33.109433+00:00",
-      "shadow_spec": {
-        "symbol": "EURJPY",
-        "selector": "asia",
-        "family": "session_range_breakout",
-        "is_universe": true,
-        "hunt": "external_discoveries",
-        "condition": null,
-        "params": {
-          "rr": 2.5,
-          "wait_bars": 12
-        }
+        "condition": null
       }
     }
   },
-  "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-08-26T01:44:33.109439+00:00",
   "gate_policy": {
     "version": "mt5-original-universal-10-v2-calibrated-inputs",
     "gates": [
@@ -1376,5 +887,7 @@
     "cpcv_mean_oos_sharpe_min_exclusive": 0.0,
     "lockbox_oos_sharpe_min": 0.0,
     "expected_value_min_exclusive": 0.0
-  }
+  },
+  "note": "UNIVERSAL 10-GATE PASS ONLY.",
+  "swept_at": "2026-08-25T23:14:25.488993+00:00"
 }
