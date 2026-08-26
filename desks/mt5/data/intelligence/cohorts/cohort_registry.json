@@ -4886,5 +4886,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"c5fd61ed7006e3c4": {
+"t0": "2026-08-26T02:24:54+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "DEVfancybear/MarketLens",
+"url": "https://github.com/DEVfancybear/MarketLens",
+"text": "Bilingual TradingView-inspired web terminal for advanced charting, replay, risk management, alerts, analytics, and secure multi-account MT5 execution with Go, Rust, and backend-managed Windows VM connectors.",
+"symbols": [],
+"found_at": "2026-08-26T02:24:31+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T02:08:33Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
