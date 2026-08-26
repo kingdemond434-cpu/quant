@@ -104,6 +104,12 @@ def _reconcile() -> None:
     forward_reconcile.main()
 
 
+def _portfolio() -> None:
+    """How many INDEPENDENT bets is the book -- before anything is sized as if it were new alpha."""
+    import portfolio_evidence
+    portfolio_evidence.main()
+
+
 def _decay() -> None:
     import decay_monitor
     decay_monitor.main()
@@ -186,7 +192,7 @@ def _zentech() -> None:
 STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
-         ("decay", _decay),
+         ("portfolio", _portfolio), ("decay", _decay),
          ("zentech", _zentech), ("export_aurum", _export_aurum))
 
 

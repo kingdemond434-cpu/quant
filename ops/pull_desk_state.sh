@@ -27,6 +27,15 @@ scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
     desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp 2>/dev/null \
   && mv desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 
+# The job manifest judges FRESHNESS, so it has to see the trading box's own artifacts rather than
+# this box's stale copies -- otherwise it would report a dead organ as healthy, which is the exact
+# failure mode it exists to catch.
+scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
+    desks/mt5/reports/execution_quality.json 2>/dev/null || true
+for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json; do
+  scp -q "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
+done
+
 rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
 if [ "$ok" = "1" ]; then
   echo "$(date -u +%FT%TZ) desk state pulled"

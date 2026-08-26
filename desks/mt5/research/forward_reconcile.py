@@ -184,6 +184,24 @@ def main() -> int:
             base_key = key.split("#", 1)[0]
             parts = base_key.split(".")
             sym, sel = parts[0], (parts[1] if len(parts) > 1 else "")
+            # NOT EVERY LANE KEYS ROWS AS "SYMBOL.selector". qquant uses
+            # "qquant.hunt16.json.<SYM> <family> <side> <window> <state>", so splitting on "."
+            # produced sym="qquant" -- matching no certificate -- and this reconciler retired
+            # AUDNZD, a genuinely certified sleeve, as UNRECONSTRUCTIBLE. The engine then reset
+            # its status to ACTIVE on the next pass while the retire_* fields stayed behind,
+            # leaving the contradictory row the principal found. When a row carries its own
+            # descriptor, believe the row, not the key.
+            _cell = str(row.get("cell") or row.get("certificate") or "")
+            if not any(sym == a for a, _b in certs) and _cell:
+                _tok = _cell.replace(".", " ").split()
+                for _t in _tok:
+                    if any(_t == a for a, _b in certs):
+                        sym = _t
+                        break
+                for _t in _tok:
+                    if any(_t == b for _a, b in certs):
+                        sel = _t
+                        break
             certificate_id = str(row.get("certificate") or key)
             has_cert = certificate_id in cert_ids or any(
                 sym == a and (sel == b or not sel) for a, b in certs
@@ -202,6 +220,14 @@ def main() -> int:
                 continue
 
             if has_cert:
+                # CLEAR STALE RETIREMENT METADATA. A row that is certified and running must not
+                # also carry retired_at/retire_reason from an earlier mistaken pass: a reader
+                # cannot tell which field to believe, and the dashboard showed both.
+                if row.pop("retired_at", None) or row.pop("retire_reason", None):
+                    actions.append({"key": key, "action": "RETIREMENT_CLEARED",
+                                    "why": "row is certified and running; stale retirement "
+                                           "metadata removed so the state is unambiguous"})
+                    changed = True
                 continue
 
             # A FULLY-SPECIFIED SLEEVE THIS GAUNTLET CANNOT JUDGE keeps measuring but loses its
