@@ -1,76 +1,132 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-25T23:41:53.625935+00:00",
+  "generated_at": "2026-08-26T04:02:55.827206+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
-    "REACHABLE_MT5_STATIC": 63,
-    "UNWIRED_REVIEW": 553,
+    "DISPOSED_BLOCKED": 7,
+    "DISPOSED_SUPERSEDED": 10,
+    "REACHABLE_MT5_STATIC": 64,
+    "UNWIRED_REVIEW": 536,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
     {
       "module": "libs.alpha.card",
       "path": "libs/alpha/card.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Crypto-era alpha lifecycle card; the MT5 desk's sleeve_registry.json + certificate flow (universal_gate) own candidate identity. Inspected by the 2026-08-25 gap-wirer seat (GAP_REGISTER 'Also this seat' block); wiring would recreate the two-lineage disease.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.decay",
       "path": "libs/alpha/decay.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Old-lineage decay scoring; desks/mt5/research/decay_monitor.py is the wired L1.59 organ in the daily chain (shadow->promoter->markout->decay->export). Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.errors",
       "path": "libs/alpha/errors.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Exception vocabulary for the superseded libs.alpha manager; no MT5 organ imports it and its siblings are superseded with it. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.health",
       "path": "libs/alpha/health.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Old-lineage sleeve health checks; MT5 health lives in decay_monitor (FADE/RETIRE ladder) + forward_reconcile. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.manager",
       "path": "libs/alpha/manager.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Crypto-era alpha lifecycle manager (allocate/retire); the MT5 promoter + sleeve_registry + decay chain own the whole lifecycle under LAWS 4 (promotion firewall). Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.ranking",
       "path": "libs/alpha/ranking.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Standalone-record ranking contradicts portfolio-first value (RESEARCH 7: marginal E[log W], never standalone record); MT5 admission is EV-rank inside slot_admission. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.registry",
       "path": "libs/alpha/registry.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Second registry for the same nouns sleeve_registry.json owns; two registries for one truth is the disease III.16 wiring exists to prevent. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.state",
       "path": "libs/alpha/state.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "State-machine states for the superseded manager; the MT5 ladder states (FORWARD_READY/CANARY/LIVE_FULL, RESEARCH 6a) are canon. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha.successor",
       "path": "libs/alpha/successor.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "Successor-hunting for retired crypto alphas; the MT5 descendant loop (RESEARCH 7: every survivor spawns descendants) plus graveyard re-open law L1.16a own replacement. Inspected 2026-08-25 seat.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.alpha_factory.alpha_discovery_engine",
@@ -992,9 +1048,15 @@
     {
       "module": "libs.execution.book_walk",
       "path": "libs/execution/book_walk.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Exact fills from the desk's RECORDED CRYPTO DEPTH tape (format-bound to the retired recorders). The discipline (impact measured on own tape, never assumed) transfers; the code cannot until an MT5 moat depth tape exists. RE-OPEN CONDITION (L1.16a): contabo moat recorder shipping depth snapshots (GAP 127).",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.broker",
@@ -1013,16 +1075,28 @@
     {
       "module": "libs.execution.carry_accounting",
       "path": "libs/execution/carry_accounting.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Delta-neutral spot-perp cash-carry accounting for the retired crypto book (principal retirement b0fe6f50; RECORDERS_OFF permanent). MT5 CFD swap/rollover accounting is broker-side and has no two-venue leg join to heal.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.collateral",
       "path": "libs/execution/collateral.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Stable-collateral asset definitions imported by crypto venue clients; Fusion margin is account-currency and broker-side. No MT5 consumer can exist.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.discretionary_sleeve",
@@ -1034,9 +1108,15 @@
     {
       "module": "libs.execution.ea_bridge",
       "path": "libs/execution/ea_bridge.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_SUPERSEDED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "SUPERSEDED",
+        "reason": "gateway.py drives MT5 natively via the MetaTrader5 package (import at gateway.py:32, SHADOW/ARMED bracket orders); the file-queue EA transport is the older route, held only by run_live_demo.py. Two transports to one terminal is the two-lineage disease.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.economics",
@@ -1111,9 +1191,15 @@
     {
       "module": "libs.execution.leg_modes",
       "path": "libs/execution/leg_modes.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Cash-carry leg-mode vocabulary for the same retired two-venue book; meaningless for single-broker MT5 CFD execution.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.leverage_policy",
@@ -1125,9 +1211,15 @@
     {
       "module": "libs.execution.maker",
       "path": "libs/execution/maker.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Its own docstring: maker-first for the TESTNET FUTURES batch, 'NOT THE LIVE PATH'. Binance testnet is banned-universe ground and the testnet books are retired.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.maker_first",
@@ -1153,9 +1245,15 @@
     {
       "module": "libs.execution.passive_impact",
       "path": "libs/execution/passive_impact.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Passive-fill impact model estimated from the same retired crypto depth/fill tape. RE-OPEN CONDITION (L1.16a): MT5 moat tape live with passive fills to fit on (GAP 127).",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.protective_stops",
@@ -1188,9 +1286,15 @@
     {
       "module": "libs.execution.short_order_path",
       "path": "libs/execution/short_order_path.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "DISPOSED_BLOCKED",
       "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
+      "proof_level": "STATIC_REACHABILITY_ONLY",
+      "disposition": {
+        "verdict": "BLOCKED",
+        "reason": "Borrow-the-base spot shorting is a crypto-venue mechanism; MT5 CFDs short natively with broker-side margin, so there is no MT5 equivalence to prove.",
+        "date": "2026-08-26",
+        "stale": false
+      }
     },
     {
       "module": "libs.execution.spot_order_path",
@@ -1524,6 +1628,13 @@
     {
       "module": "libs.ops.campaign_queue",
       "path": "libs/ops/campaign_queue.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.canon_lease",
+      "path": "libs/ops/canon_lease.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -1972,8 +2083,10 @@
     {
       "module": "libs.portfolio.portfolio_monte_carlo",
       "path": "libs/portfolio/portfolio_monte_carlo.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/allocation.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
@@ -4147,7 +4260,7 @@
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
-        "desks/mt5/side_channels/full_pipeline.py",
+        "desks/mt5/scripts/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4171,7 +4284,7 @@
         "desks/mt5/research/scalp_reverse_engineering.py",
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
-        "desks/mt5/side_channels/full_pipeline.py",
+        "desks/mt5/scripts/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4297,7 +4410,7 @@
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
-        "desks/mt5/side_channels/full_pipeline.py",
+        "desks/mt5/scripts/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4332,7 +4445,7 @@
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
-        "desks/mt5/side_channels/full_pipeline.py",
+        "desks/mt5/scripts/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4374,7 +4487,7 @@
         "desks/mt5/research/qquant_gates.py",
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
-        "desks/mt5/side_channels/full_pipeline.py",
+        "desks/mt5/scripts/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4444,5 +4557,5 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     }
   ],
-  "interpretation": "REACHABLE_MT5_STATIC proves a code path only, never runtime or economic value. UNWIRED_REVIEW is the nightly positive-EV triage queue. VENUE_SPECIFIC_REVIEW requires an MT5-equivalence proof or an explicit block/archive disposition."
+  "interpretation": "REACHABLE_MT5_STATIC proves a code path only, never runtime or economic value. UNWIRED_REVIEW is the nightly positive-EV triage queue. VENUE_SPECIFIC_REVIEW requires an MT5-equivalence proof or an explicit block/archive disposition. DISPOSED_* rows carry recorded verdicts from docs/research/mt5_capability_dispositions.json (reachability outranks a verdict; DISPOSITION_INVALID counts malformed rows that were refused)."
 }

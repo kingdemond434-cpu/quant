@@ -1,14 +1,90 @@
 {
-  "note": "Recorded verdicts for audit_mt5_capability_reuse rows (III.16 triage). Without this registry every weekly seat re-inspected the same modules and the verdicts evaporated -- the 2026-08-25 gap-wirer seat's ten libs.alpha inspections closed 'pending an audit disposition mechanism'; this is that mechanism. Verdicts: SUPERSEDED (an MT5-native organ owns the function; wiring would recreate the two-lineage disease) | BLOCKED (incompatible or banned-universe; the MT5-equivalence question is answered no). Anything positive-EV is neither: it gets WIRED and leaves the queue by measured reachability, never by verdict. Reachability always outranks a disposition -- a disposed module that gains a real MT5 consumer reports REACHABLE with the disposition marked stale. Reasons are mandatory and substantive; this file is tracked so git history is the audit trail.",
-  "dispositions": {
-    "libs.alpha.card": {"verdict": "SUPERSEDED", "reason": "Crypto-era alpha lifecycle card; the MT5 desk's sleeve_registry.json + certificate flow (universal_gate) own candidate identity. Inspected by the 2026-08-25 gap-wirer seat (GAP_REGISTER 'Also this seat' block); wiring would recreate the two-lineage disease.", "date": "2026-08-26"},
-    "libs.alpha.decay": {"verdict": "SUPERSEDED", "reason": "Old-lineage decay scoring; desks/mt5/research/decay_monitor.py is the wired L1.59 organ in the daily chain (shadow->promoter->markout->decay->export). Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.errors": {"verdict": "SUPERSEDED", "reason": "Exception vocabulary for the superseded libs.alpha manager; no MT5 organ imports it and its siblings are superseded with it. Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.health": {"verdict": "SUPERSEDED", "reason": "Old-lineage sleeve health checks; MT5 health lives in decay_monitor (FADE/RETIRE ladder) + forward_reconcile. Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.manager": {"verdict": "SUPERSEDED", "reason": "Crypto-era alpha lifecycle manager (allocate/retire); the MT5 promoter + sleeve_registry + decay chain own the whole lifecycle under LAWS 4 (promotion firewall). Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.ranking": {"verdict": "SUPERSEDED", "reason": "Standalone-record ranking contradicts portfolio-first value (RESEARCH 7: marginal E[log W], never standalone record); MT5 admission is EV-rank inside slot_admission. Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.registry": {"verdict": "SUPERSEDED", "reason": "Second registry for the same nouns sleeve_registry.json owns; two registries for one truth is the disease III.16 wiring exists to prevent. Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.state": {"verdict": "SUPERSEDED", "reason": "State-machine states for the superseded manager; the MT5 ladder states (FORWARD_READY/CANARY/LIVE_FULL, RESEARCH 6a) are canon. Inspected 2026-08-25 seat.", "date": "2026-08-26"},
-    "libs.alpha.successor": {"verdict": "SUPERSEDED", "reason": "Successor-hunting for retired crypto alphas; the MT5 descendant loop (RESEARCH 7: every survivor spawns descendants) plus graveyard re-open law L1.16a own replacement. Inspected 2026-08-25 seat.", "date": "2026-08-26"}
+ "note": "Recorded verdicts for audit_mt5_capability_reuse rows (III.16 triage). Without this registry every weekly seat re-inspected the same modules and the verdicts evaporated -- the 2026-08-25 gap-wirer seat's ten libs.alpha inspections closed 'pending an audit disposition mechanism'; this is that mechanism. Verdicts: SUPERSEDED (an MT5-native organ owns the function; wiring would recreate the two-lineage disease) | BLOCKED (incompatible or banned-universe; the MT5-equivalence question is answered no). Anything positive-EV is neither: it gets WIRED and leaves the queue by measured reachability, never by verdict. Reachability always outranks a disposition -- a disposed module that gains a real MT5 consumer reports REACHABLE with the disposition marked stale. Reasons are mandatory and substantive; this file is tracked so git history is the audit trail.",
+ "dispositions": {
+  "libs.alpha.card": {
+   "verdict": "SUPERSEDED",
+   "reason": "Crypto-era alpha lifecycle card; the MT5 desk's sleeve_registry.json + certificate flow (universal_gate) own candidate identity. Inspected by the 2026-08-25 gap-wirer seat (GAP_REGISTER 'Also this seat' block); wiring would recreate the two-lineage disease.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.decay": {
+   "verdict": "SUPERSEDED",
+   "reason": "Old-lineage decay scoring; desks/mt5/research/decay_monitor.py is the wired L1.59 organ in the daily chain (shadow->promoter->markout->decay->export). Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.errors": {
+   "verdict": "SUPERSEDED",
+   "reason": "Exception vocabulary for the superseded libs.alpha manager; no MT5 organ imports it and its siblings are superseded with it. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.health": {
+   "verdict": "SUPERSEDED",
+   "reason": "Old-lineage sleeve health checks; MT5 health lives in decay_monitor (FADE/RETIRE ladder) + forward_reconcile. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.manager": {
+   "verdict": "SUPERSEDED",
+   "reason": "Crypto-era alpha lifecycle manager (allocate/retire); the MT5 promoter + sleeve_registry + decay chain own the whole lifecycle under LAWS 4 (promotion firewall). Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.ranking": {
+   "verdict": "SUPERSEDED",
+   "reason": "Standalone-record ranking contradicts portfolio-first value (RESEARCH 7: marginal E[log W], never standalone record); MT5 admission is EV-rank inside slot_admission. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.registry": {
+   "verdict": "SUPERSEDED",
+   "reason": "Second registry for the same nouns sleeve_registry.json owns; two registries for one truth is the disease III.16 wiring exists to prevent. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.state": {
+   "verdict": "SUPERSEDED",
+   "reason": "State-machine states for the superseded manager; the MT5 ladder states (FORWARD_READY/CANARY/LIVE_FULL, RESEARCH 6a) are canon. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.alpha.successor": {
+   "verdict": "SUPERSEDED",
+   "reason": "Successor-hunting for retired crypto alphas; the MT5 descendant loop (RESEARCH 7: every survivor spawns descendants) plus graveyard re-open law L1.16a own replacement. Inspected 2026-08-25 seat.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.ea_bridge": {
+   "verdict": "SUPERSEDED",
+   "reason": "gateway.py drives MT5 natively via the MetaTrader5 package (import at gateway.py:32, SHADOW/ARMED bracket orders); the file-queue EA transport is the older route, held only by run_live_demo.py. Two transports to one terminal is the two-lineage disease.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.carry_accounting": {
+   "verdict": "BLOCKED",
+   "reason": "Delta-neutral spot-perp cash-carry accounting for the retired crypto book (principal retirement b0fe6f50; RECORDERS_OFF permanent). MT5 CFD swap/rollover accounting is broker-side and has no two-venue leg join to heal.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.leg_modes": {
+   "verdict": "BLOCKED",
+   "reason": "Cash-carry leg-mode vocabulary for the same retired two-venue book; meaningless for single-broker MT5 CFD execution.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.maker": {
+   "verdict": "BLOCKED",
+   "reason": "Its own docstring: maker-first for the TESTNET FUTURES batch, 'NOT THE LIVE PATH'. Binance testnet is banned-universe ground and the testnet books are retired.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.short_order_path": {
+   "verdict": "BLOCKED",
+   "reason": "Borrow-the-base spot shorting is a crypto-venue mechanism; MT5 CFDs short natively with broker-side margin, so there is no MT5 equivalence to prove.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.collateral": {
+   "verdict": "BLOCKED",
+   "reason": "Stable-collateral asset definitions imported by crypto venue clients; Fusion margin is account-currency and broker-side. No MT5 consumer can exist.",
+   "date": "2026-08-26"
+  },
+  "libs.execution.book_walk": {
+   "verdict": "BLOCKED",
+   "reason": "Exact fills from the desk's RECORDED CRYPTO DEPTH tape (format-bound to the retired recorders). The discipline (impact measured on own tape, never assumed) transfers; the code cannot until an MT5 moat depth tape exists. RE-OPEN CONDITION (L1.16a): contabo moat recorder shipping depth snapshots (GAP 127).",
+   "date": "2026-08-26"
+  },
+  "libs.execution.passive_impact": {
+   "verdict": "BLOCKED",
+   "reason": "Passive-fill impact model estimated from the same retired crypto depth/fill tape. RE-OPEN CONDITION (L1.16a): MT5 moat tape live with passive fills to fit on (GAP 127).",
+   "date": "2026-08-26"
   }
+ }
 }
