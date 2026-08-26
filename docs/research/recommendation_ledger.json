@@ -670,9 +670,26 @@
    "raised": "2026-07-30T12:24:52.659601+00:00",
    "status": "implemented",
    "reason": "reconciled by fresh isolated run: check_welded_gates now reports exactly 1 real weld (run_options_vrp_backtest.py; migration R0132 due 08-02). The 19 reading was true pre-migration state on 07-30, not a counting bug -- the weld signature (campaign_pbo_rc + pbo=/rc= handoff, exemptions for shim/harness/scanner) is grep-coherent today",
-   "commit": "HEAD",
+   "commit": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
    "due": null,
-   "disposed": "2026-07-31T16:58:35.048142+00:00"
+   "disposed": "2026-07-31T16:58:35.048142+00:00",
+   "repoints": [
+    {
+     "was": "HEAD",
+     "now": "16af648740dde4222eba3e21ccbeaf47e52d7d89",
+     "at": "2026-08-18T21:11:30.322406+00:00",
+     "why": "original citation was the literal string HEAD (unresolvable by construction; R0478). 16af6487 is the Cycle-4 conversion-batch commit that both records this disposition and names the work in its own message; exact work sha unrecoverable after the 07-31 concurrent renumber. Re-applied after a sibling whole-file write reverted the first repoint."
+    }
+   ],
+   "restorations": [
+    {
+     "was": "HISTORY",
+     "restored_to": "implemented",
+     "from_commit": "be6992e7bfb6c99d6a3fcd755c06fa0bacb0ede0",
+     "at": "2026-08-26T03:05:37.952105+00:00",
+     "why": "repoints 1->0 (append-only lists cannot shrink); reverted by a merge that bypassed dispose()'s one-way guard and the CLI flock, restored from this ledger's own history"
+    }
+   ]
   },
   {
    "id": "R0051",
@@ -7754,11 +7771,20 @@
    "summary": "INSTRUMENT (L1.25 first question), caught BEFORE adoption: target_horizon_sweep h>1 cells on DAILY rows test a target window (t+1-h,t+1] -- h-1 of h days already known at signal time (_period_returns docstring claims 'strictly future'; false for h>1 daily). MEASURED by oracle synthetic (litminer run8, data/carry_liq_screen.json instrument_finding): a PERFECT 5d-forward oracle reads IC -0.06 SCREEN-UNDERPOWERED; a PERFECT 20d oracle reads IC -0.53 SUSPECT-LOOKAHEAD (true signals INVERT via the zwin rolling mean); pure past-return echo reads raw IC +0.70/+0.55. The h>1 gate is structurally unable to pass the thing it screens for (L1.63 welded class) while inflating echo signals. ISOLATION: same oracle on h-spaced rows + overlap_periods=1 reads +0.96/+0.98 SUSPECT-LOOKAHEAD (correct) -- core stage_a_screen is FINE; defect is sweep row-spacing. BLAST RADIUS measured: screen_oi_ls_axes (live 40d clock) CLEAN (already uses [::h]+overlap 1 -- the in-repo correct idiom); h=1 callers clean; backfill_kimchi h=5 cell VOID as measured (kimchi kill unchanged -- stands on h=1 + mechanism contamination); run_decline_detection has the OPPOSITE defect (passes fully-forward target, harness rolls again -> tests (t+1,t+2], one-day hole); reflexivity_m5 carries a stray dead np.roll(dp,-1). Two opposite violations across callers = the CONTRACT is the defect. REPAIR (alpha org; litminer freeze bars libs/): (1) fix target_horizon_sweep to subsample [::h] per cell with overlap_periods=1, copying screen_oi_ls_axes' proven idiom -- NOT a one-line shift of _period_returns (that silently changes the same/prior-period gate semantics to mostly-future windows and would weld TIMING-ARTIFACT shut); (2) add a shape/contract guard to stage_a_screen (target basis must be declared; reject pre-rolled targets by construction, e.g. require prices+h for h>1); (3) fix run_decline_detection's double shift; (4) delete reflexivity_m5 dead roll; (5) re-run any h>1 daily-row cells recorded via the sweep. Regression test: the oracle synthetic (perfect h-day oracle MUST read ceiling-trip positive, echo MUST fail decontam) -- the positive control this harness never had at h>1.",
    "roi_bps": 60.0,
    "raised": "2026-08-18T19:19:48.239828+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "one-command auto-fix owed by the first seat NOT under a research freeze (this seat may not write scripts/); due next day because every push desk-wide is degraded to --no-verify until it lands",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-08-19",
+   "disposed": "2026-08-18T15:30:31.025390+00:00",
+   "restorations": [
+    {
+     "was": "STATUS",
+     "restored_to": "scheduled",
+     "from_commit": "b4f37e0c40cd22ed0daac58605819e94e8de4075",
+     "at": "2026-08-26T03:05:37.952105+00:00",
+     "why": "scheduled in b4f37e0c, open at HEAD; reverted by a merge that bypassed dispose()'s one-way guard and the CLI flock, restored from this ledger's own history"
+    }
+   ]
   },
   {
    "id": "R0612",

@@ -576,6 +576,44 @@ def check_stub_deaths(defects) -> None:
                         f"auth/model failure): {', '.join(p.name for p in dead[:6])}"))
 
 
+_DEATH_DROPIN = Path.home() / ".config/systemd/user/service.d/10-death-visibility.conf"
+
+
+def check_unit_deaths(defects) -> None:
+    """Fleet-wide abnormal unit stops (2026-08-26). A global user-scope drop-in
+    (ops/service.d/10-death-visibility.conf) logs every non-success service stop to
+    unit_deaths.jsonl -- oom-kill, timeout, crash. Before it, three gap-wirer seats were
+    OOM-killed in one night leaving 58-byte logs identical to auth failures. Two arms:
+    the drop-in going missing is itself a defect (absence must never read as clean),
+    and any death in 24h is named. stub-deaths reads log CONTENT; this reads the KILL."""
+    dropin = _DEATH_DROPIN
+    if not dropin.exists():
+        defects.append(("unit-deaths-fence-missing",
+                        "the death-visibility drop-in is NOT installed at "
+                        f"{dropin} -- every abnormal user-unit stop (oom-kill, timeout, crash) "
+                        "is silent again. Reinstall from ops/service.d/ + daemon-reload."))
+        return
+    log = LOGS / "unit_deaths.jsonl"
+    if not log.exists():
+        return  # fence installed, no deaths ever logged -- genuinely clean
+    recent: list[str] = []
+    for line in log.read_text("utf-8", errors="ignore").splitlines()[-200:]:
+        try:
+            row = json.loads(line)
+            ts = time.mktime(time.strptime(row["ts"], "%Y-%m-%dT%H:%M:%SZ"))
+        except (ValueError, KeyError):
+            continue
+        if NOW - ts <= 24 * 3600 and "test-death-visibility" not in row.get("unit", ""):
+            recent.append(f"{row.get('unit')}({row.get('result')}/{row.get('exit_status')})")
+    if recent:
+        defects.append(("unit-deaths",
+                        f"{len(recent)} abnormal user-unit stop(s) in 24h: "
+                        f"{', '.join(recent[:8])}. An oom-kill here is the 4GB/no-swap box "
+                        "eating a seat mid-cycle (console item: swapfile); a timeout/crash is "
+                        "that unit's own defect. Read the unit journal, fix the cause -- the "
+                        "retry loop hides the death but pays for it in quota."))
+
+
 #: Long-lived daemons whose code is loaded ONCE at process start. Add any new always-on service.
 _DAEMONS = {
     "quant-cashcarry": "scripts/run_cashcarry_executor.py",
@@ -6254,6 +6292,7 @@ def check_scheduled_scripts(defects) -> None:
 CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
+          ("unit-deaths", check_unit_deaths),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("model-freshness", check_model_freshness),
                       ("coverage", check_coverage),
