@@ -68,7 +68,17 @@ def build_cell(sym: str, family: str, params: dict, meta: dict):
     if not pq.exists():
         return None
     h1 = families._h1(pd.read_parquet(pq))
+    # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
+    # `families` meant the 14 orthogonal generators were unreachable from the one door that grants
+    # certificates -- so a carry or positioning edge could be written, tested by hand, and still
+    # never certify. That is the same defect as having no generator at all, one layer further in.
     fn = getattr(families, f"family_{family}", None)
+    if fn is None:
+        try:
+            from mt5desk import families_orthogonal as fo
+            fn = fo.ORTHOGONAL_FAMILIES.get(family)
+        except ImportError:
+            fn = None
     if fn is None:
         return None
     side = 1  # both sides tested externally; use LONG default
@@ -108,7 +118,28 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     matrix = np.column_stack([a[-min_len:] for a in cols])
 
     # Program-level tests
+    # TRIAL COUNT MUST REFLECT THE SEARCH THAT PRODUCED THE CANDIDATES. The attestation defines
+    # the basis as effective-cells x 7, "failing closed to raw_cells x 7 when dependence is
+    # unmeasurable" -- and cells x 7 is exactly right for a hand-built family sweep. It is far too
+    # generous for a candidate that came out of an unconstrained search: a cell selected as the
+    # best of 4,344 evaluated combinations has already survived a selection the gauntlet cannot
+    # see, and deflating it as though it were one of ~200 trials credits it with significance the
+    # search already spent. When candidates carry their own `search_trials`, the larger of the two
+    # bases is used -- failing closed in the direction of MORE deflation, which is the direction
+    # that cannot manufacture a survivor.
     n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+    _declared = 0
+    for _c in cells:
+        try:
+            _declared = max(_declared, int((_c.get("params") or {}).get("search_trials") or 0),
+                            int(_c.get("search_trials") or 0))
+        except (TypeError, ValueError):
+            continue
+    if _declared > n_trials:
+        print(f"  trial basis raised {n_trials} -> {_declared} (candidates declare a wider "
+              f"search; deflating against the smaller count would credit significance the "
+              f"search already spent)")
+        n_trials = _declared
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
     sh_var = float(sharpes.var(ddof=1))
 

@@ -322,25 +322,36 @@ def main(symbols: list[str] | None = None) -> int:
                                    "before this can certify -- a statistical edge with no story "
                                    "is a coincidence until someone shows otherwise."),
             })
-    # THE BAR THIS SEARCH SET FOR ITSELF. A wide search must clear a wider threshold: with N
-    # independent trials the largest |t| expected under the pure null is ~sqrt(2 ln N), so a
-    # candidate below that is what a search of this size produces from noise alone. Computing and
-    # PRINTING it is the difference between a screen and a slot machine -- otherwise the reader
-    # sees "t=3.45" and has no way to know that 4,344 trials make 4.1 the price of admission.
-    deflation_bar = math.sqrt(2.0 * math.log(max(2, total_trials)))
-    survivors = [h for h in hypotheses if h["t_stat"] >= deflation_bar]
+    # THE TEN GATES DECIDE, NOT THIS FILE (principal 2026-08-26). An earlier version computed
+    # sqrt(2 ln N) and reported candidates against it. That was a SECOND DOOR pointing the wrong
+    # way: the canonical policy already deflates for multiplicity inside `deflated_sharpe`, whose
+    # attestation defines the trial basis explicitly, and layering a private, harsher screen in
+    # FRONT of the gauntlet means the canonical machinery never gets to rule. A screen that
+    # pre-rejects what the gate would have judged is not extra rigour, it is an unsanctioned
+    # policy change made by whoever wrote the screen.
+    #
+    # So the number is still COMPUTED and REPORTED as context -- a reader comparing t=3.45 across
+    # 4,344 trials deserves the scale -- but it filters nothing. What actually matters is that
+    # `search_trials` travels with every hypothesis into the gauntlet, so the canonical DSR
+    # deflates against this search's real multiplicity rather than a flattering subset.
+    reference_scale = math.sqrt(2.0 * math.log(max(2, total_trials)))
+    above_reference = [h for h in hypotheses if h["t_stat"] >= reference_scale]
     for h in hypotheses:
         h["search_trials"] = total_trials
-        h["deflation_bar_t"] = round(deflation_bar, 3)
-        h["clears_own_multiplicity"] = bool(h["t_stat"] >= deflation_bar)
+        h["reference_scale_t"] = round(reference_scale, 3)
+        # CONTEXT ONLY -- nothing filters on this. The ten gates are the door.
+        h["above_reference_scale"] = bool(h["t_stat"] >= reference_scale)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "searched_at": now.isoformat(timespec="seconds"),
         "symbols": len(symbols), "total_trials": total_trials,
         "hypotheses": hypotheses, "per_symbol": results,
-        "deflation_bar_t": round(deflation_bar, 3),
-        "clearing_own_multiplicity": len(survivors),
+        "reference_scale_t": round(reference_scale, 3),
+        "above_reference_scale": len(above_reference),
+        "arbiter": ("the canonical ten-gate policy. This searcher screens and reports; it does "
+                    "not reject. search_trials travels with each hypothesis so deflated_sharpe "
+                    "deflates against the real multiplicity."),
         "honesty": {
             "trials_counted": total_trials,
             "why": ("every (feature, band, horizon, direction) combination evaluated is counted "
@@ -355,11 +366,10 @@ def main(symbols: list[str] | None = None) -> int:
     }, indent=1, default=str), "utf-8")
     print(f"edge search: {len(symbols)} symbol(s), {total_trials:,} trials evaluated, "
           f"{len(hypotheses)} DIVERSE hypotheses emitted")
-    print(f"  multiplicity bar for a search this wide: |t| >= {deflation_bar:.2f}  "
-          f"({len(survivors)} of {len(hypotheses)} clear it)")
-    if not survivors:
-        print("  NOTHING clears its own multiplicity -- the honest result of a wide search on "
-              "this much data. These go forward as SCREENED candidates, not findings.")
+    print(f"  reference scale for context only: |t| ~ {reference_scale:.2f} at {total_trials:,} "
+          f"trials ({len(above_reference)} of {len(hypotheses)} above it) -- NOT a filter")
+    print(f"  all {len(hypotheses)} hypotheses go to the ten-gate gauntlet, each carrying "
+          f"search_trials={total_trials:,} so the canonical DSR deflates honestly")
     for h in hypotheses[:8]:
         p = h["params"]
         print(f"   {h['symbol']:8} {p['feature']:18} band={p['band']} h={p['horizon']:>3} "
