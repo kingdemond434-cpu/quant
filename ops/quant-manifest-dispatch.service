@@ -1,0 +1,18 @@
+[Unit]
+# ROOT CRON DIED 2026-08-20 (OOM; restart is principal-console). Every ops/crontab.manifest row
+# without a user-timer twin died with it -- the hourly law gate, the daily ratchet raiser, the
+# conversion fence and the deploy puller among them, dead for 6 days before anything noticed
+# (the gap-fixer's 2026-08-26 fleet sweep). This dispatcher resurrects the ALLOWLISTED rows
+# with exact cron semantics; the allowlist exists because most manifest rows are retired
+# crypto-era organs the MT5 mandate forbids waking. See scripts/run_manifest_dispatch.py.
+Description=Quant manifest dispatcher (resurrects allowlisted cron rows under a user timer)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=quant
+WorkingDirectory=/home/quant/quant-platform
+# No sandbox hardening HERE: fired rows inherit this service's restrictions, and pull_deploy
+# legitimately writes the git tree. Each row carries its own flock and redirects.
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/run_manifest_dispatch.py
+TimeoutStartSec=300

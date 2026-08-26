@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the manifest dispatcher every 5 minutes (cron-row resurrection, GAP: dead root cron)
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
