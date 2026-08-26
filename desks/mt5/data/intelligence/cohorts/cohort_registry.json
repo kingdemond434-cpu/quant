@@ -4909,5 +4909,93 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"59f88ae0ccbefb2e": {
+"t0": "2026-08-26T03:24:46+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "bipbopcompany-droid/Risk-Nexus-Command",
+"url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
+"text": "Prop Matrix Engine 2026: Multi-Account MT5 Risk Control with Global Drawdown Guard & Kill-Switch",
+"symbols": [],
+"found_at": "2026-08-26T03:24:39+00:00",
+"topic": "mql5",
+"stars": 115,
+"star_delta": 0,
+"pushed": "2026-08-26T03:13:07Z"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"83a17dd149ccf5c6": {
+"t0": "2026-08-26T03:24:46+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+"url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
+"text": "2026 MT5 Gateway: Institutional Trend Classifier & Multi-Asset Regime Dashboard",
+"symbols": [],
+"found_at": "2026-08-26T03:24:39+00:00",
+"topic": "mql5",
+"stars": 117,
+"star_delta": 0,
+"pushed": "2026-08-26T03:12:14Z"
+},
+"mechanism_tags": [
+"trend",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"aacd53f06fea6cef": {
+"t0": "2026-08-26T03:24:46+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Wendy-Bay/PropFirm-Tracker-Elite",
+"url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
+"text": "Best Proprietary MT4/MT5 Prop Fund Manager 2026 for Multi-Phase Challenge Tracking",
+"symbols": [],
+"found_at": "2026-08-26T03:24:39+00:00",
+"topic": "mql5",
+"stars": 116,
+"star_delta": 0,
+"pushed": "2026-08-26T03:11:58Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"70193db012844420": {
+"t0": "2026-08-26T03:24:46+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "7skooooo/mql5-systems-mirror",
+"url": "https://github.com/7skooooo/mql5-systems-mirror",
+"text": "MQL5 Algorithmic Trading Scripts 2026 \u2013 Automated MT5 Strategies",
+"symbols": [],
+"found_at": "2026-08-26T03:24:39+00:00",
+"topic": "mql5",
+"stars": 116,
+"star_delta": 0,
+"pushed": "2026-08-26T03:09:40Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

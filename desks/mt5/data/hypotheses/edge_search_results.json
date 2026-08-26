@@ -1,0 +1,3656 @@
+{
+ "searched_at": "2026-08-26T03:04:21+00:00",
+ "symbols": 4,
+ "total_trials": 43512,
+ "hypotheses": [
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2514,
+   "t_stat": 3.5345060567339095,
+   "exp_r": 0.07049301625076589,
+   "source": "edge_search:dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2545,
+   "t_stat": 3.2922046502116435,
+   "exp_r": 0.1130325585110165,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ret_240",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2544,
+   "t_stat": 3.1755085023880256,
+   "exp_r": 0.06295855133200683,
+   "source": "edge_search:ret_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 2514,
+   "t_stat": 3.009233112492659,
+   "exp_r": 0.1470106576861787,
+   "source": "edge_search:dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "pos_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3067,
+   "t_stat": 2.903391046399492,
+   "exp_r": 0.052426232020038925,
+   "source": "edge_search:pos_24",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_body_frac__dd_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3176,
+   "t_stat": 2.8860703174684064,
+   "exp_r": 0.05121140150404863,
+   "source": "edge_search:x_body_frac__dd_12",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3227,
+   "t_stat": 2.588001807801603,
+   "exp_r": 0.04555804640848757,
+   "source": "edge_search:dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 290,
+   "t_stat": 2.5799802113839636,
+   "exp_r": 0.1515016546072482,
+   "source": "edge_search:rng_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_12__dd_96",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3139,
+   "t_stat": 2.5751988802045704,
+   "exp_r": 0.04596371434979123,
+   "source": "edge_search:x_dd_12__dd_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "tick_volume_z_12",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1887,
+   "t_stat": 2.5349162264127965,
+   "exp_r": 0.05835494462992377,
+   "source": "edge_search:tick_volume_z_12",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 275,
+   "t_stat": 2.5101173260839014,
+   "exp_r": 0.5243464083581635,
+   "source": "edge_search:rng_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "tick_volume_z_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2451,
+   "t_stat": 2.4605977373319448,
+   "exp_r": 0.0497014391936539,
+   "source": "edge_search:tick_volume_z_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dow__ext_corr_AUDCAD",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 2108,
+   "t_stat": 2.4474964081014403,
+   "exp_r": 0.13057570671116386,
+   "source": "edge_search:x_dow__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rngratio_6_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2648,
+   "t_stat": 2.3758896753546104,
+   "exp_r": 0.07997014937888061,
+   "source": "edge_search:rngratio_6_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "pos_48",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3143,
+   "t_stat": 2.3557809424796186,
+   "exp_r": 0.04202064493039039,
+   "source": "edge_search:pos_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__dd_3",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3133,
+   "t_stat": 2.338017737071683,
+   "exp_r": 0.041770300930849755,
+   "source": "edge_search:x_dd_240__dd_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 4758,
+   "t_stat": 2.2587322346039476,
+   "exp_r": 0.056716987874160046,
+   "source": "edge_search:dd_24",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_96",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 24,
+    "side": -1
+   },
+   "n": 161,
+   "t_stat": 2.243344036808659,
+   "exp_r": 0.8661409350542446,
+   "source": "edge_search:rng_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__dom",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3236,
+   "t_stat": 2.2433046911733556,
+   "exp_r": 0.03943519639747482,
+   "source": "edge_search:x_dd_240__dom",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_corr_AUDUSD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 48,
+    "side": -1
+   },
+   "n": 189,
+   "t_stat": 2.2429576223197536,
+   "exp_r": 1.1303443942694866,
+   "source": "edge_search:ext_corr_AUDUSD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "skew_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 48,
+    "side": 1
+   },
+   "n": 1682,
+   "t_stat": 2.2362833701517544,
+   "exp_r": 0.3777760811822979,
+   "source": "edge_search:skew_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "spread_z_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 320,
+   "t_stat": 2.2202596857961794,
+   "exp_r": 0.21497571968360787,
+   "source": "edge_search:spread_z_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_corr_AUDCAD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 491,
+   "t_stat": 2.1931162883471393,
+   "exp_r": 0.1714279144795614,
+   "source": "edge_search:ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rngratio_12_96",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 1834,
+   "t_stat": 2.1727222808343396,
+   "exp_r": 0.175749935919746,
+   "source": "edge_search:rngratio_12_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_24__dd_240",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2828,
+   "t_stat": 2.134928343653279,
+   "exp_r": 0.04014612203884047,
+   "source": "edge_search:x_dd_24__dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "spread",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 597,
+   "t_stat": 5.727508548061651,
+   "exp_r": 0.23441132000881168,
+   "source": "edge_search:spread",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__ext_corr_AUDCAD",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1951,
+   "t_stat": 2.845147092684105,
+   "exp_r": 0.06441338010180674,
+   "source": "edge_search:x_dd_240__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_AUDUSD",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 258,
+   "t_stat": 2.8211831661303446,
+   "exp_r": 0.8604527989625772,
+   "source": "edge_search:ext_resid_AUDUSD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_body_frac__dd_240",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3192,
+   "t_stat": 2.8037786952259034,
+   "exp_r": 0.049626344958834785,
+   "source": "edge_search:x_body_frac__dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_24__ext_corr_AUDCAD",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 1916,
+   "t_stat": 2.761170255930658,
+   "exp_r": 0.15451514693811555,
+   "source": "edge_search:x_dd_24__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ru_6",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4535,
+   "t_stat": 2.702644910432452,
+   "exp_r": 0.04013288157405248,
+   "source": "edge_search:ru_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2692,
+   "t_stat": 2.697207737111644,
+   "exp_r": 0.0519848588409435,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_48__dd_96",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2999,
+   "t_stat": 2.464829040659867,
+   "exp_r": 0.045008917643609585,
+   "source": "edge_search:x_dd_48__dd_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "skew_48",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 2379,
+   "t_stat": 2.4503428678742276,
+   "exp_r": 0.1740284531263901,
+   "source": "edge_search:skew_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_AUDCAD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 48,
+    "side": 1
+   },
+   "n": 580,
+   "t_stat": 2.4143156514945474,
+   "exp_r": 0.6945454518560471,
+   "source": "edge_search:ext_resid_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "vol_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3733,
+   "t_stat": 2.3860039378986833,
+   "exp_r": 0.03905189933400632,
+   "source": "edge_search:vol_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "pos_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2093,
+   "t_stat": 2.3494178273023714,
+   "exp_r": 0.0513541618698067,
+   "source": "edge_search:pos_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__ext_corr_AUDJPY",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 3137,
+   "t_stat": 2.3285265983816306,
+   "exp_r": 0.1440172675781574,
+   "source": "edge_search:x_dd_240__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__dd_96",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4536,
+   "t_stat": 2.3276044333582737,
+   "exp_r": 0.034559913974455396,
+   "source": "edge_search:x_dd_240__dd_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "volratio_6_48",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 2344,
+   "t_stat": 2.279906957604362,
+   "exp_r": 0.08156408106492194,
+   "source": "edge_search:volratio_6_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AUDCAD_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4235,
+   "t_stat": 2.262212369028369,
+   "exp_r": 0.034762152886978245,
+   "source": "edge_search:ext_residz_AUDCAD_z",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_3__ext_corr_AUDCAD",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3390,
+   "t_stat": 2.238640581222632,
+   "exp_r": 0.03844895344750617,
+   "source": "edge_search:x_dd_3__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "skew_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2992,
+   "t_stat": 2.2382229234822786,
+   "exp_r": 0.07087338442264683,
+   "source": "edge_search:skew_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ret_240",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1341,
+   "t_stat": 2.2313066024687664,
+   "exp_r": 0.06093191977357675,
+   "source": "edge_search:ret_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__dd_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3218,
+   "t_stat": 2.229231999139958,
+   "exp_r": 0.03929725803564959,
+   "source": "edge_search:x_dd_240__dd_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_48__ext_corr_AUDJPY_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1966,
+   "t_stat": 2.2177338721422784,
+   "exp_r": 0.05001700386172442,
+   "source": "edge_search:x_dd_48__ext_corr_AUDJPY_z",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ret_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1780,
+   "t_stat": 2.2086670995421773,
+   "exp_r": 0.05235043090622507,
+   "source": "edge_search:ret_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_240__ext_corr_AUDCAD",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3160,
+   "t_stat": 2.1893738571520682,
+   "exp_r": 0.03894721308492523,
+   "source": "edge_search:x_dd_240__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 3522,
+   "t_stat": 2.186911057762199,
+   "exp_r": 0.18052695862636806,
+   "source": "edge_search:x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_AUDCAD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 580,
+   "t_stat": 2.186896902370035,
+   "exp_r": 0.09080595132398854,
+   "source": "edge_search:ext_resid_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "spread",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 683,
+   "t_stat": 11.351429268039174,
+   "exp_r": 0.43435036971436436,
+   "source": "edge_search:spread",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2692,
+   "t_stat": 7.457783013991525,
+   "exp_r": 0.14373820448250038,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "spread_z_48",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1317,
+   "t_stat": 3.664765062542347,
+   "exp_r": 0.17490969335150253,
+   "source": "edge_search:spread_z_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dom__dow",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2088,
+   "t_stat": 3.476079824808436,
+   "exp_r": 0.0760719403552075,
+   "source": "edge_search:x_dom__dow",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "gap",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2818,
+   "t_stat": 3.4734797314945567,
+   "exp_r": 0.06543261462344083,
+   "source": "edge_search:gap",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "kurt_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3246,
+   "t_stat": 2.831825538637289,
+   "exp_r": 0.04970410251603931,
+   "source": "edge_search:kurt_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 5648,
+   "t_stat": 2.7511699481040335,
+   "exp_r": 0.036607500323203944,
+   "source": "edge_search:dd_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_3__dom",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2995,
+   "t_stat": 2.5644386461940973,
+   "exp_r": 0.046859095325480576,
+   "source": "edge_search:x_dd_3__dom",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 283,
+   "t_stat": 2.528493359899845,
+   "exp_r": 0.2603330023860838,
+   "source": "edge_search:dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ret_96",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 2650,
+   "t_stat": 2.4960638128004793,
+   "exp_r": 0.11877044188770582,
+   "source": "edge_search:ret_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "tick_volume",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1700,
+   "t_stat": 2.472848969551004,
+   "exp_r": 0.10388043488614372,
+   "source": "edge_search:tick_volume",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ru_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4948,
+   "t_stat": 2.4140235136706063,
+   "exp_r": 0.03431836986538222,
+   "source": "edge_search:ru_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "volratio_24_240",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2864,
+   "t_stat": 2.410618778679632,
+   "exp_r": 0.045044526760799224,
+   "source": "edge_search:volratio_24_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 132,
+   "t_stat": 2.3833684073746597,
+   "exp_r": 1.0162717035832154,
+   "source": "edge_search:rng_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 283,
+   "t_stat": 2.365773150502237,
+   "exp_r": 0.6889465056169078,
+   "source": "edge_search:dd_240",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "pos_12",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3037,
+   "t_stat": 2.3494322169599147,
+   "exp_r": 0.042632472818113096,
+   "source": "edge_search:pos_12",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ru_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 5414,
+   "t_stat": 2.3336282047172707,
+   "exp_r": 0.03171557134015677,
+   "source": "edge_search:ru_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "skew_48",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2429,
+   "t_stat": 2.3220747925857133,
+   "exp_r": 0.04711535270398326,
+   "source": "edge_search:skew_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dom__dow",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 2088,
+   "t_stat": 2.292422313895851,
+   "exp_r": 0.12288673489348016,
+   "source": "edge_search:x_dom__dow",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2884,
+   "t_stat": 2.2651009866515066,
+   "exp_r": 0.07305510488140658,
+   "source": "edge_search:x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_24",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 5104,
+   "t_stat": 2.226008875060291,
+   "exp_r": 0.031158142461688073,
+   "source": "edge_search:rng_24",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_body_frac__dd_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4507,
+   "t_stat": 2.217540740226931,
+   "exp_r": 0.03303146443105081,
+   "source": "edge_search:x_body_frac__dd_24",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_corr_AUDCAD__ext_corr_AUDJPY",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 2174,
+   "t_stat": 2.2115896531024437,
+   "exp_r": 0.1643105322955199,
+   "source": "edge_search:x_ext_corr_AUDCAD__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "rng_96",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 218,
+   "t_stat": 2.166151690788546,
+   "exp_r": 0.718730773305333,
+   "source": "edge_search:rng_96",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_48",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 830,
+   "t_stat": 2.139512908882924,
+   "exp_r": 0.07426357721207172,
+   "source": "edge_search:dd_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "spread_z_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1105,
+   "t_stat": 5.799268456680352,
+   "exp_r": 0.17445847600088096,
+   "source": "edge_search:spread_z_12",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2692,
+   "t_stat": 5.556302092631726,
+   "exp_r": 0.10708985295749332,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 2692,
+   "t_stat": 3.850083164590796,
+   "exp_r": 0.12852665660167628,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_96__ext_corr_AUDJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4201,
+   "t_stat": 3.731088387435763,
+   "exp_r": 0.057565091139426705,
+   "source": "edge_search:x_dd_96__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_48__ext_corr_AUDJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 4144,
+   "t_stat": 3.4852183092234785,
+   "exp_r": 0.09377363278556017,
+   "source": "edge_search:x_dd_48__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "gap",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2503,
+   "t_stat": 3.1643571893386113,
+   "exp_r": 0.06324920564141859,
+   "source": "edge_search:gap",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "tick_volume",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1201,
+   "t_stat": 3.070570299788134,
+   "exp_r": 0.08860281930405471,
+   "source": "edge_search:tick_volume",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4485,
+   "t_stat": 2.9307982831239543,
+   "exp_r": 0.04376276007928984,
+   "source": "edge_search:hour",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_6__ext_corr_AUDJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4287,
+   "t_stat": 2.812564667806985,
+   "exp_r": 0.042956192011662384,
+   "source": "edge_search:x_dd_6__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_96__ext_corr_AUDJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 4196,
+   "t_stat": 2.7372949633694414,
+   "exp_r": 0.1035093267270017,
+   "source": "edge_search:x_dd_96__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "vol_3",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2524,
+   "t_stat": 2.6606370050599373,
+   "exp_r": 0.052959143391277025,
+   "source": "edge_search:vol_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AUDCAD_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4361,
+   "t_stat": 2.658232193863023,
+   "exp_r": 0.04025314985799228,
+   "source": "edge_search:ext_residz_AUDCAD_z",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_body_frac__ext_corr_AUDJPY",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2250,
+   "t_stat": 2.6353102441494447,
+   "exp_r": 0.05555721808457778,
+   "source": "edge_search:x_body_frac__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_24",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3280,
+   "t_stat": 2.5859729186145626,
+   "exp_r": 0.04515304576000221,
+   "source": "edge_search:dd_24",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "spread",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4006,
+   "t_stat": 2.555240617796725,
+   "exp_r": 0.040371634230408564,
+   "source": "edge_search:spread",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "body_frac",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2156,
+   "t_stat": 2.5137701981523155,
+   "exp_r": 0.05413787374317256,
+   "source": "edge_search:body_frac",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_48",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3457,
+   "t_stat": 2.413017229303229,
+   "exp_r": 0.04104031949667816,
+   "source": "edge_search:dd_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "kurt_6",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4177,
+   "t_stat": 2.411618433744688,
+   "exp_r": 0.03731439093223053,
+   "source": "edge_search:kurt_6",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_corr_AUDJPY__ext_corr_AUDJPY_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2153,
+   "t_stat": 2.3978096046805777,
+   "exp_r": 0.08950623883808703,
+   "source": "edge_search:x_ext_corr_AUDJPY__ext_corr_AUDJPY_z",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_body_frac__ext_corr_AUDCAD",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4158,
+   "t_stat": 2.392602683711888,
+   "exp_r": 0.037104650315848635,
+   "source": "edge_search:x_body_frac__ext_corr_AUDCAD",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dd_3__dd_48",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4840,
+   "t_stat": 2.3389946740994985,
+   "exp_r": 0.03362068456889846,
+   "source": "edge_search:x_dd_3__dd_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "x_dow__ext_corr_AUDJPY",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1992,
+   "t_stat": 2.3292058369401762,
+   "exp_r": 0.05218710464264158,
+   "source": "edge_search:x_dow__ext_corr_AUDJPY",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "tick_volume_z_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2431,
+   "t_stat": 2.2701196270312205,
+   "exp_r": 0.046042220894613885,
+   "source": "edge_search:tick_volume_z_48",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "skew_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2057,
+   "t_stat": 2.251701144356209,
+   "exp_r": 0.0496470676764963,
+   "source": "edge_search:skew_12",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "discovered",
+   "params": {
+    "feature": "ru_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3480,
+   "t_stat": 2.2444005096194886,
+   "exp_r": 0.038046151827023075,
+   "source": "edge_search:ru_3",
+   "search_trials": 43512,
+   "mechanism_status": "STATISTICAL_ONLY",
+   "mechanism_note": "discovered by unconstrained search; NO economic mechanism is claimed. economic_prior must be satisfied by a named cause before this can certify -- a statistical edge with no story is a coincidence until someone shows otherwise."
+  }
+ ],
+ "per_symbol": [
+  {
+   "symbol": "XAUUSD",
+   "status": "OK",
+   "bars": 49900,
+   "primitives": 188,
+   "trials": 10884,
+   "candidates_scored": 5352,
+   "selected": [
+    {
+     "feature": "dd_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2514,
+     "n_effective": 2514.0,
+     "mean_fwd": 0.00020173737602955486,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00015976086668958257,
+     "t_stat": 3.5345060567339095,
+     "sharpe_like": 0.07049301625076589
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 2545,
+     "n_effective": 848.3,
+     "mean_fwd": 0.0006253919515542403,
+     "unconditional_fwd": 0.00012551686093832185,
+     "edge_vs_unconditional": 0.0004998750906159185,
+     "t_stat": 3.2922046502116435,
+     "sharpe_like": 0.1130325585110165
+    },
+    {
+     "feature": "ret_240",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2544,
+     "n_effective": 2544.0,
+     "mean_fwd": 0.0001748622726227922,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.0001328857632828199,
+     "t_stat": 3.1755085023880256,
+     "sharpe_like": 0.06295855133200683
+    },
+    {
+     "feature": "dd_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": 1,
+     "n_oos": 2514,
+     "n_effective": 419.0,
+     "mean_fwd": 0.0010816156557984743,
+     "unconditional_fwd": 0.00025173647520173144,
+     "edge_vs_unconditional": 0.0008298791805967428,
+     "t_stat": 3.009233112492659,
+     "sharpe_like": 0.1470106576861787
+    },
+    {
+     "feature": "pos_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3067,
+     "n_effective": 3067.0,
+     "mean_fwd": 0.00015727714361101207,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00011530063427103978,
+     "t_stat": 2.903391046399492,
+     "sharpe_like": 0.052426232020038925
+    },
+    {
+     "feature": "x_body_frac__dd_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3176,
+     "n_effective": 3176.0,
+     "mean_fwd": 0.0001616821178303329,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00011970560849036062,
+     "t_stat": 2.8860703174684064,
+     "sharpe_like": 0.05121140150404863
+    },
+    {
+     "feature": "dd_240",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3227,
+     "n_effective": 3227.0,
+     "mean_fwd": -6.583402253519494e-05,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": -0.00010781053187516721,
+     "t_stat": 2.588001807801603,
+     "sharpe_like": 0.04555804640848757
+    },
+    {
+     "feature": "rng_3",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 290,
+     "n_effective": 290.0,
+     "mean_fwd": 0.00014918328657340126,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00010720677723342897,
+     "t_stat": 2.5799802113839636,
+     "sharpe_like": 0.1515016546072482
+    },
+    {
+     "feature": "x_dd_12__dd_96",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3139,
+     "n_effective": 3139.0,
+     "mean_fwd": 0.00015386016175427953,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00011188365241430724,
+     "t_stat": 2.5751988802045704,
+     "sharpe_like": 0.04596371434979123
+    },
+    {
+     "feature": "tick_volume_z_12",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1887,
+     "n_effective": 1887.0,
+     "mean_fwd": 0.00019753779016758088,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.0001555612808276086,
+     "t_stat": 2.5349162264127965,
+     "sharpe_like": 0.05835494462992377
+    },
+    {
+     "feature": "rng_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 12,
+     "side": -1,
+     "n_oos": 275,
+     "n_effective": 22.9,
+     "mean_fwd": -0.0012125998851741926,
+     "unconditional_fwd": 0.000503406386134637,
+     "edge_vs_unconditional": -0.0017160062713088295,
+     "t_stat": 2.5101173260839014,
+     "sharpe_like": 0.5243464083581635
+    },
+    {
+     "feature": "tick_volume_z_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2451,
+     "n_effective": 2451.0,
+     "mean_fwd": 0.00013943486236350376,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 9.745835302353147e-05,
+     "t_stat": 2.4605977373319448,
+     "sharpe_like": 0.0497014391936539
+    },
+    {
+     "feature": "x_dow__ext_corr_AUDCAD",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 2108,
+     "n_effective": 351.3,
+     "mean_fwd": -0.000631820987554634,
+     "unconditional_fwd": 0.00025173647520173144,
+     "edge_vs_unconditional": -0.0008835574627563654,
+     "t_stat": 2.4474964081014403,
+     "sharpe_like": 0.13057570671116386
+    },
+    {
+     "feature": "rngratio_6_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 2648,
+     "n_effective": 882.7,
+     "mean_fwd": 0.00041167222820818653,
+     "unconditional_fwd": 0.00012551686093832185,
+     "edge_vs_unconditional": 0.00028615536726986465,
+     "t_stat": 2.3758896753546104,
+     "sharpe_like": 0.07997014937888061
+    },
+    {
+     "feature": "pos_48",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3143,
+     "n_effective": 3143.0,
+     "mean_fwd": 0.00014313581503776177,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 0.00010115930569778948,
+     "t_stat": 2.3557809424796186,
+     "sharpe_like": 0.04202064493039039
+    },
+    {
+     "feature": "x_dd_240__dd_3",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3133,
+     "n_effective": 3133.0,
+     "mean_fwd": -5.693567950856881e-05,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": -9.89121888485411e-05,
+     "t_stat": 2.338017737071683,
+     "sharpe_like": 0.041770300930849755
+    },
+    {
+     "feature": "dd_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 4758,
+     "n_effective": 1586.0,
+     "mean_fwd": 0.0003447035819962462,
+     "unconditional_fwd": 0.00012551686093832185,
+     "edge_vs_unconditional": 0.00021918672105792435,
+     "t_stat": 2.2587322346039476,
+     "sharpe_like": 0.056716987874160046
+    },
+    {
+     "feature": "rng_96",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 24,
+     "side": -1,
+     "n_oos": 161,
+     "n_effective": 6.7,
+     "mean_fwd": -0.0023645394419466756,
+     "unconditional_fwd": 0.001005861305644008,
+     "edge_vs_unconditional": -0.0033704007475906838,
+     "t_stat": 2.243344036808659,
+     "sharpe_like": 0.8661409350542446
+    },
+    {
+     "feature": "x_dd_240__dom",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3236,
+     "n_effective": 3236.0,
+     "mean_fwd": 0.0001352984100335433,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": 9.332190069357102e-05,
+     "t_stat": 2.2433046911733556,
+     "sharpe_like": 0.03943519639747482
+    },
+    {
+     "feature": "ext_corr_AUDUSD",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 48,
+     "side": -1,
+     "n_oos": 189,
+     "n_effective": 3.9,
+     "mean_fwd": -0.011897673349668497,
+     "unconditional_fwd": 0.002003301417251432,
+     "edge_vs_unconditional": -0.013900974766919929,
+     "t_stat": 2.2429576223197536,
+     "sharpe_like": 1.1303443942694866
+    },
+    {
+     "feature": "skew_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 48,
+     "side": 1,
+     "n_oos": 1682,
+     "n_effective": 35.0,
+     "mean_fwd": 0.006867375517422214,
+     "unconditional_fwd": 0.002003301417251432,
+     "edge_vs_unconditional": 0.004864074100170782,
+     "t_stat": 2.2362833701517544,
+     "sharpe_like": 0.3777760811822979
+    },
+    {
+     "feature": "spread_z_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 320,
+     "n_effective": 106.7,
+     "mean_fwd": -0.0008617117164449073,
+     "unconditional_fwd": 0.00012551686093832185,
+     "edge_vs_unconditional": -0.0009872285773832293,
+     "t_stat": 2.2202596857961794,
+     "sharpe_like": 0.21497571968360787
+    },
+    {
+     "feature": "ext_corr_AUDCAD",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 491,
+     "n_effective": 163.7,
+     "mean_fwd": -0.0006396222800312795,
+     "unconditional_fwd": 0.00012551686093832185,
+     "edge_vs_unconditional": -0.0007651391409696013,
+     "t_stat": 2.1931162883471393,
+     "sharpe_like": 0.1714279144795614
+    },
+    {
+     "feature": "rngratio_12_96",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 12,
+     "side": -1,
+     "n_oos": 1834,
+     "n_effective": 152.8,
+     "mean_fwd": -0.0017001062130139709,
+     "unconditional_fwd": 0.000503406386134637,
+     "edge_vs_unconditional": -0.002203512599148608,
+     "t_stat": 2.1727222808343396,
+     "sharpe_like": 0.175749935919746
+    },
+    {
+     "feature": "x_dd_24__dd_240",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2828,
+     "n_effective": 2828.0,
+     "mean_fwd": -4.829607093698621e-05,
+     "unconditional_fwd": 4.1976509339972284e-05,
+     "edge_vs_unconditional": -9.02725802769585e-05,
+     "t_stat": 2.134928343653279,
+     "sharpe_like": 0.04014612203884047
+    }
+   ]
+  },
+  {
+   "symbol": "EURUSD",
+   "status": "OK",
+   "bars": 53833,
+   "primitives": 188,
+   "trials": 10872,
+   "candidates_scored": 5400,
+   "selected": [
+    {
+     "feature": "spread",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 597,
+     "n_effective": 597.0,
+     "mean_fwd": 0.00018522766155799883,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 0.00018068013263111945,
+     "t_stat": 5.727508548061651,
+     "sharpe_like": 0.23441132000881168
+    },
+    {
+     "feature": "x_dd_240__ext_corr_AUDCAD",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1951,
+     "n_effective": 1951.0,
+     "mean_fwd": 6.54574483941062e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 6.090991946722682e-05,
+     "t_stat": 2.845147092684105,
+     "sharpe_like": 0.06441338010180674
+    },
+    {
+     "feature": "ext_resid_AUDUSD",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 24,
+     "side": 1,
+     "n_oos": 258,
+     "n_effective": 10.8,
+     "mean_fwd": 0.003026461899994461,
+     "unconditional_fwd": 0.0001059804457093456,
+     "edge_vs_unconditional": 0.0029204814542851155,
+     "t_stat": 2.8211831661303446,
+     "sharpe_like": 0.8604527989625772
+    },
+    {
+     "feature": "x_body_frac__dd_240",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3192,
+     "n_effective": 3192.0,
+     "mean_fwd": 4.746840714356521e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 4.292087821668583e-05,
+     "t_stat": 2.8037786952259034,
+     "sharpe_like": 0.049626344958834785
+    },
+    {
+     "feature": "x_dd_24__ext_corr_AUDCAD",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 6,
+     "side": 1,
+     "n_oos": 1916,
+     "n_effective": 319.3,
+     "mean_fwd": 0.00037783496519067615,
+     "unconditional_fwd": 2.7197257996697374e-05,
+     "edge_vs_unconditional": 0.0003506377071939788,
+     "t_stat": 2.761170255930658,
+     "sharpe_like": 0.15451514693811555
+    },
+    {
+     "feature": "ru_6",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4535,
+     "n_effective": 4535.0,
+     "mean_fwd": -2.4357531612974735e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -2.890506053985411e-05,
+     "t_stat": 2.702644910432452,
+     "sharpe_like": 0.04013288157405248
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2692,
+     "n_effective": 2692.0,
+     "mean_fwd": -2.966439028059956e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -3.4211919207478934e-05,
+     "t_stat": 2.697207737111644,
+     "sharpe_like": 0.0519848588409435
+    },
+    {
+     "feature": "x_dd_48__dd_96",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2999,
+     "n_effective": 2999.0,
+     "mean_fwd": 4.791916603620669e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 4.337163710932731e-05,
+     "t_stat": 2.464829040659867,
+     "sharpe_like": 0.045008917643609585
+    },
+    {
+     "feature": "skew_48",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 12,
+     "side": 1,
+     "n_oos": 2379,
+     "n_effective": 198.2,
+     "mean_fwd": 0.0005814876651197776,
+     "unconditional_fwd": 5.433396136291021e-05,
+     "edge_vs_unconditional": 0.0005271537037568674,
+     "t_stat": 2.4503428678742276,
+     "sharpe_like": 0.1740284531263901
+    },
+    {
+     "feature": "ext_resid_AUDCAD",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 48,
+     "side": 1,
+     "n_oos": 580,
+     "n_effective": 12.1,
+     "mean_fwd": 0.004312830253345083,
+     "unconditional_fwd": 0.0002024825639938886,
+     "edge_vs_unconditional": 0.0041103476893511945,
+     "t_stat": 2.4143156514945474,
+     "sharpe_like": 0.6945454518560471
+    },
+    {
+     "feature": "vol_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3733,
+     "n_effective": 3733.0,
+     "mean_fwd": 3.43848618974238e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 2.9837332970544426e-05,
+     "t_stat": 2.3860039378986833,
+     "sharpe_like": 0.03905189933400632
+    },
+    {
+     "feature": "pos_3",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2093,
+     "n_effective": 2093.0,
+     "mean_fwd": 5.0725875586710124e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 4.617834665983075e-05,
+     "t_stat": 2.3494178273023714,
+     "sharpe_like": 0.0513541618698067
+    },
+    {
+     "feature": "x_dd_240__ext_corr_AUDJPY",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 12,
+     "side": 1,
+     "n_oos": 3137,
+     "n_effective": 261.4,
+     "mean_fwd": 0.00047151626162364517,
+     "unconditional_fwd": 5.433396136291021e-05,
+     "edge_vs_unconditional": 0.00041718230026073494,
+     "t_stat": 2.3285265983816306,
+     "sharpe_like": 0.1440172675781574
+    },
+    {
+     "feature": "x_dd_240__dd_96",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4536,
+     "n_effective": 4536.0,
+     "mean_fwd": -2.5212699484196014e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -2.976022841107539e-05,
+     "t_stat": 2.3276044333582737,
+     "sharpe_like": 0.034559913974455396
+    },
+    {
+     "feature": "volratio_6_48",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 2344,
+     "n_effective": 781.3,
+     "mean_fwd": -0.00013077204111994314,
+     "unconditional_fwd": 1.3659146266063425e-05,
+     "edge_vs_unconditional": -0.00014443118738600657,
+     "t_stat": 2.279906957604362,
+     "sharpe_like": 0.08156408106492194
+    },
+    {
+     "feature": "ext_residz_AUDCAD_z",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4235,
+     "n_effective": 4235.0,
+     "mean_fwd": -2.6242518333922903e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -3.079004726080228e-05,
+     "t_stat": 2.262212369028369,
+     "sharpe_like": 0.034762152886978245
+    },
+    {
+     "feature": "x_dd_3__ext_corr_AUDCAD",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3390,
+     "n_effective": 3390.0,
+     "mean_fwd": -2.942615826544072e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -3.397368719232009e-05,
+     "t_stat": 2.238640581222632,
+     "sharpe_like": 0.03844895344750617
+    },
+    {
+     "feature": "skew_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 2992,
+     "n_effective": 997.3,
+     "mean_fwd": 0.00010973449429233886,
+     "unconditional_fwd": 1.3659146266063425e-05,
+     "edge_vs_unconditional": 9.607534802627543e-05,
+     "t_stat": 2.2382229234822786,
+     "sharpe_like": 0.07087338442264683
+    },
+    {
+     "feature": "ret_240",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1341,
+     "n_effective": 1341.0,
+     "mean_fwd": 6.436307947263005e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 5.9815550545750674e-05,
+     "t_stat": 2.2313066024687664,
+     "sharpe_like": 0.06093191977357675
+    },
+    {
+     "feature": "x_dd_240__dd_6",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3218,
+     "n_effective": 3218.0,
+     "mean_fwd": 4.2942201010771745e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 3.839467208389237e-05,
+     "t_stat": 2.229231999139958,
+     "sharpe_like": 0.03929725803564959
+    },
+    {
+     "feature": "x_dd_48__ext_corr_AUDJPY_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1966,
+     "n_effective": 1966.0,
+     "mean_fwd": 5.5208080776509536e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 5.066055184963016e-05,
+     "t_stat": 2.2177338721422784,
+     "sharpe_like": 0.05001700386172442
+    },
+    {
+     "feature": "ret_3",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1780,
+     "n_effective": 1780.0,
+     "mean_fwd": 6.46307072570269e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 6.008317833014753e-05,
+     "t_stat": 2.2086670995421773,
+     "sharpe_like": 0.05235043090622507
+    },
+    {
+     "feature": "x_dd_240__ext_corr_AUDCAD",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3160,
+     "n_effective": 3160.0,
+     "mean_fwd": -2.7514009747995862e-05,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": -3.206153867487524e-05,
+     "t_stat": 2.1893738571520682,
+     "sharpe_like": 0.03894721308492523
+    },
+    {
+     "feature": "x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 24,
+     "side": 1,
+     "n_oos": 3522,
+     "n_effective": 146.8,
+     "mean_fwd": 0.0009486500044331501,
+     "unconditional_fwd": 0.0001059804457093456,
+     "edge_vs_unconditional": 0.0008426695587238045,
+     "t_stat": 2.186911057762199,
+     "sharpe_like": 0.18052695862636806
+    },
+    {
+     "feature": "ext_resid_AUDCAD",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 580,
+     "n_effective": 580.0,
+     "mean_fwd": 0.0001149820553013147,
+     "unconditional_fwd": 4.547528926879375e-06,
+     "edge_vs_unconditional": 0.00011043452637443532,
+     "t_stat": 2.186896902370035,
+     "sharpe_like": 0.09080595132398854
+    }
+   ]
+  },
+  {
+   "symbol": "GBPUSD",
+   "status": "OK",
+   "bars": 53834,
+   "primitives": 188,
+   "trials": 10872,
+   "candidates_scored": 5370,
+   "selected": [
+    {
+     "feature": "spread",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 683,
+     "n_effective": 683.0,
+     "mean_fwd": 0.00028483974684046713,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 0.0002785694555518112,
+     "t_stat": 11.351429268039174,
+     "sharpe_like": 0.43435036971436436
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2692,
+     "n_effective": 2692.0,
+     "mean_fwd": -8.22166890274186e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -8.848698031607448e-05,
+     "t_stat": 7.457783013991525,
+     "sharpe_like": 0.14373820448250038
+    },
+    {
+     "feature": "spread_z_48",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 1317,
+     "n_effective": 439.0,
+     "mean_fwd": 0.000205242514759231,
+     "unconditional_fwd": 1.8817091308895828e-05,
+     "edge_vs_unconditional": 0.00018642542345033517,
+     "t_stat": 3.664765062542347,
+     "sharpe_like": 0.17490969335150253
+    },
+    {
+     "feature": "x_dom__dow",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2088,
+     "n_effective": 2088.0,
+     "mean_fwd": 7.585706756985732e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 6.958677628120144e-05,
+     "t_stat": 3.476079824808436,
+     "sharpe_like": 0.0760719403552075
+    },
+    {
+     "feature": "gap",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2818,
+     "n_effective": 2818.0,
+     "mean_fwd": 5.954645702403917e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 5.327616573538329e-05,
+     "t_stat": 3.4734797314945567,
+     "sharpe_like": 0.06543261462344083
+    },
+    {
+     "feature": "kurt_6",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3246,
+     "n_effective": 3246.0,
+     "mean_fwd": -3.967836888784954e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -4.5948660176505423e-05,
+     "t_stat": 2.831825538637289,
+     "sharpe_like": 0.04970410251603931
+    },
+    {
+     "feature": "dd_6",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 5648,
+     "n_effective": 5648.0,
+     "mean_fwd": -2.7674371933360304e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -3.3944663222016184e-05,
+     "t_stat": 2.7511699481040335,
+     "sharpe_like": 0.036607500323203944
+    },
+    {
+     "feature": "x_dd_3__dom",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2995,
+     "n_effective": 2995.0,
+     "mean_fwd": -3.45043578418659e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -4.077464913052178e-05,
+     "t_stat": 2.5644386461940973,
+     "sharpe_like": 0.046859095325480576
+    },
+    {
+     "feature": "dd_240",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 283,
+     "n_effective": 94.3,
+     "mean_fwd": 0.0005760030037016222,
+     "unconditional_fwd": 1.8817091308895828e-05,
+     "edge_vs_unconditional": 0.0005571859123927263,
+     "t_stat": 2.528493359899845,
+     "sharpe_like": 0.2603330023860838
+    },
+    {
+     "feature": "ret_96",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 6,
+     "side": 1,
+     "n_oos": 2650,
+     "n_effective": 441.7,
+     "mean_fwd": 0.00030232419074417683,
+     "unconditional_fwd": 3.763272189279276e-05,
+     "edge_vs_unconditional": 0.0002646914688513841,
+     "t_stat": 2.4960638128004793,
+     "sharpe_like": 0.11877044188770582
+    },
+    {
+     "feature": "tick_volume",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 1700,
+     "n_effective": 566.7,
+     "mean_fwd": 0.00011249225100914109,
+     "unconditional_fwd": 1.8817091308895828e-05,
+     "edge_vs_unconditional": 9.367515970024526e-05,
+     "t_stat": 2.472848969551004,
+     "sharpe_like": 0.10388043488614372
+    },
+    {
+     "feature": "ru_3",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4948,
+     "n_effective": 4948.0,
+     "mean_fwd": -2.1094095235057208e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -2.7364386523713092e-05,
+     "t_stat": 2.4140235136706063,
+     "sharpe_like": 0.03431836986538222
+    },
+    {
+     "feature": "volratio_24_240",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2864,
+     "n_effective": 2864.0,
+     "mean_fwd": 4.793796974977821e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 4.166767846112233e-05,
+     "t_stat": 2.410618778679632,
+     "sharpe_like": 0.045044526760799224
+    },
+    {
+     "feature": "rng_240",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 24,
+     "side": 1,
+     "n_oos": 132,
+     "n_effective": 5.5,
+     "mean_fwd": 0.0038601213586805724,
+     "unconditional_fwd": 0.00014494151128631943,
+     "edge_vs_unconditional": 0.003715179847394253,
+     "t_stat": 2.3833684073746597,
+     "sharpe_like": 1.0162717035832154
+    },
+    {
+     "feature": "dd_240",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 24,
+     "side": 1,
+     "n_oos": 283,
+     "n_effective": 11.8,
+     "mean_fwd": 0.0029284664945841473,
+     "unconditional_fwd": 0.00014494151128631943,
+     "edge_vs_unconditional": 0.002783524983297828,
+     "t_stat": 2.365773150502237,
+     "sharpe_like": 0.6889465056169078
+    },
+    {
+     "feature": "pos_12",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3037,
+     "n_effective": 3037.0,
+     "mean_fwd": 4.4771927299893734e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 3.850163601123785e-05,
+     "t_stat": 2.3494322169599147,
+     "sharpe_like": 0.042632472818113096
+    },
+    {
+     "feature": "ru_6",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 5414,
+     "n_effective": 5414.0,
+     "mean_fwd": 3.5102097134418846e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 2.883180584576296e-05,
+     "t_stat": 2.3336282047172707,
+     "sharpe_like": 0.03171557134015677
+    },
+    {
+     "feature": "skew_48",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2429,
+     "n_effective": 2429.0,
+     "mean_fwd": -3.656734213136931e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -4.283763342002519e-05,
+     "t_stat": 2.3220747925857133,
+     "sharpe_like": 0.04711535270398326
+    },
+    {
+     "feature": "x_dom__dow",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 6,
+     "side": 1,
+     "n_oos": 2088,
+     "n_effective": 348.0,
+     "mean_fwd": 0.0003030108598597994,
+     "unconditional_fwd": 3.763272189279276e-05,
+     "edge_vs_unconditional": 0.00026537813796700667,
+     "t_stat": 2.292422313895851,
+     "sharpe_like": 0.12288673489348016
+    },
+    {
+     "feature": "x_ext_corr_AUDCAD_z__ext_corr_AUDJPY",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 2884,
+     "n_effective": 961.3,
+     "mean_fwd": 0.0001361357655239177,
+     "unconditional_fwd": 1.8817091308895828e-05,
+     "edge_vs_unconditional": 0.00011731867421502188,
+     "t_stat": 2.2651009866515066,
+     "sharpe_like": 0.07305510488140658
+    },
+    {
+     "feature": "rng_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 5104,
+     "n_effective": 5104.0,
+     "mean_fwd": -2.132388021068441e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": -2.7594171499340293e-05,
+     "t_stat": 2.226008875060291,
+     "sharpe_like": 0.031158142461688073
+    },
+    {
+     "feature": "x_body_frac__dd_24",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 4507,
+     "n_effective": 4507.0,
+     "mean_fwd": 3.560681391768633e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 2.9336522629030448e-05,
+     "t_stat": 2.217540740226931,
+     "sharpe_like": 0.03303146443105081
+    },
+    {
+     "feature": "x_ext_corr_AUDCAD__ext_corr_AUDJPY",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 12,
+     "side": 1,
+     "n_oos": 2174,
+     "n_effective": 181.2,
+     "mean_fwd": 0.0005575254675680007,
+     "unconditional_fwd": 7.49624857060616e-05,
+     "edge_vs_unconditional": 0.0004825629818619391,
+     "t_stat": 2.2115896531024437,
+     "sharpe_like": 0.1643105322955199
+    },
+    {
+     "feature": "rng_96",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 24,
+     "side": 1,
+     "n_oos": 218,
+     "n_effective": 9.1,
+     "mean_fwd": 0.0039854455201942095,
+     "unconditional_fwd": 0.00014494151128631943,
+     "edge_vs_unconditional": 0.0038405040089078903,
+     "t_stat": 2.166151690788546,
+     "sharpe_like": 0.718730773305333
+    },
+    {
+     "feature": "dd_48",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 830,
+     "n_effective": 830.0,
+     "mean_fwd": 8.560559628758786e-05,
+     "unconditional_fwd": 6.2702912886558835e-06,
+     "edge_vs_unconditional": 7.933530499893198e-05,
+     "t_stat": 2.139512908882924,
+     "sharpe_like": 0.07426357721207172
+    }
+   ]
+  },
+  {
+   "symbol": "USDJPY",
+   "status": "OK",
+   "bars": 53833,
+   "primitives": 188,
+   "trials": 10884,
+   "candidates_scored": 5388,
+   "selected": [
+    {
+     "feature": "spread_z_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1105,
+     "n_effective": 1105.0,
+     "mean_fwd": 0.00019450149573604794,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 0.00018726987443236853,
+     "t_stat": 5.799268456680352,
+     "sharpe_like": 0.17445847600088096
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2692,
+     "n_effective": 2692.0,
+     "mean_fwd": -9.26318578277825e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -9.986347913146191e-05,
+     "t_stat": 5.556302092631726,
+     "sharpe_like": 0.10708985295749332
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 2692,
+     "n_effective": 897.3,
+     "mean_fwd": -0.00018660736542168937,
+     "unconditional_fwd": 2.168811079253958e-05,
+     "edge_vs_unconditional": -0.00020829547621422894,
+     "t_stat": 3.850083164590796,
+     "sharpe_like": 0.12852665660167628
+    },
+    {
+     "feature": "x_dd_96__ext_corr_AUDJPY",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4201,
+     "n_effective": 4201.0,
+     "mean_fwd": -5.480141150640631e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -6.203303281008572e-05,
+     "t_stat": 3.731088387435763,
+     "sharpe_like": 0.057565091139426705
+    },
+    {
+     "feature": "x_dd_48__ext_corr_AUDJPY",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 4144,
+     "n_effective": 1381.3,
+     "mean_fwd": -0.00016682621121067936,
+     "unconditional_fwd": 2.168811079253958e-05,
+     "edge_vs_unconditional": -0.00018851432200321893,
+     "t_stat": 3.4852183092234785,
+     "sharpe_like": 0.09377363278556017
+    },
+    {
+     "feature": "gap",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2503,
+     "n_effective": 2503.0,
+     "mean_fwd": 7.447215619009902e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 6.724053488641961e-05,
+     "t_stat": 3.1643571893386113,
+     "sharpe_like": 0.06324920564141859
+    },
+    {
+     "feature": "tick_volume",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 1201,
+     "n_effective": 1201.0,
+     "mean_fwd": -7.95050148384952e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -8.673663614217461e-05,
+     "t_stat": 3.070570299788134,
+     "sharpe_like": 0.08860281930405471
+    },
+    {
+     "feature": "hour",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 4485,
+     "n_effective": 4485.0,
+     "mean_fwd": 5.1742524106493875e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 4.451090280281445e-05,
+     "t_stat": 2.9307982831239543,
+     "sharpe_like": 0.04376276007928984
+    },
+    {
+     "feature": "x_dd_6__ext_corr_AUDJPY",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4287,
+     "n_effective": 4287.0,
+     "mean_fwd": -4.198843431348201e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -4.922005561716143e-05,
+     "t_stat": 2.812564667806985,
+     "sharpe_like": 0.042956192011662384
+    },
+    {
+     "feature": "x_dd_96__ext_corr_AUDJPY",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 4196,
+     "n_effective": 699.3,
+     "mean_fwd": -0.00023443587868114929,
+     "unconditional_fwd": 4.344491546639603e-05,
+     "edge_vs_unconditional": -0.0002778807941475453,
+     "t_stat": 2.7372949633694414,
+     "sharpe_like": 0.1035093267270017
+    },
+    {
+     "feature": "vol_3",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2524,
+     "n_effective": 2524.0,
+     "mean_fwd": -3.657460346896488e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -4.3806224772644305e-05,
+     "t_stat": 2.6606370050599373,
+     "sharpe_like": 0.052959143391277025
+    },
+    {
+     "feature": "ext_residz_AUDCAD_z",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4361,
+     "n_effective": 4361.0,
+     "mean_fwd": -3.8835961211220085e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -4.606758251489951e-05,
+     "t_stat": 2.658232193863023,
+     "sharpe_like": 0.04025314985799228
+    },
+    {
+     "feature": "x_body_frac__ext_corr_AUDJPY",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2250,
+     "n_effective": 2250.0,
+     "mean_fwd": 7.550106890336986e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 6.826944759969045e-05,
+     "t_stat": 2.6353102441494447,
+     "sharpe_like": 0.05555721808457778
+    },
+    {
+     "feature": "dd_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3280,
+     "n_effective": 3280.0,
+     "mean_fwd": -4.998471599997686e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -5.721633730365628e-05,
+     "t_stat": 2.5859729186145626,
+     "sharpe_like": 0.04515304576000221
+    },
+    {
+     "feature": "spread",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 4006,
+     "n_effective": 4006.0,
+     "mean_fwd": 4.9003258703981304e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 4.177163740030188e-05,
+     "t_stat": 2.555240617796725,
+     "sharpe_like": 0.040371634230408564
+    },
+    {
+     "feature": "body_frac",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2156,
+     "n_effective": 2156.0,
+     "mean_fwd": 7.082840348521215e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 6.359678218153274e-05,
+     "t_stat": 2.5137701981523155,
+     "sharpe_like": 0.05413787374317256
+    },
+    {
+     "feature": "dd_48",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 3457,
+     "n_effective": 3457.0,
+     "mean_fwd": 5.4045457674539714e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 4.681383637086029e-05,
+     "t_stat": 2.413017229303229,
+     "sharpe_like": 0.04104031949667816
+    },
+    {
+     "feature": "kurt_6",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 4177,
+     "n_effective": 4177.0,
+     "mean_fwd": 4.832764298309532e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 4.10960216794159e-05,
+     "t_stat": 2.411618433744688,
+     "sharpe_like": 0.03731439093223053
+    },
+    {
+     "feature": "x_ext_corr_AUDJPY__ext_corr_AUDJPY_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 2153,
+     "n_effective": 717.7,
+     "mean_fwd": 0.00022271497804091287,
+     "unconditional_fwd": 2.168811079253958e-05,
+     "edge_vs_unconditional": 0.0002010268672483733,
+     "t_stat": 2.3978096046805777,
+     "sharpe_like": 0.08950623883808703
+    },
+    {
+     "feature": "x_body_frac__ext_corr_AUDCAD",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4158,
+     "n_effective": 4158.0,
+     "mean_fwd": -3.813222455345178e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -4.5363845857131204e-05,
+     "t_stat": 2.392602683711888,
+     "sharpe_like": 0.037104650315848635
+    },
+    {
+     "feature": "x_dd_3__dd_48",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 4840,
+     "n_effective": 4840.0,
+     "mean_fwd": -2.8291030777417193e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -3.5522652081096615e-05,
+     "t_stat": 2.3389946740994985,
+     "sharpe_like": 0.03362068456889846
+    },
+    {
+     "feature": "x_dow__ext_corr_AUDJPY",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 1992,
+     "n_effective": 1992.0,
+     "mean_fwd": 7.315284037520965e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 6.592121907153024e-05,
+     "t_stat": 2.3292058369401762,
+     "sharpe_like": 0.05218710464264158
+    },
+    {
+     "feature": "tick_volume_z_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 2431,
+     "n_effective": 2431.0,
+     "mean_fwd": -4.583947133661982e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -5.307109264029924e-05,
+     "t_stat": 2.2701196270312205,
+     "sharpe_like": 0.046042220894613885
+    },
+    {
+     "feature": "skew_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 2057,
+     "n_effective": 2057.0,
+     "mean_fwd": 6.840811116946677e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": 6.117648986578735e-05,
+     "t_stat": 2.251701144356209,
+     "sharpe_like": 0.0496470676764963
+    },
+    {
+     "feature": "ru_3",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 3480,
+     "n_effective": 3480.0,
+     "mean_fwd": -2.894092932420485e-05,
+     "unconditional_fwd": 7.231621303679421e-06,
+     "edge_vs_unconditional": -3.617255062788427e-05,
+     "t_stat": 2.2444005096194886,
+     "sharpe_like": 0.038046151827023075
+    }
+   ]
+  }
+ ],
+ "arbiter": "the canonical ten-gate policy, and nothing else. This searcher discovers and reports; it sets no threshold of its own. Pipeline: discovery -> backtest -> ten gates -> certificate -> forward window -> live.",
+ "honesty": {
+  "trials_counted": 43512,
+  "why": "every (feature, band, horizon, direction) combination evaluated is counted and carried into each hypothesis, so deflated Sharpe deflates against the real multiplicity of the search rather than a flattering subset",
+  "oos_only": "scored on the held-out 40% only; band edges derived from the fit window so the condition itself does not leak",
+  "selection": "greedy on marginal independence, |corr| < 0.5 against everything already chosen -- diversity is the objective, not a filter"
+ }
+}

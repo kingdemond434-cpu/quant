@@ -1,0 +1,15 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+    "policy_signals": [
+      "price stability"
+    ],
+    "symbols": [
+      "JPYUSD"
+    ],
+    "confidence": 0.3
+  }
+]

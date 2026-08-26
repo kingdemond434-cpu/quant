@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T02:24:54+00:00",
+ "rebuilt_at": "2026-08-26T03:24:47+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -407,6 +407,66 @@
    },
    "cohorts": [
     "c5fd61ed7006e3c4"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "bipbopcompany-droid": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "59f88ae0ccbefb2e"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "mobilesitebytim": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "83a17dd149ccf5c6"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "wendy-bay": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "aacd53f06fea6cef"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "7skooooo": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "70193db012844420"
    ],
    "scores": {
     "independent_evidence": 1,

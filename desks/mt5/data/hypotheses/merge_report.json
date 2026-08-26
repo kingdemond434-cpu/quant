@@ -1,0 +1,15 @@
+{
+ "merged_at": "2026-08-26T03:05:38+00:00",
+ "per_source": {
+  "external_backtest_results.json": 108,
+  "edge_search_results.json": 100,
+  "orthogonal_candidates.json": -1
+ },
+ "total": 208,
+ "declared_search_trials": 43512,
+ "families": {
+  "discovered": 100,
+  "session_range_breakout": 108
+ },
+ "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
+}
