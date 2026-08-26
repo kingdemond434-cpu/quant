@@ -1,16 +1,15 @@
 [Unit]
-Description=Unified MT5 forward-shadow cycle (all certified sleeves)
+Description=Read-only watchdog for Contabo's authoritative Fusion MT5 shadow cycle
 After=network-online.target
 
 [Service]
 Type=oneshot
-WorkingDirectory=/home/quant/quant-platform/desks/mt5
-ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/research/shadow_cycle.py
+WorkingDirectory=/home/quant/quant-platform
+Environment="SHADOW_SYNC_MAX_AGE_SECONDS=2700"
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/scripts/monitor_mt5_shadow_sync.py
 StandardOutput=append:/home/quant/logs/shadow_user.log
 StandardError=append:/home/quant/logs/shadow_user.log
-MemoryMax=700M
-CPUQuota=75%
-TimeoutStartSec=900
-# EVIDENCE_BLOCKED is an honest research state, not a scheduler crash.
-SuccessExitStatus=2
+MemoryMax=128M
+CPUQuota=25%
+TimeoutStartSec=120
 
