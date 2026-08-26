@@ -1290,3 +1290,50 @@ deferred until funding lands; nothing is buildable from this box without the pai
 free-seat fallback 400-blanks on the payload, measured repeatedly). The other four §35-flagged
 findings verified traced this cycle: #79 job-market (REJECT recorded), #80 satellite/shipping
 (REJECT recorded), #48 wallet fingerprinting (GAP #88), micro_audit_inbox #1 (fixed 07-26).
+
+_Appended 2026-08-26 ~04:10Z (weekly gap-fixer, third seat — cycle close):_
+
+**UNIT DEATHS MADE VISIBLE (root cause of this seat's three dead predecessors).** The 03:02/
+03:12/03:20 gap-wirer attempts were OOM-killed 5–7 min in (zero-swap 4GB box; console item 2),
+each leaving a 58-byte log identical to an auth failure. Landed: global user-scope ExecStopPost
+drop-in (`ops/service.d/10-death-visibility.conf`, installed + daemon-reloaded — covers every
+current AND future user service, no per-unit list) → `data/cro_ai_logs/unit_deaths.jsonl`;
+max_audit `check_unit_deaths` (drop-in-missing is itself a defect); positive control run both
+directions. The retry loop that resurrected this seat is real (multiple liveness fences can
+re-fire the weekly unit); its deaths now leave evidence.
+
+**AUTHORITY-RATCHET BREACH REPAIRED + LAYER-3 GUARD (the eb1818f4 launder destroyed earned
+evidence).** The Dell launder commit reverted `research_queue.json` 26→10 — 16 Stage-A external
+survivors (e.g. GBPAUD session_range_breakout, n=2127 t=3.97) gone from the gauntlet queue.
+Restored by id-union to 34 (zero content dupes; ratchet ok, floor now 34). Recursion fence:
+pre-commit guard Layer 3 refuses any staged shrink of an authority-ratchet WATCH artifact
+without a revocation record (WATCH/REVOCATION_KEYS imported live; reachability of legit growth
+preserved; `QUANT_ALLOW_EVIDENCE_FALL=1` for deliberate acts; 4 regression tests).
+
+**CAPABILITY-DISPOSITION REGISTRY BUILT (the mechanism the 08-25 seat closed as 'pending').**
+`docs/research/mt5_capability_dispositions.json` + audit support (DISPOSED_* statuses, malformed
+rows refused loudly as DISPOSITION_INVALID, reachability outranks any verdict). Recorded: the
+08-25 seat's 9 libs.alpha SUPERSEDED verdicts + 8 inspected this cycle (ea_bridge SUPERSEDED —
+gateway drives MT5 natively; 7 crypto-mechanics BLOCKED, book_walk/passive_impact with named
+L1.16a re-open on the GAP-127 moat tape). UNWIRED_REVIEW 553→536, all honest. `event_guard`
+deliberately left queued: a real MT5 live-arming rail needing a calendar producer + money-path
+change. Scanner limitation measured en route: blind to non-dotted `from libs import x` (0 real
+instances under desks/mt5; pinned in-test).
+
+**MOAT STORE RESTORED:** `data/moat/execution_tape` was ABSENT at source (backup DEGRADED 5/6;
+replica intact) — restored from `backups/moat/`, re-run reports **OK 6/6, drill PASS, 35.6%
+free**. `data/moat/bybit/` re-appeared EMPTY at 03:36 (a recorder-ensure stub honoring
+RECORDERS_OFF) — stale-mandate noise for the 09-02 fences row. Also landed: the 02:30Z seat's
+stranded ratchet-floor raises (capability_wired .856→.859, repair_p_fix .646→.664,
+roi_basis_declared_share .010→.169) and the sor_research backup replica.
+
+**Ledger:** 4 overdue rows cleared re-measured-first — R0005 REJECTED mandate-void, split →
+R0657 (MT5 cross-axis screen, due 09-09); R0251 REJECTED mandate-void (lesson already law;
+MT5 half owned by GAP 127); R0035 IMPLEMENTED (last missing trace = register entry #137);
+R0049 IMPLEMENTED (found already built 08-18 in 95da9c34 via `git log -S`, never disposed).
+**max_audit:** doctrine-universal-missing repointed to the consolidated shared surface (15/15
+duty tokens verified present; was accusing the correct post-consolidation doctrine);
+findings-scope cleared (RESEARCH.md = operative law, MOAT_NODE_SPEC.md = spec driven by GAP
+127). **Deferred with named blockers:** #135 test adjudication + #124 promoter wiring (two live
+interactive sibling sessions hold uncommitted desk state in exactly those files; a desk-suite
+run restores protected artifacts over sibling work — R0423 class). Highest-EV open: #124.
