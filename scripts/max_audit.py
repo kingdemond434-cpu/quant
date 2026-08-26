@@ -7055,6 +7055,73 @@ def check_route_shaped_identity(defects) -> None:
             f"archived and re-windowed rather than silently re-blessed."))
 
 
+def check_worktree_on_tmpfs(defects) -> None:
+    """A git worktree under /tmp is tmpfs -- it is spending RAM, not disk.
+
+    tmpfs mounts are DERIVED from /proc/mounts, not listed -- any mount can be memory.
+
+    Origin (2026-08-26, self-found): CI was RED on committed code with 'KILLED sig9, MemAvailable
+    827MB, 495MB of RAM held by files under /tmp (tmpfs)'. The holder was /tmp/lit10-wt, an
+    abandoned detached worktree costing 322MB of a 4GB no-swap box -- so the desk-wide safety gate
+    was down for a reason no code change could fix and no code review could see. Removing it took
+    MemAvailable 1131MB -> 1348MB and CI came back.
+
+    The second hazard is worse than the first and is why this reports rather than stays quiet: the
+    same worktree held commit 16a68718 (a full litminer run) reachable from NO branch. tmpfs does
+    not survive a reboot, so that work was one power cycle -- or one `worktree remove` -- from
+    being gone. TAG THE HEAD BEFORE RECLAIMING, always; verify the tag makes it reachable, then
+    remove. Never delete a sibling's worktree that still has uncommitted work; relocate it to real
+    disk instead, which fixes the RAM cost with zero data loss.
+    """
+    try:
+        out = subprocess.run(["git", "worktree", "list", "--porcelain"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return
+    if out.returncode != 0:
+        return
+    paths = [ln.split(" ", 1)[1].strip() for ln in out.stdout.splitlines()
+             if ln.startswith("worktree ")]
+    # Derived, never hardcoded: /tmp and /dev/shm are the usual tmpfs mounts on this box, but the
+    # property that matters is "this filesystem IS memory", and any mount can be one. A literal
+    # list here would be a boundary silently capping the sweep (the anti-hardcode law).
+    ram_mounts: list[str] = []
+    try:
+        for line in Path("/proc/mounts").read_text("utf-8").splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and parts[2] in ("tmpfs", "ramfs"):
+                ram_mounts.append(parts[1].rstrip("/") + "/")
+    except OSError:                              # pragma: no cover -- non-Linux
+        return
+    if not ram_mounts:
+        return
+    offenders: list[str] = []
+    for raw in paths:
+        wt = Path(raw)
+        if not str(wt).startswith(tuple(ram_mounts)) or not wt.exists():
+            continue
+        try:
+            head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=wt,
+                                  capture_output=True, text=True, timeout=30).stdout.strip()
+            reach = subprocess.run(["git", "branch", "-a", "--contains", head], cwd=ROOT,
+                                   capture_output=True, text=True, timeout=60).stdout
+            size = subprocess.run(["du", "-sm", str(wt)], capture_output=True, text=True,
+                                  timeout=120).stdout.split("\t")[0].strip()
+        except (OSError, subprocess.SubprocessError, IndexError):
+            continue
+        named = [b for b in reach.splitlines() if b.strip() and "(no branch)" not in b]
+        orphan = "" if named else " and its HEAD is reachable from NO BRANCH -- TAG IT FIRST"
+        offenders.append(f"{wt} (~{size}MB of RAM, HEAD {head[:8]}{orphan})")
+    if offenders:
+        defects.append((
+            "worktree-on-tmpfs",
+            f"{len(offenders)} git worktree(s) live on tmpfs, so they cost RAM on a 4GB no-swap "
+            f"box and do NOT survive a reboot: {'; '.join(offenders)}. This is how CI died on "
+            "2026-08-26 -- a resource failure no code review could see and no code change could "
+            "fix. Reclaim it, but TAG the HEAD and verify reachability BEFORE removing; if it "
+            "holds uncommitted work, relocate it to real disk rather than deleting it."))
+
+
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
@@ -7062,7 +7129,8 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("book-absorbing-state", check_book_absorbing_state),
            ("rail-verdict-published", check_rail_verdict_published),
            ("universal-doctrine", check_universal_doctrine),
-           ("route-shaped-identity", check_route_shaped_identity)]
+           ("route-shaped-identity", check_route_shaped_identity),
+           ("worktree-on-tmpfs", check_worktree_on_tmpfs)]
 
 
 #: Every reasoning organ. An organ that does not carry the constitution is optimising for

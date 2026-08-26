@@ -321,3 +321,68 @@ meaning must be archived and re-windowed rather than silently re-blessed.
 GENERALISES TO: cache keys, content hashes, dedup keys, `code_hash`/`cost_hash`-style fingerprints
 (note `cost_hash` hashes a CONTINUOUSLY RE-MEASURED market observable — same family, still open as
 R0664), model/seat identity, dataset fingerprints, and any "has this changed?" gate anywhere.
+
+---
+
+## ANGLE (2026-08-26, self-found, mechanised same day): "is the check REGISTERED, or is it actually CALLABLE?"
+
+The desk already has `check_registry_complete`, which fires when a `check_*` is authored and never
+added to `CHECKS` — the 2026-07-26 class where four consecutive charters shipped with zero
+enforcement. That guard was GREEN the whole time `check_route_shaped_identity` was dead.
+
+WHAT HAPPENED: the check (written the previous cycle, the angle immediately above this one) shipped
+as `def check_route_shaped_identity() -> list[str]`, returning its verdicts, while the runner calls
+`fn(defects)`. It was correctly registered. It raised `TypeError` on **every single sweep**, so the
+dimension it enforces produced zero verdicts and read exactly like a clean one.
+
+WHY NOTHING CAUGHT IT: `_fenced` does rescue the crash — it emits `sweep-broken-<label>` — but that
+verdict names the CHECK, never the LAW that went dark. In a 40-defect sweep it reads as one more
+housekeeping row, not as "an entire class of defect is currently unenforced". Meanwhile the guard
+that exists precisely to stop inert laws was measuring the wrong half of the condition:
+**registration is not enforcement.**
+
+THE TELL, cheap to check: for every registered callable, does its signature match what the
+dispatcher actually passes? And does it RETURN its findings where the caller expects it to MUTATE
+(or vice versa)? A return value the caller discards is silence that looks like a clean verdict —
+the same shape as WS-005 and L1.28a, one level further in.
+
+GENERALISES TO: every registry-of-callables in the desk — checks, gates, collectors, screens,
+fences, cadence duties, panel missions, `_STEPS` chains. Anywhere a list of functions is dispatched
+by a loop, the loop's calling convention is an unwritten contract that nothing type-checks, because
+the registry is a list of heterogeneous callables and `mypy` has nothing to compare them against.
+
+MECHANISED: `check_registry_complete` now verifies SHAPE as well as registration
+(`check-wrong-signature`), and `tests/ops/test_max_audit_check_signatures.py` carries the positive
+control — it was verified to FAIL against pre-fix HEAD before being committed.
+
+## ANGLE (2026-08-26, self-found, mechanised same day): "what is spending RAM that isn't a process?"
+
+CI was RED on committed code: `KILLED sig9, MemAvailable 827MB, 495MB of RAM held by files under
+/tmp (tmpfs)`. Every liveness probe, every code review and every gate was blind to this, because
+the failure was **a file that is secretly memory**. `/tmp` is tmpfs on this box; a 322MB git
+worktree parked there (`/tmp/lit10-wt`, abandoned ~24h) was charging a 4GB no-swap box a tenth of
+its RAM to hold files nobody was reading. Reclaiming it took MemAvailable 1131MB → 1348MB and the
+desk-wide safety gate came back up.
+
+THE SECOND HAZARD IS THE WORSE ONE. That worktree's HEAD (`16a68718`, a complete litminer run 10)
+was reachable from **no branch at all**. tmpfs does not survive a reboot, so a full session of work
+was one power cycle — or one reflexive `worktree remove` — from being permanently gone. The
+reclaim was only safe because reachability was checked first and the commit was tagged
+(`rescued/litminer-run10-20260825`) before anything was removed.
+
+THE TELL: ask what is consuming a resource that has no process to attribute it to. `free -m`
+blames "shared"/"buff/cache"; `ps` shows nothing; the OOM killer names the victim, never the cause.
+`df -h /tmp` plus `du -sh /tmp/*` answers it in two seconds and almost nobody runs it during an
+incident because the incident presents as a test failure.
+
+THE ORDER OF OPERATIONS IS THE LESSON: tag → verify reachable → then reclaim. If the worktree holds
+uncommitted work, RELOCATE it to real disk instead of deleting — that fixes the RAM cost with zero
+data loss, and R0423 forbids destroying a sibling session's tree either way.
+
+GENERALISES TO: any tmpfs/`/dev/shm` path, container overlay upper-dirs, unreaped `/tmp` build
+caches, and the general class of **resource failures that look like code failures** — where the
+honest verdict is UNMEASURED/environmental and a re-run on a quiet box is the diagnostic (L0071:
+a negative exit code is a verdict about the BOX, never the code).
+
+MECHANISED: `check_worktree_on_tmpfs` in `scripts/max_audit.py` — flags any worktree under `/tmp`
+or `/dev/shm` with its RAM cost, and shouts separately when its HEAD is on no branch.
