@@ -108,13 +108,29 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
 #: table both fences already agree is authoritative, and importing it makes drift impossible
 #: rather than merely discouraged. Import failure is not a licence to default: the seats are
 #: then ungradeable on size and say so.
+#:
+#: ARTIFACT PARITY COMES WITH IT, and leaving it out was a defect this fence nearly shipped.
+#: A claude organ writes its deliverables through FILE TOOLS, so a completely successful run can
+#: leave nothing in the shell log but a start line -- litminer's 686-byte log on 2026-08-25 was
+#: a real dig that minted two cards and four ledger rows. Grading on bytes alone called it a
+#: stub. A fence that is wrongly red gets switched off, which is the exact failure this fence
+#: exists to prevent, so the byte floor is only consulted when the organ's own EXCLUSIVE declared
+#: artifact has ALSO gone quiet past its cadence. `_artifact_age_h` is imported rather than
+#: reimplemented for the same reason the byte floor is: max_audit already computes exclusivity
+#: (a `prospector_coverage.md` that eight organs write is not evidence any ONE of them ran), and
+#: a second copy of that logic is a second thing to drift.
 try:
     from scripts.max_audit import ORGANS as _ORGANS
+    from scripts.max_audit import _artifact_age_h as _organ_artifact_age_h
 except ImportError:  # pragma: no cover - defensive; the artifact records the blindness
     _ORGANS = {}
+    _organ_artifact_age_h = None  # type: ignore[assignment]
 
 #: glob -> min bytes that count as a REAL run, joined from the shared table.
 _MIN_BYTES: dict[str, int] = {glob: int(mb) for glob, mb, _age in _ORGANS.values()}
+#: glob -> max_audit's name for the same organ, so the artifact escape resolves too. The two
+#: tables disagree on names (`litminer` here, `litminer-dig` there) and agree on globs.
+_ORGAN_BY_GLOB: dict[str, str] = {glob: name for name, (glob, _mb, _a) in _ORGANS.items()}
 
 
 _BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt", "unobservable",
@@ -181,6 +197,9 @@ def audit() -> dict[str, Any]:
         sched = _scheduled(runner)
         name, age_h, size = _last_run(glob)
         min_bytes = _MIN_BYTES.get(glob)
+        organ = _ORGAN_BY_GLOB.get(glob)
+        art_h = (_organ_artifact_age_h(organ)
+                 if organ and _organ_artifact_age_h is not None else float("inf"))
         if min_bytes is None:
             drift.append(f"{seat}: glob {glob!r} is absent from max_audit.ORGANS -- this seat "
                          "cannot be graded on output size")
@@ -201,10 +220,18 @@ def audit() -> dict[str, Any]:
             status = "creds-missing"
         elif name is None:
             status = "never-ran"
-        elif min_bytes is not None and size is not None and size < min_bytes:
+        elif (min_bytes is not None and size is not None and size < min_bytes
+              and art_h > max_age_h):
             # BEFORE the age check, deliberately. A FRESH stub is the worse condition: the seat
             # is firing exactly on schedule and dying every time, so grading it on age would
             # report `ok` on the day it is failing hardest -- which is what it did.
+            #
+            # AND the artifact clause, because a tiny log is ambiguous on its own: it is the
+            # signature of a dead run AND of a healthy claude organ that wrote its deliverable
+            # through file tools. Only when BOTH the log and the organ's exclusive artifact have
+            # gone quiet is "it produced nothing" a measurement rather than a guess. Organs with
+            # no exclusive artifact (every frontier seat -- they all write the shared
+            # prospector_coverage.md) fall back to bytes: weaker, but honest.
             status = "stub"
         elif age_h is not None and age_h > max_age_h:
             status = "stale"
@@ -213,6 +240,7 @@ def audit() -> dict[str, Any]:
         seats[seat] = {"prompt": prompt_ok, "runner": runner_ok, "unit": sched, "creds": creds,
                        "last_run": name, "age_h": round(age_h, 1) if age_h is not None else None,
                        "last_bytes": size, "min_bytes": min_bytes,
+                       "artifact_age_h": (None if art_h == float("inf") else round(art_h, 1)),
                        "max_age_h": max_age_h, "status": status}
 
     by_status: dict[str, list[str]] = {}

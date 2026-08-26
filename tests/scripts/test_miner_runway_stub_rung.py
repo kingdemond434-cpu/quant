@@ -35,6 +35,9 @@ def seatbox(tmp_path, monkeypatch):
     monkeypatch.setattr(runway, "_ROOT", tmp_path)
     monkeypatch.setattr(runway, "_LOGDIR", logs)
     monkeypatch.setattr(runway, "_creds_present", lambda: True)
+    # No exclusive artifact by default -- that is the real state of every frontier seat (they
+    # all write the shared prospector_coverage.md), so bytes are the only honest signal there.
+    monkeypatch.setattr(runway, "_organ_artifact_age_h", lambda _o: float("inf"))
     monkeypatch.setattr(runway, "_scheduled", lambda _r: True)
     monkeypatch.setattr(runway, "_SEATS", {
         "frontier-ru": ("ops/frontier_ru_prompt.txt", "ops/run_frontier_miner.sh",
@@ -101,3 +104,31 @@ def test_every_seat_joins_the_shared_table_today():
     agreeing. A drift here is the defect returning by rename."""
     globs = {g for _p, _r, g, _a in runway._SEATS.values()}
     assert globs <= set(runway._MIN_BYTES), globs - set(runway._MIN_BYTES)
+
+
+def test_a_tiny_log_with_a_FRESH_artifact_is_not_a_stub(seatbox, monkeypatch):
+    """THE FALSE POSITIVE THIS FENCE NEARLY SHIPPED. A claude organ writes deliverables through
+    file tools, so a completely successful run can leave only a start line in the shell log --
+    litminer's 686-byte log on 2026-08-25 was a real dig that minted two cards and four ledger
+    rows. Grading on bytes alone called it a stub, and a fence that is wrongly red gets switched
+    off, which is precisely the failure this fence exists to prevent."""
+    monkeypatch.setattr(runway, "_organ_artifact_age_h", lambda _o: 14.4)
+    _log(seatbox, "frontier_ru_20260825T1900.log", 686, age_h=18.1)
+    rep = runway.audit()
+    assert rep["seats"]["frontier-ru"]["status"] == "ok", rep["seats"]["frontier-ru"]
+    assert rep["seats"]["frontier-ru"]["artifact_age_h"] == 14.4
+
+
+def test_both_signals_quiet_is_still_a_stub(seatbox, monkeypatch):
+    """The escape is not a blanket amnesty: an artifact that has ALSO gone past the cadence
+    proves nothing, and the seat is back to producing nothing."""
+    monkeypatch.setattr(runway, "_organ_artifact_age_h", lambda _o: 500.0)  # cadence is 36h
+    _log(seatbox, "frontier_ru_20260825T1603.log", 118, age_h=1.0)
+    assert runway.audit()["seats"]["frontier-ru"]["status"] == "stub"
+
+
+def test_artifact_age_is_imported_not_reimplemented():
+    """Exclusivity is the subtle half (a prospector_coverage.md that eight organs write is not
+    evidence any ONE of them ran) and a second copy of it is a second thing to drift."""
+    from scripts import max_audit
+    assert runway._organ_artifact_age_h is max_audit._artifact_age_h
