@@ -3751,6 +3751,18 @@ prices. Structural caveat: the auction is a discrete event, so a ~10-20 bps spot
 is real and is not error. Per-round transparency (price/volume by round) is still IBA-report-only
 and remains card 39's residual — NOT in this feed.
 
+**CLOCK ORACLE, THIRD AND DECISIVE PASS (added same run, next-ground item (ii) pulled forward).**
+The offset is now pinned season-by-season with no external data at all: the trading week ends at
+the **24:00 server boundary in BOTH seasons** — Friday's last H1 bar is labelled 23 in summer
+(EURUSD n=117, XAUUSD n=113) *and* winter (109 / 100), while the FX week actually closes 21:00 UTC
+under BST and 22:00 UTC under GMT. Only a UTC+3 / UTC+2 server clock puts both at 24:00 local.
+Monday's first bar is 00 for FX and 01 for gold (the metals session opens an hour later) — again
+local-clock behaviour, not UTC.
+A fourth pass against the ECB 14:15 CET reference is **consistent but NOT discriminating**, and is
+recorded as such rather than dressed up: EURUSD and USDJPY both fit bar 14 in both seasons at sd
+3-4 bps (vs 10-20 either side), but the ECB fix carries its own DST shift which cancels against the
+broker's, so that test cannot separate the offsets. The LBMA fit and the week-boundary do.
+
 **DEPTH:** item 1 exhausted (both contracts pulled to first row, three fee-notice routes probed
 and failed with their error codes recorded, premium computed and cross-checked against two
 independent USD legs); item 2 exhausted for the daily-benchmark layer, residual named (IBA
