@@ -2944,3 +2944,32 @@ each, consolidated deliberately to keep repair-mode row count down.)
 State-of-the-frontier one-liner for the coverage table: verification is the frontier's named
 bottleneck (83% release code, 38% release what a verifier needs); the field is converging on the
 desk's own laws — the desk's edge is having them ENFORCED, not written.
+
+## 2026-08-26 — PROSPECTOR (MQL5 article + forum layer). Structural/method findings.
+
+*(Routed here per PROSPECTOR_SPEC; each item is also a LEDGER row, because this file is
+write-only and a finding that lives only here is not converted.)*
+
+**A. R0667 — the whole MQL5 miner family is dark and certifies itself healthy.**
+4 organs × 36 hourly runs = 144 runs, **8 distinct artifacts of real content**. `mql5_codebase`
+points at `/en/code_base` (**HTTP 404**), `mql5_articles` scrapes `<h3>` from a page with **zero
+`<h3>` tags**, `mql5_signals` archives sidebar chrome ("Broker server", "Filter"), `mql5_forum`
+has produced **3 distinct titles ever**. Shared enablers: `params={"page": N}` which MQL5 ignores
+(measured 105/105 identical thread ids) and `except Exception: continue`, which makes a 404, a 403
+and an empty parse the same empty success. **GAP #140.**
+
+**B. R0666 — the forum miner specifically**, plus the repair route: the sitemap index.
+
+**C. R0668 — execution instrument (MT5-native, design published, mined as TEXT).**
+Measure **entry and exit slippage separately and report the asymmetry**; condition the cost model
+on the symbol's **MT5 execution mode** (Instant → requotes; Market → slippage); and record
+requote counts as **UNMEASURED** for observed (non-probe) fills, because they are unreconstructable
+from anything but your own trade return codes. Extends the R0661 execution program.
+
+**D. Method note, not yet a row — `successful_miners` counts `count > 0`.**
+`desks/mt5/side_channels/run_all_miners.py` grades a miner healthy on a non-empty row count, so
+`mql5_signals` (155 rows of UI chrome) grades **successful** while `mql5_articles` (0 rows) grades
+failed — the same defect the desk already carded as "`errors/rows` is blind to selector stubs".
+Its `summary` block is also inconsistent with its own body in the committed artifact
+(`latest_discoveries.json`: `total_miners: 25 / total_discoveries: 92` over a results dict holding
+**56 miners and ~600 rows**) — a producer/consumer collapse worth its own measurement.
