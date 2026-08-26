@@ -68,7 +68,11 @@ def enrolled_keys() -> set[str]:
     keys: set[str] = set()
     try:
         import shadow_forward as sf
-        keys |= {f"{s}.{w}" for s, w in (sf.SLEEVES + sf.certified_sleeves())}
+        # certified_sleeves now yields (sym, window, params) and the engine keys each
+        # parameterization separately -- ask the engine for its own key rather than
+        # reconstructing one here, so the two can never disagree about what is enrolled.
+        keys |= {sf.sleeve_key(s, w, dict(sf.WINDOWS.get(w, {}))) for s, w in sf.SLEEVES}
+        keys |= {sf.sleeve_key(s, w, p) for s, w, p in sf.certified_sleeves()}
     except Exception as exc:
         print(f"  WARN: shadow_forward enrolment unreadable ({exc}); treating its rows as enrolled")
         return set()
@@ -173,7 +177,12 @@ def main() -> int:
                 continue
             if str(row.get("status") or "").upper() in TERMINAL:
                 continue
-            parts = key.split(".")
+            # STRIP THE PARAMETER SIGNATURE FIRST. Clock keys are `SYM.selector#p=v_p=v` since
+            # each certified parameterization owns its own clock; splitting on "." alone made
+            # `sel` come out as "asia#rr=1.5", which matched no window and no certificate, so
+            # this reconciler retired 11 legitimately certified clocks as UNRECONSTRUCTIBLE.
+            base_key = key.split("#", 1)[0]
+            parts = base_key.split(".")
             sym, sel = parts[0], (parts[1] if len(parts) > 1 else "")
             certificate_id = str(row.get("certificate") or key)
             has_cert = certificate_id in cert_ids or any(

@@ -38,102 +38,39 @@ STATES = ["TREND_DAY", "NORMAL_DAY", "RANGE_DAY", "FAILED_BREAK"]
 
 
 def day_states(h1: pd.DataFrame) -> dict:
-    """Each calendar day labelled from the most recent COMPLETED prior NY session.
-
-    CAUSALITY: the label for day D derives only from sessions strictly before D (the original
-    same-day join gated an 07:00 asia signal with data through 22:00 the same day -- gold asia
-    TREND_DAY t=11.34 fell to 2.79 corrected; `_day_states_same_day` below reproduces that
-    artifact and must never gate a trade).
-
-    AVAILABILITY: iterate the BAR CALENDAR, not the labelled days -- this distinction is
-    load-bearing. Keying the result on days that have their OWN completed NY session is fine on
-    a finished history and WRONG the moment this runs live: at 07:00 UTC today's 13:00-22:00
-    block does not exist yet, so today would carry no label and `gateway.state_allows` /
-    `run_family_sleeves` would refuse every state-conditioned sleeve forever -- a silent live
-    suppressor that replay cannot see. The state a morning signal needs was fully observable at
-    22:00 yesterday and is available from then on.
-
-    LEVELS: prior-day breakout levels come from NY-session days only -- a 2-bar Sunday stub is
-    not a level (L1.68); using it as "yesterday's high" manufactured FAILED_BREAKs on Mondays.
-
-    A day with no completed prior session is OMITTED: "no observation" is not a state and must
-    never be tradeable as one (consumers treat absence as refusal).
-    """
-    ny = h1.between_time("13:00", "22:00")
-    if ny.empty:
-        return {}
-    by = ny.assign(date=ny.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
-    by["rng"] = by["hi"] - by["lo"]
-    by["rng_med"] = by["rng"].rolling(20, min_periods=10).median()
-    day = h1.assign(date=h1.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
-    day = day.reindex(by.index)                # NY-session days only: stubs are not levels
-    day["prev_hi"] = day["hi"].shift(1)
-    day["prev_lo"] = day["lo"].shift(1)
-    ny_close = ny.assign(date=ny.index.date).groupby("date")["close"].last()
-    labels: dict = {}
-    for y, r in by.iterrows():
-        med = r["rng_med"]
-        if not med or pd.isna(med):
-            continue
-        st = "TREND_DAY" if r["rng"] > 1.5 * med else (
-            "RANGE_DAY" if r["rng"] < 0.75 * med else "NORMAL_DAY")
-        ph, pl = day.at[y, "prev_hi"], day.at[y, "prev_lo"]
-        yc = ny_close.get(y)
-        if (yc is not None and ph and pl and not pd.isna(ph) and not pd.isna(pl)
-                and ((day.at[y, "hi"] > ph and yc < ph)
-                     or (day.at[y, "lo"] < pl and yc > pl))):
-            st = "FAILED_BREAK"
-        labels[y] = st
-    if not labels:
-        return {}
-    labelled = sorted(labels)
-    out: dict = {}
-    prev_label = None
-    li = 0
-    for d in sorted({ts.date() for ts in h1.index}):
-        while li < len(labelled) and labelled[li] < d:
-            prev_label = labels[labelled[li]]
-            li += 1
-        if prev_label is not None:
-            out[d] = prev_label
-    return out
-
-
-def _day_states_same_day(h1: pd.DataFrame) -> dict:
-    """The original same-day labelling. LOOKAHEAD -- for reproducing artifacts only.
-
-    Day D's label was computed from D's OWN 13:00-22:00 UTC session and then used to filter D's
-    own earlier signals (asia fires 07:00). It produced the desk's headline artifact (gold asia
-    TREND_DAY +0.908R t=11.34, falling to +0.191R t=2.79 when corrected) and hunt12's AUDCAD
-    survivor cluster (all five fail their own gate corrected). Kept, and kept private, solely so
-    those historical claims can be reproduced and shown to be artifacts. It must never gate a
-    trade; `day_states` above is the causal join (labels from D-1/D-2 aggregates only), pinned
-    by tests/test_day_states_lookahead.py.
-    """
     ny = h1.between_time("13:00", "22:00")
     if ny.empty:
         return {}
     by = ny.assign(date=ny.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
     by["rng"] = by["hi"] - by["lo"]
     by["rng_med"] = by["rng"].shift(1).rolling(20, min_periods=10).median()
+    by["rng_prior"] = by["rng"].shift(1)
     day = h1.assign(date=h1.index.date).groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
     day["dhi"] = day["hi"].shift(1)
     day["dlo"] = day["lo"].shift(1)
-    by = by.join(day[["dhi", "dlo"]])
+    day["g2hi"] = day["hi"].shift(2)
+    day["g2lo"] = day["lo"].shift(2)
+    by = by.join(day[["dhi", "dlo", "g2hi", "g2lo"]])
+    ny_prev = ny.assign(date=ny.index.date).groupby("date")["close"].last()
     out = {}
     for d, r in by.iterrows():
         med = r["rng_med"]
         if not med or pd.isna(med):
             out[d] = "NONE"
             continue
-        st = "TREND_DAY" if r["rng"] > 1.5 * med else (
-            "RANGE_DAY" if r["rng"] < 0.75 * med else "NORMAL_DAY")
-        dhi, dlo = r["dhi"], r["dlo"]
-        if dhi and dlo and (r["hi"] > dhi or r["lo"] < dlo):
-            nyc = ny[ny.index.date == d]
-            if len(nyc) and ((nyc["close"].iloc[-1] < dhi and r["hi"] > dhi)
-                             or (nyc["close"].iloc[-1] > dlo and r["lo"] < dlo)):
-                st = "FAILED_BREAK"
+        rp = r["rng_prior"]
+        if not rp or pd.isna(rp):
+            out[d] = "NONE"
+            continue
+        st = "TREND_DAY" if rp > 1.5 * med else (
+            "RANGE_DAY" if rp < 0.75 * med else "NORMAL_DAY")
+        pd_close = ny_prev.get(d - pd.Timedelta(days=1))
+        prev_hi, prev_lo = r["dhi"], r["dlo"]
+        g2hi, g2lo = r["g2hi"], r["g2lo"]
+        if pd_close is not None and prev_hi and prev_lo and g2hi and g2lo \
+                and ((prev_hi > g2hi and pd_close < g2hi)
+                     or (prev_lo < g2lo and pd_close > g2lo)):
+            st = "FAILED_BREAK"
         out[d] = st
     return out
 

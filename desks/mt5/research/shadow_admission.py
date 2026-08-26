@@ -163,3 +163,48 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
         state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
         out.add((symbol, selector, state, "session_range_breakout", False))
     return out
+
+
+def authorized_runs(base: Path = BASE) -> list[dict]:
+    """Exactly-specified RUNNABLE certificates: symbol, selector, family AND certified params.
+
+    WHY THIS EXISTS ALONGSIDE `authorized_specs`. That function answers "is this cell allowed?"
+    and its five-tuple deliberately has no params -- every existing consumer depends on that
+    shape. This one answers a different question the forward engine actually needs: "what,
+    precisely, do I run?" Measured 2026-08-26: 21 certificates collapsed to 6 five-tuples, so
+    five separately-gauntleted XAUUSD parameterizations became one clock executing the engine's
+    own default (rr=2.0). Four certified strategies were therefore never forward-tested while
+    still being counted as certificates.
+
+    A certificate WITHOUT `params` is not returned. It cannot be: running it means guessing the
+    parameterization that passed, and `authorized_specs`' own rule is that reconstructing lost
+    parameters from a display name is forbidden. Those rows are re-certified with params by the
+    next daily gauntlet pass rather than run on a guess.
+    """
+    universal = _read(base / "reports" / "UNIVERSAL_SURVIVORS.json")
+    if not is_exact_policy(universal.get("gate_policy")):
+        return []
+    runs: list[dict] = []
+    for name, row in (universal.get("survivors") or {}).items():
+        if not isinstance(row, dict) or not all_ten_pass(row.get("gates")):
+            continue
+        spec = row.get("shadow_spec")
+        if not isinstance(spec, dict):
+            continue
+        params = spec.get("params")
+        if not isinstance(params, dict) or not params:
+            continue                       # unrunnable without guessing -- excluded, not guessed
+        runs.append({
+            "certificate": name,
+            "symbol": str(spec["symbol"]), "selector": str(spec["selector"]),
+            "family": str(spec.get("family") or "session_range_breakout"),
+            "condition": spec.get("condition") or None,
+            "params": dict(params),
+        })
+    return runs
+
+
+def run_key(run: dict) -> str:
+    """Stable per-parameterization clock key: SYMBOL.selector#p1=v1_p2=v2 (sorted, so stable)."""
+    sig = "_".join(f"{k}={run['params'][k]}" for k in sorted(run["params"]))
+    return f"{run['symbol']}.{run['selector']}#{sig}"

@@ -1,0 +1,27 @@
+{
+ "checked_at": "2026-08-26T01:13:54+00:00",
+ "enrolled": 9,
+ "certified_pairs": 6,
+ "actions": [
+  {
+   "key": "XAUUSD.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "USDJPY.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CADJPY.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURJPY.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPJPY.asia",
+   "action": "RETIRED_ORPHAN"
+  }
+ ]
+}

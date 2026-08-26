@@ -46,10 +46,14 @@ def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import (
         BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+    from mt5desk.sizing import clamp_risk_frac
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
+          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          # gateway.py imports this from mt5desk.sizing; the AST extraction drops imports,
+          # so promoted_lot needs it supplied here (same repair as test_stop_aware_sizing)
+          "clamp_risk_frac": clamp_risk_frac}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
                  "min_lot_risk_eur"}
@@ -97,10 +101,15 @@ def test_risk_per_lot_is_the_tick_arithmetic_and_nothing_else():
 
 
 def test_live_symbol_info_beats_the_snapshot():
-    """tick_value carries today's FX rate, so a live handle is the only current answer."""
-    live = _Info(tick_size=0.01, tick_value=1.00)          # snapshot says 0.864140
+    """tick_value carries today's FX rate, so a live handle is the only current answer.
+
+    The snapshot expectation is a BAND, not a literal: the snapshot file is re-synced from the
+    live terminal, so its EUR/USD leg drifts daily and a rel=1e-4 pin fails on every sync --
+    the exact frozen-rate mistake this module's own docstring documents. 1% still catches a
+    unit error (the gold constant said 92.00 vs the venue's 86.4, a 6.5% gap)."""
+    live = _Info(tick_size=0.01, tick_value=1.00)          # snapshot says ~0.8641
     assert ru.eur_per_price_unit("XAUUSD", live) == pytest.approx(100.0)
-    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(86.414, rel=1e-4)
+    assert ru.eur_per_price_unit("XAUUSD") == pytest.approx(86.414, rel=1e-2)
 
 
 def test_an_unpriceable_instrument_refuses_rather_than_defaulting():
@@ -134,11 +143,22 @@ def test_the_floor_can_exceed_the_budget_and_says_so():
 
 @pytest.mark.parametrize("sym,stop", [("CADJPY", 0.50), ("USDJPY", 0.60), ("EURUSD", 0.0040)])
 def test_non_gold_sleeves_are_sized_in_their_own_currency(sym, stop):
-    """WITHOUT THE FIX these run at 7.3-7.4% of equity while logging 1.26%."""
+    """WITHOUT THE FIX these run at 7.3-7.4% of equity while logging 1.26%.
+
+    The pin is INTENT vs REALIZED, not a budget literal: promoted sizing now runs at the
+    fenced clamp_risk_frac base (3%), so a `< 0.02` bound written under the old Q_OPT budget
+    fails on policy, not on units. Units are correct iff realized risk never exceeds what the
+    sizer intended (flooring can only push it DOWN at these equities); the original defect ran
+    2.4x ABOVE intent."""
+    from mt5desk.sizing import clamp_risk_frac
     lot = NS["promoted_lot"](EQ, 500, stop, sym)
     true_risk = ru.realised_risk_eur(sym, stop, lot)
-    assert true_risk / EQ < 0.02, f"{sym} sized to {true_risk / EQ:.2%} of equity"
-    assert NS["realised_q"](EQ, stop, sym) == pytest.approx(true_risk / EQ, rel=1e-6)
+    intended = clamp_risk_frac(None)                     # live_n=500 -> full ramp
+    assert true_risk / EQ <= intended * 1.02, (
+        f"{sym} realized {true_risk / EQ:.2%} against intended {intended:.2%} -- risk priced "
+        f"in the wrong instrument's units")
+    # the log must print the risk of the lot ACTUALLY taken, not a Q_OPT recomputation
+    assert NS["realised_q"](EQ, stop, sym, None, lot) == pytest.approx(true_risk / EQ, rel=1e-6)
 
 
 def test_realised_q_tells_the_truth_for_every_instrument():
@@ -153,7 +173,7 @@ def test_realised_q_tells_the_truth_for_every_instrument():
 def test_gold_is_unchanged_within_the_stale_fx_constant():
     """The gold book is the only armed one, so its numbers may only move by the amount the
     frozen FX rate was actually wrong -- 92 against a measured 86.41, i.e. 6.5%."""
-    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(86.414, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD") == pytest.approx(86.414, rel=1e-2)
     assert abs(NS["_eur_per_price_unit"]("XAUUSD") / LEGACY_CONSTANT - 1) < 0.07
 
 
@@ -163,8 +183,8 @@ def test_the_fallback_chain_is_live_then_snapshot_then_gold_alone():
     the hardcoded constants, where gold answers and everything else refuses."""
     dead = _Info(0.0, 0.0)
     # tier 2: live handle is useless, snapshot still prices both
-    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(86.414, rel=1e-4)
-    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(542.40, rel=1e-4)
+    assert NS["_eur_per_price_unit"]("XAUUSD", dead) == pytest.approx(86.414, rel=1e-2)
+    assert NS["_eur_per_price_unit"]("CADJPY", dead) == pytest.approx(542.40, rel=1e-2)
     # tier 3: absent from the snapshot too -- and it is not gold, so it refuses
     with pytest.raises(ru.RiskUnitUnmeasured):
         NS["_eur_per_price_unit"]("NOSUCHPAIR", dead)
@@ -238,8 +258,9 @@ def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
     """The fix is only real if the trade loop hands over the instrument. A source check,
     because the loop itself needs a live terminal to run."""
     assert 'auto_lot(equity, dist, s["symbol"], sym)' in _SRC
-    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym)' in _SRC
-    assert 'realised_q(equity, dist, s["symbol"], sym)' in _SRC
+    # canon also hands over the sleeve's own risk_frac (clamped inside promoted_lot)
+    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym' in _SRC
+    assert 'realised_q(equity, dist, s["symbol"], sym, lot=lot)' in _SRC
     assert "cannot price" in _SRC
 
 
