@@ -253,3 +253,30 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     append-only store (graveyard, ledgers, tapes, jsonl corpora); and the mirror case this cycle
     also raised -- a WRITE with no intended reader, which is R0074's phantom-path census walked in
     the opposite direction.
+
+### Is a decision-grade number PERSISTED, or re-derived by every caller from scratch?
+    (added 2026-08-26 by the daily cycle, under the recursion rule -- this angle found a live
+    defect the first time it was asked, which is the bar for landing here permanently.)
+    Ask it of any value a subsystem COMPUTES in order to DECIDE something, where more than one
+    caller faces the same decision. The failure is not a wrong number; it is a correct number
+    that is thrown away, so every later caller pays the full discovery cost again and the desk
+    ends up with no artifact recording a fact it has measured dozens of times.
+    Proving instance: `ops/brain_env.sh:brain_reset_wait_s` parses the model CLI's rate-limit
+    message into an exact reset timestamp, sleeps once on it, and discards it. Ten organ
+    launchers call `brain_auth_check`; each walked the full `_BRAIN_MODEL_CHAIN` probe-by-probe
+    into a wall a previous organ had already measured to the minute.
+    `scripts/check_seat_launch_yield.py --days 7` (2026-08-26T07:20Z) priced it: 93 billable
+    launches, 25 real digs, 26.9% yield, `AUTH_UNAVAILABLE` 55 of the 93. The desk therefore had
+    no answer at all to "when is the brain reachable" -- UNMEASURED, which under L1.28a is a real
+    answer and a defect, and which is why the dead windows (14, 18 UTC) could only ever be found
+    by reading logs by eye.
+    THE TELL, and it is cheap to check: a function computes a value, uses it inside its own
+    frame, and there is no write anywhere in the call graph. `grep` the computing function's name
+    -- if every hit is a caller and none is a store, ask what the NEXT caller has to redo.
+    THE FIX SHAPE: persist it as a MEMO, never a rail. It must expire by wall clock, be capped so
+    a bad parse cannot silence the desk, clear on the first contradicting observation, carry a
+    human override, and have a NAMED CONSUMER in the same change (III.16) -- otherwise the memo
+    is one more unread artifact and the angle has bought nothing.
+    GENERALISES TO: quota/reset stamps, rate-limit backoffs, discovered capability probes
+    ("does this endpoint support pagination?"), measured venue costs, and any "we tried and it
+    was closed" observation that currently lives only in a log line.
