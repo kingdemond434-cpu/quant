@@ -108,12 +108,54 @@ def build_cell(sym: str, family: str, params: dict, meta: dict):
             fn = None
     if fn is None:
         return None
+    # Reconstruct runtime-only data from the serializable candidate identity. Previously the
+    # orthogonal sweep persisted `{}` for every peer/tape/macro/COT family, and discovered
+    # cross-asset features were rebuilt without `extra`; both paths therefore produced zero
+    # signals after apparently successful discovery. One producer -> one exact executable.
+    call_params = dict(params or {})
+    try:
+        from research import orthogonal_sweep as inputs
+
+        if family == "carry":
+            call_params.pop("input_symbol", None)
+            call_params["symbol"] = sym
+        elif family in {"relative_value", "correlation_regime"}:
+            peer_symbol = call_params.pop("peer_symbol", None)
+            call_params["peer"] = inputs._bars(str(peer_symbol)) if peer_symbol else None
+        elif family == "cross_asset_residual":
+            factor_symbols = call_params.pop("factor_symbols", [])
+            call_params["factors"] = [d for d in (inputs._bars(str(s)) for s in factor_symbols)
+                                      if d is not None]
+        elif family in {"liquidity_regime", "orderflow_imbalance"}:
+            call_params.pop("input_source", None)
+            spread, flow = inputs._tape_series(sym, h1.index)
+            call_params["spread_series" if family == "liquidity_regime" else "flow"] = (
+                spread if family == "liquidity_regime" else flow
+            )
+        elif family == "macro_conditional":
+            call_params.pop("input_source", None)
+            call_params["macro"] = inputs._macro_series(h1.index)
+        elif family == "cot_positioning":
+            call_params.pop("input_source", None)
+            call_params["cot"] = inputs._cot_frame()
+        elif family == "event_reaction":
+            call_params.pop("input_source", None)
+            call_params["events"] = inputs._event_index()
+        elif family == "discovered":
+            from research.edge_search import resolve_inputs
+
+            all_symbols = sorted(p.stem.removesuffix("_H1") for p in UNI.glob("*_H1.parquet"))
+            call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
+    except Exception as exc:
+        print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")
+        return None
+
     side = 1  # both sides tested externally; use LONG default
     try:
-        sigs = fn(h1, side=side, **params)
+        sigs = fn(h1, side=side, **call_params)
     except TypeError:
         try:
-            sigs = fn(h1, **params)
+            sigs = fn(h1, **call_params)
         except Exception:
             return None
     costs = costs_for(sym, meta)

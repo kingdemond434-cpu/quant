@@ -12,6 +12,7 @@ if str(DESK) not in sys.path:
 
 from research import edge_search
 from research.frontier_identity import cell_id, economic_prior
+from scripts import external_gauntlet
 
 
 def _bars(n: int = 720) -> pd.DataFrame:
@@ -94,3 +95,39 @@ def test_family_free_cells_keep_exact_parameter_identity() -> None:
     b = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "spread_z_48"}}
     assert cell_id(a) != cell_id(b)
     assert "rr=?" not in cell_id(a)
+
+
+def test_gauntlet_rebuilds_discovered_external_inputs(monkeypatch, tmp_path) -> None:
+    universe = tmp_path / "universe"
+    universe.mkdir()
+    bars = _bars()
+    bars.to_parquet(universe / "EURUSD_H1.parquet")
+    bars.to_parquet(universe / "GBPUSD_H1.parquet")
+    captured = {}
+
+    from mt5desk import families_orthogonal
+
+    def discovered(df, **params):
+        captured.update(params)
+        return []
+
+    monkeypatch.setattr(external_gauntlet, "UNI", universe)
+    monkeypatch.setitem(families_orthogonal.ORTHOGONAL_FAMILIES, "discovered", discovered)
+    marker = pd.Series(1.0, index=bars.index)
+    monkeypatch.setattr(edge_search, "resolve_inputs", lambda *_args: {"peer_marker": marker})
+
+    cell = external_gauntlet.build_cell(
+        "EURUSD", "discovered", {"feature": "ext_peer_marker", "horizon": 12}, {},
+    )
+
+    assert cell is not None
+    assert captured["extra"]["peer_marker"].equals(marker)
+
+
+def test_orthogonal_candidates_persist_runtime_provenance() -> None:
+    source = (DESK / "research" / "orthogonal_sweep.py").read_text("utf-8")
+    assert '"peer_symbol": peers[0]' in source
+    assert '"factor_symbols": peers[:2]' in source
+    assert '"input_source": "fusion_tick_tape"' in source
+    assert '"input_source": "ff_calendar_vintage"' in source
+    assert 'dict((kw and {}) or {})' not in source

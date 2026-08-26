@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 import sys
 from datetime import UTC, datetime
+from functools import lru_cache
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -52,6 +53,7 @@ def _read(p: Path):
         return None
 
 
+@lru_cache(maxsize=None)
 def _bars(symbol: str):
     import pandas as pd
     path = UNIVERSE / f"{symbol}_H1.parquet"
@@ -125,6 +127,26 @@ def _cot_frame():
     return None
 
 
+def _event_index():
+    """Recover point-in-time event timestamps already persisted by the calendar miner."""
+    import pandas as pd
+
+    root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
+    values = []
+    for path in sorted(root.glob("*.json*"))[-60:] if root.exists() else []:
+        doc = _read(path)
+        rows = doc if isinstance(doc, list) else (doc or {}).get("rows", [])
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            raw = next((row.get(k) for k in ("date", "datetime", "timestamp", "time")
+                        if row.get(k)), None)
+            if raw is not None:
+                values.append(raw)
+    idx = pd.to_datetime(values, utc=True, errors="coerce")
+    return pd.DatetimeIndex(idx.dropna().unique()).sort_values() if len(idx) else None
+
+
 def sweep() -> dict:
     from mt5desk.engine import Costs, run_backtest
     from mt5desk.families_orthogonal import FAMILY_INPUTS, ORTHOGONAL_FAMILIES
@@ -145,6 +167,7 @@ def sweep() -> dict:
         spread, flow = _tape_series(sym, df.index)
         macro = _macro_series(df.index)
         cot = _cot_frame()
+        events = _event_index()
 
         kwargs_by_family = {
             "carry": {"symbol": sym},
@@ -155,6 +178,21 @@ def sweep() -> dict:
             "orderflow_imbalance": {"flow": flow},
             "macro_conditional": {"macro": macro},
             "cot_positioning": {"cot": cot},
+            "event_reaction": {"events": events},
+        }
+        # Runtime objects cannot be JSON identities. Persist exact provenance needed to rebuild
+        # the same candidate in the universal gauntlet; an empty params object previously made
+        # peer/factor candidates silently rebuild with no inputs and therefore no trades.
+        identity_by_family = {
+            "carry": {"input_symbol": sym},
+            "relative_value": {"peer_symbol": peers[0]} if peers else {},
+            "correlation_regime": {"peer_symbol": peers[0]} if peers else {},
+            "cross_asset_residual": {"factor_symbols": peers[:2]},
+            "liquidity_regime": {"input_source": "fusion_tick_tape"},
+            "orderflow_imbalance": {"input_source": "fusion_tick_tape"},
+            "macro_conditional": {"input_source": "macro_state"},
+            "cot_positioning": {"input_source": "cot_point_in_time"},
+            "event_reaction": {"input_source": "ff_calendar_vintage"},
         }
         m = meta.get(sym, {}) if isinstance(meta, dict) else {}
         try:
@@ -197,7 +235,7 @@ def sweep() -> dict:
                 peak = max(peak, cum)
                 dd = min(dd, cum - peak)
             hypotheses.append({
-                "symbol": sym, "family": fam, "params": dict((kw and {}) or {}),
+                "symbol": sym, "family": fam, "params": identity_by_family.get(fam, {}),
                 "n": len(trades), "exp_r": round(exp, 4), "max_dd_r": round(dd, 2),
                 "source": f"orthogonal_sweep:{fam}",
                 "mechanism_status": "NAMED",
