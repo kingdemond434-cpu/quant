@@ -122,6 +122,23 @@ def test_mechanism_prior_is_not_invented_for_price_shape() -> None:
     )["passed"]
 
 
+def test_gauntlet_stops_terminal_gate_one_rejects_before_signal_construction() -> None:
+    specs = [
+        {"sym": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"},
+         "mechanism_status": "STATISTICAL_ONLY"},
+        {"sym": "XAUUSD", "family": "vol_transition", "params": {},
+         "mechanism_status": "NAMED"},
+    ]
+
+    eligible, rejected = external_gauntlet.partition_at_economic_prior(specs)
+
+    assert eligible == [specs[1]]
+    assert len(rejected) == 1
+    assert rejected[0]["terminal_gate"] == "economic_prior"
+    assert rejected[0]["downstream_status"] == "NOT_RUN_TERMINAL_GATE_1_REJECT"
+    assert rejected[0]["stages"]["economic_prior"]["passed"] is False
+
+
 def test_family_free_cells_keep_exact_parameter_identity() -> None:
     a = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"}}
     b = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "spread_z_48"}}

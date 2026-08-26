@@ -1,7 +1,10 @@
-"""Run full 10-gate gauntlet on external discovery survivors.
+"""Run the canonical sequential 10-gate gauntlet on external discovery survivors.
 
 Reads survivors from external backtest, builds daily R matrix,
-computes program-level PBO + SPA, then evaluates all 10 gates per cell.
+rejects failed economic priors at gate 1, then computes program-level PBO + SPA and the
+remaining gates for candidates that can still survive. A gate-1 reject is a measured verdict,
+not an untested disappearance; doing hours of downstream work after a terminal gate failure is
+compute theatre and prevents fresh candidates from reaching the same machinery.
 """
 from __future__ import annotations
 
@@ -160,6 +163,28 @@ def build_cell(sym: str, family: str, params: dict, meta: dict):
             return None
     costs = costs_for(sym, meta)
     return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs, "costs": costs}
+
+
+def partition_at_economic_prior(specs: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Apply gate 1 before constructing signals and return eligible specs plus exact rejects."""
+    eligible: list[dict] = []
+    rejected: list[dict] = []
+    for spec in specs:
+        stage = economic_prior(spec)
+        if stage["passed"]:
+            eligible.append(spec)
+            continue
+        rejected.append({
+            "cell": cell_id(spec),
+            "sym": spec["sym"],
+            "family": spec["family"],
+            "days": 0,
+            "passed": False,
+            "terminal_gate": "economic_prior",
+            "stages": {"economic_prior": stage},
+            "downstream_status": "NOT_RUN_TERMINAL_GATE_1_REJECT",
+        })
+    return eligible, rejected
 
 
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
@@ -378,12 +403,23 @@ def main():
             }
 
     print(f"Unique cells to evaluate: {len(cells)}")
-    for k, v in cells.items():
-        print(f"  {k}")
+    families_submitted: dict[str, int] = {}
+    for spec in cells.values():
+        fam = str(spec.get("family") or "UNKNOWN")
+        families_submitted[fam] = families_submitted.get(fam, 0) + 1
+    print(f"Submitted families: {families_submitted}")
+
+    # GATES ARE SEQUENTIAL. A statistical pattern with no falsifiable economic mechanism fails
+    # the first canonical gate. Before this partition, 2,760 such rows consumed days of signal
+    # construction, CPCV and walk-forward work despite having zero path to a certificate. Record
+    # each exact reject, but reserve downstream compute for candidates still capable of passing.
+    eligible_specs, prior_rejections = partition_at_economic_prior(list(cells.values()))
+    print(f"Economic prior: {len(eligible_specs)} advance; {len(prior_rejections)} terminal reject")
 
     # Build cell objects
     cell_objs = []
-    for key, spec in cells.items():
+    for spec in eligible_specs:
+        key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
             obj["mechanism_status"] = spec.get("mechanism_status")
@@ -392,12 +428,29 @@ def main():
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
 
-    if not cell_objs:
-        print("No buildable cells")
-        return
-
-    # Run gauntlet
-    result = run_gauntlet(cell_objs, "external_discoveries", meta)
+    # Run the remaining gates, or still emit the complete gate-1 rejection ledger when none can
+    # advance. A no-mechanism discovery batch is a valid negative result, not a missing report.
+    if cell_objs:
+        result = run_gauntlet(cell_objs, "external_discoveries", meta)
+    else:
+        print("No candidates advanced beyond the economic-prior gate")
+        result = {
+            "hunt": "external_discoveries",
+            "n_cells": 0,
+            "n_trials": 0,
+            "program_level": {"status": "NOT_RUN_NO_GATE_1_ELIGIBLE_CELLS"},
+            "survivors_passing_all": 0,
+            "gate_fails": {},
+            "verdicts": [],
+            "swept_at": datetime.now(timezone.utc).isoformat(),
+        }
+    result["n_cells_discovered"] = len(cells)
+    result["n_cells_advanced_beyond_economic_prior"] = len(cell_objs)
+    result["n_cells_rejected_at_economic_prior"] = len(prior_rejections)
+    result["verdicts"] = prior_rejections + list(result.get("verdicts", []))
+    result.setdefault("gate_fails", {})["economic_prior"] = (
+        int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
+    )
 
     # Save
     out = REPORTS / "universal_gates_external.json"
