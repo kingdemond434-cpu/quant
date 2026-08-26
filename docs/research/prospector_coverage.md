@@ -7490,3 +7490,28 @@ rows**, 5 of those runs archiving `[]` silently. Measured causes:
 
 **Measured rate limit (unchanged from the previous run, re-confirmed):** pace ≥5 s; treat 403 as
 BACK-OFF, never as an empty result.
+
+### THE FAMILY IS DARK — R0667 (measured, not inferred)
+
+Item 2 ("`/en/articles` never parsed by any desk organ") was **half wrong and worse than the note
+said**: `mql5_articles.py` exists and has run 36 times — and archived **zero rows every single
+run**. Auditing the sibling organs found the same shape. Measured from
+`desks/mt5/data/intelligence/mql5/` (144 runs across 4 organs):
+
+| organ | runs | rows | **distinct content** | root cause (verified) |
+|---|---|---|---|---|
+| `mql5_codebase.py` | 36 | **0** | 0 | `CODEBASE_URL=/en/code_base` → **HTTP 404** (`<title>404. The page does not exist`). Live route is `/en/code/mt5/{experts,indicators,libraries,scripts}/pageN`. |
+| `mql5_articles.py` | 36 | **0** | 0 | titles scraped as `<h3[^>]*>([^<]+)</h3>`; the listing page contains **0 `<h3>` tags** (40 titles live inside the `/en/articles/<id>` anchors). Every title is `""` ⇒ the symbol/pattern filter can never fire. Also **positionally zips two independent regexes** (`links[i]`↔`titles[i]`). |
+| `mql5_signals.py` | 36 | 155 | **5 — UI chrome** | "Broker server", "Filter", "Maximum profit", "Popular among subscribers". A sidebar scrape. Real route: `/en/signals/mt5/list/pageN`. |
+| `mql5_forum.py` | 36 | 189 | **3** | R0666 above. |
+
+**Two shared enabling defects, and they are the point:**
+- `params={"page": N}` — **MQL5 ignores it** (measured 105/105 identical thread ids between
+  `/en/forum` and `/en/forum?page=2`). Every "3 pages" is one page fetched three times.
+- `except Exception: continue` — a 404, a 403 and an empty parse all become the **same empty
+  success**. GAP #140 exactly, and the desk's own lesson restated: a 200 carrying 30,315 bytes of
+  404 page **is not content**.
+
+**Repair, ledgered as R0667:** sitemap-index enumeration + ≥5 s pacing + 403-as-back-off + a
+**positive control inside each miner** (`n_titles>0`, `n_rows>0`) so a zero is recorded as an
+error row rather than archived as a clean harvest.
