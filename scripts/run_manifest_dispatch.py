@@ -74,7 +74,13 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_risk_units.py": "daily L1.67 risk-UNITS audit (the CADJPY 1.26%-logged/"
                                    "7.41%-run defect class; no other fence asks this)",
     "scripts/run_portfolio_risk.py": "daily portfolio risk aggregation",
-    "scripts/run_sleeve_allocator.py": "daily sleeve allocation",
+    "scripts/run_sleeve_allocator.py": "R0141 -- risk across discretionary sleeves by MARGINAL "
+                                       "growth contribution, so N correlated sleeves are not "
+                                       "sized as N independent bets (L1.18/L1.24). Reason "
+                                       "expanded 2026-08-26 from a bare restatement of the "
+                                       "filename; NOT run to verify -- it writes allocation on "
+                                       "the money path and LAWS s4 reserves that for the "
+                                       "promoter, so this cites the module's own docstring",
     "scripts/max_audit.py": "daily live-defect audit -- the desk's own defect finder was dead",
     "scripts/rerank_gaps.py": "weekly §35 gap re-rank (GAP_REGISTER is the only work driver)",
     "scripts/record_desk_metrics.py": "daily desk metric trend (a snapshot is not a trend)",
@@ -85,6 +91,73 @@ ALLOWLIST: dict[str, str] = {
     "scripts/run_stale_daemon_repair.py": "twice-daily stale-daemon actuator",
     "scripts/build_gauntlet_survivors.py": "the eight-gate barrier's MISSING producer -- it had judged zero candidates ever",
     "scripts/promotion_gate.py": "eight-gate screen-side record (capacity+fragility, which the canonical ten do not cover)",
+    # ------------------------------------------------------------------------------------
+    # THIRD WAVE, gap-fixer 2026-08-26. The law fences. Every token below was RUN BY HAND
+    # before being listed, and the reason quotes WHAT IT ACTUALLY PRINTED -- an allowlist entry
+    # justified by a filename is a guess wearing a citation. rc=2 on a fence is correct
+    # behaviour: these organs exist to fail loud, and a fence never observed failing has had
+    # only its passes verified.
+    #
+    # These enforce NAMED LAWS -- L1.6, L1.29, L1.30, L1.32, L1.36, L1.45, L1.49, L1.54, L1.60,
+    # L1.62, L1.68, s42 -- and every one was scheduled by NOTHING since the 08-20 cron death.
+    # A law with no running fence is a law the desk cannot cash (L1.49).
+    # ------------------------------------------------------------------------------------
+    "scripts/check_miner_runway.py": "the discovery engine's own doctor -- repaired this cycle "
+                                     "(it graded 118-byte stubs `ok`) and scheduled by nothing",
+    "scripts/check_gate_reachability.py": "L1.49; live rc=2 -- 2 dead branch(es), 8 unsatisfiable, "
+                                          "2 zero-bit acceptors. 'a gate nobody calls returns "
+                                          "True' is a lesson this desk has already paid for",
+    "scripts/check_bar_span.py": "L1.68 data integrity; live rc=2 CONTAMINATED across 88/88 "
+                                 "series -- the input every backtest on this desk reads",
+    "scripts/check_cohort_integrity.py": "L1.6; live rc=2 DIVERGENT -- axis_shadows reports m=13 "
+                                         "against the registry. Evidence integrity, not hygiene",
+    "scripts/check_calibration.py": "L1.29; live rc=2 OVERDUE -- 20 forecasts past their grading "
+                                    "deadline. A desk that never grades its forecasts has no "
+                                    "calibration, only opinions",
+    "scripts/check_replacement_rate.py": "L1.30; live rc=2 UNMEASURED-BIRTHS (>=21 births vs 23 "
+                                         "deaths) -- edges die on their own schedule and only "
+                                         "the pipeline decides whether the desk does",
+    "scripts/check_law_families.py": "L1.36; live rc=2 -- 0/6 families fully enforced, failing "
+                                     "aggression and exploration",
+    "scripts/check_exploration.py": "L1.32; live rc=2 STALE -- 4/5 exploration organs in cadence",
+    "scripts/check_excitation.py": "L1.45; live rc=2 ABSORBING -- an execution exclusion with NO "
+                                   "re-entry condition. A controller that never perturbs cannot "
+                                   "identify the surface it sits on",
+    "scripts/check_capital_basis.py": "live rc=2 UNDECLARED-RETURNS -- 16 return-reporting "
+                                      "artifacts of 198 scanned declare no capital basis",
+    "scripts/check_mechanism_attribution.py": "L1.6; live rc=2 UNMEASURED -- names the blindness "
+                                              "rather than passing over it",
+    "scripts/check_llm_routing.py": "L1.54 compute maximisation; live rc=0 reporting 2/22 organs "
+                                    "routed (0.091) -- a throughput gap nothing was watching",
+    "scripts/check_cross_section_floor.py": "live rc=0 PARTIAL -- 18/52 collapse sites floored "
+                                            "(34.6%); the ratchet that catches breadth regression",
+    "scripts/check_denominator_attrition.py": "L1.60; live rc=0 OK over 86 files -- the fence "
+                                              "that catches a shrinking denominator faking a rate",
+    "scripts/check_strategy_breadth.py": "L1.32; live rc=0 -- 14 hunting surfaces, 8/14 families "
+                                         "generating. Directly watches the 0.952 concentration",
+    "scripts/check_panel_breadth.py": "L1.62; live rc=0 -- 53/53 panel cells, 0 over-claimed",
+    "scripts/check_citation_integrity.py": "L2.3/s42; live rc=0 -- 0 unresolvable of 298 citations",
+    "scripts/check_private_bisection.py": "live rc=0 -- guards against a private bar in front of "
+                                          "the canonical ten (L1.60; two were deleted on 08-26)",
+    "scripts/refresh_panel_roster.py": "live rc=0 -- 416 catalog models recorded. The desk-state "
+                                       "hook reports LLM depth under-driven and names this script",
+    # ------------------------------------------------------------------------------------
+    # DELIBERATELY NOT ALLOWLISTED, each with the measurement that decided it. A backlog is only
+    # honest when its exclusions are reasoned rather than merely un-chosen:
+    #   check_coverage_floors.py -- rc=1 `cannot read coverage.json`. It CONSUMES a --cov run's
+    #     output, so on its own timer it is a permanent red that means nothing. Its correct home
+    #     is AFTER the suite, not beside it.
+    #   check_free_roster.py, check_partition_power.py -- rc=124 at a 70s probe. Runtime is
+    #     UNMEASURED, and scheduling an unbounded job on a 4GB no-swap box that OOM-killed cron
+    #     is how the next outage starts. Measure first (L1.28a).
+    #   check_clock_provenance.py -- rc=2 `no tape under data/moat`: honest, but it reports on
+    #     RETIRED crypto ground and needs repointing at the MT5 tape before it says anything.
+    #   check_crowding.py -- rc=2 FLAT-BOOK, 331 snapshots against a book holding nothing. Same
+    #     class: vacuous until there is a live book, and a vacuous red trains readers to skim.
+    #   check_kernel_log.py -- rc=2 UNREADABLE, no kernel-log channel visible to this user. A
+    #     genuine finding (every "no OOM" claim on this box is uncheckable) but scheduling it
+    #     would page daily about a permission the desk cannot grant itself.
+    # ------------------------------------------------------------------------------------
 }
 
 #: THE BOX IS THE BINDING CONSTRAINT, AND IT IS NOT TIMIDITY TO SAY SO (measured 2026-08-26:
