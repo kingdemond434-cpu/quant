@@ -39,9 +39,30 @@ class Costs:
     # Fusion Zero's published contract is USD 2.25 per lot per side ($4.50 round turn).
     commission_per_lot: float = 2.25
     contract_oz: float = 100.0
+    #: PRICE UNITS PER UNIT OF ACCOUNT CURRENCY, per lot -- the second unit trap, found
+    #: 2026-08-26. `spread_per_lot` round-trips correctly because it was built as
+    #: `pts * tick_size * contract_size` and the engine divides by contract_size again, landing
+    #: back on a price-unit spread. `commission_per_lot` does NOT: it is a currency amount, and
+    #: dividing it by contract_size treats one unit of the account's currency as one unit of
+    #: PRICE. That is only true when the symbol is quoted in the account's own currency.
+    #:
+    #: On a EUR account, CADJPY prices in yen: one yen of price is worth 0.005418 EUR, so a
+    #: 7.00 EUR round-turn commission is 0.01292 yen of price -- and the engine was charging
+    #: 7.00/100000 = 0.00007. 184x too little, on the JPY crosses where this desk's surviving
+    #: edges actually live, in the direction that manufactures survivors.
+    #:
+    #: Defaults to 1.0, which is exactly today's arithmetic, so no existing call site changes
+    #: silently. `from_symbol()` sets it from tick_value and is the only correct constructor.
+    quote_per_account: float = 1.0
 
     def per_oz_roundtrip(self) -> float:
-        return self.spread_per_lot + self.commission_per_lot * 2.0
+        """Round-trip cost per lot, in the convention the engine divides by `contract_oz`.
+
+        The commission is converted from account currency into that convention; the spread is
+        already in it. See `quote_per_account`.
+        """
+        return (self.spread_per_lot
+                + self.commission_per_lot * 2.0 * float(self.quote_per_account))
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
@@ -55,10 +76,19 @@ class Costs:
         all fills are worse than it.
         """
         cs = float(meta.get("contract_size", 1e5))
-        spread = (float(meta.get("median_spread_pts", 0.0))
-                  * float(meta.get("tick_size", 0.0)) * cs)
+        ts = float(meta.get("tick_size", 0.0))
+        spread = float(meta.get("median_spread_pts", 0.0)) * ts * cs
+        # PRICE UNITS PER UNIT OF ACCOUNT CURRENCY. `tick_value` is one tick's worth in account
+        # currency for one lot, so `cs * ts / tick_value` is how many price units one unit of
+        # account currency buys -- 1.0 for a symbol quoted in the account's own currency, ~185
+        # for a JPY cross on a EUR account. WITHOUT tick_value there is no conversion and the
+        # commission would silently revert to the 184x undercharge, so its absence falls back to
+        # 1.0 and is REPORTED rather than assumed away: see scripts/check_universe_registry.py.
+        tv = float(meta.get("tick_value", 0.0) or 0.0)
+        qpa = (cs * ts / tv) if (tv > 0 and cs > 0 and ts > 0) else 1.0
         return cls(spread_per_lot=max(spread * mult, 0.05),
-                   commission_per_lot=commission_per_lot, contract_oz=cs)
+                   commission_per_lot=commission_per_lot, contract_oz=cs,
+                   quote_per_account=qpa)
 
 
 @dataclass

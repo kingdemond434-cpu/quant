@@ -118,12 +118,26 @@ def slog(*a) -> None:
 
 
 def per_symbol_costs(meta: dict, sym: str):
+    """Costs for `sym` from the registry, via the ONE sanctioned constructor.
+
+    THIS FUNCTION HAND-ROLLED THE ARITHMETIC AND CARRIED BOTH DOCUMENTED UNIT BUGS (2026-08-26).
+
+      * `spread = 0.48 if sym == "XAUUSD"` is the hardcode `Costs` warns about in its own
+        docstring: 0.48 is dollars PER OUNCE written into a field that wants currency PER LOT, so
+        the engine divided it by 100 and charged gold 0.0048/oz -- three percent of a real spread
+        the registry itself puts at 0.10/oz and the desk's own fills put at 0.05-0.08. Every gold
+        forward R on this desk was accrued very nearly spread-free.
+      * `commission_per_lot=3.50` went in unconverted, so on a EUR account the JPY crosses were
+        charged 1/184th of their real commission.
+
+    `Costs.from_symbol` is where both fixes live. Hand-rolling here is what kept the money path
+    from ever receiving them, which is why this now calls it and a test forbids the hand-roll.
+
+    The commission stays at 3.50 rather than the class default 2.25: it is the higher number and
+    nothing here may lower a cost.
+    """
     from mt5desk.engine import Costs  # noqa: E402
-    m = meta[sym]
-    spread = 0.48 if sym == "XAUUSD" else (
-        m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
-    return Costs(spread_per_lot=max(spread, 0.05),
-                 commission_per_lot=3.50, contract_oz=m["contract_size"])
+    return Costs.from_symbol(meta[sym], commission_per_lot=3.50)
 
 
 def fetch_h1(sym: str):
