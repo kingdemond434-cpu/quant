@@ -382,6 +382,50 @@ def _forward_returns(close, horizons=HORIZONS) -> dict:
     return out
 
 
+def mechanism_for_feature(feature: str) -> tuple[str, str]:
+    """Name a falsifiable economic prior when the measured input genuinely supplies one.
+
+    This does not infer profitability. It distinguishes mechanism-bearing discoveries (venue
+    liquidity, carry, positioning, relative value, slow diffusion, scheduled flow or a declared
+    state transition) from arbitrary price-shape correlations. Interactions are named only when
+    both legs have a prior; a story for one half cannot launder an unexplained half.
+    """
+    if feature.startswith("x_") and "__" in feature:
+        left, right = feature[2:].split("__", 1)
+        ls, ln = mechanism_for_feature(left)
+        rs, rn = mechanism_for_feature(right)
+        if ls == rs == "NAMED":
+            return "NAMED", f"conditional interaction: {ln}; jointly with {rn}"
+        return "STATISTICAL_ONLY", "interaction includes at least one unexplained statistical leg"
+
+    named = (
+        (("ext_book_spread", "spread", "tick_volume"),
+         "liquidity/inventory withdrawal changes price impact and subsequent recovery"),
+        (("ext_book_flow", "ext_book_ticks"),
+         "venue activity and signed mid-price pressure proxy short-lived execution flow"),
+        (("ext_swap_diff",),
+         "broker swap differential compensates inventory funding and carry demand"),
+        (("ext_cot",),
+         "reported positioning extremes create crowding and forced-unwind asymmetry"),
+        (("ext_resid_", "ext_residz_", "ext_triangle_resid_"),
+         "cross-instrument pricing residuals can converge when common risk is re-arbitraged"),
+        (("ext_lead_",),
+         "information diffuses from a leading Fusion instrument into a slower target"),
+        (("ext_xsection_",),
+         "cross-sectional dispersion/breadth identifies common-flow versus idiosyncratic states"),
+        (("ext_macro_",),
+         "point-in-time macro state changes discount-rate and risk-transfer demand"),
+        (("hour", "dow", "dom", "month", "gap"),
+         "scheduled settlement/rebalancing and liquidity cycles create clock-conditioned flow"),
+        (("volratio_", "rngratio_", "sign_entropy_", "path_efficiency_", "serial_corr_"),
+         "a measurable market-state transition changes continuation versus absorption odds"),
+    )
+    for prefixes, note in named:
+        if feature.startswith(prefixes):
+            return "NAMED", note
+    return "STATISTICAL_ONLY", "no economic cause is encoded by this price-shape primitive"
+
+
 def evaluate(prim: dict, fwd: dict, *, fit_end: int) -> tuple[list[dict], int]:
     """Enumerate every (feature, band, horizon, direction) and score it OUT OF SAMPLE.
 
@@ -577,6 +621,7 @@ def main(symbols: list[str] | None = None) -> int:
         results.append(res)
         total_trials += int(res.get("trials") or 0)
         for row in res.get("selected", []):
+            mechanism_status, mechanism_note = mechanism_for_feature(str(row["feature"]))
             hypotheses.append({
                 "symbol": sym,
                 "family": "discovered",
@@ -587,11 +632,8 @@ def main(symbols: list[str] | None = None) -> int:
                 "source": f"edge_search:{row['feature']}",
                 # Trial count lives in the REPORT for audit, never on a hypothesis: anything
                 # attached to a row travels into the gates and becomes a bar.
-                "mechanism_status": "STATISTICAL_ONLY",
-                "mechanism_note": ("discovered by unconstrained search; NO economic mechanism is "
-                                   "claimed. economic_prior must be satisfied by a named cause "
-                                   "before this can certify -- a statistical edge with no story "
-                                   "is a coincidence until someone shows otherwise."),
+                "mechanism_status": mechanism_status,
+                "mechanism_note": mechanism_note,
             })
     # NO BAR HERE, AND NO DEFLATION INPUT LEAVES HERE (principal 2026-08-26: "never use or
     # consider the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused

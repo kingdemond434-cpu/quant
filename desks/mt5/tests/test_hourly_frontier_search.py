@@ -11,6 +11,7 @@ if str(DESK) not in sys.path:
     sys.path.insert(0, str(DESK))
 
 from research import edge_search
+from research.frontier_identity import cell_id, economic_prior
 
 
 def _bars(n: int = 720) -> pd.DataFrame:
@@ -74,3 +75,22 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "desks/mt5/research/edge_search.py ||" not in script
     assert "orthogonal_candidates.json" in script
     assert "merge_hypotheses.py" in script
+
+
+def test_mechanism_prior_is_not_invented_for_price_shape() -> None:
+    status, _ = edge_search.mechanism_for_feature("ret_24")
+    assert status == "STATISTICAL_ONLY"
+    assert not economic_prior({"family": "discovered", "mechanism_status": status})["passed"]
+
+    status, note = edge_search.mechanism_for_feature("ext_triangle_resid_JPY")
+    assert status == "NAMED"
+    assert economic_prior(
+        {"family": "discovered", "mechanism_status": status, "mechanism_note": note}
+    )["passed"]
+
+
+def test_family_free_cells_keep_exact_parameter_identity() -> None:
+    a = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"}}
+    b = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "spread_z_48"}}
+    assert cell_id(a) != cell_id(b)
+    assert "rr=?" not in cell_id(a)

@@ -39,6 +39,7 @@ from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
 
 from mt5desk import families
 from mt5desk.engine import Costs, run_backtest
+from research.frontier_identity import cell_id, economic_prior
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
@@ -183,12 +184,12 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     for idx, (orig_i, ds) in enumerate(valid):
         c = cells[orig_i]
         arr = ds.to_numpy(float)
-        cid = f"{c['sym']}.{c['family']}.rr={c.get('params',{}).get('rr','?')}_wb={c.get('params',{}).get('wait_bars','?')}"
+        cid = cell_id(c)
 
         # In-sample
         sr = sharpe_ratio(arr)
         stages = {
-            "economic_prior": {"passed": True, "message": "discovered via external channel"},
+            "economic_prior": economic_prior(c),
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
 
@@ -306,7 +307,13 @@ def main():
             continue
         key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
         if key not in cells:
-            cells[key] = {"sym": sym, "family": fam, "params": params}
+            cells[key] = {
+                "sym": sym,
+                "family": fam,
+                "params": params,
+                "mechanism_status": h.get("mechanism_status"),
+                "mechanism_note": h.get("mechanism_note"),
+            }
 
     print(f"Unique cells to evaluate: {len(cells)}")
     for k, v in cells.items():
@@ -317,6 +324,8 @@ def main():
     for key, spec in cells.items():
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
+            obj["mechanism_status"] = spec.get("mechanism_status")
+            obj["mechanism_note"] = spec.get("mechanism_note")
             cell_objs.append(obj)
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
@@ -375,11 +384,7 @@ def main():
                 return name
         return None
 
-    _params_by_cell = {
-        f"{c['sym']}.{c['family']}.rr={c.get('params', {}).get('rr', '?')}"
-        f"_wb={c.get('params', {}).get('wait_bars', '?')}": dict(c.get("params") or {})
-        for c in cell_objs
-    }
+    _params_by_cell = {cell_id(c): dict(c.get("params") or {}) for c in cell_objs}
     for v in result.get("verdicts", []):
         if not v.get("passed"):
             continue
