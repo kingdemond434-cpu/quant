@@ -32,6 +32,10 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+# ONE definition of a usable miner row, shared with the fence that acts on it. Restating the
+# rule here instead of importing it is how the pack and the fence would come to disagree.
+from check_miner_health import classify_row
+
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 OUT = ROOT / "data" / "research_facts.json"
@@ -93,33 +97,68 @@ def main() -> int:
     facts["forward"] = {"live_clocks": live, "forward_observations": fwd_obs,
                         "historical_observations_excluded": hist_obs}
 
-    # --- miners: rows, usable rate, and who is producing nothing usable -------------------------
+    # --- miners: REAL rows, not rows ------------------------------------------------------------
+    # A miner's health is the information it produced, and an error row is still a row. The
+    # previous version of this block measured `error_rate = fetch_errors / rows` and reported
+    # 35 of 41 sources healthy while 30 of them had produced ZERO usable rows for 18 consecutive
+    # hourly sweeps (measured 2026-08-26). It had three structural blind spots, each of which
+    # failed toward a CLEAN verdict -- the one direction nothing downstream catches (WS-005):
+    #
+    #   1. `if rows:` dropped any source with zero rows from the pack ENTIRELY, so the most
+    #      completely broken miners were the most invisible ones. 13 sources were missing.
+    #   2. A selector-drift stub (`raw_capture` + needs_selector_work) is not an "error", so a
+    #      miner emitting nothing but "page shape drifted" scored error_rate 0.0 -- perfect
+    #      health -- while carrying no information at all. fbs_tape: 21 rows, 21 stubs, 0.0.
+    #   3. The `all_errors` list required rows_7d >= 5, hiding every 100%-error miner that
+    #      produces one error row per sweep on a slow cadence (followme_cn, hfm_pamm, minfx_jp,
+    #      readitrades_africa, share4you -- all at error_rate 1.0, none reported).
+    #
+    # Organs are under standing orders to trust this file and not recompute it, so a number that
+    # is wrong here is wrong everywhere, silently. `real_rows_7d` is therefore the headline and
+    # `dead` is derived from it. Fence: scripts/check_miner_health.py (same definition of real).
     miners: dict[str, dict] = {}
     for base in (DESK / "data" / "intelligence", ROOT / "data" / "intelligence"):
         if not base.exists():
             continue
         for src in sorted(d for d in base.iterdir() if d.is_dir()):
-            rows = errors = 0
+            rows = errors = stubs = real = walled = sweeps = 0
             for f in src.glob("discoveries_*.json"):
                 try:
                     if datetime.fromtimestamp(f.stat().st_mtime, tz=UTC) < cutoff:
                         continue
                 except OSError:
                     continue
+                sweeps += 1
                 data = _read(f)
                 items = data if isinstance(data, list) else []
                 for it in items:
-                    if isinstance(it, dict):
-                        rows += 1
-                        if str(it.get("kind") or "").endswith("error"):
-                            errors += 1
-            if rows:
-                miners[src.name] = {"rows_7d": rows, "fetch_errors": errors,
-                                    "error_rate": round(errors / rows, 3)}
-    facts["miners"] = {"count": len(miners), "detail": miners,
-                       "all_errors": sorted(k for k, v in miners.items()
-                                            if v["rows_7d"] >= 5
-                                            and v["error_rate"] >= 0.99)}
+                    if not isinstance(it, dict):
+                        continue
+                    rows += 1
+                    bucket = classify_row(it)
+                    errors += bucket == "error"
+                    walled += bucket == "walled"
+                    stubs += bucket == "stub"
+                    real += bucket == "real"
+            if not sweeps:
+                continue
+            miners[src.name] = {
+                "sweeps_7d": sweeps, "rows_7d": rows, "real_rows_7d": real,
+                "fetch_errors": errors, "selector_stubs": stubs, "walled_rows": walled,
+                "error_rate": round(errors / rows, 3) if rows else 0.0,
+                "usable_rate": round(real / rows, 3) if rows else 0.0,
+            }
+    dead = sorted(k for k, v in miners.items()
+                  if v["real_rows_7d"] == 0 and not v["walled_rows"])
+    facts["miners"] = {
+        "count": len(miners), "detail": miners,
+        "dead_no_usable_output": dead,
+        "walled": sorted(k for k, v in miners.items() if v["walled_rows"]),
+        "all_errors": sorted(k for k, v in miners.items() if v["error_rate"] >= 0.99),
+        "note": "HEALTH IS real_rows_7d, NEVER rows_7d -- an error row and a selector stub are "
+                "both rows and neither is information. `dead_no_usable_output` produced nothing "
+                "usable in the window and is a repair queue, not a statistic.",
+    }
 
     # --- artifact freshness: "is X wired and alive" as a number, not an impression --------------
     fresh = {}

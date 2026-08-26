@@ -48,6 +48,113 @@ def _state() -> dict:
         return {}
 
 
+# ------------------------------------------------------------------ SOURCE WALLS (§13 gate)
+# MEASURED 2026-08-26 (gap-fixer): six of these miners had produced NOTHING BUT fetch_error rows
+# for 7+ days -- 100% error rate, ~24 futile requests per source per day, and no organ escalated
+# it because the facts pack counts an error row as a `row` (rows_7d: 19, fetch_errors: 19 reads
+# as "productive" to anything that only counts rows).
+#
+# The three walls below are NOT selector bugs and are NOT fixed by trying harder. Each verdict
+# is recorded with the evidence that produced it, because "we couldn't get in" and "we are not
+# allowed in" are different facts with different obligations (RESEARCH §3, §13 LEGITIMACY GATE:
+# the access boundary is a hard limit, not a preference -- no gray-area "it's public enough").
+#
+# REDISCOVERY IS PERMANENT, never deletion (RESEARCH §3 free-frontier: a residual gap "stays on
+# the rediscovery cadence forever"). But HOW a wall is re-probed depends on WHY it is walled:
+#   ROBOTS_DISALLOW -- the operator has refused this agent in writing. The content is NEVER
+#                      fetched again, not even weekly. Rediscovery re-reads robots.txt ONLY
+#                      (always permitted -- that is what robots.txt is for) and the source
+#                      resumes only if the directive is gone. Re-probing the CONTENT of a site
+#                      that disallows us would be the violation, just spaced further apart.
+#   ANTIBOT_CHALLENGE / HTTP_403 -- the server refused the request. Solving or evading a
+#                      challenge is circumventing an access control and is out of bounds, so
+#                      the only legitimate move is to ask again, rarely, in case it lifts.
+SOURCE_WALLS: dict[str, dict] = {
+    "forexpeacearmy": {
+        "verdict": "ROBOTS_DISALLOW",
+        "host": "www.forexpeacearmy.com",
+        "evidence": "robots.txt names this agent explicitly: 'User-agent: ClaudeBot / "
+                    "Disallow: /', alongside Content-Signal 'ai-train=no, use=reference'. "
+                    "The miner was sending a spoofed Chrome UA hourly to a site that had "
+                    "refused it in writing, and getting 403 for it.",
+        "probe": "robots",
+        "ua_token": "ClaudeBot",
+        "since": "2026-08-26",
+    },
+    "myfxbook_outlook": {
+        "verdict": "ANTIBOT_CHALLENGE",
+        "host": "www.myfxbook.com",
+        "evidence": "Cloudflare managed challenge fronts the whole host -- even /robots.txt "
+                    "returns the 'Just a moment...' interstitial (cType: 'managed'). Passing "
+                    "it means defeating an access control, which §13 forbids outright.",
+        "probe": "url",
+        "url": "https://www.myfxbook.com/community/outlook",
+        "since": "2026-08-26",
+    },
+    "collective2": {
+        "verdict": "HTTP_403",
+        "host": "collective2.com",
+        "evidence": "robots.txt PERMITS /leaderboard (its Disallow list is only /grid, "
+                    "/newgrid, /cgi-perl/system/grid.mpl, /strategy/csv/*), but the server "
+                    "answers 403 to this box. Policy allows, server refuses -- so this is a "
+                    "reversible block (WAF/datacenter IP), not a licence refusal.",
+        "probe": "url",
+        "url": "https://collective2.com/leaderboard",
+        "since": "2026-08-26",
+    },
+}
+REPROBE_DAYS = 7
+
+
+def _wall_due(name: str, st: dict) -> bool:
+    """True when this walled source's periodic rediscovery probe is due."""
+    last = (st.get("wall_probes") or {}).get(name)
+    if not last:
+        return True
+    try:
+        age = (datetime.now(tz=UTC) - datetime.fromisoformat(last)).days
+    except ValueError:
+        return True
+    return age >= REPROBE_DAYS
+
+
+def _robots_still_disallows(host: str, ua_token: str) -> bool:
+    """Re-read robots.txt and report whether this agent is still refused.
+
+    Fails CLOSED: any error means we could not prove the refusal was lifted, so the wall
+    stands. An unreachable robots.txt is not consent.
+    """
+    try:
+        txt = fetch(f"https://{host}/robots.txt")
+    except Exception:
+        return True
+    group_ua, disallowed = None, False
+    for raw in txt.splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if not line or ":" not in line:
+            continue
+        key, _, val = line.partition(":")
+        key, val = key.strip().lower(), val.strip()
+        if key == "user-agent":
+            group_ua = val.lower()
+        elif key == "disallow" and group_ua == ua_token.lower() and val == "/":
+            disallowed = True
+    return disallowed
+
+
+def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
+    """Ask once whether a wall has lifted. Returns (lifted, note)."""
+    if wall.get("probe") == "robots":
+        if _robots_still_disallows(wall["host"], wall.get("ua_token", "*")):
+            return False, f"robots.txt still disallows {wall.get('ua_token')}"
+        return True, f"robots.txt no longer disallows {wall.get('ua_token')} -- source resumable"
+    try:
+        fetch(wall["url"])
+    except Exception as exc:
+        return False, f"still blocked: {str(exc)[:120]}"
+    return True, "target URL now answers -- source resumable"
+
+
 # ---------------------------------------------------------------- S9 MQL5 Signals
 def mine_mql5_signals() -> list[dict]:
     out = []
@@ -309,20 +416,20 @@ def mine_propfirm_boards() -> list[dict]:
 
 def mine_mql5_survivors() -> list[dict]:
     """S++ flagship: phenotype-screened MQL5 survivor hunt (own module, richest ground)."""
-    from mql5_survivor_hunter import run_and_save as _hunt  # noqa: PLC0415
+    from mql5_survivor_hunter import run_and_save as _hunt
     return _hunt()
 
 
 def mine_regional_survivors() -> list[dict]:
     """Global regional family (14 grounds + FBS tape), rotating-cursor hourly depth."""
-    from regional_survivor_hunters import run_and_save as _hunt  # noqa: PLC0415
+    from regional_survivor_hunters import run_and_save as _hunt
     res = _hunt()
     return [r for v in res.values() for r in v.get("discoveries", [])]
 
 
 def mine_global_frontier() -> list[dict]:
     """Adaptive per-locale discovery cell: native queries -> new populations -> graduation."""
-    from global_survivor_frontier import run_and_save as _frontier  # noqa: PLC0415
+    from global_survivor_frontier import run_and_save as _frontier
     return _frontier().get("discoveries", [])
 
 
@@ -341,25 +448,74 @@ MINERS = {
 }
 
 
-def run_and_save() -> dict:
-    ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
-    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0}
-    for name, fn in MINERS.items():
-        try:
-            rows_ = fn()
-        except Exception as exc:                                         # noqa: BLE001
-            rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
-            summary["failed"] += 1
-        d = INTEL / name
-        d.mkdir(parents=True, exist_ok=True)
-        (d / f"discoveries_{ts}.json").write_text(
-            json.dumps(rows_, indent=1, default=str), "utf-8")
+def _write_rows(name: str, rows_: list[dict], ts: str, results: dict, summary: dict,
+                counted: bool = False) -> None:
+    """Archive one source's rows and update the sweep tally.
+
+    `counted=True` means the caller already decided this source's ok/raw_only disposition
+    (walled and wall-lifted sources), so only the archive and the row total are touched.
+    """
+    d = INTEL / name
+    d.mkdir(parents=True, exist_ok=True)
+    (d / f"discoveries_{ts}.json").write_text(
+        json.dumps(rows_, indent=1, default=str), "utf-8")
+    results[name] = {"discoveries": rows_, "count": len(rows_)}
+    summary["total"] += len(rows_)
+    if not counted:
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
-        results[name] = {"discoveries": rows_, "count": len(rows_)}
-        summary["total"] += len(rows_)
         summary["ok"] += 1 if real else 0
         summary["raw_only"] += 0 if real else 1
+
+
+def run_and_save() -> dict:
+    ts = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M")
+    results, summary = {}, {"total": 0, "ok": 0, "raw_only": 0, "failed": 0, "walled": 0}
+    st = _state()
+    probes = st.setdefault("wall_probes", {})
+    for name, fn in MINERS.items():
+        wall = SOURCE_WALLS.get(name)
+        if wall:
+            # A walled source is a DISPOSITIONED state, not a silent failure. It emits a
+            # `walled` row carrying its verdict and evidence -- so the corpus records WHY the
+            # channel is dark -- and it is fetched only when its rediscovery probe comes due.
+            if _wall_due(name, st):
+                lifted, note = _probe_wall(name, wall)
+                probes[name] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+                if lifted:
+                    try:
+                        rows_ = fn()
+                    except Exception as exc:
+                        rows_ = [row(name, "fetch_error", str(exc)[:200],
+                                     needs_selector_work=True)]
+                        summary["failed"] += 1
+                    else:
+                        summary["ok"] += 1
+                        _write_rows(name, rows_, ts, results, summary, counted=True)
+                        print(f"  {name}: WALL LIFTED ({note}) -- {len(rows_)} rows")
+                        continue
+                else:
+                    rows_ = [row(name, "walled", f"{wall['verdict']}: {note}",
+                                 wall.get("url", f"https://{wall['host']}/"),
+                                 wall["evidence"], verdict=wall["verdict"],
+                                 walled_since=wall["since"], needs_selector_work=False)]
+            else:
+                rows_ = [row(name, "walled", f"{wall['verdict']} (probe not due)",
+                             wall.get("url", f"https://{wall['host']}/"), wall["evidence"],
+                             verdict=wall["verdict"], walled_since=wall["since"],
+                             needs_selector_work=False)]
+            summary["walled"] += 1
+            _write_rows(name, rows_, ts, results, summary, counted=True)
+            print(f"  {name}: WALLED ({wall['verdict']})")
+            continue
+        try:
+            rows_ = fn()
+        except Exception as exc:
+            rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
+            summary["failed"] += 1
+        _write_rows(name, rows_, ts, results, summary)
+        real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
+    STATE.write_text(json.dumps(st, indent=0), "utf-8")
     # merge into latest_discoveries.json so convert_to_hypotheses feeds the gauntlet queue
     latest_p = INTEL / "latest_discoveries.json"
     try:
@@ -369,13 +525,14 @@ def run_and_save() -> dict:
     latest.update(results)
     latest_p.write_text(json.dumps(latest, indent=1, default=str), "utf-8")
     print(f"seed miners: {summary['total']} rows across {len(MINERS)} sources "
-          f"(ok={summary['ok']} raw={summary['raw_only']} failed={summary['failed']})")
+          f"(ok={summary['ok']} raw={summary['raw_only']} "
+          f"walled={summary['walled']} failed={summary['failed']})")
     # JOIN STAGE (Drop 3): forward-cohort enrollment/mortality + identity graph run on every
     # sweep's output -- relationships and TIME are the corpus the sites cannot sell us.
     try:
-        from cohort_and_identity import run_and_save as _cohorts  # noqa: PLC0415
+        from cohort_and_identity import run_and_save as _cohorts
         _cohorts()
-    except Exception as exc:                                             # noqa: BLE001
+    except Exception as exc:
         print(f"cohort/identity join failed (non-fatal): {exc}")
     return results
 
