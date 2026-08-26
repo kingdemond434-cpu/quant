@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import json
 import math
+from functools import lru_cache
 from datetime import UTC, datetime
 from itertools import combinations
 from pathlib import Path
@@ -72,10 +73,43 @@ SELECT_K = 120
 #: Symbols searched per hourly run. A budget, not a boundary: the cursor below guarantees the
 #: rest are covered on following runs and then covered again.
 PER_RUN = 40
-#: Primitives feeding the pairwise interaction pool. Grows quadratically, so it stays bounded --
-#: but the bound is a COMPUTE budget, not a belief about where edges live, and it is stated as
-#: such so nobody reads it as "interactions beyond this do not matter".
-INTERACTION_POOL = 22
+
+
+def _interaction_pool_size(n_rows: int, n_features: int) -> int:
+    """Use the largest interaction pool current memory can support.
+
+    This is deliberately resource-derived rather than a feature/family ceiling.  The old literal
+    22 meant every primitive sorting after the first 22 was *never* combined with anything.  On
+    the desk box that discarded most peer, tape, macro and COT interactions despite gigabytes of
+    free memory; on the research VPS, blindly removing the cap OOM-killed the hourly service.
+    """
+    try:
+        import psutil
+
+        budget = int(psutil.virtual_memory().available * 0.12)
+    except (ImportError, OSError):
+        budget = 256 * 1024 * 1024
+    # Two z-score temporaries plus the interaction and pandas overhead.
+    bytes_per_pair = max(1, n_rows) * 8 * 5
+    affordable_pairs = max(1, budget // bytes_per_pair)
+    # n*(n-1)/2 <= affordable_pairs
+    affordable_features = int((1 + math.sqrt(1 + 8 * affordable_pairs)) // 2)
+    return max(2, min(n_features, affordable_features))
+
+
+@lru_cache(maxsize=None)
+def _close(symbol: str):
+    """Load a close series once per run; all-peer discovery otherwise rereads N² parquet files."""
+    import pandas as pd
+
+    path = UNIVERSE / f"{symbol}_H1.parquet"
+    if not path.exists():
+        return None
+    try:
+        frame = pd.read_parquet(path, columns=["close"])
+        return frame["close"].astype(float)
+    except Exception:
+        return None
 
 
 def _read(p: Path):
@@ -121,6 +155,17 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
         prim[f"pos_{n}"] = (close - lo) / (hi - lo).replace(0, np.nan)
         prim[f"dd_{n}"] = close / close.rolling(n).max() - 1.0
         prim[f"ru_{n}"] = close / close.rolling(n).min() - 1.0
+
+        # Distant-domain primitives, expressed as measurements rather than strategy families:
+        # information theory (directional entropy), control/signal processing (path efficiency),
+        # and state persistence (serial dependence).  Their combinations with venue/macro/peer
+        # inputs let the search discover mechanisms nobody named in advance.
+        up = (ret > 0).astype(float).rolling(n).mean().clip(1e-9, 1 - 1e-9)
+        prim[f"sign_entropy_{n}"] = -(up * np.log(up) + (1 - up) * np.log(1 - up))
+        prim[f"path_efficiency_{n}"] = (
+            np.log(close).diff(n).abs() / ret.abs().rolling(n).sum().replace(0, np.nan)
+        )
+        prim[f"serial_corr_{n}"] = ret.rolling(n).corr(ret.shift(1))
 
     # --- dispersion RATIOS: regime, not level -----------------------------------------------
     for fast, slow in ((6, 48), (12, 96), (24, 240)):
@@ -168,7 +213,11 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
     # Interactions are formed mechanically between a bounded set of the most-populated primitives
     # so the trial count stays honest and countable rather than exploding into millions.
     keys = [k for k in sorted(prim) if prim[k].notna().sum() > len(prim[k]) * 0.5]
-    for a, b in combinations(keys[:INTERACTION_POOL], 2):
+    pool_size = _interaction_pool_size(len(d), len(keys))
+    # Rank by population first, then name for deterministic ties. External/tape series with less
+    # history no longer disappear merely because their names sort after OHLC transforms.
+    keys = sorted(keys, key=lambda k: (-int(prim[k].notna().sum()), k))[:pool_size]
+    for a, b in combinations(keys, 2):
         sa, sb = prim[a], prim[b]
         za = (sa - sa.rolling(240).mean()) / sa.rolling(240).std(ddof=1)
         zb = (sb - sb.rolling(240).mean()) / sb.rolling(240).std(ddof=1)
@@ -193,20 +242,17 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     extra: dict = {}
 
     # --- peers: residuals and rolling correlations against several other instruments ---------
-    peers = [s for s in all_symbols if s != symbol][:4]
-    base = None
-    try:
-        base_df = pd.read_parquet(UNIVERSE / f"{symbol}_H1.parquet")
-        base = np.log(base_df["close"].astype(float))
-    except Exception:
-        base = None
+    # ALL registry instruments are potential peers. The previous [:4] silently made most of the
+    # Fusion universe ineligible as a driver; caching makes full coverage cheaper than that cap.
+    peers = [s for s in all_symbols if s != symbol]
+    base_close = _close(symbol)
+    base = np.log(base_close) if base_close is not None else None
     if base is not None:
         for peer in peers:
-            try:
-                pdf = pd.read_parquet(UNIVERSE / f"{peer}_H1.parquet")
-            except Exception:
+            peer_close = _close(peer)
+            if peer_close is None:
                 continue
-            pc = np.log(pdf["close"].astype(float))
+            pc = np.log(peer_close)
             joined = pd.concat([base, pc], axis=1, join="inner").dropna()
             if len(joined) < 500:
                 continue
@@ -216,6 +262,49 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
                                        / resid.rolling(240).std(ddof=1))
             extra[f"corr_{peer}"] = (joined.iloc[:, 0].diff()
                                      .rolling(120).corr(joined.iloc[:, 1].diff()))
+            # Lead-lag is not contemporaneous correlation. Every lag uses information available
+            # before the target decision and is separately trial-accounted downstream.
+            for lag in (1, 3, 6, 12, 24):
+                extra[f"lead_{peer}_{lag}"] = joined.iloc[:, 1].diff().shift(lag)
+
+        # Cross-sectional state: dispersion and common motion across every available Fusion leg.
+        peer_returns = []
+        for peer in peers:
+            pc = _close(peer)
+            if pc is not None:
+                peer_returns.append(np.log(pc).diff().rename(peer))
+        if peer_returns:
+            panel = pd.concat(peer_returns, axis=1).reindex(index)
+            extra["xsection_mean"] = panel.mean(axis=1)
+            extra["xsection_dispersion"] = panel.std(axis=1, ddof=1)
+            extra["xsection_breadth"] = (panel > 0).mean(axis=1)
+
+        # Every executable FX triangle is derived from the registry, never from a literal pair
+        # list. This tests residual convergence/continuation; it does NOT claim synchronized
+        # three-leg arbitrage because H1 closes are not executable simultaneous quotes.
+        if len(symbol) == 6 and symbol.isalpha():
+            base_ccy, quote_ccy = symbol[:3], symbol[3:]
+
+            def fx_log(a: str, b: str):
+                direct = _close(a + b)
+                if direct is not None:
+                    return np.log(direct)
+                inverse = _close(b + a)
+                return -np.log(inverse) if inverse is not None else None
+
+            currencies = sorted({s[:3] for s in all_symbols if len(s) == 6 and s.isalpha()}
+                                | {s[3:] for s in all_symbols if len(s) == 6 and s.isalpha()})
+            for bridge in currencies:
+                if bridge in (base_ccy, quote_ccy):
+                    continue
+                left, right = fx_log(base_ccy, bridge), fx_log(quote_ccy, bridge)
+                if left is None or right is None:
+                    continue
+                tri = pd.concat([base, left, right], axis=1, join="inner").dropna()
+                if len(tri) >= 500:
+                    extra[f"triangle_resid_{bridge}"] = tri.iloc[:, 0] - (
+                        tri.iloc[:, 1] - tri.iloc[:, 2]
+                    )
 
     # --- the venue's own book: spread and a signed-move proxy from the tick tape --------------
     tape_dir = BASE / "data" / "tape" / "ticks" / symbol
@@ -476,9 +565,11 @@ def main(symbols: list[str] | None = None) -> int:
                 "cursor": cursor + PER_RUN,
                 "note": "rotation cursor -- coverage is a cycle, never a completed sweep",
             }), "utf-8")
-        symbols = symbols[:PER_RUN]
-        print(f"  covering {len(symbols)} symbol(s) this run; cursor advances so the whole "
-              f"universe is re-searched continuously")
+        # The desk box owns the heavy search and currently fits the complete Fusion registry in
+        # one hourly run. Keep the cursor as future overflow ordering, but do not truncate today:
+        # every registered instrument and asset class is searched every hour.
+        print(f"  covering the complete registry: {len(symbols)} symbol(s) this run; cursor "
+              "retained only as deterministic overflow ordering for a future larger universe")
     results, hypotheses = [], []
     total_trials = 0
     for sym in symbols:

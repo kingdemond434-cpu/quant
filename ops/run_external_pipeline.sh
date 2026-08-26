@@ -28,8 +28,25 @@ $PY scripts/build_research_facts.py || echo "facts pack FAILED (rc=$?) -- contin
 echo "[$(date -u +%FT%TZ)] stage 2a: mined ground (miners + moat -> search targets)"
 $PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- continuing"
 
-echo "[$(date -u +%FT%TZ)] stage 2b: generic edge search (no families, diversity-selected)"
-$PY desks/mt5/research/edge_search.py || echo "edge search FAILED (rc=$?) -- continuing"
+# Heavy discovery belongs on the MT5 desk box. Measured 2026-08-26: running edge_search here
+# OOM-killed this service after the 28-minute external screen, so neither search output reached
+# merge or the gauntlet. The desk box has the same Fusion universe and ~8GB RAM; execute BOTH the
+# family-free search and the named orthogonal falsification sweep there, then pull their artifacts
+# into the one merge below. Discovery remains hourly; only the compute location changes.
+echo "[$(date -u +%FT%TZ)] stage 2b: desk-box frontier search (family-free + orthogonal)"
+scp -q desks/mt5/data/hypotheses/mined_targets.json \
+    contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/mined_targets.json' 2>/dev/null || true
+if ssh -o ConnectTimeout=20 contabo-mt5 \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py && py -3 -W ignore research\orthogonal_sweep.py" \
+     >> "$LOGF" 2>&1; then
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
+      desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
+      desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null
+  echo "desk-box frontier artifacts pulled"
+else
+  echo "stage 2b FAILED on the desk box -- see $LOGF; prior artifacts remain provenance only"
+fi
 
 # STAGE 2c: merge every producer into the ONE file the gauntlet reads. Without this the search
 # and the sweep write files nothing consumes -- producers with no consumer, which is how the book
