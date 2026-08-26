@@ -221,3 +221,23 @@ def test_dispatcher_unit_keeps_killmode_process() -> None:
         "quant-manifest-dispatch.service lost KillMode=process -- systemd will SIGKILL every "
         "organ the dispatcher spawns the instant the dispatcher exits, and the state file will "
         "go on reporting fires=N with nothing behind it.")
+
+
+def test_coverage_measurement_is_scheduled() -> None:
+    """L1.50's input must have a PRODUCER, or the ratchet is unmeasured rather than stalled.
+
+    Measured 2026-08-26: COVERAGE_RATCHET.json read last_raised 2026-08-09 for 17 days and the
+    cause was NOT the scheduler -- check_ratchets ran fine and had nothing to do. coverage.json
+    was ABSENT, its only producer is `ops/gates.sh --full`, and that command had no timer, no
+    manifest row, and run_ci's test step runs pytest WITHOUT --cov. So "the floor has not risen"
+    was reading as "coverage has not improved" when the truth was "coverage has not been
+    MEASURED" -- absence resolving to a clean verdict, which is the WS-005 class.
+    """
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    unit = (root / "ops" / "quant-coverage-ratchet.service").read_text("utf-8")
+    assert "gates.sh --full" in unit, (
+        "the weekly coverage unit no longer runs the only command that writes coverage.json; "
+        "without it the L1.50 ratchet silently has no input again")
+    timer = (root / "ops" / "quant-coverage-ratchet.timer").read_text("utf-8")
+    assert "OnCalendar=" in timer, "the coverage measurement lost its schedule"
