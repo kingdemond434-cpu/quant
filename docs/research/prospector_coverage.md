@@ -7454,3 +7454,39 @@ Backlog: 0 pending verification, 0 pending legitimacy, 29 deferred (earliest 202
 verified clear before opening new ground, per RESUME-DO-NOT-RESTART.
 
 STATUS: OPEN — updated as each item resolves.
+
+### ITEM 1 PROGRESS — MQL5 forum reply layer
+
+**ENUMERATION ROUTE FOUND (operator library, permanent):** `https://www.mql5.com/sitemap.xml` is a
+342-entry sitemap **index** that ships **per-section, per-language** forum sitemaps. This is the
+route the desk has been missing; it replaces every "walk the listing pages until the IP 403s"
+approach with a single XML pull.
+
+| sitemap | URLs | note |
+|---|---|---|
+| `sitemap_forum_trading_systems_en.xml` | **4,113** | the mechanism-bearing board |
+| `sitemap_forum_trading_systems_ru.xml` | **2,141** | RU board, region-parity ground (DIGGING_CHARTER 14) |
+| also present, unpulled | — | `_forum_{general,ea,indicators,stock-exchange,mql4,financial-news,art}_{en,ru}`, `_articles_en`, `_codebase_en`, `_blogs_en`, `_signals_en`, `_jobs_en`, `_market_en` |
+
+**§13 legitimacy — VERIFIED CLEAN, full read of robots.txt (2,961 B, not a `head -c` truncation;
+KR s5 lesson).** The `User-agent: *` group bars `/*/search*`, `/data*`, `/*/messages/*`,
+`/*/channels/*`, `/*/code/viewcode/*`, `/*/code/download/*/`, signals sub-pages and market
+comments. **`/en/forum`, `/en/forum/<section>`, `/en/articles` and the sitemaps are ALLOWED.**
+No named-bot block applies to us (blocks are Mail.RU_Bot, MJ12bot, ExaBot, CrazyWebCrawler,
+SemrushBot, AhrefsBot, BLEXBot, and a Yandex-specific group).
+
+**DEFECT FOUND AND LEDGERED — R0666 (GAP #140 class, live hourly organ).**
+`desks/mt5/side_channels/mql5_forum.py` has produced **3 distinct titles across 36 runs / 189
+rows**, 5 of those runs archiving `[]` silently. Measured causes:
+1. `params={"page": N}` is **ignored by MQL5** — `/en/forum` and `/en/forum?page=2` return
+   **105/105 identical thread ids**, so `max_pages=3` fetches one widget three times. The archive
+   is the proof: 30 of 36 runs hold exactly 6 rows = 2 titles × 3.
+2. `/en/forum` is the recent-activity **widget**, not a board — no section is ever reached.
+3. `_extract_symbols` reads the **anchor text only**; every body-borne mechanism is dropped
+   (measured yield: 1 of 30 anchors).
+4. `threads[:30]` truncates 284 matched anchors, and the regex also matches **paginator links**,
+   so page numbers enter the candidate pool as "threads".
+5. `except Exception: continue` converts a 403 into an empty success — GAP #140 exactly.
+
+**Measured rate limit (unchanged from the previous run, re-confirmed):** pace ≥5 s; treat 403 as
+BACK-OFF, never as an empty result.
