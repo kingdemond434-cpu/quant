@@ -19,6 +19,12 @@ $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc
 # not hypotheses -- 740 discovery files existed and none had ever reached the ten gates because a
 # web artefact is not a (symbol, family, params). This turns them into a ranked search target
 # list, hourly, and the moat's own tick tape weighs heaviest because nobody else has it.
+# STAGE 1: precompute every number an LLM organ would otherwise count for itself. Python
+# counts; the model judges. This runs first so anything downstream -- including the LLM organs on
+# their own cadences -- reads current facts rather than deriving them.
+echo "[$(date -u +%FT%TZ)] stage 1: research facts pack"
+$PY scripts/build_research_facts.py || echo "facts pack FAILED (rc=$?) -- continuing"
+
 echo "[$(date -u +%FT%TZ)] stage 2a: mined ground (miners + moat -> search targets)"
 $PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- continuing"
 
