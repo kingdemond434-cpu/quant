@@ -6,6 +6,12 @@
 # the law forbids.
 set -u
 cd /home/quant/quant-platform
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 PY=.venv/bin/python
 LOGF=data/cro_ai_logs/external_pipeline_gauntlet.log
 export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
@@ -124,3 +130,6 @@ scp -q desks/mt5/data/hypotheses/external_backtest_results.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_backtest_results.json' \
   2>/dev/null && echo "hypothesis corpus synced" || echo "hypothesis sync skipped"
 echo "[$(date -u +%FT%TZ)] external pipeline done"
+
+exit $?
+}

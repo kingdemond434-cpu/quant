@@ -4,6 +4,12 @@
 # scripts/record_suite_run.py -- the producer that check_test_suite_pass_fail reads. Adapted
 # from the one-shot /home/quant/run_suite_verdict.sh (which waited on a since-dead sibling PID
 # and was scheduled by nothing) into the weekly quant-suite-verdict.timer.
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 LOG=/home/quant/suite_verdict_$(date -u +%Y%m%dT%H%M%SZ).log
 AVAIL=$(awk '/MemAvailable/{print int($2/1024)}' /proc/meminfo)
 echo "MemAvailable=${AVAIL}MB at launch" >> "$LOG"
@@ -21,3 +27,6 @@ echo "HEAD=$(git rev-parse HEAD)" >> "$LOG"
 echo "PYTEST_RC=$?" >> "$LOG"
 .venv/bin/python scripts/record_suite_run.py --log "$LOG" --source quant-suite-verdict >> "$LOG" 2>&1
 echo "$LOG" > /home/quant/suite_verdict_latest.path
+
+exit $?
+}

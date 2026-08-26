@@ -2,6 +2,15 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
+# holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
+# resume from the middle of a line. Measured on 63680c05: comment text executed as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. A `{ ... }` alone protects
+# the body but bash still reads past the closing brace; only the exit INSIDE the group ends the
+# process before another byte is read. See ops/run_frontier_rotation.sh for the full account.
+# DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER THE CLOSING `}`.
+{
 dig_dry_run blindrediscovery ops/blindrediscovery_dig_prompt.txt && exit 0
 # ATTEMPT-FIRST: the stub below is written BEFORE the mutex/auth exits so a deferred or
 # auth-dead run stays visible to organ_catchup, which reads "no logs today" as "not attempted --
@@ -25,3 +34,6 @@ claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$
 # trigger kept demanding digs over ground fresh eyes had already seen. stamp() refuses
 # on a dead run -- an exit code proves the process ended, never that it produced.
 .venv/bin/python -c "from libs.ops.blind_trigger import stamp; print(stamp(min_artifact_ts=$_DIG_START_TS))" >> "$LOG" 2>&1
+
+exit $?
+}

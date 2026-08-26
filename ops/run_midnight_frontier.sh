@@ -2,6 +2,15 @@
 # One MT5/Fusion-only midnight frontier: fresh state snapshot, then the fenced Codex reasoner.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
+# holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
+# resume from the middle of a line. Measured on 63680c05: comment text executed as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. A `{ ... }` alone protects
+# the body but bash still reads past the closing brace; only the exit INSIDE the group ends the
+# process before another byte is read. See ops/run_frontier_rotation.sh for the full account.
+# DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER THE CLOSING `}`.
+{
 mkdir -p data
 exec 8>data/.midnight_controller_cycle.lock
 if ! flock -n 8; then
@@ -51,3 +60,6 @@ if [ "$CONTROLLER_RC" -ne 0 ]; then
     exit "$CONTROLLER_RC"
 fi
 exit "$PIPELINE_RC"
+
+exit $?
+}

@@ -23,7 +23,12 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
-
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 mkdir -p data/cro_ai_logs
 # PER-DAY, NOT PER-RUN (2026-08-05, stub-deaths defect). This was %Y%m%dT%H%M, so a worker firing
 # every 20 minutes minted up to 72 log files a day. Every fence that counts LOG FILES then read one
@@ -163,3 +168,6 @@ t["note"] = ("Self-tuning batch. Climbs by 2 on every completed run with NO uppe
 TUNE.write_text(json.dumps(t, indent=1), "utf-8")
 print(f"tuning: batch {old} -> {t['batch']}")
 PYEOF
+
+exit $?
+}

@@ -19,7 +19,15 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/free_tier.env
 source ops/brain_env.sh 2>/dev/null || true
-
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
+# holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
+# resume from the middle of a line. Measured on 63680c05: comment text executed as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. A `{ ... }` alone protects
+# the body but bash still reads past the closing brace; only the exit INSIDE the group ends the
+# process before another byte is read. See ops/run_frontier_rotation.sh for the full account.
+# DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER THE CLOSING `}`.
+{
 LOG="data/cro_ai_logs/deepseek_$(date -u +%Y%m%dT%H%M).log"
 mkdir -p data/cro_ai_logs
 {
@@ -38,3 +46,6 @@ if ! git diff --quiet -- data/ docs/research/ 2>/dev/null; then
         && git push -q --no-verify origin desk-sync-clean 2>&1 | tail -1 \
         && echo "deepseek findings donated + pushed"
 fi
+
+exit $?
+}

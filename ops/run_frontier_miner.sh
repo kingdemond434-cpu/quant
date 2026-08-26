@@ -5,6 +5,15 @@ set -uo pipefail
 cd /home/quant/quant-platform
 source ops/brain_env.sh
 # TODAY-GUARD (2026-08-25): one real dig per day; chain and scattered timers cannot double-run.
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; this desk commits ~200x/day into the tree these launchers execute from, and a dig
+# holds its slot up to 3h, so a commit that changes this file's LENGTH mid-run makes bash
+# resume from the middle of a line. Measured on 63680c05: comment text executed as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. A `{ ... }` alone protects
+# the body but bash still reads past the closing brace; only the exit INSIDE the group ends the
+# process before another byte is read. See ops/run_frontier_rotation.sh for the full account.
+# DO NOT UNWRAP THE BRACE AND DO NOT ADD A LINE AFTER THE CLOSING `}`.
+{
 if [ "${1:-}" = "unified" ] && find data/cro_ai_logs -name "frontier_unified_$(date -u +%Y%m%d)T*.log" -size +1500c 2>/dev/null | grep -q .; then
     echo "unified frontier: already produced today -- skipping (chain/timer no-op)"
     exit 0
@@ -45,3 +54,6 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
 claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== frontier-$REGION exit $? at $(date -u) ===" >> "$LOG"
+
+exit $?
+}

@@ -9,6 +9,12 @@
 # battery itself exits 0 unless a check crashed in a way that produced no output.
 set -uo pipefail
 cd /home/quant/quant-platform
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 PY=.venv/bin/python
 LOG_PREFIX="[fence-battery $(date -u +%FT%TZ)]"
 echo "$LOG_PREFIX start"
@@ -22,3 +28,6 @@ for s in scripts/check_bar_span.py scripts/check_data_recoverability.py \
     echo "$LOG_PREFIX $s rc=$?"
 done
 echo "$LOG_PREFIX done"
+
+exit $?
+}

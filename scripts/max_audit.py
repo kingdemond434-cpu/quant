@@ -666,6 +666,76 @@ def check_unit_deaths(defects) -> None:
                         "retry loop hides the death but pays for it in quota."))
 
 
+def check_launcher_seal(defects) -> None:
+    """Long-running shell launchers must be sealed against mid-run rewrite (2026-08-26).
+
+    bash reads a script INCREMENTALLY, by byte offset. This desk commits ~200x/day into the tree
+    these launchers execute from, and a dig holds its slot for up to three hours, so any commit
+    that changes a launcher's LENGTH mid-run makes bash resume from the middle of a line.
+
+    IT HAPPENED. 63680c05 grew a comment in ops/run_frontier_rotation.sh by ~120 bytes at 11:22
+    while a dig was running, and data/cro_ai_logs/seat_frontier.log recorded comment text being
+    executed as a command, then output from the STALE version, then `syntax error near
+    unexpected token 'fi'`. The dig died mid-way and the failure looked like an ordinary
+    non-zero exit.
+
+    REPRODUCED, AND THE FIX MEASURED RATHER THAN ASSUMED: an unguarded script rewritten mid-run
+    executed garbage AND THEN RE-RAN ITSELF FROM THE TOP. A bare `{ ... }` protected the body
+    but bash still read past the closing brace and re-ran. Only `{ ... exit N }` -- the exit
+    INSIDE the group, so the process is gone before bash reads another byte -- ran exactly once,
+    cleanly, with the right status.
+
+    So the seal is three properties, and this check tests all three because two of them alone
+    still leave the script re-running: a `{` on its own line, an `exit` as the last statement
+    INSIDE the group, and a `}` that is the final line of the file.
+    """
+    root = ROOT / "ops"
+    if not root.is_dir():
+        return
+    unsealed = []
+    for f in sorted(root.glob("run_*.sh")):
+        try:
+            lines = f.read_text("utf-8", errors="ignore").rstrip("\n").split("\n")
+        except OSError:
+            continue
+        # Only launchers a scheduler actually starts and that run long enough to be caught.
+        # A script nothing invokes cannot be corrupted mid-run by definition.
+        if not _launcher_is_scheduled(f.name):
+            continue
+        body = [ln for ln in lines if ln.strip()]
+        sealed = (bool(body) and body[-1].strip() == "}"
+                  and body[-2].strip().startswith("exit")
+                  and any(ln.strip() == "{" for ln in lines))
+        if not sealed:
+            unsealed.append(f.name)
+    if unsealed:
+        defects.append(("launcher-unsealed",
+                        f"{len(unsealed)} scheduled shell launcher(s) can be corrupted by a "
+                        f"commit landing mid-run: {', '.join(unsealed[:8])}"
+                        f"{' ...' if len(unsealed) > 8 else ''}. bash reads by byte offset, so a "
+                        "length change mid-run resumes execution inside a line -- measured on "
+                        "63680c05, which killed a frontier dig and left a `syntax error near "
+                        "unexpected token` in seat_frontier.log. Fix: wrap the body in `{` ... "
+                        "`exit $?` `}` with the closing brace as the file's last line."))
+
+
+def _launcher_is_scheduled(name: str) -> bool:
+    """True when a user unit or the crontab manifest names this launcher."""
+    units = Path.home() / ".config" / "systemd" / "user"
+    if units.is_dir():
+        for u in units.glob("*.service"):
+            try:
+                if name in u.read_text("utf-8", errors="ignore"):
+                    return True
+            except OSError:
+                continue
+    man = ROOT / "ops" / "crontab.manifest"
+    try:
+        return name in man.read_text("utf-8", errors="ignore")
+    except OSError:
+        return False
+
+
 def check_manifest_backlog(defects) -> None:
     """The scheduler's own backlog (2026-08-26). Root `cron.service` OOM-died on 08-20 and
     every ops/crontab.manifest row without a user-timer twin died with it -- 201 organs,
@@ -6473,6 +6543,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("organs", check_organs), ("stubs", check_stub_deaths),
           ("unit-deaths", check_unit_deaths),
           ("manifest-backlog", check_manifest_backlog),
+          ("launcher-unsealed", check_launcher_seal),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("model-freshness", check_model_freshness),
                       ("coverage", check_coverage),

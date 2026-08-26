@@ -14,8 +14,17 @@
 # with no brain/quota dependency. It does NOT, by itself, move the 390 number.
 set -euo pipefail
 cd /home/quant/quant-platform
+# SEALED AGAINST MID-RUN REWRITE (2026-08-26). bash reads a script INCREMENTALLY by byte
+# offset; a commit that changes this file's LENGTH while it is running resumes execution inside
+# a line. Measured on 63680c05 (ops/run_frontier_rotation.sh): comment text ran as a command,
+# then a dangling `fi`, then the script RE-RAN ITSELF FROM THE TOP. Only the exit INSIDE the
+# group ends the process before bash reads another byte. Do not unwrap; add nothing after `}`.
+{
 LOG=data/cro_ai_logs/crypto_factory_cron.log
 echo "=== $(date -u +%FT%TZ) crypto factory harness ===" >> "$LOG"
 .venv/bin/python scripts/run_crypto_research.py --timeframe H8 >> "$LOG" 2>&1 || echo "H8 run failed" >> "$LOG"
 .venv/bin/python scripts/run_crypto_research.py --timeframe D1 >> "$LOG" 2>&1 || echo "D1 run failed" >> "$LOG"
 echo "=== done $(date -u +%FT%TZ) ===" >> "$LOG"
+
+exit $?
+}
