@@ -1278,3 +1278,15 @@ claims). canary_history + cadence_duties committed (their fences measure COMMIT 
 unwired `libs.alpha.*` modules inspected: superseded by the MT5 desk's own decay_monitor/
 sleeve_registry organs — wiring them would recreate the two-lineage disease; block-with-reason
 is the recorded verdict, pending an audit disposition mechanism.
+
+_Appended 2026-08-26 ~03:55Z (weekly gap-fixer cycle, third seat — the 03:02/03:12/03:20 attempts
+were OOM-killed; death-visibility fence now landed, 6c8a9fc4):_
+
+**#137 RECORDED (closes the last R0035 recording debt) — Competitor/Smart-Opponent Simulation
+(SUBSYSTEM_TRIAGE.md finding #26) is BLOCKED-ON-FUNDING, not undecided.** One of seven
+components (#22–#28) behind the same ~$120 OpenRouter top-up (HTTP 402), which has been the
+standing PURCHASE DECISION on data/PRINCIPAL_ACTION.md since 08-11. Decision state: build
+deferred until funding lands; nothing is buildable from this box without the paid roster (the
+free-seat fallback 400-blanks on the payload, measured repeatedly). The other four §35-flagged
+findings verified traced this cycle: #79 job-market (REJECT recorded), #80 satellite/shipping
+(REJECT recorded), #48 wallet fingerprinting (GAP #88), micro_audit_inbox #1 (fixed 07-26).
