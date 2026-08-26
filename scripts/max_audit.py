@@ -614,6 +614,68 @@ def check_unit_deaths(defects) -> None:
                         "retry loop hides the death but pays for it in quota."))
 
 
+def check_manifest_backlog(defects) -> None:
+    """The scheduler's own backlog (2026-08-26). Root `cron.service` OOM-died on 08-20 and
+    every ops/crontab.manifest row without a user-timer twin died with it -- 201 organs,
+    including the hourly law gate, the daily ratchet raiser (the L1.50 floor stall's direct
+    cause) and `check_organ_liveness` itself, which is precisely why six days passed with no
+    escalation: the dead-organ detector was one of the dead organs.
+
+    `run_manifest_dispatch.py` resurrects the allowlisted rows and has always WRITTEN the
+    remaining backlog to its state file -- but nothing ever READ it (grep, 2026-08-26: zero
+    consumers). A measurement no organ consumes is an opinion, so "216 uncovered" sat in a
+    JSON file and escalated to nobody. This is the consumer. Two arms, because the failure has
+    two shapes: the dispatcher itself going silent (the outage recursing one level up), and the
+    backlog sitting un-drained. Both are the same defect class -- a schedule nobody is checking.
+    """
+    state = ROOT / "data" / "manifest_dispatch_state.json"
+    if not state.is_file():
+        defects.append(("manifest-dispatch-missing",
+                        f"{state} does not exist -- the manifest dispatcher has never run, so "
+                        "every ops/crontab.manifest row without a user-timer twin is dead and "
+                        "unmeasured. Root cron has been down since 2026-08-20."))
+        return
+    try:
+        data = json.loads(state.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        defects.append(("manifest-dispatch-unreadable", f"{state} is unreadable ({exc})"))
+        return
+    try:
+        age_h = (NOW - time.mktime(time.strptime(
+            str(data.get("last_check", ""))[:19], "%Y-%m-%dT%H:%M:%S"))) / 3600.0
+    except ValueError:
+        age_h = None
+    # The timer fires every 5 minutes; an hour of silence is the dispatcher itself dead.
+    if age_h is None or age_h > 1.0:
+        defects.append(("manifest-dispatch-stale",
+                        f"manifest dispatcher last ran {age_h if age_h is None else round(age_h, 1)}h "
+                        "ago (timer is every 5min) -- the organ that resurrects cron rows is "
+                        "itself down. `systemctl --user status quant-manifest-dispatch`."))
+    uncovered = int(data.get("uncovered_unallowed", 0) or 0)
+    if uncovered:
+        toks = [str(t) for t in (data.get("uncovered_tokens") or [])][:6]
+        defects.append(("manifest-backlog",
+                        f"{uncovered} manifest row(s) still have no scheduler since the 08-20 "
+                        f"cron death: {', '.join(toks) or 'see uncovered_tokens'}"
+                        f"{' ...' if uncovered > len(toks) else ''}. Each is an organ that "
+                        "leaves no artifact. Triage: allowlist the venue-agnostic positive-EV "
+                        "ones in run_manifest_dispatch.py, or retire the crypto-era rows OUT "
+                        "of ops/crontab.manifest so the backlog is honest rather than ignored."))
+    pending = data.get("pending") or {}
+    if len(pending) >= 8:
+        defects.append(("manifest-dispatch-throttled",
+                        f"{len(pending)} allowlisted row(s) are deferred by the memory governor "
+                        f"(avail {data.get('avail_mb')}MB < {MIN_AVAIL_MB_HINT}MB floor) -- the "
+                        "box is too tight to run the fleet it is scheduled to run. This is a "
+                        "capacity fact, not a missing executor (L1.53): the console item is a "
+                        "swapfile or a bigger box."))
+
+
+#: Mirrors run_manifest_dispatch.MIN_AVAIL_MB for the message above; imported lazily would
+#: couple the audit to a script, so it is restated and kept in sync by the test.
+MIN_AVAIL_MB_HINT = 420
+
+
 #: Long-lived daemons whose code is loaded ONCE at process start. Add any new always-on service.
 _DAEMONS = {
     "quant-cashcarry": "scripts/run_cashcarry_executor.py",
@@ -6308,6 +6370,7 @@ CHECKS = [("carryover-skipped", check_carryover_skipped),
           ("recommendation-rows", check_recommendation_rows),
           ("organs", check_organs), ("stubs", check_stub_deaths),
           ("unit-deaths", check_unit_deaths),
+          ("manifest-backlog", check_manifest_backlog),
                       ("stale-daemons", check_stale_daemons),
                       ("panel", check_panel), ("model-freshness", check_model_freshness),
                       ("coverage", check_coverage),

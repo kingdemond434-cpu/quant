@@ -53,7 +53,49 @@ ALLOWLIST: dict[str, str] = {
     "scripts/build_event_calendar.py": "monthly macro event calendar (MT5 event guard input)",
     "scripts/run_intelligence_cycle.py": "4-hourly macro collectors (WALCL/RFB vintages feed MT5 axes)",
     "deploy/pull_deploy.sh": "10-min inbound deploy path (dead 126h; fence reads its state)",
+    # ------------------------------------------------------------------------------------
+    # SECOND WAVE, gap-fixer 2026-08-26. The first wave rescued 12 rows and left 173
+    # venue-agnostic ones dead, because the backlog number this script writes was consumed by
+    # NOBODY (grep: zero readers of manifest_dispatch_state.json) -- a measurement with no
+    # consumer is an opinion, so "216 uncovered" sat in a file for six days and escalated to
+    # no one. Every token below was RUN BY HAND on 2026-08-26 before being listed here: each
+    # exits 0 or exits 2-with-a-real-finding, and none is crypto-era. rc=2 on a fence is
+    # correct behaviour, not a failure -- these organs are supposed to fail loud.
+    # Ordered by expected terminal-wealth impact, which is why the liveness fence leads:
+    # ITS death is why the other 172 deaths went unnoticed.
+    # ------------------------------------------------------------------------------------
+    "scripts/check_organ_liveness.py": "hourly dead-organ detector -- ITSELF dead 128h; the "
+                                       "reason the 08-20 cron death escalated to nobody",
+    "scripts/check_freshness.py": "hourly L1.44 consumption-time freshness contracts",
+    "scripts/check_change_window.py": "hourly L1.38 sterile-cockpit window (money-path guard)",
+    "scripts/check_promotion_gate.py": "hourly L1.6 promotion-gate rung state",
+    "scripts/run_promotion_queue.py": "6-hourly promotion queue -- the forward->live door",
+    "scripts/check_gate0_ready.py": "hourly Gate-0 readiness ledger",
+    "scripts/check_risk_units.py": "daily L1.67 risk-UNITS audit (the CADJPY 1.26%-logged/"
+                                   "7.41%-run defect class; no other fence asks this)",
+    "scripts/run_portfolio_risk.py": "daily portfolio risk aggregation",
+    "scripts/run_sleeve_allocator.py": "daily sleeve allocation",
+    "scripts/max_audit.py": "daily live-defect audit -- the desk's own defect finder was dead",
+    "scripts/rerank_gaps.py": "weekly §35 gap re-rank (GAP_REGISTER is the only work driver)",
+    "scripts/record_desk_metrics.py": "daily desk metric trend (a snapshot is not a trend)",
+    "scripts/check_claim_consistency.py": "daily cross-organ claim contradiction detector",
+    "scripts/check_input_provenance.py": "hourly artifact input-provenance declarations",
+    "scripts/check_denominators.py": "hourly denominator-declaration fence",
+    "scripts/check_idle_cost.py": "hourly idle-capital/timidity meter (LAWS §2a)",
+    "scripts/run_stale_daemon_repair.py": "twice-daily stale-daemon actuator",
 }
+
+#: THE BOX IS THE BINDING CONSTRAINT, AND IT IS NOT TIMIDITY TO SAY SO (measured 2026-08-26:
+#: 3814MB total, ZERO swap, ~1660MB available, load 1.9). Three gap-wirer seats and the
+#: same-day external pipeline were OOM-killed in the 24h before this was written. Firing a
+#: batch of organs into that headroom can take the kernel's OOM killer to `quant-live-guard`
+#: or the executor, which is a ruin path, not an inconvenience -- so the governor below names
+#: the ruin probability it reduces, as the survival rails require of every clamp.
+#: A deferred row is NEVER dropped: it lands in `pending` and fires on a later tick when the
+#: headroom returns. Silent truncation would read as "the fleet is covered" when it is not.
+MIN_AVAIL_MB = 420           # below this, defer rather than fire (kernel OOM territory)
+MAX_FIRES_PER_TICK = 4       # burst cap: a 5-minute tick never thunders the whole manifest
+PENDING_MAX_AGE_MIN = 180    # a row deferred longer than this waits for its next natural slot
 
 TOKEN_RE = re.compile(r"(?:scripts|deploy|ops)/[A-Za-z0-9_./-]+\.(?:py|sh)")
 
@@ -98,6 +140,25 @@ def cron_matches(spec: str, t: datetime) -> bool:
     if dom != "*" and dow != "*":
         return dom_ok or dow_ok
     return dom_ok and dow_ok
+
+
+def _avail_mb() -> float:
+    """MemAvailable in MB, or +inf when it cannot be read.
+
+    FAILING OPEN IS THE RIGHT DIRECTION HERE and it is a deliberate choice, not an oversight:
+    this governor exists to protect a 3.8GB swapless box from an OOM cascade, but a governor
+    that cannot read memory and therefore refuses to fire ANYTHING would silently re-create
+    the exact outage it was built to end -- 200 organs dead and no one told. An unreadable
+    /proc/meminfo is a broken probe, and a broken probe must not be allowed to hold the fleet
+    down; the OOM killer is a survivable event, six silent days is not.
+    """
+    try:
+        for line in Path("/proc/meminfo").read_text(encoding="utf-8").splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) / 1024.0
+    except (OSError, ValueError, IndexError):
+        pass
+    return float("inf")
 
 
 def manifest_rows() -> list[tuple[str, str, str]]:
@@ -157,34 +218,75 @@ def main() -> int:
     twins = twinned_tokens()
     fired: list[str] = []
     skipped_twinned: list[str] = []
-    uncovered = 0
+    deferred: list[str] = []
+    uncovered_tokens: set[str] = set()
     rows = manifest_rows()
+
+    # THE TWIN CHECK RUNS FIRST NOW. It used to run AFTER `uncovered += 1`, so any row that
+    # already had a real user timer -- run_moat_backup, run_live_guard, run_drills, certify_
+    # gauntlet and 11 others -- was counted as part of the dead backlog it had already left.
+    # The published figure was 216 uncovered of 228; the true dead set is 201. A backlog gauge
+    # that counts healed rows as sick can never reach zero, so the ratchet it feeds could never
+    # close (L1.50) and the number could never be trusted enough to act on.
+    due: list[tuple[str, str]] = []
     for spec, cmd, token in rows:
-        if token not in ALLOWLIST:
-            uncovered += 1
-            continue
         if token in twins:
             skipped_twinned.append(token)
+            continue
+        if token not in ALLOWLIST:
+            uncovered_tokens.add(token)
             continue
         try:
             if not due_times(spec, last_check, now):
                 continue
         except ValueError:
             continue  # malformed spec on an allowlisted row: never crash the whole dispatcher
+        due.append((token, cmd))
+
+    # Rows deferred by a previous tick's governor come first: they are already late, and the
+    # whole point of the pending queue is that a governor delays work rather than losing it.
+    pending: dict[str, dict[str, str]] = dict(state.get("pending") or {})
+    replay: list[tuple[str, str]] = []
+    for token, row in list(pending.items()):
+        try:
+            since = datetime.fromisoformat(str(row.get("since")))
+        except (TypeError, ValueError):
+            pending.pop(token, None)
+            continue
+        if (now - since) > timedelta(minutes=PENDING_MAX_AGE_MIN):
+            pending.pop(token, None)  # stale: wait for the row's next natural slot, never thunder
+            continue
+        replay.append((token, str(row.get("cmd", ""))))
+    queue = replay + [d for d in due if d[0] not in pending]
+
+    for token, cmd in queue:
+        if len(fired) >= MAX_FIRES_PER_TICK or _avail_mb() < MIN_AVAIL_MB:
+            deferred.append(token)
+            pending[token] = {"cmd": cmd, "since": pending.get(token, {}).get(
+                "since", now.isoformat(timespec="seconds"))}
+            continue
         subprocess.Popen(["/bin/sh", "-c", cmd], cwd=ROOT,
                          env={"PATH": "/usr/bin:/bin", "HOME": str(Path.home()),
                               "QUANT_ROOT": str(ROOT)},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                          start_new_session=True)
         fired.append(token)
+        pending.pop(token, None)
         row_state = state.setdefault("rows", {}).setdefault(token, {})
         row_state["last_fired"] = now.isoformat(timespec="seconds")
         row_state["fires"] = int(row_state.get("fires", 0)) + 1
 
     state["last_check"] = now.isoformat(timespec="seconds")
     state["fired_this_run"] = fired
+    state["deferred_this_run"] = deferred
+    state["pending"] = pending
+    state["avail_mb"] = _avail_mb()
     state["skipped_twinned"] = sorted(set(skipped_twinned))
-    state["uncovered_unallowed"] = uncovered
+    state["uncovered_unallowed"] = len(uncovered_tokens)
+    # The COUNT alone is not actionable -- the next seat needs to know WHICH organs are dead
+    # without re-deriving it. The list is what turns this artifact from a number into a queue.
+    state["uncovered_tokens"] = sorted(uncovered_tokens)
+    state["allowlisted"] = len(ALLOWLIST)
     state["manifest_rows_seen"] = len(rows)
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=1) + "\n", encoding="utf-8")

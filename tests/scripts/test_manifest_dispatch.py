@@ -64,3 +64,110 @@ def test_due_times_window_and_boundaries() -> None:
         dt(2026, 8, 26, 3, 9)]
     # a daily row outside the window does not fire
     assert due_times("7 7 * * *", dt(2026, 8, 26, 3, 0), dt(2026, 8, 26, 3, 20)) == []
+
+
+# ---------------------------------------------------------------------------------------------
+# REGRESSION, gap-fixer 2026-08-26. Two defects found while draining the 08-20 cron backlog.
+# ---------------------------------------------------------------------------------------------
+
+def _harness(tmp_path, monkeypatch, rows: str, allow: dict, units: str = "", avail=float("inf")):
+    """Point the dispatcher at a scratch manifest/state/unit dir and stub the actual firing."""
+    import scripts.run_manifest_dispatch as md
+
+    manifest = tmp_path / "crontab.manifest"
+    manifest.write_text(rows, encoding="utf-8")
+    unit_dir = tmp_path / "units"
+    unit_dir.mkdir()
+    if units:
+        (unit_dir / "some.service").write_text(units, encoding="utf-8")
+    fired: list[str] = []
+
+    class _Popen:
+        def __init__(self, argv, **kw):
+            fired.append(argv[-1])
+
+    monkeypatch.setattr(md, "MANIFEST", manifest)
+    monkeypatch.setattr(md, "STATE", tmp_path / "state.json")
+    monkeypatch.setattr(md, "USER_UNITS", unit_dir)
+    monkeypatch.setattr(md, "ALLOWLIST", allow)
+    monkeypatch.setattr(md, "_avail_mb", lambda: avail)
+    monkeypatch.setattr(md.subprocess, "Popen", _Popen)
+    return md, fired
+
+
+def test_twinned_row_is_not_counted_as_uncovered_backlog(tmp_path, monkeypatch) -> None:
+    """A row with its own user timer is ALIVE and must not inflate the dead-organ backlog.
+
+    The pre-fix loop did `if token not in ALLOWLIST: uncovered += 1; continue` BEFORE the twin
+    check, so all 14 rows already re-homed to real user timers (run_moat_backup, run_live_guard,
+    run_drills, certify_gauntlet ...) were counted as part of the outage backlog they had
+    already left. It published 216 uncovered of 228 when the true dead set was 201 -- a gauge
+    that counts healed rows as sick can never reach zero, so the ratchet it feeds can never
+    close and nobody can trust the number enough to act on it.
+    """
+    import json
+
+    md, _ = _harness(
+        tmp_path, monkeypatch,
+        rows="0 7 * * * cd /x && .venv/bin/python scripts/twinned_organ.py >> a.log 2>&1\n"
+             "0 8 * * * cd /x && .venv/bin/python scripts/orphan_organ.py >> b.log 2>&1\n",
+        allow={},
+        units="ExecStart=/x/.venv/bin/python scripts/twinned_organ.py\n",
+    )
+    md.main()
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+
+    assert state["skipped_twinned"] == ["scripts/twinned_organ.py"]
+    # The twinned row is alive; only the genuine orphan is backlog.
+    assert state["uncovered_unallowed"] == 1
+    assert state["uncovered_tokens"] == ["scripts/orphan_organ.py"]
+
+
+def test_governor_defers_rather_than_drops_when_memory_is_tight(tmp_path, monkeypatch) -> None:
+    """Low headroom must DELAY a row into `pending`, never lose it.
+
+    The box is 3814MB with zero swap and OOM-killed four organs in the 24h before the governor
+    was written, so firing a batch into thin headroom can take the kernel to quant-live-guard.
+    But a governor that silently skips is indistinguishable from the outage it guards against:
+    the row must come back on a later tick.
+    """
+    import json
+
+    rows = "".join(
+        f"0 7 * * * cd /x && .venv/bin/python scripts/organ{i}.py >> {i}.log 2>&1\n"
+        for i in range(3))
+    allow = {f"scripts/organ{i}.py": "test" for i in range(3)}
+
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows, allow=allow, avail=1.0)
+    assert md.MIN_AVAIL_MB > 1.0  # the stub is genuinely below the floor, not merely low
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [until])
+    md.main()
+
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert fired == []                                   # nothing fired into a tight box
+    assert sorted(state["pending"]) == [f"scripts/organ{i}.py" for i in range(3)]
+    assert sorted(state["deferred_this_run"]) == [f"scripts/organ{i}.py" for i in range(3)]
+
+    # ... and the NEXT tick, with headroom back, drains the queue instead of losing it.
+    monkeypatch.setattr(md, "_avail_mb", lambda: float("inf"))
+    md.main()
+    state2 = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert len(fired) == 3
+    assert state2["pending"] == {}
+
+
+def test_burst_cap_bounds_a_single_tick(tmp_path, monkeypatch) -> None:
+    """A 5-minute tick never thunders the whole manifest, even with headroom to spare."""
+    import json
+
+    rows = "".join(
+        f"0 7 * * * cd /x && .venv/bin/python scripts/organ{i}.py >> {i}.log 2>&1\n"
+        for i in range(10))
+    allow = {f"scripts/organ{i}.py": "test" for i in range(10)}
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows, allow=allow)
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [until])
+    md.main()
+
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert len(fired) == md.MAX_FIRES_PER_TICK
+    assert len(state["pending"]) == 10 - md.MAX_FIRES_PER_TICK   # the rest queued, not dropped
