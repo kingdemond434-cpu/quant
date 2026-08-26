@@ -91,6 +91,29 @@ def _exec_stats(symbol: str, session: str | None) -> dict:
             "why": f"reconstructed from {cell.get('fills')} fill(s) on the desk's own tick tape"}
 
 
+def _atr_distance(symbol: str) -> float | None:
+    """Per-symbol stop distance from the symbol's OWN recent bars.
+
+    One risk_distance for every candidate was a silent unit error: 0.35 is a sane stop on gold
+    and one fifth of a big figure on GBPJPY. Every cost expressed "per R" inherited whatever
+    distortion that mismatch produced. The honest denominator is each symbol's own volatility --
+    2x the mean H1 range over the last 200 bars, the same magnitude the families use for stops.
+    None when bars are absent: a candidate we cannot size is labelled, not guessed.
+    """
+    try:
+        import pandas as pd
+        path = UNIVERSE / f"{symbol}_H1.parquet"
+        if not path.exists():
+            return None
+        df = pd.read_parquet(path, columns=["high", "low"]).tail(200)
+        if len(df) < 50:
+            return None
+        rng = float((df["high"] - df["low"]).mean())
+        return rng * 2.0 if rng > 0 else None
+    except Exception:
+        return None
+
+
 def _spread_cost_r(meta: dict, risk_distance: float | None) -> float | None:
     """Spread as a fraction of R -- the unit every gate and sizing decision uses."""
     try:
@@ -141,10 +164,23 @@ def resolve(intent: dict, candidates: list[str] | None = None) -> dict:
         if not isinstance(meta, dict):
             continue                    # never score a symbol the registry cannot describe
         ex = _exec_stats(sym, session)
-        spread_r = _spread_cost_r(meta, risk_distance)
-        # Swap is SIGNED by direction: the same instrument pays a carry long and charges it short.
-        swap = float(meta.get("swap_long" if direction > 0 else "swap_short") or 0.0)
-        swap_r = (swap / float(risk_distance)) if risk_distance else 0.0
+        # PER-SYMBOL RISK DISTANCE. The intent's number is a fallback, not a truth: a stop
+        # distance sane on one instrument is noise on another, and every per-R cost inherits it.
+        sym_risk = _atr_distance(sym) or (float(risk_distance) if risk_distance else None)
+
+        spread_r = _spread_cost_r(meta, sym_risk)
+        # SWAP, IN COMMENSURATE UNITS. swap_long/short from the venue is CURRENCY PER LOT PER
+        # NIGHT; risk_distance is PRICE units. Dividing them directly produced net edges of +23R
+        # on GBPJPY -- an artifact of mixed units, not an opportunity. Risk per lot in currency
+        # is distance x contract_size; swap contributes only for nights actually held, and a
+        # session strategy that closes intraday holds zero.
+        swap_ccy = float(meta.get("swap_long" if direction > 0 else "swap_short") or 0.0)
+        nights = float(intent.get("expected_holding_nights") or 0.0)
+        contract = float(meta.get("contract_size") or 0.0)
+        if sym_risk and contract > 0 and nights > 0:
+            swap_r = (swap_ccy * nights) / (sym_risk * contract)
+        else:
+            swap_r = 0.0
         overlap = _overlap(sym)
 
         net_r = alpha_r - abs(ex["slip_r"]) - abs(spread_r or 0.0) + swap_r
@@ -162,6 +198,9 @@ def resolve(intent: dict, candidates: list[str] | None = None) -> dict:
             "slippage_r": round(ex["slip_r"], 4),
             "spread_r": None if spread_r is None else round(spread_r, 4),
             "swap_r": round(swap_r, 6),
+            "risk_distance_used": None if sym_risk is None else round(sym_risk, 5),
+            "risk_distance_source": ("symbol_atr" if _atr_distance(sym) else
+                                     ("intent_fallback" if risk_distance else "unsized")),
             "fill_rate": round(ex["fill_rate"], 3),
             "portfolio_overlap": round(overlap, 3),
             "net_edge_r": round(net_r, 4),

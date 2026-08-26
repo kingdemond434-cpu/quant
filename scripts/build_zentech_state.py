@@ -355,6 +355,27 @@ def build() -> dict[str, Any]:
     # -- principal 2026-08-26 additions: stats, funnel, live decay, sampled equity ------------
     # READINESS IS THE HEADLINE. A dashboard that shows equity and sleeve counts without saying
     # what size is actually EARNED invites the reader to supply their own answer.
+    # MOAT COVERAGE, PUBLISHED WHERE THE TAPE LIVES. The tick tape exists only on the desk box,
+    # so when mined_ground runs on the research box the moat contributed ZERO -- the desk's one
+    # proprietary pointer silently uncounted, which is the WS-005 shape again. This builder runs
+    # ON the tape's box every 5 minutes, so it publishes a tiny summary the pull carries over.
+    try:
+        from datetime import timedelta as _td
+        _tape = DESK / "data" / "tape" / "ticks"
+        _cut = now - _td(days=7)
+        _cov = {}
+        if _tape.exists():
+            for _d in _tape.iterdir():
+                if _d.is_dir():
+                    _days = sum(1 for f in _d.glob("*.parquet")
+                                if datetime.fromtimestamp(f.stat().st_mtime, UTC) >= _cut)
+                    if _days:
+                        _cov[_d.name.upper()] = _days
+        (DESK / "data" / "moat_coverage.json").write_text(
+            json.dumps({"built_at": now.isoformat(timespec="seconds"),
+                        "window_days": 7, "coverage": _cov}, indent=1), "utf-8")
+    except Exception:
+        pass
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}

@@ -128,6 +128,17 @@ def scan_moat(universe: set[str], cutoff: datetime) -> Counter:
     """Symbols the desk's OWN tape flags -- the pointer nobody else can buy."""
     weights: Counter = Counter()
     if not MOAT_TAPE.exists():
+        # The tape lives on the desk box. Its state builder publishes a per-symbol coverage
+        # summary every 5 minutes and the pull carries it here, so the moat counts on BOTH boxes
+        # instead of silently contributing zero wherever the parquet happens not to be.
+        summary = _read(BASE / "data" / "moat_coverage.json")
+        if isinstance(summary, dict):
+            for sym, days in (summary.get("coverage") or {}).items():
+                if str(sym).upper() in universe:
+                    try:
+                        weights[str(sym).upper()] += MOAT_WEIGHT * int(days)
+                    except (TypeError, ValueError):
+                        continue
         return weights
     for d in MOAT_TAPE.iterdir():
         if not d.is_dir():

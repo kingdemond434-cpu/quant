@@ -36,7 +36,7 @@ scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
 # failure mode it exists to catch.
 scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
     desks/mt5/reports/execution_quality.json 2>/dev/null || true
-for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json; do
+for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json moat_coverage.json; do
   scp -q "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
 done
 
