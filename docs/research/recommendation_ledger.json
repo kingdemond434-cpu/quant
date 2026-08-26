@@ -8485,6 +8485,62 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0662",
+   "source": "cro-cycle-20260826",
+   "summary": "MT5 forward clocks froze the RETRIEVAL ROUTE (Bars.source) in data_venue, so every VPS run broke identity terminally (195/195 shadow.log lines) and the 14-day forward window never survived one day -- nothing could ever promote. FIXED e40151e5: Bars.evidence_venue + IDENTITY_SCHEMA + archive-and-rewindow migration; two consecutive runs now 0 breaks (was 15/15).",
+   "roi_bps": 40.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-26T08:51:51.932888+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "e40151e5ff909bfc0e8b00c3faf8b2e1ac9516be",
+   "due": null,
+   "disposed": "2026-08-26T08:52:21.704859+00:00"
+  },
+  {
+   "id": "R0663",
+   "source": "cro-cycle-20260826",
+   "summary": "The hourly MT5 sync bus REVERTS VPS-owned data files (desks/mt5/data/sleeve_registry.json, reports/shadow/shadow_state.json) to the desk box's stale copies within ~2min -- measured TWICE during the e40151e5 fix: reverted rows carried the old cost_hash, old data_venue and no identity_schema, while the ROW COUNT never moved so no count-based guard could see it. Mitigated (check_authority_ratchet now WATCHes by schema count); root fix is C:-side exclusion of VPS-owned MT5 data files.",
+   "roi_bps": 25.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-26T08:52:07.875244+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0664",
+   "source": "cro-cycle-20260826",
+   "summary": "TWO universe.json files disagree on cost by 15x and nothing reconciles them: desks/mt5/universe/universe.json has CADJPY median_spread_pts=15.0, desks/mt5/data/universe/universe.json (the one shadow_forward actually reads, UNI=BASE/data/universe) has 1.0. Every cost model, gate and cost_hash depends on which file a caller picked. This also keeps cost_hash drifting after the venue fix.",
+   "roi_bps": 30.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-26T08:52:11.400221+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0665",
+   "source": "cro-cycle-20260826",
+   "summary": "growth_audit's promotion_latency check reads web/cashcarry_shadow.json, the CRYPTO carry sleeve RETIRED by principal order 2026-08-19 (b0fe6f50) and voided by the MT5 mandate. It has read ACT-NOW / justified_by NONE every cycle since, so the desk's ONLY anti-timidity gauge is permanently non-empty on an unactionable item and a REAL conservatism defect arriving tomorrow is indistinguishable (L1.43). Meanwhile MT5 promotion latency is measured by NOTHING. Repoint the check at the MT5 sleeve registry; give the retired clock a TERMINAL verdict class (the R0691 precedent), never a widened tolerance.",
+   "roi_bps": 12.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-26T08:52:24.708894+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

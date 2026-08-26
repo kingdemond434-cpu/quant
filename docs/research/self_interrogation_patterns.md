@@ -280,3 +280,44 @@ recursion rule), so the desk needs him to supply an angle exactly once.
     GENERALISES TO: quota/reset stamps, rate-limit backoffs, discovered capability probes
     ("does this endpoint support pagination?"), measured venue costs, and any "we tried and it
     was closed" observation that currently lives only in a log line.
+
+---
+
+### ANGLE (added 2026-08-26, cro cycle): does this equality check hash WHAT a thing is, or HOW it reached us?
+
+Ask of every identity, fingerprint, dedup key, cache key and drift check: if the SAME thing
+arrives by a DIFFERENT route tomorrow, does this compare equal? And if a DIFFERENT thing arrives
+by the SAME route, does it compare unequal? A field that answers "no" to either is not an
+identity — it is a transport log, and it fails in both directions at once.
+
+PROVING INSTANCE. `desks/mt5/research/shadow_forward.py` froze `data_venue = str(bars.source)`
+into every sleeve identity. `Bars.source` names the ROUTE — `MT5:FusionMarkets-Live` from a live
+terminal, `CACHE:USDJPY_H1.parquet` from the parquet cache of those same broker bars.
+`MetaTrader5` is not importable on the Linux VPS, so every run drifted; an identity break is
+TERMINAL and nothing clears it. Measured: 195 `IDENTITY BROKEN` lines in
+`desks/mt5/logs/shadow.log`, `data_venue` named in 195/195. The 14-day forward window (L1.58)
+therefore never survived a single day and **no sleeve could ever reach promotion** — the binding
+constraint on the entire objective, invisible because each individual break looked like the gate
+correctly doing its job.
+
+THE SECOND HALF IS THE ONE THAT MAKES THIS AN ANGLE AND NOT AN ANECDOTE. The same field was
+BLIND to the change it existed to catch: a demo feed and a live feed arriving by the same route
+both read `CACHE:<file>`. `broker_info.json` recorded `FusionMarkets-Demo` while every frozen row
+recorded `-Live`. So the wrong quantity was simultaneously over-sensitive (fires on outages) and
+under-sensitive (cannot see a venue swap) — which is the general signature of a check measuring a
+proxy instead of its subject, and why fixing it is a TIGHTENING, never a loosening.
+
+THE TELL, cheap to check: read the identity/key field list and, for each field, name the physical
+thing it describes. Any field whose value contains a filename, a hostname, a directory, a
+connection string, a process id or a retrieval verb is describing the pipe, not the water.
+
+THE FIX SHAPE: split the two facts — a `venue`/subject field that the producer sets from what it
+KNOWS, and a `source`/route field kept for provenance (L1.46) but excluded from identity. Fail
+the subject CLOSED (`UNKNOWN-VENUE` matches nothing) so an unmeasurable subject breaks the check
+rather than passing it (L1.28a). Then VERSION the schema: a field can change MEANING without
+changing shape, which is invisible to every comparison in the file, so rows frozen under the old
+meaning must be archived and re-windowed rather than silently re-blessed.
+
+GENERALISES TO: cache keys, content hashes, dedup keys, `code_hash`/`cost_hash`-style fingerprints
+(note `cost_hash` hashes a CONTINUOUSLY RE-MEASURED market observable — same family, still open as
+R0664), model/seat identity, dataset fingerprints, and any "has this changed?" gate anywhere.

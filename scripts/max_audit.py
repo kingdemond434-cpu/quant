@@ -7011,13 +7011,57 @@ def check_universal_doctrine(defects) -> None:
 # Checks DEFINED BELOW the CHECKS literal must be registered here -- appending them up there is a
 # NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
 # the run order); `check_registry_complete` below is what makes a future omission impossible.
+def check_route_shaped_identity() -> list[str]:
+    """A frozen IDENTITY field that names a FILE, HOST or PATH describes the pipe, not the water.
+
+    Origin (2026-08-26, self-found): `shadow_forward` froze `data_venue = str(bars.source)` -- the
+    ROUTE the bars arrived by -- into every sleeve identity. On the Linux VPS `MetaTrader5` is not
+    importable, so every run read the parquet cache, every run "drifted", and an identity break is
+    TERMINAL. 195 IDENTITY BROKEN lines with data_venue named in 195/195: the 14-day forward
+    window never survived one day and nothing could ever reach promotion. Each break looked like
+    the gate correctly doing its job, which is why nothing surfaced it.
+
+    The check is the angle in the patterns file, mechanised: read the frozen identities and flag
+    any value that contains a path separator, a file extension or a cache/route verb. Those are
+    transport facts. A venue, a model, a dataset or a venue-server name is not one.
+    """
+    reg = Path("desks/mt5/data/sleeve_registry.json")
+    if not reg.exists():
+        return []
+    try:
+        rows = (json.loads(reg.read_text("utf-8")).get("sleeves") or {})
+    except (OSError, ValueError):
+        return []
+    bad: list[str] = []
+    for key, row in rows.items():
+        ident = row.get("identity") or {}
+        for field, value in ident.items():
+            if field == "sleeve_id" or not isinstance(value, str):
+                continue
+            low = value.lower()
+            if (low.startswith(("cache:", "file:", "path:"))
+                    or "/" in value or "\\" in value
+                    or low.endswith((".parquet", ".json", ".csv"))):
+                bad.append(f"{key}.{field}={value!r}")
+    if not bad:
+        return []
+    return [f"route-shaped-identity: {len(bad)} frozen identity field(s) name a RETRIEVAL ROUTE "
+            f"rather than the thing itself -- {', '.join(sorted(bad)[:4])}. A route in an identity "
+            f"field fires on every outage AND is blind to a real change arriving by the same "
+            f"route; it is not a stricter gate, it is the wrong quantity. Split the subject from "
+            f"the transport (h1_source.Bars.evidence_venue is the worked example), fail the "
+            f"subject CLOSED, and version the schema so rows frozen under the old meaning are "
+            f"archived and re-windowed rather than silently re-blessed."]
+
+
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
            ("holdings-ratchet", check_holdings_never_shrink),
            ("book-absorbing-state", check_book_absorbing_state),
            ("rail-verdict-published", check_rail_verdict_published),
-           ("universal-doctrine", check_universal_doctrine)]
+           ("universal-doctrine", check_universal_doctrine),
+           ("route-shaped-identity", check_route_shaped_identity)]
 
 
 #: Every reasoning organ. An organ that does not carry the constitution is optimising for
