@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-26T10:30:13+00:00",
+  "updated_at": "2026-08-26T10:45:13+00:00",
   "configured_sleeves": 48,
   "represented_sleeves": 48,
   "certified_sleeves_total": 16,
@@ -9,7 +9,7 @@
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
   "errors": {},
-  "seconds": 1.852,
+  "seconds": 1.975,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "status": "OPERATING"
