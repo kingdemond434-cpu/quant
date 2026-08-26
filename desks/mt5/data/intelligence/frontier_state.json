@@ -1,5 +1,5 @@
 {
-"cursor": 14,
+"cursor": 15,
 "queries_done": {
 "zh": [
 "\u8ddf\u5355 MT4",
@@ -45,6 +45,9 @@
 "sinyal ranking"
 ],
 "ko": [
+"\ubcf5\uc0ac \ub9e4\ub9e4 MT4",
+"\ubcf5\uc0ac \ub9e4\ub9e4 MT5",
+"\ubcf5\uc0ac \ub9e4\ub9e4 ranking",
 "\uce74\ud53c \ud2b8\ub808\uc774\ub529 MT4",
 "\uce74\ud53c \ud2b8\ub808\uc774\ub529 MT5",
 "\uce74\ud53c \ud2b8\ub808\uc774\ub529 ranking"

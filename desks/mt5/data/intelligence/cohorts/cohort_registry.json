@@ -5109,5 +5109,51 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"fac5fed40918177c": {
+"t0": "2026-08-26T11:25:22+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "pranay123-stack/forex-trading-strategies",
+"url": "https://github.com/pranay123-stack/forex-trading-strategies",
+"text": "Forex trading strategies \u2014 MQL5 Expert Advisors with custom parametric oscillators, Strategy Tester reports and design documents.",
+"symbols": [],
+"found_at": "2026-08-26T11:25:15+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T11:22:49Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"894f580a9e0e1969": {
+"t0": "2026-08-26T11:25:22+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "pranay123-stack/forex-mt5-strategies",
+"url": "https://github.com/pranay123-stack/forex-mt5-strategies",
+"text": "MetaTrader 5 Expert Advisors \u2014 seven algorithmic strategies in MQL5 with Strategy Tester reports and per-strategy design documents.",
+"symbols": [],
+"found_at": "2026-08-26T11:25:15+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T11:22:01Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T10:24:08+00:00",
+ "rebuilt_at": "2026-08-26T11:25:25+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -546,6 +546,22 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "pranay123-stack": {
+   "presences": {
+    "github_topics": 2
+   },
+   "cohorts": [
+    "fac5fed40918177c",
+    "894f580a9e0e1969"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 2,
     "longevity_max_d": 0,
     "deleted_or_dead": 0,
     "mortality": 0.0

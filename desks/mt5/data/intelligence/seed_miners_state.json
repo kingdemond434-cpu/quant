@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 4200,
+"forextsd_offset": 4500,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -46,6 +46,8 @@
 "RPNATION1/Tradingalgos": 4,
 "metatraderVPS/metatrader-broker-symbols": 3,
 "Abhishek-97735/Equity-Line": 0,
-"ArtemVeremienko/mt5kit": 0
+"ArtemVeremienko/mt5kit": 0,
+"pranay123-stack/forex-trading-strategies": 0,
+"pranay123-stack/forex-mt5-strategies": 0
 }
 }
