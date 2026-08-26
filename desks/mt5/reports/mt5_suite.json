@@ -1,18 +1,15 @@
 {
- "checked_at": "2026-08-26T20:18:53+00:00",
+ "checked_at": "2026-08-26T20:30:50+00:00",
  "verdict": "OK",
  "counts": {
-  "passed": 527,
+  "passed": 536,
   "failed": 28,
   "error": 0,
   "skipped": 0,
-  "total": 555
+  "total": 564
  },
  "new_failing": [],
- "newly_passing": [
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]",
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]"
- ],
+ "newly_passing": [],
  "known_failing": [
   "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
   "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout",
@@ -43,8 +40,6 @@
   "desks.mt5.tests.test_trial_matrix_alignment::test_the_per_survivor_series_is_sorted_by_date",
   "desks.mt5.tests.test_universe_discovery::test_the_real_universe_on_disk_classifies_cleanly"
  ],
- "reasons": [
-  "2 test(s) now pass and are struck from the floor -- a ratchet never gives ground back: desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]; desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]"
- ],
- "pytest_tail": "FAILED desks/mt5/tests/test_trial_matrix_alignment.py::test_the_per_survivor_series_is_sorted_by_date\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n28 failed, 527 passed in 28.06s"
+ "reasons": [],
+ "pytest_tail": "FAILED desks/mt5/tests/test_trial_matrix_alignment.py::test_the_per_survivor_series_is_sorted_by_date\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n28 failed, 536 passed in 20.33s"
 }

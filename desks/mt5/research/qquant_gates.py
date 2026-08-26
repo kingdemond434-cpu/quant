@@ -76,12 +76,22 @@ def _init_worker() -> None:
                                       .read_text("utf-8"))}
 
     def costs_for(sym: str, mult: float = 1.0) -> Costs:
+        """Costs via the sanctioned constructor. This hand-roll carried BOTH unit bugs.
+
+        `0.48` for gold is dollars per OUNCE in a field that wants currency per LOT, so the
+        engine divided it by 100 and charged 3% of a real spread. And `Costs` divides commission
+        by contract_size, which treats one unit of account currency as one unit of PRICE -- true
+        only for a symbol quoted in the account's own currency, and 1/184th of the truth on a JPY
+        cross. `from_symbol` fixes both; hand-rolling beside it is what kept the fixes out.
+
+        `mult` STILL SCALES THE COMMISSION, which `from_symbol`'s docstring argues against (a
+        contractual fee does not widen). That argument is right and changing it here would LOWER
+        a stressed cost, which is the one direction that can manufacture a survivor. The units
+        are corrected now -- every component of this cost is >= what it was -- and the
+        commission-stress question is a separate decision with its own evidence.
+        """
         m = _worker_ctx["meta"].get(sym, {})
-        return Costs(
-            spread_per_lot=0.48 * mult if sym == "XAUUSD" else max(
-                m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5)
-                * m.get("contract_size", 1e5), 0.05) * mult,
-            commission_per_lot=3.50 * mult, contract_oz=m.get("contract_size", 1e5))
+        return Costs.from_symbol(m, mult=mult, commission_per_lot=3.50 * mult)
 
     _worker_ctx["costs_for"] = costs_for
 

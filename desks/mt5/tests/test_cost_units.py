@@ -133,3 +133,46 @@ def test_shadow_costs_on_the_real_registry_are_positive_and_account_correct() ->
         if sym.endswith("JPY"):
             # The conversion has to be the ~185 yen-per-EUR figure, not 1.0.
             assert costs.quote_per_account > 100, f"{sym} reverted to the unconverted commission"
+
+
+def _live_costs_for(module_path: str, fn_name: str):
+    """Import a live cost helper without importing its whole module's side effects."""
+    import ast  # noqa: PLC0415
+
+    src = (_DESK / module_path).read_text("utf-8")
+    fn = next(n for n in ast.walk(ast.parse(src))
+              if isinstance(n, ast.FunctionDef) and n.name == fn_name)
+    body = fn.body[1:] if (fn.body and isinstance(fn.body[0], ast.Expr)
+                           and isinstance(fn.body[0].value, ast.Constant)) else fn.body
+    return "\n".join(ast.unparse(node) for node in body)
+
+
+def test_every_live_cost_helper_uses_the_sanctioned_constructor() -> None:
+    """The gold hardcode lives in 14 files. These two are the ones that RUN.
+
+    `qquant_gates.costs_for` is reached by the daily cycle's `qquant_shadow` step;
+    `side_channels/full_pipeline.costs_for` is reached by a systemd unit. Both hand-rolled the
+    arithmetic and therefore carried both unit bugs: gold at 3% of its spread and JPY commission
+    at 1/184th. The remaining hand-rolls are in hunt modules nothing schedules (GAP 144).
+    """
+    for path, fn in (("research/qquant_gates.py", "costs_for"),
+                     ("side_channels/full_pipeline.py", "costs_for")):
+        code = _live_costs_for(path, fn)
+        assert "Costs.from_symbol" in code, f"{path}:{fn} hand-rolls its costs again"
+        assert "0.48" not in code, f"{path}:{fn} reintroduced the gold per-ounce hardcode"
+        assert "median_spread_pts" not in code, f"{path}:{fn} recomputes the spread itself"
+
+
+def test_the_live_helpers_never_got_cheaper() -> None:
+    """The correction must raise every component; a cheaper cost can manufacture a survivor."""
+    for meta in (CADJPY, XAUUSD, EURCHF_LIKE):
+        for mult in (1.0, 2.0, 3.0):
+            before_spread = (0.48 * mult if meta is XAUUSD else
+                             max(meta["median_spread_pts"] * meta["tick_size"]
+                                 * meta["contract_size"], 0.05) * mult)
+            before = Costs(spread_per_lot=before_spread, commission_per_lot=3.50 * mult,
+                           contract_oz=meta["contract_size"])
+            after = Costs.from_symbol(meta, mult=mult, commission_per_lot=3.50 * mult)
+            assert price_cost(after) >= price_cost(before) - 1e-12, (
+                f"{meta['median_spread_pts']}pts @ mult={mult} got CHEAPER: "
+                f"{price_cost(before)} -> {price_cost(after)}")

@@ -1,4 +1,4 @@
-"""Full pipeline: discover → backtest → 10 gates → shadow admission.
+r"""Full pipeline: discover → backtest → 10 gates → shadow admission.
 
 One script, one day. Runs all 25 miners, converts to hypotheses,
 backtests, runs 10-gate gauntlet, writes certificates, pulls to
@@ -90,14 +90,13 @@ PATTERN_TO_FAMILY = {
 
 
 def costs_for(sym, meta, mult=1.0):
-    m = meta.get(sym, {})
-    spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
-    if sym == "XAUUSD":
-        spread = 0.48 * mult
-    else:
-        spread = max(spread, 0.05) * mult
-    return Costs(spread_per_lot=spread, commission_per_lot=3.50 * mult,
-                 contract_oz=m.get("contract_size", 1e5))
+    """Costs via the sanctioned constructor -- see qquant_gates.costs_for for the full reasoning.
+
+    The `0.48` gold hardcode charged 3% of a real spread, and an unconverted commission charged a
+    JPY cross 1/184th of its real fee. `mult` still scales the commission because removing it
+    would LOWER a stressed cost; the units are corrected here and nothing gets cheaper.
+    """
+    return Costs.from_symbol(meta.get(sym, {}), mult=mult, commission_per_lot=3.50 * mult)
 
 
 def daily_series(df, sigs, costs):
