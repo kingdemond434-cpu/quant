@@ -74,10 +74,43 @@ ORGANS = {
     "frontier-jp":      ("frontier_jp_*.log",        1500, 36.0),
     "frontier-ar":      ("frontier_ar_*.log",        1500, 36.0),
     "frontier-br":      ("frontier_br_*.log",        1500, 36.0),
+    # THE ORGAN THAT REPLACED THE SEVEN ABOVE, AND NOTHING WAS WATCHING IT (2026-08-26).
+    # 53c55b8e deleted `REGIONS=(en cn ru kr jp ar br)` from ops/run_frontier_rotation.sh on
+    # 08-25 and put one EV-triaged unified dig in its place. The seven regional entries here
+    # kept firing `organ-stale-*` about seats nothing invokes any more, while the dig that
+    # actually runs -- the desk's primary discovery organ -- appeared in no liveness table at
+    # all. `grep frontier_unified` over scripts/ and libs/ops/ found exactly one hit, in
+    # check_quota_resume, which is itself unscheduled. So the desk was monitoring seven ghosts
+    # and zero real organs on its highest-value hunting path: if the unified dig had died, the
+    # only signal would have been the arrival rate months later.
+    "frontier-unified": ("frontier_unified_*.log",   1500, 36.0),
     "dataaxis-dig":     ("dataaxis_*.log",           1500, 96.0),
     "litminer-dig":     ("litminer_*.log",           1500, 216.0),
     "prospector-dig":   ("prospector_*.log",         1500, 216.0),
     "blindrediscovery": ("blindrediscovery_*.log",   1500, 840.0),
+}
+
+
+#: organ -> the organ that now does its work. Lives HERE, beside ORGANS, because this file is
+#: already the shared home of the organ tables and check_miner_runway imports from it; a second
+#: copy in the other direction would be circular and would drift the day either moved.
+#:
+#: NOT A DELETION. Dropping these seven rows would shrink the denominator until both fences went
+#: green on seven dead hunting grounds, which is the trick LAWS §2a forbids by name. Keeping them
+#: as permanent daily reds is the other failure: a fence that is always red gets ignored, and
+#: this desk lost six days to a cron outage nobody escalated for exactly that reason. So the
+#: ghosts stop firing HERE -- `frontier-unified` is in ORGANS and fires once, naming the one
+#: repair -- while check_miner_runway keeps a row per ground and flips every one of them bad the
+#: moment the superseder is.
+#:
+#: MEASURED 2026-08-26: 53c55b8e deleted `REGIONS=(en cn ru kr jp ar br)` from
+#: ops/run_frontier_rotation.sh on 08-25, so nothing has invoked a per-region dig since. These
+#: five had been firing `organ-stale-*` for 101h about seats no scheduler names.
+SUPERSEDED_BY: dict[str, str] = {
+    "frontier-en": "frontier-unified", "frontier-cn": "frontier-unified",
+    "frontier-ru": "frontier-unified", "frontier-kr": "frontier-unified",
+    "frontier-jp": "frontier-unified", "frontier-ar": "frontier-unified",
+    "frontier-br": "frontier-unified",
 }
 
 
@@ -419,6 +452,11 @@ ORGAN_ARTIFACTS: dict[str, tuple[str, ...]] = {
     # committed log doc -- run 2 (8278e31) wrote 234 lines there while every .log stayed
     # under 200b, and this check read that as "organ has never fired" (2026-08-12).
     "blindrediscovery": ("docs/research/blind_rediscovery_log.md",),
+    # DECLARED EMPTY ON PURPOSE, same reasoning as brain-cycle above. The unified dig writes
+    # prospector_coverage.md and search_operator_library.md, both of which several organs write,
+    # and a liveness signal a dozen writers can emit is not evidence THIS organ ran. Log size is
+    # weaker and honest; a shared artifact here would make a dead unified cycle read as produced.
+    "frontier-unified": (),
 }
 
 
@@ -454,6 +492,20 @@ def _artifact_age_h(organ: str) -> float:
 
 def check_organs(defects) -> None:
     for organ, (pat, min_b, max_h) in ORGANS.items():
+        sup = SUPERSEDED_BY.get(organ)
+        if sup:
+            # Its work moved. The superseder has its own row in this table and fires ONCE if it
+            # dies, which is the report the desk wants -- seven identical defects naming one
+            # repair is noise, and noise is how a real one gets skimmed past. A map pointing at
+            # an organ that is not in ORGANS is the dangerous case and is caught below, not here.
+            if sup in ORGANS:
+                continue
+            defects.append((f"organ-supersession-broken-{organ}",
+                            f"{organ} is recorded as superseded by {sup!r}, which is not in "
+                            "ORGANS -- so this ground is watched by nothing at all. A "
+                            "retirement pointing at an absent organ is strictly worse than no "
+                            "retirement, because it reads as covered."))
+            continue
         ok = [p for p in LOGS.glob(pat) if p.stat().st_size >= min_b]
         art_h = _artifact_age_h(organ)
         if not ok and art_h > max_h:

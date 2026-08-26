@@ -18,6 +18,8 @@ STATUS is the diagnosis, and the distinction is the whole point:
   unobservable     THIS HOST CANNOT SEE THE LOGS -- says nothing about the seats (see below)
   ok               produced a REAL log inside its max age
   stub             fired on time and died at birth -> quota/auth/mutex, NOT a cadence problem
+  superseded       another seat does this work now -> forgiven ONLY while that seat is healthy
+  superseder-broken the seat that absorbed this one is itself failing -> ONE repair, N grounds
   stale            produced before, not recently  -> a runtime failure, look at the log
   never-ran        runway complete, zero output   -> scheduling/quota, not configuration
   creds-missing    cannot possibly run            -> a HUMAN step, and the real blocker today
@@ -93,6 +95,11 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
                     "frontier_ar_*.log", 36.0),
     "frontier-br": ("ops/frontier_br_prompt.txt", "ops/run_frontier_miner.sh",
                     "frontier_br_*.log", 36.0),
+    # THE SEAT THAT REPLACED THE SEVEN ABOVE. 53c55b8e deleted the REGIONS loop from
+    # ops/run_frontier_rotation.sh on 2026-08-25; since then this is the only frontier dig any
+    # scheduler invokes, and until now it appeared in no liveness table anywhere.
+    "frontier-unified": ("ops/frontier_unified_prompt.txt", "ops/run_frontier_miner.sh",
+                         "frontier_unified_*.log", 36.0),
     "prospector": ("ops/prospector_dig_prompt.txt", "ops/run_prospector_dig.sh",
                    "prospector_*.log", 216.0),
     "litminer": ("ops/litminer_dig_prompt.txt", "ops/run_litminer_dig.sh",
@@ -121,9 +128,11 @@ _SEATS: dict[str, tuple[str, str, str, float]] = {
 #: a second copy of that logic is a second thing to drift.
 try:
     from scripts.max_audit import ORGANS as _ORGANS
+    from scripts.max_audit import SUPERSEDED_BY as _SUPERSEDED_SRC
     from scripts.max_audit import _artifact_age_h as _organ_artifact_age_h
 except ImportError:  # pragma: no cover - defensive; the artifact records the blindness
     _ORGANS = {}
+    _SUPERSEDED_SRC = {}
     _organ_artifact_age_h = None  # type: ignore[assignment]
 
 #: glob -> min bytes that count as a REAL run, joined from the shared table.
@@ -133,8 +142,28 @@ _MIN_BYTES: dict[str, int] = {glob: int(mb) for glob, mb, _age in _ORGANS.values
 _ORGAN_BY_GLOB: dict[str, str] = {glob: name for name, (glob, _mb, _a) in _ORGANS.items()}
 
 
+#: seat -> the seat that now does its work. NOT a deletion, and the difference is the whole
+#: point. Removing these five rows would shrink the denominator until the fence went green,
+#: which is the trick LAWS §2a forbids by name; leaving them as daily reds trains every reader
+#: to ignore this fence, which is how the desk lost six days to a cron outage nobody escalated.
+#:
+#: A superseded seat therefore KEEPS ITS ROW AND INHERITS ITS OBLIGATION: it is only forgiven
+#: while the seat that absorbed it is itself healthy. If `frontier-unified` breaks, all seven
+#: regional grounds go bad WITH it, in one place, naming the one repair that fixes all of them
+#: -- which is the report the desk actually wants and could not previously produce.
+#:
+#: MEASURED 2026-08-26: nothing has invoked `run_frontier_miner.sh <region>` since 08-25, so
+#: these globs will never receive another byte. The unified dig's own log blamed the silence on
+#: "the seat auth has been down since 08-21" and called it the single largest suppressor of the
+#: desk's arrival rate -- but auth pings OPEN (PING-OK on claude-opus-5), and prospector,
+#: dataaxis and the unified dig all produced real logs today. The organ diagnosed an
+#: infrastructure outage from log ages without reading its own launcher.
+#: IMPORTED, not restated -- the same rule as the byte floor and the artifact age. It lives in
+#: max_audit beside ORGANS so both fences retire an organ on the same evidence on the same day.
+_SUPERSEDED_BY: dict[str, str] = dict(_SUPERSEDED_SRC)
+
 _BAD = ("creds-missing", "never-ran", "not-scheduled", "missing-prompt", "unobservable",
-        "stub")
+        "stub", "superseder-broken")
 #: "stub" is BAD, and it is the rung this ladder was missing. A seat dying at birth every day is
 #: strictly worse than a stale one: it is consuming its slot, its quota and its mutex turn while
 #: producing nothing, and it renews its own freshness stamp each time it does so.
@@ -242,6 +271,27 @@ def audit() -> dict[str, Any]:
                        "last_bytes": size, "min_bytes": min_bytes,
                        "artifact_age_h": (None if art_h == float("inf") else round(art_h, 1)),
                        "max_age_h": max_age_h, "status": status}
+
+    # THE SUPERSEDE PASS, and it runs AFTER every seat has its own verdict so the superseder's
+    # real state is known. A superseded seat is forgiven only while its superseder is healthy;
+    # the moment the superseder goes bad, every ground it absorbed goes bad with it and names
+    # the single repair that fixes all of them.
+    for seat, sup_name in _SUPERSEDED_BY.items():
+        row = seats.get(seat)
+        if row is None:
+            continue
+        sup_row = seats.get(sup_name)
+        if sup_row is None:
+            # The superseder is not even in the table: the retirement pointed at nothing, which
+            # is strictly worse than no retirement. Never silently forgiven.
+            row["status"] = "superseder-broken"
+            row["covered_by"] = f"{sup_name} (ABSENT from this table)"
+            continue
+        row["covered_by"] = sup_name
+        if sup_row["status"] in _BAD:
+            row["status"] = "superseder-broken"
+        else:
+            row["status"] = "superseded"
 
     by_status: dict[str, list[str]] = {}
     for seat, row in seats.items():

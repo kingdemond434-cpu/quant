@@ -42,6 +42,10 @@ def seatbox(tmp_path, monkeypatch):
     monkeypatch.setattr(runway, "_SEATS", {
         "frontier-ru": ("ops/frontier_ru_prompt.txt", "ops/run_frontier_miner.sh",
                         "frontier_ru_*.log", 36.0)})
+    # These cases exercise the stub rung in isolation. Supersession is a separate property with
+    # its own fixture below; leaving the real map in place here would route every verdict
+    # through an absent superseder.
+    monkeypatch.setattr(runway, "_SUPERSEDED_BY", {})
     return logs
 
 
@@ -132,3 +136,79 @@ def test_artifact_age_is_imported_not_reimplemented():
     evidence any ONE of them ran) and a second copy of it is a second thing to drift."""
     from scripts import max_audit
     assert runway._organ_artifact_age_h is max_audit._artifact_age_h
+
+
+# ---------------------------------------------------------------------------------------
+# SUPERSESSION. Seven regional seats stopped having any invoker on 2026-08-25 (53c55b8e
+# deleted the REGIONS loop). Deleting their rows would have shrunk the denominator until the
+# fence went green -- the trick LAWS §2a forbids by name -- and leaving them as permanent reds
+# would have trained every reader to ignore this fence, which is how six days of cron outage
+# went unescalated. They keep their rows AND inherit their obligation.
+# ---------------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def twoseats(tmp_path, monkeypatch):
+    logs = tmp_path / "cro_ai_logs"
+    logs.mkdir()
+    (tmp_path / "ops").mkdir()
+    for f in ("frontier_ru_prompt.txt", "frontier_unified_prompt.txt"):
+        (tmp_path / "ops" / f).write_text("mission", "utf-8")
+    (tmp_path / "ops/run_frontier_miner.sh").write_text("#!/bin/bash\n", "utf-8")
+    monkeypatch.setattr(runway, "_ROOT", tmp_path)
+    monkeypatch.setattr(runway, "_LOGDIR", logs)
+    monkeypatch.setattr(runway, "_creds_present", lambda: True)
+    monkeypatch.setattr(runway, "_scheduled", lambda _r: True)
+    monkeypatch.setattr(runway, "_organ_artifact_age_h", lambda _o: float("inf"))
+    monkeypatch.setattr(runway, "_SEATS", {
+        "frontier-ru": ("ops/frontier_ru_prompt.txt", "ops/run_frontier_miner.sh",
+                        "frontier_ru_*.log", 36.0),
+        "frontier-unified": ("ops/frontier_unified_prompt.txt", "ops/run_frontier_miner.sh",
+                             "frontier_unified_*.log", 36.0)})
+    monkeypatch.setattr(runway, "_SUPERSEDED_BY", {"frontier-ru": "frontier-unified"})
+    return logs
+
+
+def test_healthy_superseder_forgives_the_absorbed_seat(twoseats):
+    _log(twoseats, "frontier_ru_20260825T1603.log", 118, age_h=200.0)
+    _log(twoseats, "frontier_unified_20260826T1121.log", 11919, age_h=0.4)
+    rep = runway.audit()
+    assert rep["seats"]["frontier-ru"]["status"] == "superseded"
+    assert rep["seats"]["frontier-ru"]["covered_by"] == "frontier-unified"
+    assert rep["n_bad"] == 0
+
+
+def test_broken_superseder_takes_every_ground_down_with_it(twoseats):
+    """THE PROPERTY THAT MAKES THIS NOT A DENOMINATOR TRICK. One repair, N grounds -- and the
+    fence says so instead of going quietly green on seven dead hunting grounds."""
+    _log(twoseats, "frontier_ru_20260825T1603.log", 118, age_h=200.0)
+    _log(twoseats, "frontier_unified_20260826T1121.log", 180, age_h=0.4)  # a stub
+    rep = runway.audit()
+    assert rep["seats"]["frontier-unified"]["status"] == "stub"
+    assert rep["seats"]["frontier-ru"]["status"] == "superseder-broken"
+    assert rep["n_bad"] == 2, "an absorbed ground was forgiven while its superseder was failing"
+
+
+def test_supersession_pointing_at_nothing_is_worse_than_none(twoseats, monkeypatch):
+    """A retirement that points at an absent seat is a ground with no watcher at all."""
+    monkeypatch.setattr(runway, "_SUPERSEDED_BY", {"frontier-ru": "frontier-does-not-exist"})
+    _log(twoseats, "frontier_ru_20260825T1603.log", 118, age_h=200.0)
+    _log(twoseats, "frontier_unified_20260826T1121.log", 11919, age_h=0.4)
+    rep = runway.audit()
+    assert rep["seats"]["frontier-ru"]["status"] == "superseder-broken"
+    assert "ABSENT" in rep["seats"]["frontier-ru"]["covered_by"]
+
+
+def test_every_superseder_named_today_is_a_real_seat():
+    """Live wiring check: a supersede map that drifts off its own table is the defect returning."""
+    missing = set(runway._SUPERSEDED_BY.values()) - set(runway._SEATS)
+    assert not missing, missing
+
+
+def test_the_organ_that_actually_runs_is_watched():
+    """The hole this whole change exists to close: the dig that replaced seven seats appeared
+    in no liveness table at all, so its death would have been invisible."""
+    from scripts.max_audit import ORGANS
+    assert "frontier-unified" in ORGANS
+    assert "frontier-unified" in runway._SEATS
+    assert runway._SEATS["frontier-unified"][2] in runway._MIN_BYTES
