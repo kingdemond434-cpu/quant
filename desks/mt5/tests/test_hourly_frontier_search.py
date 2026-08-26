@@ -46,6 +46,21 @@ def test_primitives_include_distant_domain_and_execution_axes(monkeypatch) -> No
     assert "tick_volume_z_12" in primitives
 
 
+def test_scored_candidate_masks_are_losslessly_packed() -> None:
+    bars = _bars(2400)
+    prim = {"ret_24": np.log(bars["close"]).diff(24)}
+    fwd = edge_search._forward_returns(bars["close"], horizons=(1,))
+
+    candidates, trials = edge_search.evaluate(prim, fwd, fit_end=1440)
+
+    assert trials > 0
+    assert candidates
+    candidate = candidates[0]
+    assert "_mask" not in candidate
+    assert candidate["_mask_bits"].nbytes * 8 <= candidate["_mask_len"] + 7
+    assert edge_search.select_diverse(candidates, k=1)
+
+
 def test_resolver_uses_every_peer_and_builds_registry_triangle(monkeypatch) -> None:
     idx = pd.date_range("2025-01-01", periods=720, freq="h", tz="UTC")
     base = pd.Series(np.exp(np.arange(len(idx)) * 0.0001), index=idx)

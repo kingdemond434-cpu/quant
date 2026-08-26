@@ -440,8 +440,10 @@ def evaluate(prim: dict, fwd: dict, *, fit_end: int) -> tuple[list[dict], int]:
     # Unconditional forward mean per horizon, on the SAME out-of-sample bars every candidate is
     # scored on. This is the benchmark a conditional edge must beat to be an edge at all.
     base_means: dict = {}
+    fwd_values: dict = {}
     for h, fr in fwd.items():
         fv = fr.to_numpy(dtype="float64", na_value=np.nan)
+        fwd_values[h] = fv
         oos_all = np.zeros(len(fv), dtype=bool)
         oos_all[fit_end:] = True
         sel = oos_all & np.isfinite(fv)
@@ -462,9 +464,9 @@ def evaluate(prim: dict, fwd: dict, *, fit_end: int) -> tuple[list[dict], int]:
             if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
                 continue
             mask = finite & (values >= lo) & (values <= hi)
-            for h, fr in fwd.items():
+            for h in fwd:
                 trials += 2                       # both directions are a trial each
-                fv = fr.to_numpy(dtype="float64", na_value=np.nan)
+                fv = fwd_values[h]
                 sel = mask & np.isfinite(fv)
                 oos = sel.copy()
                 oos[:fit_end] = False
@@ -504,7 +506,14 @@ def evaluate(prim: dict, fwd: dict, *, fit_end: int) -> tuple[list[dict], int]:
                     "n_oos": n_oos, "n_effective": round(n_eff, 1),
                     "mean_fwd": mean, "unconditional_fwd": base, "edge_vs_unconditional": edge,
                     "t_stat": abs(t), "sharpe_like": abs(edge) / sd,
-                    "_mask": oos, "_fwd": fv,
+                    # Thousands of full boolean arrays were the searcher's largest avoidable
+                    # allocation: 2,760 emitted candidates came from a much wider scored pool,
+                    # and holding one byte per bar per candidate competed with the gauntlet for
+                    # the desk box. Pack the exact mask losslessly (8x smaller); the selector
+                    # reconstructs it only for the candidate currently under comparison.
+                    "_mask_bits": np.packbits(oos, bitorder="little"),
+                    "_mask_len": len(oos),
+                    "_fwd": fv,
                 })
     return candidates, trials
 
@@ -525,7 +534,8 @@ def select_diverse(candidates: list[dict], k: int = SELECT_K) -> list[dict]:
     for cand in ranked:
         if len(chosen) >= k:
             break
-        vec = np.where(cand["_mask"], cand["_fwd"] * cand["side"], 0.0)
+        mask = np.unpackbits(cand["_mask_bits"], bitorder="little")[:cand["_mask_len"]].astype(bool)
+        vec = np.where(mask, cand["_fwd"] * cand["side"], 0.0)
         if not np.isfinite(vec).all():
             vec = np.nan_to_num(vec)
         redundant = False
