@@ -114,6 +114,26 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             daily.append(None)
 
     # Build matrix from valid series
+    # WHERE CELLS DIE, BY FAMILY. A cell that builds but yields fewer than 60 trading days has
+    # no series the gates can judge, and until now it vanished silently -- 575 `discovered` cells
+    # were built, dropped here, and reported nowhere, so the sweep looked like it had simply not
+    # found them. A drop is a measurement and belongs in the log with its reason (L1.28a).
+    _drop: dict[str, dict[str, int]] = {}
+    for _i, _d in enumerate(daily):
+        _fam = str(cells[_i].get("family", "?"))
+        _row = _drop.setdefault(_fam, {"built": 0, "no_series": 0, "too_few_days": 0, "kept": 0})
+        _row["built"] += 1
+        if _d is None:
+            _row["no_series"] += 1
+        elif len(_d) < 60:
+            _row["too_few_days"] += 1
+        else:
+            _row["kept"] += 1
+    for _fam, _row in sorted(_drop.items(), key=lambda kv: -kv[1]["built"]):
+        if _row["kept"] != _row["built"]:
+            print(f"  cells {_fam}: built={_row['built']} kept={_row['kept']} "
+                  f"no_series={_row['no_series']} under_60_days={_row['too_few_days']}")
+
     valid = [(i, d) for i, d in enumerate(daily) if d is not None and len(d) >= 60]
     if not valid:
         print("  NO cells with >= 60 days")
