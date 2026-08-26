@@ -57,8 +57,8 @@
     "n": 2101,
     "exp_r": 0.1701,
     "max_dd_r": -25.6,
-    "t_stat": 6.75,
-    "profit_factor": 1.409,
+    "t_stat": 6.74,
+    "profit_factor": 1.408,
     "win_rate": 0.5017,
     "source": "ext_github_XAUUSD_session_range_breakout",
     "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
@@ -87,9 +87,9 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.194,
+    "exp_r": 0.1939,
     "max_dd_r": -24.7,
-    "t_stat": 7.18,
+    "t_stat": 7.17,
     "profit_factor": 1.461,
     "win_rate": 0.4955,
     "source": "ext_github_XAUUSD_session_range_breakout",
@@ -503,7 +503,7 @@
       "wait_bars": 12
     },
     "n": 2131,
-    "exp_r": -0.0071,
+    "exp_r": -0.007,
     "max_dd_r": -41.29,
     "t_stat": -0.37,
     "profit_factor": 0.982,
@@ -567,7 +567,7 @@
       "wait_bars": 12
     },
     "n": 2131,
-    "exp_r": -0.0134,
+    "exp_r": -0.0133,
     "max_dd_r": -42.83,
     "t_stat": -0.64,
     "profit_factor": 0.966,

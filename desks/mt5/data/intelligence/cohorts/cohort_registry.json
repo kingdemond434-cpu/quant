@@ -4750,5 +4750,52 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"b5b4326d6651aa67": {
+"t0": "2026-08-26T00:24:44+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "NulveKN/MT5-Forex-Session-indicator",
+"url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+"text": "MQL5 session indicator for MT5 \u2014 visually maps London, New York, and Asian kill zones with overlap detection. Built for scalpers and intraday traders who time entries around institutional session windows.",
+"symbols": [],
+"found_at": "2026-08-26T00:24:37+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T00:00:39Z"
+},
+"mechanism_tags": [
+"scalping",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b1343400b5c84f97": {
+"t0": "2026-08-26T00:24:44+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Quorvathz/Confluence-Signal-Matrix",
+"url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
+"text": "MT5 multi-timeframe confluence matrix scoring M15-H4-D1 alignment, liquidity sweeps, break of structure, order blocks, and ranked institutional signals.",
+"symbols": [],
+"found_at": "2026-08-26T00:24:37+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-25T23:55:36Z"
+},
+"mechanism_tags": [
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

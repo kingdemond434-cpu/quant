@@ -7,8 +7,13 @@
       "wait_bars": 8
     },
     "n": 2046,
-    "exp_r": 0.1508,
-    "max_dd_r": -22.27
+    "exp_r": 0.107,
+    "max_dd_r": -27.08,
+    "t_stat": 4.56,
+    "profit_factor": 1.248,
+    "win_rate": 0.5064,
+    "source": "ext_github_XAUUSD_session_range_breakout",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -18,19 +23,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.1869,
-    "max_dd_r": -19.64
-  },
-  {
-    "symbol": "XAUUSD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 8
-    },
-    "n": 2046,
-    "exp_r": 0.1653,
-    "max_dd_r": -27.85
+    "exp_r": 0.1439,
+    "max_dd_r": -24.24,
+    "t_stat": 6.33,
+    "profit_factor": 1.359,
+    "win_rate": 0.524,
+    "source": "ext_github_XAUUSD_session_range_breakout",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -40,19 +39,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.2131,
-    "max_dd_r": -21.0
-  },
-  {
-    "symbol": "XAUUSD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 2046,
-    "exp_r": 0.1852,
-    "max_dd_r": -26.95
+    "exp_r": 0.1701,
+    "max_dd_r": -25.6,
+    "t_stat": 6.74,
+    "profit_factor": 1.408,
+    "win_rate": 0.5017,
+    "source": "ext_github_XAUUSD_session_range_breakout",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "XAUUSD",
@@ -62,8 +55,13 @@
       "wait_bars": 12
     },
     "n": 2101,
-    "exp_r": 0.237,
-    "max_dd_r": -20.1
+    "exp_r": 0.1939,
+    "max_dd_r": -24.7,
+    "t_stat": 7.17,
+    "profit_factor": 1.461,
+    "win_rate": 0.4955,
+    "source": "ext_github_XAUUSD_session_range_breakout",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4"
   },
   {
     "symbol": "USDJPY",
@@ -73,8 +71,13 @@
       "wait_bars": 8
     },
     "n": 1974,
-    "exp_r": 0.1062,
-    "max_dd_r": -17.22
+    "exp_r": 0.0667,
+    "max_dd_r": -23.39,
+    "t_stat": 3.18,
+    "profit_factor": 1.18,
+    "win_rate": 0.5122,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -84,8 +87,13 @@
       "wait_bars": 12
     },
     "n": 2107,
-    "exp_r": 0.1436,
-    "max_dd_r": -12.8
+    "exp_r": 0.1045,
+    "max_dd_r": -13.99,
+    "t_stat": 5.32,
+    "profit_factor": 1.315,
+    "win_rate": 0.5278,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -95,8 +103,13 @@
       "wait_bars": 8
     },
     "n": 1974,
-    "exp_r": 0.1146,
-    "max_dd_r": -16.74
+    "exp_r": 0.0751,
+    "max_dd_r": -23.82,
+    "t_stat": 3.33,
+    "profit_factor": 1.198,
+    "win_rate": 0.5005,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -106,8 +119,13 @@
       "wait_bars": 12
     },
     "n": 2107,
-    "exp_r": 0.1595,
-    "max_dd_r": -14.06
+    "exp_r": 0.1203,
+    "max_dd_r": -16.09,
+    "t_stat": 5.68,
+    "profit_factor": 1.356,
+    "win_rate": 0.5192,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -117,8 +135,13 @@
       "wait_bars": 8
     },
     "n": 1974,
-    "exp_r": 0.1141,
-    "max_dd_r": -15.78
+    "exp_r": 0.0745,
+    "max_dd_r": -22.84,
+    "t_stat": 3.18,
+    "profit_factor": 1.194,
+    "win_rate": 0.4944,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "USDJPY",
@@ -128,96 +151,13 @@
       "wait_bars": 12
     },
     "n": 2107,
-    "exp_r": 0.1641,
-    "max_dd_r": -13.06
-  },
-  {
-    "symbol": "GBPUSD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2205,
-    "exp_r": 0.0962,
-    "max_dd_r": -25.85
-  },
-  {
-    "symbol": "GBPUSD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 2181,
-    "exp_r": 0.0994,
-    "max_dd_r": -29.53
-  },
-  {
-    "symbol": "GBPUSD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2205,
-    "exp_r": 0.1266,
-    "max_dd_r": -24.71
-  },
-  {
-    "symbol": "USDCAD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2215,
-    "exp_r": 0.0824,
-    "max_dd_r": -29.16
-  },
-  {
-    "symbol": "AUDCAD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2122,
-    "exp_r": 0.0605,
-    "max_dd_r": -22.96
-  },
-  {
-    "symbol": "AUDCAD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2122,
-    "exp_r": 0.0523,
-    "max_dd_r": -22.82
-  },
-  {
-    "symbol": "AUDCAD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2122,
-    "exp_r": 0.0509,
-    "max_dd_r": -25.51
-  },
-  {
-    "symbol": "GBPAUD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 8
-    },
-    "n": 2039,
-    "exp_r": 0.0729,
-    "max_dd_r": -18.36
+    "exp_r": 0.1249,
+    "max_dd_r": -15.09,
+    "t_stat": 5.65,
+    "profit_factor": 1.367,
+    "win_rate": 0.5145,
+    "source": "ext_reddit_USDJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPAUD",
@@ -227,19 +167,13 @@
       "wait_bars": 12
     },
     "n": 2127,
-    "exp_r": 0.1033,
-    "max_dd_r": -16.0
-  },
-  {
-    "symbol": "GBPAUD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 8
-    },
-    "n": 2039,
-    "exp_r": 0.0692,
-    "max_dd_r": -18.15
+    "exp_r": 0.0777,
+    "max_dd_r": -18.69,
+    "t_stat": 3.97,
+    "profit_factor": 1.224,
+    "win_rate": 0.5068,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPAUD",
@@ -249,19 +183,13 @@
       "wait_bars": 12
     },
     "n": 2127,
-    "exp_r": 0.1023,
-    "max_dd_r": -15.87
-  },
-  {
-    "symbol": "GBPAUD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 2039,
-    "exp_r": 0.0749,
-    "max_dd_r": -20.28
+    "exp_r": 0.0767,
+    "max_dd_r": -18.44,
+    "t_stat": 3.7,
+    "profit_factor": 1.217,
+    "win_rate": 0.4937,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "GBPAUD",
@@ -271,52 +199,13 @@
       "wait_bars": 12
     },
     "n": 2127,
-    "exp_r": 0.111,
-    "max_dd_r": -16.06
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0588,
-    "max_dd_r": -24.22
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0552,
-    "max_dd_r": -28.91
-  },
-  {
-    "symbol": "AUDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2065,
-    "exp_r": 0.0564,
-    "max_dd_r": -29.54
-  },
-  {
-    "symbol": "EURAUD",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2110,
-    "exp_r": 0.0678,
-    "max_dd_r": -20.01
+    "exp_r": 0.0854,
+    "max_dd_r": -18.17,
+    "t_stat": 3.96,
+    "profit_factor": 1.242,
+    "win_rate": 0.4922,
+    "source": "ext_forexfactory_GBPAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURAUD",
@@ -326,8 +215,13 @@
       "wait_bars": 12
     },
     "n": 2110,
-    "exp_r": 0.0774,
-    "max_dd_r": -20.51
+    "exp_r": 0.0517,
+    "max_dd_r": -25.95,
+    "t_stat": 2.59,
+    "profit_factor": 1.149,
+    "win_rate": 0.4844,
+    "source": "ext_forexfactory_EURAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURAUD",
@@ -337,107 +231,13 @@
       "wait_bars": 12
     },
     "n": 2110,
-    "exp_r": 0.0796,
-    "max_dd_r": -19.16
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0598,
-    "max_dd_r": -15.88
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0597,
-    "max_dd_r": -16.62
-  },
-  {
-    "symbol": "NZDJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2043,
-    "exp_r": 0.0647,
-    "max_dd_r": -16.12
-  },
-  {
-    "symbol": "GBPJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 8
-    },
-    "n": 2114,
-    "exp_r": 0.0872,
-    "max_dd_r": -21.6
-  },
-  {
-    "symbol": "GBPJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2170,
-    "exp_r": 0.1165,
-    "max_dd_r": -19.26
-  },
-  {
-    "symbol": "GBPJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2170,
-    "exp_r": 0.1218,
-    "max_dd_r": -22.77
-  },
-  {
-    "symbol": "GBPJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 2114,
-    "exp_r": 0.0862,
-    "max_dd_r": -25.8
-  },
-  {
-    "symbol": "GBPJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2170,
-    "exp_r": 0.1277,
-    "max_dd_r": -17.89
-  },
-  {
-    "symbol": "CADJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 8
-    },
-    "n": 2037,
-    "exp_r": 0.0944,
-    "max_dd_r": -12.89
+    "exp_r": 0.0539,
+    "max_dd_r": -23.11,
+    "t_stat": 2.62,
+    "profit_factor": 1.154,
+    "win_rate": 0.4825,
+    "source": "ext_forexfactory_EURAUD_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -447,8 +247,13 @@
       "wait_bars": 12
     },
     "n": 2142,
-    "exp_r": 0.1409,
-    "max_dd_r": -11.14
+    "exp_r": 0.0908,
+    "max_dd_r": -14.8,
+    "t_stat": 4.4,
+    "profit_factor": 1.243,
+    "win_rate": 0.5247,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "CADJPY",
@@ -458,74 +263,109 @@
       "wait_bars": 8
     },
     "n": 2037,
-    "exp_r": 0.1124,
-    "max_dd_r": -14.02
-  },
-  {
-    "symbol": "CADJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 2142,
-    "exp_r": 0.1632,
-    "max_dd_r": -11.34
-  },
-  {
-    "symbol": "CADJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 2037,
-    "exp_r": 0.1112,
-    "max_dd_r": -15.24
-  },
-  {
-    "symbol": "CADJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 12
-    },
-    "n": 2142,
-    "exp_r": 0.1595,
-    "max_dd_r": -14.52
-  },
-  {
-    "symbol": "CHFJPY",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 1.5,
-      "wait_bars": 12
-    },
-    "n": 2156,
     "exp_r": 0.0615,
-    "max_dd_r": -15.4
+    "max_dd_r": -22.08,
+    "t_stat": 2.6,
+    "profit_factor": 1.144,
+    "win_rate": 0.488,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "CADJPY",
     "family": "session_range_breakout",
     "params": {
       "rr": 2.0,
       "wait_bars": 12
     },
-    "n": 2156,
-    "exp_r": 0.0679,
-    "max_dd_r": -18.4
+    "n": 2142,
+    "exp_r": 0.1131,
+    "max_dd_r": -14.38,
+    "t_stat": 5.06,
+    "profit_factor": 1.298,
+    "win_rate": 0.5154,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
   },
   {
-    "symbol": "CHFJPY",
+    "symbol": "CADJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "n": 2037,
+    "exp_r": 0.0604,
+    "max_dd_r": -22.14,
+    "t_stat": 2.46,
+    "profit_factor": 1.14,
+    "win_rate": 0.4811,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "CADJPY",
     "family": "session_range_breakout",
     "params": {
       "rr": 2.5,
       "wait_bars": 12
     },
-    "n": 2156,
-    "exp_r": 0.076,
-    "max_dd_r": -19.38
+    "n": 2142,
+    "exp_r": 0.1093,
+    "max_dd_r": -18.79,
+    "t_stat": 4.73,
+    "profit_factor": 1.285,
+    "win_rate": 0.5084,
+    "source": "ext_forexfactory_CADJPY_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 1.5,
+      "wait_bars": 12
+    },
+    "n": 2170,
+    "exp_r": 0.0902,
+    "max_dd_r": -28.25,
+    "t_stat": 4.26,
+    "profit_factor": 1.23,
+    "win_rate": 0.5009,
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 2170,
+    "exp_r": 0.0955,
+    "max_dd_r": -26.27,
+    "t_stat": 4.19,
+    "profit_factor": 1.237,
+    "win_rate": 0.4843,
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "GBPJPY",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 12
+    },
+    "n": 2170,
+    "exp_r": 0.1015,
+    "max_dd_r": -21.57,
+    "t_stat": 4.26,
+    "profit_factor": 1.25,
+    "win_rate": 0.4793,
+    "source": "ext_forexfactory_GBPJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -535,8 +375,13 @@
       "wait_bars": 8
     },
     "n": 2081,
-    "exp_r": 0.1007,
-    "max_dd_r": -12.72
+    "exp_r": 0.0672,
+    "max_dd_r": -15.01,
+    "t_stat": 3.16,
+    "profit_factor": 1.171,
+    "win_rate": 0.5031,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -546,8 +391,13 @@
       "wait_bars": 12
     },
     "n": 2148,
-    "exp_r": 0.1332,
-    "max_dd_r": -11.24
+    "exp_r": 0.1,
+    "max_dd_r": -12.31,
+    "t_stat": 4.89,
+    "profit_factor": 1.276,
+    "win_rate": 0.5209,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -557,8 +407,13 @@
       "wait_bars": 8
     },
     "n": 2081,
-    "exp_r": 0.1059,
-    "max_dd_r": -15.96
+    "exp_r": 0.0724,
+    "max_dd_r": -17.1,
+    "t_stat": 3.2,
+    "profit_factor": 1.181,
+    "win_rate": 0.4926,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -568,8 +423,13 @@
       "wait_bars": 12
     },
     "n": 2148,
-    "exp_r": 0.1426,
-    "max_dd_r": -13.01
+    "exp_r": 0.1095,
+    "max_dd_r": -14.08,
+    "t_stat": 5.02,
+    "profit_factor": 1.298,
+    "win_rate": 0.5121,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -579,8 +439,13 @@
       "wait_bars": 8
     },
     "n": 2081,
-    "exp_r": 0.0981,
-    "max_dd_r": -15.79
+    "exp_r": 0.0646,
+    "max_dd_r": -17.66,
+    "t_stat": 2.77,
+    "profit_factor": 1.16,
+    "win_rate": 0.4873,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   },
   {
     "symbol": "EURJPY",
@@ -590,7 +455,12 @@
       "wait_bars": 12
     },
     "n": 2148,
-    "exp_r": 0.138,
-    "max_dd_r": -12.84
+    "exp_r": 0.1048,
+    "max_dd_r": -13.93,
+    "t_stat": 4.65,
+    "profit_factor": 1.282,
+    "win_rate": 0.5074,
+    "source": "ext_forexfactory_EURJPY_session_range_breakout",
+    "url": ""
   }
 ]

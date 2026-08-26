@@ -27,6 +27,15 @@
    "graduated": 0,
    "last_swept": "2026-08-25T23:22:02+00:00",
    "native_terms_available": 18
+  },
+  "ar": {
+   "region": "MENA",
+   "open_frontier": false,
+   "queries_exercised": 3,
+   "populations_found": 0,
+   "graduated": 0,
+   "last_swept": "2026-08-26T00:22:00+00:00",
+   "native_terms_available": 15
   }
  }
 }

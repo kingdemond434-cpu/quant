@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 900,
+"forextsd_offset": 1200,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -30,6 +30,8 @@
 "peridotfoundation/MT5-Directional-Flow-Dashboard": 115,
 "Kaltorim/MT5-Trend-Direction-Predictor": 1,
 "ZrakD/Mt5-Forex-position-size-calculator": 0,
-"VelmoPk/Smart-Money-Concepts-indicator-MT5": 2
+"VelmoPk/Smart-Money-Concepts-indicator-MT5": 2,
+"NulveKN/MT5-Forex-Session-indicator": 0,
+"Quorvathz/Confluence-Signal-Matrix": 0
 }
 }
