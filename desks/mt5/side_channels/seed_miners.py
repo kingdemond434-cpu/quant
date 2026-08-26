@@ -227,22 +227,52 @@ def mine_bis_speeches() -> list[dict]:
 
 # ---------------------------------------------------------------- S22 broker swaps
 def mine_broker_swaps() -> list[dict]:
-    out = []
-    for broker, url in [("fusionmarkets", "https://fusionmarkets.com/en/pricing/swap-rates")]:
+    """Swap/rollover terms from the VENUE ITSELF, not from its marketing page.
+
+    THE DEFECT THIS REPLACES (measured 2026-08-26). This scraped
+    fusionmarkets.com/en/pricing/swap-rates, which now 404s, so the miner had returned nothing but
+    fetch errors -- and swap differentials are precisely the input the CARRY family needs, so a
+    whole orthogonal mechanism was blocked on a dead marketing URL.
+
+    The desk does not need that page. It holds a live terminal session with the same broker, and
+    `symbol_info` carries `swap_long` / `swap_short` per symbol as authoritative, point-in-time,
+    account-specific values -- better data than the public table, which is indicative and rounded.
+    `expand_universe.py` already records them into the universe registry every run.
+
+    So this reads the registry. It is not a workaround for a broken scrape; it is the correct
+    source, and the scrape was always the indirect one. A registry with no swap fields is reported
+    as UNMEASURED rather than silently yielding nothing -- absence is never a clean verdict.
+    """
+    out: list[dict] = []
+    reg_path = Path(__file__).resolve().parent.parent / "data" / "universe" / "universe.json"
+    try:
+        registry = json.loads(reg_path.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return [row("broker_swaps", "fetch_error", f"universe registry unreadable: {exc}",
+                    str(reg_path), needs_selector_work=False)]
+
+    priced = 0
+    for sym, meta in sorted(registry.items()):
+        if not isinstance(meta, dict):
+            continue
+        lng, sht = meta.get("swap_long"), meta.get("swap_short")
+        if lng is None and sht is None:
+            continue
+        priced += 1
         try:
-            html = fetch(url)
-            hits = re.findall(r'([A-Z]{6})\D{0,40}(-?\d+\.?\d*)\D{1,20}(-?\d+\.?\d*)',
-                              html)[:60]
-            for sym, lng, sht in hits:
-                out.append(row("broker_swaps", "swap_table", f"{broker} {sym} swap",
-                               url, symbols=[sym], swap_long=lng, swap_short=sht,
-                               broker=broker))
-            if not hits:
-                out.append(row("broker_swaps", "raw_capture", f"{broker} swap page shape",
-                               url, html[:1200], needs_selector_work=True))
-        except Exception as exc:                                         # noqa: BLE001
-            out.append(row("broker_swaps", "fetch_error", f"{broker}: {exc}", url,
-                           needs_selector_work=True))
+            diff = float(lng or 0.0) - float(sht or 0.0)
+        except (TypeError, ValueError):
+            diff = 0.0
+        out.append(row("broker_swaps", "swap_table",
+                       f"fusion {sym} swap long={lng} short={sht} diff={diff:+.4f}",
+                       "mt5://symbol_info", symbols=[sym],
+                       swap_long=lng, swap_short=sht, swap_diff=diff,
+                       broker="fusionmarkets", source_kind="venue_terminal"))
+    if not priced:
+        out.append(row("broker_swaps", "unmeasured",
+                       "universe registry carries no swap fields yet -- run expand_universe.py on "
+                       "the desk box, which records swap_long/swap_short from symbol_info",
+                       str(reg_path), needs_selector_work=False))
     return out
 
 
