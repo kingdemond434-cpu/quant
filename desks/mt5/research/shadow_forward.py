@@ -16,7 +16,7 @@ hunt5-param gold book.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -27,15 +27,24 @@ BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
-LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")
+LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
 
-SHADOW_START = datetime(2026, 8, 16, tzinfo=timezone.utc)
+SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
 WINDOWS = {
-    "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
-    "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
-    "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
-    "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
+    "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "london_am": {
+        "range_start": 10, "range_end": 13, "signal_at": 13,
+        "wait_bars": 8, "rr": 2.0, "ttl_bars": 12,
+    },
+    "ny_open": {
+        "range_start": 13, "range_end": 14, "signal_at": 14,
+        "wait_bars": 12, "rr": 2.0, "ttl_bars": 12,
+    },
+    "afternoon": {
+        "range_start": 14, "range_end": 17, "signal_at": 17,
+        "wait_bars": 8, "rr": 2.0, "ttl_bars": 12,
+    },
 }
 
 #: Grandfathered enrolment only -- hunt6 sleeves already on clocks when enrolment became
@@ -73,7 +82,7 @@ def certified_sleeves() -> list[tuple[str, str]]:
                      f"certificate exists but cannot be run -- wire the selector")
                 continue
             rows.append((sym, selector))
-    except Exception as exc:  # noqa: BLE001 -- enrolment must never kill the running clocks
+    except Exception as exc:  # enrolment failure must not kill already-running clocks
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
     return rows
@@ -103,7 +112,7 @@ def slog(*a) -> None:
 
 
 def per_symbol_costs(meta: dict, sym: str):
-    from mt5desk.engine import Costs  # noqa: E402
+    from mt5desk.engine import Costs
     m = meta[sym]
     spread = 0.48 if sym == "XAUUSD" else (
         m["median_spread_pts"] * m["tick_size"] * m["contract_size"])
@@ -125,11 +134,9 @@ def fetch_h1(sym: str):
 
     Returns a `Bars` (not a DataFrame) so the source travels with the data.
     """
-    from datetime import timedelta
-
-    from research.h1_source import fetch_h1 as _fetch  # noqa: PLC0415
+    from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
-                datetime(2018, 1, 1, tzinfo=timezone.utc))
+                datetime(2018, 1, 1, tzinfo=UTC))
     bars = _fetch(sym, start)
     if bars is None:
         slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
@@ -146,8 +153,8 @@ def fetch_h1(sym: str):
 
 
 def main() -> None:
-    from mt5desk import families  # noqa: E402
-    from mt5desk.engine import run_backtest  # noqa: E402
+    from mt5desk import families
+    from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / "shadow_state.json"
@@ -157,7 +164,7 @@ def main() -> None:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except Exception:
             state = {}
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
 
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
@@ -215,11 +222,11 @@ def main() -> None:
         # the precise leakage the two-stage law exists to stop (LAWS L1.28a; RESEARCH §6a: the
         # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
         # stamped once, the first time a row is seen, and never moved.
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if not st.get("forward_start"):
             st["forward_start"] = now.isoformat()
         days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
-                       .replace(tzinfo=timezone.utc)).days
+                       .replace(tzinfo=UTC)).days
         st["days_active"] = days_active
         # SUFFICIENT EVIDENCE = the flat count OR a significant forward t-stat at a floor of
         # trades. Whichever arrives first; both are honest, one is merely faster when the edge
@@ -256,12 +263,15 @@ def main() -> None:
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    slog(f"shadow state saved ({len(enrolled)} sleeves, {len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    slog(
+        f"shadow state saved ({len(enrolled)} sleeves, "
+        f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)"
+    )
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         slog("shadow error:", traceback.format_exc())
