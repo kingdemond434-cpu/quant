@@ -88,6 +88,12 @@ def _qquant_shadow() -> None:
     qquant_shadow.main()
 
 
+def _execution() -> None:
+    """Reconstruct execution quality from the venue's own ticks BEFORE the promoter runs."""
+    from mt5desk import shadow_execution
+    shadow_execution.main()
+
+
 def _promote() -> None:
     import promoter
     promoter.main()
@@ -179,7 +185,7 @@ def _zentech() -> None:
 #: anything today's cycle produced.
 STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
-         ("promoter", _promote), ("markout", _markout),
+         ("execution", _execution), ("promoter", _promote), ("markout", _markout),
          ("decay", _decay),
          ("zentech", _zentech), ("export_aurum", _export_aurum))
 
