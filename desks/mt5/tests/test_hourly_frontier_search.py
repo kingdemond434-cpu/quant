@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
+import sys
 
 import numpy as np
 import pandas as pd
+
+DESK = Path(__file__).resolve().parents[1]
+if str(DESK) not in sys.path:
+    sys.path.insert(0, str(DESK))
 
 from research import edge_search
 
