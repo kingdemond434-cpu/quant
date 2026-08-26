@@ -444,7 +444,7 @@ def main(symbols: list[str] | None = None) -> int:
         for row in res.get("selected", []):
             hypotheses.append({
                 "symbol": sym,
-                "family": "generic_edge",
+                "family": "discovered",
                 "params": {"feature": row["feature"], "band": row["band"],
                            "horizon": row["horizon"], "side": row["side"]},
                 "n": row["n_oos"], "t_stat": row["t_stat"],

@@ -784,3 +784,74 @@ FAMILY_INPUTS = {
     "overnight_gap_decay": ("price only", None),
     "drawdown_conditional": ("price only", None),
 }
+
+
+def family_discovered(
+    df: pd.DataFrame,
+    *,
+    feature: str = "",
+    band: tuple | list = (0.9, 1.0),
+    horizon: int = 12,
+    side: int = 1,
+    extra: dict | None = None,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+) -> list[Signal]:
+    """Execute ANY edge the searcher discovered, from its parameters alone.
+
+    THIS IS WHAT MAKES "NO HARDCODED FAMILY" REAL. `edge_search` can discover that forward
+    returns are conditional on some primitive being in some quantile band -- but a discovery the
+    gauntlet cannot EXECUTE is a note, not a candidate, and the ten gates judge realised trades,
+    not correlations. Without this the entire search was decorative: it would emit hypotheses no
+    cell builder could turn into signals, so nothing it found could ever certify.
+
+    There is no strategy knowledge in here. The feature name is looked up in the same primitive
+    builder the search used, the band edges are recomputed the same way, and a position is opened
+    whenever the condition holds, held for the discovered horizon, bracketed by ATR. Whether that
+    is a "breakout", a "carry" or something nobody has named is not this function's business --
+    and that indifference is the point.
+    """
+    # Import path differs by caller (package vs script vs desk-box task); try each rather than
+    # letting one layout silently disable every discovered edge.
+    try:
+        from research.edge_search import build_primitives
+    except ImportError:
+        import sys as _sys
+        _sys.path.insert(0, str(BASE / "research"))
+        from edge_search import build_primitives
+
+    d = _h1(df)
+    prim = build_primitives(d, "", extra or {})
+    series = prim.get(feature)
+    if series is None:
+        return []
+    values = series.to_numpy(dtype="float64", na_value=np.nan)
+    finite = np.isfinite(values)
+    if finite.sum() < 200:
+        return []
+    lo_q, hi_q = float(band[0]), float(band[1])
+    lo, hi = np.quantile(values[finite], lo_q), np.quantile(values[finite], hi_q)
+    if not (np.isfinite(lo) and np.isfinite(hi)) or hi <= lo:
+        return []
+
+    atr = _atr(d, atr_n)
+    side = 1 if int(side) >= 0 else -1
+    ttl = max(1, int(horizon))
+    signals: list[Signal] = []
+    for i in range(atr_n, len(d) - 1):
+        v = values[i]
+        if not np.isfinite(v) or v < lo or v > hi:
+            continue
+        a = float(atr.iloc[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        px = float(d["close"].iloc[i])
+        signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=ttl,
+                              tag=f"discovered:{feature}", trigger=px, wait_bars=0))
+    return signals
+
+
+ORTHOGONAL_FAMILIES["discovered"] = family_discovered
+FAMILY_INPUTS["discovered"] = ("whatever primitive the search named", "resolved by edge_search")

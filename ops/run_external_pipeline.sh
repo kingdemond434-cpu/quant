@@ -17,6 +17,12 @@ $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc
 echo "[$(date -u +%FT%TZ)] stage 2b: generic edge search (no families, diversity-selected)"
 $PY desks/mt5/research/edge_search.py || echo "edge search FAILED (rc=$?) -- continuing"
 
+# STAGE 2c: merge every producer into the ONE file the gauntlet reads. Without this the search
+# and the sweep write files nothing consumes -- producers with no consumer, which is how the book
+# stayed 95% one family while the searcher "ran nightly".
+echo "[$(date -u +%FT%TZ)] stage 2c: merge hypothesis sources"
+$PY desks/mt5/research/merge_hypotheses.py || echo "merge FAILED (rc=$?)"
+
 echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet"
 $PY desks/mt5/scripts/external_gauntlet.py || { echo "stage 3 FAILED (rc=$?)"; exit 1; }
 
