@@ -26,6 +26,18 @@ PROTECTED = {{
 }}
 '''
 
+# Mirrors the real module's shape: WATCH paths absolute from the module's own ROOT, a
+# list-counted artifact (the class eb1818f4 actually trampled), string-semantics revocation.
+RATCHET_FIXTURE = '''
+from pathlib import Path
+ROOT = Path(__file__).resolve().parent.parent
+WATCH = {
+    "research_queue": (ROOT / "desks/mt5/data/queue.json",
+                       lambda d: len(d) if isinstance(d, list) else 0),
+}
+REVOCATION_KEYS = ("revoked", "revocation")
+'''
+
 
 def _git(repo: Path, *args: str, env: dict[str, str] | None = None,
          check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -56,9 +68,12 @@ def scratch_repo(tmp_path: Path) -> Path:
     _git(repo, "config", "user.name", "test")
     shutil.copy(GUARD_SRC, repo / "scripts" / "moneypath_precommit_guard.py")
     (repo / "scripts" / "check_moneypath_fence.py").write_text(PROTECTED_FIXTURE)
+    (repo / "scripts" / "check_authority_ratchet.py").write_text(RATCHET_FIXTURE)
     (repo / "desks/mt5/mt5desk/families.py").write_text(
         f"def {MARKER}():\n    return 1\n")
     (repo / "desks/mt5/data/state.json").write_text('{"v": 1}\n')
+    (repo / "desks/mt5/data/queue.json").write_text(
+        '[{"id": "a"}, {"id": "b"}, {"id": "c"}]\n')
     hook = repo / ".git" / "hooks" / "pre-commit"
     hook.write_text(f"#!/bin/sh\nexec {sys.executable} scripts/moneypath_precommit_guard.py\n")
     hook.chmod(0o755)
@@ -121,3 +136,45 @@ def test_ssh_override_env_allows_deliberate_py(scratch_repo: Path) -> None:
     env["QUANT_ALLOW_SSH_PY"] = "1"
     _git(scratch_repo, "commit", "-q", "-m", "principal-act", env=env)
     assert "# deliberate" in _git(scratch_repo, "show", "HEAD:desks/mt5/mt5desk/families.py").stdout
+
+
+QUEUE = "desks/mt5/data/queue.json"
+
+
+def test_evidence_shrink_refused_any_context(scratch_repo: Path) -> None:
+    """Layer 3, the eb1818f4 class: a staged copy with fewer entries is refused + restored."""
+    (scratch_repo / QUEUE).write_text('[{"id": "a"}]\n')
+    (scratch_repo / "desks/mt5/data/state.json").write_text('{"v": 3}\n')
+    _git(scratch_repo, "add", "--", QUEUE, "desks/mt5/data/state.json")
+    _git(scratch_repo, "commit", "-q", "-m", "launder", env=_env(ssh=False), check=False)
+    stat = _git(scratch_repo, "show", "--stat", "--format=", "HEAD").stdout
+    assert "state.json" in stat  # legit sibling change still lands
+    assert "queue.json" not in stat
+    assert '"id": "b"' in (scratch_repo / QUEUE).read_text()  # worktree restored from HEAD
+
+
+def test_evidence_rise_and_sanctioned_fall_pass(scratch_repo: Path) -> None:
+    (scratch_repo / QUEUE).write_text('[{"id": "a"}, {"id": "b"}, {"id": "c"}, {"id": "d"}]\n')
+    _git(scratch_repo, "add", "--", QUEUE)
+    _git(scratch_repo, "commit", "-q", "-m", "grow", env=_env(ssh=False))
+    assert '"id": "d"' in _git(scratch_repo, "show", f"HEAD:{QUEUE}").stdout
+    (scratch_repo / QUEUE).write_text('[{"id": "a", "revoked": ["b", "c", "d"]}]\n')
+    _git(scratch_repo, "add", "--", QUEUE)
+    _git(scratch_repo, "commit", "-q", "-m", "revoke", env=_env(ssh=False))
+    assert "revoked" in _git(scratch_repo, "show", f"HEAD:{QUEUE}").stdout
+
+
+def test_evidence_deletion_refused(scratch_repo: Path) -> None:
+    _git(scratch_repo, "rm", "-q", "--", QUEUE)
+    _git(scratch_repo, "commit", "-q", "-m", "delete", env=_env(ssh=False), check=False)
+    assert _git(scratch_repo, "show", f"HEAD:{QUEUE}", check=False).returncode == 0
+    assert (scratch_repo / QUEUE).exists()  # worktree restored
+
+
+def test_evidence_fall_override_env(scratch_repo: Path) -> None:
+    (scratch_repo / QUEUE).write_text('[{"id": "a"}]\n')
+    _git(scratch_repo, "add", "--", QUEUE)
+    env = _env(ssh=False)
+    env["QUANT_ALLOW_EVIDENCE_FALL"] = "1"
+    _git(scratch_repo, "commit", "-q", "-m", "deliberate-fall", env=env)
+    assert '"id": "b"' not in _git(scratch_repo, "show", f"HEAD:{QUEUE}").stdout

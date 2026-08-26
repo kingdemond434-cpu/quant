@@ -9,7 +9,7 @@ engine.py, 264 from shadow_forward.py and stripped every fence marker. The conte
 the flip-flop repeats hourly. The Dell script cannot be edited from this box (no inbound route);
 its git commands CAN be governed here, because they run in this repo and hooks apply.
 
-Two layers, both restore-and-continue (never abort the whole commit -- the same sync commit
+Three layers, all restore-and-continue (never abort the whole commit -- the same sync commit
 carries legitimate state JSONs that must land):
 
 1. SSH context (`SSH_CONNECTION` set, as it is for the Dell's ssh-run git): code never travels
@@ -23,11 +23,20 @@ carries legitimate state JSONs that must land):
    retirement is done by changing that map in the same commit -- which changes what this guard
    enforces. This layer also stops the measured 2026-08-25 local-sibling overwrite class.
 
+3. Every context: a staged change may never SHRINK an authority-ratchet-floored artifact's
+   earned-evidence count below what HEAD carries, unless the staged copy records a revocation
+   (same string semantics as check_authority_ratchet.REVOCATION_KEYS). MEASURED 2026-08-26:
+   launder commit eb1818f4 reverted research_queue.json 26 -> 10, destroying 16 Stage-A external
+   survivors; the ratchet caught it at 03:12 but the loss had sat in HEAD for two hours. WATCH
+   and REVOCATION_KEYS are imported live from check_authority_ratchet.py -- one source of truth,
+   no second list to rot. Escape hatch for a deliberate principal act: QUANT_ALLOW_EVIDENCE_FALL=1.
+
 The fence's own repair commits use --no-verify and bypass this guard by design.
 """
 from __future__ import annotations
 
 import importlib.util
+import json
 import os
 import subprocess
 import sys
@@ -113,6 +122,19 @@ def markers(spec: str | tuple[str, ...]) -> tuple[str, ...]:
     return (spec,) if isinstance(spec, str) else spec
 
 
+def load_ratchet_watch() -> tuple[dict, tuple[str, ...]]:
+    spec = importlib.util.spec_from_file_location(
+        "check_authority_ratchet", ROOT / "scripts" / "check_authority_ratchet.py")
+    if spec is None or spec.loader is None:
+        return {}, ()
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception:
+        return {}, ()
+    return getattr(mod, "WATCH", {}), tuple(getattr(mod, "REVOCATION_KEYS", ()))
+
+
 def blob(rev_path: str) -> str | None:
     r = git("show", rev_path)
     return r.stdout if r.returncode == 0 else None
@@ -155,6 +177,39 @@ def main() -> int:
     if stripped:
         log(f"PRECOMMIT-GUARD marker-strip: restored {len(stripped)} file(s) whose staged copy "
             f"lost a canon marker HEAD carries: {', '.join(sorted(stripped))}")
+
+    # Layer 3: earned evidence may never silently fall THROUGH A COMMIT. The ratchet catches a
+    # fall on its next tick; this refuses it at the boundary, so the loss never enters history.
+    if not os.environ.get("QUANT_ALLOW_EVIDENCE_FALL"):
+        watch, revocation_keys = load_ratchet_watch()
+        shrunk: list[str] = []
+        for _name, (abs_path, counter) in watch.items():
+            try:
+                rel = str(Path(abs_path).relative_to(ROOT))
+            except ValueError:
+                continue
+            if rel not in staged or staged[rel] == "A":
+                continue
+            head_raw = blob(f"HEAD:{rel}")
+            if head_raw is None:
+                continue
+            try:
+                head_n = int(counter(json.loads(head_raw)))
+            except Exception:
+                continue  # HEAD unparseable/uncountable is the content fence's problem, not ours
+            idx_raw = blob(f":{rel}")
+            try:
+                idx_n: int | None = int(counter(json.loads(idx_raw or "")))
+            except Exception:
+                idx_n = None  # a torn/deleted stage of an evidence artifact is refused below
+            sanctioned = bool(idx_raw) and any(k in idx_raw[:20000] for k in revocation_keys)
+            if idx_n is None or (idx_n < head_n and not sanctioned):
+                unstage_and_restore(rel, staged[rel])
+                shrunk.append(f"{rel}({head_n}->{idx_n})")
+        if shrunk:
+            log(f"PRECOMMIT-GUARD evidence-fall: refused {len(shrunk)} staged artifact(s) whose "
+                f"earned-evidence count falls below HEAD with no revocation record "
+                f"(QUANT_ALLOW_EVIDENCE_FALL=1 overrides): {', '.join(sorted(shrunk))}")
 
     # Restore-and-continue: the rest of the commit (state JSONs, reports) proceeds. If nothing
     # is left staged, git itself fails the commit with 'nothing to commit' -- the truthful
