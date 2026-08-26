@@ -35,6 +35,7 @@ import os
 import sys
 import time
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -96,23 +97,90 @@ def _iter_rows(path: Path):
         return
 
 
-def trades_from(row: dict) -> list[tuple[int, float, float]]:
+@dataclass
+class ParseAttrition:
+    """WHAT THE READER THREW AWAY, counted per venue (L1.60).
+
+    THE DEFECT THIS EXISTS FOR IS ON THE RECORD AND COST SEVEN DAYS. `trades_from` skipped an
+    entry it could not read with a bare `continue`, so 221,000 of 221,000 nested bybit entries
+    were dropped for mislabelled fields and the builder reported a venue with no trades. A 100%
+    parse loss and a genuinely quiet venue were BYTE-IDENTICAL in every artifact downstream --
+    `build()` counted only successes, so the one number that would have screamed was never taken.
+
+    The repair is the one L1.60 prescribes: count the ATTEMPTS, not just the survivors. Skipping
+    is often right; skipping INVISIBLY never is, because it makes "this venue is quiet" and "this
+    reader cannot read this venue" the same observation, and only one of them is a defect.
+
+    Every drop reason is separate on purpose. `not_dict` is a schema change, `bad_number` is a
+    corrupt payload, and `no_ts_or_px` is a well-formed entry we still refused -- they point at
+    three different repairs, and a single `dropped` total would send a reader to the wrong one.
+    """
+
+    rows: int = 0                 #: trade ROWS seen (a bybit row carries many prints)
+    entries: int = 0              #: nested entries ATTEMPTED -- the denominator
+    parsed: int = 0               #: prints actually returned
+    not_dict: int = 0
+    bad_number: int = 0
+    no_ts_or_px: int = 0
+
+    @property
+    def dropped(self) -> int:
+        return self.not_dict + self.bad_number + self.no_ts_or_px
+
+    @property
+    def parse_rate(self) -> float | None:
+        """Parsed / attempted, or None when nothing was attempted.
+
+        NONE IS NOT ZERO AND MUST NEVER BE ROUNDED TO IT. No trade rows at all is a recorder
+        question; rows that all failed to parse is a reader question. Collapsing them is the exact
+        ambiguity this class was built to remove (L1.28a: unmeasured is a real answer).
+        """
+        return None if self.entries == 0 else self.parsed / self.entries
+
+    def as_dict(self) -> dict[str, object]:
+        r = self.parse_rate
+        return {"rows": self.rows, "entries": self.entries, "parsed": self.parsed,
+                "dropped": self.dropped, "not_dict": self.not_dict,
+                "bad_number": self.bad_number, "no_ts_or_px": self.no_ts_or_px,
+                "parse_rate": (None if r is None else round(r, 6))}
+
+
+def trades_from(row: dict, attrition: ParseAttrition | None = None
+                ) -> list[tuple[int, float, float]]:
     """(ms, price, qty) from either schema. Unknown kinds yield nothing.
 
     Bybit nests its trades and labels size `v` on some payloads and `size` on others; both are
     accepted because a missing quantity silently becomes zero volume, which is a bar that looks
     real and weighs nothing.
+
+    Pass `attrition` to learn what was DISCARDED. It is optional so the three existing consumers
+    keep working unchanged, but a caller that publishes a trade count and does not take it is
+    reporting a numerator with no denominator (L1.57).
     """
     k = row.get("k")
     if k == BINANCE_TRADE:
+        if attrition is not None:
+            attrition.rows += 1
+            attrition.entries += 1
         try:
-            return [(int(row["t"]), float(row["p"]), float(row["q"]))]
+            out_b = [(int(row["t"]), float(row["p"]), float(row["q"]))]
         except (KeyError, TypeError, ValueError):
+            if attrition is not None:
+                attrition.bad_number += 1
             return []
+        if attrition is not None:
+            attrition.parsed += 1
+        return out_b
     if k == BYBIT_TRADE:
         out = []
+        if attrition is not None:
+            attrition.rows += 1
         for tr in row.get("v") or []:
+            if attrition is not None:
+                attrition.entries += 1
             if not isinstance(tr, dict):
+                if attrition is not None:
+                    attrition.not_dict += 1
                 continue
             try:
                 # R0378: BOTH Bybit shapes. The compressed WS payload labels these p/T/v; the
@@ -129,9 +197,15 @@ def trades_from(row: dict) -> list[tuple[int, float, float]]:
                 raw_q = tr.get("v") if tr.get("v") is not None else tr.get("size")
                 qty = float(raw_q if raw_q is not None else 0.0)
             except (TypeError, ValueError):
+                if attrition is not None:
+                    attrition.bad_number += 1
                 continue
             if ms and px > 0:
                 out.append((ms, px, qty))
+                if attrition is not None:
+                    attrition.parsed += 1
+            elif attrition is not None:
+                attrition.no_ts_or_px += 1
         return out
     return []
 
@@ -154,6 +228,36 @@ def group_by_symbol(files: list[Path]) -> dict[str, list[Path]]:
         if symbol and symbol != MOAT.name.upper():
             out[symbol].append(f)
     return {k: sorted(v) for k, v in out.items()}
+
+
+def newest_across_venues(paths: list[Path], each: int) -> list[Path]:
+    """The `each` newest files for one symbol, SHARED ROUND-ROBIN ACROSS ITS VENUES.
+
+    Two things were wrong with the `[-each:]` this replaces, and they compounded.
+
+    NEWEST WAS NOT NEWEST. The list is sorted by full path, which is `<venue>/<symbol>/<file>`, so
+    the last elements are the last VENUE alphabetically, not the most recent recordings. Recency
+    lives in the filename (`20260817_00.jsonl.gz`), so the sort key is the basename.
+
+    ONE VENUE ATE THE WHOLE ALLOCATION. The budget is divided per symbol precisely so the busiest
+    stream cannot starve the others; leaving venues to compete inside a symbol re-created that at
+    the next level down and silently excluded bybit entirely. Round-robin gives every venue a
+    share, newest first.
+
+    THE TOTAL BUDGET IS UNCHANGED -- this reorders which files are read, never how many. Widening
+    it here instead would have traded a silent coverage hole for a silent memory bill on a 4GB box
+    that has already been OOM-killed by this builder once.
+    """
+    by_venue: dict[str, list[Path]] = defaultdict(list)
+    for p in paths:
+        by_venue[p.parent.parent.name].append(p)
+    queues = [sorted(v, key=lambda p: p.name) for _, v in sorted(by_venue.items())]
+    out: list[Path] = []
+    while len(out) < each and any(queues):
+        for q in queues:
+            if q and len(out) < each:
+                out.append(q.pop())            # newest first within this venue
+    return sorted(out)
 
 
 #: Bar width in milliseconds, for the streaming bucket key. Derived from `freq` so the two can
@@ -188,12 +292,16 @@ def build(files: list[Path], freq: str = DEFAULT_FREQ) -> tuple[pd.DataFrame, di
     parts: dict[int, list[float]] = {}
     oi_last: dict[int, tuple[int, float]] = {}
     seen: dict[str, int] = defaultdict(int)
+    #: Per-venue ATTEMPTS beside the per-venue successes. `seen` alone cannot tell a quiet venue
+    #: from an unreadable one, which is the whole of R0529.
+    attr: dict[str, ParseAttrition] = defaultdict(ParseAttrition)
     n_trades = n_oi = 0
 
     for f in files:
         venue = f.parent.parent.name
+        va = attr[venue]
         for row in _iter_rows(f):
-            for ms, price, qty in trades_from(row):
+            for ms, price, qty in trades_from(row, va):
                 b = (ms // step) * step
                 cur = parts.get(b)
                 if cur is None:
@@ -223,8 +331,9 @@ def build(files: list[Path], freq: str = DEFAULT_FREQ) -> tuple[pd.DataFrame, di
                     oi_last[b] = (ms, val)
                 n_oi += 1
 
+    diag_attr = {v: a.as_dict() for v, a in sorted(attr.items()) if a.rows}
     if not parts:
-        return pd.DataFrame(), {"venues": dict(seen), "trades": 0}
+        return pd.DataFrame(), {"venues": dict(seen), "trades": 0, "parse": diag_attr}
 
     rows = sorted(parts.items())
     bars = pd.DataFrame({
@@ -242,7 +351,8 @@ def build(files: list[Path], freq: str = DEFAULT_FREQ) -> tuple[pd.DataFrame, di
     # flat stretch as genuine low volatility.
     if oi_last:
         bars["open_interest"] = [oi_last.get(b, (0, float("nan")))[1] for b, _ in rows]
-    return bars, {"venues": dict(seen), "trades": n_trades, "oi_points": n_oi}
+    return bars, {"venues": dict(seen), "trades": n_trades, "oi_points": n_oi,
+                  "parse": diag_attr}
 
 
 def main() -> int:
@@ -266,18 +376,41 @@ def main() -> int:
     # zero -- measured 2026-08-07 on the live box: 400/32,440 files yielded ONE venue and ONE
     # blended series. Dividing the budget guarantees breadth, and breadth is the whole point:
     # every cross-sectional operator the desk owns needs at least two symbols to rank against.
+    #
+    # AND THE SAME ARGUMENT ONE LEVEL DOWN, WHICH THIS MISSED FOR A WEEK. A per-symbol budget that
+    # lets a single VENUE eat that symbol's whole allocation reproduces the defect above exactly,
+    # and it did: `per_symbol[symbol]` is sorted by full PATH and the layout is
+    # `data/moat/<venue>/<symbol>/<file>`, so the sort is VENUE-MAJOR and `[-each:]` takes the
+    # alphabetically-last venue rather than the newest files. `bybit` < `fut` < `spot`, so bybit
+    # was last in line and never made the cut. Measured on the live box 2026-08-19: 440 bybit
+    # files on disk, ZERO budgeted, budget = {spot: 279, fut: 20} -- and reaching one bybit file
+    # for any symbol needed BARS_FILE_BUDGET >= 1849 against a default of 400.
+    #
+    # That is why R0378 -- which un-dropped the entire bybit trade tape at the parse layer -- had
+    # not moved one committed bar seven days after it shipped. The prints parsed perfectly and the
+    # builder never read them, which is the desk's own recurring lesson in a new costume: a
+    # committed fix is inert until something actually runs it on the live path (III.16).
     each = max(1, FILE_BUDGET // max(1, len(per_symbol)))
     written: list[dict[str, object]] = []
     empty: list[str] = []
     venues: dict[str, int] = {}
+    parse: dict[str, ParseAttrition] = defaultdict(ParseAttrition)
     n_read = 0
 
     for symbol in sorted(per_symbol):
-        budgeted = per_symbol[symbol][-each:]      # newest: the recent window is what screens need
+        budgeted = newest_across_venues(per_symbol[symbol], each)
         n_read += len(budgeted)
         bars, diag = build(budgeted)
         for v, c in diag.get("venues", {}).items():
             venues[v] = venues.get(v, 0) + c
+        for v, d in diag.get("parse", {}).items():
+            a = parse[v]
+            a.rows += int(d["rows"])
+            a.entries += int(d["entries"])
+            a.parsed += int(d["parsed"])
+            a.not_dict += int(d["not_dict"])
+            a.bad_number += int(d["bad_number"])
+            a.no_ts_or_px += int(d["no_ts_or_px"])
         if bars.empty:
             empty.append(symbol)
             continue
@@ -297,6 +430,7 @@ def main() -> int:
     if not written:
         out = {"ts": datetime.now(tz=UTC).isoformat(), "state": "NO TRADES",
                "files_read": n_read, "symbols_seen": sorted(per_symbol), "venues": venues,
+               "parse": {v: a.as_dict() for v, a in sorted(parse.items())},
                "reason": ("tape present but no TRADE rows parsed. Bars are built from trades, "
                           "never from book mid -- a mid-price series looks like a price and is "
                           "not one, because nothing traded there."),
@@ -314,6 +448,11 @@ def main() -> int:
         "symbols_written": len(written), "symbols_empty": empty,
         "bars": sum(w["bars"] for w in written), "freq": DEFAULT_FREQ,
         "venues": venues, "symbols": written,
+        # THE DENOMINATOR BESIDE THE NUMERATOR. `venues` counts prints that PARSED; this counts
+        # what was attempted and what was discarded, per venue, so a reader can tell a quiet
+        # venue from an unreadable one without re-deriving it from the tape (R0529, L1.57/L1.60).
+        # Read by scripts/check_tape_parse_rate.py.
+        "parse": {v: a.as_dict() for v, a in sorted(parse.items())},
         "note": ("ONE FILE PER SYMBOL. Until 2026-08-07 every trade from every symbol was pooled "
                  "into a single OHLCV series, so an open from one instrument and a close from "
                  "another shared a bar -- a price series of nothing. It also pinned every "

@@ -931,6 +931,19 @@ SYSTEMD unit="quant-blindrediscovery.timer" on="*-*-01 20:00:00" exec="ops/run_b
 #   ops/quant-dataaxis.service:12
 # CONFIDENCE: committed-unit
 SYSTEMD unit="quant-dataaxis.timer" on="*-*-* 14:00:00" exec="ops/run_dataaxis_dig.sh"
+# EARLY-WINDOW SEAT TIMERS (gap-fixer 2026-08-26). The four rows above/below at 14:00-19:00 are
+# ROOT timers firing into the measured-exhausted quota window (0-14% of launches produce). These
+# user-scope twins fire the SAME scripts in the measured-productive window (05:00-09:00, 80-100%),
+# installed by ops/install_early_seat_timers.sh. Registered here so the scheduler manifest sees
+# them; they are user units, so they are not ops/*.timer files.
+SYSTEMD unit="quant-seat-dataaxis.timer" on="*-*-* 05:00:00" exec="ops/run_dataaxis_dig.sh"
+SYSTEMD unit="quant-seat-prospector.timer" on="*-*-* 06:00:00" exec="ops/run_prospector_dig.sh"
+SYSTEMD unit="quant-seat-litminer.timer" on="*-*-* 07:00:00" exec="ops/run_litminer_dig.sh"
+SYSTEMD unit="quant-seat-frontier.timer" on="*-*-* 08:00:00" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-frontier2.timer" on="*-*-* 03:00:00" exec="ops/run_frontier_rotation.sh"
+SYSTEMD unit="quant-seat-launch-yield.timer" on="*-*-* 10:00:00" exec="scripts/check_seat_launch_yield.py"
+# The ONLY producer of coverage.json, and therefore the L1.50 ratchet's only input.
+SYSTEMD unit="quant-coverage-ratchet.timer" on="Sun *-*-* 01:00:00" exec="ops/gates.sh"
 
 # EVIDENCE: ops/quant-frontier.timer:4 (daily 15:00); ops/quant-frontier.service:9. The
 #   rotation runs ALL 7 regions, resumable, via ops/run_frontier_miner.sh per region
