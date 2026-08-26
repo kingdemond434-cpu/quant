@@ -77,8 +77,23 @@ def unstage_and_restore(path: str, status: str) -> None:
     if status == "A":
         # New file from the sync: keep it out of history, keep the bytes on disk for review.
         git("rm", "--cached", "-q", "--", path)
-    else:
-        git("checkout", "-q", "HEAD", "--", path)
+        return
+    # QUARANTINE BEFORE RESTORE. The refused copy is not always stale garbage: measured
+    # 2026-08-26 03:00Z, the Dell shipped a LEGITIMATELY NEWER families.py (the 14-family
+    # zero-hardcode registry) through the same pipe that trampled gateway.py an hour earlier.
+    # Restoring from HEAD without saving the bytes would make this box destroy the only local
+    # copy of C:-authored work; the quarantine keeps refusal reversible, which is what makes a
+    # hard refusal defensible at all.
+    src = ROOT / path
+    if src.is_file():
+        stamp = datetime.now(tz=UTC).strftime("%Y%m%dT%H%M%S")
+        dest = ROOT / "data" / "sync_refused" / stamp / path
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(src.read_bytes())
+        except OSError:
+            pass
+    git("checkout", "-q", "HEAD", "--", path)
 
 
 def load_protected() -> dict[str, str | tuple[str, ...]]:
