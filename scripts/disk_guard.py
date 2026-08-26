@@ -29,6 +29,7 @@ import shutil
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 ROOT = Path("/home/quant/quant-platform")
 INTEL_DIRS = [ROOT / "desks/mt5/data/intelligence", ROOT / "data/intelligence"]
@@ -60,6 +61,43 @@ RETAIN_DAYS = 3
 FREE_FLOOR_GB = 4.0
 #: A single source directory larger than this is a migration candidate, not a rotation problem.
 DIR_ALERT_MB = 400
+
+#: ---------------------------------------------------------------------------------------
+#: THE MEMORY ARM (gap-fixer 2026-08-26). This file has called itself a "DISK + MEMORY GUARD"
+#: since it was written, and it had no memory arm at all: every measurement it took was
+#: `shutil.disk_usage("/")`. The box's actual killer is RAM, not disk -- 63% disk used and
+#: ZERO swap on 3814MB. On 2026-08-20 root `cron.service` was OOM-killed and has been dead
+#: ever since (161 manifest rows with it); on 2026-08-26 alone the same-day external pipeline
+#: was OOM-killed three times, `memecoin-shadow` once, and the CI suite died sig9 with the
+#: run's own note reading "MemAvailable 827MB, 495MB of RAM held by files under /tmp (tmpfs)".
+#:
+#: `/tmp` IS RAM ON THIS BOX. It is a tmpfs, so a scratch file a miner seat wrote last week is
+#: not sitting on the disk -- it is holding resident memory against every organ that runs
+#: afterwards, and it is invisible to a guard that only reads disk free space. That is the
+#: whole defect: the instrument measured the wrong resource, so the resource that was actually
+#: binding had no instrument at all (L1.46).
+#:
+#: SAFETY, and it is what makes deleting from /tmp legitimate rather than reckless:
+#:   1. Only REGULAR FILES are ever removed -- never sockets, fifos, symlinks or directories.
+#:   2. Never inside a live tool's own scratch (KEEP_PREFIXES): agent sessions, systemd private
+#:      dirs, snap, X11, the pytest tmpdir tree, ssh control sockets, the node compile cache.
+#:   3. Never a file ANY process holds open. Checked against /proc/*/fd, not assumed from age --
+#:      a long-running miner streaming a 2GB download is exactly the file an age rule would eat.
+#:   4. Only files untouched (max of mtime and atime) for TMP_RETAIN_HOURS.
+#: A file surviving all four is derived scratch whose writer exited days ago.
+#: S108 is suppressed deliberately: /tmp IS the subject here. This guard exists to reclaim
+#: the RAM a tmpfs-mounted /tmp holds; parameterising the path away would parameterise away
+#: the fix. The four safety clauses above are what make writing to it legitimate.
+TMP_DIR = Path("/tmp")  # noqa: S108
+TMP_RETAIN_HOURS = 24.0
+#: Below this MemAvailable the box is in OOM-killer territory: the kernel starts choosing
+#: victims, and it does not choose the offender -- on 08-20 it chose cron, which is why the
+#: fleet lost its scheduler for six days. Naming the ruin path is what the survival rails
+#: require of every clamp; this one reduces the probability that the OOM killer reaches
+#: `quant-live-guard` or the gateway.
+MEM_FLOOR_MB = 600.0
+KEEP_PREFIXES = ("claude-", "systemd-private", ".X", "snap", "pytest-of-",
+                 "node-compile-cache", ".font", "ssh-", ".ICE", "tmux-")
 
 
 def free_gb() -> float:
@@ -95,11 +133,79 @@ def rollup(src_dir: Path, cutoff: str, actions: list[str]) -> int:
     return freed
 
 
+def mem_available_mb() -> float:
+    """MemAvailable in MB. Returns 0.0 when unreadable -- UNMEASURED is never a clean verdict
+    (L1.28a), and a guard that cannot read the resource it guards must say so, not pass."""
+    try:
+        for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
+            if line.startswith("MemAvailable:"):
+                return float(line.split()[1]) / 1024.0
+    except (OSError, ValueError, IndexError):
+        pass
+    return 0.0
+
+
+def _open_files() -> set[str]:
+    """Every path any visible process currently holds open. Cheap (~one readlink per fd) and
+    the difference between a janitor and an outage: age alone cannot tell a dead seat's
+    leftovers from a live seat's in-progress download."""
+    held: set[str] = set()
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            for fd in (proc / "fd").iterdir():
+                try:
+                    held.add(str(fd.resolve()))
+                except OSError:
+                    continue
+        except OSError:
+            continue
+    return held
+
+
+def reap_tmpfs(now: datetime, actions: list[str]) -> tuple[int, int]:
+    """Free RAM held by stale scratch under the /tmp tmpfs. Returns (bytes_freed, n_files)."""
+    if not TMP_DIR.is_dir():
+        return 0, 0
+    held = _open_files()
+    cutoff = now.timestamp() - TMP_RETAIN_HOURS * 3600.0
+    freed = 0
+    removed = 0
+    for entry in TMP_DIR.iterdir():
+        if entry.name.startswith(KEEP_PREFIXES):
+            continue
+        candidates = [entry] if entry.is_file() and not entry.is_symlink() else (
+            [f for f in entry.rglob("*") if f.is_file() and not f.is_symlink()]
+            if entry.is_dir() and not entry.is_symlink() else [])
+        for f in candidates:
+            try:
+                st = f.stat()
+            except OSError:
+                continue
+            if max(st.st_mtime, st.st_atime) >= cutoff:
+                continue
+            if str(f) in held:
+                continue
+            try:
+                f.unlink()
+            except OSError:
+                continue
+            freed += st.st_size
+            removed += 1
+    if removed:
+        actions.append(f"tmpfs: reclaimed {freed / 1e6:.1f}MB of RAM from {removed} stale "
+                       f"scratch file(s) older than {TMP_RETAIN_HOURS:.0f}h")
+    return freed, removed
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     before = free_gb()
+    mem_before = mem_available_mb()
     actions: list[str] = []
     big: list[str] = []
+    tmp_freed, tmp_files = reap_tmpfs(now, actions)
     cutoff = (now - timedelta(days=RETAIN_DAYS)).strftime("%Y%m%d")
     freed = 0
 
@@ -113,11 +219,31 @@ def main() -> int:
             freed += rollup(src, cutoff, actions)
 
     after = free_gb()
-    report = {"checked_at": now.isoformat(timespec="seconds"),
+    mem_after = mem_available_mb()
+    report: dict[str, Any] = {"checked_at": now.isoformat(timespec="seconds"),
               "free_gb_before": round(before, 2), "free_gb_after": round(after, 2),
               "freed_mb": round(freed / 1e6, 1), "actions": actions[-20:],
               "migration_candidates": big,
-              "retain_days": RETAIN_DAYS}
+              "retain_days": RETAIN_DAYS,
+              "mem_available_mb_before": round(mem_before, 1),
+              "mem_available_mb_after": round(mem_after, 1),
+              "tmpfs_reclaimed_mb": round(tmp_freed / 1e6, 1),
+              "tmpfs_files_removed": tmp_files,
+              "tmp_retain_hours": TMP_RETAIN_HOURS}
+    # The memory arm alerts on the SAME footing as the disk arm. `/tmp` is RAM here, so a
+    # reclaim that still leaves the box under the floor is not a cleanup that worked -- it is
+    # evidence the pressure is coming from resident processes, and the honest next move is the
+    # console (swapfile) or moving heavy state to the Contabo node, not another sweep.
+    if mem_after and mem_after < MEM_FLOOR_MB:
+        report["MEM_ALERT"] = (
+            f"MemAvailable {mem_after:.0f}MB below the {MEM_FLOOR_MB:.0f}MB floor after "
+            f"reclaiming {tmp_freed / 1e6:.1f}MB of tmpfs -- the box is in OOM-killer "
+            f"territory and the killer does not choose the offender (it took root cron on "
+            f"2026-08-20 and the fleet lost its scheduler for six days). PRINCIPAL CONSOLE: "
+            f"a swapfile needs root. Meanwhile heavy state belongs on the Contabo node.")
+    elif not mem_after:
+        report["MEM_ALERT"] = ("MemAvailable is UNREADABLE -- the memory arm is blind, which "
+                               "is a defect, not a pass (L1.28a).")
     if after < FREE_FLOOR_GB:
         report["ALERT"] = (f"free space {after:.1f}GB below the {FREE_FLOOR_GB}GB floor even "
                            f"after rotation -- this is no longer a rotation problem: move heavy "
@@ -125,10 +251,14 @@ def main() -> int:
                            f"grow the disk.")
     LOG.write_text(json.dumps(report, indent=1), "utf-8")
     print(f"disk guard: {before:.1f}GB -> {after:.1f}GB free, "
-          f"{report['freed_mb']}MB compacted, {len(actions)} action(s)"
+          f"{report['freed_mb']}MB compacted, {len(actions)} action(s) | "
+          f"mem {mem_before:.0f} -> {mem_after:.0f}MB avail "
+          f"({report['tmpfs_reclaimed_mb']}MB tmpfs RAM reclaimed from "
+          f"{tmp_files} file(s))"
           + (f" | ALERT: {report['ALERT'][:80]}" if "ALERT" in report else "")
+          + (f" | MEM_ALERT: {report['MEM_ALERT'][:80]}" if "MEM_ALERT" in report else "")
           + (f" | large: {big}" if big else ""))
-    return 1 if "ALERT" in report else 0
+    return 1 if ("ALERT" in report or "MEM_ALERT" in report) else 0
 
 
 if __name__ == "__main__":
