@@ -40,7 +40,7 @@ def test_structured_miners_compile_to_source_faithful_candidates() -> None:
 
     assert event_status == "STRUCTURED_EVENT"
     assert {row["family"] for row in event} == {"event_reaction"}
-    assert {row["symbol"] for row in event} == {"EURUSD", "GBPUSD", "USDJPY"}
+    assert {row["symbol"] for row in event} == {"EURUSD", "GBPUSD", "USDJPY", "XAUUSD"}
     assert cot_status == "STRUCTURED_COT"
     assert cot[0]["family"] == "cot_positioning"
     assert seasonal_status == "STRUCTURED_CALENDAR"
