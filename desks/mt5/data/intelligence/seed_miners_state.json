@@ -1,5 +1,5 @@
 {
-"forextsd_offset": 4800,
+"forextsd_offset": 5100,
 "gh_stars": {
 "Meridiansz/MT5-Popular-Charts-Dashboard": 0,
 "ZovraT/MT5-volume-profile-indicator": 2,
@@ -50,6 +50,7 @@
 "pranay123-stack/forex-trading-strategies": 0,
 "pranay123-stack/forex-mt5-strategies": 0,
 "softwaredevelop/mql5": 3,
-"nodalytics/till_infinity": 2
+"nodalytics/till_infinity": 2,
+"PNX89/QUOTEZ": 0
 }
 }

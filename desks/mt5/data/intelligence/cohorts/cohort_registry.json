@@ -5200,5 +5200,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"bf702b638d215dfe": {
+"t0": "2026-08-26T14:24:39+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "PNX89/QUOTEZ",
+"url": "https://github.com/PNX89/QUOTEZ",
+"text": "MCP server exposing MetaTrader 5 market data to LLM agents as typed, read only tools. No order placement code exists in it",
+"symbols": [],
+"found_at": "2026-08-26T14:24:35+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T14:15:40Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
