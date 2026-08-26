@@ -1,27 +1,12 @@
 {
- "checked_at": "2026-08-26T01:13:54+00:00",
- "enrolled": 9,
+ "checked_at": "2026-08-26T02:02:32+00:00",
+ "enrolled": 19,
  "certified_pairs": 6,
  "actions": [
   {
-   "key": "XAUUSD.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "USDJPY.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "CADJPY.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "EURJPY.asia",
-   "action": "RETIRED_ORPHAN"
-  },
-  {
-   "key": "GBPJPY.asia",
-   "action": "RETIRED_ORPHAN"
+   "key": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+   "action": "RETIREMENT_CLEARED",
+   "why": "row is certified and running; stale retirement metadata removed so the state is unambiguous"
   }
  ]
 }

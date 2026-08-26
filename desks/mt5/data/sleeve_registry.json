@@ -16,12 +16,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "a8f5251483f49824",
-    "data_venue": "CACHE:CADJPY_H1.parquet",
-    "sleeve_id": "001494ee07779c410b9d"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "4766b89cf3e7ff8aeda9"
    },
-   "frozen_at": "2026-08-26T01:42:09+00:00",
+   "frozen_at": "2026-08-26T01:44:47+00:00",
    "forward_start": "2026-08-25T23:25:02.141407+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "CADJPY.asia#rr=2.5": {
    "identity": {
@@ -39,12 +41,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "a8f5251483f49824",
-    "data_venue": "CACHE:CADJPY_H1.parquet",
-    "sleeve_id": "bcde09929fb2119c0589"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "e7ba9c6feba00c43ffcd"
    },
-   "frozen_at": "2026-08-26T01:42:10+00:00",
+   "frozen_at": "2026-08-26T01:44:47+00:00",
    "forward_start": "2026-08-26T01:16:27.604518+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "CADJPY.asia#rr=1.5": {
    "identity": {
@@ -62,12 +66,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "a8f5251483f49824",
-    "data_venue": "CACHE:CADJPY_H1.parquet",
-    "sleeve_id": "3745ee4a94abd99815bd"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "c44df42b7aaa1b5924dd"
    },
-   "frozen_at": "2026-08-26T01:42:11+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.647405+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "EURJPY.asia#rr=1.5": {
    "identity": {
@@ -85,12 +91,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:EURJPY_H1.parquet",
-    "sleeve_id": "313682c72096636f63d0"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "fa52a7abcb0d0e1128f6"
    },
-   "frozen_at": "2026-08-26T01:42:13+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.697523+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "EURJPY.asia": {
    "identity": {
@@ -108,12 +116,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:EURJPY_H1.parquet",
-    "sleeve_id": "d70f2edce32b9a4a9eb9"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "7d97535bf0069960805b"
    },
-   "frozen_at": "2026-08-26T01:42:14+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-25T23:25:02.184957+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "EURJPY.asia#rr=2.5": {
    "identity": {
@@ -131,12 +141,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:EURJPY_H1.parquet",
-    "sleeve_id": "47c88e75b3b331d42e3e"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "0fb68730aa1dcd6c97c0"
    },
-   "frozen_at": "2026-08-26T01:42:16+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.779327+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "GBPJPY.asia#rr=1.5": {
    "identity": {
@@ -154,12 +166,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:GBPJPY_H1.parquet",
-    "sleeve_id": "29072f666a9b1f272c23"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "fd92e08f4869b01741e1"
    },
-   "frozen_at": "2026-08-26T01:42:17+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.826206+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "GBPJPY.asia#rr=2.5": {
    "identity": {
@@ -177,12 +191,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:GBPJPY_H1.parquet",
-    "sleeve_id": "01b194de07775980aa35"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "3f0a89873d8b1c73d472"
    },
-   "frozen_at": "2026-08-26T01:42:19+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.857736+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:14+00:00"
   },
   "USDJPY.asia#rr=1.5": {
    "identity": {
@@ -200,12 +216,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:USDJPY_H1.parquet",
-    "sleeve_id": "eca8191b7f595848fd94"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "8957e340386e63670917"
    },
-   "frozen_at": "2026-08-26T01:42:20+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.907781+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:15+00:00"
   },
   "USDJPY.asia": {
    "identity": {
@@ -223,12 +241,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:USDJPY_H1.parquet",
-    "sleeve_id": "8171daf7d72f203e5ab1"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "e1536a33dd30bf38c00d"
    },
-   "frozen_at": "2026-08-26T01:42:21+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-25T23:25:02.055030+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:15+00:00"
   },
   "USDJPY.asia#rr=2.5": {
    "identity": {
@@ -246,12 +266,14 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "bfaaed36b0e0215e",
-    "data_venue": "CACHE:USDJPY_H1.parquet",
-    "sleeve_id": "55ac1a07af8b16f9513b"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "223d25374ddee1264bfa"
    },
-   "frozen_at": "2026-08-26T01:42:23+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:27.996746+00:00",
-   "status": "LIVE"
+   "status": "IDENTITY_BROKEN",
+   "status_why": "cost_hash changed after the clock froze",
+   "status_at": "2026-08-26T05:30:15+00:00"
   },
   "XAUUSD.asia#rr=1.5": {
    "identity": {
@@ -269,10 +291,10 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "fdeef54d06f470bf",
-    "data_venue": "CACHE:XAUUSD_H1.parquet",
-    "sleeve_id": "8f13633cb8d5a14324ad"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "28f53d362efad73ba3dc"
    },
-   "frozen_at": "2026-08-26T01:42:24+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.044299+00:00",
    "status": "LIVE"
   },
@@ -292,10 +314,10 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "fdeef54d06f470bf",
-    "data_venue": "CACHE:XAUUSD_H1.parquet",
-    "sleeve_id": "847034f8851fc7ddeaa2"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "a25c6841833616009898"
    },
-   "frozen_at": "2026-08-26T01:42:25+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-25T23:25:01.916932+00:00",
    "status": "LIVE"
   },
@@ -315,10 +337,10 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "fdeef54d06f470bf",
-    "data_venue": "CACHE:XAUUSD_H1.parquet",
-    "sleeve_id": "9ffd95743837301b6184"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "8c79d6b83a31fa37b0d1"
    },
-   "frozen_at": "2026-08-26T01:42:27+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.159135+00:00",
    "status": "LIVE"
   },
@@ -338,13 +360,13 @@
     },
     "code_hash": "02f3e887f9a439bb",
     "cost_hash": "fdeef54d06f470bf",
-    "data_venue": "CACHE:XAUUSD_H1.parquet",
-    "sleeve_id": "c363e05978a4abae4326"
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "bfe48add97f9130d2e12"
    },
-   "frozen_at": "2026-08-26T01:42:28+00:00",
+   "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.196809+00:00",
    "status": "LIVE"
   }
  },
- "updated_at": "2026-08-26T01:42:28+00:00"
+ "updated_at": "2026-08-26T05:30:15+00:00"
 }
