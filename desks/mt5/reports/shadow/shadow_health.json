@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-08-26T08:45:13+00:00",
+  "updated_at": "2026-08-26T09:00:22+00:00",
   "configured_sleeves": 48,
   "represented_sleeves": 48,
   "certified_sleeves_total": 16,
   "retired_shadow_sleeves": 0,
   "quarantined_uncertified_candidates": 4,
-  "sleeves_with_forward_trades": 31,
+  "sleeves_with_forward_trades": 35,
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
   "errors": {},
-  "seconds": 2.449,
+  "seconds": 5.694,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "status": "OPERATING"
