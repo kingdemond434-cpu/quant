@@ -17,6 +17,15 @@ cd /home/quant/quant-platform
 {
 .venv/bin/python desks/mt5/side_channels/seed_miners.py || echo "seed miners failed rc=$?"
 
+# HEALTH FENCE, on the producer's own cadence. A miner that fetches, gets a 403 or matches
+# no selector, and archives one stub row looks IDENTICAL to a productive one to anything that
+# counts rows -- that is how 33 of 54 sources went dark for weeks while the facts pack read
+# healthy (2026-08-26). Non-fatal by design: this sweep's job is to mine, and a fence that can
+# abort the thing it measures buys silence rather than health. The log is the artifact and
+# max_audit reads the same scan.
+.venv/bin/python scripts/check_miner_health.py >> data/cro_ai_logs/miner_health.log 2>&1 \
+    || echo "miner-health: DOWN sources -- see data/cro_ai_logs/miner_health.log"
+
 INTEL_PATHS=(
     desks/mt5/data/intelligence
     desks/mt5/data/hypotheses

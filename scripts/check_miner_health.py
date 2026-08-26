@@ -93,7 +93,7 @@ def scan(streak: int, days: int) -> dict:
                   if datetime.fromtimestamp(f.stat().st_mtime, tz=UTC) >= cutoff]
         if not recent:
             continue
-        runs, last_err = [], ""
+        runs, last_err, empty_sweeps = [], "", 0
         for f in recent[-max(streak, 1) * 3:]:
             try:
                 rows = json.loads(f.read_text("utf-8"))
@@ -103,9 +103,11 @@ def scan(streak: int, days: int) -> dict:
                 continue
             real = sum(1 for r in rows if _is_real(r))
             runs.append(real)
+            if not rows:
+                empty_sweeps += 1
             if real == 0:
                 for r in rows:
-                    if isinstance(r, dict) and str(r.get("kind")) in ERROR_KINDS:
+                    if isinstance(r, dict) and classify_row(r) == "error":
                         last_err = str(r.get("title") or "")[:140]
         if not runs:
             continue
@@ -117,6 +119,7 @@ def scan(streak: int, days: int) -> dict:
         report[src_dir.name] = {
             "runs_seen": len(runs), "dark_streak": dark,
             "real_rows_recent": sum(runs), "last_error": last_err,
+            "empty_sweeps": empty_sweeps,
             "walled": src_dir.name in walls,
             "verdict": walls.get(src_dir.name, {}).get("verdict", ""),
         }
@@ -149,8 +152,14 @@ def main() -> int:
     for name, v in sorted(walled.items()):
         print(f"  WALLED  {name:22s} {v['verdict']} (dispositioned, on rediscovery cadence)")
     for name, v in sorted(down.items(), key=lambda kv: -kv[1]["dark_streak"]):
-        print(f"  DOWN    {name:22s} {v['dark_streak']} consecutive dark sweeps "
-              f"| {v['last_error'] or 'no error row -- produced only stubs'}")
+        # An ARCHIVED-EMPTY miner and a STUB-ONLY miner are different repairs. Empty means the
+        # miner caught its own exception and wrote `[]` -- a failure recorded as a successful
+        # run of nothing (aaii returns 403 and archives an empty list). Stubs mean it fetched
+        # and matched no selector. Collapsing the two sends the wrong fix to both.
+        why = v["last_error"] or (
+            f"archived EMPTY {v['empty_sweeps']}x -- exception swallowed, no error row"
+            if v["empty_sweeps"] else "fetched but matched no selector (stub rows only)")
+        print(f"  DOWN    {name:22s} {v['dark_streak']} consecutive dark sweeps | {why}")
     if down:
         print(f"\nFAIL: {len(down)} miner(s) producing no real rows. Each is either a route "
               f"bug (fix the URL) or a wall (record the verdict in "
