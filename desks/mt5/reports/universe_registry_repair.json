@@ -1,13 +1,10 @@
 {
- "repaired_at": "2026-08-26T19:51:08+00:00",
+ "repaired_at": "2026-08-26T20:03:00+00:00",
  "account_ccy": "EUR",
  "symbols": 197,
  "broker_tick_values_restored": 23,
  "tick_values_derived": 0,
- "spreads_from_realized_fills": [
-  "CADJPY",
-  "EURJPY"
- ],
+ "spreads_from_realized_fills": [],
  "underivable_tick_value": [
   "3M",
   "ADP",
@@ -94,7 +91,6 @@
  ],
  "defects_before": [
   "tick_value: missing or stubbed on 82/197 symbol(s) (e.g. 3M, ADP, AMD, AT&T, AUS200)",
-  "median_spread_pts: 2 symbol(s) read 0 while this desk's OWN fills measured a positive spread (e.g. CADJPY, EURJPY)",
   "cost: 82/197 symbol(s) cannot be costed in EUR at all (e.g. 3M, ADP, AMD, AT&T, AUS200)"
  ],
  "defects_after": [
