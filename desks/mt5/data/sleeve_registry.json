@@ -15,6 +15,369 @@
      "wait_bars": 12
     },
     "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "82c96eb90b9d49875166"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:49+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "CADJPY.asia#rr=2.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "4dc23175156e444fcc1d"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:51+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "CADJPY.asia#rr=1.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "a96aca9b593495e9",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "1c42bac94ed29cc6dedb"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:52+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "EURJPY.asia#rr=1.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "e92005636a373b23aecb"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:53+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "EURJPY.asia": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "3f35ae876588a6d5298b"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:54+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "EURJPY.asia#rr=2.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "EURJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "f35c539ed95ee0da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "c662d435ac341b2fb72b"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:56+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "GBPJPY.asia#rr=1.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "52700f9bd4b30774",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "06fa6f2010d03183983c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:57+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "GBPJPY.asia#rr=2.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "GBPJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "52700f9bd4b30774",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "e718d101c96819078ec2"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:58+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "USDJPY.asia#rr=1.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "cbb13d8c906fd157c739"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:49:59+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "USDJPY.asia": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "c0207d1a6e93a1e15dda"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:01+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "USDJPY.asia#rr=2.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "USDJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "023649f14b7299da",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "c2e077f79765273e559c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:06+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "XAUUSD.asia#rr=1.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "a0cb0eead3dd6da0ee0e"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:08+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "XAUUSD.asia": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "c247ec77e97dc65fa84a"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:11+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "XAUUSD.asia#rr=2.5": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.5,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "69c67a9ad8cb34c35430"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:12+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  },
+  "XAUUSD.asia#rr=1.5_wait_bars=8": {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "XAUUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 1.5,
+     "ttl_bars": 12,
+     "wait_bars": 8
+    },
+    "code_hash": "02f3e887f9a439bb",
+    "cost_hash": "fdeef54d06f470bf",
+    "data_venue": "MT5:FusionMarkets-Demo",
+    "sleeve_id": "692a3b788fc257e82eee"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-26T08:50:13+00:00",
+   "forward_start": null,
+   "status": "LIVE"
+  }
+ },
+ "updated_at": "2026-08-26T08:50:13+00:00",
+ "archived_identities": [
+  {
+   "identity": {
+    "family": "session_range_breakout",
+    "symbol": "CADJPY",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "range_start": 7,
+     "rr": 2.0,
+     "ttl_bars": 12,
+     "wait_bars": 12
+    },
+    "code_hash": "02f3e887f9a439bb",
     "cost_hash": "a8f5251483f49824",
     "data_venue": "MT5:FusionMarkets-Live",
     "sleeve_id": "4766b89cf3e7ff8aeda9"
@@ -23,9 +386,12 @@
    "forward_start": "2026-08-25T23:25:02.141407+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:11+00:00",
+   "sleeve_key": "CADJPY.asia",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "CADJPY.asia#rr=2.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "CADJPY",
@@ -48,9 +414,12 @@
    "forward_start": "2026-08-26T01:16:27.604518+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:11+00:00",
+   "sleeve_key": "CADJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "CADJPY.asia#rr=1.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "CADJPY",
@@ -73,9 +442,12 @@
    "forward_start": "2026-08-26T01:16:27.647405+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:11+00:00",
+   "sleeve_key": "CADJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "EURJPY.asia#rr=1.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "EURJPY",
@@ -98,9 +470,12 @@
    "forward_start": "2026-08-26T01:16:27.697523+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:11+00:00",
+   "sleeve_key": "EURJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "EURJPY.asia": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "EURJPY",
@@ -123,9 +498,12 @@
    "forward_start": "2026-08-25T23:25:02.184957+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:11+00:00",
+   "sleeve_key": "EURJPY.asia",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "EURJPY.asia#rr=2.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "EURJPY",
@@ -148,9 +526,12 @@
    "forward_start": "2026-08-26T01:16:27.779327+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "EURJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "GBPJPY.asia#rr=1.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "GBPJPY",
@@ -173,9 +554,12 @@
    "forward_start": "2026-08-26T01:16:27.826206+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "GBPJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "GBPJPY.asia#rr=2.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "GBPJPY",
@@ -198,9 +582,12 @@
    "forward_start": "2026-08-26T01:16:27.857736+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:14+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "GBPJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "USDJPY.asia#rr=1.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "USDJPY",
@@ -223,9 +610,12 @@
    "forward_start": "2026-08-26T01:16:27.907781+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:15+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "USDJPY.asia#rr=1.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "USDJPY.asia": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "USDJPY",
@@ -248,9 +638,12 @@
    "forward_start": "2026-08-25T23:25:02.055030+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:15+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "USDJPY.asia",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "USDJPY.asia#rr=2.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "USDJPY",
@@ -273,9 +666,12 @@
    "forward_start": "2026-08-26T01:16:27.996746+00:00",
    "status": "IDENTITY_BROKEN",
    "status_why": "cost_hash changed after the clock froze",
-   "status_at": "2026-08-26T05:30:15+00:00"
+   "status_at": "2026-08-26T08:45:12+00:00",
+   "sleeve_key": "USDJPY.asia#rr=2.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "XAUUSD.asia#rr=1.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "XAUUSD",
@@ -296,9 +692,12 @@
    },
    "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.044299+00:00",
-   "status": "LIVE"
+   "status": "LIVE",
+   "sleeve_key": "XAUUSD.asia#rr=1.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "XAUUSD.asia": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "XAUUSD",
@@ -319,9 +718,12 @@
    },
    "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-25T23:25:01.916932+00:00",
-   "status": "LIVE"
+   "status": "LIVE",
+   "sleeve_key": "XAUUSD.asia",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "XAUUSD.asia#rr=2.5": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "XAUUSD",
@@ -342,9 +744,12 @@
    },
    "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.159135+00:00",
-   "status": "LIVE"
+   "status": "LIVE",
+   "sleeve_key": "XAUUSD.asia#rr=2.5",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   },
-  "XAUUSD.asia#rr=1.5_wait_bars=8": {
+  {
    "identity": {
     "family": "session_range_breakout",
     "symbol": "XAUUSD",
@@ -365,8 +770,10 @@
    },
    "frozen_at": "2026-08-26T01:44:48+00:00",
    "forward_start": "2026-08-26T01:16:28.196809+00:00",
-   "status": "LIVE"
+   "status": "LIVE",
+   "sleeve_key": "XAUUSD.asia#rr=1.5_wait_bars=8",
+   "archived_at": "2026-08-26T08:49:46+00:00",
+   "archived_why": "frozen on Bars.source (a RETRIEVAL ROUTE) rather than the evidence venue; the field changed meaning when h1_source.Bars.evidence_venue landed, so this row is no longer a pre-registration of the venue it appears to name. Re-freezes under schema venue-2026-08-26"
   }
- },
- "updated_at": "2026-08-26T05:30:15+00:00"
+ ]
 }

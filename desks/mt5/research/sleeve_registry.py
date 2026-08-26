@@ -48,6 +48,16 @@ REGISTRY = BASE / "data" / "sleeve_registry.json"
 IDENTITY_FIELDS = ("family", "symbol", "direction", "timeframe", "selector", "condition",
                    "params", "code_hash", "cost_hash", "data_venue")
 
+#: WHAT THE FIELDS MEAN, versioned. A frozen row records the schema it was frozen under, because
+#: a field can change MEANING without changing shape and that is invisible to every comparison
+#: here. It happened: `data_venue` used to hold `Bars.source` -- the ROUTE the bars arrived by --
+#: so a row frozen from a live terminal read "MT5:<server>" while the identical evidence replayed
+#: from the parquet cache read "CACHE:<file>", and every clock broke terminally on every run the
+#: Windows box was down. It now holds `Bars.evidence_venue`, WHOSE PRINTS the bars are. Rows
+#: frozen under an older schema are not pre-registrations of the new quantity and must not be
+#: silently re-blessed; `scripts/migrate_identity_venue.py` archives them and starts a NEW window.
+IDENTITY_SCHEMA = "venue-2026-08-26"
+
 
 def _read(path: Path) -> dict:
     try:
@@ -110,6 +120,7 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None) -> dict:
         return rows[key]["identity"]
     rows[key] = {
         "identity": ident,
+        "identity_schema": IDENTITY_SCHEMA,
         "frozen_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "forward_start": forward_start,
         "status": "LIVE",

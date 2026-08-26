@@ -46,6 +46,16 @@ WATCH = {
                        lambda d: len(d) if isinstance(d, list) else 0),
     "source_populations": (DESK / "data" / "intelligence" / "source_populations.json",
                            lambda d: len(d.get("populations") or {})),
+    # SLEEVE IDENTITIES THAT ARE ACTUALLY PRE-REGISTRATIONS OF A VENUE. Counted by schema, not by
+    # row: an hourly sync reverted this file to the desk box's stale copy TWICE during the fix
+    # that landed the venue schema (2026-08-26, measured -- the reverted rows carried the old
+    # cost_hash, the old data_venue and no schema at all), and a row count would not have moved,
+    # so nothing would have noticed. A fall here means forward clocks silently went back to
+    # identities frozen on a RETRIEVAL ROUTE, which is the state where no clock survives two
+    # consecutive runs and nothing can ever reach promotion.
+    "sleeve_identity_schema": (DESK / "data" / "sleeve_registry.json",
+                               lambda d: sum(1 for v in (d.get("sleeves") or {}).values()
+                                             if v.get("identity_schema"))),
 }
 #: A revocation must SAY it revoked. Any of these in the artifact excuses a fall.
 REVOCATION_KEYS = ("revoked", "revocation", "retired_certificates", "revoked_at")

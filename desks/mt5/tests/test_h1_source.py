@@ -57,9 +57,24 @@ def test_the_module_does_not_import_MetaTrader5_at_module_level():
 
 
 def test_shadow_forward_no_longer_imports_MetaTrader5_directly():
+    """THE COUPLING IS AT MODULE SCOPE, AND SO IS THE ASSERTION.
+
+    This read the WHOLE file for the substring, so it went red when
+    `broker_utc_offset_hours` gained an optional, fully-guarded call-site import
+    (`try: import MetaTrader5 ... except Exception: <fall back to 0.0>`). That import cannot
+    reproduce the outage this test exists to prevent -- shadow keeps running without a terminal,
+    it just records no offset -- so the red was a false positive measuring the wrong quantity,
+    and a fence that is red for a reason nobody will fix is a fence people learn to ignore.
+    Scoped to the module head like its sibling above, and the guard on the call-site import is
+    asserted explicitly so the optional form cannot silently become a hard one.
+    """
     src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
-    assert "import MetaTrader5" not in src
+    head = src.split("def ")[0]
+    assert "import MetaTrader5" not in head, "module-level import re-welds shadow to a terminal"
     assert "from research.h1_source import fetch_h1" in src
+    # every occurrence must sit inside a try, i.e. be optional
+    for chunk in src.split("import MetaTrader5")[:-1]:
+        assert chunk.rstrip().endswith("try:"), "MetaTrader5 must stay an optional import"
 
 
 def test_the_cache_alone_can_serve_shadow(monkeypatch, tmp_path):

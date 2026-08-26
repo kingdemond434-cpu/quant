@@ -252,7 +252,14 @@ def main() -> None:
                 family="session_range_breakout", symbol=sym, direction="LONG", timeframe="H1",
                 selector=win, condition=None, params=params,
                 code=_reg.code_hash(families.family_session_range_breakout),
-                cost=_reg.cost_hash(per_symbol_costs(meta, sym)), data_venue=str(bars.source))
+                cost=_reg.cost_hash(per_symbol_costs(meta, sym)),
+                # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
+                # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made
+                # every clock break on every run the Windows box was down -- terminally, and the
+                # 14-day window therefore never survived one day. `evidence_venue` names whose
+                # prints these are, so a real venue change still breaks the clock and an outage
+                # does not. See h1_source.Bars.evidence_venue.
+                data_venue=str(bars.evidence_venue))
             _drift = _reg.verify(key, _ident)
             if _drift:
                 _reg.mark(key, "IDENTITY_BROKEN",
@@ -269,6 +276,7 @@ def main() -> None:
         except Exception as exc:                                         # noqa: BLE001
             slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
         st["bar_source"] = bars.source
+        st["evidence_venue"] = bars.evidence_venue
         st["bar_source_stale"] = bars.stale
         st["promotion_authority"] = bars.promotion_authority
         st["order_authority"] = False

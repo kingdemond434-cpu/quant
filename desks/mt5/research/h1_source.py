@@ -83,12 +83,45 @@ def trading_lag_hours(last_bar: pd.Timestamp, end: datetime | pd.Timestamp) -> f
 
 @dataclass
 class Bars:
-    """H1 bars plus the honest provenance of where they came from."""
+    """H1 bars plus the honest provenance of where they came from.
+
+    `source` and `venue` are two DIFFERENT facts and conflating them welded the
+    forward clocks shut. See `evidence_venue`.
+    """
     df: pd.DataFrame
-    source: str                     # MT5 | HTTP:<host> | CACHE:<file>
+    source: str                     # ROUTE: MT5 | HTTP:<host> | CACHE:<file>
     fetched_utc: str
     why: str = ""
     promotion_authority: bool = False
+    venue: str = ""                 # WHOSE PRINTS these are -- see evidence_venue
+
+    @property
+    def evidence_venue(self) -> str:
+        """The venue whose prints this evidence IS, independent of how it was retrieved.
+
+        THE DEFECT THIS FIXES (measured 2026-08-26). `shadow_forward` put `source` into the
+        frozen sleeve identity. But `source` is a ROUTE -- "MT5:FusionMarkets-Live" when the
+        Windows terminal answers, "CACHE:USDJPY_H1.parquet" when it does not -- and those are
+        the SAME broker's bars arriving two different ways. `from_cache` already says so in
+        code: it sets promotion_authority from broker_info.json precisely because cached Fusion
+        bars "carry the same evidence quality as live broker bars for promotion". So every
+        forward clock broke on identity drift on every run the terminal was down, which on this
+        Linux box is every run: 195 IDENTITY BROKEN lines in reports, data_venue named in
+        195/195. A break is terminal, so the 14-day window never survived a single day and
+        nothing could ever reach promotion.
+
+        The old field was ALSO blind to the change it existed to catch: a demo feed and a live
+        feed reaching us by the same route both read "CACHE:<file>". broker_info.json currently
+        records FusionMarkets-Demo while the frozen rows say FusionMarkets-Live -- a real venue
+        change the transport string could not see. This property is therefore STRICTER, not
+        looser: it ignores the route and reports the venue, so a genuine venue change breaks the
+        clock and a terminal outage does not.
+
+        Fails closed: an unrecoverable venue is "UNKNOWN-VENUE", which matches no frozen
+        identity and so breaks the clock rather than quietly passing (L1.28a -- unmeasured is a
+        real answer, never a clean verdict).
+        """
+        return self.venue or "UNKNOWN-VENUE"
 
     @property
     def n(self) -> int:
@@ -143,7 +176,8 @@ class Bars:
 
     def stamp(self) -> dict:
         """What the caller writes into every ledger row built from these bars."""
-        return {"bar_source": self.source, "bars_fetched_utc": self.fetched_utc,
+        return {"bar_source": self.source, "evidence_venue": self.evidence_venue,
+                "bars_fetched_utc": self.fetched_utc,
                 "bars_freshest": None if self.freshest is None else self.freshest.isoformat(),
                 "bars_stale": self.stale,
                 "promotion_authority": self.promotion_authority,
@@ -258,6 +292,7 @@ def from_mt5(sym: str, start: datetime) -> Bars | None:
                 f"broker-native bars on the BROKER clock (offset {offset:+.2f}h from UTC; "
                 f"timestamps are labelled UTC but are not); capital authority only when the "
                 f"server is the configured Fusion venue", authority,
+                venue=f"MT5:{server}",
             )
         except Exception:
             continue
@@ -289,14 +324,21 @@ def from_cache(sym: str, start: datetime) -> Bars | None:
     # Check broker_info.json for promotion_authority
     broker_info_path = UNI / "broker_info.json"
     is_fusion = False
+    # THE VENUE TRAVELS WITH THE CACHE. broker_info.json already records which server the
+    # parquet was refreshed from, so a cached bar can name its venue exactly as a live one
+    # does. Without this the identity check saw only "CACHE:<file>" -- a route, not a venue.
+    server = ""
     if broker_info_path.exists():
         try:
             broker_info = json.loads(broker_info_path.read_text(encoding="utf-8"))
             is_fusion = broker_info.get("is_fusion", False)
+            server = str(broker_info.get("server") or "")
             # Per-symbol override if available
             sym_info = broker_info.get("symbols", {}).get(sym, {})
             if "is_fusion" in sym_info:
                 is_fusion = sym_info["is_fusion"]
+            if sym_info.get("server"):
+                server = str(sym_info["server"])
         except Exception:
             pass
 
@@ -304,7 +346,8 @@ def from_cache(sym: str, start: datetime) -> Bars | None:
              datetime.now(UTC).isoformat(timespec="seconds"),
              "cached history \u2014 valid evidence up to its own end, and NO DATA "
              "after it. Re-run research/fetch_universe.py to extend.",
-             promotion_authority=is_fusion)
+             promotion_authority=is_fusion,
+             venue=f"MT5:{server}" if server else "UNKNOWN-VENUE")
     return b
 
 
@@ -363,7 +406,8 @@ def from_yfinance(sym: str, start: datetime) -> Bars | None:
                 datetime.now(UTC).isoformat(timespec="seconds"),
                 "free hourly bars — a DIFFERENT series from the broker's: no "
                 "dealer spread, different session boundaries, and no guarantee "
-                "the highs and lows match what the venue printed")
+                "the highs and lows match what the venue printed",
+                venue="HTTP:yfinance")
 
 
 #: Extra sources a deployment can register — an HTTP feed on the VPS, a vendor
