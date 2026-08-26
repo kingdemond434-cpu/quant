@@ -15,6 +15,13 @@ $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc
 # STAGE 2b: the zero-hardcode search. It runs BEFORE the gauntlet so its diverse candidates are
 # judged by the same ten gates as everything else -- and it carries its own trial count so the
 # deflation is honest about how wide the search was.
+# STAGE 2a: what did the miners and the MOAT point at this week? Mining supplies ATTENTION,
+# not hypotheses -- 740 discovery files existed and none had ever reached the ten gates because a
+# web artefact is not a (symbol, family, params). This turns them into a ranked search target
+# list, hourly, and the moat's own tick tape weighs heaviest because nobody else has it.
+echo "[$(date -u +%FT%TZ)] stage 2a: mined ground (miners + moat -> search targets)"
+$PY desks/mt5/research/mined_ground.py || echo "mined ground FAILED (rc=$?) -- continuing"
+
 echo "[$(date -u +%FT%TZ)] stage 2b: generic edge search (no families, diversity-selected)"
 $PY desks/mt5/research/edge_search.py || echo "edge search FAILED (rc=$?) -- continuing"
 

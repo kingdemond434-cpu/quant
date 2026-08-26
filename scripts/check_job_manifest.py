@@ -36,10 +36,11 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+from libs.ops.repair_invoke import request_repair
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -147,7 +148,7 @@ def main() -> int:
             + "\n".join(f"  - {f}" for f in findings) + "\n")
     ALARM.write_text(body, "utf-8")
     print(body)
-    subprocess.Popen(["systemctl", "--user", "start", "--no-block", "quant-gap-wirer.service"])
+    request_repair("job-manifest breach")
     return 1
 
 

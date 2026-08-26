@@ -435,6 +435,18 @@ def main(symbols: list[str] | None = None) -> int:
     now = datetime.now(tz=UTC)
     if symbols is None:
         symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+        # MINED GROUND FIRST. The miners and the moat spent the week pointing at particular
+        # symbols; searching those before the rest is the entire conversion step that was
+        # missing -- otherwise mining and searching run in the same desk and never meet, which
+        # is how 22 miners were scored zero-yield for finding things nobody tested.
+        targets = _read(BASE / "data" / "hypotheses" / "mined_targets.json") or {}
+        known = set(symbols)
+        ranked = [r.get("symbol") for r in (targets.get("targets") or [])
+                  if r.get("symbol") in known]
+        if ranked:
+            seen = set(ranked)
+            symbols = ranked + [s for s in symbols if s not in seen]
+            print(f"  search order: {len(ranked)} mined-ground symbol(s) first")
     results, hypotheses = [], []
     total_trials = 0
     for sym in symbols:

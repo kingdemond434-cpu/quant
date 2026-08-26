@@ -32,11 +32,12 @@ a decision with a cost, and the register plus the gap-wirer are where that decis
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+from libs.ops.repair_invoke import request_repair
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -208,8 +209,7 @@ def main() -> int:
         ALARM.write_text("MINER/BREADTH " + now.isoformat(timespec="seconds") + "\n\n"
                          + "\n".join(f"  - {f}" for f in findings) + "\n", "utf-8")
         print("\n" + "\n".join(f"  - {f}" for f in findings))
-        subprocess.Popen(["systemctl", "--user", "start", "--no-block",
-                          "quant-gap-wirer.service"])
+        request_repair("miner-conversion breach")
         return 1
     if ALARM.exists():
         ALARM.unlink()

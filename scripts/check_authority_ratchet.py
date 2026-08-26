@@ -21,10 +21,11 @@ looks". Floors live in data/authority_ratchet.json and rise on their own.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+
+from libs.ops.repair_invoke import request_repair
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
@@ -139,8 +140,7 @@ def main() -> int:
     ALARM.write_text(body, "utf-8")
     print("AUTHORITY RATCHET BREACH\n" + body)
     # Fire the repair organ immediately -- this class is data loss, not a queue item.
-    subprocess.Popen(["systemctl", "--user", "start", "--no-block",
-                      "quant-gap-wirer.service"])
+    request_repair("authority-ratchet breach")
     return 1
 
 

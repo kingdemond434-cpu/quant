@@ -5,24 +5,26 @@ roles; this watcher only decides WHEN it fires early.
 
 P0 conditions (any one triggers): a failed user unit; a production heartbeat/state artifact
 stale beyond twice its cadence; a fence alarm artifact present. Cooldown: at most one
-event-triggered invocation per 6 hours (data/p0_last_fired), so a persistent failure gets one
+event-triggered invocation per 6 hours (shared via libs.ops.repair_invoke), so a persistent failure gets one
 deep repair run, not a thrash loop -- the weekly slot still runs regardless.
 
     python3 scripts/check_p0_liveness.py       # exit 0 quiet / triggers wirer and exits 1
 """
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 import time
-from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.ops.repair_invoke import request_repair
+
 ROOT = Path(__file__).resolve().parent.parent
-COOLDOWN_S = 6 * 3600
-STAMP = ROOT / "data" / "p0_last_fired"
+# The cooldown and its stamp moved to libs/ops/repair_invoke.py (2026-08-26) so all five
+# gap-wirer invokers share ONE rate limit. They are deliberately NOT restated here: a stale
+# `STAMP = data/p0_last_fired` would tell the next reader that this fence still owns its own
+# window, which is exactly the belief that let four other fences fire without one.
 LOG = ROOT / "data" / "p0_watch.log"
 
 #: artifact -> max age in minutes (2x its producer's cadence)
@@ -72,19 +74,17 @@ def main() -> int:
 
     if not hard:
         return 0
-    last = 0.0
-    with suppress(OSError, ValueError):
-        last = float(STAMP.read_text().strip())
     for h in hard:
         log(f"P0: {h}")
-    if now - last < COOLDOWN_S:
-        log(f"P0 present but cooldown active ({int((now - last) / 60)}min ago); weekly slot "
-            f"or next cooldown window will take it")
-        return 1
-    STAMP.write_text(json.dumps(now), "utf-8")
-    log("P0 TRIGGER: invoking gap-wirer early (event-driven repair)")
-    subprocess.Popen(["systemctl", "--user", "start", "--no-block",
-                      "quant-gap-wirer.service"])
+    # SHARED DOOR (2026-08-26). This fence was the ONLY one of five gap-wirer invokers with a
+    # cooldown; the other four fired on every breaching run, at cadences as fast as 10 minutes,
+    # so a persistent breach re-spawned a multi-hour Claude seat continuously -- three OOM kills
+    # and a 1.6GB peak in one night, each run holding the desk-wide brain mutex and starving the
+    # miners behind it. libs.ops.repair_invoke now owns the rate limit for everyone, using this
+    # fence's own 6h value and this fence's own semantics, so nothing here changes behaviour --
+    # it just stops being the only place that behaves.
+    log("P0 TRIGGER: requesting gap-wirer (event-driven repair)")
+    request_repair("p0-liveness: " + "; ".join(hard[:3]))
     return 1
 
 
