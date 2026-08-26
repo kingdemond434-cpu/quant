@@ -1096,6 +1096,34 @@ def _worker_pids(rel: str) -> list[int]:
     return pids
 
 
+def _owner_unit(pid: int) -> str:
+    """The systemd unit that actually owns this pid, from its cgroup. "" when nothing does.
+
+    WHY THIS EXISTS (2026-08-26). `_live_organs()` maps a script to EVERY pid running it, and
+    this check then collapsed them into ONE verdict keyed on the OLDEST -- so three
+    `serve_dashboard.py` processes with three different owners produced a single reading, taken
+    from whichever had been alive longest.
+
+    Measured: `quant-dashboard.service` (pid 861460, /system.slice), the token-gated desk-web
+    unit (pid 2582648, --port 8788), and an ORPHAN (pid 2484799, --port 8799) left behind in
+    `/user.slice/.../session-91168.scope` by an ssh session that had since closed. The orphan was
+    the oldest, so `daemon-stale-code-quant-dashboard` reported ITS staleness against the UNIT's
+    label -- and `run_stale_daemon_repair` dutifully restarted the unit, every run, forever. The
+    restart worked (the unit's pid did change) and the verdict came back STILL-STALE because the
+    stale process was never part of that unit. The defect had stood 53.9h that way.
+
+    The orphan was also invisible to the `daemon-unsupervised` arm below, because that arm asks
+    whether MainPID is anywhere in the pid SET -- and it was, via a legitimate sibling. An orphan
+    hiding inside a supervised script's pid set is exactly the case that check exists to catch.
+    """
+    try:
+        line = Path(f"/proc/{pid}/cgroup").read_text("utf-8", errors="ignore").strip()
+    except OSError:
+        return ""
+    tail = line.rsplit("/", 1)[-1] if line else ""
+    return tail if tail.endswith(".service") else ""
+
+
 def check_stale_daemons(defects) -> None:
     """A daemon running code older than its own source is a fix that DID NOT SHIP.
 
@@ -1132,6 +1160,27 @@ def check_stale_daemons(defects) -> None:
         if not entry.exists():
             continue
         svc = by_script.get(rel)
+        # ATTRIBUTE BEFORE JUDGING. A pid that no systemd unit owns cannot be repaired by
+        # restarting one, so it must not be folded into a unit's staleness verdict -- that is
+        # what made this defect self-perpetuating. Orphans get their OWN defect naming their own
+        # repair (a kill), and the unit is judged only on the processes it actually owns.
+        owned, orphans = [], []
+        for _p in pids:
+            (owned if (_owner_unit(_p) or not svc) else orphans).append(_p)
+        for _p in orphans:
+            _oage = (now - (_proc_start(_p) or now)) / 3600.0
+            if _oage < _ORGAN_MIN_UP_H:
+                continue
+            defects.append((f"daemon-orphan-{rel.rsplit('/', 1)[-1].removesuffix('.py')}-{_p}",
+                            f"{rel} pid {_p} (up {_oage:.1f}h) belongs to NO systemd unit -- it "
+                            "was started by hand in a login session that has since closed, and "
+                            "nothing supervises, restarts or ships fixes into it. It is running "
+                            "whatever code existed when that session ran. `systemctl restart` "
+                            f"cannot touch it: the repair is `kill {_p}` after confirming the "
+                            "managed unit serves the same thing."))
+        pids = owned
+        if not pids:
+            continue
         starts = [s for s in (_proc_start(p) for p in pids) if s is not None]
         if not starts:
             continue                       # every pid exited mid-audit; next run sees them
