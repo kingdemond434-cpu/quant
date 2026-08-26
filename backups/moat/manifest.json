@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-26T04:05:04.490748+00:00",
+  "generated": "2026-08-26T04:09:56.209783+00:00",
   "law": "L1.23 -- survival first: the moat is capital in information form",
   "stores": {
     "execution_tape": {
@@ -12,46 +12,13 @@
         "quarantine_test_contamination.jsonl": "58135c3618709c427b38dcbadc11d38ef5aeba52cc16613a61fb3dd361af02b3"
       }
     },
-    "sor_research": {
-      "status": "REPLICATED",
-      "kind": "sqlite",
-      "path": "data/sor_research.sqlite",
-      "bytes": 667766784,
-      "sha256": {
-        "sor_research": "7a95eb034e04cbe0fa9c1b9c64603d5a3c6bbe6a503b1cf365e0604fc77b4c17"
-      },
-      "table_rows": {
-        "schema_migrations": 8,
-        "snapshots": 0,
-        "config_versions": 0,
-        "audit_log": 1675,
-        "trials_ledger": 0,
-        "alpha_registry": 0,
-        "risk_registry": 0,
-        "research_runs": 0,
-        "orders": 0,
-        "fills": 0,
-        "positions": 0,
-        "alpha_cards": 0,
-        "alpha_events": 0,
-        "alpha_performance": 0,
-        "research_memory": 369,
-        "metric_points": 0,
-        "alerts": 0,
-        "research_candidates": 24244,
-        "lab_checkpoint": 1,
-        "campaigns": 405,
-        "workers": 24,
-        "candidate_returns": 44890
-      }
-    },
     "alpha_registry": {
       "status": "REPLICATED",
       "kind": "sqlite",
       "path": "data/alpha_registry.sqlite",
       "bytes": 659456,
       "sha256": {
-        "alpha_registry": "d223a30e00dd4d4243283d1a55a7cd26ced83979ca37eca20990ae3bc8aa2b5e"
+        "alpha_registry": "ac3dda9d691a9872610a15bccf1160ff90ae4eb6b4c148859ff73603969767ee"
       },
       "table_rows": {
         "schema_migrations": 7,
@@ -109,12 +76,14 @@
   "skipped_over_cap": [],
   "not_covered_bytes": {
     "data/lake": 1457034841,
-    "data/moat": 139999
+    "data/moat": 139999,
+    "data/sor_research.sqlite": 667766784
   },
   "not_covered_note": "bulk lake/L2 need the Storage-Box/R2 principal decision -- measured here every run so the gap stays a number",
-  "disk_free_pct": 35.57,
+  "disk_free_pct": 36.84,
   "fuse_pct": 15.0,
   "restore_drill_passed": true,
   "absent_stores": [],
+  "oversized_stores": [],
   "status": "OK"
 }
