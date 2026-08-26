@@ -5019,5 +5019,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"dc08b77ae7031618": {
+"t0": "2026-08-26T06:24:49+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "RPNATION1/Tradingalgos",
+"url": "https://github.com/RPNATION1/Tradingalgos",
+"text": "Trading Algos META 4/5 Pine",
+"symbols": [],
+"found_at": "2026-08-26T06:24:46+00:00",
+"topic": "forex-trading",
+"stars": 4,
+"star_delta": 0,
+"pushed": "2026-08-26T06:17:22Z"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

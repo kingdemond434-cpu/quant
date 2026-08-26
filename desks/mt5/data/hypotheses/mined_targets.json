@@ -1,132 +1,132 @@
 {
- "built_at": "2026-08-26T05:33:21+00:00",
+ "built_at": "2026-08-26T06:13:02+00:00",
  "window_days": 7,
  "universe_size": 24,
  "targets": [
   {
    "symbol": "XAUUSD",
-   "score": 788.0,
-   "from_miners": 788.0,
+   "score": 819.0,
+   "from_miners": 819.0,
    "from_moat": 0.0
   },
   {
    "symbol": "EURUSD",
-   "score": 374.0,
-   "from_miners": 374.0,
+   "score": 388.0,
+   "from_miners": 388.0,
    "from_moat": 0.0
   },
   {
    "symbol": "AUDUSD",
-   "score": 350.0,
-   "from_miners": 350.0,
+   "score": 364.0,
+   "from_miners": 364.0,
    "from_moat": 0.0
   },
   {
    "symbol": "GBPUSD",
-   "score": 292.0,
-   "from_miners": 292.0,
+   "score": 305.0,
+   "from_miners": 305.0,
    "from_moat": 0.0
   },
   {
    "symbol": "USDJPY",
-   "score": 286.0,
-   "from_miners": 286.0,
+   "score": 299.0,
+   "from_miners": 299.0,
    "from_moat": 0.0
   },
   {
    "symbol": "AUDCAD",
-   "score": 273.0,
-   "from_miners": 273.0,
+   "score": 278.0,
+   "from_miners": 278.0,
    "from_moat": 0.0
   },
   {
    "symbol": "USDCAD",
-   "score": 250.0,
-   "from_miners": 250.0,
+   "score": 262.0,
+   "from_miners": 262.0,
    "from_moat": 0.0
   },
   {
    "symbol": "NZDUSD",
-   "score": 213.0,
-   "from_miners": 213.0,
+   "score": 224.0,
+   "from_miners": 224.0,
    "from_moat": 0.0
   },
   {
    "symbol": "USDCHF",
-   "score": 180.0,
-   "from_miners": 180.0,
+   "score": 190.0,
+   "from_miners": 190.0,
    "from_moat": 0.0
   },
   {
    "symbol": "AUDNZD",
-   "score": 156.0,
-   "from_miners": 156.0,
+   "score": 159.0,
+   "from_miners": 159.0,
    "from_moat": 0.0
   },
   {
    "symbol": "AUDJPY",
-   "score": 140.0,
-   "from_miners": 140.0,
+   "score": 144.0,
+   "from_miners": 144.0,
    "from_moat": 0.0
   },
   {
    "symbol": "EURAUD",
-   "score": 105.0,
-   "from_miners": 105.0,
+   "score": 108.0,
+   "from_miners": 108.0,
    "from_moat": 0.0
   },
   {
    "symbol": "GBPAUD",
-   "score": 88.0,
-   "from_miners": 88.0,
+   "score": 91.0,
+   "from_miners": 91.0,
    "from_moat": 0.0
   },
   {
    "symbol": "BTCUSD",
-   "score": 88.0,
-   "from_miners": 88.0,
+   "score": 89.0,
+   "from_miners": 89.0,
    "from_moat": 0.0
   },
   {
    "symbol": "EURJPY",
-   "score": 86.0,
-   "from_miners": 86.0,
+   "score": 87.0,
+   "from_miners": 87.0,
    "from_moat": 0.0
   },
   {
    "symbol": "GBPJPY",
-   "score": 72.0,
-   "from_miners": 72.0,
+   "score": 75.0,
+   "from_miners": 75.0,
    "from_moat": 0.0
   },
   {
    "symbol": "CHFJPY",
-   "score": 69.0,
-   "from_miners": 69.0,
+   "score": 70.0,
+   "from_miners": 70.0,
    "from_moat": 0.0
   },
   {
    "symbol": "NZDCAD",
-   "score": 67.0,
-   "from_miners": 67.0,
+   "score": 68.0,
+   "from_miners": 68.0,
    "from_moat": 0.0
   },
   {
    "symbol": "CADJPY",
-   "score": 52.0,
-   "from_miners": 52.0,
+   "score": 53.0,
+   "from_miners": 53.0,
    "from_moat": 0.0
   },
   {
    "symbol": "EURGBP",
-   "score": 50.0,
-   "from_miners": 50.0,
+   "score": 51.0,
+   "from_miners": 51.0,
    "from_moat": 0.0
   },
   {
    "symbol": "NZDJPY",
-   "score": 18.0,
-   "from_miners": 18.0,
+   "score": 19.0,
+   "from_miners": 19.0,
    "from_moat": 0.0
   },
   {
@@ -162,7 +162,7 @@
    "usable_rate": 0.0
   },
   "central_banks": {
-   "rows": 26,
+   "rows": 27,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -174,7 +174,7 @@
    "usable_rate": 0.0
   },
   "cot": {
-   "rows": 220,
+   "rows": 231,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -216,9 +216,9 @@
    "usable_rate": 0.0
   },
   "forexfactory": {
-   "rows": 270,
+   "rows": 285,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 270,
+   "rows_naming_a_symbol": 285,
    "usable_rate": 1.0
   },
   "forexpeacearmy": {
@@ -240,10 +240,10 @@
    "usable_rate": 0.0
   },
   "github": {
-   "rows": 686,
+   "rows": 712,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 209,
-   "usable_rate": 0.305
+   "rows_naming_a_symbol": 216,
+   "usable_rate": 0.303
   },
   "github_topics": {
    "rows": 450,
@@ -330,10 +330,10 @@
    "usable_rate": 0.0
   },
   "reddit": {
-   "rows": 345,
+   "rows": 365,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 341,
-   "usable_rate": 0.988
+   "rows_naming_a_symbol": 361,
+   "usable_rate": 0.989
   },
   "regional_survivors": {
    "rows": 1513,
@@ -348,13 +348,13 @@
    "usable_rate": 0.0
   },
   "seasonality": {
-   "rows": 96,
+   "rows": 102,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 80,
+   "rows_naming_a_symbol": 85,
    "usable_rate": 0.833
   },
   "sec_edgar": {
-   "rows": 150,
+   "rows": 160,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -366,9 +366,9 @@
    "usable_rate": 0.0
   },
   "shipping": {
-   "rows": 16,
+   "rows": 17,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 16,
+   "rows_naming_a_symbol": 17,
    "usable_rate": 1.0
   },
   "trading_latam": {

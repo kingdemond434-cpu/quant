@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T05:24:52+00:00",
+ "rebuilt_at": "2026-08-26T06:24:50+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -482,6 +482,21 @@
    },
    "cohorts": [
     "cb4798081fc0499c"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "rpnation1": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "dc08b77ae7031618"
    ],
    "scores": {
     "independent_evidence": 1,
