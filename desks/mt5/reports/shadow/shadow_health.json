@@ -1,16 +1,18 @@
 {
-  "updated_at": "2026-08-26T11:18:33+00:00",
-  "configured_sleeves": 48,
-  "represented_sleeves": 48,
+  "updated_at": "2026-08-26T11:34:04+00:00",
+  "configured_sleeves": 16,
+  "represented_sleeves": 16,
   "certified_sleeves_total": 16,
-  "retired_shadow_sleeves": 0,
+  "retired_shadow_sleeves": 32,
   "quarantined_uncertified_candidates": 4,
-  "sleeves_with_forward_trades": 35,
+  "sleeves_with_forward_trades": 4,
   "evidence_blocked_sleeves": 0,
   "missing_sleeves": [],
-  "errors": {},
-  "seconds": 1.226,
+  "errors": {
+    "legacy_shadow": "AttributeError: 'Bars' object has no attribute 'evidence_venue'"
+  },
+  "seconds": 1.583,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
-  "status": "OPERATING"
+  "status": "FAILED"
 }
