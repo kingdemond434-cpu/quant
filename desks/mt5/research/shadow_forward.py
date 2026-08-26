@@ -38,6 +38,11 @@ WINDOWS = {
     "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
 }
 
+#: Grandfathered enrolment only -- hunt6 sleeves already on clocks when enrolment became
+#: data-driven. NEVER extend this list by hand: a certificate IS enrolment (RESEARCH §6d, the
+#: one-pipeline law), and `certified_sleeves()` below turns every ten-gate pass into a clock on
+#: the next daily run with no code edit. Editing this literal instead is the exact defect the
+#: same-day fence exists to catch (a certificate sat un-enrolled until a human typed).
 SLEEVES = [  # (sym, window) - hunt6 survivors
     ("XAUUSD", "asia"), ("XAUUSD", "london_am"), ("XAUUSD", "afternoon"),
     ("USDJPY", "asia"), ("USDJPY", "london_am"),
@@ -46,11 +51,47 @@ SLEEVES = [  # (sym, window) - hunt6 survivors
     ("GBPJPY", "asia"), ("GBPJPY", "london_am"),
 ]
 
+
+def certified_sleeves() -> list[tuple[str, str]]:
+    """Every ten-gate certificate, as (sym, window) rows for the ONE forward engine.
+
+    Authority comes from `shadow_admission.authorized_specs` -- the same fail-closed door every
+    other consumer uses (exact policy attestation + all ten gates + explicit shadow_spec). This
+    function adds NO judgment of its own: it only shapes admitted specs into the engine's row
+    format, and drops (visibly) anything whose selector this engine has no window for. A dropped
+    spec is a wiring gap for the gap-wirer, never a silent skip.
+    """
+    rows: list[tuple[str, str]] = []
+    try:
+        from shadow_admission import authorized_specs
+        for sym, selector, _cond, family, _isu in sorted(authorized_specs(BASE)):
+            if family != "session_range_breakout":
+                continue  # this engine runs one family; other families enrol as they are built
+            if selector not in WINDOWS:
+                slog(f"ENROL-GAP: certified {sym}.{selector} has no window mapping; "
+                     f"certificate exists but cannot be run -- wire the selector")
+                continue
+            rows.append((sym, selector))
+    except Exception as exc:  # noqa: BLE001 -- enrolment must never kill the running clocks
+        slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
+             f"running grandfathered sleeves only this pass")
+    return rows
+
 FETCH_DAYS = 45
 VERDICT_MIN_TRADES = 50
 VERDICT_MIN_DAYS = 14
 PROMOTE_MIN_EXP = 0.05
 PROMOTE_MIN_DD = -25.0
+#: SEQUENTIAL SUFFICIENCY (principal 2026-08-26: discovery -> gates -> forward -> live, same day
+#: at the front, and the forward leg must actually be reachable). A flat n>=50 is a PROXY for
+#: "enough forward evidence to overturn the power-gate doubt". At this desk's measured rate --
+#: 5-7 trades per sleeve in 8 days, ~0.75/day -- that proxy costs ~66 days, so the 14-day clause
+#: it is AND'd with was dead letter and nothing could ever promote. The fix is not to lower the
+#: bar but to MEASURE THE THING THE BAR STANDS FOR: a t-statistic on forward R is valid at any n,
+#: so a large true edge clears it early and a weak one still fails at n=200. Strictly more
+#: aggressive when the edge is real, strictly stricter when it is marginal.
+SEQ_MIN_TRADES = 20      # never a verdict on a handful of trades, however pretty
+SEQ_MIN_T = 2.5          # forward mean R significantly > 0, one-sided
 
 
 def slog(*a) -> None:
@@ -107,7 +148,10 @@ def main() -> None:
         return
 
     h1_cache = {}
-    for sym, win in SLEEVES:
+    # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
+    # here automatically -- the same day they are written -- with their clock stamped below.
+    enrolled = list(dict.fromkeys(SLEEVES + certified_sleeves()))
+    for sym, win in enrolled:
         key = f"{sym}.{win}"
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
@@ -139,13 +183,38 @@ def main() -> None:
             })
         else:
             st.setdefault("exp_r", 0.0)
-        days_active = 0
-        if st.get("first_entry"):
-            days_active = (datetime.now(timezone.utc) -
-                           pd.Timestamp(st["first_entry"]).to_pydatetime().replace(tzinfo=timezone.utc)).days
+        # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
+        # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
+        # before its hypothesis was frozen arrived at the gate already 8/14 of the way through
+        # its "forward" window, on evidence gathered while it was still being SELECTED. That is
+        # the precise leakage the two-stage law exists to stop (LAWS L1.28a; RESEARCH §6a: the
+        # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
+        # stamped once, the first time a row is seen, and never moved.
+        now = datetime.now(timezone.utc)
+        if not st.get("forward_start"):
+            st["forward_start"] = now.isoformat()
+        days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
+                       .replace(tzinfo=timezone.utc)).days
         st["days_active"] = days_active
-        if st["status"] == "ACTIVE" and (st["n"] >= VERDICT_MIN_TRADES
-                                         or days_active >= VERDICT_MIN_DAYS):
+        # SUFFICIENT EVIDENCE = the flat count OR a significant forward t-stat at a floor of
+        # trades. Whichever arrives first; both are honest, one is merely faster when the edge
+        # is large. Quality bars (exp_r, maxDD) still apply to every promotion below.
+        t_stat = 0.0
+        if len(trades) >= 2:
+            _rs = [t.r_multiple for t in trades]
+            _mean = sum(_rs) / len(_rs)
+            _var = sum((x - _mean) ** 2 for x in _rs) / (len(_rs) - 1)
+            if _var > 0:
+                t_stat = _mean / ((_var / len(_rs)) ** 0.5)
+        st["forward_t"] = round(t_stat, 3)
+        enough = (st["n"] >= VERDICT_MIN_TRADES
+                  or (st["n"] >= SEQ_MIN_TRADES and t_stat >= SEQ_MIN_T))
+        # AND, never OR: gate_spec.yaml has always said `n >= 50, days >= 14` together, but this
+        # line said `or`, so a sleeve holding ONE trade would take a verdict on day 14 -- and
+        # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
+        # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
+        # a certificate.
+        if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
             if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
                 st["status"] = "PROMOTION CANDIDATE"
                 slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
@@ -160,7 +229,7 @@ def main() -> None:
              f"days={days_active} [{st['status']}]")
     state["last_run"] = today
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    slog(f"shadow state saved ({len(SLEEVES)} sleeves)")
+    slog(f"shadow state saved ({len(enrolled)} sleeves, {len(enrolled) - len(SLEEVES)} certificate-enrolled)")
 
 
 if __name__ == "__main__":

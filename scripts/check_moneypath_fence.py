@@ -34,6 +34,15 @@ PROTECTED = {
     "desks/mt5/research/qquant_shadow.py": "PROMOTION_CANDIDATE",
     "desks/mt5/moat/moat_recorder.py": "copy_ticks_range",
     "desks/mt5/moat/moat_fence.py": "symbols_floor",
+    # 2026-08-26: the hourly sync bus committed the DESK BOX's stale copies over these two
+    # VPS-owned files -- the certifier then ran the pre-patch writer and produced 15 spec-less
+    # certificates (authority the admission door refuses). Marker = the patch each file must
+    # never lose: the gauntlet's spec/attestation writer, the state builder's live MT5 snapshot.
+    "desks/mt5/scripts/external_gauntlet.py": "ATTESTATION",
+    "scripts/build_zentech_state.py": "_mt5_snapshot",
+    # the same-day engine's stamped clock + certificate auto-enrolment (RESEARCH 6d)
+    "desks/mt5/research/shadow_forward.py": "certified_sleeves",
+    "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
 }
 
 

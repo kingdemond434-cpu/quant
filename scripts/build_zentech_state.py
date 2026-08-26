@@ -104,9 +104,147 @@ def _shadow_rows() -> list[dict[str, Any]]:
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
 
 
+def _equity_history(equity: float | None, now: datetime) -> list[dict[str, Any]]:
+    """Persist a 24/7 sampled equity tape so the curve exists from day one.
+
+    The ledger-derived curve needs closed trades; a young live book has none, so the panel said
+    UNMEASURED forever. Every build with a measured equity appends one sample here (deduped to
+    >=60s spacing); the curve then shows the real account line at the builder's cadence.
+    """
+    path = OUT.parent / "equity_history.jsonl"
+    rows: list[dict[str, Any]] = []
+    try:
+        rows = [json.loads(x) for x in path.read_text("utf-8").splitlines() if x.strip()]
+    except (OSError, json.JSONDecodeError):
+        rows = []
+    if equity is not None:
+        last = _timestamp(rows[-1].get("at")) if rows else None
+        if last is None or (now - last).total_seconds() >= 60:
+            rows.append({"at": now.isoformat(), "equity": equity})
+            rows = rows[-40000:]
+            with suppress(OSError):
+                path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", "utf-8")
+    return rows
+
+
+def _ledger_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Win rate / Sharpe / R drawdown from closed live trades. Empty ledger -> UNMEASURED."""
+    rs, by_day = [], {}
+    for row in rows:
+        r = _number(row.get("r_multiple"))
+        pnl = _number(row.get("profit"), row.get("net_pnl"), row.get("pnl"))
+        if r is not None:
+            rs.append(r)
+        ts = _timestamp(row.get("time"))
+        if ts is not None and pnl is not None:
+            by_day[ts.date().isoformat()] = by_day.get(ts.date().isoformat(), 0.0) + pnl
+    out: dict[str, Any] = {"closed_trades": len(rs), "win_rate": None, "sharpe_daily": None,
+                           "max_dd_r": None, "current_dd_r": None,
+                           "daily_pnl": sorted(by_day.items())[-14:]}
+    if rs:
+        out["win_rate"] = round(100.0 * sum(1 for r in rs if r > 0) / len(rs), 1)
+        cum = peak = dd = cur = 0.0
+        for r in rs:
+            cum += r
+            peak = max(peak, cum)
+            dd = min(dd, cum - peak)
+            cur = cum - peak
+        out["max_dd_r"], out["current_dd_r"] = round(dd, 2), round(cur, 2)
+    daily_vals = [v for _, v in sorted(by_day.items())]
+    if len(daily_vals) >= 5:
+        mean = sum(daily_vals) / len(daily_vals)
+        var = sum((x - mean) ** 2 for x in daily_vals) / (len(daily_vals) - 1)
+        if var > 0:
+            out["sharpe_daily"] = round(mean / var ** 0.5 * (252 ** 0.5), 2)
+    return out
+
+
+def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
+    """Stage counts for the ONE pipeline: discovered -> backtested -> certified -> forward -> live."""
+    hyp = None
+    for cand in (DESK / "data" / "hypotheses" / "external_backtest_results.json",
+                 ROOT / "desks" / "mt5" / "data" / "hypotheses" / "external_backtest_results.json"):
+        rows = None
+        try:
+            rows = json.loads(cand.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if isinstance(rows, list):
+            hyp = len(rows)
+            break
+    forward, promo_ready, live_rows = [], 0, {}
+    terminal = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED"}
+    for path in (DESK / "reports" / "shadow" / "shadow_state.json",
+                 DESK / "reports" / "shadow" / "qquant_shadow_state.json",
+                 DESK / "reports" / "shadow" / "scalp_shadow_state.json"):
+        data = _read(path)
+        for key, row in list(data.items()) + list((data.get("sleeves") or {}).items() if isinstance(data.get("sleeves"), dict) else []):
+            if not isinstance(row, dict) or "status" not in row:
+                continue
+            status = str(row.get("status") or "").upper()
+            if status in terminal:
+                continue
+            days = int(_number(row.get("days_active")) or 0)
+            forward.append({"name": key, "days": days, "of": 14,
+                            "n": int(_number(row.get("n")) or 0),
+                            "t": _number(row.get("forward_t")),
+                            "exp_r": _number(row.get("exp_r")),
+                            "status": status})
+            if status == "PROMOTION CANDIDATE":
+                promo_ready += 1
+    sleeves_doc = _read(DESK / "data" / "sleeves.json")
+    live_rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc.get("sleeves"), dict) else (
+        sleeves_doc if isinstance(sleeves_doc, dict) else {})
+    live_rows = {k: v for k, v in (live_rows or {}).items() if isinstance(v, dict)}
+    return {
+        "discovered_backtested": hyp,
+        "certified": universal.get("n"),
+        "forward_clocks": len(forward),
+        "promotion_ready": promo_ready,
+        "live": len(live_rows),
+        "forward_detail": sorted(forward, key=lambda r: -r["days"])[:40],
+    }
+
+
+def _mt5_snapshot() -> dict[str, Any]:
+    """Live account read straight from the terminal, when this box has one.
+
+    The file-based account_state lags its writer's cadence, so the dashboard sat on STALE for
+    most of every hour. On the desk box the terminal is right here; on the research box the
+    import fails and the file path below carries on unchanged (absence is a fallback, never an
+    error). today_pnl is the sum of today's closed deal profits plus floating -- the number the
+    principal means by "today's gain".
+    """
+    try:
+        import MetaTrader5 as mt5  # type: ignore[import-not-found, import-untyped]
+        if mt5.terminal_info() is None and not mt5.initialize():
+            return {}
+        info = mt5.account_info()
+        if info is None:
+            return {}
+        now = datetime.now(UTC)
+        day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        closed = 0.0
+        deals = mt5.history_deals_get(day0, now)
+        for d in deals or ():
+            closed += float(getattr(d, "profit", 0.0) or 0.0)
+            closed += float(getattr(d, "commission", 0.0) or 0.0)
+            closed += float(getattr(d, "swap", 0.0) or 0.0)
+        return {
+            "server": getattr(info, "server", None), "currency": getattr(info, "currency", None),
+            "balance": float(info.balance), "equity": float(info.equity),
+            "profit": float(info.profit), "margin": float(info.margin),
+            "margin_free": float(info.margin_free),
+            "today_pnl": round(closed + float(info.profit), 2),
+            "updated_at": now.isoformat(),
+        }
+    except Exception:
+        return {}
+
+
 def build() -> dict[str, Any]:
     gateway = _read(DESK / "data" / "gateway_state.json")
-    account = _read(DESK / "data" / "account_state.json") or gateway
+    account = _mt5_snapshot() or _read(DESK / "data" / "account_state.json") or gateway
     qquant = _read(DESK / "reports" / "QQUANT_GATES.json")
     universal = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
     markout = _read(DESK / "reports" / "markout.json")
@@ -176,6 +314,19 @@ def build() -> dict[str, Any]:
         "equity_curve": _series(rows, start),
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",
     }
+    # -- principal 2026-08-26 additions: stats, funnel, live decay, sampled equity ------------
+    payload["stats"] = _ledger_stats(rows)
+    payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
+    payload["pipeline"] = _funnel(universal)
+    decay = _read(DESK / "data" / "decay_live.json")
+    payload["decay"] = {
+        "checked_at": decay.get("checked_at"), "live_sleeves": decay.get("live_sleeves"),
+        "verdicts": decay.get("verdicts") or {}, "actions": decay.get("actions_taken") or [],
+    }
+    history = _equity_history(equity, now)
+    if len(payload["equity_curve"]) < 2 and len(history) >= 2:
+        payload["equity_curve"] = [r["equity"] for r in history][-500:]
+        payload["equity_curve_source"] = "sampled_account_equity"
     return payload
 
 
