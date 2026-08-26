@@ -1620,10 +1620,34 @@ def check_ci_gate(defects) -> None:
             # an old marker still escalates rather than silently reading as green. Staleness is
             # NOT softened by this: ci-gate-stale below is unchanged and still fail-closed.
             if ci.get("tracked_ok", ci.get("ok")) is False:
-                defects.append(("ci-gate-red",
-                                f"last CI run ({ci.get('ts')}) was RED on COMMITTED code -> "
-                                f"{ci.get('failed_tracked') or ci.get('failed')}; the desk-wide "
-                                "safety gate is down. Run scripts/run_ci.py + fix"))
+                # A RESOURCE KILL IS NOT A CODE FAILURE, AND THE PRODUCER ALREADY KNOWS THE
+                # DIFFERENCE (2026-08-26). run_ci.py writes a separate `killed` list and its
+                # entries carry their own diagnosis -- the 08-26 marker reads verbatim "KILLED
+                # sig9, MemAvailable 827MB, 495MB of RAM held by files under /tmp (tmpfs) -- box
+                # ran out of resources mid-step, NOT a code failure". This consumer never read
+                # that field, so the desk-wide safety gate reported "RED on COMMITTED code" about
+                # a run whose own record says the code was never the problem.
+                #
+                # The two demand OPPOSITE repairs: one sends someone to find a bug that does not
+                # exist, the other says reclaim memory and re-run when quiet. Merging them is the
+                # same defect the tracked_ok fix above was written for -- a red nobody can act on
+                # recurs, gets skimmed, and BURIES a real one. Still a defect either way: unknown
+                # is never green, and the gate has not proven anything.
+                failed = list(ci.get("failed_tracked") or ci.get("failed") or [])
+                killed = set(ci.get("killed") or [])
+                if failed and all(f in killed for f in failed):
+                    defects.append(("ci-gate-resource-killed",
+                                    f"last CI run ({ci.get('ts')}) did not finish -- every "
+                                    f"tracked failure is a RESOURCE KILL, not a code failure: "
+                                    f"{failed}. The gate has proven NOTHING (unknown is not "
+                                    "green), but the repair is capacity, not a code fix: reclaim "
+                                    "memory (scripts/disk_guard.py has a tmpfs arm) and re-run "
+                                    "scripts/run_ci.py when the box is quiet."))
+                else:
+                    defects.append(("ci-gate-red",
+                                    f"last CI run ({ci.get('ts')}) was RED on COMMITTED code -> "
+                                    f"{failed}; the desk-wide safety gate is down. "
+                                    "Run scripts/run_ci.py + fix"))
             # NOW is epoch seconds (time.time()), not a datetime -- compare in epoch space.
             age_h = (NOW - datetime.fromisoformat(str(ci.get("ts"))).timestamp()) / 3600.0
             if age_h > _CI_STALE_H:
