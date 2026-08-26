@@ -113,13 +113,30 @@ def main() -> int:
 
     # --- independence ----------------------------------------------------------------------
     port = _read(DESK / "reports" / "portfolio_evidence.json") or {}
-    n_eff = ((port.get("effective_bets") or {}).get("n_effective"))
+    bets = port.get("effective_bets") or {}
+    n_eff = bets.get("n_effective")
+    n_sleeves = bets.get("n_sleeves") or 0
     ok = isinstance(n_eff, (int, float)) and n_eff > 1.0
-    checks["independence"] = {"pass": ok, "n_effective": n_eff}
-    if not ok:
-        reasons.append(f"independence: N_eff={n_eff} -- the book is one bet however many names "
-                       f"it holds; sizing several correlated variants as separate sleeves takes "
-                       f"more risk than the diversification earns")
+    # UNMEASURED IS NOT "FULLY CORRELATED". N_eff comes out 0 in two completely different worlds:
+    # a book whose sleeves all move together, and a book with no forward observations to
+    # correlate at all. This check reported both as "the book is one bet however many names it
+    # holds" -- a verdict about correlation drawn from an absence of data, which is precisely the
+    # error L1.28a names and which this desk has been bitten by repeatedly. They need different
+    # answers because they need different ACTIONS: one is fixed by holding different mechanisms,
+    # the other only by elapsed time.
+    measured = int(n_sleeves) >= 2
+    checks["independence"] = {"pass": ok, "n_effective": n_eff, "n_sleeves": n_sleeves,
+                              "measured": measured}
+    if not ok and not measured:
+        reasons.append(f"independence: UNMEASURED -- only {n_sleeves} sleeve(s) have forward "
+                       f"observations, so there is nothing to correlate yet. This is not a "
+                       f"finding that the book is concentrated; it is the absence of a book to "
+                       f"measure, and only elapsed forward time resolves it.")
+    elif not ok:
+        reasons.append(f"independence: N_eff={n_eff} across {n_sleeves} sleeve(s) -- the book is "
+                       f"one bet however many names it holds; sizing correlated variants as "
+                       f"separate sleeves takes more risk than the diversification earns. Fixed "
+                       f"by certifying a different MECHANISM, not by waiting.")
 
     # --- freshness -------------------------------------------------------------------------
     man = _read(ROOT / "data" / "job_manifest.json") or {}
