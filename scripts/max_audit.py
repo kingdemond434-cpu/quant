@@ -3095,6 +3095,21 @@ _FINDING_DOCS = (
 #: Finding-bearing docs deliberately out of scope, with the reason -- so the scope check can tell
 #: "consciously excluded" from "quietly unmonitored".
 _FINDING_DOCS_EXCLUDED = {
+    "docs/RESEARCH.md":
+        "OPERATIVE GOVERNING DOCUMENT (the 2026-08-25 consolidation's research constitution, "
+        "CLAUDE.md table row 2; supersedes ELITE_QUANT_INTELLIGENCE_MANDATE, which is excluded "
+        "on the same class). Its numbered matches are the canonical ten-gate table (§6a rows "
+        "1-10) and the discovery->live pipeline steps -- LAW that stays open by design, never "
+        "findings owing dispositions. It binds through ops/brain_env.sh injection into every "
+        "organ prompt, not through the findings register; rowing its clauses would inflate the "
+        "open-finding count with items that can never close.",
+    "docs/research/MOAT_NODE_SPEC.md":
+        "BUILD SPECIFICATION for the Contabo moat recorder node: its numbered items are spec "
+        "requirements (symbols-recorded/uptime/gap-count floors, heartbeat contract) whose "
+        "delivery is driven by GAP register row 127 (moat coverage ratchet), not by findings "
+        "rows -- one obligation, one law, the COINM_CONVEXITY precedent. The spec stays open "
+        "until the node ships its fence; double-rowing each requirement would charge the same "
+        "work to two registers.",
     "docs/research/recent_changes.md":
         "GENERATED 24h change digest (scripts/, regenerated on a rolling window): every line is "
         "a QUOTED commit patch, so any numbered finding matched inside it is a copy of text that "
@@ -6812,11 +6827,33 @@ DOCTRINE = ROOT / "ops/principal_doctrine.txt"
 # Duties that must reach EVERY organ, not just the brain. The list is explicit rather than
 # inferred: a heuristic would either miss a renamed duty or nag about the many duties that are
 # CORRECTLY brain-only (audit coverage, red-team panels, risk-path depth, the independence gate).
-_UNIVERSAL = ("PROACTIVE BATTERY DUTY", "NO-ORPHANED-RECOMMENDATION LAW", "NOVELTY GATE",
-              "TARGET/HORIZON SWEEP DUTY", "RESEARCH-MEMORY DUTY", "FREE-FIRST DATA PROTOCOL",
-              "BLIND-SPOT ORIGIN DUTY", "FINDING LIFECYCLE DUTY", "SELF-INTERROGATION DUTY",
-              "TWO-STAGE DISCOVERY LAW", "SCREEN-ON-DISCOVERY DUTY", "MINING-NEVER-REGRESSES LAW",
-              "NO-CEILING AXIOM", "FREE-FRONTIER AXIOM", "DATA-UTILIZATION")
+# REPOINTED 2026-08-26 (gap-fixer): the 08-25 consolidation moved every one of these into
+# LAWS.md/RESEARCH.md under the canon's own phrasing, and this check kept demanding the OLD
+# all-caps names from the OLD single file -- accusing the correct post-consolidation doctrine
+# (the same failure the constitution-not-injected detector had, fixed the same way). The shared
+# surface is now the UNION of what organs inject/read (LAWS §7: brain_env injects the sealed
+# doctrine AND LAWS.md; research organs open RESEARCH.md as their first standing order), and
+# each token below is the consolidated canon's own distinctive name, matched case-insensitively.
+_UNIVERSAL = (
+    ("PROACTIVE BATTERY DUTY", "adversarial battery"),          # RESEARCH §8, masters 187-207
+    ("NO-ORPHANED-RECOMMENDATION LAW", "no orphaned recommendation"),
+    ("NOVELTY GATE", "novelty gate"),
+    ("TARGET/HORIZON SWEEP DUTY", "target-horizon cell is a dsr-counted trial"),
+    ("RESEARCH-MEMORY DUTY", "research memory"),
+    ("FREE-FIRST DATA PROTOCOL", "free-first"),
+    ("BLIND-SPOT ORIGIN DUTY", "blind-spot origin"),
+    ("FINDING LIFECYCLE DUTY", "findings lifecycle"),
+    ("SELF-INTERROGATION DUTY", "self-interrogation"),
+    ("TWO-STAGE DISCOVERY LAW", "two-stage discovery law"),
+    ("SCREEN-ON-DISCOVERY DUTY", "screen-on-discovery"),
+    ("MINING-NEVER-REGRESSES LAW", "mining-never-regresses"),
+    ("NO-CEILING AXIOM", "no-ceiling"),
+    ("FREE-FRONTIER AXIOM", "free-frontier"),
+    ("DATA-UTILIZATION", "data-utilization"),
+)
+#: The injected/read shared surface (LAWS §7). ALL of these must exist and together carry
+#: every universal duty; principal_doctrine.txt alone is the sealed core, not the whole law.
+_SHARED_SURFACE = ("ops/principal_doctrine.txt", "docs/LAWS.md", "docs/RESEARCH.md")
 
 
 def check_universal_doctrine(defects) -> None:
@@ -6828,16 +6865,20 @@ def check_universal_doctrine(defects) -> None:
     dangerous half of the job without the discipline that makes it safe. A universal law parked in
     one organ's prompt is not a law, it is a local habit.
     """
-    if not DOCTRINE.exists():
+    absent = [p for p in _SHARED_SURFACE if not (ROOT / p).exists()]
+    if absent:
         defects.append(("doctrine-missing",
-                        "ops/principal_doctrine.txt is gone -- every organ injects it as its "
-                        "system prompt, so the desk is running with no standing law at all"))
+                        f"shared-surface document(s) gone: {', '.join(absent)} -- every organ "
+                        "injects/reads these as standing law (LAWS §7), so the desk is running "
+                        "with a hole in its constitution"))
         return
-    txt = DOCTRINE.read_text("utf-8", errors="ignore")
-    missing = [d for d in _UNIVERSAL if d not in txt]
+    txt = "".join((ROOT / p).read_text("utf-8", errors="ignore")
+                  for p in _SHARED_SURFACE).lower()
+    missing = [label for label, token in _UNIVERSAL if token not in txt]
     if missing:
         defects.append(("doctrine-universal-missing",
-                        f"universal duties absent from the shared doctrine: {', '.join(missing)}. "
+                        f"universal duties absent from the shared doctrine surface "
+                        f"({' + '.join(_SHARED_SURFACE)}): {', '.join(missing)}. "
                         "These bind every organ; if one lives only in a single organ's prompt, "
                         "every other organ operates without it -- which is how diggers came to be "
                         "ordered to screen axes with no novelty gate or trial accounting."))
