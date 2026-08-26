@@ -3878,5 +3878,27 @@
    "win_rate": 0.4884,
    "symbol": "AUDJPY"
   }
+ },
+ {
+  "id": "ext-20260826-b4ccee",
+  "geneology_id": "external:ext_forexfactory_AUDUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1605 exp=0.0605R t=2.43 pf=1.16 maxDD=-21.14R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T20:50:00.665153+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1605,
+   "exp_r": 0.0605,
+   "t_stat": 2.43,
+   "profit_factor": 1.16,
+   "max_dd_r": -21.14,
+   "win_rate": 0.4941,
+   "symbol": "AUDUSD"
+  }
  }
 ]

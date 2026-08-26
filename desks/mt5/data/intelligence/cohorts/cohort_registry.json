@@ -5474,5 +5474,25 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"aafce023802594cf": {
+"t0": "2026-08-26T21:24:35+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "TheHolderCollective/MetatraderSharpCookbook",
+"url": "https://github.com/TheHolderCollective/MetatraderSharpCookbook",
+"text": "A collection of example programs which show how to use the MetatraderSharp library",
+"symbols": [],
+"found_at": "2026-08-26T21:24:31+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T21:22:43Z"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
