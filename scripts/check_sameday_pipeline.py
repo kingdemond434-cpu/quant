@@ -54,7 +54,15 @@ ENROL_GRACE_HOURS = 24
 #: An enrolled sleeve silent this long has a firing problem, not a patience problem.
 SILENT_DAYS = 3
 #: Verdicts that stop a clock. Everything else is still counting and still owes a stamp.
-TERMINAL = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED"}
+#: Matched by PREFIX so RETIRED_ORPHAN / RETIRED_GATE_FAIL / RETIRED_UNRECONSTRUCTIBLE (written
+#: by forward_reconcile) count as stopped. An exact-string set silently kept 31 retired rows
+#: reading as live clocks.
+_TERMINAL_PREFIXES = ("RETIRED", "KILL", "QUARANTIN", "DEAD", "REJECT")
+
+
+def _is_terminal(status) -> bool:
+    s = str(status or "").upper()
+    return s.startswith(_TERMINAL_PREFIXES) or s == "PROMOTED"
 
 
 def read(p: Path):
@@ -110,8 +118,7 @@ def main() -> int:
     # machine it runs on is not a fence (L1.43). Terminal verdicts are excluded; everything else
     # is a clock still counting and must carry its stamp.
     unstamped = [k for k, v in rows.items()
-                 if str(v.get("status") or "").upper() not in TERMINAL
-                 and not v.get("forward_start")]
+                 if not _is_terminal(v.get("status")) and not v.get("forward_start")]
     if unstamped:
         findings.append(
             f"UNSTAMPED-CLOCK: {len(unstamped)} active forward row(s) carry no `forward_start`, "
@@ -122,7 +129,7 @@ def main() -> int:
 
     # 3. enrolled and silent ---------------------------------------------------------------
     for key, val in rows.items():
-        if str(val.get("status") or "").upper() in TERMINAL:
+        if _is_terminal(val.get("status")):
             continue
         days = val.get("days_active") or 0
         if days >= SILENT_DAYS and int(val.get("n") or 0) == 0:

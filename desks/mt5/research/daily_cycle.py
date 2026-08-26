@@ -93,6 +93,11 @@ def _promote() -> None:
     promoter.main()
 
 
+def _reconcile() -> None:
+    import forward_reconcile
+    forward_reconcile.main()
+
+
 def _decay() -> None:
     import decay_monitor
     decay_monitor.main()
@@ -173,7 +178,7 @@ def _zentech() -> None:
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
 STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
-         ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
+         ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("promoter", _promote), ("markout", _markout),
          ("decay", _decay),
          ("zentech", _zentech), ("export_aurum", _export_aurum))

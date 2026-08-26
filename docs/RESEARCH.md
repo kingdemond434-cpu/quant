@@ -409,6 +409,23 @@ do exactly that.*
 evidence neither for nor against itself and will reach day 14 with nothing to judge (L1.28a).
 Report and repair it as a firing defect — feed, signal, or session filter.
 
+**EVERY CLOCK IS CERTIFIED OR RETIRED — NO SQUATTERS (principal 2026-08-26: "shouldn't all be
+tested for certification and retired if the 10 gates don't work").** A live forward clock must be
+BOTH enrolled by a running engine AND backed by a ten-gate certificate. `forward_reconcile` runs
+first in the daily chain and disposes of everything else, reason recorded, evidence never deleted:
+orphan → `RETIRED_ORPHAN`; uncertified but reconstructible → gauntleted, pass certifies, fail →
+`RETIRED_GATE_FAIL` with the failing gates named; parameters unreconstructible →
+`RETIRED_UNRECONSTRUCTIBLE` (guessing them is forbidden — a gauntlet on guessed parameters
+certifies a strategy nobody is trading). **Enrolment is a certificate, never a hand-typed literal.**
+
+*Measured on the first run: of 36 rows reading `ACTIVE`, only 10 were run by any engine — 26 were
+STOPPED clocks with frozen `days_active`/`n` (one at days=7, n=1) that would have fired a day-14
+verdict on a single ancient trade. Of the 10 that ran, 5 held no certificate; all 5 failed the
+gauntlet on **PBO 0.5961** (threshold 0.50 — a 60% probability of being backtest-overfit) and were
+retired. The desk went from a claimed 37 clocks to **5 real ones**, every one certificate-backed and
+restarted at day 0 on a properly pre-registered window. A count that flatters the pipeline is worse
+than a smaller honest one: it is the number a promotion decision would have been made against.*
+
 **ONE SHADOW, ONE FORWARD — BESPOKE PIPELINES ARE BANNED (principal 2026-08-26: "all must enter
 the same one shadow pipeline and forward pipeline and never make their own ones").** There is
 exactly ONE shadow/forward engine, one state ledger, one clock format (`forward_start`, `n`,

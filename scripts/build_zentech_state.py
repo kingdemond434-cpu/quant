@@ -1,4 +1,10 @@
-"""Build the read-only ZENTECH operator view from canonical MT5 artifacts."""
+"""Build the read-only DESK view state from canonical MT5 artifacts.
+
+Output: web/desk_state.json, consumed by web/desk.html. (Filename kept as
+build_zentech_state.py because daily_cycle, the desk-box scheduled task and the
+moneypath fence all reference it by path; the ZENTECH branding it was named for
+is retired.)
+"""
 from __future__ import annotations
 
 import json
@@ -12,7 +18,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DESK = ROOT / "desks" / "mt5"
-OUT = ROOT / "web" / "zentech_state.json"
+OUT = ROOT / "web" / "desk_state.json"
 
 
 def _read(path: Path) -> dict[str, Any]:
@@ -104,6 +110,18 @@ def _shadow_rows() -> list[dict[str, Any]]:
     return sorted(output, key=lambda row: row["expectancy_r"], reverse=True)
 
 
+def _is_terminal(status) -> bool:
+    """A clock is stopped if its status is terminal -- matched by PREFIX, not exact string.
+
+    2026-08-26: the reconciler introduced RETIRED_ORPHAN / RETIRED_GATE_FAIL /
+    RETIRED_UNRECONSTRUCTIBLE. Every consumer tested `status in {"RETIRED", ...}`, so 31 retired
+    rows kept counting as live forward clocks on the dashboard -- a retirement that does not
+    propagate is a rename, not a retirement.
+    """
+    s = str(status or "").upper()
+    return s.startswith(("RETIRED", "KILL", "QUARANTIN", "DEAD", "REJECT")) or s == "PROMOTED"
+
+
 def _equity_history(equity: float | None, now: datetime) -> list[dict[str, Any]]:
     """Persist a 24/7 sampled equity tape so the curve exists from day one.
 
@@ -173,7 +191,6 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             hyp = len(rows)
             break
     forward, promo_ready, live_rows = [], 0, {}
-    terminal = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED"}
     for path in (DESK / "reports" / "shadow" / "shadow_state.json",
                  DESK / "reports" / "shadow" / "qquant_shadow_state.json",
                  DESK / "reports" / "shadow" / "scalp_shadow_state.json"):
@@ -182,7 +199,7 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             if not isinstance(row, dict) or "status" not in row:
                 continue
             status = str(row.get("status") or "").upper()
-            if status in terminal:
+            if _is_terminal(status):
                 continue
             days = int(_number(row.get("days_active")) or 0)
             forward.append({"name": key, "days": days, "of": 14,
@@ -280,8 +297,7 @@ def build() -> dict[str, Any]:
     )
     payload = {
         "generated_at": now.isoformat(),
-        "identity": {"name": "ZENTECH", "caption": "MULTI-ASSET MT5 INSTITUTIONAL QUANT FUND",
-                     "operator": "ZAID HUSSAIN", "moniker": "THE WOLF OF WALL STREET"},
+        "identity": {"name": "QUANT DESK", "caption": "AUTONOMOUS MULTI-ASSET MT5 RESEARCH DESK"},
         "account": {
             "venue": _find(account, "server", "broker") or "UNMEASURED",
             "currency": _find(account, "currency") or "UNMEASURED",

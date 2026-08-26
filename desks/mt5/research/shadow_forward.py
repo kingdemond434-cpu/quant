@@ -43,13 +43,14 @@ WINDOWS = {
 #: one-pipeline law), and `certified_sleeves()` below turns every ten-gate pass into a clock on
 #: the next daily run with no code edit. Editing this literal instead is the exact defect the
 #: same-day fence exists to catch (a certificate sat un-enrolled until a human typed).
-SLEEVES = [  # (sym, window) - hunt6 survivors
-    ("XAUUSD", "asia"), ("XAUUSD", "london_am"), ("XAUUSD", "afternoon"),
-    ("USDJPY", "asia"), ("USDJPY", "london_am"),
-    ("CADJPY", "asia"),
-    ("EURJPY", "asia"), ("EURJPY", "london_am"),
-    ("GBPJPY", "asia"), ("GBPJPY", "london_am"),
-]
+#: GRANDFATHERING IS OVER (principal 2026-08-26: "shouldn't all be tested for certification and
+#: retired if the 10 gates don't work"). This list held ten hunt6 sleeves that ran WITHOUT a
+#: ten-gate certificate. On 2026-08-26 `forward_reconcile` put all ten through the canonical
+#: gauntlet: the five `asia` cells hold certificates and now enrol through `certified_sleeves()`
+#: like everything else, and the five london_am/afternoon cells FAILED on PBO 0.5961 (threshold
+#: 0.50 -- a 60% probability of being backtest-overfit) and are retired RETIRED_GATE_FAIL.
+#: The list stays empty: enrolment is a CERTIFICATE, never a literal a human typed.
+SLEEVES: list[tuple[str, str]] = []
 
 
 def certified_sleeves() -> list[tuple[str, str]]:

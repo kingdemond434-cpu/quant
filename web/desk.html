@@ -285,7 +285,7 @@ function chart(values){
 
 async function load(){
  try{
-  const d=await fetch(`zentech_state.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
+  const d=await fetch(`desk_state.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
   const a=d.account||{},e=d.execution||{},r=d.research||{},st=d.stats||{},p=d.pipeline||{},dec=d.decay||{};
   const live=d.health?.status==='LIVE';
   $('health').textContent=d.health?.status||'—';$('badge').classList.toggle('err',!live);

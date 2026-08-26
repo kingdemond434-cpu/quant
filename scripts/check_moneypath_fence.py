@@ -52,6 +52,8 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/shadow_forward.py": (
         "certified_sleeves", "from research.h1_source import fetch_h1"),
     "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
+    # grandfathering is over: SLEEVES must stay empty and enrolment must stay certificate-driven
+    "desks/mt5/research/forward_reconcile.py": "RETIRED_ORPHAN",
 }
 
 
