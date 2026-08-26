@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 import math
 from datetime import UTC, datetime
+from itertools import combinations
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
@@ -59,6 +60,9 @@ REDUNDANCY_CORR = 0.5
 #: How many edges to select. Small on purpose: the output is hypotheses for the gauntlet, and
 #: flooding the gauntlet with near-duplicates is what the diversity objective exists to prevent.
 SELECT_K = 25
+#: How many primitives feed the pairwise interaction pool. Bounded on purpose: the pool grows
+#: quadratically, and an uncountable search is worse than a narrower honest one.
+INTERACTION_POOL = 14
 
 
 def _read(p: Path):
@@ -143,7 +147,128 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
         prim[f"ext_{name}_z"] = ((aligned - aligned.rolling(96).mean())
                                  / aligned.rolling(96).std(ddof=1))
 
-    return {k: v for k, v in prim.items() if v is not None}
+    prim = {k: v for k, v in prim.items() if v is not None}
+
+    # PAIRWISE INTERACTIONS. A single-feature condition can only express "when X is extreme".
+    # Most real mechanisms are conditional -- "when volatility is low AND positioning is
+    # stretched" -- and that structure is unreachable from single features however many you add.
+    # Interactions are formed mechanically between a bounded set of the most-populated primitives
+    # so the trial count stays honest and countable rather than exploding into millions.
+    keys = [k for k in sorted(prim) if prim[k].notna().sum() > len(prim[k]) * 0.5]
+    for a, b in combinations(keys[:INTERACTION_POOL], 2):
+        sa, sb = prim[a], prim[b]
+        za = (sa - sa.rolling(240).mean()) / sa.rolling(240).std(ddof=1)
+        zb = (sb - sb.rolling(240).mean()) / sb.rolling(240).std(ddof=1)
+        prim[f"x_{a}__{b}"] = za * zb
+    return prim
+
+
+
+def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
+    """Every external series this box can supply, as PRIMITIVES with no family semantics.
+
+    This is what makes the search reach past the named families without naming anything. A carry
+    edge is not "the carry family" here -- it is whatever the searcher finds conditioned on the
+    swap-differential primitive. A relative-value edge is a condition on a peer-residual
+    primitive. Positioning, liquidity and macro likewise. The mechanisms are the same; the
+    difference is that nobody had to think of them first, and combinations nobody named are
+    reachable by exactly the same enumeration.
+    """
+    import numpy as np
+    import pandas as pd
+
+    extra: dict = {}
+
+    # --- peers: residuals and rolling correlations against several other instruments ---------
+    peers = [s for s in all_symbols if s != symbol][:4]
+    base = None
+    try:
+        base_df = pd.read_parquet(UNIVERSE / f"{symbol}_H1.parquet")
+        base = np.log(base_df["close"].astype(float))
+    except Exception:
+        base = None
+    if base is not None:
+        for peer in peers:
+            try:
+                pdf = pd.read_parquet(UNIVERSE / f"{peer}_H1.parquet")
+            except Exception:
+                continue
+            pc = np.log(pdf["close"].astype(float))
+            joined = pd.concat([base, pc], axis=1, join="inner").dropna()
+            if len(joined) < 500:
+                continue
+            resid = joined.iloc[:, 0] - joined.iloc[:, 1]
+            extra[f"resid_{peer}"] = resid
+            extra[f"residz_{peer}"] = ((resid - resid.rolling(240).mean())
+                                       / resid.rolling(240).std(ddof=1))
+            extra[f"corr_{peer}"] = (joined.iloc[:, 0].diff()
+                                     .rolling(120).corr(joined.iloc[:, 1].diff()))
+
+    # --- the venue's own book: spread and a signed-move proxy from the tick tape --------------
+    tape_dir = BASE / "data" / "tape" / "ticks" / symbol
+    if tape_dir.exists():
+        frames = []
+        for f in sorted(tape_dir.glob("*.parquet"))[-30:]:
+            try:
+                frames.append(pd.read_parquet(f, columns=["ts", "bid", "ask"]))
+            except Exception:
+                continue
+        if frames:
+            tk = pd.concat(frames, ignore_index=True).dropna(subset=["bid", "ask"])
+            tk["ts"] = pd.to_datetime(tk["ts"], utc=True)
+            tk = tk.sort_values("ts").set_index("ts")
+            extra["book_spread"] = (tk["ask"] - tk["bid"]).resample("1h").mean()
+            mid = (tk["ask"] + tk["bid"]) / 2.0
+            extra["book_flow"] = np.sign(mid.diff()).resample("1h").sum()
+            extra["book_ticks"] = mid.resample("1h").count()
+
+    # --- swap/contract terms: the differential that a carry mechanism would condition on -----
+    terms_dir = BASE / "data" / "tape" / "contract_terms"
+    if terms_dir.exists():
+        vals = []
+        for f in sorted(terms_dir.glob("*.json*"))[-60:]:
+            try:
+                raw = json.loads(f.read_text("utf-8"))
+            except Exception:
+                continue
+            for row in (raw if isinstance(raw, list) else [raw]):
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("symbol", "")).upper() != symbol.upper():
+                    continue
+                try:
+                    vals.append((pd.Timestamp(row.get("recorded_at") or row.get("at"), tz="UTC"),
+                                 float(row.get("swap_long", 0)) - float(row.get("swap_short", 0))))
+                except Exception:
+                    continue
+        if vals:
+            s = pd.Series(dict(vals)).sort_index()
+            extra["swap_diff"] = s
+
+    # --- macro and positioning ---------------------------------------------------------------
+    macro = _read(BASE / "data" / "macro_state.json")
+    if isinstance(macro, dict):
+        for k, v in list(macro.items())[:6]:
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                extra[f"macro_{k}"] = pd.Series(float(v), index=index)
+    for name in ("cot_tff.json", "cot.json", "cot_disagg.json"):
+        doc = _read(BASE / "data" / name)
+        rows = doc if isinstance(doc, list) else (doc or {}).get("rows")
+        if not isinstance(rows, list) or not rows:
+            continue
+        try:
+            cdf = pd.DataFrame(rows)
+            tcol = next((c for c in ("date", "report_date", "as_of") if c in cdf.columns), None)
+            ncol = next((c for c in ("net", "noncomm_net", "net_position")
+                         if c in cdf.columns), None)
+            if tcol and ncol:
+                cdf.index = pd.to_datetime(cdf[tcol], utc=True, errors="coerce")
+                extra["cot_net"] = cdf[ncol].astype(float).dropna()
+                break
+        except Exception:
+            continue
+
+    return extra
 
 
 def _forward_returns(close, horizons=HORIZONS) -> dict:
@@ -282,7 +407,13 @@ def search_symbol(symbol: str, extra: dict | None = None) -> dict:
     df = pd.read_parquet(path)
     if len(df) < 2000:
         return {"symbol": symbol, "status": "TOO_FEW_BARS", "bars": len(df)}
-    prim = build_primitives(df, symbol, extra)
+    all_syms = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+    resolved = dict(extra or {})
+    try:
+        resolved.update(resolve_inputs(symbol, df.index, all_syms))
+    except Exception as exc:
+        print(f"  {symbol}: input resolution partial ({type(exc).__name__}: {exc})")
+    prim = build_primitives(df, symbol, resolved)
     if not prim:
         return {"symbol": symbol, "status": "NO_PRIMITIVES"}
     fwd = _forward_returns(df["close"])
