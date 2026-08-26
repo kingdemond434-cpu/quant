@@ -54,10 +54,19 @@ foreach ($d in @("universe", "states", "cot", "cot_tff", "cot_disagg", "lake",
     if (Test-Path $p) { Copy-Item $p -Destination $dataOut -Recurse -Force }
 }
 
-# 2. Upload
+# 2. Upload main bundle
 $scp = Get-Command scp -ErrorAction SilentlyContinue
 if (-not $scp) { exit 1 }
 & $scp -r -q "$bundle\*" $vps 2>&1 | Out-Null
+
+# 2b. Upload C:\opt\quant gate certificates (merge-fix: these persist through sweeps)
+$optBase = "C:\opt\quant\desks\mt5"
+if (Test-Path "$optBase\reports") {
+    & $scp -r -q "$optBase\reports\*" "${vps}reports/" 2>&1 | Out-Null
+}
+if (Test-Path "$optBase\data\UNIVERSAL_SURVIVORS.canon.json") {
+    & $scp -q "$optBase\data\UNIVERSAL_SURVIVORS.canon.json" "${vps}data/" 2>&1 | Out-Null
+}
 
 # 3. Commit + push on the VPS repo (whole-brain visibility)
 $ssh = Get-Command ssh -ErrorAction SilentlyContinue
