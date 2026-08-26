@@ -11,7 +11,19 @@ STEP 1 -- TRIAGE, ~5 minutes, before any digging. Read, fresh:
     tail carries its own "Owed next run" section -- those debts are REAL and carry over)
   - docs/research/data_axis_watchlist.md open cards with due deferrals
   - docs/research/search_operator_library.md for the operator set of whatever ground you pick
-Then CHOOSE, by expected survivor-value per hour, 1-3 grounds for today's budget from:
+Then WORK EVERY GROUND WHOSE EXPECTED SURVIVOR-VALUE CLEARS THE BAR (principal 2026-08-26).
+There is NO numeric cap on how many grounds you take -- an earlier version said "1-3" and that
+was a quota in disguise, the exact defect this prompt names two paragraphs down. The rule is a
+THRESHOLD, not a count: take every ground whose measured conversion prior and current owed-debt
+justify the hour, in descending order of expected survivor-value, and keep going until the
+remaining grounds are genuinely low-value or the budget is gone.
+
+SKIPPING A GROUND IS A DECISION THAT MUST BE NAMED. For each ground you do NOT work, state which
+one and why -- "measured conversion 0.00 across the last N runs", "no owed debt and covered 6h
+ago", "blocked at s13". "Ran out of list" and "it was not in the top three" are not reasons. A
+high-value ground left unworked because a cap said so is idle capital's research twin (LAWS 2a).
+
+Candidate grounds:
   en cn ru jp kr ar br  +  creator/track-record ground (MQL5 signals/articles/forum,
   TradingView public scripts, QuantConnect, championship archives, published track records,
   black-box reverse engineering per RESEARCH §4 -- the desk's measured best source class:

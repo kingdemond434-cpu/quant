@@ -786,6 +786,12 @@ FAMILY_INPUTS = {
 }
 
 
+#: Derived primitives, cached per frame extent. Bounded because a sweep touches few distinct
+#: frames and an unbounded cache on 310 series each would trade CPU for the memory the gauntlet
+#: just stopped wasting.
+_PRIM_CACHE: dict = {}
+
+
 def family_discovered(
     df: pd.DataFrame,
     *,
@@ -822,7 +828,21 @@ def family_discovered(
         from edge_search import build_primitives
 
     d = _h1(df)
-    prim = build_primitives(d, "", extra or {})
+    # PRIMITIVES ARE CACHED PER FRAME. Measured 2026-08-26: build_primitives takes 4.3s and
+    # produces 310 series, and this function called it ONCE PER CELL -- 575 discovered cells meant
+    # ~41 minutes spent rebuilding byte-identical primitives to read one column out of each. The
+    # frames themselves are already shared per symbol by the gauntlet, so the derived primitives
+    # are shared for exactly the same reason and with exactly the same safety: read-only inputs,
+    # identical bars, identical output. Keyed on the frame's own extent rather than id(), which a
+    # garbage collector can recycle.
+    _key = (len(d), str(d.index[0]) if len(d) else "", str(d.index[-1]) if len(d) else "",
+            tuple(sorted((extra or {}).keys())))
+    prim = _PRIM_CACHE.get(_key)
+    if prim is None:
+        prim = build_primitives(d, "", extra or {})
+        if len(_PRIM_CACHE) > 8:          # bounded: a sweep touches few distinct frames
+            _PRIM_CACHE.clear()
+        _PRIM_CACHE[_key] = prim
     series = prim.get(feature)
     if series is None:
         return []
@@ -838,16 +858,23 @@ def family_discovered(
     atr = _atr(d, atr_n)
     side = 1 if int(side) >= 0 else -1
     ttl = max(1, int(horizon))
+    # VECTORISED SELECTION. The scalar loop ran ~50k Python iterations per cell and there are
+    # hundreds of cells; numpy picks the qualifying bars in one pass and only those become
+    # objects. Same bars, same signals -- the loop was never doing anything numpy cannot.
+    atr_v = atr.to_numpy(dtype="float64", na_value=np.nan)
+    close_v = d["close"].to_numpy(dtype="float64", na_value=np.nan)
+    idx = np.arange(len(d))
+    ok = (idx >= atr_n) & (idx < len(d) - 1)
+    ok &= finite & (values >= lo) & (values <= hi)
+    ok &= np.isfinite(atr_v) & (atr_v > 0)
+    picks = idx[ok]
+
     signals: list[Signal] = []
-    for i in range(atr_n, len(d) - 1):
-        v = values[i]
-        if not np.isfinite(v) or v < lo or v > hi:
-            continue
-        a = float(atr.iloc[i])
-        if not np.isfinite(a) or a <= 0:
-            continue
-        px = float(d["close"].iloc[i])
-        signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
+    times = d.index
+    for i in picks:
+        a = float(atr_v[i])
+        px = float(close_v[i])
+        signals.append(Signal(time=times[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl,
                               tag=f"discovered:{feature}", trigger=px, wait_bars=0))
     return signals
