@@ -3514,34 +3514,115 @@ black-box reverse-engineering ground), Forum reply layers, Market teardowns/revi
 genre). The MT5 universe's NATIVE ecosystem; currently the thinnest-covered major source
 (1 doc mentions it vs 8+ for TradingView/CN grounds).
 
-### 42. [seed S2] GitHub code repos, systematic (not incidental) — grade: pending verification
+### 42. [seed S2] GitHub code repos, systematic (not incidental) — grade: **route verified-live 2026-08-26 (unified frontier dig; keyless probe)** [§33: deferred(2026-09-05) tier:3]
+- **Measured 2026-08-26:** `api.github.com/search/repositories?q=topic:mql5` returns HTTP 200
+  keyless, `total_count=646`. Route confirmed; the unauthenticated search rate limit (10 req/min)
+  is the pacing constraint a collector must respect, and a 403 there is BACK-OFF, never an empty
+  result (the MQL5 rate-limit precedent, card 41). Corpus build itself is still owed.
 Beyond ad-hoc searches: topic/language sweeps for MT5/MQL/FX strategy repos, fork graphs of
 high-star strategy repos, Issues/Discussions of broker-API wrappers, dead-repo archaeology
 (L1.11a). GitHub maximalism is already law; this seed makes the DAILY cycle own it.
 
-### 43. [seed S3] TradingView public scripts — grade: pending verification
+### 43. [seed S3] TradingView public scripts — grade: **route verified-live 2026-08-26 (HTTP 200 on /scripts/); NOT new ground — duplicate of seed S12** [§33: deferred(2026-09-01) tier:3]
+- **Merged, not double-counted:** S3 and S12 are the same ground described twice (S12's own text
+  concedes S3 is "already covered in 8 docs — the seed here is the DAILY cadence, not novelty").
+  S12 carries the live deferral and owns the work; this card is a pointer, so that the pair is one
+  item in the backlog rather than two (RESEARCH: convergence is recorded, never counted twice).
 Pine Script public library: strategy scripts with visible logic + boosts/comments as a crowding
 signal. Already covered in 8 docs — the seed here is the DAILY cadence, not novelty.
 
-### 44. [seed S4] QuantConnect — grade: pending verification
+### 44. [seed S4] QuantConnect — grade: **route verified-live + §13 BOUNDARY READ 2026-08-26** [§33: deferred(2026-09-05) tier:3]
+- **robots.txt read 2026-08-26 (HTTP 200, 851b):** `Disallow: /api`, `/api/*`, `/index.php`,
+  `/processSignUp`. **The API is barred to crawlers; the public algorithm/forum pages are not.**
+  Any collector built here reads pages and must never touch `/api` — the same shape as MQL5's
+  "mechanism TEXT yes, source download NO" boundary. Duplicate of S15, which owns the corpus work.
 Public algorithms, forum, Alpha league results. Mechanism extraction + the failure genre
 (live-vs-backtest divergence threads are free execution-reality data).
 
-### 45. [seed S5] Trump Truth Social — grade: needs-legitimacy-review
+### 45. [seed S5] Trump Truth Social — grade: needs-legitimacy-review (NOT probed 2026-08-26 — deliberately deferred, reason named) [§33: deferred(2026-09-12) tier:3]
+- **Not worked today and the skip is a decision, not an omission:** the §13 question (platform ToS
+  on automated reuse) is the binding constraint, and it is a READ, not a probe — running the probe
+  first would generate corpus the desk may not be permitted to keep. The legitimacy read is the
+  whole of the next unit of work here.
+- **Ranked BELOW S6/S21 on mechanism, not on effort:** a policy statement from a central bank is a
+  scheduled, dated, market-moving event with a forced counterparty; a social post is an
+  unscheduled headline whose event-study window is contaminated by every other headline in it.
+  S6/S21 were funded first this run for that reason and produced a wired artifact.
 Macro/policy event source for the MT5 universe (DXY, gold, indices, energy): tariff/Fed/dollar
 statements move hunted instruments. Route: public web/archives only, timestamps preserved
 point-in-time; event-study gate (RESEARCH §6) is the ONLY admissible test shape.
 
-### 46. [seed S6] Central-bank statements, systematic — grade: pending verification
+### 46. [seed S6] Central-bank statements, systematic — grade: **verified-clean + WIRED 2026-08-26 (unified frontier dig): the miner that was supposed to own this ground was structurally incapable of producing a dated series, and is now repaired and producing one** [§33: wired tier:2 -> desks/mt5/data/intelligence/central_banks/cb_documents.jsonl]
+- **§13:** public RSS/RDF feeds published by each institution for syndication, read at their
+  documented endpoints, no account, no crawl of disallowed paths, no paywall. Fed press releases
+  are US-Government public domain; BIS/ECB/BoJ/BoE/BoC feeds are the banks' own distribution
+  channel. Nothing here is cracked, gated or closed-group.
+- **THE DEFECT (this is the finding, not the feed list).** `desks/mt5/side_channels/central_bank_miner.py`
+  was already wired into `run_all_miners.py` and already flagged ZERO-YIELD by
+  `scripts/check_miner_conversion.py` (20+ rows, 0 survivors in 14d). The reason was structural, and
+  reading the file rather than the fence explains it:
+  1. **No timestamp anywhere in its output.** It scraped each bank's HTML *landing page* and kept
+     `re.sub(r'<[^>]+>', ' ', text)[:2000]` — the first 2000 characters after tag-stripping, i.e.
+     navigation chrome — then counted policy keywords in it. A keyword count on today's landing page
+     is not an event. **The desk's two absent-but-reachable families, `event_reaction` (needs an
+     economic calendar) and `macro_conditional` (needs a macro state series), could never be fed by
+     it**, because an event study is impossible without a publication stamp.
+  2. **`_extract_symbols` matched instrument tickers as literal substrings of a central bank page.**
+     "EURUSD" does not appear on federalreserve.gov. Positive control run against `git show HEAD:`
+     of the old file: `_extract_symbols("Federal Reserve Board monetary policy USD press release")`
+     -> `[]`, on every run, so the fallback `f"{currency}USD"` fired and emitted **"USDUSD"** for the
+     Fed — not an instrument.
+  3. `confidence = len(signals) * 0.3` is a popularity score, not a mechanism.
+  This is the WS-005 shape at source level: the fence could see the miner producing nothing of value
+  but not *why*, and "zero-yield source" and "broken reader pointed at a good source" look identical
+  from the outside — the same class as card 41's MQL5 collector (R0660).
+- **THE REPAIR (same change as the diagnosis).** The miner now reads dated syndication feeds and
+  archives point-in-time documents. Probed live 2026-08-26, all keyless HTTP 200 with per-item
+  stamps: Fed `feeds/press_monetary.xml` (pubDate, CDATA-wrapped), ECB `rss/press.html`, BoJ
+  `en/rss/whatsnew.xml`, BoE `rss/news`, BoC press-release feed, BIS `doclist/cbspeeches.rss`
+  (RDF `dc:date`, not `pubDate` — a pubDate-only reader returns zero rows here and reads as a clean
+  empty, so both tag families are parsed). Instruments are now **derived from the speaking bank's
+  currency**, never substring-matched. An undated item is **DROPPED, never stamped with `now`** —
+  a collection time standing in for a publication time is the L1.46 clock-provenance defect.
+- **Measured first run:** **162 dated documents**, 0 undated, span 2026-03-18 -> 2026-08-26, across
+  BoE 50 / BoJ 47 / BIS 25 / Fed 15 / ECB 15 / BoC 10. Artifact:
+  `desks/mt5/data/intelligence/central_banks/cb_documents.jsonl` (append-only, deduped on bank|link).
+  Seven regression tests in `tests/test_central_bank_miner.py`, each naming the defect it catches;
+  the two structural ones were positive-controlled against the pre-fix file.
+- **RESIDUALS, named rather than left to read as success:**
+  1. **RBA is DEAD from this box.** Both published feed paths return HTTP 403 under two distinct
+     user agents — an edge block on the IP, not an absent feed. The row is deliberately KEPT in the
+     seed dict so the miner REPORTS the dead leg every run; **AUD has no central-bank coverage and
+     that must not read as a clean verdict** (WS-005). §38 replacement route is owed.
+  2. **SNB not yet routed** — the obvious path 404s; CHF uncovered.
+  3. **Only 2 of 162 rows carry a policy signal**, because RSS titles/descriptions are terse. The
+     keyword layer needs the *document body* behind `link`, which this pass does not fetch. **This is
+     an attention stream, not yet a hawkish/dovish series**, and it must not be scored as one.
+  4. **RSS is a rolling window: this axis CANNOT backfill.** It accrues forward from today, so the
+     families it feeds gain power with calendar time. That is a real cost of the six months this
+     miner spent broken, and it is the argument for fixing readers the moment a fence calls a source
+     zero-yield rather than accepting the source verdict.
+- **Convergence with [seed S21] BIS central-banker speeches:** S21 asked for exactly this PIT text
+  layer ("no per-CB scrapers needed"). The BIS feed is now wired here, so S21's route half is
+  **satisfied by this card** and its remaining novelty is the full-text speech bodies (residual 3
+  above). Recorded as one discovery reached from two seeds, not two.
 Fed/ECB/BoJ/BoE/SNB/RBA/RBNZ/BoC full text + minutes + speaker calendars, diffed
 statement-over-statement (hawkish/dovish delta as a data axis, ALFRED-style point-in-time).
 Macro is a first-class edge axis (RESEARCH §2); this is its primary free document stream.
 
-### 47. [seed S7] CN ground: Bilibili + Zhihu — grade: pending verification
+### 47. [seed S7] CN ground: Bilibili + Zhihu — grade: pending verification (NOT worked 2026-08-26 — owned by the CN miner, skip reason named) [§33: deferred(2026-09-05) tier:3]
+- **Skip reason:** Zhihu is recorded WALLED twice by the CN miner (s12, 2026-08-25) and this seed
+  asks for a *cadence*, not a route — cadence is the CN seat's to set, and a unified dig probing
+  the same wall a third time would burn budget to re-derive a known verdict. The open unit here is
+  the Bilibili half, which has never been probed; it stays with the CN seat.
 Already first-class in the CN miner (8–9 docs); seed confirms DAILY cadence and extends to the
 quant-video/column layers the frontier digs have not yet exhausted.
 
-### 48. [seed S8] KR ground continuation — grade: pending verification
+### 48. [seed S8] KR ground continuation — grade: pending verification (NOT worked 2026-08-26 — owned by the KR miner, skip reason named) [§33: deferred(2026-09-05) tier:3]
+- **Skip reason:** the seed extends an operator set the KR seat already holds, and the KR venue-state
+  layer it used to feed was KILLED by the 2026-08-18 mandate re-grade (card 26 above), so the ground
+  needs re-scoping to MT5 instruments before any cadence question is even well-posed. Re-scoping is
+  the owed unit and it belongs to the KR seat.
 Naver blogs/cafes covered (3 docs); extend to KR quant communities per the KR miner's existing
 operator set, daily.
 
@@ -3659,56 +3740,64 @@ count. LIVE verified track records on the desk's own platform — the single ric
 reverse-engineering ground (RESEARCH §4). Extract stats + rank deltas; flag high-growth/low-dd
 signals for mechanism inference. [§33: deferred(2026-09-01) tier:1]
 
-### 50. [seed S10] Myfxbook public systems + community outlook — grade: pending verification
+### 50. [seed S10] Myfxbook public systems + community outlook — grade: pending verification [§33: deferred(2026-09-01) tier:1]
 Verified track records (equity curves, per-trade history where public) AND the community outlook
 endpoint (retail % long/short per pair) — the positioning axis, consumed WITH the standing
-B-book debias prior (retail ruin is cost extraction, never naive fade). [§33: deferred(2026-09-01) tier:1]
+B-book debias prior (retail ruin is cost extraction, never naive fade).
 
-### 51. [seed S11] Darwinex public DARWIN metrics — grade: pending verification
+### 51. [seed S11] Darwinex public DARWIN metrics — grade: pending verification [§33: deferred(2026-09-01) tier:1]
 Public API: d-scores, return series, investor capacity per DARWIN. A regulated, curated
-track-record universe with its own risk-normalization to reverse-engineer. [§33: deferred(2026-09-01) tier:1]
+track-record universe with its own risk-normalization to reverse-engineer.
 
-### 52. [seed S12] TradingView public Pine library, systematic — grade: pending verification
+### 52. [seed S12] TradingView public Pine library, systematic — grade: pending verification [§33: deferred(2026-09-01) tier:1]
 Open-source script pages (full Pine source = direct strategy corpus), per-script boost/use
 counts, author graphs, per-symbol ideas streams. hunt16's families were TradingView-style
-indicator recreations — this is that ground, mined at the source. [§33: deferred(2026-09-01) tier:1]
+indicator recreations — this is that ground, mined at the source.
 
-### 53. [seed S13] FX Blue public profiles — grade: pending verification
-Public stats pages of live accounts (many prop-firm passers publish here). [§33: deferred(2026-09-05) tier:2]
+### 53. [seed S13] FX Blue public profiles — grade: pending verification [§33: deferred(2026-09-05) tier:2]
+Public stats pages of live accounts (many prop-firm passers publish here).
 
-### 54. [seed S14] Collective2 public strategy leaderboards — grade: pending verification
-Cross-asset strategies with published records + fee/capacity data. [§33: deferred(2026-09-05) tier:2]
+### 54. [seed S14] Collective2 public strategy leaderboards — grade: pending verification [§33: deferred(2026-09-05) tier:2]
+Cross-asset strategies with published records + fee/capacity data.
 
-### 55. [seed S15] QuantConnect forum + published algorithms — grade: pending verification
-Shared LEAN algorithms (source available), forum strategy threads, league rankings. [§33: deferred(2026-09-05) tier:2]
+### 55. [seed S15] QuantConnect forum + published algorithms — grade: pending verification [§33: deferred(2026-09-05) tier:2]
+Shared LEAN algorithms (source available), forum strategy threads, league rankings.
 
-### 56. [seed S16] ForexPeaceArmy performance tests + review corpus — grade: pending verification
+### 56. [seed S16] ForexPeaceArmy performance tests + review corpus — grade: pending verification [§33: deferred(2026-09-05) tier:2]
 The EN refutation genre (RU поделка analogue): independent live performance tests of EAs and
-signal services — free graveyard material + occasional real survivors. [§33: deferred(2026-09-05) tier:2]
+signal services — free graveyard material + occasional real survivors.
 
-### 57. [seed S17] ForexFactory Trade Explorer public profiles — grade: pending verification
+### 57. [seed S17] ForexFactory Trade Explorer public profiles — grade: pending verification [§33: deferred(2026-09-05) tier:2]
 Live retail trade streams from linked accounts; plus PIT calendar REVISION capture (the
 existing calendar miner keeps only current values — vintages are the revision-aware layer
-h19-003 needs). [§33: deferred(2026-09-05) tier:2]
+h19-003 needs).
 
-### 58. [seed S18] Wayback CDX walker for dead EA forums — grade: pending verification
+### 58. [seed S18] Wayback CDX walker for dead EA forums — grade: pending verification [§33: deferred(2026-09-08) tier:2]
 Forex-TSD attachments corpus (OP-096b, already carded by the EN dig): flat CDX enumeration of
 .mq4 sources + posted MT4 statements from the pre-MQL5 era. Pure python; web.archive.org works
-via curl from this box (measured). [§33: deferred(2026-09-08) tier:2]
+via curl from this box (measured).
 
-### 59. [seed S19] quant.stackexchange full dump — grade: pending verification
+### 59. [seed S19] quant.stackexchange full dump — grade: pending verification [§33: deferred(2026-09-08) tier:3]
 Stack Exchange data dumps (CC BY-SA, archive.org): every quant Q&A ever, offline-minable —
-mechanism folklore + refutations at zero marginal cost. [§33: deferred(2026-09-08) tier:3]
+mechanism folklore + refutations at zero marginal cost.
 
-### 60. [seed S20] arXiv q-fin API daily feed — grade: pending verification
+### 60. [seed S20] arXiv q-fin API daily feed — grade: pending verification [§33: deferred(2026-09-08) tier:3]
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
-pre-built month instead of browsing. [§33: deferred(2026-09-08) tier:3]
+pre-built month instead of browsing.
 
-### 61. [seed S21] BIS central-banker speeches full-text — grade: pending verification
+### 61. [seed S21] BIS central-banker speeches full-text — grade: **route half SATISFIED 2026-08-26 via seed S6 (card 46); residual is the full-text bodies only** [§33: deferred(2026-09-08) tier:2]
+- **Convergence, recorded once (not two discoveries):** this seed's stated ask was a dated PIT
+  text layer with "no per-CB scrapers needed". `https://www.bis.org/doclist/cbspeeches.rss` is
+  now probed, parsed and wired by the repaired central-bank miner — 25 dated speech rows in the
+  first archive run. Note the feed is **RDF with `dc:date`**, not RSS `pubDate`; a pubDate-only
+  reader returns zero rows and reads as an empty feed.
+- **Residual owed here:** the speech BODIES behind each `link`. The feed carries title + date
+  only, which is why just 2 of 162 archived documents currently match a policy keyword — the
+  hawkish/dovish delta this seed exists to produce needs the full text and does not exist yet.
 bis.org aggregates ALL central banks' speeches with dates — the PIT text layer behind h19-003's
-event trading, no per-CB scrapers needed. [§33: deferred(2026-09-08) tier:2]
+event trading, no per-CB scrapers needed.
 
-### 62. [seed S22] Broker swap/spread tables across MT5 brokers — grade: **route re-graded 2026-08-26 (prospector) — the SINGLE-broker half is ALREADY BUILT; only the CROSS-broker half is novel**
+### 62. [seed S22] Broker swap/spread tables across MT5 brokers — grade: **route re-graded 2026-08-26 (prospector) — the SINGLE-broker half is ALREADY BUILT; only the CROSS-broker half is novel** [§33: deferred(2026-09-08) tier:2]
 - MQL5's codebase surfaces a whole genre of live swap panels (`Swap Meter`, `Swap Fee Monitor
   Panel`, `Quantora Trading Cost Calculator`) that read swap from the terminal, not from broker
   web tables. Checked against the desk: `desks/mt5/side_channels/seed_miners.py:238` already
@@ -3718,15 +3807,15 @@ event trading, no per-CB scrapers needed. [§33: deferred(2026-09-08) tier:2]
   dispersion (one terminal cannot see another broker's swap menu).
 
 Extend broker_physics_miner: daily swap-table snapshots across brokers = the carry structure of
-the CFD universe (swap arbitrage/carry tilt axis) + spread menus for the cost surface. [§33: deferred(2026-09-08) tier:2]
+the CFD universe (swap arbitrage/carry tilt axis) + spread menus for the cost surface.
 
-### 63. [seed S23] GitHub topic/star-delta novelty sweeps — grade: pending verification
+### 63. [seed S23] GitHub topic/star-delta novelty sweeps — grade: pending verification [§33: deferred(2026-09-08) tier:3]
 Systematic (not incidental) sweeps of mql4/mql5/pine/forex-ea/backtesting topics with star/fork
-DELTAS as the novelty signal; fork-graph expansion from any repo that converts. [§33: deferred(2026-09-08) tier:3]
+DELTAS as the novelty signal; fork-graph expansion from any repo that converts.
 
-### 64. [seed S24] Prop-firm public leaderboards (FTMO et al.) — grade: pending verification
+### 64. [seed S24] Prop-firm public leaderboards (FTMO et al.) — grade: pending verification [§33: deferred(2026-09-08) tier:3]
 Passer/payout leaderboards + published stats where public: a survivorship-heavy but
-selection-documented track-record ground; selection-bias defense (master 23) mandatory. [§33: deferred(2026-09-08) tier:3]
+selection-documented track-record ground; selection-bias defense (master 23) mandatory.
 
 ---
 
