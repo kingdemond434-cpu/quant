@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-08-26T00:30:08+00:00",
+  "updated_at": "2026-08-26T00:45:09+00:00",
   "configured_sleeves": 41,
   "represented_sleeves": 41,
   "certified_sleeves_total": 41,
@@ -11,7 +11,7 @@
   "errors": {
     "qquant_shadow": "PermissionError: [Errno 13] Permission denied: 'C:\\\\opt\\\\quant\\\\desks\\\\mt5\\\\reports\\\\shadow\\\\ledger_qquant.hunt16.json.AUDNZD_dav_range_filter_adx_SHORT_afternoon_NORMAL_DAY.json'"
   },
-  "seconds": 0.704,
+  "seconds": 0.9,
   "gateway_armed": true,
   "promoted_live_sleeves": [],
   "status": "FAILED"
