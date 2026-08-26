@@ -1341,6 +1341,40 @@ def check_blind_trigger(defects) -> None:
                         "has new raw material; do not wait for the monthly floor."))
 
 
+def _recorder_pause_reason() -> str:
+    """Why the tape recorders are not writing, READ from what they publish. '' == they are writing.
+
+    Returns "SWITCHED-OFF" | "DISK-PAUSED" | "".
+
+    TWO STATES THAT ARE NOT DEFECTS, AND ONE THAT WELDED A GATE SHUT. `data/RECORDERS_OFF` is the
+    desk's own non-root kill switch (scripts/recorder_switch.py) -- the exact file
+    data/PRINCIPAL_ACTION.md tells the principal to touch to ACCEPT the crypto-tape retirement
+    (Constitution 224 / commit 6b8b61a9 / R0717). Nothing in this file had ever heard of it:
+    `grep -c RECORDERS_OFF scripts/max_audit.py` was 0. So accepting the retirement would have
+    left `recorder-scope-shrank` and `tape-recording-stopped` firing forever, identically and
+    unclearably, on a decision the desk had deliberately made -- the ACCEPT path welded shut by
+    the fence that was supposed to watch it. A gate that cannot be satisfied by doing the right
+    thing is a §33 Tier-1 defect-closer, and this desk has shipped that exact shape before (a
+    file-presence gate holding the sterile cockpit shut over a retired executor's flat book).
+
+    DISK-PAUSED is self-protection, not a stall: run_recorder.py:281-287 stops writing above
+    _DISK_MAX_FRAC=0.80 and keeps the heartbeat fresh, stamping the marker so a reader can tell.
+    Reading it is what separates "the recorder broke" from "the disk filled up".
+
+    This LOOSENS NOTHING: a genuinely stalled recorder publishes neither marker and still fires
+    the original defect with the original message.
+    """
+    if (ROOT / "data" / "RECORDERS_OFF").exists():
+        return "SWITCHED-OFF"
+    for hb in ("recorder_heartbeat", "recorder_spot_heartbeat", "recorder_bybit_heartbeat"):
+        try:
+            if "DISK-PAUSED" in (ROOT / "data" / hb).read_text("utf-8"):
+                return "DISK-PAUSED"
+        except OSError:
+            continue      # a heartbeat we cannot read is not evidence of a pause
+    return ""
+
+
 def check_self_application(defects) -> None:
     """Each of these encodes a max-fix the principal forced this session, as a REGRESSION guard.
     His pressure, made permanent: a future edit that undoes any becomes a same-day defect."""
@@ -1391,10 +1425,26 @@ def check_self_application(defects) -> None:
                    if d.is_dir() and any(f.stat().st_mtime > cutoff
                                          for f in d.glob("*.jsonl.gz")))
         if live < 20:
-            defects.append(("recorder-scope-shrank",
-                            f"recorder futures tape has {live} symbols written in the last "
-                            "30min (expansion floor is 20) -- forward-tape breadth regressed "
-                            "or the recorder stalled"))
+            # RESTORED 2026-08-26 (lost half of 3da91a1d, which never merged: the CHECKS landed
+            # and their un-welder did not). Three causes, three different actions, and only one
+            # of them is this defect -- without this, a recorder that is alive, healthy and
+            # DELIBERATELY paused reported as "breadth regressed or the recorder stalled".
+            reason = _recorder_pause_reason()
+            if reason == "SWITCHED-OFF":
+                pass          # a recorded decision via the desk's own kill switch
+            elif reason == "DISK-PAUSED":
+                defects.append((
+                    "recorder-disk-paused",
+                    f"recorder futures tape has {live} symbols written in the last 30min, "
+                    "because the recorders PAUSED THEMSELVES on disk pressure (heartbeat marker "
+                    "DISK-PAUSED, run_recorder.py _DISK_MAX_FRAC=0.80) -- the recorders are "
+                    "healthy and the DISK is the defect. Reclaim space or buy it; do not chase "
+                    "the recorder."))
+            else:
+                defects.append(("recorder-scope-shrank",
+                                f"recorder futures tape has {live} symbols written in the last "
+                                "30min (expansion floor is 20) -- forward-tape breadth regressed "
+                                "or the recorder stalled"))
     # bybit second-venue recorder must still exist
     if not (ROOT / "scripts/run_recorder_bybit.py").exists():
         defects.append(("bybit-recorder-gone", "second-venue (bybit) recorder script removed -- "
@@ -7513,6 +7563,21 @@ def check_under_exploration(defects) -> None:
                 "seven reconstructions are the first seven, not the last, so raw tape must stay "
                 "re-readable. Buy storage; every hour past the pause is permanently unbuyable."))
         if state == "RECORDING-STOPPED":
+            # A tape that stopped because the desk SWITCHED IT OFF is a recorded decision, not a
+            # stall (see _recorder_pause_reason). Without this, the principal's own ACCEPT path in
+            # data/PRINCIPAL_ACTION.md fires an unclearable defect for as long as the retirement
+            # holds -- and under the MT5 mandate that retirement is PERMANENT, so this defect
+            # would have fired forever on a decision the desk deliberately made. Restored
+            # 2026-08-26 from 3da91a1d, whose checks landed here while this half never did.
+            # The frozen-denominator warning still stands and is still said.
+            if _recorder_pause_reason() == "SWITCHED-OFF":
+                defects.append((
+                    "tape-retired-coverage-frozen",
+                    f"{label}: recording is OFF by decision (data/RECORDERS_OFF present). That is "
+                    "not a stall -- but coverage is filled/total over a FROZEN grid, so any "
+                    "coverage number from this surface is now meaningless and must not be read "
+                    "as progress (L1.65: a gauge denominated in what survives cannot see a loss)."))
+                continue
             defects.append((
                 "tape-recording-stopped",
                 f"{label}: {why} This outranks every coverage finding: coverage is filled/total "
