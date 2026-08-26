@@ -301,6 +301,9 @@ def _mem_available_mb() -> int | None:
 
 def _run_steps() -> int:
     failed: list[str] = []
+    #: step label -> the failing test node IDs it reported. Empty for a step that passed or that
+    #: died without producing a summary (HUNG/KILLED), which is itself the honest answer.
+    details: dict[str, list[str]] = {}
     for label, cmd, budget in _STEPS:
         try:
             r = subprocess.run(cmd, cwd=str(_ROOT), capture_output=True, text=True,
@@ -350,6 +353,19 @@ def _run_steps() -> int:
         print(f"[{'PASS' if ok else 'FAIL'}] {label}: {tail[0][:120]}")
         if not ok:
             failed.append(label)
+            # RECORD *WHICH* TEST, NOT JUST WHICH STEP (2026-08-26). The marker recorded
+            # `failed: ['tests (pytest)']` and nothing else, so max_audit could report the
+            # desk-wide gate red -- as it did for 20h -- while naming no failing test. The only
+            # way to learn what broke was to re-run the whole 60-80 minute suite, which on a
+            # 3.8GB swapless box competes with the live organs and is why a red gate sits.
+            # A defect the desk cannot act on without an hour of compute is a defect it leaves
+            # alone. pytest already prints the node IDs in its short summary; keeping them costs
+            # nothing and turns the next red into a targeted fix.
+            details[label] = [
+                ln.split(" - ")[0].strip()
+                for ln in (r.stdout or "").splitlines()
+                if ln.startswith(("FAILED ", "ERROR "))
+            ][:25]
     failed_tracked, inflight = _attribute(failed)
     stale = [s for s in failed if s not in failed_tracked]
     if stale:
@@ -375,6 +391,7 @@ def _run_steps() -> int:
             json.dumps({"ok": not failed, "ts": datetime.now(tz=UTC).isoformat(),
                         "failed": failed, "tracked_ok": not failed_tracked,
                         "failed_tracked": failed_tracked, "inflight": inflight,
+                        "failed_tests": details,
                         "killed": [s for s in failed if "(KILLED sig" in s]}), "utf-8")
     return 1 if failed else 0
 
