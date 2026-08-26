@@ -1455,76 +1455,50 @@ fail-fast run was stopped at its first failure, so the suite has not yet been pr
 end-to-end. Next gap-fixer: run `scripts/run_ci.py` and read `failed_tests` in the marker, which
 now names the tests rather than only the step.
 
-### 2026-08-26T06:15Z addendum — the scheduler repair was itself inert, and two corrections
+### 2026-08-26T07:05Z addendum 2 — the CI red, and a defect class promoted to ARCHITECTURAL
 
-**#140 (new, CLOSED) — THE REPAIR WAS FIRING AND KILLING EVERY ORGAN IT FIRED.** Reality-gate
-check on this cycle's own work, and it failed. The dispatcher state reported `fires=1` for
-`check_organ_liveness`, `check_freshness`, `check_promotion_gate`, `check_input_provenance`,
-`check_denominators` and `check_gate0_ready` — while every one of those organs' logs was still
-**5.4 days stale**. The commands were fine: run by hand with the dispatcher's exact env and cwd,
-`check_freshness` wrote its log normally.
+**#139 UNDERLYING CI RED: 45 → 14 failing tests, and 5 of the 6 causes were one class.**
+The full suite ran to completion (80 min) and reported **45 failures**. Re-run after this
+cycle's repairs: **14**. What was fixed, and why it is one story:
 
-**Cause:** systemd's default `KillMode=control-group` tears down the whole cgroup when a
-`Type=oneshot` main process exits, and `start_new_session=True` escapes the SESSION, not the
-CGROUP. Every spawned row was SIGKILLed milliseconds after starting. Proven, not reasoned: a
-probe unit spawning a detached `sleep 25; echo SURVIVED` child left NO output under the default
-and printed SURVIVED under `KillMode=process`.
+| # | symbol/behaviour missing | implementation lives in | landed? |
+|---|---|---|---|
+| 1 | `liquidation_listener._flush` atomic write + quarantine + `_STATUS` | `31a4969b` | tests merged, code did not |
+| 2 | `desks/mt5/.../failure_mining.py` (never importable, +4 indent) | — | syntax, hidden by #1's SyntaxError |
+| 3 | `build_bars.ParseAttrition` | `6d204306` | **NOT an ancestor of HEAD** |
+| 4 | `recommendations.claim_state` / `CLAIM_TTL_H` | `ddc0b562` | **NOT an ancestor of HEAD** |
+| 5 | `max_audit._recorder_pause_reason` | `3da91a1d` | **NOT an ancestor of HEAD** |
 
-**Blast radius:** BOTH waves were inert — the first wave's 12 organs (hourly law gate, §33
-conversion fence, ratchet raiser, deploy puller) as much as this cycle's 17. `fires=N` is a
-HEARTBEAT; the organ's own artifact is the PIPE. Fixed in `d236da86`; the proof is a clean split
-in the artifact table — **everything fired after 05:22 produced, everything fired before did
-not**: `pull_deploy` 02:39→05:20:57, `check_idle_cost` 04:29→05:31:02, `check_conversion`
-(§33 fence) produced 05:36, `gauntlet_survivors.json` 05:40:51 → `promotion_gate_verdicts.json`
-05:44:32. `check_organ_liveness` produced at **05:50:59 — its first output in 128h**.
+**FIVE INSTANCES IN ONE CYCLE PROMOTES THIS TO AN ARCHITECTURAL DEFECT** under the
+recurring-defect ladder (1 fix → 2 fence → 3 architectural → 4 redesign candidate). The
+component that needs redesign is **the merge process**, not any of these files. Cases 3–5 share
+an exact, mechanically-checkable signature: *a symbol a test imports from a first-party module,
+absent at HEAD, present on a branch that is not an ancestor of HEAD.* The branch that has it can
+be NAMED, so the detector is buildable — carded, deliberately not built on the tail of this
+cycle (a half-built scaffold is worse than none, and the `compile (compileall)` gate added today
+already catches the subclass that cannot even import).
 
-**#141 (new, CLOSED) — `organ_catchup` had the identical defect, and it is the loop everything
-rests on.** Recursion rule applied: two organs spawn organs and then exit. Its own log is the
-proof — `re-fired brain (ops/run_cro_ai.sh)` at 04:55, 05:05, 05:10, 05:15, 05:20: five re-fires
-in 25 minutes with no cro_ai run produced by any of them. A re-fire that WORKS makes the next
-tick report `field busy`; it re-fired forever, logging success and starting nothing. This is the
-loop the whole quota/mutex recovery design depends on — the miners deferred behind the brain
-mutex resume *there*. After the fix the next ticks read `field busy (brain running)`. `1054cafd`.
+**Case 5 was LIVE, not cosmetic.** The checks calling `_recorder_pause_reason`
+(`recorder-scope-shrank`, `tape-recording-stopped`) are at HEAD; the helper that lets them CLEAR
+was not. `grep -c RECORDERS_OFF scripts/max_audit.py` returned **0** while `data/RECORDERS_OFF`
+is present and PERMANENT under the MT5 mandate — so the desk's own documented ACCEPT path was
+welded shut by the fence meant to watch it, and doing the right thing could never clear the
+defect. Same shape the desk shipped before (a file-presence gate holding the sterile cockpit
+shut over a retired executor's flat book). Grafted by hand, not restored wholesale: HEAD carries
+newer max_audit work (`check_manifest_backlog`, added earlier today) that a wholesale take would
+have silently reverted — checked with `merge-base`, not assumed.
 
-**#142 (new, CLOSED) — the repair organ was starving the organs it exists to serve.** Five
-fences invoke `quant-gap-wirer.service` and exactly ONE had a cooldown; the other four fired on
-every breaching run, at cadences as fast as **every 10 minutes**. A breach that persists is the
-normal state of a breach. Journal, against a WEEKLY timer: `03:12 start → 03:19 OOM-KILLED`,
-`03:20 → 03:26 OOM-KILLED`, `03:32 → 04:19 finished (1.6GB peak)`, `04:20 start`. Each start
-takes the desk-wide brain mutex, so every miner waking during the run is DEFERRED — inside the
-one window this cycle measured as productive. `libs/ops/repair_invoke.py` is now the single door
-(shared 6h stamp + an is-active check, since a run outlives the cooldown). No fence weakened.
+**Remaining 14, triaged, all pre-existing and none of this class:** `test_desk_memory` (3 — a
+backlog of 59 lessons enforced by no test and 4 with broken `enforced_by` paths, L0173–L0176,
+other seats'); `test_scheduler_manifest` (2 — **72** committed units absent from the manifest,
+first offender `ops/full-pipeline.timer`; my 7 new SYSTEMD rows do not change the count);
+`test_check_risk_units` (2); `test_research_allocator_semantics` (2); and one each in
+`test_review_fixes`, `test_dependency_caps` (undeclared imports: playwright, mt5desk,
+convert_to_hypotheses, run_all_miners), `test_check_private_bisection`,
+`test_wiring_and_ratchets` (34 orphans vs a budget of 30), `test_record_suite_run`.
 
-**CORRECTION to `d236da86`, which matters because it would mislead the next reader.** That
-commit implied the cgroup kill explained the 17-day L1.50 coverage-floor stall. It does not.
-Measured: `check_ratchets` ran at 02:30 today and is not dead — it had nothing to do.
-`coverage.json` was **ABSENT**; its only producer is `ops/gates.sh --full`, which had no timer,
-no manifest row, and `run_ci`'s test step runs pytest **without** `--cov`. The ratchet has had no
-input since a human last typed the command by hand. "The floor has not risen" was reading as
-"coverage has not improved" when the truth was "coverage has not been MEASURED" — absence
-resolving to a clean verdict, the WS-005 class. `quant-coverage-ratchet.timer` now runs it
-weekly (Sun 01:00 UTC — off-peak, clear of the miners' 05:00–09:00 window). `619e9ac6`.
-
-**MONEY-PATH FENCE (brief item 3) — working, and the trample RATE is escalating.**
-`data/moneypath_fence.log`: **34 BREACH+RESTORED events today vs 4 yesterday**, most often
-`desks/mt5/research/promoter.py` (9× — the organ that arms capital), then `external_gauntlet.py`
-(6×) and `gateway.py` (5×). The fence catches and heals each one from HEAD. Trampler identified:
-`2dbd4401 "mt5 desk hourly sync"` — the Windows-box hourly sync, 30 files, **19,571 deletions**.
-That is GAP 128/134's known root cause and it is C:-side, unreachable from this box. NOT my
-pushes: the large clusters (02:05 ×15, 01:20–01:40) predate this session entirely. New evidence
-here is the RATE and the named trampling commit class, not the row.
-
-**F0025 verified, still true, correctly principal-gated — not neglect.** `run_deadman_switch.py`
-line ~295 guards the stale-feed detector on `eq is not None`, and `should_fire` returns False when
-equity is None, so an **absent** equity feed makes the ruin rail neither fire nor page. Combined
-with LAWS §4 (the rail watches retired crypto endpoints), it is currently blind AND silent. Read
-only; the file was not touched. It must be repointed AND this gap closed before any capital arms.
-
-**Highest-EV item left open:** the daily research chain (`scripts/daily_research_cycle.py`) has
-been dead since 2026-08-20 on BOTH routes — the manifest row (cron dead) and root
-`quant-cro.timer`, whose `quant-cro.service` sits in `systemctl --failed`. It is the desk's main
-research pipeline. **Exact blocker, not a vague deferral:** its `_STEPS` include
-`autodiscovery → scripts/run_crypto_research.py`, the crypto factory, which the MT5 mandate
-forbids waking. Resurrecting the chain requires a step-by-step mandate audit to strip or fence
-the crypto-era steps first; blanket-allowlisting it would breach LAWS §1. That audit is the next
-cycle's top item and is now cheap, because the scheduler underneath it finally works.
+**Two claims corrected this cycle, both because they would have misled the next reader:**
+`d236da86` implied the cgroup kill explained the L1.50 coverage stall (it did not — the ratchet
+has no producer at all); and the 3 `TestClaimState` failures that looked like new regressions in
+my before/after diff were pre-existing — `comm` had warned the inputs were unsorted and I
+re-derived them directly rather than trusting the diff.
