@@ -5064,5 +5064,50 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"4223990502bf8fd7": {
+"t0": "2026-08-26T10:24:07+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Abhishek-97735/Equity-Line",
+"url": "https://github.com/Abhishek-97735/Equity-Line",
+"text": "\ud83d\udcca Calculate and visualize projected equity and floating profit/loss with the Equity Line indicator for MT4/MT5/cTrader.",
+"symbols": [],
+"found_at": "2026-08-26T10:24:01+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T10:03:05Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4969c01fe309ab1f": {
+"t0": "2026-08-26T10:24:07+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ArtemVeremienko/mt5kit",
+"url": "https://github.com/ArtemVeremienko/mt5kit",
+"text": "Python quant toolkit for MetaTrader 5: Optimal trading session scheduling, tick-level microstructure analysis, feed health monitoring, TPO profiles, and statistical arbitrage.",
+"symbols": [],
+"found_at": "2026-08-26T10:24:03+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T10:21:24Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

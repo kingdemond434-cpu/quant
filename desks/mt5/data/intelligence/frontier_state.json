@@ -1,5 +1,5 @@
 {
-"cursor": 13,
+"cursor": 14,
 "queries_done": {
 "zh": [
 "\u8ddf\u5355 MT4",
@@ -39,7 +39,10 @@
 "id": [
 "salin perdagangan MT4",
 "salin perdagangan MT5",
-"salin perdagangan ranking"
+"salin perdagangan ranking",
+"sinyal MT4",
+"sinyal MT5",
+"sinyal ranking"
 ],
 "ko": [
 "\uce74\ud53c \ud2b8\ub808\uc774\ub529 MT4",
