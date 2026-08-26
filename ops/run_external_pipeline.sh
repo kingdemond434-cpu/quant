@@ -7,6 +7,7 @@
 set -u
 cd /home/quant/quant-platform
 PY=.venv/bin/python
+LOGF=data/cro_ai_logs/external_pipeline_gauntlet.log
 
 echo "[$(date -u +%FT%TZ)] stage 2: external backtest"
 $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc=$?)"
@@ -23,8 +24,26 @@ $PY desks/mt5/research/edge_search.py || echo "edge search FAILED (rc=$?) -- con
 echo "[$(date -u +%FT%TZ)] stage 2c: merge hypothesis sources"
 $PY desks/mt5/research/merge_hypotheses.py || echo "merge FAILED (rc=$?)"
 
-echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet"
-$PY desks/mt5/scripts/external_gauntlet.py || { echo "stage 3 FAILED (rc=$?)"; exit 1; }
+# STAGE 3 RUNS ON THE DESK BOX, NOT HERE. Measured 2026-08-26: a 208-cell gauntlet (100 of them
+# discovered edges with ~5,000 signals each) was OOM-killed on this 4GB box -- 25 OOM events in 90
+# minutes -- while the desk box sat with 4.1GB free of 8GB and already holds the universe. Heavy
+# compute follows the memory and the data; this box coordinates and keeps the canon. Running it
+# here would silently truncate the gauntlet to whatever fits, which is worse than not running it:
+# a partial gauntlet still writes verdicts.
+echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet (on the desk box)"
+scp -q desks/mt5/data/hypotheses/external_survivors.json \
+    contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
+if ssh -o ConnectTimeout=20 contabo-mt5 \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py" \
+     >> "$LOGF" 2>&1; then
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \
+      desks/mt5/reports/UNIVERSAL_SURVIVORS.json 2>/dev/null
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/universal_gates_external.json' \
+      desks/mt5/reports/universal_gates_external.json 2>/dev/null
+  echo "gauntlet done on the desk box; certificates pulled back"
+else
+  echo "stage 3 FAILED on the desk box -- see $LOGF"
+fi
 
 # Stage 4: certificates -> canon copy -> desk box. The canon file is what the authority
 # ratchet floors and what restores the authority file after a bad writer.
