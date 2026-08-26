@@ -32,10 +32,15 @@ def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import (
         BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+    from mt5desk.sizing import clamp_risk_frac
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
+          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          # gateway.py imports this from mt5desk.sizing; the AST extraction keeps only
+          # function/const defs, so the import has to be supplied here or promoted_lot
+          # dies on a NameError that looks like a sizing bug
+          "clamp_risk_frac": clamp_risk_frac}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "stop_distance",
                  "promoted_lot", "heat_budget", "cap_by_heat",
                  "_eur_per_price_unit", "min_lot_risk_eur"}
@@ -186,12 +191,20 @@ def test_the_promoted_ramp_is_stop_aware_too():
 
 def test_the_promoted_ramp_floors_rather_than_rounds():
     """Rounding up reintroduced the overshoot _lot_steps exists to prevent, on
-    exactly the sleeves with the least forward evidence."""
+    exactly the sleeves with the least forward evidence.
+
+    The bound is computed at the promoted path's OWN risk basis -- clamp_risk_frac
+    (3% base, sleeve-specific since 2026-08-25), not the gold book's Q_OPT -- because
+    promoted_lot passes q_eff = clamp_risk_frac(risk_frac) * ramp into auto_lot. Bounding
+    against Q_OPT tested a policy the gateway no longer runs."""
+    from mt5desk.sizing import clamp_risk_frac
     for live_n in (0, 100, 500):
         for eq in (1_684.0, 8_000.0, 25_000.0):
             lot = NS["promoted_lot"](eq, live_n, 53.40)
             ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-            assert lot <= max(NS["auto_lot"](eq, 53.40) * ramp, 0.01) + 1e-9
+            q_eff = clamp_risk_frac(None) * ramp
+            bound = NS["auto_lot"](eq, 53.40, NS["GOLD_SYMBOL"], None, q=q_eff)
+            assert lot <= max(bound, 0.01) + 1e-9
 
 
 # ------------------------------------------------------- the live path is wired
@@ -199,7 +212,10 @@ def test_the_promoted_ramp_floors_rather_than_rounds():
 def test_the_gateway_sizes_from_the_spec_and_refuses_when_it_cannot():
     """The fix is only real if the trade loop passes the distance."""
     assert "dist = stop_distance(spec)" in _SRC
-    assert "auto_lot(equity, dist)" in _SRC
+    # canon evolved the call to carry the symbol's own risk units (L1.67) and the clamped
+    # per-sleeve risk fraction; the property under test -- the REAL distance reaches the
+    # sizer, never the house constant -- is unchanged
+    assert "auto_lot(equity, dist_usd, symbol, info, q=q_eff)" in _SRC
     assert "refusing to size from the house average" in _SRC
 
 

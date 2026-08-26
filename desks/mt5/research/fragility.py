@@ -153,7 +153,9 @@ def main() -> int:
         if sym not in mkt_cache:
             h1 = symbol_h1(sym)
             c = pd.Series(h1["close"].to_numpy(float), index=h1.index)
-            mk = np.log(c).diff().resample("D").sum().dropna()
+            # L1.68 (GAP 132): resample("D").sum() emits 0.0-return rows for empty calendar
+            # days and a stub return for the Sunday open sliver -- both deflate daily vol.
+            mk = families.d1_session_filtered(np.log(c).diff().resample("D").sum().dropna())
             mk.index = mk.index.tz_localize(None)
             mkt_cache[sym] = mk
         return mkt_cache[sym]

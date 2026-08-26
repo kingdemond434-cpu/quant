@@ -54,6 +54,15 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
     # grandfathering is over: SLEEVES must stay empty and enrolment must stay certificate-driven
     "desks/mt5/research/forward_reconcile.py": "RETIRED_ORPHAN",
+    # 2026-08-26 (gap-wirer): five more unification-reverted properties re-applied and fenced.
+    # Each marker is the patch the file must never lose; every one of these was ALREADY lost
+    # once to a sync trample or branch unification, which is exactly why it is here.
+    "desks/mt5/research/universal_gate.py": "retained_exact_survivors",
+    "desks/mt5/research/run_hunt12.py": "_day_states_same_day",
+    "desks/mt5/research/allocation.py": "from mt5desk.gateway import Q_OPT",
+    "desks/mt5/research/portfolio_projection.py": "from_symbol",
+    "desks/mt5/mt5desk/config.py": "def desk_root",
+    "desks/mt5/mt5desk/families.py": "d1_session_filtered",
 }
 
 

@@ -18,8 +18,10 @@ from research.hunt_deflate import (  # noqa: E402
     build_candidates,
     normalize_existing,
 )
+# Canon's sequential-sufficiency rework (RESEARCH 6d) renamed MIN_VERDICT_TRADES to
+# SEQ_MIN_TRADES -- same constant, same meaning: never a verdict below this many trades.
 from research.shadow_forward import (  # noqa: E402
-    MIN_VERDICT_TRADES,
+    SEQ_MIN_TRADES,
     VERDICT_MIN_DAYS,
     VERDICT_MIN_TRADES,
 )
@@ -80,5 +82,5 @@ def test_canonical_candidate_policy_matches_the_live_shadow_clock() -> None:
     assert FORWARD_POLICY == {
         "evaluate_after_trades": VERDICT_MIN_TRADES,
         "evaluate_after_days": VERDICT_MIN_DAYS,
-        "minimum_trades_for_verdict": MIN_VERDICT_TRADES,
+        "minimum_trades_for_verdict": SEQ_MIN_TRADES,
     }

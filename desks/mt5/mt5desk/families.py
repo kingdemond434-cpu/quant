@@ -39,6 +39,34 @@ def _h1(df: pd.DataFrame) -> pd.DataFrame:
     return h1.dropna(subset=["close"])
 
 
+def d1_session_filtered(frame, *, trades_weekends: bool = False):
+    """Drop out-of-calendar DAILY rows at the point of consumption (L1.68, GAP 132).
+
+    A Sunday "D1" row on a weekend-closed instrument is the 1-3h Asia-Pacific open stub wearing
+    a day's clothes (measured: annualised vol understated up to 4.95%, lag-1 autocorrelation
+    inflated 34% on the worst symbol), and ``resample("D").sum()`` additionally manufactures
+    0.0-value Saturday rows out of empty groups. The rule is libs/research/bar_span.py's --
+    ONE encoding, shared with scripts/check_bar_span.py -- imported lazily so the Windows-side
+    money path (gateway imports this module) never needs the repo root on sys.path. Applies to
+    any DataFrame/Series with a DatetimeIndex of DAILY rows; H1 frames are NOT passed through
+    here because weekend H1 bars are genuine trading hours, not stubs.
+    """
+    if trades_weekends or len(frame) == 0:
+        return frame
+    try:
+        from libs.research.bar_span import is_out_of_calendar
+    except ImportError:  # research organ invoked without the repo root on sys.path
+        import sys
+        from pathlib import Path
+        _root = str(Path(__file__).resolve().parents[3])
+        if _root not in sys.path:
+            sys.path.insert(0, _root)
+        from libs.research.bar_span import is_out_of_calendar
+    keep = [not is_out_of_calendar(int(t) // 1_000_000, trades_weekends=trades_weekends)
+            for t in frame.index.asi8]
+    return frame[keep]
+
+
 def family1_usd_session_shock(
     df: pd.DataFrame,
     fx: pd.DataFrame | None,

@@ -28,30 +28,41 @@ def _frame(days: int = 40) -> pd.DataFrame:
     base = pd.Series(100.0, index=idx)
     hi, lo = base.copy(), base.copy()
     for i, ts in enumerate(idx):
-        if 13 <= ts.hour <= 22 and ts.dayofyear % 2 == 0:
-            hi.iloc[i] += 12.0          # a violently wide NY on even days only
-            lo.iloc[i] -= 12.0
+        if 13 <= ts.hour <= 22:
+            hi.iloc[i] += 1.0           # every NY session has SOME range: a literal zero
+            lo.iloc[i] -= 1.0           # median reads as "no observation" and skips the label
+            if ts.dayofyear % 2 == 0:
+                hi.iloc[i] += 12.0      # a violently wide NY on even days only
+                lo.iloc[i] -= 12.0
     return pd.DataFrame({"open": base, "high": hi, "low": lo, "close": base,
                          "tick_volume": 1.0}, index=idx)
 
 
 def test_a_days_label_comes_from_the_previous_day():
+    """Canon computes labels directly from D-1/D-2 aggregates (not the old branch's two-step
+    re-keying), so the pin is the CAUSAL property itself: on a fixture where NY is violently
+    wide on even days only, the wide-day states must surface on the FOLLOWING days."""
     h1 = _frame()
-    same, prior = _day_states_same_day(h1), day_states(h1)
-    days = sorted(prior)
-    assert days, "no labelled days"
-    for d in days:
-        yesterday = sorted(x for x in same if x < d)[-1]
-        assert prior[d] == same[yesterday], (
-            f"{d} was labelled from its own session, not {yesterday}'s")
+    prior = day_states(h1)
+    tradeable = {d: s for d, s in prior.items() if s != "NONE"}
+    assert tradeable, "no labelled days"
+    for d, s in tradeable.items():
+        prev_even = pd.Timestamp(d - pd.Timedelta(days=1)).dayofyear % 2 == 0
+        if s == "TREND_DAY":
+            assert prev_even, f"{d} TREND_DAY without a wide prior session -- same-day join"
+        if s == "RANGE_DAY":
+            assert not prev_even, f"{d} RANGE_DAY after a wide prior session -- same-day join"
 
 
-def test_the_first_day_is_dropped_rather_than_defaulted():
-    """No prior session means NO STATE. Defaulting would make an unobservable day tradeable."""
+def test_unobservable_days_carry_no_state_rather_than_a_default():
+    """No completed prior session means NO STATE -- the day is OMITTED, and consumers
+    (gateway.state_allows) treat absence as refusal. Defaulting would make an unobservable
+    day tradeable."""
     h1 = _frame()
-    same, prior = _day_states_same_day(h1), day_states(h1)
-    assert min(same) not in prior
-    assert len(prior) == len(same) - 1
+    prior = day_states(h1)
+    first_bar_day = min(ts.date() for ts in h1.index)
+    assert first_bar_day not in prior
+    assert "NONE" not in set(prior.values())
 
 
 def test_the_label_is_not_computed_from_future_bars():
@@ -85,13 +96,17 @@ def test_the_two_joins_actually_disagree():
 
 @pytest.mark.parametrize("sym", ["XAUUSD", "AUDCAD"])
 def test_on_real_data_every_label_is_strictly_backward_looking(sym):
+    """Truncation invariance on real bars: withholding a day's own future must not change its
+    label. Implementation-agnostic, so it survives refactors of the join arithmetic."""
     parquet = _DESK / "data" / "universe" / f"{sym}_H1.parquet"
     if not parquet.exists():
         pytest.skip(f"{sym} bars not present")
     from mt5desk import families
     h1 = families._h1(pd.read_parquet(parquet))
-    same, prior = _day_states_same_day(h1), day_states(h1)
-    days = sorted(prior)
-    for d in days[:200]:
-        yesterday = sorted(x for x in same if x < d)[-1]
-        assert prior[d] == same[yesterday]
+    full = day_states(h1)
+    days = sorted(full)
+    for d in days[40:200:20]:
+        cutoff = pd.Timestamp(d, tz="UTC") + pd.Timedelta(hours=8)
+        truncated = day_states(h1[h1.index < cutoff])
+        assert d in truncated and truncated[d] == full[d], (
+            f"{sym} {d}: label changed when its own future was withheld")
