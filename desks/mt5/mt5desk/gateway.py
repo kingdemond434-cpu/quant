@@ -258,7 +258,8 @@ def stop_distance(spec: dict) -> float | None:
 
 
 def realised_q(equity: float, dist_usd: float | None = None,
-               symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+               symbol: str = GOLD_SYMBOL, info: object | None = None,
+               lot: float | None = None) -> float:
     """The risk fraction the account WILL actually run, after the 0.01-lot floor.
 
     Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
@@ -275,7 +276,11 @@ def realised_q(equity: float, dist_usd: float | None = None,
     """
     d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
     per_unit = _eur_per_price_unit(symbol, info)
-    lot = max(_lot_steps(Q_OPT * equity / (d * per_unit)), 0.01)
+    if lot is None:
+        # No lot given: recompute at Q_OPT -- right for the Q_OPT-sized book, FICTION for a
+        # clamp-sized promoted sleeve (printed 1.16% while the lot ran 2.9%). Callers holding
+        # the actual lot pass it; q_charge already bills the heat cap honestly either way.
+        lot = max(_lot_steps(Q_OPT * equity / (d * per_unit)), 0.01)
     return float(lot * d * per_unit / equity) if equity > 0 else 0.0
 
 
@@ -1451,7 +1456,7 @@ def main() -> None:
                     promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
                                  s.get("risk_frac"))
                     if s["lot"] == "auto_ramp" else float(s["lot"]))
-                q_real = realised_q(equity, dist, s["symbol"], sym)
+                q_real = realised_q(equity, dist, s["symbol"], sym, lot=lot)
             except Exception as exc:                              # noqa: BLE001
                 log(f"[{s['name']}] SKIPPED: cannot price {s['symbol']} risk in account "
                     f"currency ({exc}); refusing to size from the house average")

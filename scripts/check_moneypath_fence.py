@@ -63,6 +63,15 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/portfolio_projection.py": "from_symbol",
     "desks/mt5/mt5desk/config.py": "def desk_root",
     "desks/mt5/mt5desk/families.py": "d1_session_filtered",
+    # 2026-08-26 01:19-01:21 UTC, MEASURED: the C:-side hourly pusher overwrote EVERY unmarkered
+    # file above-and-below with stale copies and the sweep commit (eb1818f4) laundered them into
+    # history within two minutes -- the fence's own docstring scenario, executed end to end.
+    # Marker coverage is therefore the survival condition for a fix in this tree, not a nicety.
+    "desks/mt5/mt5desk/engine.py": "trail_tighten_k",       # pessimistic intrabar order + exits
+    "desks/mt5/research/run_hunt17.py": "d1_session_filtered",
+    "desks/mt5/research/regime_discovery.py": "d1_session_filtered",
+    "desks/mt5/research/fragility.py": "d1_session_filtered",
+    "desks/mt5/research/orthogonality.py": "research.portfolio_projection",
 }
 
 
