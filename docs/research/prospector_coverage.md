@@ -7437,3 +7437,20 @@ real; 2 cards verified-clean, 1 route re-graded; R0660 + R0661 raised; R0652 hal
 2 graveyard discards, 1 already-held lead; 3 operator-library routes.
 **Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forward clocks minted, 0 video fetched,
 0 video locked (no route tried-and-failed), 0 reply chains mined, 0 non-English ground this run.**
+
+---
+
+## SESSION 2026-08-26 (b) — PROSPECTOR, standing daily run
+
+**ITEMS TAKEN THIS RUN** (bounded per completion contract; depth unbounded):
+1. **MQL5 forum reply layer** — thread bodies ≥2 levels deep, ranked by mechanism-keyword
+   density (desk lesson: never by votes). Named as the highest-yield MQL5 residual by the
+   previous run's NEXT-GROUND list, item 1.
+2. **MQL5 `/en/articles`** — never once parsed by any desk organ; the teardown/refutation genre.
+   NEXT-GROUND item 2.
+3. (stretch, only if 1+2 close) named next ground for the following run.
+
+Backlog: 0 pending verification, 0 pending legitimacy, 29 deferred (earliest 2026-09-01) —
+verified clear before opening new ground, per RESUME-DO-NOT-RESTART.
+
+STATUS: OPEN — updated as each item resolves.
