@@ -246,3 +246,41 @@ def test_a_marker_written_by_the_real_run_ci_is_parseable_by_the_real_max_audit(
     assert parsed.tzinfo is not None, (
         "a naive timestamp makes the age computation wrong by the box's UTC offset -- and wrong "
         "in the direction that makes a stale marker look fresher than it is")
+
+
+class TestTheCompilePassIsGated:
+    """L0177. Every AST-level tool in this repo is blind to the symbol-table class of syntax
+    error -- `await` outside `async` is the one that bit -- so ruff, mypy AND `pytest --co` all
+    reported GREEN on scripts/liquidation_listener.py while `import` raised SyntaxError and the
+    desk-wide gate sat RED for 21h. `ast.parse` shares the blindness, so reaching for it as a
+    hand-check confirms the wrong answer. Only `compile()` runs the pass that catches it.
+
+    Pinned in BOTH gate definitions because they are separate files that nothing else relates,
+    and the local gate is the one a session actually runs before pushing.
+    """
+
+    def test_run_ci_has_a_compile_step(self) -> None:
+        from scripts.run_ci import _STEPS
+        labels = [label for label, _cmd, _budget in _STEPS]
+        assert any("compile" in label for label in labels), (
+            "the compileall step was removed from run_ci._STEPS -- a file that cannot be "
+            f"imported can once again pass every other gate. Steps: {labels}")
+        cmd = next(c for label, c, _ in _STEPS if "compile" in label)
+        assert "compileall" in cmd, f"the compile step no longer runs compileall: {cmd}"
+
+    def test_local_gates_have_a_compile_step(self) -> None:
+        src = (_ROOT / "ops" / "gates.sh").read_text("utf-8")
+        assert "compileall" in src, (
+            "ops/gates.sh lost its compileall run. This is the gate a session actually executes "
+            "before pushing, so losing it here is worse than losing it in CI.")
+
+    def test_compile_runs_before_the_expensive_test_step(self) -> None:
+        """~1s versus a 2h budget: the cheapest failure in the repo must not be detected last.
+        The original defect was found only after a full-suite run, which on a 3.8GB swapless box
+        competes with the live organs -- which is precisely why the red sat instead of being
+        fixed."""
+        from scripts.run_ci import _STEPS
+        labels = [label for label, _c, _b in _STEPS]
+        compile_at = next(i for i, label in enumerate(labels) if "compile" in label)
+        tests_at = next(i for i, label in enumerate(labels) if label.startswith("tests"))
+        assert compile_at < tests_at, f"compile must precede the suite: {labels}"
