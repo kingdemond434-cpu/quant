@@ -1189,7 +1189,18 @@ def check_stale_daemons(defects) -> None:
         age = (now - started) / 3600.0
         if age < _ORGAN_MIN_UP_H:
             continue        # a one-shot CLI run or a just-restarted organ -- it loaded fresh code
-        label = svc or rel.rsplit("/", 1)[-1].removesuffix(".py")
+        # LABEL FROM THE PID'S ACTUAL OWNER, not from the script->unit map. Two DIFFERENT units
+        # run serve_dashboard.py here (quant-dashboard on :8080, quant-desk-web on :8788), and
+        # `by_script` collapses a script to ONE unit name -- so a stale pid owned by desk-web was
+        # reported under quant-dashboard's label, and the actuator restarted quant-dashboard. Same
+        # class as the orphan above, one level down: a verdict is only actionable if it names the
+        # thing whose restart would change it.
+        #
+        # RESIDUAL, STATED RATHER THAN HIDDEN: still ONE verdict per script, taken from the oldest
+        # owned pid. If two units are stale at once, the older is reported, repaired, and the
+        # other surfaces on the next run -- it converges rather than reporting both at once.
+        label = _owner_unit(pid).removesuffix(".service") or svc or \
+            rel.rsplit("/", 1)[-1].removesuffix(".py")
         # OWNERSHIP: a fix cannot ship into a process the supervisor does not control. Only
         # meaningful for scripts that HAVE a unit -- the rest are cron/loop organs by design.
         if svc:
