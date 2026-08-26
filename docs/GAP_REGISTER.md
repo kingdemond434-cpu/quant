@@ -1200,3 +1200,35 @@ frontier_ru/prospector/cro OOM-killed again yesterday); (3) root research units'
 (cro-ai/dataaxis/blindrediscovery exit-1s); (4) **NEW: edit the C:-side hourly push task to
 exclude `desks/mt5/**/*.py` (#134)** — the single highest-leverage line on this list, it ends
 the GAP-128 class instead of fencing it.
+
+_Appended 2026-08-26 ~02:30Z (weekly gap-fixer cycle, second seat — non-colliding lane vs the
+02:00Z seat; each fix below forced through a real run and verified):_
+
+**#134 CONTAINMENT UPGRADED — the launder route is now closed on this box.** The Dell's hourly
+sync executes `git add desks/mt5 && git commit` IN THIS REPO over ssh, so hooks govern it:
+`ops/githooks/pre-commit` → `scripts/moneypath_precommit_guard.py` (tests
+`tests/scripts/test_moneypath_precommit_guard.py`, commit 6fed406d). Layer 1: ssh-context
+commits (SSH_CONNECTION set — true for the Dell's git, false for every local organ) may not
+stage ANY `desks/mt5/**/*.py` or `scripts/build_zentech_state.py`; refused files are restored
+from HEAD (new files left untracked on disk, nothing destroyed); `QUANT_ALLOW_SSH_PY=1` is the
+deliberate-act override. Layer 2, any context: a staged change may never strip a fence marker
+HEAD carries. The sync's state JSONs still land; an all-trample sync degrades to an EMPTY
+commit (git checks emptiness before the hook runs — verified in a scratch repo). Measured
+attack 7cb174af (02:02Z, gutted gateway.py −1078 lines) reproduced in tests and blocked. The
+worktree-write trample persists until the Dell push list excludes `*.py` (console item 4,
+unchanged — now defense-in-depth rather than the sole fix); the 5-min fence heals the worktree.
+
+**Live trading box UNSTALED (found in this seat's STEP-0):** 6 of 21 protected files on
+contabo-mt5 `C:/opt/quant` were running marker-less stale code (families, universal_gate,
+fragility, orthogonality, regime_discovery, run_hunt17 — exactly the newest-fenced batch, i.e.
+the 02:00Z seat's fixes had not reached the box that runs them). Deployed via the established
+scp route and re-verified marker-present over ssh. The trample SOURCE is a third tree
+(`C:\Users\dell\mt5-research`, ABSENT on contabo-mt5): `sync_to_vps.ps1` bundles that tree's
+`mt5desk/research/scripts` dirs wholesale. `pull_from_vps.ps1` pulls only certificates — the
+Dell never refreshes code from here, so its tree goes staler with every VPS-side fix.
+
+**Fence hardened:** CANON_COMMIT advanced b0497287 → 6fed406d (4th advance; the old pin was
+missing 5 files' post-pin markers, leaving them dependent on the 60-commit find_good_commit
+window ≈ 2 days of history at current commit rates); worktree-only-trample restores now log
+"nothing to commit" instead of the ambiguous `rc=1` that cost this cycle four false-trail log
+lines; real commit failures now log stderr.

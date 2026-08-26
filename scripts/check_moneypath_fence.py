@@ -24,7 +24,10 @@ LOG = ROOT / "data" / "moneypath_fence.log"
 #: Known-good commit holding every protected file with its marker; the fallback source when
 #: HEAD itself has been swept stale. Advancing this pin is a deliberate act in a commit that
 #: also changes the protected file -- never automatic.
-CANON_COMMIT = "b0497287"  # verified 2026-08-26 (3rd advance): all 21 markers present
+CANON_COMMIT = "6fed406d"  # verified 2026-08-26 (4th advance): every PROTECTED marker present,
+# including the 5 files whose markers postdate the previous pin (promoter, external_gauntlet,
+# shadow_forward's 6-tuple, sleeve_registry's 3-tuple, h1_source) -- those silently depended on
+# the 60-commit find_good_commit window until this advance.
 
 #: file -> marker(s) that exist ONLY in the canonical lineage of that file. A tuple means
 #: EVERY marker must be present: one marker per protected property, because a trample can
@@ -167,6 +170,14 @@ def main() -> int:
     # Commit ONLY the protected paths, so a sweep cannot re-commit the stale content on top
     # of a restored tree. Explicit paths per R0423; never -A.
     git("add", "--", *breached)
+    # A WORKTREE-ONLY TRAMPLE RESTORES TO CONTENT IDENTICAL TO HEAD, so there is nothing to
+    # commit and `git commit` exits 1. Logging that as `fence commit rc=1` reads as a failed
+    # repair (it sent this cycle's investigator down a false trail four log lines in a row,
+    # 01:25-01:40 2026-08-26); it is actually the GOOD case -- history never took the damage.
+    if git("diff", "--cached", "--quiet").returncode == 0:
+        log(f"restore matched HEAD (worktree-only trample healed, nothing to commit) "
+            f"for {breached}")
+        return 1 if unrestorable else 0
     # THE COMMIT MUST NOT SILENTLY FAIL. Measured 2026-08-26: this returned rc=1 (a pre-commit
     # gate rejected the tree because ANOTHER session's unrelated work was staged) and the fence
     # reported success anyway, so the restored content sat uncommitted and the next sync reverted
@@ -177,7 +188,8 @@ def main() -> int:
             f"moneypath fence: restored {len(breached)} canon file(s) after shared-tree "
             f"revert (GAP 128)\n\nFiles: {', '.join(breached)}\n"
             f"The fence restores by canon marker; see data/moneypath_fence.log.")
-    log(f"fence commit rc={r.returncode} for {breached}")
+    detail = "" if r.returncode == 0 else f" stderr: {r.stderr.strip()[:200]}"
+    log(f"fence commit rc={r.returncode} for {breached}{detail}")
     # A SUCCESSFUL restore is the fence DOING ITS JOB. Exiting nonzero for it marked this unit
     # failed on every trample, which teaches every liveness sweep to ignore a red fence
     # (cry-wolf). The log and the fence commit carry the breach record; only an UNRESTORABLE
