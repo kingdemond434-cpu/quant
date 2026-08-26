@@ -1232,3 +1232,49 @@ missing 5 files' post-pin markers, leaving them dependent on the 60-commit find_
 window ≈ 2 days of history at current commit rates); worktree-only-trample restores now log
 "nothing to commit" instead of the ambiguous `rc=1` that cost this cycle four false-trail log
 lines; real commit failures now log stderr.
+
+_Appended 2026-08-26 ~03:10Z (weekly gap-fixer cycle, second seat — continued):_
+
+**SCHEDULER RESURRECTION (root-cause class fix for 5 separate stale-producer defects).** Root
+cron died 08-20 (OOM; restart remains console item 1) and every `ops/crontab.manifest` row
+without a user-timer twin died silently with it: the hourly law gate, `check_ratchets --ratchet`
+(the direct cause of the 16-day L1.50 coverage-floor stall — floors re-raised this cycle,
+n_floors=20), `check_conversion` (§33 fence), `pull_deploy` (126h stale; forced run now reports
+"already at 97aaf4a8 — nothing to deploy": the inbound deploy path works again), and
+`run_cadence` (its manifest row prescribes `quant-cadence.timer`, which existed in ops/ but was
+never installed — installed now; first run completed SUCCESS after 14 min, state refreshed).
+`quant-manifest-dispatch.timer` (5-min, commit 71edc743) fires a 12-row allowlist with vixie-cron
+semantics read live from the manifest; 216 rows measured `uncovered_unallowed` in
+`data/manifest_dispatch_state.json` — mostly crypto-era organs the mandate forbids waking
+blindly; each future allowlist addition is a deliberate reviewed act. First real fire verified
+(02:34: conversion fence + pull_deploy). **DECISION ROW (dated 09-02):** 9 repo timers remain
+uninstalled (seat digs dataaxis/frontier/litminer/prospector, blindrediscovery, watchdog,
+alerts, daily-max, cadence-now-installed) — the dig seats overlap FAILED root units and
+LLM-invoking sessions; installing user twins risks double-fire and env mismatch, so they need a
+deliberate root-vs-user ruling alongside console item 1.
+
+**DISK / MOAT-BACKUP FUSE CLEARED: 83% → 62% (9.5G → 14G free).** The moat backup had been
+DISK-FUSE-refused since 08-23 (14.53% free vs 15% floor, its own log). Cause: 25 clean-but-
+unlanded worktree checkouts ≈ 8GB. Reaper policy corrected (`REAP-CLEAN-AHEAD`, 72h idle):
+KEEP-AHEAD protects the BRANCH, not the checkout — commits live in shared .git and every branch
+survives removal (verified). `remove_checkout()` escalates to --force only after re-verifying at
+removal time that the only dirt is expected-untracked `.venv`; genuinely dirty trees (16 remain,
+holding the unmerged-sibling-work backlog) stay absolutely protected. 16 checkouts reclaimed.
+
+**RECONSTITUTION SURFACE REPAIRED:** 47 installed user units had no ops/ repo copy (a rebuilt
+box would have lost ~24 timers — the #58 claim had rotted as sessions installed units directly).
+All committed; a live YouTube API key found EMBEDDED in hourly-controller/full-pipeline units is
+now sourced from `data/secrets/youtube.env` (gitignored, 600) in both installed and repo copies.
+
+**STALE-MANDATE FENCES (new row, dated 09-02):** the law gate's excitation + clock-provenance
+checks and max_audit's tape-recording/tape-disk items still demand the RETIRED crypto tape
+("start the recorders"); `RECORDERS_OFF` is permanent under the MT5 mandate. Repoint each to MT5
+moat ground (contabo's moat_recorder/moat_miner artifacts) or retire with the mandate as the
+recorded reason — absence of the crypto tape must stop reading as a desk defect.
+
+**Also this seat:** findings lifecycle healthy (24/27 fixed; F0025 is Tier-3-escalated and folds
+into the deadman console item). 4 consolidation docs classified (ARTIFACT_GOVERNANCE + max_audit
+claims). canary_history + cadence_duties committed (their fences measure COMMIT recency). Ten
+unwired `libs.alpha.*` modules inspected: superseded by the MT5 desk's own decay_monitor/
+sleeve_registry organs — wiring them would recreate the two-lineage disease; block-with-reason
+is the recorded verdict, pending an audit disposition mechanism.
