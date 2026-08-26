@@ -3391,12 +3391,23 @@ this sits unread is a day of an irreplaceable series that is mined by nobody and
 `data/moat/<venue>/<SYMBOL>/*.jsonl.gz` and therefore counts this file in neither numerator nor
 denominator); OP-093 (the reduce/vector shape); R0291 (the collector's origin).
 
-### 38. CN gold layer — SGE Au99.99/Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction — grade: **routes VERIFIED live 2026-08-25 (CN s12); bulk history pull throttle-blocked this session; collector exists UNWIRED (R0649)** [§33: deferred(2026-08-26) tier:2]
+### 38. CN gold layer — SGE Au99.99/Au(T+D) premium vs XAUUSD + 递延费 (deferred-fee) direction — grade: **WIRED 2026-08-26: parser rebuilt for the real graph payload (R0649), both contracts recorded daily by quant-sge-premium.timer (07:45 UTC), first row on disk** [§33: wired tier:2 -> desks/mt5/data/lake/sge_daily.parquet]
 
 **MT5-MANDATE NATIVE: this is an XAUUSD/XAGUSD conditioning layer, not a crypto axis.** First CN
 dig under the 2026-08-18 universe order. The MT5 desk already believed in this axis enough to build
 `desks/mt5/research/fetch_sge_premium.py` — which has ZERO callers, zero output artifacts, and a
 sole configured source its own parser cannot parse (III.16 built-never-run; repair = R0649).
+**WIRED 2026-08-26 (this repo, same-day):** `_parse_graph` rebuilt against the live payload shape
+(`times`/`data`/`heyue`/`delaystr`; fixture test `desks/mt5/tests/test_sge_premium.py`); both
+contracts pulled per run (`?instid=Au99.99` and `Au(T+D)` — the endpoint's silent fallback to
+Au99.99 on unknown instid is refused by the `heyue` check); history self-records forward into
+`desks/mt5/data/lake/sge_daily.parquet` (upsert by Beijing session date from `delaystr`, so cadence
+cannot duplicate); premium legs: desk Fusion XAUUSD 07:00Z H1 close (FRED's LBMA series is 404 —
+withdrawn) + ECB same-snapshot USDCNY cross (FRED DEXCHUS fallback); scheduled by
+`quant-sge-premium.timer` daily 07:45 UTC (15:45 Beijing, just after day-session close).
+`agtd_basis_cny_g` (Au(T+D) − Au99.99) is recorded per day — the market-priced read on the 递延费
+pressure side; the *published* fee-direction notice remains a separate, still-unwired leg (named
+below).
 
 **MECHANISM (two-sided, regime-labelled — primary CN sources, read this run):**
 - China is the largest physical consumer; imports need a per-shipment PBoC permit
