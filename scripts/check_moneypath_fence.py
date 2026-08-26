@@ -122,6 +122,7 @@ def find_good_commit(path: str, spec: str | tuple[str, ...], depth: int = 60) ->
 
 def main() -> int:
     breached: list[str] = []
+    unrestorable: list[str] = []
     for path, spec in PROTECTED.items():
         f = ROOT / path
         try:
@@ -150,7 +151,7 @@ def main() -> int:
             log(f"BREACH UNRESTORABLE {path}: marker(s) {missing} missing, and NO commit in "
                 f"recent history carries them -- refusing to overwrite the working copy with "
                 f"content that would fail this same check. Fix the file by hand.")
-            breached.append(path)
+            unrestorable.append(path)
             continue
         r = git("checkout", src, "--", path)
         if r.returncode == 0:
@@ -158,9 +159,11 @@ def main() -> int:
             breached.append(path)
         else:
             log(f"BREACH UNRESTORABLE {path}: {r.stderr.strip()[:200]}")
-            breached.append(path)
-    if not breached:
+            unrestorable.append(path)
+    if not breached and not unrestorable:
         return 0
+    if not breached:
+        return 1
     # Commit ONLY the protected paths, so a sweep cannot re-commit the stale content on top
     # of a restored tree. Explicit paths per R0423; never -A.
     git("add", "--", *breached)
@@ -175,7 +178,11 @@ def main() -> int:
             f"revert (GAP 128)\n\nFiles: {', '.join(breached)}\n"
             f"The fence restores by canon marker; see data/moneypath_fence.log.")
     log(f"fence commit rc={r.returncode} for {breached}")
-    return 1
+    # A SUCCESSFUL restore is the fence DOING ITS JOB. Exiting nonzero for it marked this unit
+    # failed on every trample, which teaches every liveness sweep to ignore a red fence
+    # (cry-wolf). The log and the fence commit carry the breach record; only an UNRESTORABLE
+    # file -- canon lost from HEAD, the pin AND recent history -- is a failure the unit wears.
+    return 1 if unrestorable else 0
 
 
 if __name__ == "__main__":
