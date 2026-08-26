@@ -1,0 +1,85 @@
+[
+  {
+    "source": "seasonality",
+    "type": "known_pattern",
+    "pattern": "sell_in_may",
+    "month": 8,
+    "direction": "down",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Seasonal pattern 'sell_in_may' active (month 8)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURGBP",
+    "month": 8,
+    "avg_return": -0.0008,
+    "overall_avg": -0.0003,
+    "direction": "bearish",
+    "symbols": [
+      "EURGBP"
+    ],
+    "confidence": 0.6,
+    "description": "EURGBP historically bearish in month 8 (avg -0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "GBPUSD",
+    "month": 8,
+    "avg_return": 0.0013,
+    "overall_avg": 0.0006,
+    "direction": "bullish",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "confidence": 0.6,
+    "description": "GBPUSD historically bullish in month 8 (avg 0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURUSD",
+    "month": 8,
+    "avg_return": 0.0004,
+    "overall_avg": 0.0001,
+    "direction": "bullish",
+    "symbols": [
+      "EURUSD"
+    ],
+    "confidence": 0.6,
+    "description": "EURUSD historically bullish in month 8 (avg 0.000%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "AUDCAD",
+    "month": 8,
+    "avg_return": 0.0008,
+    "overall_avg": -0.0001,
+    "direction": "bullish",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "confidence": 0.6,
+    "description": "AUDCAD historically bullish in month 8 (avg 0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "BTCUSD",
+    "month": 8,
+    "avg_return": 1.4158,
+    "overall_avg": 0.2165,
+    "direction": "bullish",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "confidence": 0.6,
+    "description": "BTCUSD historically bullish in month 8 (avg 1.416%)"
+  }
+]
