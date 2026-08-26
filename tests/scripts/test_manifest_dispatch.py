@@ -173,6 +173,33 @@ def test_burst_cap_bounds_a_single_tick(tmp_path, monkeypatch) -> None:
     assert len(state["pending"]) == 10 - md.MAX_FIRES_PER_TICK   # the rest queued, not dropped
 
 
+SPAWNER_UNITS = (
+    # unit file -> why it spawns and therefore must not be killed with its parent
+    ("ops/quant-manifest-dispatch.service", "fires every resurrected cron row"),
+    ("ops/quant-organ-catchup.service", "re-fires quota-killed and mutex-deferred organs"),
+)
+
+
+def test_every_spawner_unit_keeps_killmode_process() -> None:
+    """Both organs that SPAWN other organs and then exit must survive their own exit.
+
+    organ_catchup had the identical defect and its own log is the proof: "re-fired brain
+    (ops/run_cro_ai.sh)" at 04:55, 05:05, 05:10, 05:15 and 05:20 -- five re-fires in 25 minutes,
+    with no cro_ai run produced by any of them. A successful re-fire makes the NEXT tick report
+    "field busy"; instead it re-fired forever, logging success and starting nothing. That loop is
+    what the whole quota/mutex recovery design rests on -- a miner deferred behind the brain
+    mutex is supposed to resume there within 5 minutes, and could not.
+    """
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    for rel, why in SPAWNER_UNITS:
+        src = (root / rel).read_text("utf-8")
+        assert "KillMode=process" in src, (
+            f"{rel} lost KillMode=process -- systemd tears down the whole cgroup when a "
+            f"Type=oneshot main process exits, so every organ it spawns ({why}) is SIGKILLed "
+            "milliseconds later while its log goes on reporting success.")
+
+
 def test_dispatcher_unit_keeps_killmode_process() -> None:
     """The dispatcher SPAWNS its rows and exits, so the unit must not take them down with it.
 
