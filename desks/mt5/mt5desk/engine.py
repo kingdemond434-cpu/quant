@@ -200,9 +200,16 @@ def run_backtest(
     o = df["open"].to_numpy()
     h = df["high"].to_numpy()
     l = df["low"].to_numpy()
-    idx = df.index.to_numpy()
-    # epoch-ns lookups: tz-proof
-    idx_ns = idx.astype("datetime64[ns]").astype("int64")
+    # KEEP THE PANDAS INDEX. `df.index.to_numpy()` on a tz-AWARE index returns an object array
+    # of Timestamps and warns "no explicit representation of timezones available for
+    # np.datetime64" -- benign in production, but under `filterwarnings = error` it turns the
+    # look-ahead guards into failures, and it is the kind of implicit coercion that would quietly
+    # strip the clock off `entry_time` if numpy ever chose datetime64 instead. Indexing a
+    # DatetimeIndex yields the same tz-aware Timestamps with nothing implicit about it.
+    idx = df.index
+    # epoch-ns lookups: tz-proof. `asi8` is UTC epoch-ns for an aware index and wall-clock ns for
+    # a naive one, which is exactly what the previous astype chain produced for each.
+    idx_ns = np.asarray(idx.asi8, dtype="int64")
     sig_ns = np.array(
         [pd.Timestamp(s.time).value for s in signals], dtype="int64"
     )

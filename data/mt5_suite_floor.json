@@ -2,8 +2,6 @@
  "known_failing": [
   "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
   "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout",
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]",
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]",
   "desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip",
   "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list",
   "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source",
@@ -31,9 +29,9 @@
   "desks.mt5.tests.test_trial_matrix_alignment::test_the_per_survivor_series_is_sorted_by_date",
   "desks.mt5.tests.test_universe_discovery::test_the_real_universe_on_disk_classifies_cleanly"
  ],
- "measured_at": "2026-08-26T20:12:19+00:00",
- "passed_at_measure": 521,
- "total_at_measure": 551,
+ "measured_at": "2026-08-26T20:18:53+00:00",
+ "passed_at_measure": 527,
+ "total_at_measure": 555,
  "command": "python scripts/check_mt5_suite.py",
  "why": "desks/mt5 is excluded from ruff, mypy and testpaths, so NOTHING else runs these. A name may only leave this list; a name arriving is a new red."
 }

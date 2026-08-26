@@ -1,23 +1,21 @@
 {
- "checked_at": "2026-08-26T20:12:19+00:00",
+ "checked_at": "2026-08-26T20:18:53+00:00",
  "verdict": "OK",
  "counts": {
-  "passed": 521,
-  "failed": 30,
+  "passed": 527,
+  "failed": 28,
   "error": 0,
   "skipped": 0,
-  "total": 551
+  "total": 555
  },
- "new_failing": [
-  "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
-  "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout"
+ "new_failing": [],
+ "newly_passing": [
+  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]",
+  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]"
  ],
- "newly_passing": [],
  "known_failing": [
   "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
   "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout",
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]",
-  "desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]",
   "desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip",
   "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list",
   "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source",
@@ -46,7 +44,7 @@
   "desks.mt5.tests.test_universe_discovery::test_the_real_universe_on_disk_classifies_cleanly"
  ],
  "reasons": [
-  "floor seeded with 30 known-failing test(s)"
+  "2 test(s) now pass and are struck from the floor -- a ratchet never gives ground back: desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[AUDCAD]; desks.mt5.tests.test_day_states_lookahead::test_on_real_data_every_label_is_strictly_backward_looking[XAUUSD]"
  ],
- "pytest_tail": "FAILED desks/mt5/tests/test_trial_matrix_alignment.py::test_the_per_survivor_series_is_sorted_by_date\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n30 failed, 521 passed in 42.12s"
+ "pytest_tail": "FAILED desks/mt5/tests/test_trial_matrix_alignment.py::test_the_per_survivor_series_is_sorted_by_date\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n28 failed, 527 passed in 28.06s"
 }

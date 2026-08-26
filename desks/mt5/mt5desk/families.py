@@ -30,7 +30,28 @@ def _atr(df: pd.DataFrame, n: int = 14) -> pd.Series:
 
 
 def _h1(df: pd.DataFrame) -> pd.DataFrame:
-    """Resample to H1 and drop gap rows so rolling stats see only real bars."""
+    """Resample to H1, drop gap rows, and GUARANTEE A TIMEZONE ON THE INDEX.
+
+    THE CLOCK IS PART OF THE DATA (L1.46), AND THIS FUNCTION USED TO PASS IT THROUGH UNTOUCHED.
+
+    154 call sites reach the desk's bars through here, and every one of them was written when the
+    parquets on disk carried `datetime64[ms, UTC]`. On 2026-08-26 a producer
+    (`scripts/download_all_symbols.py`, `pd.to_datetime(..., unit="s")` with no `utc=True`)
+    rewrote all 197 of them tz-NAIVE. The desk's own look-ahead guard --
+    `test_day_states_lookahead`, the one that proves no label is computed from future bars --
+    stopped failing and started ERRORING on "Cannot compare tz-naive and tz-aware datetime-like
+    objects". A guard that errors is a guard that never ran (L1.49), and because nothing has ever
+    run this desk's suite, nothing said so.
+
+    Naive stamps are LOCALIZED, not converted: these are broker-clock timestamps and this is the
+    same label-do-not-move operation `research/h1_source.py` already applies, so the index means
+    exactly what it meant when the files were written `utc=True`. It is a LABEL and not a claim
+    about true UTC -- `h1_source.broker_utc_offset_hours()` is the number that converts.
+    """
+    if isinstance(df.index, pd.DatetimeIndex):
+        df = df.copy()
+        df.index = (df.index.tz_localize("UTC") if df.index.tz is None
+                    else df.index.tz_convert("UTC"))
     h1 = df.resample("1h").agg(
         {"open": "first", "high": "max", "low": "min", "close": "last"}
     )
