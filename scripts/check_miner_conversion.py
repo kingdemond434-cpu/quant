@@ -49,12 +49,15 @@ ALARM = ROOT / "data" / "MINER_YIELD_ALARM.txt"
 WINDOW_DAYS = 14
 #: Families that would each add a genuinely different bet, ordered by independence from a
 #: session-range book rather than by how easy they are to mine.
+#: Names must match the generator registry EXACTLY -- `volatility_transition` here versus
+#: `vol_transition` there reported a family as having no generator when one existed, which turns a
+#: naming slip into a fabricated acquisition task.
 BREADTH_TARGETS = (
     ("carry", "swap/rollover differentials -- a return stream with no directional overlap"),
     ("relative_value", "cross-pair and triangle residuals -- profits when direction does not"),
     ("cross_asset_residual", "metals vs FX vs index residuals after the common factor"),
-    ("volatility_transition", "regime changes in realised vol -- fires when breakouts stall"),
-    ("liquidity_transition", "spread/depth regime shifts -- an execution-derived edge"),
+    ("vol_transition", "regime changes in realised vol -- fires when breakouts stall"),
+    ("liquidity_regime", "spread/depth regime shifts -- an execution-derived edge"),
     ("event_reaction", "scheduled macro releases -- a different clock entirely"),
     ("cot_positioning", "COT/positioning extremes -- weekly, uncorrelated to intraday ranges"),
     ("macro_conditional", "rates/DXY conditionality -- changes WHEN other sleeves should fire"),
@@ -143,8 +146,27 @@ def main() -> int:
     total_certs = sum(fam_counts.values())
     top_family, top_n = (fam_counts.most_common(1) or [("none", 0)])[0]
     concentration = round(top_n / total_certs, 3) if total_certs else None
-    missing = [{"family": f, "why": why} for f, why in BREADTH_TARGETS
-               if not any(f in k for k in held)]
+    # A family is now three states, not two, and the difference is what to DO about it:
+    #   held        -- a certificate exists
+    #   reachable   -- a generator exists and its input is present; it just has not certified yet
+    #   unreachable -- no generator, or its input is not recorded (an ACQUISITION task, which is a
+    #                  completely different piece of work from "nobody mined it")
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(DESK))
+        from mt5desk.families_orthogonal import FAMILY_INPUTS, ORTHOGONAL_FAMILIES
+    except Exception:
+        ORTHOGONAL_FAMILIES, FAMILY_INPUTS = {}, {}
+    missing = []
+    for f, why in BREADTH_TARGETS:
+        if any(f in k for k in held):
+            continue
+        needs = FAMILY_INPUTS.get(f, ("unknown", None))[0]
+        missing.append({
+            "family": f, "why": why,
+            "state": "REACHABLE" if f in ORTHOGONAL_FAMILIES else "NO_GENERATOR",
+            "needs": needs,
+        })
 
     report = {
         "measured_at": now.isoformat(timespec="seconds"),
@@ -172,8 +194,8 @@ def main() -> int:
           f"{len(zero_yield)} zero-yield")
     print(f"book breadth: {total_certs} certificate(s), largest family '{top_family}' "
           f"= {concentration} of the book; {len(missing)} target family(ies) absent")
-    for row in missing[:4]:
-        print(f"   MISSING {row['family']:22} {row['why']}")
+    for row in missing[:8]:
+        print(f"   {row['state']:12} {row['family']:22} needs: {row['needs']}")
 
     findings = []
     if concentration is not None and concentration > 0.8:

@@ -11,6 +11,12 @@ PY=.venv/bin/python
 echo "[$(date -u +%FT%TZ)] stage 2: external backtest"
 $PY desks/mt5/side_channels/run_external_backtest.py || echo "stage 2 FAILED (rc=$?)"
 
+# STAGE 2b: the zero-hardcode search. It runs BEFORE the gauntlet so its diverse candidates are
+# judged by the same ten gates as everything else -- and it carries its own trial count so the
+# deflation is honest about how wide the search was.
+echo "[$(date -u +%FT%TZ)] stage 2b: generic edge search (no families, diversity-selected)"
+$PY desks/mt5/research/edge_search.py || echo "edge search FAILED (rc=$?) -- continuing"
+
 echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet"
 $PY desks/mt5/scripts/external_gauntlet.py || { echo "stage 3 FAILED (rc=$?)"; exit 1; }
 
