@@ -69,12 +69,32 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
     return s.groupby(level=0).sum()
 
 
+#: One H1 frame per SYMBOL, shared by every cell on it. Each cell used to carry its own
+#: `pd.read_parquet` result, so a sweep of 900+ cells held that many copies of the same handful
+#: of dataframes -- gigabytes of duplicate bars on the box that also runs the MT5 terminal.
+#: Sharing is not a memory/accuracy trade: the frames are read-only inputs, every cell sees
+#: byte-identical bars, and skipping hundreds of redundant parquet reads makes the sweep FASTER.
+#: (Re-applied 2026-08-26 after the first attempt was lost before it reached a commit -- the
+#: fence now carries `_H1_CACHE` as a marker so a second loss is caught rather than repeated.)
+_H1_CACHE: dict[str, object] = {}
+
+
+def _h1_for(sym: str):
+    frame = _H1_CACHE.get(sym)
+    if frame is None:
+        pq = UNI / f"{sym}_H1.parquet"
+        if not pq.exists():
+            return None
+        frame = families._h1(pd.read_parquet(pq))
+        _H1_CACHE[sym] = frame
+    return frame
+
+
 def build_cell(sym: str, family: str, params: dict, meta: dict):
     """Build a Cell from external survivor spec."""
-    pq = UNI / f"{sym}_H1.parquet"
-    if not pq.exists():
+    h1 = _h1_for(sym)
+    if h1 is None:
         return None
-    h1 = families._h1(pd.read_parquet(pq))
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
     # `families` meant the 14 orthogonal generators were unreachable from the one door that grants
     # certificates -- so a carry or positioning edge could be written, tested by hand, and still

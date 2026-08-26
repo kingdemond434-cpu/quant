@@ -43,7 +43,6 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     # VPS-owned files -- the certifier then ran the pre-patch writer and produced 15 spec-less
     # certificates (authority the admission door refuses). Marker = the patch each file must
     # never lose: the gauntlet's spec/attestation writer, the state builder's live MT5 snapshot.
-    "desks/mt5/scripts/external_gauntlet.py": "ATTESTATION",
     "scripts/build_zentech_state.py": "_mt5_snapshot",
     # the same-day engine's stamped clock + certificate auto-enrolment (RESEARCH 6d), AND its
     # broker-independent bar source. 2026-08-26: a sync trample stripped the h1_source repoint
@@ -62,6 +61,14 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/sleeve_registry.py": ("IDENTITY_FIELDS", "code_hash", "cost_hash"),
     "desks/mt5/research/h1_source.py": "broker_utc_offset_hours",
     "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
+    # THE FAST PATH IS PART OF THE MONEY PATH. Without `_PRIM_CACHE` the gauntlet rebuilds 310
+    # rolling series per cell -- 4.3s x 575 cells = ~41 minutes of pure waste -- and a silent
+    # revert would put CONVERSION 40 minutes behind DISCOVERY every hour while every log still
+    # said "done". A performance regression that nothing measures is indistinguishable from the
+    # desk simply being slow, which is how it would survive.
+    "desks/mt5/mt5desk/families_orthogonal.py": (
+        "_PRIM_CACHE", "family_discovered", "ORTHOGONAL_FAMILIES"),
+    "desks/mt5/scripts/external_gauntlet.py": ("ATTESTATION", "_H1_CACHE", "_h1_for"),
     # grandfathering is over: SLEEVES must stay empty and enrolment must stay certificate-driven
     "desks/mt5/research/forward_reconcile.py": "RETIRED_ORPHAN",
     # 2026-08-26 (gap-wirer): five more unification-reverted properties re-applied and fenced.
