@@ -18,11 +18,16 @@ way the number the portfolio actually cares about -- effective independent bets 
 
 THE HONESTY THIS OWES, because an unconstrained search is a p-hacking machine if unaccounted:
 
-  TRIALS ARE COUNTED, ALL OF THEM. The searcher reports exactly how many (feature, band, horizon,
-  direction) combinations it evaluated, and that count is written into every hypothesis it emits
-  so the deflated Sharpe gate deflates against the real multiplicity rather than a flattering
-  subset. A search that tests 40,000 combinations and reports its best one as if it were a single
-  hypothesis is lying by omission.
+  TRIALS ARE COUNTED, ALL OF THEM, AND HANDED TO THE GATES. The searcher reports how many
+  (feature, band, horizon, direction) combinations it evaluated and writes that count into every
+  hypothesis, so the canonical `deflated_sharpe` gate deflates against the real multiplicity. That
+  is the ONLY place multiplicity is judged.
+
+  THIS FILE NEVER SETS A BAR. The pipeline is fixed and singular: discovery -> backtest -> the ten
+  gates -> certificate -> forward window -> live. A screen that rejects on its own threshold
+  inserts an unsanctioned gate in front of that pipeline, and a private threshold is a policy
+  change made by whoever wrote the screen. Everything discovered goes to the gauntlet; the gauntlet
+  decides. There is no second bar, harsher or looser, anywhere in this file.
 
   NO ECONOMIC STORY IS INVENTED. A statistically discovered edge has no mechanism, and the
   canonical ten-gate policy requires `economic_prior`. Every hypothesis is emitted with
@@ -453,36 +458,25 @@ def main(symbols: list[str] | None = None) -> int:
                                    "before this can certify -- a statistical edge with no story "
                                    "is a coincidence until someone shows otherwise."),
             })
-    # THE TEN GATES DECIDE, NOT THIS FILE (principal 2026-08-26). An earlier version computed
-    # sqrt(2 ln N) and reported candidates against it. That was a SECOND DOOR pointing the wrong
-    # way: the canonical policy already deflates for multiplicity inside `deflated_sharpe`, whose
-    # attestation defines the trial basis explicitly, and layering a private, harsher screen in
-    # FRONT of the gauntlet means the canonical machinery never gets to rule. A screen that
-    # pre-rejects what the gate would have judged is not extra rigour, it is an unsanctioned
-    # policy change made by whoever wrote the screen.
-    #
-    # So the number is still COMPUTED and REPORTED as context -- a reader comparing t=3.45 across
-    # 4,344 trials deserves the scale -- but it filters nothing. What actually matters is that
-    # `search_trials` travels with every hypothesis into the gauntlet, so the canonical DSR
-    # deflates against this search's real multiplicity rather than a flattering subset.
-    reference_scale = math.sqrt(2.0 * math.log(max(2, total_trials)))
-    above_reference = [h for h in hypotheses if h["t_stat"] >= reference_scale]
+    # NO BAR IS COMPUTED HERE, NOT EVEN FOR DISPLAY (principal 2026-08-26: "never use or consider
+    # the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused
+    # as a filter, a threshold sitting next to the results is one a reader -- or a later edit --
+    # will start treating as a verdict, and it competes with the only pipeline this desk has:
+    # discovery -> backtest -> ten gates -> certificate -> forward -> live. The trial count is
+    # carried to the gauntlet, where deflation is the canonical policy's job and nobody else's.
     for h in hypotheses:
         h["search_trials"] = total_trials
-        h["reference_scale_t"] = round(reference_scale, 3)
-        # CONTEXT ONLY -- nothing filters on this. The ten gates are the door.
-        h["above_reference_scale"] = bool(h["t_stat"] >= reference_scale)
+        # search_trials is the ONLY multiplicity artefact this file emits; the gauntlet's
+        # deflated_sharpe is what judges against it.
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "searched_at": now.isoformat(timespec="seconds"),
         "symbols": len(symbols), "total_trials": total_trials,
         "hypotheses": hypotheses, "per_symbol": results,
-        "reference_scale_t": round(reference_scale, 3),
-        "above_reference_scale": len(above_reference),
-        "arbiter": ("the canonical ten-gate policy. This searcher screens and reports; it does "
-                    "not reject. search_trials travels with each hypothesis so deflated_sharpe "
-                    "deflates against the real multiplicity."),
+        "arbiter": ("the canonical ten-gate policy, and nothing else. This searcher discovers "
+                    "and reports; it sets no threshold of its own. Pipeline: discovery -> "
+                    "backtest -> ten gates -> certificate -> forward window -> live."),
         "honesty": {
             "trials_counted": total_trials,
             "why": ("every (feature, band, horizon, direction) combination evaluated is counted "
@@ -497,10 +491,8 @@ def main(symbols: list[str] | None = None) -> int:
     }, indent=1, default=str), "utf-8")
     print(f"edge search: {len(symbols)} symbol(s), {total_trials:,} trials evaluated, "
           f"{len(hypotheses)} DIVERSE hypotheses emitted")
-    print(f"  reference scale for context only: |t| ~ {reference_scale:.2f} at {total_trials:,} "
-          f"trials ({len(above_reference)} of {len(hypotheses)} above it) -- NOT a filter")
-    print(f"  all {len(hypotheses)} hypotheses go to the ten-gate gauntlet, each carrying "
-          f"search_trials={total_trials:,} so the canonical DSR deflates honestly")
+    print(f"  all {len(hypotheses)} go to the ten-gate gauntlet carrying "
+          f"search_trials={total_trials:,}; deflation is the gauntlet's job, not this file's")
     for h in hypotheses[:8]:
         p = h["params"]
         print(f"   {h['symbol']:8} {p['feature']:18} band={p['band']} h={p['horizon']:>3} "

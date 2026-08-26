@@ -426,6 +426,24 @@ retired. The desk went from a claimed 37 clocks to **5 real ones**, every one ce
 restarted at day 0 on a properly pre-registered window. A count that flatters the pipeline is worse
 than a smaller honest one: it is the number a promotion decision would have been made against.*
 
+**THE PIPELINE IS FIXED AND NOBODY MAY INSERT A GATE (principal 2026-08-26: "never use or
+consider the harsher bars ever").** The order is exactly:
+
+> **discovery → backtest → the canonical ten gates → certificate → 14-day forward window → live**
+
+No screen, searcher, miner or reviewer may apply a threshold of its own **in either direction**.
+A stricter private bar is not extra rigour — it is a policy change made by whoever wrote the
+screen, and it rejects candidates the canonical policy never got to judge. A looser one is the
+same offence pointed the other way. Screens SORT and REPORT; the ten gates DECIDE.
+
+**Multiplicity is judged in exactly one place.** A wide search carries its own trial count
+(`search_trials`) into the gauntlet, and `deflated_sharpe` deflates against it — the attestation
+defines the basis as effective-cells × 7, and the gauntlet takes the LARGER of that and the
+declared search width, failing closed toward more deflation. That is the whole of the desk's
+multiplicity handling. *Removed 2026-08-26: an `edge_search` screen that computed √(2 ln N) and
+reported candidates against it. Even unused as a filter, a threshold printed beside results is
+one a reader or a later edit starts treating as a verdict.*
+
 **ONE SHADOW, ONE FORWARD — BESPOKE PIPELINES ARE BANNED (principal 2026-08-26: "all must enter
 the same one shadow pipeline and forward pipeline and never make their own ones").** There is
 exactly ONE shadow/forward engine, one state ledger, one clock format (`forward_start`, `n`,

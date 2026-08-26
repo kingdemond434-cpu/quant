@@ -202,6 +202,14 @@ only the DD rail is armed. The promoter refills freed slots the same day; a reti
 only through a fresh forward window. A decay flag nothing consumes is an opinion, not a monitor.
 Full text: RESEARCH §6e. Organ: `desks/mt5/research/decay_monitor.py`.
 
+**L1.60 ONE PIPELINE, NO INSERTED GATES.** discovery → backtest → canonical ten gates →
+certificate → 14-day forward → live, in that order, for everything. No screen, searcher or miner
+may apply a threshold of its own in EITHER direction: a stricter private bar rejects what the
+policy never judged, a looser one waves through what it would have caught, and both are policy
+changes made outside the policy. Screens sort and report; the ten gates decide. Multiplicity is
+judged once, inside `deflated_sharpe`, against the trial count the search declares. Full text:
+RESEARCH §6d.
+
 **Named absorbed laws (in force):** NO-CEILING ("we are at max" requires evidence);
 FREE-FRONTIER (a free alternative exists and has not been found yet; never English-only);
 MINING-NEVER-REGRESSES (volume, breadth, depth never fall; shrinking a denominator to fake a rate
