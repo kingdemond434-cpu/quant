@@ -10,8 +10,9 @@
 set -uo pipefail
 cd /home/quant/quant-platform
 # UNIFIED CYCLE (principal 2026-08-25): ONE EV-allocated dig replaces the fixed 7-region
-# sequence -- the unified brain triages measured yields and owed cards, then digs the 1-3
-# highest-EV grounds deep (ops/frontier_unified_prompt.txt; starvation floor keeps every
+# sequence -- the unified brain triages measured yields and owed cards, then digs EVERY ground
+# whose expected survivor-value clears the bar (no numeric cap: a count is a quota in disguise,
+# principal 2026-08-26; skipping a ground is a decision that must be named) (ops/frontier_unified_prompt.txt; starvation floor keeps every
 # ground's debt alive). The per-region briefs stay on disk and binding for whatever ground
 # it picks. Same resume rule: a real unified log today means done.
 TODAY="$(date -u +%Y%m%d)"
