@@ -111,6 +111,9 @@ def test_production_path_has_no_harsher_prefilter() -> None:
         "shadow admission must require the exact original-ten-gate certificate")
     assert "gate_spec not in gate_authority" in promoter, (
         "live promotion must still independently require a real certificate")
+    assert "shadow already ran today; skip" not in shadow, (
+        "the 30-minute owner must replay new H1 arrivals instead of freezing after one daily run")
+    assert 'state["configured_sleeves"] = len(enrolled)' in shadow
     supervisor = (DESK / "research" / "research_supervisor.py").read_text(encoding="utf-8")
     assert DONE_MARKER in supervisor
 

@@ -158,9 +158,6 @@ def main() -> None:
         except Exception:
             state = {}
     today = datetime.now(timezone.utc).date().isoformat()
-    if state.get("last_run") == today:
-        slog("shadow already ran today; skip")
-        return
 
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
@@ -197,6 +194,7 @@ def main() -> None:
         st["bar_source_stale"] = bars.stale
         st["promotion_authority"] = bars.promotion_authority
         st["order_authority"] = False
+        st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
         if trades:
             rs = [t.r_multiple for t in trades]
             cum = [sum(rs[:i + 1]) for i in range(len(rs))]
@@ -255,6 +253,8 @@ def main() -> None:
              f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
              f"days={days_active} [{st['status']}]")
     state["last_run"] = today
+    state["configured_sleeves"] = len(enrolled)
+    state["gate_blocked_sleeves"] = 0
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
     slog(f"shadow state saved ({len(enrolled)} sleeves, {len(enrolled) - len(SLEEVES)} certificate-enrolled)")
 

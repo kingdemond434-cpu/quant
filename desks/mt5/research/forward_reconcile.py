@@ -89,6 +89,28 @@ def certified_pairs() -> set[tuple[str, str]]:
         return set()
 
 
+def certified_ids() -> set[str]:
+    """Exact certificate identities, including qquant's non-symbol display keys.
+
+    A qquant state key starts ``qquant.<hunt>.<cell>``; splitting it at dots and
+    treating the first two fields as ``symbol.selector`` turns a valid AUDNZD
+    certificate into the fictitious pair ``qquant.hunt16``.  Prefer the frozen
+    certificate id before falling back to the legacy pair-shaped identity.
+    """
+    try:
+        from gate_policy import all_ten_pass, is_exact_policy
+        doc = _read(CERTS)
+        if not is_exact_policy(doc.get("gate_policy")):
+            return set()
+        return {
+            str(key) for key, row in (doc.get("survivors") or {}).items()
+            if isinstance(row, dict) and all_ten_pass(row.get("gates"))
+        }
+    except Exception as exc:
+        print(f"  WARN: exact certificate ids unreadable ({exc}); using spec identity only")
+        return set()
+
+
 def gauntlet(cells: list[dict]) -> dict:
     """Run the canonical ten gates on reconstructed cells. Returns {key: verdict-row}."""
     if not cells:
@@ -121,6 +143,7 @@ def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     enrolled = enrolled_keys()
     certs = certified_pairs()
+    cert_ids = certified_ids()
     if not certs:
         print("forward reconcile: admission unreadable -- FAIL SOFT, nothing changed")
         return 0
@@ -145,7 +168,10 @@ def main() -> int:
                 continue
             parts = key.split(".")
             sym, sel = parts[0], (parts[1] if len(parts) > 1 else "")
-            has_cert = any(sym == a and (sel == b or not sel) for a, b in certs)
+            certificate_id = str(row.get("certificate") or key)
+            has_cert = certificate_id in cert_ids or any(
+                sym == a and (sel == b or not sel) for a, b in certs
+            )
 
             if enrolled and key not in enrolled:
                 row["status"] = "RETIRED_ORPHAN"

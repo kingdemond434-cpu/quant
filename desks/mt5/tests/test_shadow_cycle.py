@@ -70,7 +70,7 @@ def test_terminal_shadow_verdict_is_retained_but_not_active(
     }))
     (reports / "qquant_shadow_state.json").write_text(json.dumps({
         "certified_qquant_sleeves": 1,
-        "qquant.retired": {"n": 50, "status": "KILL"},
+        "qquant.retired": {"n": 50, "status": "RETIRED_GATE_FAIL"},
     }))
     monkeypatch.setattr(shadow_cycle, "BASE", tmp_path)
     monkeypatch.setattr(shadow_cycle, "OUT", reports / "health.json")
