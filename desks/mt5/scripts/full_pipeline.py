@@ -417,9 +417,19 @@ def step_certify(gauntlet_result):
         "swept_at": datetime.now(timezone.utc).isoformat(),
     }, indent=2, default=str), encoding="utf-8")
 
-    # Sync canon
-    canon_path = DATA / "UNIVERSAL_SURVIVORS.canon.json"
-    canon_path.write_text(surv_path.read_text("utf-8"), encoding="utf-8")
+    # CANON IS NOT THIS FILE'S TO WRITE (2026-08-26). This line copied THIS pipeline's output
+    # straight over the canonical restore-source, and its certificates are strictly weaker than
+    # the canonical certifier's: `shadow_spec` here hardcodes selector="asia" for every symbol and
+    # carries NO params, so 21 certificates covering 15 distinct parameterizations collapsed back
+    # to 14 unrunnable ones -- twice in one night, each time inside an automated commit that
+    # looked routine. The desk enrolled 5 clocks instead of 15 as a direct result.
+    #
+    # This is the "one door" law applied to WRITERS, not just to promotion: two certifiers writing
+    # the same authority file is not redundancy, it is a race whose loser is whichever ran first.
+    # ops/run_external_pipeline.sh is the canonical path (it records params and ratchets canon);
+    # this pipeline keeps its own report for inspection and stops here.
+    print("  canon NOT written: ops/run_external_pipeline.sh is the single canonical certifier "
+          "(this pipeline's shadow_spec has no params and would downgrade it)")
 
     print(f"  {new_certs} new certificates, {len(survivors)} total in authority")
     return survivors

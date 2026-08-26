@@ -17,15 +17,20 @@ $PY desks/mt5/scripts/external_gauntlet.py || { echo "stage 3 FAILED (rc=$?)"; e
 # Stage 4: certificates -> canon copy -> desk box. The canon file is what the authority
 # ratchet floors and what restores the authority file after a bad writer.
 $PY - <<'PYEOF'
-import json, shutil
+import json, shutil, sys
 from pathlib import Path
+sys.path.insert(0, ".")
+from libs.ops.canon_lease import hold
 auth = Path("desks/mt5/reports/UNIVERSAL_SURVIVORS.json")
 canon = Path("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json")
 a = json.loads(auth.read_text("utf-8"))
 c = json.loads(canon.read_text("utf-8")) if canon.exists() else {"survivors": {}}
 if len(a.get("survivors", {})) >= len(c.get("survivors", {})):
-    shutil.copyfile(auth, canon)
-    print(f"canon updated: n={len(a['survivors'])}")
+    # UNDER LEASE. Two certifiers wrote this file tonight and the loser was whichever ran first;
+    # the lease serialises them and fences a stalled writer out entirely.
+    with hold("desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json", "external-pipeline") as tok:
+        shutil.copyfile(auth, canon)
+        print(f"canon updated under lease {str(tok)[:12]}: n={len(a['survivors'])}")
 else:
     print(f"canon NOT updated: authority {len(a.get('survivors', {}))} < canon "
           f"{len(c['survivors'])} -- ratchet holds")

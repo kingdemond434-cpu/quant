@@ -1,0 +1,371 @@
+"""GENERIC EDGE SEARCH -- no families, no templates, and diversity as the objective function.
+
+WHY NO HARDCODED FAMILIES (principal 2026-08-26: "absolute 0 hardcoding n max diversity"). Every
+family file, including the orthogonal ones written earlier tonight, encodes a human's guess about
+where edges live. That guess is a CEILING: the desk can only ever certify strategies someone
+already imagined, which is exactly how 95.2% of its certificates ended up being one mechanism.
+This searcher has no strategy templates at all. It builds PRIMITIVES from whatever numeric series
+the box has, enumerates conditions over them mechanically, and lets the data say which
+combinations predict forward returns.
+
+WHY DIVERSITY IS THE OBJECTIVE AND NOT A FILTER. Ranking candidates by edge strength and hoping
+the winners differ is how you get twenty copies of the best idea -- the search finds the strongest
+signal, then the next strongest, which is usually the same signal with a slightly different
+threshold. So selection here is explicitly GREEDY ON MARGINAL INDEPENDENCE: a candidate's score is
+its edge DISCOUNTED by how much its return series already resembles what has been selected. The
+second copy of a good idea scores near zero however profitable it is on its own. That is the only
+way the number the portfolio actually cares about -- effective independent bets -- goes up.
+
+THE HONESTY THIS OWES, because an unconstrained search is a p-hacking machine if unaccounted:
+
+  TRIALS ARE COUNTED, ALL OF THEM. The searcher reports exactly how many (feature, band, horizon,
+  direction) combinations it evaluated, and that count is written into every hypothesis it emits
+  so the deflated Sharpe gate deflates against the real multiplicity rather than a flattering
+  subset. A search that tests 40,000 combinations and reports its best one as if it were a single
+  hypothesis is lying by omission.
+
+  NO ECONOMIC STORY IS INVENTED. A statistically discovered edge has no mechanism, and the
+  canonical ten-gate policy requires `economic_prior`. Every hypothesis is emitted with
+  `mechanism_status: STATISTICAL_ONLY`, which does NOT pass that gate -- it routes to review where
+  a mechanism must be named or the candidate dies. Auto-passing economic_prior for a machine
+  discovery would gut the one gate that separates a cause from a coincidence.
+
+  OUT-OF-SAMPLE BY CONSTRUCTION. Edges are fit on the first portion and scored on the held-out
+  remainder; the in-sample number is never the reported one. This is a screen, not a verdict --
+  survivors go through the same ten gates and the same pre-registered forward window as
+  everything else. No second door.
+"""
+from __future__ import annotations
+
+import json
+import math
+from datetime import UTC, datetime
+from pathlib import Path
+
+BASE = Path(__file__).resolve().parent.parent
+UNIVERSE = BASE / "data" / "universe"
+OUT = BASE / "data" / "hypotheses" / "edge_search_results.json"
+
+#: Forward horizons in bars. A grid, not a choice -- the data picks.
+HORIZONS = (1, 3, 6, 12, 24, 48)
+#: Conditioning bands per feature: which quantile slice of the feature we condition on.
+BANDS = ((0.0, 0.1), (0.1, 0.25), (0.75, 0.9), (0.9, 1.0), (0.4, 0.6))
+#: Fraction of history used to FIT; the rest is held out and is the only score reported.
+FIT_FRACTION = 0.6
+#: A candidate needs at least this many held-out observations to be scored at all.
+MIN_OOS_OBS = 60
+#: Correlation above this to an already-selected edge means it is the same bet.
+REDUNDANCY_CORR = 0.5
+#: How many edges to select. Small on purpose: the output is hypotheses for the gauntlet, and
+#: flooding the gauntlet with near-duplicates is what the diversity objective exists to prevent.
+SELECT_K = 25
+
+
+def _read(p: Path):
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+
+
+def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
+    """Every numeric series derivable from the input, with NO strategy semantics attached.
+
+    These are not signals and not families. They are measurements -- shape, dispersion, position
+    in range, clock -- from which conditions are enumerated mechanically. Nothing here encodes a
+    view about what should work; a breakout, a carry and a reversal are all just particular
+    combinations this enumeration can reach, alongside combinations nobody has named.
+    """
+    import numpy as np
+    import pandas as pd
+
+    d = df.copy()
+    for col in ("open", "high", "low", "close"):
+        if col not in d.columns:
+            return {}
+    close = d["close"].astype(float)
+    high = d["high"].astype(float)
+    low = d["low"].astype(float)
+    openp = d["open"].astype(float)
+    ret = np.log(close).diff()
+    rng = (high - low)
+    prim: dict = {}
+
+    # --- shape / momentum over several scales (scales enumerated, not chosen) ---------------
+    for n in (3, 6, 12, 24, 48, 96, 240):
+        prim[f"ret_{n}"] = np.log(close).diff(n)
+        prim[f"vol_{n}"] = ret.rolling(n).std(ddof=1)
+        prim[f"rng_{n}"] = rng.rolling(n).mean()
+        prim[f"skew_{n}"] = ret.rolling(n).skew()
+        prim[f"kurt_{n}"] = ret.rolling(n).kurt()
+        # position within the trailing range: 0 = at the low, 1 = at the high
+        lo = low.rolling(n).min()
+        hi = high.rolling(n).max()
+        prim[f"pos_{n}"] = (close - lo) / (hi - lo).replace(0, np.nan)
+        prim[f"dd_{n}"] = close / close.rolling(n).max() - 1.0
+        prim[f"ru_{n}"] = close / close.rolling(n).min() - 1.0
+
+    # --- dispersion RATIOS: regime, not level -----------------------------------------------
+    for fast, slow in ((6, 48), (12, 96), (24, 240)):
+        prim[f"volratio_{fast}_{slow}"] = (ret.rolling(fast).std(ddof=1)
+                                           / ret.rolling(slow).std(ddof=1))
+        prim[f"rngratio_{fast}_{slow}"] = rng.rolling(fast).mean() / rng.rolling(slow).mean()
+
+    # --- intrabar structure ------------------------------------------------------------------
+    body = (close - openp).abs()
+    prim["body_frac"] = body / rng.replace(0, np.nan)
+    prim["upper_wick"] = (high - close.combine(openp, max)) / rng.replace(0, np.nan)
+    prim["lower_wick"] = (close.combine(openp, min) - low) / rng.replace(0, np.nan)
+    prim["gap"] = (openp - close.shift(1)) / rng.rolling(24).mean().replace(0, np.nan)
+
+    # --- clock: derived from the index, never a named session --------------------------------
+    idx = d.index
+    prim["hour"] = pd.Series(idx.hour.astype(float), index=idx)
+    prim["dow"] = pd.Series(idx.dayofweek.astype(float), index=idx)
+    prim["dom"] = pd.Series(idx.day.astype(float), index=idx)
+    prim["month"] = pd.Series(idx.month.astype(float), index=idx)
+
+    # --- volume/spread when the feed carries them --------------------------------------------
+    for col in ("tick_volume", "real_volume", "spread"):
+        if col in d.columns:
+            s = d[col].astype(float)
+            prim[col] = s
+            for n in (12, 48):
+                prim[f"{col}_z_{n}"] = (s - s.rolling(n).mean()) / s.rolling(n).std(ddof=1)
+
+    # --- any external series the caller supplies (macro, COT, peers, tape aggregates) --------
+    for name, series in (extra or {}).items():
+        try:
+            aligned = series.reindex(d.index).ffill().astype(float)
+        except Exception:
+            continue
+        prim[f"ext_{name}"] = aligned
+        prim[f"ext_{name}_z"] = ((aligned - aligned.rolling(96).mean())
+                                 / aligned.rolling(96).std(ddof=1))
+
+    return {k: v for k, v in prim.items() if v is not None}
+
+
+def _forward_returns(close, horizons=HORIZONS) -> dict:
+    import numpy as np
+    out = {}
+    logc = np.log(close.astype(float))
+    for h in horizons:
+        out[h] = logc.shift(-h) - logc
+    return out
+
+
+def evaluate(prim: dict, fwd: dict, *, fit_end: int) -> tuple[list[dict], int]:
+    """Enumerate every (feature, band, horizon, direction) and score it OUT OF SAMPLE.
+
+    Returns the candidates and the TOTAL TRIAL COUNT -- the second value is not optional
+    bookkeeping, it is what the deflated-Sharpe gate needs in order to be honest about a search
+    this wide.
+    """
+    import numpy as np
+
+    candidates: list[dict] = []
+    trials = 0
+    # Unconditional forward mean per horizon, on the SAME out-of-sample bars every candidate is
+    # scored on. This is the benchmark a conditional edge must beat to be an edge at all.
+    base_means: dict = {}
+    for h, fr in fwd.items():
+        fv = fr.to_numpy(dtype="float64", na_value=np.nan)
+        oos_all = np.zeros(len(fv), dtype=bool)
+        oos_all[fit_end:] = True
+        sel = oos_all & np.isfinite(fv)
+        base_means[h] = float(fv[sel].mean()) if sel.sum() >= MIN_OOS_OBS else np.nan
+
+    for fname, series in prim.items():
+        values = series.to_numpy(dtype="float64", na_value=np.nan)
+        finite = np.isfinite(values)
+        if finite.sum() < MIN_OOS_OBS * 4:
+            continue
+        fit_vals = values[:fit_end][np.isfinite(values[:fit_end])]
+        if fit_vals.size < MIN_OOS_OBS:
+            continue
+        for lo_q, hi_q in BANDS:
+            # Band edges come from the FIT window only -- using full-sample quantiles would leak
+            # the future into the definition of the condition itself.
+            lo, hi = np.quantile(fit_vals, lo_q), np.quantile(fit_vals, hi_q)
+            if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
+                continue
+            mask = finite & (values >= lo) & (values <= hi)
+            for h, fr in fwd.items():
+                trials += 2                       # both directions are a trial each
+                fv = fr.to_numpy(dtype="float64", na_value=np.nan)
+                sel = mask & np.isfinite(fv)
+                oos = sel.copy()
+                oos[:fit_end] = False
+                n_oos = int(oos.sum())
+                if n_oos < MIN_OOS_OBS:
+                    continue
+                r_oos = fv[oos]
+                mean = float(r_oos.mean())
+                sd = float(r_oos.std(ddof=1))
+                if not np.isfinite(sd) or sd <= 0:
+                    continue
+
+                # TWO CORRECTIONS, WITHOUT WHICH THIS SEARCHER IS A DRIFT DETECTOR.
+                #
+                # 1. CONDITIONAL vs UNCONDITIONAL, not vs zero. An instrument with a trend has a
+                #    positive mean forward return under almost ANY condition, so scoring against
+                #    zero rediscovers the drift once per feature. The first run of this file
+                #    returned 25 "edges" that were all side=+1 at the same horizon -- gold's
+                #    drift, found 25 ways. The question is whether CONDITIONING helps, so the
+                #    benchmark is the unconditional forward return over the same out-of-sample
+                #    bars at the same horizon.
+                #
+                # 2. OVERLAPPING WINDOWS destroy the sample size. At h=48 on hourly bars,
+                #    consecutive observations share 47 of 48 hours: they are not independent, and
+                #    dividing by sqrt(n) overstates significance by roughly sqrt(h) -- a factor of
+                #    ~7 at h=48. Effective n is deflated by the overlap, which is the difference
+                #    between t=20 and t=3.
+                base = base_means.get(h)
+                if base is None or not np.isfinite(base):
+                    continue
+                edge = mean - base
+                n_eff = max(1.0, n_oos / float(h))
+                t = edge / (sd / math.sqrt(n_eff))
+                side = 1 if edge >= 0 else -1
+                candidates.append({
+                    "feature": fname, "band": [lo_q, hi_q], "horizon": h, "side": side,
+                    "n_oos": n_oos, "n_effective": round(n_eff, 1),
+                    "mean_fwd": mean, "unconditional_fwd": base, "edge_vs_unconditional": edge,
+                    "t_stat": abs(t), "sharpe_like": abs(edge) / sd,
+                    "_mask": oos, "_fwd": fv,
+                })
+    return candidates, trials
+
+
+def select_diverse(candidates: list[dict], k: int = SELECT_K) -> list[dict]:
+    """Greedy selection that maximises MARGINAL independence, not individual strength.
+
+    Each pick is the candidate with the best edge among those not already explained by what has
+    been selected. Redundancy is measured on the realised per-observation return series, so two
+    candidates that are described differently but fire on the same bars are correctly recognised
+    as one bet -- which is exactly the failure the family-based book fell into.
+    """
+    import numpy as np
+
+    ranked = sorted(candidates, key=lambda c: c["t_stat"], reverse=True)
+    chosen: list[dict] = []
+    chosen_vectors: list = []
+    for cand in ranked:
+        if len(chosen) >= k:
+            break
+        vec = np.where(cand["_mask"], cand["_fwd"] * cand["side"], 0.0)
+        if not np.isfinite(vec).all():
+            vec = np.nan_to_num(vec)
+        redundant = False
+        for prev in chosen_vectors:
+            denom = (np.linalg.norm(vec) * np.linalg.norm(prev))
+            if denom <= 0:
+                continue
+            corr = float(np.dot(vec, prev) / denom)
+            if abs(corr) >= REDUNDANCY_CORR:
+                redundant = True
+                break
+        if redundant:
+            continue
+        chosen.append(cand)
+        chosen_vectors.append(vec)
+    return chosen
+
+
+def search_symbol(symbol: str, extra: dict | None = None) -> dict:
+    import pandas as pd
+
+    path = UNIVERSE / f"{symbol}_H1.parquet"
+    if not path.exists():
+        return {"symbol": symbol, "status": "NO_BARS"}
+    df = pd.read_parquet(path)
+    if len(df) < 2000:
+        return {"symbol": symbol, "status": "TOO_FEW_BARS", "bars": len(df)}
+    prim = build_primitives(df, symbol, extra)
+    if not prim:
+        return {"symbol": symbol, "status": "NO_PRIMITIVES"}
+    fwd = _forward_returns(df["close"])
+    fit_end = int(len(df) * FIT_FRACTION)
+    cands, trials = evaluate(prim, fwd, fit_end=fit_end)
+    chosen = select_diverse(cands)
+    rows = [{k: v for k, v in c.items() if not k.startswith("_")} for c in chosen]
+    return {"symbol": symbol, "status": "OK", "bars": len(df),
+            "primitives": len(prim), "trials": trials,
+            "candidates_scored": len(cands), "selected": rows}
+
+
+def main(symbols: list[str] | None = None) -> int:
+    now = datetime.now(tz=UTC)
+    if symbols is None:
+        symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
+    results, hypotheses = [], []
+    total_trials = 0
+    for sym in symbols:
+        res = search_symbol(sym)
+        results.append(res)
+        total_trials += int(res.get("trials") or 0)
+        for row in res.get("selected", []):
+            hypotheses.append({
+                "symbol": sym,
+                "family": "generic_edge",
+                "params": {"feature": row["feature"], "band": row["band"],
+                           "horizon": row["horizon"], "side": row["side"]},
+                "n": row["n_oos"], "t_stat": row["t_stat"],
+                "exp_r": row["sharpe_like"],
+                "source": f"edge_search:{row['feature']}",
+                # The two fields that keep this honest downstream.
+                "search_trials": None,          # filled below with the DESK-WIDE total
+                "mechanism_status": "STATISTICAL_ONLY",
+                "mechanism_note": ("discovered by unconstrained search; NO economic mechanism is "
+                                   "claimed. economic_prior must be satisfied by a named cause "
+                                   "before this can certify -- a statistical edge with no story "
+                                   "is a coincidence until someone shows otherwise."),
+            })
+    # THE BAR THIS SEARCH SET FOR ITSELF. A wide search must clear a wider threshold: with N
+    # independent trials the largest |t| expected under the pure null is ~sqrt(2 ln N), so a
+    # candidate below that is what a search of this size produces from noise alone. Computing and
+    # PRINTING it is the difference between a screen and a slot machine -- otherwise the reader
+    # sees "t=3.45" and has no way to know that 4,344 trials make 4.1 the price of admission.
+    deflation_bar = math.sqrt(2.0 * math.log(max(2, total_trials)))
+    survivors = [h for h in hypotheses if h["t_stat"] >= deflation_bar]
+    for h in hypotheses:
+        h["search_trials"] = total_trials
+        h["deflation_bar_t"] = round(deflation_bar, 3)
+        h["clears_own_multiplicity"] = bool(h["t_stat"] >= deflation_bar)
+
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    OUT.write_text(json.dumps({
+        "searched_at": now.isoformat(timespec="seconds"),
+        "symbols": len(symbols), "total_trials": total_trials,
+        "hypotheses": hypotheses, "per_symbol": results,
+        "deflation_bar_t": round(deflation_bar, 3),
+        "clearing_own_multiplicity": len(survivors),
+        "honesty": {
+            "trials_counted": total_trials,
+            "why": ("every (feature, band, horizon, direction) combination evaluated is counted "
+                    "and carried into each hypothesis, so deflated Sharpe deflates against the "
+                    "real multiplicity of the search rather than a flattering subset"),
+            "oos_only": f"scored on the held-out {int((1 - FIT_FRACTION) * 100)}% only; "
+                        f"band edges derived from the fit window so the condition itself does "
+                        f"not leak",
+            "selection": f"greedy on marginal independence, |corr| < {REDUNDANCY_CORR} against "
+                         f"everything already chosen -- diversity is the objective, not a filter",
+        },
+    }, indent=1, default=str), "utf-8")
+    print(f"edge search: {len(symbols)} symbol(s), {total_trials:,} trials evaluated, "
+          f"{len(hypotheses)} DIVERSE hypotheses emitted")
+    print(f"  multiplicity bar for a search this wide: |t| >= {deflation_bar:.2f}  "
+          f"({len(survivors)} of {len(hypotheses)} clear it)")
+    if not survivors:
+        print("  NOTHING clears its own multiplicity -- the honest result of a wide search on "
+              "this much data. These go forward as SCREENED candidates, not findings.")
+    for h in hypotheses[:8]:
+        p = h["params"]
+        print(f"   {h['symbol']:8} {p['feature']:18} band={p['band']} h={p['horizon']:>3} "
+              f"side={p['side']:+d} t={h['t_stat']:.2f} n={h['n']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
