@@ -7515,3 +7515,94 @@ run**. Auditing the sibling organs found the same shape. Measured from
 **Repair, ledgered as R0667:** sitemap-index enumeration + ≥5 s pacing + 403-as-back-off + a
 **positive control inside each miner** (`n_titles>0`, `n_rows>0`) so a zero is recorded as an
 error row rather than archived as a clean harvest.
+
+### ITEM 2 CLOSED — `/en/articles` listing layer EXHAUSTED (82/82 pages, 3,277 articles)
+
+Every page walked, every title + preview read and scored by **mechanism-keyword density** (never
+by rating — desk lesson). Artifact: `data/intelligence/mql5_catalog/mql5_articles_ranked_20260826.json`.
+
+**Depth taken:** 9 article bodies read in full. **Yield: 1 execution instrument, 0 alpha cards.**
+
+| lead | verdict |
+|---|---|
+| 20173/19626/18702… **Statistical Arbitrage Through Cointegrated Stocks** (12-part series) | **GRAVEYARD-PRE-EMPTED at the family level** by `zecontinha_eg_pairs_screen` (retail EG pairs, refuted at source by measurement). Free corroboration: the series' own author records that his correlation-pairs prototype "performed well on the backtest, but failed miserably when we let it run for two weeks on a realtime demo account." The remaining parts are METHOD (screening, real-time updating, structural breaks, rolling eigenvectors), not new alpha. |
+| 17522 **Swap Arbitrage: synthetic positive-carry portfolio** | **ALREADY HELD** — `desks/mt5/side_channels/seed_miners.py:238` implements the terminal-native swap route. The article's increment is portfolio construction (max positive swap, min vol), i.e. the classic carry-crash trade, with no new forced participant named. |
+| 22175 **Carry Trade Logic: swap rates into position SIZING** | marginal increment on the held route; noted, not carded. |
+| 14035 / 15622 **Forex spread trading using seasonality** | **DISCARDED, calendar class.** The method is "average the spread by calendar day over N years"; no forced participant is named. Pre-empted by the desk's calendar-family graveyard (`gotobi_nakane_drift` — replicated *then* measured dead; TDOM discarded 2026-08-25). The *survivable* variant it gestures at — month-end index-hedge rebalancing flow, where the participant genuinely is forced — is named here as a lead, not claimed. |
+| 22998 **Measuring broker execution quality** | **KEPT → R0668.** The only lead that survived. |
+
+### ITEM 1 CLOSED (to the depth the ground allows) — forum reply layer, ≥2 levels
+
+25 `trading_systems` listing pages (750 threads, ranked), then **9 thread bodies read at post
+level**, including a 3,197-reply monster sampled at pages 1 / 80 / 160. Artifact:
+`data/intelligence/mql5_catalog/mql5_forum_trading_systems_ranked_20260826.json`.
+**Route fact worth keeping:** MQL5 renders the *quoted parent text inline* in each `div.comment-box`,
+so **reply chains are readable without fetching the parent** — one fetch gives you the chain.
+
+**Three hard findings, all from the reply layer, none visible on any listing page:**
+
+- **R0669 — the MT5 `deviation` argument is INERT on every Market-execution symbol.** A site
+  moderator states it and two practitioners confirm by test: the slippage cap works only under
+  Instant/Request execution; under Market/Exchange "sending of the order in such a mode means
+  advance consent to its execution at this price". Fusion-style ECN accounts are Market execution,
+  so **a cap set in the order request is a no-op that reads as a control in code review** — the
+  R0618 welded-open-refuser shape. Repair: record `SYMBOL_TRADE_EXEMODE` per symbol, enforce the
+  cap client-side pre-trade, and make any "slippage is capped" fence report UNENFORCED otherwise.
+- **R0670 — the MT5 Strategy Tester has no swap history; it applies TODAY's swap table to the whole
+  backtest.** This is the `pct_circ_now` class (a `*_now` field joined to historical events)
+  landing on the desk's **only repeat-survivor family**. Grade SEMI. The repair that must start
+  today regardless: **record `SYMBOL_SWAP_LONG/SHORT` daily for the whole universe** — a
+  proprietary series nobody else keeps, worthless until it has history, so every day not recording
+  is edge declined.
+- **R0671 — counterparty termination is an unpriced capacity risk.** Practitioners report bans for
+  arb-shaped flow ("legal in law, forbidden in terms of use — that is what binds"), one broker
+  permitting triangular arb *only on condition it made zero profit*. Two findings separated: the
+  **risk** (a high-turnover MT5 sleeve can be killed by the broker, not the market, and fills
+  degrade before the ban — measurable with R0668) and a **mechanism logged but not carded**
+  (zero-edge turnover harvesting a volume rebate: real and MT5-native, but it is a contract, not a
+  price, and it triggers the very risk in (a)). The evasion folklore in that thread —
+  masking turnover, sub-20% toxic ratio — is **rejected**, not adopted: it is deception of the
+  counterparty and outside the §13 posture the desk holds everywhere else.
+
+### DEPTH LINE (honest)
+- `/en/articles` listing: **EXHAUSTED** (82/82, every title+preview scored — not sampled).
+  Article BODIES: 9 of 3,277 read. Not a claim of exhaustion; the ranked catalog is the resume point.
+- `trading_systems` forum: **25 of 138 listing pages** (750 of ~4,113 threads). Threads mined at
+  post level: 9. Reply chains ≥2 levels: **9 (was 0 last run — the named gap is closed).**
+- Deep pages of the 3,197-reply thread were sampled and are **mostly bickering**; the honest route
+  fact is that listing-preview keyword density does **not** predict thread body density — the
+  next crawl must score BODIES.
+- Forks/citations chased: 0 (wrong ground).
+- Non-English ground: **quantified, not mined** — the sitemap proves 11 languages exist and gives
+  their populations. That is the next run's ground, not this one's claim.
+
+### FAILURES, REPORTED BECAUSE THEY ARE MINE
+- `pkill -f mq_forum.py` **killed my own shell** — the pattern self-matches. It is already a desk
+  lesson (`desk-operational-gotchas`) and I did it anyway. Cost: one restarted crawl.
+- Two chained waiters (`while pgrep -f mq_list.py`) **never fired** for the same self-match reason,
+  so the article parse sat idle until I ran it by hand. Same defect, second costume.
+
+### NEXT UN-EXHAUSTED GROUND (named before closing)
+1. **`trading_systems` pages 26–138** (3,363 threads unseen), then rank on **BODY** density, not
+   preview density — this run measured that preview density does not predict it.
+2. **The RU forum** — `sitemap_forum_trading_systems_ru.xml`, 2,141 threads. The EN threads mined
+   here are largely translated RU practitioners; the RU board is the source, not the mirror.
+3. **`forum_general_en` (45,001+) and `forum_ea_en` (15,683)** — the two largest boards, never touched.
+4. **`/en/blogs` (10,001+)** — never parsed by any desk organ, and it is the solo-practitioner
+   long-form genre the hand-priority names.
+5. **`/en/jobs` (158)** — smallest and most neglected: clients describing, in their own words and
+   with a budget attached, the strategy they are paying to have automated. Positioning intel.
+6. Article bodies below rank 9 in the ranked catalog (3,268 unread).
+7. Carried unchanged: NP forum-1 f12 147620 Kelly + 147696 Dynamic Correlation; Numerai classic
+   methodology residue; Wilmott (Wayback-curl only, live board WALLED ×4 — do not re-probe).
+
+**RUN CLOSE 2026-08-26 (b):** items 1 and 2 both closed to their named depth. Backlog verified
+clear before opening ground (0 pending, 29 deferred). **6 ledger rows raised — R0666, R0667,
+R0668, R0669, R0670, R0671.** 1 permanent enumeration route (sitemap index, 11 languages, with
+its §13 read and its measured rate limit). 3 catalog artifacts committed. 1 desk lesson (L0184).
+2 graveyard-pre-empted discards, 1 already-held lead, 1 mechanism logged-and-rejected.
+**Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forward clocks minted, 0 video fetched,
+0 video locked (no route tried and failed), 0 non-English ground mined (quantified only).**
+The public MQL5 alpha layer stayed picked-clean, exactly as expected. **The yield of this run was
+not alpha — it was three execution/data-integrity facts on the desk's own binding constraint, and
+the discovery that the desk's four MQL5 miners have been dark for 144 runs while reporting success.**
