@@ -7011,7 +7011,7 @@ def check_universal_doctrine(defects) -> None:
 # Checks DEFINED BELOW the CHECKS literal must be registered here -- appending them up there is a
 # NameError, which is exactly how four of them ended up dead. Keep the order explicit (the list is
 # the run order); `check_registry_complete` below is what makes a future omission impossible.
-def check_route_shaped_identity() -> list[str]:
+def check_route_shaped_identity(defects) -> None:
     """A frozen IDENTITY field that names a FILE, HOST or PATH describes the pipe, not the water.
 
     Origin (2026-08-26, self-found): `shadow_forward` froze `data_venue = str(bars.source)` -- the
@@ -7025,13 +7025,13 @@ def check_route_shaped_identity() -> list[str]:
     any value that contains a path separator, a file extension or a cache/route verb. Those are
     transport facts. A venue, a model, a dataset or a venue-server name is not one.
     """
-    reg = Path("desks/mt5/data/sleeve_registry.json")
+    reg = ROOT / "desks/mt5/data/sleeve_registry.json"
     if not reg.exists():
-        return []
+        return
     try:
         rows = (json.loads(reg.read_text("utf-8")).get("sleeves") or {})
     except (OSError, ValueError):
-        return []
+        return
     bad: list[str] = []
     for key, row in rows.items():
         ident = row.get("identity") or {}
@@ -7044,14 +7044,15 @@ def check_route_shaped_identity() -> list[str]:
                     or low.endswith((".parquet", ".json", ".csv"))):
                 bad.append(f"{key}.{field}={value!r}")
     if not bad:
-        return []
-    return [f"route-shaped-identity: {len(bad)} frozen identity field(s) name a RETRIEVAL ROUTE "
+        return
+    defects.append(("route-shaped-identity",
+            f"{len(bad)} frozen identity field(s) name a RETRIEVAL ROUTE "
             f"rather than the thing itself -- {', '.join(sorted(bad)[:4])}. A route in an identity "
             f"field fires on every outage AND is blind to a real change arriving by the same "
             f"route; it is not a stricter gate, it is the wrong quantity. Split the subject from "
             f"the transport (h1_source.Bars.evidence_venue is the worked example), fail the "
             f"subject CLOSED, and version the schema so rows frozen under the old meaning are "
-            f"archived and re-windowed rather than silently re-blessed."]
+            f"archived and re-windowed rather than silently re-blessed."))
 
 
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
@@ -8292,6 +8293,35 @@ def check_registry_complete(defects) -> None:
         name for name, obj in globals().items()
         if name.startswith("check_") and callable(obj)
         and name not in registered and name not in _CHECKS_EXEMPT)
+
+    # 2026-08-26, self-found and PAID FOR THE SAME DAY: `check_route_shaped_identity` was written
+    # `() -> list[str]` (returning its verdicts) while the runner calls `fn(defects)`. It was
+    # correctly REGISTERED, so this guard was green -- and it raised TypeError on every single
+    # sweep, so a real 195-break defect produced zero verdicts and the dimension read clean.
+    # Registration is not enforcement: a check the runner cannot CALL is as inert as one it never
+    # reaches, and _fenced's sweep-broken-* rescue reports the crash without ever naming the law
+    # that went dark. Shape is checked here, at registration, where it is cheap and unmissable.
+    import inspect
+    misshapen: list[str] = []
+    for label, fn in CHECKS:
+        try:
+            sig = inspect.signature(fn)
+        except (TypeError, ValueError):          # pragma: no cover -- builtins/C callables
+            continue
+        positional = [pm for pm in sig.parameters.values()
+                      if pm.kind in (pm.POSITIONAL_ONLY, pm.POSITIONAL_OR_KEYWORD)
+                      and pm.default is pm.empty]
+        varargs = any(pm.kind is pm.VAR_POSITIONAL for pm in sig.parameters.values())
+        if len(positional) != 1 and not varargs:
+            misshapen.append(f"{label}({fn.__name__}{sig})")
+    if misshapen:
+        defects.append((
+            "check-wrong-signature",
+            f"{len(misshapen)} registered check(s) cannot be CALLED by the runner, which passes "
+            f"exactly one positional `defects` list: {', '.join(misshapen)}. Each raises on every "
+            "sweep and its law reads clean while going unenforced -- registration is not "
+            "enforcement. Every check is `def check_x(defects) -> None` and APPENDS "
+            "`(id, message)` tuples; returning verdicts discards them silently."))
     if orphans:
         defects.append((
             "check-unregistered",
