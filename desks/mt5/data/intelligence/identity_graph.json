@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T22:25:00+00:00",
+ "rebuilt_at": "2026-08-26T23:24:40+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -758,6 +758,51 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "daggerconsole": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "ed14f65ecf497fdd"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "dendyerbrace": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "2fa30cfbadc6a59b"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "pierskinkpit": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "e6b64983e46617a7"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
     "longevity_max_d": 0,
     "deleted_or_dead": 0,
     "mortality": 0.0

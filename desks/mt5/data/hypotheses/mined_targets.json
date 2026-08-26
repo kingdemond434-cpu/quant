@@ -1,30 +1,30 @@
 {
- "built_at": "2026-08-26T22:10:03+00:00",
+ "built_at": "2026-08-26T23:09:28+00:00",
  "window_days": 7,
  "universe_size": 197,
  "targets": [
   {
    "symbol": "XAUUSD",
-   "score": 1509.0,
-   "from_miners": 1491.0,
+   "score": 1529.0,
+   "from_miners": 1511.0,
    "from_moat": 18.0
   },
   {
    "symbol": "EURUSD",
-   "score": 722.0,
-   "from_miners": 704.0,
+   "score": 736.0,
+   "from_miners": 718.0,
    "from_moat": 18.0
   },
   {
    "symbol": "AUDUSD",
-   "score": 667.0,
-   "from_miners": 649.0,
+   "score": 679.0,
+   "from_miners": 661.0,
    "from_moat": 18.0
   },
   {
    "symbol": "AUDCAD",
-   "score": 629.0,
-   "from_miners": 611.0,
+   "score": 649.0,
+   "from_miners": 631.0,
    "from_moat": 18.0
   },
   {
@@ -35,44 +35,44 @@
   },
   {
    "symbol": "US500",
-   "score": 603.0,
-   "from_miners": 585.0,
+   "score": 605.0,
+   "from_miners": 587.0,
    "from_moat": 18.0
   },
   {
    "symbol": "USDJPY",
-   "score": 517.0,
-   "from_miners": 499.0,
+   "score": 523.0,
+   "from_miners": 505.0,
    "from_moat": 18.0
   },
   {
    "symbol": "GBPUSD",
-   "score": 514.0,
-   "from_miners": 496.0,
+   "score": 520.0,
+   "from_miners": 502.0,
    "from_moat": 18.0
   },
   {
    "symbol": "USDCAD",
-   "score": 437.0,
-   "from_miners": 419.0,
+   "score": 441.0,
+   "from_miners": 423.0,
    "from_moat": 18.0
   },
   {
    "symbol": "AUDNZD",
-   "score": 376.0,
-   "from_miners": 358.0,
+   "score": 388.0,
+   "from_miners": 370.0,
    "from_moat": 18.0
   },
   {
    "symbol": "NZDUSD",
-   "score": 363.0,
-   "from_miners": 345.0,
+   "score": 365.0,
+   "from_miners": 347.0,
    "from_moat": 18.0
   },
   {
    "symbol": "AUDJPY",
-   "score": 311.0,
-   "from_miners": 293.0,
+   "score": 319.0,
+   "from_miners": 301.0,
    "from_moat": 18.0
   },
   {
@@ -83,110 +83,110 @@
   },
   {
    "symbol": "BTCUSD",
-   "score": 270.0,
-   "from_miners": 246.0,
+   "score": 280.0,
+   "from_miners": 256.0,
    "from_moat": 24.0
   },
   {
    "symbol": "EURAUD",
-   "score": 239.0,
-   "from_miners": 221.0,
+   "score": 245.0,
+   "from_miners": 227.0,
    "from_moat": 18.0
   },
   {
    "symbol": "EURJPY",
-   "score": 230.0,
-   "from_miners": 212.0,
+   "score": 238.0,
+   "from_miners": 220.0,
    "from_moat": 18.0
   },
   {
    "symbol": "CADCHF",
-   "score": 203.0,
-   "from_miners": 185.0,
+   "score": 211.0,
+   "from_miners": 193.0,
    "from_moat": 18.0
   },
   {
    "symbol": "GBPAUD",
-   "score": 194.0,
-   "from_miners": 176.0,
+   "score": 198.0,
+   "from_miners": 180.0,
    "from_moat": 18.0
   },
   {
    "symbol": "CHFJPY",
-   "score": 185.0,
-   "from_miners": 167.0,
+   "score": 191.0,
+   "from_miners": 173.0,
    "from_moat": 18.0
   },
   {
    "symbol": "NZDCAD",
-   "score": 183.0,
-   "from_miners": 165.0,
+   "score": 189.0,
+   "from_miners": 171.0,
    "from_moat": 18.0
   },
   {
    "symbol": "EURCAD",
-   "score": 158.0,
-   "from_miners": 140.0,
+   "score": 164.0,
+   "from_miners": 146.0,
    "from_moat": 18.0
   },
   {
    "symbol": "EURNZD",
-   "score": 158.0,
-   "from_miners": 140.0,
+   "score": 164.0,
+   "from_miners": 146.0,
    "from_moat": 18.0
   },
   {
    "symbol": "GBPJPY",
-   "score": 158.0,
-   "from_miners": 140.0,
+   "score": 160.0,
+   "from_miners": 142.0,
    "from_moat": 18.0
   },
   {
    "symbol": "CADJPY",
+   "score": 144.0,
+   "from_miners": 126.0,
+   "from_moat": 18.0
+  },
+  {
+   "symbol": "EURGBP",
    "score": 140.0,
    "from_miners": 122.0,
    "from_moat": 18.0
   },
   {
-   "symbol": "EURGBP",
-   "score": 136.0,
-   "from_miners": 118.0,
-   "from_moat": 18.0
-  },
-  {
    "symbol": "GBPCAD",
-   "score": 113.0,
-   "from_miners": 95.0,
+   "score": 117.0,
+   "from_miners": 99.0,
    "from_moat": 18.0
   },
   {
    "symbol": "GBPNZD",
-   "score": 113.0,
-   "from_miners": 95.0,
+   "score": 117.0,
+   "from_miners": 99.0,
    "from_moat": 18.0
   },
   {
    "symbol": "XAUEUR",
-   "score": 113.0,
-   "from_miners": 95.0,
+   "score": 117.0,
+   "from_miners": 99.0,
    "from_moat": 18.0
   },
   {
    "symbol": "AUDCHF",
-   "score": 68.0,
-   "from_miners": 50.0,
+   "score": 70.0,
+   "from_miners": 52.0,
    "from_moat": 18.0
   },
   {
    "symbol": "EURCHF",
-   "score": 68.0,
-   "from_miners": 50.0,
+   "score": 70.0,
+   "from_miners": 52.0,
    "from_moat": 18.0
   },
   {
    "symbol": "XAGUSD",
-   "score": 68.0,
-   "from_miners": 50.0,
+   "score": 70.0,
+   "from_miners": 52.0,
    "from_moat": 18.0
   },
   {
@@ -197,8 +197,8 @@
   },
   {
    "symbol": "ADP",
-   "score": 47.0,
-   "from_miners": 32.0,
+   "score": 48.0,
+   "from_miners": 33.0,
    "from_moat": 15.0
   },
   {
@@ -1164,22 +1164,22 @@
  ],
  "miner_health": {
   "amarkets": {
-   "rows": 3219,
+   "rows": 3330,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "arxiv_qfin": {
-   "rows": 651,
+   "rows": 676,
    "fetch_errors": 1,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "broker_swaps": {
-   "rows": 1242,
+   "rows": 1243,
    "fetch_errors": 10,
    "rows_naming_a_symbol": 965,
-   "usable_rate": 0.777
+   "usable_rate": 0.776
   },
   "central_banks": {
    "rows": 309,
@@ -1188,7 +1188,7 @@
    "usable_rate": 0.0
   },
   "collective2": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1200,8 +1200,8 @@
    "usable_rate": 0.0
   },
   "darwinex": {
-   "rows": 27,
-   "fetch_errors": 27,
+   "rows": 28,
+   "fetch_errors": 28,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
@@ -1218,15 +1218,15 @@
    "usable_rate": 0.0
   },
   "fbs_tape": {
-   "rows": 29,
+   "rows": 30,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "ff_calendar_vintage": {
-   "rows": 1863,
+   "rows": 1932,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 27,
+   "rows_naming_a_symbol": 28,
    "usable_rate": 0.014
   },
   "followme_cn": {
@@ -1242,20 +1242,20 @@
    "usable_rate": 1.0
   },
   "forexpeacearmy": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "forextsd_cdx": {
-   "rows": 2764,
-   "fetch_errors": 4,
+   "rows": 2765,
+   "fetch_errors": 5,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "fxblue": {
-   "rows": 27,
-   "fetch_errors": 27,
+   "rows": 28,
+   "fetch_errors": 28,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
@@ -1266,7 +1266,7 @@
    "usable_rate": 0.306
   },
   "github_topics": {
-   "rows": 1215,
+   "rows": 1260,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 1,
    "usable_rate": 0.001
@@ -1278,13 +1278,13 @@
    "usable_rate": 0.0
   },
   "instaforex_copy": {
-   "rows": 113,
+   "rows": 117,
    "fetch_errors": 1,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "litefinance": {
-   "rows": 393,
+   "rows": 408,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1296,19 +1296,19 @@
    "usable_rate": 0.0
   },
   "mql5_signals": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 3,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "mql5_survivors": {
-   "rows": 810,
+   "rows": 846,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 765,
+   "rows_naming_a_symbol": 799,
    "usable_rate": 0.944
   },
   "myfxbook_outlook": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1326,19 +1326,19 @@
    "usable_rate": 0.0
   },
   "propfirm_boards": {
-   "rows": 27,
-   "fetch_errors": 27,
+   "rows": 28,
+   "fetch_errors": 28,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "quant_se": {
-   "rows": 810,
+   "rows": 840,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "quantconnect": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1356,7 +1356,7 @@
    "usable_rate": 1.0
   },
   "regional_survivors": {
-   "rows": 4386,
+   "rows": 4555,
    "fetch_errors": 10,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1392,13 +1392,13 @@
    "usable_rate": 1.0
   },
   "trading_latam": {
-   "rows": 1102,
+   "rows": 1140,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "tradingview_scripts": {
-   "rows": 27,
+   "rows": 28,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0

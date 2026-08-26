@@ -5494,5 +5494,69 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"ed14f65ecf497fdd": {
+"t0": "2026-08-26T23:24:38+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "DaggerConsole/metatrader-4-boost",
+"url": "https://github.com/DaggerConsole/metatrader-4-boost",
+"text": "Metatrader 4 Boost",
+"symbols": [],
+"found_at": "2026-08-26T23:24:33+00:00",
+"topic": "mql5",
+"stars": 98,
+"star_delta": 0,
+"pushed": "2026-08-26T22:39:13Z"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2fa30cfbadc6a59b": {
+"t0": "2026-08-26T23:24:38+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "dendyerbrace/myfxbook-core",
+"url": "https://github.com/dendyerbrace/myfxbook-core",
+"text": "Myfxbook Core",
+"symbols": [],
+"found_at": "2026-08-26T23:24:34+00:00",
+"topic": "metatrader5",
+"stars": 314,
+"star_delta": 0,
+"pushed": "2026-08-26T22:39:34Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e6b64983e46617a7": {
+"t0": "2026-08-26T23:24:38+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "pierskinkpit/forex-tester-studio",
+"url": "https://github.com/pierskinkpit/forex-tester-studio",
+"text": "Forex Tester Studio",
+"symbols": [],
+"found_at": "2026-08-26T23:24:34+00:00",
+"topic": "metatrader5",
+"stars": 316,
+"star_delta": 0,
+"pushed": "2026-08-26T22:37:25Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
