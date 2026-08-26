@@ -1,0 +1,29 @@
+{
+ "swept_at": "2026-08-26T12:45:29+00:00",
+ "symbols": 295,
+ "families_ran": {
+  "correlation_regime": 293,
+  "cross_asset_residual": 292,
+  "drawdown_conditional": 281,
+  "overnight_gap_decay": 292,
+  "relative_value": 293,
+  "turn_of_month": 293,
+  "vol_mean_reversion": 293,
+  "vol_transition": 293,
+  "orderflow_imbalance": 125,
+  "liquidity_regime": 83
+ },
+ "input_gaps": {
+  "carry:no-signals (contract/swap terms)": 293,
+  "cot_positioning:no-signals (COT net positioning)": 293,
+  "discovered:no-signals (whatever primitive the search named)": 293,
+  "event_reaction:no-signals (an economic calendar)": 293,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 210,
+  "macro_conditional:no-signals (a macro state series)": 293,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 168,
+  "overnight_gap_decay:no-signals (price only)": 1,
+  "drawdown_conditional:no-signals (price only)": 12,
+  "cross_asset_residual:no-signals (2+ factor instruments' H1)": 1
+ },
+ "hypotheses": []
+}
