@@ -3350,5 +3350,181 @@
    "win_rate": 0.454,
    "symbol": "USDCHF"
   }
+ },
+ {
+  "id": "ext-20260826-86decb",
+  "geneology_id": "external:ext_forexfactory_US500_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: US500 session_range_breakout params={'rr': 2.5, 'wait_bars': 12} screened at n=1748 exp=-0.1316R t=-4.03 pf=0.806 maxDD=-250.74R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1748,
+   "exp_r": -0.1316,
+   "t_stat": -4.03,
+   "profit_factor": 0.806,
+   "max_dd_r": -250.74,
+   "win_rate": 0.4102,
+   "symbol": "US500"
+  }
+ },
+ {
+  "id": "ext-20260826-0ed191",
+  "geneology_id": "external:ext_forexfactory_GBPUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPUSD session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1357 exp=0.1346R t=3.95 pf=1.273 maxDD=-23.63R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1357,
+   "exp_r": 0.1346,
+   "t_stat": 3.95,
+   "profit_factor": 1.273,
+   "max_dd_r": -23.63,
+   "win_rate": 0.451,
+   "symbol": "GBPUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-145139",
+  "geneology_id": "external:ext_reddit_EURUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURUSD session_range_breakout params={'rr': 1.5, 'wait_bars': 12} screened at n=1762 exp=0.102R t=3.83 pf=1.216 maxDD=-27.12R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1762,
+   "exp_r": 0.102,
+   "t_stat": 3.83,
+   "profit_factor": 1.216,
+   "max_dd_r": -27.12,
+   "win_rate": 0.4779,
+   "symbol": "EURUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-26dd86",
+  "geneology_id": "external:ext_reddit_EURUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURUSD session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1740 exp=0.1159R t=3.61 pf=1.223 maxDD=-23.69R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1740,
+   "exp_r": 0.1159,
+   "t_stat": 3.61,
+   "profit_factor": 1.223,
+   "max_dd_r": -23.69,
+   "win_rate": 0.427,
+   "symbol": "EURUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-c2da43",
+  "geneology_id": "external:ext_reddit_EURUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURUSD session_range_breakout params={'rr': 1.5, 'wait_bars': 8} screened at n=1740 exp=0.0954R t=3.52 pf=1.198 maxDD=-28.47R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1740,
+   "exp_r": 0.0954,
+   "t_stat": 3.52,
+   "profit_factor": 1.198,
+   "max_dd_r": -28.47,
+   "win_rate": 0.473,
+   "symbol": "EURUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-1596a7",
+  "geneology_id": "external:ext_reddit_EURUSD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURUSD session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1740 exp=0.1055R t=3.51 pf=1.207 maxDD=-26.42R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1740,
+   "exp_r": 0.1055,
+   "t_stat": 3.51,
+   "profit_factor": 1.207,
+   "max_dd_r": -26.42,
+   "win_rate": 0.4397,
+   "symbol": "EURUSD"
+  }
+ },
+ {
+  "id": "ext-20260826-b0b41a",
+  "geneology_id": "external:ext_forexfactory_NZDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDCAD session_range_breakout params={'rr': 2.0, 'wait_bars': 12} screened at n=1688 exp=0.0748R t=3.4 pf=1.23 maxDD=-38.36R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1688,
+   "exp_r": 0.0748,
+   "t_stat": 3.4,
+   "profit_factor": 1.23,
+   "max_dd_r": -38.36,
+   "win_rate": 0.5113,
+   "symbol": "NZDCAD"
+  }
+ },
+ {
+  "id": "ext-20260826-551830",
+  "geneology_id": "external:ext_forexfactory_NZDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDCAD session_range_breakout params={'rr': 1.5, 'wait_bars': 12} screened at n=1688 exp=0.0691R t=3.33 pf=1.215 maxDD=-38.13R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 12
+  },
+  "created_at": "2026-08-26T17:50:00.432689+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1688,
+   "exp_r": 0.0691,
+   "t_stat": 3.33,
+   "profit_factor": 1.215,
+   "max_dd_r": -38.13,
+   "win_rate": 0.5172,
+   "symbol": "NZDCAD"
+  }
  }
 ]

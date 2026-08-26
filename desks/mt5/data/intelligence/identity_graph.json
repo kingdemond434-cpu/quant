@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T17:25:48+00:00",
+ "rebuilt_at": "2026-08-26T18:24:43+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -648,6 +648,81 @@
    },
    "cohorts": [
     "044fd1e2d0a0fb03"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "jeanettecapital5730": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "53d2658bb5411755"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "gregorytestate3889": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "60a6064758d7bd7c"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "syndicalistreceptionist8185": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "b4ce5b9f601c3760"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "singni725": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "693fe9d99d2c2a26"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "eltano1985": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "f48c6756ee6c0ad2"
    ],
    "scores": {
     "independent_evidence": 1,

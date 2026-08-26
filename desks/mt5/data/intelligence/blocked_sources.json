@@ -4,102 +4,102 @@
   "equiti_copy": {
    "first_seen": "2026-08-25T22:44:03+00:00",
    "region": "MENA/global",
-   "last_seen": "2026-08-26T17:22:26+00:00",
-   "url": "https://copy-ratings.equiti.com/?page=5",
+   "last_seen": "2026-08-26T18:22:26+00:00",
+   "url": "https://copy-ratings.equiti.com/?page=1",
    "diagnosis": "JS_APP_NEEDS_API",
    "fix_hint": "client-rendered app: the page ships no data, so find the JSON endpoint its own XHR calls and read that instead of the HTML",
    "error": "",
-   "attempts": 21
+   "attempts": 22
   },
   "duplitrade": {
    "first_seen": "2026-08-25T22:44:16+00:00",
    "region": "EU/global",
-   "last_seen": "2026-08-26T17:22:39+00:00",
+   "last_seen": "2026-08-26T18:22:41+00:00",
    "url": "https://duplitrade.com/strategy-providers",
    "diagnosis": "JS_APP_NEEDS_API",
    "fix_hint": "client-rendered app: the page ships no data, so find the JSON endpoint its own XHR calls and read that instead of the HTML",
    "error": "",
-   "attempts": 21
+   "attempts": 22
   },
   "octa_masters": {
    "first_seen": "2026-08-25T22:44:28+00:00",
    "region": "SEA",
-   "last_seen": "2026-08-26T17:22:53+00:00",
-   "url": "https://my.octabroker.com/copy-trading/rating/?page=1",
+   "last_seen": "2026-08-26T18:22:54+00:00",
+   "url": "https://my.octabroker.com/copy-trading/rating/?page=2",
    "diagnosis": "UNKNOWN_SHAPE",
    "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
    "error": "",
-   "attempts": 21
+   "attempts": 22
   },
   "share4you": {
    "first_seen": "2026-08-25T22:44:29+00:00",
    "region": "CIS/Asia",
-   "last_seen": "2026-08-26T17:22:54+00:00",
-   "url": "https://www.share4you.com/en/leaders?page=1",
+   "last_seen": "2026-08-26T18:22:56+00:00",
+   "url": "https://www.share4you.com/en/leaders?page=2",
    "diagnosis": "HTTP_BLOCKED",
    "fix_hint": "HTTP 404 -- try the Contabo Windows IP (this box is a datacenter range many venues refuse), a regional mirror, or the archive",
-   "error": "404 Client Error: Not Found for url: https://www.share4you.com/en/leaders?page=1",
-   "attempts": 21
+   "error": "404 Client Error: Not Found for url: https://www.share4you.com/en/leaders?page=2",
+   "attempts": 22
   },
   "roboforex_copyfx": {
    "first_seen": "2026-08-25T22:44:43+00:00",
    "region": "CIS/global",
-   "last_seen": "2026-08-26T17:23:12+00:00",
-   "url": "https://copy.roboforex.pro/ratings/traders-all/?page=1",
+   "last_seen": "2026-08-26T18:23:11+00:00",
+   "url": "https://copy.roboforex.pro/ratings/traders-all/?page=2",
    "diagnosis": "UNKNOWN_SHAPE",
    "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
    "error": "",
-   "attempts": 21
+   "attempts": 22
   },
   "hfm_pamm": {
    "first_seen": "2026-08-25T22:44:45+00:00",
    "region": "MENA/Africa",
-   "last_seen": "2026-08-26T17:23:13+00:00",
-   "url": "https://pamm.hfm.com/int/en/performance?page=1",
+   "last_seen": "2026-08-26T18:23:13+00:00",
+   "url": "https://pamm.hfm.com/int/en/performance?page=2",
    "diagnosis": "HTTP_BLOCKED",
    "fix_hint": "HTTP 403 -- try the Contabo Windows IP (this box is a datacenter range many venues refuse), a regional mirror, or the archive",
-   "error": "403 Client Error: Forbidden for url: https://pamm.hfm.com/int/en/performance?page=1",
-   "attempts": 21
+   "error": "403 Client Error: Forbidden for url: https://pamm.hfm.com/int/en/performance?page=2",
+   "attempts": 22
   },
   "followme_cn": {
    "first_seen": "2026-08-25T22:44:48+00:00",
    "region": "China",
-   "last_seen": "2026-08-26T17:23:17+00:00",
-   "url": "https://cn.followme.com/trade/rank?page=1",
+   "last_seen": "2026-08-26T18:23:16+00:00",
+   "url": "https://cn.followme.com/trade/rank?page=2",
    "diagnosis": "HTTP_BLOCKED",
    "fix_hint": "HTTP 403 -- try the Contabo Windows IP (this box is a datacenter range many venues refuse), a regional mirror, or the archive",
-   "error": "403 Client Error: Forbidden for url: https://cn.followme.com/trade/rank?page=1",
-   "attempts": 21
+   "error": "403 Client Error: Forbidden for url: https://cn.followme.com/trade/rank?page=2",
+   "attempts": 22
   },
   "minfx_jp": {
    "first_seen": "2026-08-25T22:44:49+00:00",
    "region": "Japan",
-   "last_seen": "2026-08-26T17:23:18+00:00",
+   "last_seen": "2026-08-26T18:23:18+00:00",
    "url": "https://min-fx.jp/systre/strategy/",
    "diagnosis": "HTTP_BLOCKED",
    "fix_hint": "HTTP 403 -- try the Contabo Windows IP (this box is a datacenter range many venues refuse), a regional mirror, or the archive",
    "error": "403 Client Error: Forbidden for url: https://min-fx.jp/systre/strategy/",
-   "attempts": 21
+   "attempts": 22
   },
   "mylivefx_br": {
    "first_seen": "2026-08-25T22:44:57+00:00",
    "region": "Brazil",
-   "last_seen": "2026-08-26T17:23:27+00:00",
+   "last_seen": "2026-08-26T18:23:27+00:00",
    "url": "https://mylivefx.com/",
    "diagnosis": "SERVER_RENDERED_WRONG_SELECTOR",
    "fix_hint": "the numbers ARE in the HTML -- write a card parser for this markup (see parse_litefinance: 0 -> 15 records with the right selector)",
    "error": "",
-   "attempts": 21
+   "attempts": 22
   },
   "readitrades_africa": {
    "first_seen": "2026-08-25T22:44:59+00:00",
    "region": "Africa",
-   "last_seen": "2026-08-26T17:23:31+00:00",
+   "last_seen": "2026-08-26T18:23:29+00:00",
    "url": "https://www.ready-trade.com/",
    "diagnosis": "FETCH_ERROR",
    "fix_hint": "page returned 200 with neither rendered numbers nor JS markers",
    "error": "HTTPSConnectionPool(host='www.ready-trade.com', port=443): Max retries exceeded with url: / (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_V",
-   "attempts": 21
+   "attempts": 22
   }
  }
 }

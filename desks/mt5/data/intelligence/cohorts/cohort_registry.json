@@ -5314,5 +5314,121 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"53d2658bb5411755": {
+"t0": "2026-08-26T18:24:42+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "jeanettecapital5730/MT5-Risk-Management-EA",
+"url": "https://github.com/jeanettecapital5730/MT5-Risk-Management-EA",
+"text": "Calculate lot sizes and manage trade risk directly within MetaTrader 5 and MetaTrader 4 to execute orders with precision.",
+"symbols": [],
+"found_at": "2026-08-26T18:24:37+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T17:36:45Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"60a6064758d7bd7c": {
+"t0": "2026-08-26T18:24:42+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Gregorytestate3889/MT5-Forex-Session-indicator",
+"url": "https://github.com/Gregorytestate3889/MT5-Forex-Session-indicator",
+"text": "Visualize global market sessions on MT4 and MT5 charts with this high-performance indicator.",
+"symbols": [],
+"found_at": "2026-08-26T18:24:37+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-26T17:36:44Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b4ce5b9f601c3760": {
+"t0": "2026-08-26T18:24:42+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+"url": "https://github.com/Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+"text": "Execute high-frequency trades on MT5 and MT4 using real-time signal generation and optimized M1 or M5 workflows.",
+"symbols": [],
+"found_at": "2026-08-26T18:24:37+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-26T17:36:44Z"
+},
+"mechanism_tags": [
+"scalping",
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"693fe9d99d2c2a26": {
+"t0": "2026-08-26T18:24:42+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+"url": "https://github.com/Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+"text": "Automate Euro/USD trading on MT5 using EMA cross signals with this expert advisor for precise entry and exit points.",
+"symbols": [],
+"found_at": "2026-08-26T18:24:37+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-26T17:29:50Z"
+},
+"mechanism_tags": [
+"copy_trading",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f48c6756ee6c0ad2": {
+"t0": "2026-08-26T18:24:42+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Eltano1985/tradememory-protocol",
+"url": "https://github.com/Eltano1985/tradememory-protocol",
+"text": "Provide persistent, outcome-weighted memory for AI trading agents to improve decision-making across sessions with the TradeMemory Protocol.",
+"symbols": [],
+"found_at": "2026-08-26T18:24:38+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T17:25:51Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
