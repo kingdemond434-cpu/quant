@@ -303,23 +303,23 @@ class FailureMiningAnalyzer:
                           f"Success rate {pattern.success_rate:.1%} (avg +{pattern.avg_success_r:.3f}R) "
                           f"vs failure rate {pattern.failure_rate:.1%} (avg {pattern.avg_failure_r:.3f}R). "
                           f"Trade only when condition met, invert otherwise.",
-                    symbols=[],  # Strategy-specific
-                    timing={
-                        "strategy_id": pattern.strategy_id,
-                        "condition": pattern.condition,
-                    },
-                    falsifier=f"Pattern p-value rises above 0.1 over 50+ occurrences",
-                    expected_horizon="per_trade",
-                    capacity_estimate="small",
-                    metadata={
-                        "strategy_id": pattern.strategy_id,
-                        "pattern": pattern.pattern_name,
-                        "p_value": pattern.p_value,
-                        "success_rate": pattern.success_rate,
-                    }
-                )
-                hypotheses.append(h)
-                save_hypothesis(h)
+                symbols=[],  # Strategy-specific
+                timing={
+                    "strategy_id": pattern.strategy_id,
+                    "condition": pattern.condition,
+                },
+                falsifier=f"Pattern p-value rises above 0.1 over 50+ occurrences",
+                expected_horizon="per_trade",
+                capacity_estimate="small",
+                metadata={
+                    "strategy_id": pattern.strategy_id,
+                    "pattern": pattern.pattern_name,
+                    "p_value": pattern.p_value,
+                    "success_rate": pattern.success_rate,
+                }
+            )
+            hypotheses.append(h)
+            save_hypothesis(h)
 
         # Inverted strategy hypotheses
         for signal in self.inverted_signals[-10:]:
@@ -330,22 +330,22 @@ class FailureMiningAnalyzer:
                 mechanism=f"Inverted alpha: {signal.strategy_id} consistently loses "
                           f"(avg {signal.context.get('strategy_avg_r', 0):.3f}R). "
                           f"Inverting signals produces positive expectancy.",
-                    symbols=[signal.symbol],
-                    timing={
-                        "strategy_id": signal.strategy_id,
-                        "inversion": True,
-                    },
-                    falsifier=f"Original strategy becomes profitable (avg R > 0) over 100+ trades",
-                    expected_horizon="per_trade",
-                    capacity_estimate="small",
-                    metadata={
-                        "strategy_id": signal.strategy_id,
-                        "original_avg_r": signal.context.get("strategy_avg_r"),
-                        "inversion": True,
-                    }
-                )
-                hypotheses.append(h)
-                save_hypothesis(h)
+                symbols=[signal.symbol],
+                timing={
+                    "strategy_id": signal.strategy_id,
+                    "inversion": True,
+                },
+                falsifier=f"Original strategy becomes profitable (avg R > 0) over 100+ trades",
+                expected_horizon="per_trade",
+                capacity_estimate="small",
+                metadata={
+                    "strategy_id": signal.strategy_id,
+                    "original_avg_r": signal.context.get("strategy_avg_r"),
+                    "inversion": True,
+                }
+            )
+            hypotheses.append(h)
+            save_hypothesis(h)
 
         return hypotheses
 

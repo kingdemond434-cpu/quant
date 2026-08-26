@@ -193,9 +193,24 @@ class TestTheSuiteItselfIsBounded:
         assert re.search(r"^timeout\s*=\s*\d+", src, re.M), (
             "the suite-wide per-test timeout was removed -- one hanging test again stalls the "
             "whole gate instead of failing it")
-        assert 'timeout_method = "signal"' in src, (
-            "the thread method cannot interrupt a blocking syscall and cannot report WHERE the "
-            "hang was, which is most of the diagnostic value")
+        # THREAD, NOT SIGNAL -- corrected 2026-08-26 against the platform, not against the
+        # preference. This assertion demanded `signal` and pyproject has said `thread` since the
+        # same commit that added both, so it has been red ever since and was one of the failures
+        # keeping the desk-wide gate down. signal (SIGALRM) IS the better method where it exists
+        # -- it interrupts a blocking syscall and yields the offending test's own traceback --
+        # but SIGALRM DOES NOT EXIST ON WINDOWS and the MT5 execution box is Windows, where it
+        # raises AttributeError and takes the whole run down as an INTERNALERROR before a single
+        # test reports. A suite that cannot execute on the box that TRADES is worth less than a
+        # slightly worse hang traceback on the box that does not.
+        #
+        # NOTHING IS LOOSENED: the property this class exists to protect -- a hang becomes a
+        # NAMED failing test instead of a stalled suite -- is carried entirely by `timeout = N`
+        # above, which is still asserted. What is pinned here is only that a method is set
+        # EXPLICITLY, so nobody silently reverts to a platform-fatal one.
+        assert 'timeout_method = "thread"' in src, (
+            "timeout_method must stay explicitly `thread`: SIGALRM does not exist on Windows and "
+            "the MT5 execution box is Windows, so `signal` INTERNALERRORs the entire suite on "
+            "the box that trades. Set it per-platform rather than flipping it globally.")
 
     def test_the_plugin_is_a_hard_dependency(self) -> None:
         """Without it, `timeout` is an unrecognised ini key -- a warning, not an error -- so the

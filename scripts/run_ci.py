@@ -94,6 +94,18 @@ _STEPS = [
     # the signal is dominated by `ast.AST has no attribute value` and legitimate monkeypatch
     # module access. That is a silencing campaign, and a gate green because everything is
     # silenced is worse than no gate (the rule this file's own `files` list already follows).
+    # COMPILE, AND RUFF IS NOT A SUBSTITUTE FOR IT (2026-08-26). This gate went red on
+    # `tests (pytest)` for 21h with one cause: scripts/liquidation_listener.py carried
+    # `await asyncio.sleep(30)` inside a plain `def`, and ruff, mypy AND collect were all GREEN
+    # on it. `await` outside `async` is not a PARSER error -- CPython accepts it into the AST and
+    # rejects it in the symbol-table pass -- so every AST-level tool passes while `import` raises
+    # SyntaxError. Collect missed it because the only importer imports inside a fixture. Adding
+    # this found two MORE files that had never been importable (a +4 indentation block in
+    # desks/mt5/side_channels/failure_mining.py, and a bash script named .py). ~1s for the pass
+    # every other tool skips, and it runs BEFORE the 2h test step so the cheapest failure in the
+    # repo is detected first rather than last.
+    ("compile (compileall)", [_PY, "-m", "compileall", "-q", "scripts", "libs", "desks",
+                              "tests"], 300),
     ("collect (pytest --co)", [_PY, "-m", "pytest", "--co", "-q", "tests/"], 300),
     # WHOLE TREE (2026-07-25): was 4 named files + tests/execution = ~147 of ~1099 tests, leaving
     # tests/risk (the ruin path) and tests/validation (the anti-false-positive path) ungated, and

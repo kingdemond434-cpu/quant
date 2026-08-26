@@ -47,6 +47,19 @@ echo "gates:"
 # ruff first: it is the cheapest and its failures are the least interesting, so getting them out
 # of the way keeps the expensive output readable.
 run "lint (ruff)"          $PY -m ruff check .
+# COMPILE IS ITS OWN GATE, AND RUFF IS NOT A SUBSTITUTE FOR IT (2026-08-26). scripts/
+# liquidation_listener.py sat in committed code with `await asyncio.sleep(30)` inside a plain
+# `def`, and ruff, mypy AND pytest --co all reported GREEN on it -- for at least 21h, during
+# which it was the sole cause of the desk-wide CI red. `await` outside `async` is not a PARSER
+# error: CPython accepts it into the AST and rejects it in the symbol-table pass, so every
+# AST-level tool (ruff included, and `ast.parse` if you reach for it to check by hand) says the
+# file is fine while `import` raises SyntaxError. Collection missed it because the only importer
+# does so inside a fixture, so the module is never touched at collection time -- and the four
+# tests that would have caught the REAL defect underneath (a non-atomic archive write that had
+# already destroyed ~40 days of data) ERRORED on import instead of FAILING on behaviour, which
+# is how the lost implementation stayed lost. compileall runs the pass the others skip, over the
+# whole tree, in about a second.
+run "compile (compileall)" $PY -m compileall -q scripts libs desks tests
 # COLLECTION IS ITS OWN GATE. An uncollectable module is not a failing test, it is a test that
 # DOES NOT RUN, and pytest reports that as an error count sitting next to a green pass count.
 # ruff does not resolve names and mypy's `files` excludes tests/, so a deleted function or a

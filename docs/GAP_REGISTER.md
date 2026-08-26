@@ -1337,3 +1337,120 @@ findings-scope cleared (RESEARCH.md = operative law, MOAT_NODE_SPEC.md = spec dr
 127). **Deferred with named blockers:** #135 test adjudication + #124 promoter wiring (two live
 interactive sibling sessions hold uncommitted desk state in exactly those files; a desk-suite
 run restores protected artifacts over sibling work — R0423 class). Highest-EV open: #124.
+
+---
+
+## 2026-08-26T05:05Z — weekly gap-fixer/wirer cycle (fleet liveness sweep + scheduler + CI repair)
+
+**FINDING OF THE CYCLE — the arrivals collapse was an INFRASTRUCTURE defect, and the desk was
+being told to fix it with research effort.** The conversion gauge reported `ARRIVALS COLLAPSED
+— 25 raised against a baseline of 158.0/week` and instructed this seat to HUNT HARDER. Measured
+over the 7 days to today: **102 headless seat launches produced 27 real digs (28.1% of 96
+billable); 56 died on `auth unavailable` before launching at all.** The miners were not hunting
+too little — four launches in five never started. It is a clean time-of-day pattern:
+
+| hour UTC | dead | produced | rate |
+|---|---|---|---|
+| 05:00 | 0 | 3 | 100% |
+| 06:00 | 0 | 2 | 100% |
+| 07:00 | 1 | 4 | 80% |
+| 08:00 | 0 | 2 | 100% |
+| 14:00 | 7 | 0 | **0%** |
+| 15:00 | 30 | 5 | **14%** |
+| 18:00 | 7 | 0 | **0%** |
+| 19:00 | 6 | 1 | **14%** |
+
+**Root cause:** every dig row in `ops/crontab.manifest` is guarded by
+`systemctl is-enabled quant-<seat>.timer || <run it>`, and ROOT systemd timers exist for those
+seats at 14:00/15:00/18:00/19:00 — exactly the exhausted quota window. The guard therefore
+suppresses the manifest's OWN early slots (03/05/06/07, the productive window) in favour of root
+timers that fire into a wall. Those are the `quant-dataaxis` / `quant-frontier` /
+`quant-prospector` units sitting in `systemctl --failed`, and root is the principal's console.
+
+**Repaired in userland** (`ops/install_early_seat_timers.sh`, commit `2ff54e7a`): the manifest's
+own early slots re-homed as user timers with the is-enabled guard dropped — same scripts, same
+flocks, same logs, same hours the manifest already specifies. dataaxis 05:00, prospector 06:00,
+litminer 07:00, frontier 08:00 + 03:00. Shared `/tmp/seat_*.lock` prevents user/root overlap;
+every dig is resume-aware, and `organ_catchup` already knows all five by script and re-fires a
+mutex loser every 5 min. This also retires the five `organ-stale-frontier-*` defects at cause.
+Fence + ratcheted floor: `scripts/check_seat_launch_yield.py`, daily 10:00 UTC.
+
+**Falsifier evaluated rather than assumed:** `brain_env.sh`'s mutex carries a written falsifier
+("if brain_mutex.log shows the daily cycle repeatedly deferred behind long digs, this needs organ
+priority"). Measured: **7 deferrals in 7 days against 56 auth deaths.** The mutex is protecting,
+not starving — it stays exactly as it is, and `MUTEX_DEFERRED` is excluded from the fence's
+denominator so correct serialisation never reads as failure.
+
+**#138 (new, CLOSED) — the scheduler backlog was measured by nobody.** `run_manifest_dispatch.py`
+had been writing the post-cron-death backlog to `data/manifest_dispatch_state.json`, and **grep
+finds zero consumers**. A measurement with no consumer is an opinion, so "216 uncovered" sat in a
+file for six days and escalated to no one — while `check_organ_liveness` (hourly), the organ best
+placed to notice, was itself one of the dead rows. Fixed in `a6792b29`: twin check moved before
+the count (216/228 published vs 201 truly dead — a gauge counting healed rows as sick can never
+reach zero); a memory governor (box: 3814MB, **zero swap**, four organs OOM-killed in 24h) that
+DEFERS into `pending` rather than dropping; +17 organs, each hand-run first. Dead tokens
+**183 → 166**. Consumer wired: `max_audit.check_manifest_backlog`.
+
+**#139 (new, CLOSED) — a syntax error in committed code passed all three gates for 21h.** The
+desk-wide CI had been RED on `tests (pytest)` since 2026-08-25T08:56Z. Cause:
+`scripts/liquidation_listener.py` carried `await asyncio.sleep(30)` inside a plain `def`
+(`_switch_wait` lost its `async`). **ruff, mypy and `pytest --co` were all GREEN on it** —
+verified directly against the HEAD file, which ruff reports as "All checks passed!". `await`
+outside `async` is not a parser error: CPython accepts it into the AST and rejects it in the
+symbol-table pass, so every AST-level tool is blind (including `ast.parse`, if reached for as a
+hand-check — it "passes" where `compile()` fails). Collection missed it because the only importer
+imports inside a fixture.
+
+- **Gate closed:** `compile (compileall)` added to `ops/gates.sh` AND `run_ci.py` `_STEPS`, ~1s,
+  positioned before the 2h test step. Positive control: reintroducing the bug turns it RED.
+- **It earned itself immediately, finding two more files that had NEVER been importable** —
+  `desks/mt5/side_channels/failure_mining.py` (two kwarg blocks indented +4 after a multi-line
+  f-string; in the MT5 desk) and `desks/mt5/side_channels/check_acc.py` (a `#!/bin/bash` script
+  with a `.py` extension, swept in by an hourly sync → renamed `.sh`, capability kept).
+- **The defect UNDERNEATH, and the reason this mattered:** with the syntax fixed, the four tests
+  in `test_liquidation_flush_durability.py` went ERROR → FAIL and exposed that `_flush()` was
+  **never atomic** and cleared its buffer BEFORE the write. That is the desk's single
+  most-repeated lesson verbatim — *a heartbeat proves the loop is alive, never that the pipe is*
+  — the defect that destroyed ~40 days of liquidations behind a perfectly green heartbeat. The
+  implementation existed in `31a4969b` and was LOST in a merge that kept its tests: the
+  **kept-tests-dropped-code class**, and the SyntaxError is exactly what hid it, because ERROR
+  on import never reports the behaviour the test was written to pin. Restored in full (atomic
+  temp+replace, buffer cleared only after durability, corrupt archive QUARANTINED not
+  overwritten, plus the second `_STATUS` signal). 4/4 pass.
+- **One stale test corrected, nothing loosened:** `test_pytest_has_a_default_timeout` demanded
+  `timeout_method = "signal"` while pyproject has said `"thread"` since the same commit added
+  both — red ever since. The CONFIG is right: SIGALRM does not exist on Windows and the MT5
+  execution box is Windows, where `signal` INTERNALERRORs the whole suite on the box that trades.
+  The bounded-suite property is carried by `timeout = 300`, still asserted.
+
+**Liveness sweep (STEP 0):** `quant-moat-backup` had FAILED today (exit 2, DEGRADED 5/6,
+`execution_tape` ABSENT). Both causes resolved; detector re-run **clears at OK 5/5, drill PASS**.
+`quant-external-pipeline` was OOM-killed at 03:44 and self-recovered on its next hourly tick.
+Deliberately NOT built: an automated `backups/ → data/` restore path — manufacturing auto-restore
+machinery for a crypto-era retired store is negative-EV and risks resurrecting data someone
+removed on purpose. Named rather than silently skipped.
+
+**Wired this cycle — the eight-gate barrier had judged ZERO candidates for its entire existence.**
+`scripts/promotion_gate.py` reads `data/gauntlet_survivors.json`; nothing had ever written it, so
+it published NO-PRODUCER and returned 0, which the cadence scored as a duty fired. The producer
+`build_gauntlet_survivors.py` existed and was an ORPHAN SCRIPT referenced by nothing. Run: **21
+candidates from real MT5 evidence, 3 clearing all eight gates**, 18 carrying at least one
+UNMEASURED gate (which the barrier counts as FAILED — fail-closed). No L1.60 conflict: the gate
+states in its own output that it is a screen-side prerequisite and that promotion authority
+remains with pre-registered forward evidence.
+
+**Process lesson paid for again, recorded:** the first version of this entry was written while a
+background suite run was live, and the suite's GAP-113 protected-artifact restore reverted
+`docs/GAP_REGISTER.md` between the write and the `git add` — so the commit staged nothing and
+reported success. Verified against `git show`. Kill the suite before writing a protected artifact,
+and re-read after every add.
+
+**Still the principal's console (all root):** `systemctl restart cron`; **a swapfile is the
+cheapest ruin-probability reduction available** and is now implicated in four separate findings
+this cycle; the retired crypto root units; the dead-zone root seat timers, which now merely
+duplicate the userland early slots and can be disabled.
+
+**Highest-EV item left open:** the remaining CI red beyond the three files fixed here — the
+fail-fast run was stopped at its first failure, so the suite has not yet been proven green
+end-to-end. Next gap-fixer: run `scripts/run_ci.py` and read `failed_tests` in the marker, which
+now names the tests rather than only the step.
