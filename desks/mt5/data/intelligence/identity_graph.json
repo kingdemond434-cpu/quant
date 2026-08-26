@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T04:24:31+00:00",
+ "rebuilt_at": "2026-08-26T05:24:52+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -467,6 +467,21 @@
    },
    "cohorts": [
     "70193db012844420"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "tyumex": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "cb4798081fc0499c"
    ],
    "scores": {
     "independent_evidence": 1,

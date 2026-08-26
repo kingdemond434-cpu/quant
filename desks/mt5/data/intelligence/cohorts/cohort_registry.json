@@ -4997,5 +4997,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"cb4798081fc0499c": {
+"t0": "2026-08-26T05:24:51+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Tyumex/tyumex-trading-terminal",
+"url": "https://github.com/Tyumex/tyumex-trading-terminal",
+"text": "Windows multi-chart trading terminal for Binance, Hyperliquid, CME/MOEX and MetaTrader 4/5: order-flow footprint, cluster volume, second-level candles, drawing tools, bar replay and risk-based order entry.",
+"symbols": [],
+"found_at": "2026-08-26T05:24:46+00:00",
+"topic": "metatrader5",
+"stars": 11,
+"star_delta": 0,
+"pushed": "2026-08-26T05:23:26Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
