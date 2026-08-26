@@ -64,6 +64,7 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
         "check_constitution_core.py",
         "codex login status",
         "--sandbox danger-full-access",
+        "--dangerously-bypass-approvals-and-sandbox",
         "controller_checkpoint.py claim",
         "controller_checkpoint.py heartbeat",
         "controller_checkpoint.py checkpoint",
@@ -92,7 +93,8 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     service = SERVICE.read_text("utf-8")
     assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
-    assert "--dangerously-bypass-approvals-and-sandbox" not in source
+    assert "CODEX_GLOBAL_ARGS=(--dangerously-bypass-approvals-and-sandbox)" in source
+    assert "CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)" in source
     assert source.index("check_constitution_core.py") < source.index(
         "controller_checkpoint.py claim"
     ) < source.index("cat ops/midnight_codex_prompt.txt")
