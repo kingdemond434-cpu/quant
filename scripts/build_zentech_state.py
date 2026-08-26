@@ -340,6 +340,11 @@ def build() -> dict[str, Any]:
         "disclaimer": "Research and operator telemetry only. Missing values are UNMEASURED; shadow has zero order authority.",
     }
     # -- principal 2026-08-26 additions: stats, funnel, live decay, sampled equity ------------
+    # READINESS IS THE HEADLINE. A dashboard that shows equity and sleeve counts without saying
+    # what size is actually EARNED invites the reader to supply their own answer.
+    payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
+        "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
+    payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
     payload["stats"] = _ledger_stats(rows)
     payload["stats"]["today_pnl"] = payload["account"]["today_pnl"]
     payload["pipeline"] = _funnel(universal)
