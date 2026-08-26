@@ -1,0 +1,9 @@
+[Unit]
+Description=Miner conversion + book breadth: what converts, and what independence is missing
+
+[Service]
+Type=oneshot
+MemoryMax=400M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_miner_conversion.py
+SuccessExitStatus=0 1

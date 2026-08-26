@@ -1,0 +1,9 @@
+[Unit]
+Description=Authority ratchet: earned evidence may never silently fall
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_authority_ratchet.py
+SuccessExitStatus=0 1

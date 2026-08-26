@@ -1,0 +1,13 @@
+[Unit]
+Description=Hourly survivor acquisition controller
+After=network.target
+
+[Service]
+EnvironmentFile=/home/quant/quant-platform/data/secrets/youtube.env
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/hourly_controller.py --once
+StandardOutput=append:/home/quant/logs/hourly_user.log
+StandardError=append:/home/quant/logs/hourly_user.log
+MemoryMax=600M
+CPUQuota=50%
+TimeoutStartSec=3000

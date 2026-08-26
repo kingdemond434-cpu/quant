@@ -3618,6 +3618,13 @@ _TERMINAL_ARTIFACTS = {
         "standing subordinate implementation doctrine under the sealed master",
     "docs/RESEARCH_DATA_TRANSPORT.md":
         "deployment runbook -- superseded by a new transport design, never cadence-refreshed",
+    # 2026-08-26 consolidation docs (gap-wirer): the two operative governing documents, their
+    # disposition map, and two standing specs -- classified in ARTIFACT_GOVERNANCE.md same cycle.
+    "docs/LAWS.md": "operative constitution of the 2026-08-25 consolidation -- amendment is a principal act, never a cadence",
+    "docs/RESEARCH.md": "operative research mandate -- every organ's first standing order, amended by decision only",
+    "docs/MANDATE_COVERAGE.md": "terminal disposition map of the consolidation -- a re-consolidation writes a NEW map",
+    "docs/policy/DEEPSEEK_SECOND_FLYWHEEL_MANDATE.md": "standing principal mandate -- donation-only flywheel authority limits",
+    "docs/research/MOAT_NODE_SPEC.md": "standing spec -- implementations change by code, the spec by decision",
     "docs/research/EXPLORATION_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/MEASUREMENT_DOCTRINE.md": "standing doctrine -- binds organs, not an inventory",
     "docs/research/OPERATING_DOCTRINE.md": "standing doctrine -- governs what to build",

@@ -1,0 +1,10 @@
+[Unit]
+Description=Hourly external stage-A survivors -> canonical gauntlet queue promotion
+
+[Service]
+MemoryMax=600M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/promote_external_to_queue.py

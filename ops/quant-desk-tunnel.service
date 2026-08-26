@@ -1,0 +1,15 @@
+[Unit]
+Description=Public HTTPS tunnel for the desk dashboard (quick tunnel, no root required)
+After=network-online.target quant-desk-web.service
+Wants=quant-desk-web.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_desk_tunnel.sh
+Restart=always
+RestartSec=10
+MemoryMax=250M
+
+[Install]
+WantedBy=default.target

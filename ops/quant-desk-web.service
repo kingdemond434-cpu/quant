@@ -1,0 +1,14 @@
+[Unit]
+Description=Quant desk dashboard (token-gated) for Dell and phone
+After=network-online.target
+
+[Service]
+Type=simple
+MemoryMax=350M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1 --require-token
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

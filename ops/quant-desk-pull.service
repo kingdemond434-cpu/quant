@@ -1,0 +1,9 @@
+[Unit]
+Description=Pull live desk state from the trading box (dashboard freshness)
+
+[Service]
+Type=oneshot
+MemoryMax=200M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/pull_desk_state.sh
+SuccessExitStatus=0 1

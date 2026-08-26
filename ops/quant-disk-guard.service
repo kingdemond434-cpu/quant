@@ -1,0 +1,9 @@
+[Unit]
+Description=Disk + memory guard: rotate rebuildable artifacts, never touch irreplaceable ones
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/disk_guard.py
+SuccessExitStatus=0 1

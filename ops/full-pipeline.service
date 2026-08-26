@@ -1,0 +1,12 @@
+[Unit]
+Description=Full pipeline: discover backtest gates certify
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+Environment=PATH=/home/quant/quant-platform/.venv/bin:/usr/bin
+EnvironmentFile=/home/quant/quant-platform/data/secrets/youtube.env
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/desks/mt5/side_channels/full_pipeline.py
+StandardOutput=append:/home/quant/quant-platform/desks/mt5/logs/full_pipeline.log
+StandardError=append:/home/quant/quant-platform/desks/mt5/logs/full_pipeline.log

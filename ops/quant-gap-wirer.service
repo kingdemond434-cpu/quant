@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly gap-fixer/wirer/weakness hunter (repair organ; principal-ordered 2026-08-25)
+
+[Service]
+MemoryMax=2500M
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_gap_wirer.sh
+TimeoutStartSec=6h

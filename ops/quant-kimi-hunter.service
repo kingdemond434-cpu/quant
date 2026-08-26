@@ -1,0 +1,11 @@
+[Unit]
+Description=Kimi mechanism hunter (free-tier chain first)
+
+[Service]
+MemoryMax=2500M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash -c 'source ops/free_tier.env && .venv/bin/python scripts/kimi_hunter.py >> data/cro_ai_logs/kimi_$(date -u +%%Y%%m%%d).log 2>&1'
+TimeoutStartSec=1h

@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily brain chain: CRO -> unified frontier -> video hunter, one cache window (token-economy order 2026-08-25)
+
+[Service]
+MemoryMax=2500M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/bash /home/quant/quant-platform/ops/run_daily_brain_chain.sh
+TimeoutStartSec=8h
