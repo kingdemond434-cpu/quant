@@ -17,13 +17,22 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
+import time
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-PY = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\pythonw.exe"
-PYE = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe"
+# WAS a hardcoded C:\Users\dell\... path -- the retired laptop's interpreter, which does not
+# exist on Contabo. Caught live 2026-08-26 while checking whether the hourly restart of dead
+# hunt12/hunt16 processes actually works: it does not, on this box, because the launch command
+# points at a file that is not there. Derived portably instead, from whichever interpreter is
+# actually running this script -- pythonw.exe sits beside python.exe in every standard CPython
+# Windows install, so this works on any box without a hardcoded path.
+_exe_dir = Path(sys.executable).parent
+_pythonw = _exe_dir / "pythonw.exe"
+PY = str(_pythonw) if _pythonw.exists() else sys.executable
 
 EXPECTED = {
     "hunt12": ("pythonw.exe", "run_hunt12.py"),
@@ -40,13 +49,20 @@ def procs() -> list[str]:
     return (out.stdout or "") + (out.stderr or "")
 
 
-def start(script: str) -> None:
-    subprocess.Popen(
+def start(script: str) -> bool:
+    """Launch script hidden/detached. Returns whether the LAUNCH COMMAND ITSELF reported
+    success -- not proof the process is still alive a moment later. health() re-polls procs()
+    afterward for that; a launch command returning 0 and a process actually staying up are
+    different facts, and conflating them is exactly the bug this replaced (restarted=True was
+    written unconditionally, with no check at all, on top of a launch path that did not exist
+    on this box in the first place)."""
+    result = subprocess.run(
         ["powershell", "-NoProfile", "-Command",
-         f"Start-Process -FilePath '{PYE if False else PY}' -ArgumentList "
+         f"Start-Process -FilePath '{PY}' -ArgumentList "
          f"'-u','-W','ignore','research\\{script}' -WorkingDirectory "
          f"'{BASE}' -WindowStyle Hidden"],
-        creationflags=0x08000000)
+        capture_output=True, text=True, timeout=30)
+    return result.returncode == 0
 
 
 def health() -> dict:
@@ -56,8 +72,15 @@ def health() -> dict:
         alive = script in blob
         res[name] = {"alive": alive}
         if not alive:
-            start(script)
-            res[name]["restarted"] = True
+            launch_ok = start(script)
+            if launch_ok:
+                # Give the OS a moment to actually create the process before checking for it --
+                # process creation itself is near-instant even for a script whose real work is
+                # slow.
+                time.sleep(5)
+            res[name]["restarted"] = bool(launch_ok and script in procs())
+            if not res[name]["restarted"]:
+                res[name]["restart_failed"] = True
     res["gateway_cmd"] = {"alive": "MT5Gateway.cmd" in blob or bool(
         subprocess.run(["powershell", "-NoProfile", "-Command",
                         "Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
