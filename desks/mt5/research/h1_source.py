@@ -150,6 +150,38 @@ class Bars:
                 "h1_source_version": H1_SOURCE_VERSION}
 
 
+def broker_utc_offset_hours(mt5_mod) -> float:
+    """Measured offset between the broker's clock and true UTC, in hours.
+
+    THE DEFECT THIS MEASURES. `copy_rates_*` returns the broker SERVER's wall time, not UTC.
+    Stamping it `utc=True` -- as this file did -- labels every bar with a time it does not have.
+    Measured 2026-08-26: a Fusion tick carried 04:29:03 while true UTC was 01:29:03, so every
+    bar in the desk's history is labelled THREE HOURS LATE. Two things break silently:
+
+      * any comparison between a bar timestamp and a real clock (a forward-window boundary, a
+        staleness check, "is this bar fresh") is wrong by the offset;
+      * session windows are hour-of-day filters. They still select coherent broker sessions --
+        they were fitted and gauntleted on these labels, so the STRATEGIES are unaffected -- but
+        the label "07:00 UTC" names an hour that is really 04:00 UTC.
+
+    The fix is to record the offset rather than silently re-label history: the bars stay on the
+    broker clock (which is what the sessions mean), and everything that must compare against a
+    real clock converts explicitly through this number. Rounded to a quarter hour because broker
+    offsets are whole or half hours; the residue is network latency, not a real offset.
+    """
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
+    try:
+        tick = mt5_mod.symbol_info_tick("XAUUSD") or mt5_mod.symbol_info_tick("EURUSD")
+        if tick is None or not getattr(tick, "time", 0):
+            return 0.0
+        broker = _dt.fromtimestamp(tick.time, _tz.utc)
+        delta = (broker - _dt.now(_tz.utc)).total_seconds() / 3600.0
+        return round(delta * 4) / 4
+    except Exception:
+        return 0.0
+
+
 def _terminal_candidates() -> list[str]:
     """Configured terminal first, then explicitly configured/read-only fallbacks."""
     paths: list[str] = []
@@ -212,13 +244,20 @@ def from_mt5(sym: str, start: datetime) -> Bars | None:
             if rates is None or len(rates) < 100:
                 continue
             df = pd.DataFrame(rates)
+            # These are BROKER-CLOCK timestamps. `utc=True` here is a label, not a conversion --
+            # kept because every session window and every gauntleted cell is defined on this
+            # clock, and silently shifting history would change what the certified strategies do.
+            # The honest part is publishing the offset so callers that compare against a real
+            # clock can convert; see broker_utc_offset_hours().
             df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
             authority = "fusion" in server.casefold()
+            offset = broker_utc_offset_hours(mt5)
             return Bars(
                 _normalise(df.set_index("time")), f"MT5:{server}",
                 datetime.now(UTC).isoformat(timespec="seconds"),
-                "broker-native bars; capital authority only when the server is the configured "
-                "Fusion venue", authority,
+                f"broker-native bars on the BROKER clock (offset {offset:+.2f}h from UTC; "
+                f"timestamps are labelled UTC but are not); capital authority only when the "
+                f"server is the configured Fusion venue", authority,
             )
         except Exception:
             continue

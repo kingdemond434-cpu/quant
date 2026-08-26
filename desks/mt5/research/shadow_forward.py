@@ -16,7 +16,7 @@ hunt5-param gold book.
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -53,30 +53,45 @@ WINDOWS = {
 SLEEVES: list[tuple[str, str]] = []
 
 
-def certified_sleeves() -> list[tuple[str, str]]:
-    """Every ten-gate certificate, as (sym, window) rows for the ONE forward engine.
+def certified_sleeves() -> list[tuple[str, str, dict]]:
+    """Every runnable certificate as (symbol, window, EXACT certified params).
 
-    Authority comes from `shadow_admission.authorized_specs` -- the same fail-closed door every
-    other consumer uses (exact policy attestation + all ten gates + explicit shadow_spec). This
-    function adds NO judgment of its own: it only shapes admitted specs into the engine's row
-    format, and drops (visibly) anything whose selector this engine has no window for. A dropped
-    spec is a wiring gap for the gap-wirer, never a silent skip.
+    Authority AND parameters come from `shadow_admission.authorized_runs` -- the same fail-closed
+    door, now carrying the parameterization that actually passed the gauntlet. One clock per
+    parameterization: rr=1.5 and rr=2.5 on the same symbol and session are two different
+    strategies and each owes its own forward evidence. Before this, all variants shared one clock
+    running the WINDOWS default (rr=2.0), so four certified XAUUSD variants were never tested.
+
+    A certificate whose selector this engine has no window for, or which carries no params, is
+    reported and skipped -- a visible wiring gap for the gap-wirer, never a silent guess.
     """
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, str, dict]] = []
     try:
-        from shadow_admission import authorized_specs
-        for sym, selector, _cond, family, _isu in sorted(authorized_specs(BASE)):
-            if family != "session_range_breakout":
+        from shadow_admission import authorized_runs
+        for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
+            if run["family"] != "session_range_breakout":
                 continue  # this engine runs one family; other families enrol as they are built
-            if selector not in WINDOWS:
-                slog(f"ENROL-GAP: certified {sym}.{selector} has no window mapping; "
-                     f"certificate exists but cannot be run -- wire the selector")
+            if run["selector"] not in WINDOWS:
+                slog(f"ENROL-GAP: certified {run['symbol']}.{run['selector']} has no window "
+                     f"mapping; certificate exists but cannot be run -- wire the selector")
                 continue
-            rows.append((sym, selector))
+            # The window supplies the SESSION hours; the certificate supplies everything it was
+            # gauntleted with. Certificate wins on overlap: it is the thing that passed.
+            params = dict(WINDOWS[run["selector"]])
+            params.update(run["params"])
+            rows.append((run["symbol"], run["selector"], params))
     except Exception as exc:  # noqa: BLE001 -- enrolment must never kill the running clocks
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
     return rows
+
+
+def sleeve_key(sym: str, win: str, params: dict) -> str:
+    """One clock per parameterization -- the key carries what makes them different."""
+    extra = {k: v for k, v in sorted(params.items()) if WINDOWS.get(win, {}).get(k) != v}
+    sig = "_".join(f"{k}={v}" for k, v in extra.items())
+    return f"{sym}.{win}" + (f"#{sig}" if sig else "")
+
 
 FETCH_DAYS = 45
 VERDICT_MIN_TRADES = 50
@@ -162,9 +177,13 @@ def main() -> None:
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
     # here automatically -- the same day they are written -- with their clock stamped below.
-    enrolled = list(dict.fromkeys(SLEEVES + certified_sleeves()))
-    for sym, win in enrolled:
-        key = f"{sym}.{win}"
+    enrolled = [(s, w, dict(WINDOWS.get(w, {}))) for s, w in SLEEVES] + certified_sleeves()
+    seen: set[str] = set()
+    for sym, win, params in enrolled:
+        key = sleeve_key(sym, win, params)
+        if key in seen:
+            continue
+        seen.add(key)
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
@@ -174,9 +193,33 @@ def main() -> None:
         if bars is None:
             continue
         h1 = bars.df
-        sigs = families.family_session_range_breakout(h1, **WINDOWS[win])
+        sigs = families.family_session_range_breakout(h1, **params)
         res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
-        trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
+        # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
+        # (2026-08-16); this parameterization's clock was frozen at `forward_start`. Trades before
+        # that boundary were available while the cell was being SELECTED, so counting them toward
+        # a forward threshold is the leakage the two-stage law forbids -- measured 2026-08-26:
+        # XAUUSD.asia had forward_start=Aug 25 23:25 and n=7 whose first entry was Aug 17 17:00.
+        # Both sets are written: `all_trades` to the ledger tagged by phase (deleting history
+        # would destroy the audit trail), `trades` -- the only set feeding n/exp_r/max_dd/verdicts
+        # -- starts at the boundary. The boundary is CONVERTED, not assumed: bar stamps are on the
+        # broker clock (+3h at Fusion) while forward_start is true UTC.
+        all_trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
+        _fs = st.get("forward_start")
+        _boundary = None
+        if _fs:
+            try:
+                _boundary = (pd.Timestamp(_fs).to_pydatetime().replace(tzinfo=timezone.utc)
+                             + timedelta(hours=float(st.get("broker_offset_h") or 0.0)))
+            except (ValueError, TypeError):
+                _boundary = None
+        trades = ([t for t in all_trades if t.entry_time >= _boundary]
+                  if _boundary is not None else [])
+        st["n_historical"] = len(all_trades) - len(trades)
+        st["evidence_note"] = (
+            f"{len(trades)} forward observation(s) since the clock froze; "
+            f"{len(all_trades) - len(trades)} earlier observation(s) retained as HISTORICAL and "
+            f"excluded from every threshold (they predate pre-registration)")
         ledger = SHADOW_DIR / f"ledger_{sym}_{win}.json"
         # A trade replayed on the broker's own feed and one replayed on cached
         # or free bars are not the same evidence -- OHLC differ at the tick and
@@ -187,9 +230,44 @@ def main() -> None:
         ledger.write_text(json.dumps(
             [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
               "side": t.side, "entry": t.entry, "exit": t.exit,
-              "r_multiple": t.r_multiple, "reason": t.reason, **_stamp}
-             for t in trades],
+              "r_multiple": t.r_multiple, "reason": t.reason,
+              "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
+                        else "historical"),
+              **_stamp}
+             for t in all_trades],
             indent=2), encoding="utf-8")
+        try:
+            import MetaTrader5 as _mt5
+            from h1_source import broker_utc_offset_hours
+            st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
+        except Exception:                                                # noqa: BLE001
+            st.setdefault("broker_offset_h", 0.0)
+        # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
+        # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
+        # while leaving every name and number intact, and a forward series that splices two of
+        # those together is not a smaller sample but a wrong one.
+        try:
+            import sleeve_registry as _reg
+            _ident = _reg.identity(
+                family="session_range_breakout", symbol=sym, direction="LONG", timeframe="H1",
+                selector=win, condition=None, params=params,
+                code=_reg.code_hash(families.family_session_range_breakout),
+                cost=_reg.cost_hash(per_symbol_costs(meta, sym)), data_venue=str(bars.source))
+            _drift = _reg.verify(key, _ident)
+            if _drift:
+                _reg.mark(key, "IDENTITY_BROKEN",
+                          f"{', '.join(_drift)} changed after the clock froze")
+                st["status"] = "IDENTITY_BROKEN"
+                st["identity_drift"] = _drift
+                slog(f"{key}: IDENTITY BROKEN -- {', '.join(_drift)} changed after the clock "
+                     f"froze; evidence preserved, clock stopped. Restarting requires a NEW "
+                     f"frozen identity and a NEW window.")
+                state[key] = st
+                continue
+            _reg.freeze(key, _ident, forward_start=st.get("forward_start"))
+            st["sleeve_id"] = _ident["sleeve_id"]
+        except Exception as exc:                                         # noqa: BLE001
+            slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
         st["bar_source"] = bars.source
         st["bar_source_stale"] = bars.stale
         st["promotion_authority"] = bars.promotion_authority

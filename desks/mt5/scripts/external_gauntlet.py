@@ -332,12 +332,20 @@ def main():
                 return name
         return None
 
+    _params_by_cell = {
+        f"{c['sym']}.{c['family']}.rr={c.get('params', {}).get('rr', '?')}"
+        f"_wb={c.get('params', {}).get('wait_bars', '?')}": dict(c.get("params") or {})
+        for c in cell_objs
+    }
     for v in result.get("verdicts", []):
         if not v.get("passed"):
             continue
         key = f"external.{v['cell']}"
-        params = next((c["params"] for c in cell_objs
-                       if f"{c['sym']}.{c['family']}" in v["cell"]), {})
+        # EXACT MATCH ON THE CELL ID, not a prefix. `f"{sym}.{family}" in cell` matched the FIRST
+        # cell sharing that prefix, so every CADJPY certificate inherited rr=1.5 from whichever
+        # variant was built first -- wrong params on 14 of 15 certificates, which is worse than
+        # none. The cid formula in run_gauntlet encodes rr and wait_bars, so it is a unique key.
+        params = _params_by_cell.get(v["cell"], {})
         sel = _selector(params or {})
         row = {
             "hunt": "external_discoveries",
