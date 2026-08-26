@@ -53,6 +53,8 @@ REPORT = ROOT / "data" / "sameday_pipeline.json"
 ENROL_GRACE_HOURS = 24
 #: An enrolled sleeve silent this long has a firing problem, not a patience problem.
 SILENT_DAYS = 3
+#: A live clock refreshed less often than this is idle -- the cycle runs every 15 minutes.
+IDLE_HOURS = 3.0
 #: Verdicts that stop a clock. Everything else is still counting and still owes a stamp.
 #: Matched by PREFIX so RETIRED_ORPHAN / RETIRED_GATE_FAIL / RETIRED_UNRECONSTRUCTIBLE (written
 #: by forward_reconcile) count as stopped. An exact-string set silently kept 31 retired rows
@@ -126,6 +128,34 @@ def main() -> int:
             f"pre-registration -- evidence gathered during selection is being counted as "
             f"forward evidence. Rows: {', '.join(sorted(unstamped)[:6])}"
             + (" ..." if len(unstamped) > 6 else ""))
+
+    # 3b. NEVER IDLE (principal 2026-08-26: "all work n accumulate trades never idle"). A clock
+    # that has not been REFRESHED recently is idle even if it holds trades: the engine replays
+    # on every shadow cycle (15 min), so a row whose state is hours old means the cycle is
+    # erroring, the task is dead, or the engine skipped it. Measured tonight: shadow_cycle had
+    # been exiting 1 every 15 minutes on a PermissionError, and a once-per-day guard in the
+    # engine had been making 15-minute cycles no-ops.
+    stale_rows = []
+    for key, val in rows.items():
+        if _is_terminal(val.get("status")):
+            continue
+        stamp = val.get("last_attempt_at") or val.get("updated_at") or val.get("last_source_bar")
+        if not stamp:
+            continue
+        try:
+            age_h = (now - datetime.fromisoformat(str(stamp))).total_seconds() / 3600
+        except ValueError:
+            continue
+        if age_h > IDLE_HOURS:
+            stale_rows.append(f"{key} ({age_h:.1f}h)")
+    if stale_rows:
+        findings.append(
+            f"IDLE-CLOCK: {len(stale_rows)} live clock(s) have not been refreshed in over "
+            f"{IDLE_HOURS}h -- the shadow cycle replays every 15 minutes, so this means the "
+            f"cycle is failing or the engine is skipping them. Evidence stops accruing while "
+            f"the day counter keeps running, which is the worst combination: the clock matures "
+            f"on stale data. Rows: {', '.join(sorted(stale_rows)[:6])}"
+            + (" ..." if len(stale_rows) > 6 else ""))
 
     # 3. enrolled and silent ---------------------------------------------------------------
     for key, val in rows.items():

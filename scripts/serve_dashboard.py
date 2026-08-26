@@ -86,8 +86,16 @@ class _Handler(SimpleHTTPRequestHandler):
     _last_refresh = 0.0
     token = ""
 
+    require_token = False
+
     def _authorised(self) -> bool:
-        """Loopback is trusted; everything else needs the token (header, ?k=, or cookie).
+        """Loopback is trusted UNLESS --require-token; everything else needs the token.
+
+        THE HOLE THIS CLOSES. A Cloudflare tunnel connects to its origin over 127.0.0.1, so every
+        request from the public internet arrives here with a LOOPBACK client address. Trusting
+        loopback would have published live equity, P&L and open positions to anyone who knew the
+        hostname -- with the token bypassed for exactly the traffic it exists to protect. Any
+        deployment reachable from outside MUST pass --require-token, which drops the exemption.
 
         Three carriers because three devices: a header for scripts, a query string so a phone can
         be enrolled from a single pasted link, and a cookie so it stays enrolled afterwards.
@@ -98,11 +106,12 @@ class _Handler(SimpleHTTPRequestHandler):
         # Loopback is the whole 127.0.0.0/8 block plus ::1 -- not just the one literal. A
         # hardcoded ["127.0.0.1"] both misses 127.0.1.1 (what this box's hostname resolves to)
         # and reads as stricter than it is.
-        try:
-            if ip_address(self.client_address[0]).is_loopback:
-                return True
-        except (ValueError, IndexError):
-            pass
+        if not self.require_token:
+            try:
+                if ip_address(self.client_address[0]).is_loopback:
+                    return True
+            except (ValueError, IndexError):
+                pass
         supplied = ""
         auth = self.headers.get("Authorization", "")
         if auth.startswith("Bearer "):
@@ -171,8 +180,12 @@ def main() -> None:
     ap.add_argument("--host", default="0.0.0.0")  # noqa: S104 -- deliberate LAN bind; the TOKEN is the control, the firewall is the second one
     ap.add_argument("--no-auth", action="store_true",
                     help="serve without a token (loopback-only deployments)")
+    ap.add_argument("--require-token", action="store_true",
+                    help="require the token even from loopback -- MANDATORY behind a tunnel or "
+                         "proxy, whose requests reach this origin as 127.0.0.1")
     args = ap.parse_args()
     _Handler.token = "" if args.no_auth else _token()
+    _Handler.require_token = bool(args.require_token) and not args.no_auth
     _WEB.mkdir(parents=True, exist_ok=True)
     # Build once before serving so localhost never opens on a missing/stale state file. The daily
     # MT5 cycle refreshes it thereafter; this best-effort call cannot mutate trading state.

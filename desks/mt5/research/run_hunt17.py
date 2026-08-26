@@ -446,7 +446,9 @@ def battery(h4: pd.DataFrame, sigs: list, costs: Costs) -> dict:
 def resample(h1: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     agg = {"open": "first", "high": "max", "low": "min", "close": "last"}
     h4 = h1.resample("4h").agg(agg).dropna()
-    d1 = h1.resample("D").agg(agg).dropna()
+    # L1.68 (GAP 132): the Sunday H1 stub bars are genuine market time at H1/H4 but resample
+    # into a fake sixth "D1" bar; declared-and-excluded at consumption, never from disk.
+    d1 = families.d1_session_filtered(h1.resample("D").agg(agg).dropna())
     return h4, d1
 
 

@@ -34,4 +34,12 @@ PYEOF
 scp -q desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json' \
   && echo "canon synced to desk box" || echo "desk-box sync FAILED (will retry next run)"
+
+# The hypothesis corpus lives on THIS box (stage 2 writes it here) but the dashboard state is
+# built on the desk box, which is the only machine that can read the live account. Without this
+# the funnel's first stage reads null -- "discovered" unmeasured -- while every later stage has
+# a number, which reads as a broken pipeline rather than a missing file.
+scp -q desks/mt5/data/hypotheses/external_backtest_results.json \
+    contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_backtest_results.json' \
+  2>/dev/null && echo "hypothesis corpus synced" || echo "hypothesis sync skipped"
 echo "[$(date -u +%FT%TZ)] external pipeline done"
