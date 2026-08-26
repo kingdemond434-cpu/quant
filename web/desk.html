@@ -126,7 +126,7 @@ td:first-child{font-family:Inter;font-weight:600;font-size:12px}
     </div>
     <div class="bd"><div class="s" style="color:var(--mut);font-size:10px;font-family:var(--mono)" id="markout">markout —</div></div></section>
 
-  <section class="card c12"><div class="hd"><span>Pipeline — one door for everything</span><span>discover → certify → forward → live</span></div>
+  <section class="card c12"><div class="hd"><span>Pipeline — one door for everything</span><span id="obsNote">discover → certify → forward → live</span></div>
     <div class="funnel" id="funnel"></div></section>
 
   <section class="card c8"><div class="hd"><span>Daily gains</span><span>last 14 sessions</span></div>
@@ -135,7 +135,7 @@ td:first-child{font-family:Inter;font-weight:600;font-size:12px}
     <div class="scroll"><table><thead><tr><th>Sleeve</th><th>Verdict</th><th class="r">t</th><th class="r">Exp R</th></tr></thead><tbody id="decay"></tbody></table></div></section>
 
   <section class="card c12"><div class="hd"><span>Forward clocks</span><span id="fwdCount">—</span></div>
-    <div class="scroll"><table><thead><tr><th>Sleeve</th><th>Status</th><th class="r">Trades</th><th class="r">t</th><th class="r">Exp R</th><th style="width:30%">14-day window</th></tr></thead><tbody id="forward"></tbody></table></div></section>
+    <div class="scroll"><table><thead><tr><th>Sleeve</th><th>Status</th><th class="r">Fwd obs</th><th class="r">Hist</th><th class="r">t</th><th class="r">Exp R</th><th style="width:26%">14-day window</th></tr></thead><tbody id="forward"></tbody></table></div></section>
 
   <section class="card c6"><div class="hd"><span>Certified survivors</span><span>original ten gates</span></div>
     <div class="scroll"><table><thead><tr><th>Sleeve</th><th class="r">DSR</th><th class="r">WF Sharpe</th><th class="r">PBO</th><th class="r">SPA p</th></tr></thead><tbody id="survivors"></tbody></table></div></section>
@@ -310,6 +310,7 @@ async function load(){
   $('fills').textContent=n(e.matched_fills,0);
   $('markout').textContent=e.markout_usable?'markout USABLE':(e.why||'markout unmeasured');
   const stages=[['Discovered + backtested',p.discovered_backtested],['Certified · 10 gates',p.certified],['Forward clocks',p.forward_clocks],['Promotion ready',p.promotion_ready],['Live',p.live]];
+  $('obsNote').textContent=`${p.forward_observations??0} forward obs · ${p.historical_observations??0} historical (excluded)`;
   $('funnel').innerHTML=stages.map(([l,v],i)=>`<div class="stage${i===4?' final':''}"><div class="l">${l}</div><div class="v">${v==null?'—':v}</div></div>`).join('');
   const dp=st.daily_pnl||[];
   $('days').innerHTML=dp.length?dp.map(([day,v])=>`<div class="day ${v>=0?'up':'dn'}"><div class="d">${day.slice(5)}</div><div class="v ${v>=0?'up':'dn'}">${v>=0?'+':''}${n(v)}</div></div>`).join(''):'<div class="empty" style="width:100%">No closed sessions yet — boxes light up with the first live trading day</div>';
@@ -317,7 +318,7 @@ async function load(){
   $('fwdCount').textContent=`${fw.length} on the clock`;
   rows($('forward'),fw,x=>{const pc=Math.min(100,Math.round(100*x.days/(x.of||14)));
     const pill=x.status==='PROMOTION CANDIDATE'?'ok':(x.days>=14?'warn':'');
-    return `<tr><td>${x.name}</td><td><span class="pill ${pill}">${x.status}</span></td><td class="r">${x.n}</td><td class="r">${x.t==null?'—':n(x.t)}</td><td class="r ${x.exp_r>0?'up':x.exp_r<0?'dn':''}">${x.exp_r==null?'—':n(x.exp_r,3)}</td><td><div style="font:9px var(--mono);color:var(--mut)">day ${x.days}/${x.of||14}</div><div class="bar"><i style="width:${pc}%"></i></div></td></tr>`},6);
+    return `<tr><td>${x.name}</td><td><span class="pill ${pill}">${x.status}</span></td><td class="r">${x.n}</td><td class="r" style="color:var(--mut)">${x.n_historical||0}</td><td class="r">${x.t==null?'—':n(x.t)}</td><td class="r ${x.exp_r>0?'up':x.exp_r<0?'dn':''}">${x.exp_r==null?'—':n(x.exp_r,3)}</td><td><div style="font:9px var(--mono);color:var(--mut)">day ${x.days}/${x.of||14}</div><div class="bar"><i style="width:${pc}%"></i></div></td></tr>`},7);
   const dv=Object.entries(dec.verdicts||{});
   if(dv.length)rows($('decay'),dv,([k,v])=>`<tr><td>${k}</td><td><span class="pill ${v.verdict==='HEALTHY'?'ok':v.verdict==='FADE'?'warn':'bad'}">${v.verdict}</span></td><td class="r">${v.t==null?'—':n(v.t)}</td><td class="r ${v.exp_r>0?'up':v.exp_r<0?'dn':''}">${v.exp_r==null?'—':n(v.exp_r,3)}</td></tr>`,4);
   else $('decay').innerHTML=`<tr><td class="empty" colspan="4">${dec.live_sleeves===0?'0 live sleeves — monitor armed, waiting':'no measured rows'}</td></tr>`;

@@ -75,6 +75,17 @@ def _source() -> dict:
         return {"promotion_authority": False, "reason": f"invalid source manifest: {exc}"}
 
 
+
+def _broker_offset_h() -> float:
+    """Measured broker-vs-UTC offset, so the forward boundary converts instead of guessing."""
+    try:
+        import MetaTrader5 as _mt5
+        from h1_source import broker_utc_offset_hours
+        return float(broker_utc_offset_hours(_mt5))
+    except Exception:
+        return 0.0
+
+
 def _drawdown(rs: list[float]) -> float:
     if not rs:
         return 0.0
@@ -124,13 +135,43 @@ def run(now: datetime | None = None) -> dict:
         )
         assert isinstance(records, list)
         ledger = SHADOW / f"ledger_{name}.json"
-        ledger.write_text(json.dumps(records, indent=2), "utf-8")
+
+        # FORWARD EVIDENCE STARTS AT THIS SLEEVE'S OWN FROZEN CLOCK, not at the engine-wide
+        # SHADOW_START. `forward_start` is stamped per row when the row is created; observations
+        # before it were available while the cell was being selected. Measured 2026-08-26: these
+        # four scalp rows froze at 01:19 and reported 4/8/17/28 observations dating back four
+        # days -- 57 selection-era observations presented as forward evidence. History is kept
+        # and tagged; only post-boundary rows feed n / exp / maturity.
+        #
+        # The boundary is CONVERTED: bar stamps are on the broker clock (Fusion runs +3h) while
+        # `forward_start` is true UTC. Comparing them raw moves the boundary three hours.
+        _fs = (state.get("sleeves", {}).get(name) or {}).get("forward_start")
+        _bound = None
+        if _fs:
+            try:
+                _bound = pd.Timestamp(_fs) + pd.Timedelta(hours=_broker_offset_h())
+            except (ValueError, TypeError):
+                _bound = None
+        _all = list(records)
+        if _bound is not None:
+            records = [r for r in _all
+                       if pd.Timestamp(str(r.get("entry_time") or r.get("time") or
+                                           r.get("open_time") or SHADOW_START)) >= _bound]
+        else:
+            records = []
+        n_historical = len(_all) - len(records)
+        ledger = SHADOW / f"ledger_{name}.json"
+        ledger.write_text(json.dumps(
+            [{**r, "phase": ("forward" if r in records else "historical")} for r in _all],
+            indent=2), "utf-8")
         rs = [float(row["r"]) for row in records]
         n = len(rs)
         last_bar = pd.Timestamp(df.index[-1])
         lag_hours = _trading_lag_hours(last_bar, now)
         stale_source = lag_hours > (1.0 if tf == "M5" else 2.0)
-        days = max(0, (last_bar.date() - SHADOW_START.date()).days)
+        _clock_from = (_bound - pd.Timedelta(hours=_broker_offset_h())
+                       if _bound is not None else SHADOW_START)
+        days = max(0, (last_bar.date() - _clock_from.date()).days)
         exp = float(np.mean(rs)) if rs else None
         max_dd = _drawdown(rs)
         matured = n >= 50 or (days >= 14 and n >= 20)
@@ -148,7 +189,8 @@ def run(now: datetime | None = None) -> dict:
             status = "KILL"
         state["sleeves"][name] = {
             "status": status, "timeframe": tf, "choice": choice.__dict__,
-            "n": n, "days": days, "expectancy_r": exp, "max_drawdown_r": max_dd,
+            "n": n, "n_historical": n_historical, "days": days,
+            "expectancy_r": exp, "max_drawdown_r": max_dd,
             "last_source_bar": last_bar.isoformat(), "matured": matured,
             "source_trading_lag_hours": lag_hours, "source_stale": stale_source,
             "promotion_authority": authority,

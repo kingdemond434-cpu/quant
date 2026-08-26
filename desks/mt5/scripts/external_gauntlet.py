@@ -356,10 +356,16 @@ def main():
             "gated_at": datetime.now(timezone.utc).isoformat(),
         }
         if sel is not None:
+            # PARAMS ARE PART OF THE IDENTITY. Without them the spec says only "XAUUSD asia",
+            # so five separately-gauntleted parameterizations collapse to ONE runnable spec and
+            # the forward engine runs its own default for all of them -- four certificates
+            # describing strategies that are never forward-tested. The two-stage law requires
+            # that the thing which passed the gauntlet IS the thing that goes forward, and that
+            # identity is the params, not the session label.
             row["shadow_spec"] = {"symbol": v["sym"], "selector": sel,
                                   "family": v.get("family", "session_range_breakout"),
                                   "is_universe": True, "hunt": "external_discoveries",
-                                  "condition": None}
+                                  "condition": None, "params": dict(params or {})}
         else:
             print(f"  NO-SPEC {key}: params {params} match no known window; certificate "
                   f"written WITHOUT shadow_spec -- it cannot enrol until the selector is wired")

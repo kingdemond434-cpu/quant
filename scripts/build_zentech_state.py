@@ -204,6 +204,11 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             days = int(_number(row.get("days_active")) or 0)
             forward.append({"name": key, "days": days, "of": 14,
                             "n": int(_number(row.get("n")) or 0),
+                            # Shown beside the forward count, never added to it: an observation
+                            # that predates the frozen clock is evidence about a different
+                            # question and may not satisfy a forward threshold.
+                            "n_historical": int(_number(row.get("n_historical")) or 0),
+                            "sleeve_id": row.get("sleeve_id"),
                             "t": _number(row.get("forward_t")),
                             "exp_r": _number(row.get("exp_r")),
                             "status": status})
@@ -213,7 +218,11 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     live_rows = sleeves_doc.get("sleeves") if isinstance(sleeves_doc.get("sleeves"), dict) else (
         sleeves_doc if isinstance(sleeves_doc, dict) else {})
     live_rows = {k: v for k, v in (live_rows or {}).items() if isinstance(v, dict)}
+    forward_obs = sum(r["n"] for r in forward)
+    hist_obs = sum(r.get("n_historical", 0) for r in forward)
     return {
+        "forward_observations": forward_obs,
+        "historical_observations": hist_obs,
         "discovered_backtested": hyp,
         "certified": universal.get("n"),
         "forward_clocks": len(forward),

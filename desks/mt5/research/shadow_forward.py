@@ -285,7 +285,15 @@ def main() -> None:
                 "last_entry": str(trades[-1].entry_time),
             })
         else:
-            st.setdefault("exp_r", 0.0)
+            # ZERO FORWARD OBSERVATIONS IS A MEASUREMENT, NOT A REASON TO KEEP THE OLD NUMBER.
+            # This branch used to `setdefault` and leave n/cum_r/exp_r/max_dd untouched, so a
+            # clock whose forward set became empty -- exactly what happens the moment the
+            # boundary is corrected -- kept displaying the CONTAMINATED pre-registration counts
+            # and would have carried them into a promotion decision. Counters are reset to the
+            # honest zero and the historical arm is reported separately (L1.28a: unmeasured is
+            # never a verdict, and neither is inherited).
+            st.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
+                       "first_entry": None, "last_entry": None})
         # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
         # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
         # before its hypothesis was frozen arrived at the gate already 8/14 of the way through
