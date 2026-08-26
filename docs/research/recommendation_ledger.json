@@ -8268,11 +8268,11 @@
    "rank": 8.0,
    "roi_basis": "rank",
    "raised": "2026-08-25T15:51:15.889880+00:00",
-   "status": "open",
-   "reason": null,
-   "commit": null,
+   "status": "implemented",
+   "reason": "Parser rebuilt for the real graph payload (_parse_graph: times/data/heyue/delaystr; both contracts via ?instid=; heyue check refuses the silent fallback); history self-records forward to desks/mt5/data/lake/sge_daily.parquet (first row 2026-08-26 on disk); premium legs re-based (Fusion XAUUSD 07:00Z + ECB USDCNY cross, DEXCHUS fallback); wired quant-sge-premium.timer daily 07:45 UTC; tests desks/mt5/tests/test_sge_premium.py 4 passed",
+   "commit": "91ee20cd5fa4133652cacd79dd1e28cc7ac8dec7",
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-26T00:41:18.653743+00:00"
   },
   {
    "id": "R0650",
