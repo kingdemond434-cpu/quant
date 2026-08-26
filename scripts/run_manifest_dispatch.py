@@ -83,6 +83,8 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_denominators.py": "hourly denominator-declaration fence",
     "scripts/check_idle_cost.py": "hourly idle-capital/timidity meter (LAWS §2a)",
     "scripts/run_stale_daemon_repair.py": "twice-daily stale-daemon actuator",
+    "scripts/build_gauntlet_survivors.py": "the eight-gate barrier's MISSING producer -- it had judged zero candidates ever",
+    "scripts/promotion_gate.py": "eight-gate screen-side record (capacity+fragility, which the canonical ten do not cover)",
 }
 
 #: THE BOX IS THE BINDING CONSTRAINT, AND IT IS NOT TIMIDITY TO SAY SO (measured 2026-08-26:

@@ -1372,6 +1372,26 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 # CONFIDENCE: committed-script (new this cycle)
 55 * * * * cd "$QUANT_ROOT" && flock -n data/.cron_promotion.lock .venv/bin/python scripts/check_promotion_gate.py >> data/cro_ai_logs/promotion.log 2>&1
 
+# THE EIGHT-GATE BARRIER HAD JUDGED ZERO CANDIDATES FOR ITS ENTIRE EXISTENCE (gap-fixer
+# 2026-08-26). scripts/promotion_gate.py reads data/gauntlet_survivors.json and NOTHING in this
+# repository had ever written it, so the barrier published NO-PRODUCER and returned 0 -- which
+# the cadence scored as a duty fired. Its producer, build_gauntlet_survivors.py, existed and was
+# an ORPHAN SCRIPT referenced by nothing (max_audit orphan-scripts). Wiring it turns a decoration
+# into a real screen-side record: first run wrote 21 candidates from real MT5 evidence, 3
+# clearing all eight gates, 18 carrying at least one UNMEASURED gate -- which this barrier counts
+# as FAILED, never as passed-by-default.
+# NOT A NEW BAR (RESEARCH s6d / L1.60): the gate says so in its own output -- it is a screen-side
+# prerequisite made auditable, and promotion authority remains with pre-registered FORWARD
+# evidence under the Two-Stage Discovery Law. Two gates it applies, CAPACITY and FRAGILITY, are
+# not covered by the canonical ten, and those are exactly where a certified-but-unfillable sleeve
+# dies -- which is why it is fed rather than deleted.
+# Producer then gate, five minutes apart, inside the measured-productive quota window.
+# EVIDENCE: scripts/build_gauntlet_survivors.py -> data/gauntlet_survivors.json
+# CONFIDENCE: hand-run 2026-08-26, rc=0, artifact verified
+40 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gauntlet_survivors.lock .venv/bin/python scripts/build_gauntlet_survivors.py >> data/cro_ai_logs/gauntlet_survivors.log 2>&1
+# EVIDENCE: scripts/promotion_gate.py -> data/promotion_gate_verdicts.json
+45 5 * * * cd "$QUANT_ROOT" && flock -n data/.cron_gauntlet_survivors.lock .venv/bin/python scripts/promotion_gate.py >> data/cro_ai_logs/gauntlet_survivors.log 2>&1
+
 # DISCRETIONARY MAX (R0151): the ceiling-pusher for the discretionary desk -- L1.28c and L1.25a
 # applied to this section like every other. TARGET: a 38pct hit rate. That number is LEGAL where a
 # CAGR target is not, and the distinction is the whole point: a return figure is reachable by SIZE,
