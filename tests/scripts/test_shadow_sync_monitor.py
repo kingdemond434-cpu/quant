@@ -13,6 +13,8 @@ def test_monitor_accepts_fresh_complete_authoritative_state(tmp_path, monkeypatc
         "updated_at": datetime.now(UTC).isoformat(),
         "certified_sleeves_total": 2,
         "represented_sleeves": 2,
+        "evidence_blocked_sleeves": 0,
+        "status": "OPERATING",
     }))
     (shadow / "shadow_state.json").write_text(json.dumps({
         "A": {"status": "ACTIVE", "n": 1, "bar_source_stale": False},
@@ -34,6 +36,8 @@ def test_monitor_fails_on_identity_or_staleness(tmp_path, monkeypatch) -> None:
         "updated_at": "2020-01-01T00:00:00+00:00",
         "certified_sleeves_total": 1,
         "represented_sleeves": 1,
+        "evidence_blocked_sleeves": 1,
+        "status": "EVIDENCE_BLOCKED",
     }))
     (shadow / "shadow_state.json").write_text(json.dumps({
         "A": {"status": "IDENTITY_BROKEN", "n": 0, "identity_drift": ["data_venue"]},
@@ -42,4 +46,14 @@ def test_monitor_fails_on_identity_or_staleness(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(monitor, "OUT", tmp_path / "monitor.json")
 
     assert monitor.main() == 1
-    assert json.loads(monitor.OUT.read_text())["defects"]
+    report = json.loads(monitor.OUT.read_text())
+    assert report["defects"]
+    assert report["evidence_blocked_sleeves"] == 1
+
+
+def test_desk_pull_includes_every_shadow_health_input() -> None:
+    root = monitor.ROOT
+    script = (root / "ops" / "pull_desk_state.sh").read_text("utf-8")
+
+    assert "external_shadow_state.json" in script
+    assert "shadow_health.json" in script

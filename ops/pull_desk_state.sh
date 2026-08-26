@@ -18,7 +18,11 @@ ok=0
 scp -q "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev/null \
   && mv web/desk_state.json.tmp web/desk_state.json && ok=1
 
-for f in shadow_state.json qquant_shadow_state.json scalp_shadow_state.json; do
+# Pull every state producer consumed by the read-only watchdog. Omitting shadow_health meant the
+# VPS could have current sleeve ledgers but keep judging yesterday's aggregate health; omitting
+# external_shadow_state made newly certified generic frontiers invisible after they enrolled.
+for f in shadow_state.json qquant_shadow_state.json scalp_shadow_state.json \
+         external_shadow_state.json shadow_health.json; do
   scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/$f" \
       "desks/mt5/reports/shadow/$f.tmp" 2>/dev/null \
     && mv "desks/mt5/reports/shadow/$f.tmp" "desks/mt5/reports/shadow/$f"

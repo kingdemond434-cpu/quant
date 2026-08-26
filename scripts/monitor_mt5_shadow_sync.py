@@ -63,6 +63,12 @@ def main() -> int:
     represented = int(health.get("represented_sleeves", 0) or 0)
     if represented < expected:
         defects.append(f"shadow missing {expected - represented} certified sleeve(s)")
+    blocked = int(health.get("evidence_blocked_sleeves", 0) or 0)
+    health_status = str(health.get("status") or "UNKNOWN").upper()
+    if blocked:
+        defects.append(f"shadow health reports {blocked} evidence-blocked sleeve(s)")
+    if health_status not in {"OPERATING", "HEALTHY", "OK"}:
+        defects.append(f"shadow aggregate status is {health_status}")
 
     report = {
         "checked_at": now.isoformat(timespec="seconds"),
@@ -75,6 +81,8 @@ def main() -> int:
         "active_rows": len(active),
         "rows_with_forward_trades": sum(int(row.get("n", 0) or 0) > 0
                                          for _name, _key, row in active),
+        "evidence_blocked_sleeves": blocked,
+        "authoritative_health_status": health_status,
         "defects": sorted(set(defects)),
         "status": "FAILED" if defects else "OPERATING",
     }
