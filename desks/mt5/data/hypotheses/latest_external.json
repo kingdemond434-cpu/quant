@@ -10,7 +10,7 @@
     "patterns": [
       "momentum"
     ],
-    "created": "2026-08-26T07:02:47.032806+00:00"
+    "created": "2026-08-26T08:01:28.681126+00:00"
   },
   {
     "id": "ext_github_XAUUSD_session_range_breakout",
@@ -23,7 +23,7 @@
     "patterns": [
       "EMA"
     ],
-    "created": "2026-08-26T07:02:47.032842+00:00"
+    "created": "2026-08-26T08:01:28.681169+00:00"
   },
   {
     "id": "ext_reddit_XAUUSD_session_range_breakout",
@@ -37,7 +37,7 @@
       "resistance",
       "order block"
     ],
-    "created": "2026-08-26T07:02:47.032873+00:00"
+    "created": "2026-08-26T08:01:28.681205+00:00"
   },
   {
     "id": "ext_reddit_EURUSD_session_range_breakout",
@@ -52,7 +52,7 @@
       "swing",
       "trend"
     ],
-    "created": "2026-08-26T07:02:47.032884+00:00"
+    "created": "2026-08-26T08:01:28.681218+00:00"
   },
   {
     "id": "ext_reddit_XAUUSD_momentum_basic",
@@ -66,7 +66,7 @@
       "reversal",
       "momentum"
     ],
-    "created": "2026-08-26T07:02:47.032897+00:00"
+    "created": "2026-08-26T08:01:28.681230+00:00"
   },
   {
     "id": "ext_reddit_USDJPY_session_range_breakout",
@@ -81,7 +81,7 @@
       "resistance",
       "EMA"
     ],
-    "created": "2026-08-26T07:02:47.032909+00:00"
+    "created": "2026-08-26T08:01:28.681240+00:00"
   },
   {
     "id": "ext_central_bank_USDJPY_session_range_breakout",
@@ -94,7 +94,7 @@
     "patterns": [
       "price stability"
     ],
-    "created": "2026-08-26T07:02:47.032922+00:00"
+    "created": "2026-08-26T08:01:28.681249+00:00"
   },
   {
     "id": "ext_forexfactory_USDJPY_session_range_breakout",
@@ -105,7 +105,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032930+00:00"
+    "created": "2026-08-26T08:01:28.681255+00:00"
   },
   {
     "id": "ext_forexfactory_XAUUSD_session_range_breakout",
@@ -116,7 +116,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032935+00:00"
+    "created": "2026-08-26T08:01:28.681259+00:00"
   },
   {
     "id": "ext_forexfactory_USDCHF_session_range_breakout",
@@ -127,7 +127,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032941+00:00"
+    "created": "2026-08-26T08:01:28.681271+00:00"
   },
   {
     "id": "ext_forexfactory_EURUSD_session_range_breakout",
@@ -138,7 +138,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032946+00:00"
+    "created": "2026-08-26T08:01:28.681275+00:00"
   },
   {
     "id": "ext_forexfactory_GBPUSD_session_range_breakout",
@@ -149,7 +149,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032952+00:00"
+    "created": "2026-08-26T08:01:28.681279+00:00"
   },
   {
     "id": "ext_forexfactory_AUDUSD_session_range_breakout",
@@ -160,7 +160,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032958+00:00"
+    "created": "2026-08-26T08:01:28.681283+00:00"
   },
   {
     "id": "ext_forexfactory_NAS100_session_range_breakout",
@@ -171,7 +171,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032964+00:00"
+    "created": "2026-08-26T08:01:28.681287+00:00"
   },
   {
     "id": "ext_forexfactory_NZDUSD_session_range_breakout",
@@ -182,7 +182,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032969+00:00"
+    "created": "2026-08-26T08:01:28.681291+00:00"
   },
   {
     "id": "ext_forexfactory_USDCAD_session_range_breakout",
@@ -193,7 +193,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032973+00:00"
+    "created": "2026-08-26T08:01:28.681295+00:00"
   },
   {
     "id": "ext_forexfactory_US500_session_range_breakout",
@@ -204,7 +204,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032978+00:00"
+    "created": "2026-08-26T08:01:28.681298+00:00"
   },
   {
     "id": "ext_forexfactory_AUDNZD_session_range_breakout",
@@ -215,7 +215,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032992+00:00"
+    "created": "2026-08-26T08:01:28.681309+00:00"
   },
   {
     "id": "ext_forexfactory_AUDCAD_session_range_breakout",
@@ -226,7 +226,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.032999+00:00"
+    "created": "2026-08-26T08:01:28.681316+00:00"
   },
   {
     "id": "ext_forexfactory_GBPAUD_session_range_breakout",
@@ -237,7 +237,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033004+00:00"
+    "created": "2026-08-26T08:01:28.681323+00:00"
   },
   {
     "id": "ext_forexfactory_EURAUD_session_range_breakout",
@@ -248,7 +248,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033009+00:00"
+    "created": "2026-08-26T08:01:28.681327+00:00"
   },
   {
     "id": "ext_forexfactory_AUDJPY_session_range_breakout",
@@ -259,7 +259,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033014+00:00"
+    "created": "2026-08-26T08:01:28.681330+00:00"
   },
   {
     "id": "ext_forexfactory_CADJPY_session_range_breakout",
@@ -270,7 +270,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033049+00:00"
+    "created": "2026-08-26T08:01:28.681356+00:00"
   },
   {
     "id": "ext_forexfactory_NZDJPY_session_range_breakout",
@@ -281,7 +281,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033053+00:00"
+    "created": "2026-08-26T08:01:28.681360+00:00"
   },
   {
     "id": "ext_forexfactory_CHFJPY_session_range_breakout",
@@ -292,7 +292,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033058+00:00"
+    "created": "2026-08-26T08:01:28.681364+00:00"
   },
   {
     "id": "ext_forexfactory_GBPJPY_session_range_breakout",
@@ -303,7 +303,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033072+00:00"
+    "created": "2026-08-26T08:01:28.681369+00:00"
   },
   {
     "id": "ext_forexfactory_EURJPY_session_range_breakout",
@@ -314,7 +314,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033076+00:00"
+    "created": "2026-08-26T08:01:28.681373+00:00"
   },
   {
     "id": "ext_forexfactory_NZDCAD_session_range_breakout",
@@ -325,7 +325,7 @@
     "url": "",
     "confidence": 0.7,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033081+00:00"
+    "created": "2026-08-26T08:01:28.681378+00:00"
   },
   {
     "id": "ext_seasonality_US500_session_range_breakout",
@@ -336,7 +336,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033107+00:00"
+    "created": "2026-08-26T08:01:28.681411+00:00"
   },
   {
     "id": "ext_seasonality_NAS100_session_range_breakout",
@@ -347,7 +347,7 @@
     "url": "",
     "confidence": 0.4,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033111+00:00"
+    "created": "2026-08-26T08:01:28.681415+00:00"
   },
   {
     "id": "ext_seasonality_GBPUSD_session_range_breakout",
@@ -358,7 +358,7 @@
     "url": "",
     "confidence": 0.6,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033116+00:00"
+    "created": "2026-08-26T08:01:28.681420+00:00"
   },
   {
     "id": "ext_seasonality_EURUSD_session_range_breakout",
@@ -369,7 +369,7 @@
     "url": "",
     "confidence": 0.6,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033121+00:00"
+    "created": "2026-08-26T08:01:28.681425+00:00"
   },
   {
     "id": "ext_seasonality_AUDCAD_session_range_breakout",
@@ -380,7 +380,7 @@
     "url": "",
     "confidence": 0.6,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033125+00:00"
+    "created": "2026-08-26T08:01:28.681429+00:00"
   },
   {
     "id": "ext_seasonality_BTCUSD_session_range_breakout",
@@ -391,7 +391,7 @@
     "url": "",
     "confidence": 0.6,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033130+00:00"
+    "created": "2026-08-26T08:01:28.681434+00:00"
   },
   {
     "id": "ext_shipping_US500_momentum_basic",
@@ -402,7 +402,7 @@
     "url": "",
     "confidence": 0.3,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033135+00:00"
+    "created": "2026-08-26T08:01:28.681439+00:00"
   },
   {
     "id": "ext_shipping_NAS100_momentum_basic",
@@ -413,7 +413,7 @@
     "url": "",
     "confidence": 0.3,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033139+00:00"
+    "created": "2026-08-26T08:01:28.681443+00:00"
   },
   {
     "id": "ext_shipping_AUDUSD_momentum_basic",
@@ -424,7 +424,7 @@
     "url": "",
     "confidence": 0.3,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033143+00:00"
+    "created": "2026-08-26T08:01:28.681447+00:00"
   },
   {
     "id": "ext_shipping_NZDUSD_momentum_basic",
@@ -435,6 +435,6 @@
     "url": "",
     "confidence": 0.3,
     "patterns": [],
-    "created": "2026-08-26T07:02:47.033146+00:00"
+    "created": "2026-08-26T08:01:28.681451+00:00"
   }
 ]
