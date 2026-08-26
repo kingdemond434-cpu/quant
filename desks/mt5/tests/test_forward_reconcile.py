@@ -33,3 +33,9 @@ def test_qquant_certificate_identity_is_not_parsed_as_symbol_selector(
     state = json.loads(state_path.read_text(encoding="utf-8"))
     assert state[key]["status"] == "ACTIVE"
     assert "retired_at" not in state[key]
+
+
+def test_frequent_shadow_owner_does_not_freeze_after_first_daily_run() -> None:
+    source = (DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
+    assert "shadow already ran today; skip" not in source
+    assert 'state["configured_sleeves"] = len(enrolled)' in source
