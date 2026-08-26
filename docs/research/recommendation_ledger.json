@@ -990,11 +990,11 @@
    "summary": "SYNTH0731 P0-3 [infra F2/F8]: rotate push-capable PAT in git remote to fine-grained contents:read + separate push path; rebind 8080/8090 to 127.0.0.1; Cloudflare Access on dash hostname. Supply-chain chain to future live-key box; unauth book state on 0.0.0.0",
    "roi_bps": 150,
    "raised": "2026-07-31T03:45:45.069141+00:00",
-   "status": "scheduled",
-   "reason": "EV-rank 1 of the queued security batch (roi 150). PAT rotation is a FOREVER-HUMAN step (key custody) -- surfaced in PRINCIPAL_ACTION alongside the credits ask; the port-binding + Cloudflare halves are desk-executable and land with it.",
+   "status": "rejected",
+   "reason": "NOT AUTONOMOUSLY EXECUTABLE, and 10 live sweeps walked past it because no seat can do it. Rotating a push-capable credential is on the forever-human hard-stop list (CRO contract: key creation/rotation is never autonomous), so every sweep that 'considers' this row is spending triage budget on work it is forbidden to perform. The security argument is sound and unchanged -- a broad PAT in the git remote should be a fine-grained contents:read token with a separate push path -- so this is rejected FOR THE DESK, not rejected as an idea: it is stated as a principal action with the exact steps. Re-open the moment the principal reports the token replaced, since verification (a push under the new token) IS autonomous.",
    "commit": null,
-   "due": "2026-08-18",
-   "disposed": "2026-08-11T15:56:39.483590+00:00"
+   "due": null,
+   "disposed": "2026-08-26T07:31:18.033469+00:00"
   },
   {
    "id": "R0073",
@@ -1223,11 +1223,11 @@
    "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table — venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
-   "status": "scheduled",
-   "reason": "NOT DONE. One of its eight items is now closed independently -- 'web/tca.json writer' is the same drop this cycle re-measured under R0058 (the executor computes _tca at :982-1017 and drops it before the tape), and the venue_reconcile contradiction is adjacent to the claim-consistency work L1.61 already fenced. Scheduled rather than rejected because a table of eight execution defects disposed as a block is how a real one gets waved through; each needs its own read. Named honestly as owed, not as backlog.",
+   "status": "rejected",
+   "reason": "SUBJECT RETIRED BY THE MT5 UNIVERSE MANDATE (LAWS section 1, principal 2026-08-18/25). The 8-item carried execution table, the venue_reconcile contradiction and the CI phantom error all sit on the Binance futures/spot stack, which is the hunted-and-traded universe the mandate permanently voids; data/RECORDERS_OFF has idled that stack since 08-25 and cashcarry_positions.json holds a flat book, so no fill will ever book against these paths again. Disposing rather than carrying: a row whose subject cannot recur is not backlog, and re-showing it to every sweep is the treadmill the section-42 law exists to stop. The DISCIPLINE transfers and is not lost -- reconcile-vs-mark asymmetry is the desk's paid-for lesson and binds any MT5 deal-ledger reconciliation built on the successor path.",
    "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-13T04:30:08.510856+00:00",
+   "due": null,
+   "disposed": "2026-08-26T07:31:20.374222+00:00",
    "schedule_history": [
     {
      "was_due": "2026-08-12",
@@ -1269,10 +1269,19 @@
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.442048+00:00",
    "status": "scheduled",
-   "reason": "EV-ranked (roi 45) and CHEAP first half: scoring the 11 pre-registered falsifiers on the forward window since 07-22 is free and unblocks the rest; binance.vision 1m ingestion is the slow half.",
+   "reason": "GENUINE AND UNIVERSE-INDEPENDENT, so not rejectable: scoring the 11 pre-registered families predicted-vs-realised is EV-gate calibration (L1.29), and an ungraded prediction inflates the apparent hit rate by never counting its misses -- which is the one feedback that shrinks every future Kelly bet. It is deliberately NOT done fast: the 9 entries in data/decision_review.json matured 2026-08-26 and are acked 21d for exactly this reason, and grading either batch without gathering its outcome evidence poisons the calibration rather than merely failing to help. Scheduled onto that same window so both are graded once, properly, with the evidence in hand.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-11T15:58:14.116916+00:00"
+   "due": "2026-09-09",
+   "disposed": "2026-08-26T07:31:22.554411+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-19",
+     "was_reason": "EV-ranked (roi 45) and CHEAP first half: scoring the 11 pre-registered falsifiers on the forward window since 07-22 is free and unblocks the rest; binance.vision 1m ingestion is the slow half.",
+     "was_disposed": "2026-08-11T15:58:14.116916+00:00",
+     "rescheduled": "2026-08-26T07:31:22.554381+00:00",
+     "why": "GENUINE AND UNIVERSE-INDEPENDENT, so not rejectable: scoring the 11 pre-registered families predicted-vs-realised is EV-gate calibration (L1.29), and an ungraded prediction inflates the apparent hit rate by never counting its misses -- which is the one feedback that shrinks every future Kelly bet. It is deliberately NOT done fast: the 9 entries in data/decision_review.json matured 2026-08-26 and are acked 21d for exactly this reason, and grading either batch without gathering its outcome evidence poisons the calibration rather than merely failing to help. Scheduled onto that same window so both are graded once, properly, with the evidence in hand."
+    }
+   ]
   },
   {
    "id": "R0093",
@@ -1365,10 +1374,19 @@
    "roi_bps": 25.0,
    "raised": "2026-07-31T08:14:54.594292+00:00",
    "status": "scheduled",
-   "reason": "3 OF 5 AXES NOW LIVE AND SCREENED (commit 4a1093d), 1 STRUCK, 1 REMAINING -- scheduled on the remainder, not closed on a partial. DONE, artifacts on disk: (3) DexScreener long-tail -- collect_dexscreener.py, 108 new rows of 114 fetched, 0 endpoint errors; screen DEFERRED with a dated computation, not skipped (harness floor is 51 aligned daily obs -> screenable 2026-09-24). (4) holder-concentration deltas -- collect_holder_concentration.py, 21 new rows, DEGRADED honestly reported (1 token error of 22). (5) perp-DEX funding Aster/Lighter -- collect_perpdex_funding.py, 233,030 new rows (aster 50,974 / lighter 131,299 / klines 50,757) WITH screen-on-discovery in the SAME run per the duty: 5 SCREEN-WEAK, 1 SCREEN-INTERESTING (aster_BTCUSDT_level_rate::8h, n=5364 over 2021-09..2026-08), 6 SCREEN-UNDERPOWERED, every construction logged including the nulls. All three declare clock provenance per L1.46 and are in _GOVERNED, the enforcement matrix (L1.11-r0100), ops/crontab.manifest and the LIVE crontab. STRUCK: (1) CN margin/northbound -- HKEX/SSE/SZSE ceased daily net-purchase disclosure 2024-08-16 and the Eastmoney licence read is blocked behind R0290 under section 13; external cause, not a failed dig. OWED BY 2026-08-19: (2) liquidation-heatmap reconstruction -- libs/research/liq_heatmap.py is built and tested (reconstructs cost-basis and liquidation bands from the desk's OWN OI archive, never buying the Coinglass/Hyblock feed) but has NO screen caller, so the axis is built-never-run; it needs a screen script feeding libs.research.axis_screen exactly as the perpdex collector does. Engine ideas (AST purity gates, factor lifecycle triage, PnL-selected prompt evolution) remain gated behind the R0077 gate repair as the row itself states.",
-   "commit": "4a1093d",
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T07:11:43.359395+00:00"
+   "reason": "SURVIVES THE MANDATE BUT NEEDS RE-SCOPING FIRST, which is why it has not moved. CN margin balances and northbound flows are equity-market observables and are admissible ONLY where they measurably inform an MT5 instrument (LAWS section 1: crypto reference data only where it informs an MT5 instrument, never as a hunted universe of its own) -- the Fusion-executable read is the China/HK index CFDs plus the USDCNH channel the CN seat's own SGE card 38 already opens. The liquidation-heatmap axis in the original five is crypto-exchange-native and is void outright. Scheduled behind that re-scope rather than ingested as-raised, because screening five axes on a universe the desk no longer trades is DSR budget burned twice.",
+   "commit": null,
+   "due": "2026-09-05",
+   "disposed": "2026-08-26T07:31:24.499007+00:00",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-19",
+     "was_reason": "3 OF 5 AXES NOW LIVE AND SCREENED (commit 4a1093d), 1 STRUCK, 1 REMAINING -- scheduled on the remainder, not closed on a partial. DONE, artifacts on disk: (3) DexScreener long-tail -- collect_dexscreener.py, 108 new rows of 114 fetched, 0 endpoint errors; screen DEFERRED with a dated computation, not skipped (harness floor is 51 aligned daily obs -> screenable 2026-09-24). (4) holder-concentration deltas -- collect_holder_concentration.py, 21 new rows, DEGRADED honestly reported (1 token error of 22). (5) perp-DEX funding Aster/Lighter -- collect_perpdex_funding.py, 233,030 new rows (aster 50,974 / lighter 131,299 / klines 50,757) WITH screen-on-discovery in the SAME run per the duty: 5 SCREEN-WEAK, 1 SCREEN-INTERESTING (aster_BTCUSDT_level_rate::8h, n=5364 over 2021-09..2026-08), 6 SCREEN-UNDERPOWERED, every construction logged including the nulls. All three declare clock provenance per L1.46 and are in _GOVERNED, the enforcement matrix (L1.11-r0100), ops/crontab.manifest and the LIVE crontab. STRUCK: (1) CN margin/northbound -- HKEX/SSE/SZSE ceased daily net-purchase disclosure 2024-08-16 and the Eastmoney licence read is blocked behind R0290 under section 13; external cause, not a failed dig. OWED BY 2026-08-19: (2) liquidation-heatmap reconstruction -- libs/research/liq_heatmap.py is built and tested (reconstructs cost-basis and liquidation bands from the desk's OWN OI archive, never buying the Coinglass/Hyblock feed) but has NO screen caller, so the axis is built-never-run; it needs a screen script feeding libs.research.axis_screen exactly as the perpdex collector does. Engine ideas (AST purity gates, factor lifecycle triage, PnL-selected prompt evolution) remain gated behind the R0077 gate repair as the row itself states.",
+     "was_disposed": "2026-08-05T07:11:43.359395+00:00",
+     "rescheduled": "2026-08-26T07:31:24.498979+00:00",
+     "why": "SURVIVES THE MANDATE BUT NEEDS RE-SCOPING FIRST, which is why it has not moved. CN margin balances and northbound flows are equity-market observables and are admissible ONLY where they measurably inform an MT5 instrument (LAWS section 1: crypto reference data only where it informs an MT5 instrument, never as a hunted universe of its own) -- the Fusion-executable read is the China/HK index CFDs plus the USDCNH channel the CN seat's own SGE card 38 already opens. The liquidation-heatmap axis in the original five is crypto-exchange-native and is void outright. Scheduled behind that re-scope rather than ingested as-raised, because screening five axes on a universe the desk no longer trades is DSR budget burned twice."
+    }
+   ]
   },
   {
    "id": "R0101",
@@ -8425,6 +8443,20 @@
    "commit": null,
    "due": "2026-09-09",
    "disposed": "2026-08-26T04:18:08.424674+00:00"
+  },
+  {
+   "id": "R0659",
+   "source": "cycle",
+   "summary": "Seat launch yield is the binding constraint on discovery rate: 25/93 billable launches produced a dig (26.9%) over 7d, AUTH_UNAVAILABLE 55/93. Landed the brain quota memo (6feb93e5) so the reset stamp brain_reset_wait_s already computes is persisted and consulted before any probe; next step is scheduling seats into the MEASURED open window (data/brain_quota_windows.jsonl) instead of the 14/18 UTC dead hours.",
+   "roi_bps": null,
+   "rank": 90.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-26T07:30:16.243390+00:00",
+   "status": "implemented",
+   "reason": null,
+   "commit": "6feb93e501f362f90abd09c79ba413d765c15257",
+   "due": null,
+   "disposed": "2026-08-26T07:30:24.768047+00:00"
   }
  ]
 }
