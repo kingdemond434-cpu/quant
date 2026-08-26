@@ -1,5 +1,5 @@
 {
-"cursor": 24,
+"cursor": 25,
 "queries_done": {
 "zh": [
 "\u590d\u5236\u4ea4\u6613 MT4",
@@ -50,6 +50,9 @@
 "sinais ranking"
 ],
 "vi": [
+"copy trade MT4",
+"copy trade MT5",
+"copy trade ranking",
 "sao ch\u00e9p giao d\u1ecbch MT4",
 "sao ch\u00e9p giao d\u1ecbch MT5",
 "sao ch\u00e9p giao d\u1ecbch ranking"

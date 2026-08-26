@@ -1,0 +1,12 @@
+[
+ {
+  "source": "propfirm_boards",
+  "kind": "fetch_error",
+  "title": "404 Client Error: Not Found for url: https://ftmo.com/en/leaderboards/",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-26T20:24:38+00:00",
+  "needs_selector_work": true
+ }
+]
