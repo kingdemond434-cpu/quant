@@ -5223,5 +5223,73 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"041e1af3c6580981": {
+"t0": "2026-08-26T15:25:09+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@AlphaTrader2020",
+"url": "https://my.litefinance.org/traders/AlphaTrader2020",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-26T15:22:30+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 6438.51
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"003e6d51c0e8539c": {
+"t0": "2026-08-26T15:25:09+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "tipcsy/TradeForge",
+"url": "https://github.com/tipcsy/TradeForge",
+"text": "MetaTrader 5 keresked\u00e9si keretrendszer Pythonban: \u00e9l\u0151 motor, tkinter dashboard, backtest \u00e9s Optuna-alap\u00fa param\u00e9ter-optimaliz\u00e1l\u00e1s.",
+"symbols": [],
+"found_at": "2026-08-26T15:25:03+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-26T15:13:42Z"
+},
+"mechanism_tags": [
+"trend",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"190023b44515f562": {
+"t0": "2026-08-26T15:25:09+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Trujillofa/mt5-arch-integration",
+"url": "https://github.com/Trujillofa/mt5-arch-integration",
+"text": "MetaTrader 5 on Arch Linux: Wine terminal, file-bridge EA, multi-broker profiles, Python CLI",
+"symbols": [],
+"found_at": "2026-08-26T15:25:05+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T15:15:02Z"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

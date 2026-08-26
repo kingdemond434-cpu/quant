@@ -1,0 +1,12 @@
+[
+ {
+  "source": "broker_swaps",
+  "kind": "unmeasured",
+  "title": "universe registry carries no swap fields yet -- run expand_universe.py on the desk box, which records swap_long/swap_short from symbol_info",
+  "url": "/home/quant/quant-platform/desks/mt5/data/universe/universe.json",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-26T15:01:12+00:00",
+  "needs_selector_work": false
+ }
+]

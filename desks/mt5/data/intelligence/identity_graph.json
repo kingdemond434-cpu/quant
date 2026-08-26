@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-26T14:24:40+00:00",
+ "rebuilt_at": "2026-08-26T15:25:10+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -603,6 +603,36 @@
    },
    "cohorts": [
     "bf702b638d215dfe"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "tipcsy": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "003e6d51c0e8539c"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "trujillofa": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "190023b44515f562"
    ],
    "scores": {
     "independent_evidence": 1,

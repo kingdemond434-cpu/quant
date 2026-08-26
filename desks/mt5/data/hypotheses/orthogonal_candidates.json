@@ -1,5 +1,5 @@
 {
- "swept_at": "2026-08-26T12:45:29+00:00",
+ "swept_at": "2026-08-26T14:36:26+00:00",
  "symbols": 295,
  "families_ran": {
   "correlation_regime": 293,
@@ -25,5 +25,5738 @@
   "drawdown_conditional:no-signals (price only)": 12,
   "cross_asset_residual:no-signals (2+ factor instruments' H1)": 1
  },
- "hypotheses": []
+ "hypotheses": [
+  {
+   "symbol": "A",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 61,
+   "exp_r": 0.2703,
+   "max_dd_r": -4.77,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "A",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "AA"
+    ]
+   },
+   "n": 194,
+   "exp_r": 0.3329,
+   "max_dd_r": -11.86,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "A",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 448,
+   "exp_r": 0.0016,
+   "max_dd_r": -22.72,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "A",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 120,
+   "exp_r": 0.0108,
+   "max_dd_r": -15.0,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "A",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 117,
+   "exp_r": 0.083,
+   "max_dd_r": -14.29,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AA",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 70,
+   "exp_r": 0.1867,
+   "max_dd_r": -8.44,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AA",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 224,
+   "exp_r": 0.0997,
+   "max_dd_r": -17.92,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AA",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 491,
+   "exp_r": 0.0569,
+   "max_dd_r": -17.21,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 146,
+   "exp_r": 0.1628,
+   "max_dd_r": -9.14,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AA",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 539,
+   "exp_r": 0.0611,
+   "max_dd_r": -19.59,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AA",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 141,
+   "exp_r": 0.1025,
+   "max_dd_r": -12.0,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAL",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 41,
+   "exp_r": 0.0385,
+   "max_dd_r": -5.33,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AAL",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 163,
+   "exp_r": 0.2906,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAL",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 83,
+   "exp_r": 0.242,
+   "max_dd_r": -14.7,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AAL",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 475,
+   "exp_r": 0.0013,
+   "max_dd_r": -32.41,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAL",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 140,
+   "exp_r": 0.4028,
+   "max_dd_r": -10.5,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAL",
+   "family": "vol_transition",
+   "params": {},
+   "n": 55,
+   "exp_r": 0.2427,
+   "max_dd_r": -4.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 184,
+   "exp_r": 0.3904,
+   "max_dd_r": -11.05,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AALB",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 580,
+   "exp_r": 0.1605,
+   "max_dd_r": -24.9,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALB",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 84,
+   "exp_r": 0.0535,
+   "max_dd_r": -12.55,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AALB",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 145,
+   "exp_r": 0.2734,
+   "max_dd_r": -9.01,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALB",
+   "family": "vol_transition",
+   "params": {},
+   "n": 68,
+   "exp_r": 0.187,
+   "max_dd_r": -6.2,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALG",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 89,
+   "exp_r": 0.1561,
+   "max_dd_r": -8.01,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AALG",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 205,
+   "exp_r": 0.1907,
+   "max_dd_r": -9.79,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AALG",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 545,
+   "exp_r": 0.0381,
+   "max_dd_r": -15.66,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALG",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 189,
+   "exp_r": 0.0851,
+   "max_dd_r": -16.23,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AALG",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 714,
+   "exp_r": 0.0421,
+   "max_dd_r": -18.05,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALG",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 187,
+   "exp_r": 0.0618,
+   "max_dd_r": -19.07,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAOI",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 134,
+   "exp_r": 0.3648,
+   "max_dd_r": -12.71,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAOI",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 287,
+   "exp_r": 0.1581,
+   "max_dd_r": -14.25,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAOI",
+   "family": "vol_transition",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.3205,
+   "max_dd_r": -4.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 172,
+   "exp_r": 0.2846,
+   "max_dd_r": -10.32,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 41,
+   "exp_r": 0.4473,
+   "max_dd_r": -5.34,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 856,
+   "exp_r": 0.0272,
+   "max_dd_r": -26.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 169,
+   "exp_r": 0.1127,
+   "max_dd_r": -9.32,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 1031,
+   "exp_r": 0.1387,
+   "max_dd_r": -19.57,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 316,
+   "exp_r": 0.0097,
+   "max_dd_r": -27.33,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "vol_transition",
+   "params": {},
+   "n": 127,
+   "exp_r": 0.0365,
+   "max_dd_r": -8.36,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 98,
+   "exp_r": 0.1838,
+   "max_dd_r": -6.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 62,
+   "exp_r": 0.2861,
+   "max_dd_r": -8.38,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 190,
+   "exp_r": 0.066,
+   "max_dd_r": -11.18,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 107,
+   "exp_r": 0.0134,
+   "max_dd_r": -18.2,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "vol_transition",
+   "params": {},
+   "n": 55,
+   "exp_r": 0.18,
+   "max_dd_r": -10.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPLUSD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 46,
+   "exp_r": 0.124,
+   "max_dd_r": -6.56,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 122,
+   "exp_r": 0.0535,
+   "max_dd_r": -11.58,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 236,
+   "exp_r": 0.3243,
+   "max_dd_r": -12.43,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 33,
+   "exp_r": 0.2493,
+   "max_dd_r": -5.0,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 323,
+   "exp_r": 0.3038,
+   "max_dd_r": -13.14,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 195,
+   "exp_r": 0.0269,
+   "max_dd_r": -27.05,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 674,
+   "exp_r": 0.0933,
+   "max_dd_r": -18.73,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBV.24H",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 258,
+   "exp_r": 0.0073,
+   "max_dd_r": -24.94,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 187,
+   "exp_r": 0.4222,
+   "max_dd_r": -12.17,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 695,
+   "exp_r": 0.0795,
+   "max_dd_r": -8.9,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 160,
+   "exp_r": 0.0013,
+   "max_dd_r": -25.4,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 974,
+   "exp_r": 0.0275,
+   "max_dd_r": -50.94,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 220,
+   "exp_r": 0.1109,
+   "max_dd_r": -28.78,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABBVIE",
+   "family": "vol_transition",
+   "params": {},
+   "n": 111,
+   "exp_r": 0.2352,
+   "max_dd_r": -12.83,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 134,
+   "exp_r": 0.4437,
+   "max_dd_r": -5.54,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.3839,
+   "max_dd_r": -3.72,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 532,
+   "exp_r": 0.0195,
+   "max_dd_r": -40.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 82,
+   "exp_r": 0.274,
+   "max_dd_r": -7.4,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 525,
+   "exp_r": 0.0277,
+   "max_dd_r": -41.02,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 131,
+   "exp_r": 0.0338,
+   "max_dd_r": -17.65,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 138,
+   "exp_r": 0.3098,
+   "max_dd_r": -8.6,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABF",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 70,
+   "exp_r": 0.4221,
+   "max_dd_r": -6.84,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABF",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 471,
+   "exp_r": 0.0715,
+   "max_dd_r": -18.29,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABF",
+   "family": "vol_transition",
+   "params": {},
+   "n": 75,
+   "exp_r": 0.0292,
+   "max_dd_r": -9.09,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 39,
+   "exp_r": 0.0079,
+   "max_dd_r": -9.89,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 142,
+   "exp_r": 0.2564,
+   "max_dd_r": -5.68,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 89,
+   "exp_r": 0.0566,
+   "max_dd_r": -15.09,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABN",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 465,
+   "exp_r": 0.1819,
+   "max_dd_r": -15.61,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABN",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 147,
+   "exp_r": 0.0622,
+   "max_dd_r": -19.02,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABNB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 172,
+   "exp_r": 0.4639,
+   "max_dd_r": -9.65,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABNB",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 415,
+   "exp_r": 0.1921,
+   "max_dd_r": -8.21,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABNB",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 135,
+   "exp_r": 0.0307,
+   "max_dd_r": -15.41,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABNB",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 501,
+   "exp_r": 0.0637,
+   "max_dd_r": -21.56,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABNB",
+   "family": "vol_transition",
+   "params": {},
+   "n": 56,
+   "exp_r": 0.1624,
+   "max_dd_r": -6.01,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABT",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 61,
+   "exp_r": 0.2228,
+   "max_dd_r": -7.95,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABT",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 176,
+   "exp_r": 0.1939,
+   "max_dd_r": -17.05,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABT",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 135,
+   "exp_r": 0.0758,
+   "max_dd_r": -19.09,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABT",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 508,
+   "exp_r": 0.0169,
+   "max_dd_r": -29.76,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABT",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 128,
+   "exp_r": 0.201,
+   "max_dd_r": -14.54,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ABT",
+   "family": "vol_transition",
+   "params": {},
+   "n": 50,
+   "exp_r": 0.0724,
+   "max_dd_r": -8.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AC",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 135,
+   "exp_r": 0.4275,
+   "max_dd_r": -7.02,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AC",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 543,
+   "exp_r": 0.0113,
+   "max_dd_r": -33.93,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AC",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 70,
+   "exp_r": 0.2059,
+   "max_dd_r": -11.99,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AC",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 487,
+   "exp_r": 0.1147,
+   "max_dd_r": -16.01,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AC",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 141,
+   "exp_r": 0.1621,
+   "max_dd_r": -15.71,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AC",
+   "family": "vol_transition",
+   "params": {},
+   "n": 72,
+   "exp_r": 0.0636,
+   "max_dd_r": -11.03,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACA",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 49,
+   "exp_r": 0.1038,
+   "max_dd_r": -4.1,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ACA",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 156,
+   "exp_r": 1.2097,
+   "max_dd_r": -11.09,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ACA",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 554,
+   "exp_r": 0.1483,
+   "max_dd_r": -24.09,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 76,
+   "exp_r": 0.2743,
+   "max_dd_r": -13.18,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ACA",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 486,
+   "exp_r": 0.2256,
+   "max_dd_r": -10.61,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACA",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 109,
+   "exp_r": 0.1282,
+   "max_dd_r": -13.56,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACA",
+   "family": "vol_transition",
+   "params": {},
+   "n": 68,
+   "exp_r": 0.1872,
+   "max_dd_r": -10.57,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 194,
+   "exp_r": 0.1703,
+   "max_dd_r": -14.5,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ACN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 414,
+   "exp_r": 0.0962,
+   "max_dd_r": -13.4,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 117,
+   "exp_r": 0.234,
+   "max_dd_r": -12.25,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ACN",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 114,
+   "exp_r": 0.1238,
+   "max_dd_r": -20.67,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACN",
+   "family": "vol_transition",
+   "params": {},
+   "n": 55,
+   "exp_r": 0.433,
+   "max_dd_r": -6.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADAJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 144,
+   "exp_r": 0.1171,
+   "max_dd_r": -7.74,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADAJPY",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 247,
+   "exp_r": 0.0581,
+   "max_dd_r": -22.67,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADAJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 129,
+   "exp_r": 0.2415,
+   "max_dd_r": -11.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 76,
+   "exp_r": 0.1347,
+   "max_dd_r": -16.55,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 177,
+   "exp_r": 0.4539,
+   "max_dd_r": -9.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 437,
+   "exp_r": 0.4006,
+   "max_dd_r": -10.43,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 130,
+   "exp_r": 0.0111,
+   "max_dd_r": -20.31,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 499,
+   "exp_r": 0.0292,
+   "max_dd_r": -24.57,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 261,
+   "exp_r": 0.2517,
+   "max_dd_r": -9.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADBE.24H",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 432,
+   "exp_r": 0.1129,
+   "max_dd_r": -11.08,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE.24H",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 691,
+   "exp_r": 0.0062,
+   "max_dd_r": -43.0,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADI",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 81,
+   "exp_r": 0.1336,
+   "max_dd_r": -11.09,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADI",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 186,
+   "exp_r": 0.2688,
+   "max_dd_r": -23.92,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADI",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 529,
+   "exp_r": 0.1262,
+   "max_dd_r": -13.65,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADI",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 137,
+   "exp_r": 0.0701,
+   "max_dd_r": -24.29,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADI",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 478,
+   "exp_r": 0.0911,
+   "max_dd_r": -19.37,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADI",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 139,
+   "exp_r": 0.2478,
+   "max_dd_r": -11.05,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADI",
+   "family": "vol_transition",
+   "params": {},
+   "n": 46,
+   "exp_r": 0.033,
+   "max_dd_r": -11.06,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADM",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 189,
+   "exp_r": 0.1798,
+   "max_dd_r": -10.11,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADM",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 125,
+   "exp_r": 0.1563,
+   "max_dd_r": -11.21,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADM",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 502,
+   "exp_r": 0.053,
+   "max_dd_r": -26.79,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADM",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 113,
+   "exp_r": 0.0335,
+   "max_dd_r": -11.8,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADM",
+   "family": "vol_transition",
+   "params": {},
+   "n": 42,
+   "exp_r": 0.1132,
+   "max_dd_r": -6.54,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 42,
+   "exp_r": 0.0252,
+   "max_dd_r": -7.2,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 90,
+   "exp_r": 0.44,
+   "max_dd_r": -3.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 508,
+   "exp_r": 0.0572,
+   "max_dd_r": -20.84,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 73,
+   "exp_r": 0.2194,
+   "max_dd_r": -7.41,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 446,
+   "exp_r": 0.0163,
+   "max_dd_r": -26.21,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 151,
+   "exp_r": 0.0755,
+   "max_dd_r": -17.01,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "vol_transition",
+   "params": {},
+   "n": 69,
+   "exp_r": 0.1965,
+   "max_dd_r": -10.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADS",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 45,
+   "exp_r": 0.0582,
+   "max_dd_r": -8.38,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADS",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 113,
+   "exp_r": 0.6579,
+   "max_dd_r": -5.54,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADS",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 473,
+   "exp_r": 0.1776,
+   "max_dd_r": -14.96,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADS",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 62,
+   "exp_r": 0.2429,
+   "max_dd_r": -11.23,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADS",
+   "family": "vol_transition",
+   "params": {},
+   "n": 76,
+   "exp_r": 0.0682,
+   "max_dd_r": -11.02,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 75,
+   "exp_r": 0.0162,
+   "max_dd_r": -12.08,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 168,
+   "exp_r": 0.2707,
+   "max_dd_r": -12.78,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 464,
+   "exp_r": 0.0887,
+   "max_dd_r": -8.74,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 129,
+   "exp_r": 0.1289,
+   "max_dd_r": -9.08,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 500,
+   "exp_r": 0.0206,
+   "max_dd_r": -24.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 125,
+   "exp_r": 0.1335,
+   "max_dd_r": -6.81,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADSK",
+   "family": "vol_transition",
+   "params": {},
+   "n": 52,
+   "exp_r": 0.2172,
+   "max_dd_r": -7.02,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADYEN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 42,
+   "exp_r": 0.2092,
+   "max_dd_r": -6.16,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADYEN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 102,
+   "exp_r": 0.3839,
+   "max_dd_r": -10.71,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADYEN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 68,
+   "exp_r": 0.1231,
+   "max_dd_r": -11.62,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADYEN",
+   "family": "vol_transition",
+   "params": {},
+   "n": 55,
+   "exp_r": 0.1277,
+   "max_dd_r": -13.47,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AENA",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 175,
+   "exp_r": 0.2125,
+   "max_dd_r": -11.38,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AENA",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 483,
+   "exp_r": 0.1057,
+   "max_dd_r": -19.64,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AENA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 67,
+   "exp_r": 0.2031,
+   "max_dd_r": -9.3,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AENA",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 467,
+   "exp_r": 0.1454,
+   "max_dd_r": -13.31,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AENA",
+   "family": "vol_transition",
+   "params": {},
+   "n": 78,
+   "exp_r": 0.1253,
+   "max_dd_r": -13.93,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AEP",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 216,
+   "exp_r": 0.5676,
+   "max_dd_r": -10.81,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AEP",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 367,
+   "exp_r": 0.1065,
+   "max_dd_r": -14.32,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AEP",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 110,
+   "exp_r": 0.1175,
+   "max_dd_r": -11.0,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AEP",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 486,
+   "exp_r": 0.0135,
+   "max_dd_r": -27.83,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AEP",
+   "family": "vol_transition",
+   "params": {},
+   "n": 49,
+   "exp_r": 0.1874,
+   "max_dd_r": -7.27,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFG",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 183,
+   "exp_r": 0.2195,
+   "max_dd_r": -13.03,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AFG",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 120,
+   "exp_r": 0.212,
+   "max_dd_r": -8.41,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AFG",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 505,
+   "exp_r": 0.0261,
+   "max_dd_r": -25.7,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFL",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 190,
+   "exp_r": 0.3032,
+   "max_dd_r": -19.88,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AFL",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 475,
+   "exp_r": 0.0007,
+   "max_dd_r": -14.13,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFL",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 112,
+   "exp_r": 0.1917,
+   "max_dd_r": -9.91,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AFL",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 461,
+   "exp_r": 0.0495,
+   "max_dd_r": -22.56,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFX",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 36,
+   "exp_r": 0.4143,
+   "max_dd_r": -3.03,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AFX",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 163,
+   "exp_r": 0.6463,
+   "max_dd_r": -27.97,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AFX",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 450,
+   "exp_r": 0.0401,
+   "max_dd_r": -17.23,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFX",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 137,
+   "exp_r": 0.1877,
+   "max_dd_r": -21.17,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AFX",
+   "family": "vol_transition",
+   "params": {},
+   "n": 73,
+   "exp_r": 0.08,
+   "max_dd_r": -11.54,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGG",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 77,
+   "exp_r": 0.0092,
+   "max_dd_r": -13.87,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGG",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 225,
+   "exp_r": 0.3567,
+   "max_dd_r": -10.07,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AGG",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 732,
+   "exp_r": 0.0948,
+   "max_dd_r": -17.27,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGG",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 122,
+   "exp_r": 0.0768,
+   "max_dd_r": -19.34,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGG",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 131,
+   "exp_r": 0.1078,
+   "max_dd_r": -9.59,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 51,
+   "exp_r": 0.2161,
+   "max_dd_r": -8.89,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 131,
+   "exp_r": 0.5897,
+   "max_dd_r": -9.76,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AGN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 547,
+   "exp_r": 0.0322,
+   "max_dd_r": -32.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 73,
+   "exp_r": 0.1017,
+   "max_dd_r": -13.45,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGN",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 502,
+   "exp_r": 0.1504,
+   "max_dd_r": -12.29,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGN",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 143,
+   "exp_r": 0.1405,
+   "max_dd_r": -20.56,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 85,
+   "exp_r": 0.0705,
+   "max_dd_r": -8.39,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 247,
+   "exp_r": 0.0359,
+   "max_dd_r": -16.31,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 374,
+   "exp_r": 0.0488,
+   "max_dd_r": -17.64,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 133,
+   "exp_r": 0.1868,
+   "max_dd_r": -10.73,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 580,
+   "exp_r": 0.0536,
+   "max_dd_r": -20.94,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AGNC",
+   "family": "vol_transition",
+   "params": {},
+   "n": 57,
+   "exp_r": 0.0685,
+   "max_dd_r": -5.91,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AI",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 61,
+   "exp_r": 0.0462,
+   "max_dd_r": -13.09,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AI",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 144,
+   "exp_r": 0.3202,
+   "max_dd_r": -8.33,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AI",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.3293,
+   "max_dd_r": -4.0,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AI",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 811,
+   "exp_r": 0.0207,
+   "max_dd_r": -27.72,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AI",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 158,
+   "exp_r": 0.1599,
+   "max_dd_r": -9.87,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AI",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 898,
+   "exp_r": 0.1284,
+   "max_dd_r": -101.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AI",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 288,
+   "exp_r": 0.0368,
+   "max_dd_r": -28.51,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIG",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 161,
+   "exp_r": 0.2501,
+   "max_dd_r": -13.19,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AIG",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 467,
+   "exp_r": 0.0552,
+   "max_dd_r": -25.7,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIG",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 128,
+   "exp_r": 0.0074,
+   "max_dd_r": -10.3,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AIG",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 494,
+   "exp_r": 0.0073,
+   "max_dd_r": -19.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIG",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 112,
+   "exp_r": 1.9451,
+   "max_dd_r": -17.92,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIG",
+   "family": "vol_transition",
+   "params": {},
+   "n": 54,
+   "exp_r": 0.0626,
+   "max_dd_r": -11.85,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AIR",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 70,
+   "exp_r": 0.2794,
+   "max_dd_r": -8.01,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AIR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 156,
+   "exp_r": 0.4413,
+   "max_dd_r": -8.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AIR",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 120,
+   "exp_r": 0.466,
+   "max_dd_r": -8.23,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKAM",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 73,
+   "exp_r": 0.0991,
+   "max_dd_r": -7.32,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKAM",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 185,
+   "exp_r": 0.2197,
+   "max_dd_r": -15.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AKAM",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 517,
+   "exp_r": 0.0329,
+   "max_dd_r": -18.7,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AKAM",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 104,
+   "exp_r": 0.0149,
+   "max_dd_r": -16.37,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AKAM",
+   "family": "vol_transition",
+   "params": {},
+   "n": 49,
+   "exp_r": 0.4215,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 43,
+   "exp_r": 0.0152,
+   "max_dd_r": -6.79,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 100,
+   "exp_r": 0.2987,
+   "max_dd_r": -7.99,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 571,
+   "exp_r": 0.0706,
+   "max_dd_r": -35.04,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 79,
+   "exp_r": 0.1421,
+   "max_dd_r": -9.99,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 537,
+   "exp_r": 0.0416,
+   "max_dd_r": -18.17,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 150,
+   "exp_r": 0.1638,
+   "max_dd_r": -14.01,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 39,
+   "exp_r": 0.2621,
+   "max_dd_r": -5.0,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 128,
+   "exp_r": 0.0874,
+   "max_dd_r": -10.46,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.3081,
+   "max_dd_r": -5.1,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 241,
+   "exp_r": 0.1481,
+   "max_dd_r": -9.32,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 289,
+   "exp_r": 0.1405,
+   "max_dd_r": -16.85,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALAB",
+   "family": "vol_transition",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.2602,
+   "max_dd_r": -7.59,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALB",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 75,
+   "exp_r": 0.0012,
+   "max_dd_r": -15.4,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 241,
+   "exp_r": 0.116,
+   "max_dd_r": -18.83,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALB",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 31,
+   "exp_r": 0.0598,
+   "max_dd_r": -6.08,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALB",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 488,
+   "exp_r": 0.0222,
+   "max_dd_r": -14.48,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALB",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 138,
+   "exp_r": 0.6232,
+   "max_dd_r": -11.6,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 66,
+   "exp_r": 0.0657,
+   "max_dd_r": -8.17,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALGN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 193,
+   "exp_r": 0.2655,
+   "max_dd_r": -11.43,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALGN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 415,
+   "exp_r": 0.0074,
+   "max_dd_r": -27.22,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 135,
+   "exp_r": 0.0489,
+   "max_dd_r": -12.19,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 362,
+   "exp_r": 0.0596,
+   "max_dd_r": -27.82,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 162,
+   "exp_r": 0.081,
+   "max_dd_r": -10.28,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 61,
+   "exp_r": 0.0008,
+   "max_dd_r": -8.37,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 258,
+   "exp_r": 0.1514,
+   "max_dd_r": -12.02,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALIBABA",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 43,
+   "exp_r": 0.0094,
+   "max_dd_r": -10.62,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 296,
+   "exp_r": 0.1342,
+   "max_dd_r": -27.37,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA",
+   "family": "vol_transition",
+   "params": {},
+   "n": 148,
+   "exp_r": 0.1558,
+   "max_dd_r": -10.21,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 112,
+   "exp_r": 0.1682,
+   "max_dd_r": -8.01,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 129,
+   "exp_r": 0.2903,
+   "max_dd_r": -10.42,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 218,
+   "exp_r": 0.083,
+   "max_dd_r": -21.78,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 81,
+   "exp_r": 0.3413,
+   "max_dd_r": -11.5,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "vol_transition",
+   "params": {},
+   "n": 49,
+   "exp_r": 0.2355,
+   "max_dd_r": -6.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 218,
+   "exp_r": 0.1036,
+   "max_dd_r": -22.42,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 429,
+   "exp_r": 0.1376,
+   "max_dd_r": -23.02,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALK",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 513,
+   "exp_r": 0.0659,
+   "max_dd_r": -20.65,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALK",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 122,
+   "exp_r": 0.2173,
+   "max_dd_r": -9.43,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 75,
+   "exp_r": 0.0756,
+   "max_dd_r": -15.57,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 181,
+   "exp_r": 0.5706,
+   "max_dd_r": -5.44,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 34,
+   "exp_r": 0.1206,
+   "max_dd_r": -5.63,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 133,
+   "exp_r": 0.1958,
+   "max_dd_r": -10.18,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 512,
+   "exp_r": 0.0768,
+   "max_dd_r": -14.36,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALLC",
+   "family": "vol_transition",
+   "params": {},
+   "n": 56,
+   "exp_r": 0.0594,
+   "max_dd_r": -9.62,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 296,
+   "exp_r": 0.1352,
+   "max_dd_r": -24.99,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 433,
+   "exp_r": 0.1991,
+   "max_dd_r": -3.1,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 647,
+   "exp_r": 0.0129,
+   "max_dd_r": -29.0,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 153,
+   "exp_r": 0.1284,
+   "max_dd_r": -11.18,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 280,
+   "exp_r": 0.0232,
+   "max_dd_r": -23.91,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 618,
+   "exp_r": 0.1917,
+   "max_dd_r": -2.66,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 320,
+   "exp_r": 0.2288,
+   "max_dd_r": -8.59,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 298,
+   "exp_r": 0.1355,
+   "max_dd_r": -4.27,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 280,
+   "exp_r": 0.043,
+   "max_dd_r": -20.77,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 685,
+   "exp_r": 0.0202,
+   "max_dd_r": -34.7,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 599,
+   "exp_r": 0.1281,
+   "max_dd_r": -3.25,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 137,
+   "exp_r": 0.0396,
+   "max_dd_r": -13.73,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 275,
+   "exp_r": 0.2895,
+   "max_dd_r": -12.4,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 411,
+   "exp_r": 0.3458,
+   "max_dd_r": -2.99,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 185,
+   "exp_r": 0.1437,
+   "max_dd_r": -6.89,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 174,
+   "exp_r": 0.0454,
+   "max_dd_r": -20.83,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 290,
+   "exp_r": 0.3427,
+   "max_dd_r": -9.62,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 211,
+   "exp_r": 0.0642,
+   "max_dd_r": -3.5,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 110,
+   "exp_r": 0.067,
+   "max_dd_r": -11.26,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 165,
+   "exp_r": 0.1517,
+   "max_dd_r": -16.48,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 371,
+   "exp_r": 0.0828,
+   "max_dd_r": -16.92,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 111,
+   "exp_r": 0.1706,
+   "max_dd_r": -14.32,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 550,
+   "exp_r": 0.1887,
+   "max_dd_r": -2.17,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 282,
+   "exp_r": 0.4253,
+   "max_dd_r": -11.2,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 203,
+   "exp_r": 0.0974,
+   "max_dd_r": -3.34,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 273,
+   "exp_r": 0.0653,
+   "max_dd_r": -14.87,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 235,
+   "exp_r": 0.1467,
+   "max_dd_r": -14.45,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 256,
+   "exp_r": 0.087,
+   "max_dd_r": -25.98,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 844,
+   "exp_r": 0.1881,
+   "max_dd_r": -1.63,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 641,
+   "exp_r": 0.0301,
+   "max_dd_r": -35.43,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 302,
+   "exp_r": 0.0972,
+   "max_dd_r": -11.42,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 237,
+   "exp_r": 0.1791,
+   "max_dd_r": -5.1,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 253,
+   "exp_r": 0.1118,
+   "max_dd_r": -18.55,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 212,
+   "exp_r": 0.0874,
+   "max_dd_r": -9.56,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFNOK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 976,
+   "exp_r": 0.3376,
+   "max_dd_r": -8.58,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFSEK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 1031,
+   "exp_r": 0.0671,
+   "max_dd_r": -29.16,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 296,
+   "exp_r": 0.0306,
+   "max_dd_r": -40.52,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 369,
+   "exp_r": 0.256,
+   "max_dd_r": -8.0,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 223,
+   "exp_r": 0.055,
+   "max_dd_r": -24.52,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHINAH",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 208,
+   "exp_r": 0.1013,
+   "max_dd_r": -13.69,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "COFROB",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 63,
+   "exp_r": 0.1919,
+   "max_dd_r": -8.89,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "COFROB",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 132,
+   "exp_r": 0.0338,
+   "max_dd_r": -23.11,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "E35",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 30,
+   "exp_r": 0.0198,
+   "max_dd_r": -5.39,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "E35",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 131,
+   "exp_r": 0.3058,
+   "max_dd_r": -10.98,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 303,
+   "exp_r": 0.468,
+   "max_dd_r": -12.08,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 133,
+   "exp_r": 0.0062,
+   "max_dd_r": -10.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 240,
+   "exp_r": 0.0624,
+   "max_dd_r": -33.64,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 303,
+   "exp_r": 0.0796,
+   "max_dd_r": -16.82,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 243,
+   "exp_r": 0.1136,
+   "max_dd_r": -4.81,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 259,
+   "exp_r": 0.1797,
+   "max_dd_r": -22.37,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 641,
+   "exp_r": 0.2525,
+   "max_dd_r": -2.51,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 233,
+   "exp_r": 0.2237,
+   "max_dd_r": -13.35,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 387,
+   "exp_r": 0.0552,
+   "max_dd_r": -5.36,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 243,
+   "exp_r": 0.0069,
+   "max_dd_r": -21.27,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURHKD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 303,
+   "exp_r": 0.0618,
+   "max_dd_r": -29.92,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURHKD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 278,
+   "exp_r": 0.014,
+   "max_dd_r": -32.08,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 283,
+   "exp_r": 0.2326,
+   "max_dd_r": -8.94,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 216,
+   "exp_r": 0.1003,
+   "max_dd_r": -5.52,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 623,
+   "exp_r": 0.041,
+   "max_dd_r": -28.4,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 233,
+   "exp_r": 0.144,
+   "max_dd_r": -14.91,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURMXN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 430,
+   "exp_r": 0.3697,
+   "max_dd_r": -1.54,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURNOK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 328,
+   "exp_r": 0.2831,
+   "max_dd_r": -27.89,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURNOK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 680,
+   "exp_r": 0.0325,
+   "max_dd_r": -257.34,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURNZD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 302,
+   "exp_r": 0.2376,
+   "max_dd_r": -19.64,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURNZD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 181,
+   "exp_r": 0.1255,
+   "max_dd_r": -3.71,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURNZD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 168,
+   "exp_r": 0.0735,
+   "max_dd_r": -19.48,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURPLN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 667,
+   "exp_r": 0.0603,
+   "max_dd_r": -19.55,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURSEK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 669,
+   "exp_r": 0.8227,
+   "max_dd_r": -9.2,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 363,
+   "exp_r": 0.1901,
+   "max_dd_r": -4.4,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 119,
+   "exp_r": 0.1302,
+   "max_dd_r": -9.36,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 305,
+   "exp_r": 0.25,
+   "max_dd_r": -23.57,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 225,
+   "exp_r": 0.041,
+   "max_dd_r": -25.16,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 599,
+   "exp_r": 0.0092,
+   "max_dd_r": -39.88,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 286,
+   "exp_r": 0.0449,
+   "max_dd_r": -17.78,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURZAR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 267,
+   "exp_r": 0.0296,
+   "max_dd_r": -41.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "EURZAR",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 552,
+   "exp_r": 0.3182,
+   "max_dd_r": -2.96,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EUSTX50",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 30,
+   "exp_r": 0.3789,
+   "max_dd_r": -5.87,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "FRA40",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 31,
+   "exp_r": 0.3141,
+   "max_dd_r": -3.33,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 121,
+   "exp_r": 0.0123,
+   "max_dd_r": -13.41,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 252,
+   "exp_r": 0.383,
+   "max_dd_r": -9.62,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 150,
+   "exp_r": 0.0522,
+   "max_dd_r": -7.13,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 252,
+   "exp_r": 0.0431,
+   "max_dd_r": -12.66,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 704,
+   "exp_r": 0.2844,
+   "max_dd_r": -80.84,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 211,
+   "exp_r": 0.0666,
+   "max_dd_r": -15.78,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 283,
+   "exp_r": 0.1121,
+   "max_dd_r": -12.15,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 218,
+   "exp_r": 0.1306,
+   "max_dd_r": -3.88,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPCHF",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 161,
+   "exp_r": 0.0121,
+   "max_dd_r": -15.05,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 438,
+   "exp_r": 0.258,
+   "max_dd_r": -3.21,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPCHF",
+   "family": "vol_transition",
+   "params": {},
+   "n": 259,
+   "exp_r": 0.0203,
+   "max_dd_r": -16.72,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPDKK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 228,
+   "exp_r": 0.0918,
+   "max_dd_r": -14.11,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPDKK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 519,
+   "exp_r": 0.1523,
+   "max_dd_r": -2.27,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPDKK",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 608,
+   "exp_r": 0.006,
+   "max_dd_r": -31.17,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 148,
+   "exp_r": 0.0341,
+   "max_dd_r": -21.14,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 251,
+   "exp_r": 0.1942,
+   "max_dd_r": -9.48,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 159,
+   "exp_r": 0.1379,
+   "max_dd_r": -4.7,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 248,
+   "exp_r": 0.1662,
+   "max_dd_r": -9.87,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPMXN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 658,
+   "exp_r": 0.5341,
+   "max_dd_r": -5.65,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPNOK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 748,
+   "exp_r": 0.3184,
+   "max_dd_r": -12.46,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPNZD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 298,
+   "exp_r": 0.1517,
+   "max_dd_r": -17.7,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPNZD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 147,
+   "exp_r": 0.0786,
+   "max_dd_r": -3.82,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPSEK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 700,
+   "exp_r": 0.4452,
+   "max_dd_r": -19.92,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 295,
+   "exp_r": 0.0608,
+   "max_dd_r": -26.14,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 130,
+   "exp_r": 0.1466,
+   "max_dd_r": -8.14,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 334,
+   "exp_r": 0.0188,
+   "max_dd_r": -52.24,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 166,
+   "exp_r": 0.0245,
+   "max_dd_r": -5.15,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 248,
+   "exp_r": 0.011,
+   "max_dd_r": -19.36,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "GBPZAR",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 599,
+   "exp_r": 0.3078,
+   "max_dd_r": -2.48,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GER40",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 210,
+   "exp_r": 0.1354,
+   "max_dd_r": -14.25,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "HK50",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 200,
+   "exp_r": 0.089,
+   "max_dd_r": -15.19,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "HK50",
+   "family": "vol_transition",
+   "params": {},
+   "n": 163,
+   "exp_r": 0.1137,
+   "max_dd_r": -15.5,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 274,
+   "exp_r": 0.3199,
+   "max_dd_r": -29.61,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 263,
+   "exp_r": 0.0914,
+   "max_dd_r": -4.83,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 260,
+   "exp_r": 0.0805,
+   "max_dd_r": -18.15,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "JPN225",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 299,
+   "exp_r": 0.26,
+   "max_dd_r": -19.55,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "JPN225",
+   "family": "vol_transition",
+   "params": {},
+   "n": 238,
+   "exp_r": 0.044,
+   "max_dd_r": -14.05,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 207,
+   "exp_r": 0.0078,
+   "max_dd_r": -21.99,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "NOKSEK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 873,
+   "exp_r": 0.2178,
+   "max_dd_r": -58.7,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 281,
+   "exp_r": 0.1516,
+   "max_dd_r": -22.46,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "NZDCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 445,
+   "exp_r": 0.1588,
+   "max_dd_r": -6.85,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 584,
+   "exp_r": 0.2103,
+   "max_dd_r": -3.23,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDHUF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 748,
+   "exp_r": 0.0444,
+   "max_dd_r": -37.9,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 275,
+   "exp_r": 0.4177,
+   "max_dd_r": -7.25,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 314,
+   "exp_r": 0.1589,
+   "max_dd_r": -3.14,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 652,
+   "exp_r": 0.0063,
+   "max_dd_r": -30.52,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 206,
+   "exp_r": 0.2379,
+   "max_dd_r": -13.4,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 448,
+   "exp_r": 0.2356,
+   "max_dd_r": -3.57,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDSGD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 164,
+   "exp_r": 0.0482,
+   "max_dd_r": -10.94,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 291,
+   "exp_r": 0.0135,
+   "max_dd_r": -20.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 305,
+   "exp_r": 0.1033,
+   "max_dd_r": -6.06,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 246,
+   "exp_r": 0.0169,
+   "max_dd_r": -25.78,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 201,
+   "exp_r": 0.039,
+   "max_dd_r": -13.51,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 264,
+   "exp_r": 0.2327,
+   "max_dd_r": -15.03,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 345,
+   "exp_r": 0.2391,
+   "max_dd_r": -7.94,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 228,
+   "exp_r": 0.1073,
+   "max_dd_r": -19.11,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "SOLUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 112,
+   "exp_r": 0.0589,
+   "max_dd_r": -11.1,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "UKCOCOA",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 30,
+   "exp_r": 0.1504,
+   "max_dd_r": -8.78,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "US30",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 404,
+   "exp_r": 0.0011,
+   "max_dd_r": -29.07,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "US30",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 727,
+   "exp_r": 0.0035,
+   "max_dd_r": -33.95,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "US30",
+   "family": "vol_transition",
+   "params": {},
+   "n": 308,
+   "exp_r": 0.0302,
+   "max_dd_r": -20.58,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USCOCOA",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 34,
+   "exp_r": 0.0346,
+   "max_dd_r": -9.59,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDBRL",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 77,
+   "exp_r": 0.0513,
+   "max_dd_r": -12.66,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 149,
+   "exp_r": 0.0667,
+   "max_dd_r": -14.9,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 372,
+   "exp_r": 0.1733,
+   "max_dd_r": -36.79,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 129,
+   "exp_r": 0.0497,
+   "max_dd_r": -4.4,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 258,
+   "exp_r": 0.0244,
+   "max_dd_r": -25.47,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 669,
+   "exp_r": 0.0082,
+   "max_dd_r": -35.64,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 235,
+   "exp_r": 0.0203,
+   "max_dd_r": -17.93,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 341,
+   "exp_r": 0.3295,
+   "max_dd_r": -46.19,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 332,
+   "exp_r": 0.1322,
+   "max_dd_r": -2.39,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 660,
+   "exp_r": 0.0111,
+   "max_dd_r": -24.66,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "vol_transition",
+   "params": {},
+   "n": 254,
+   "exp_r": 0.0044,
+   "max_dd_r": -23.23,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 306,
+   "exp_r": 0.0645,
+   "max_dd_r": -27.73,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 272,
+   "exp_r": 0.1558,
+   "max_dd_r": -7.86,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 167,
+   "exp_r": 0.1021,
+   "max_dd_r": -7.53,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 307,
+   "exp_r": 0.1512,
+   "max_dd_r": -35.05,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "vol_transition",
+   "params": {},
+   "n": 292,
+   "exp_r": 0.077,
+   "max_dd_r": -17.42,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 281,
+   "exp_r": 0.2605,
+   "max_dd_r": -10.14,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 145,
+   "exp_r": 0.02,
+   "max_dd_r": -8.17,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 606,
+   "exp_r": 0.0361,
+   "max_dd_r": -31.74,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 272,
+   "exp_r": 0.1065,
+   "max_dd_r": -15.63,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDKRW",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 128,
+   "exp_r": 0.0064,
+   "max_dd_r": -12.19,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDKRW",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 275,
+   "exp_r": 0.0182,
+   "max_dd_r": -68.09,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDKRW",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 206,
+   "exp_r": 0.0426,
+   "max_dd_r": -23.83,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDMXN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 139,
+   "exp_r": 0.0917,
+   "max_dd_r": -20.06,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDMXN",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 311,
+   "exp_r": 0.1391,
+   "max_dd_r": -18.43,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDMXN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 444,
+   "exp_r": 0.2521,
+   "max_dd_r": -1.8,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDNOK",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 138,
+   "exp_r": 0.0859,
+   "max_dd_r": -16.72,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDNOK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 499,
+   "exp_r": 0.4522,
+   "max_dd_r": -4.68,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDPLN",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 433,
+   "exp_r": 0.0793,
+   "max_dd_r": -6.69,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDRUB",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 39,
+   "exp_r": 2.5454,
+   "max_dd_r": -24.27,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDSEK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 469,
+   "exp_r": 0.2399,
+   "max_dd_r": -3.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDSGD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 309,
+   "exp_r": 0.161,
+   "max_dd_r": -26.29,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 376,
+   "exp_r": 0.2602,
+   "max_dd_r": -2.65,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDTHB",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 253,
+   "exp_r": 0.0957,
+   "max_dd_r": -19.13,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDTHB",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 356,
+   "exp_r": 0.127,
+   "max_dd_r": -20.73,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDTRY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 298,
+   "exp_r": 0.2816,
+   "max_dd_r": -72.37,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 239,
+   "exp_r": 0.6516,
+   "max_dd_r": -21.48,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 32,
+   "exp_r": 0.1735,
+   "max_dd_r": -4.5,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 501,
+   "exp_r": 0.2818,
+   "max_dd_r": -1.84,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 357,
+   "exp_r": 0.0191,
+   "max_dd_r": -34.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 73,
+   "exp_r": 0.1496,
+   "max_dd_r": -10.44,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XALUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 45,
+   "exp_r": 0.0597,
+   "max_dd_r": -13.52,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAUAUD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 126,
+   "exp_r": 0.0433,
+   "max_dd_r": -11.16,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XAUAUD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 360,
+   "exp_r": 0.0597,
+   "max_dd_r": -17.45,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XAUAUD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 628,
+   "exp_r": 0.0877,
+   "max_dd_r": -22.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 155,
+   "exp_r": 0.1418,
+   "max_dd_r": -10.57,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 357,
+   "exp_r": 0.1084,
+   "max_dd_r": -16.26,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 241,
+   "exp_r": 0.0185,
+   "max_dd_r": -28.89,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 653,
+   "exp_r": 0.1477,
+   "max_dd_r": -14.77,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 368,
+   "exp_r": 0.0937,
+   "max_dd_r": -19.02,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 250,
+   "exp_r": 0.017,
+   "max_dd_r": -33.14,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 703,
+   "exp_r": 0.0717,
+   "max_dd_r": -21.26,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 319,
+   "exp_r": 0.2427,
+   "max_dd_r": -34.9,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 238,
+   "exp_r": 0.0353,
+   "max_dd_r": -17.43,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 635,
+   "exp_r": 0.0274,
+   "max_dd_r": -25.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 260,
+   "exp_r": 0.5378,
+   "max_dd_r": -39.22,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 40,
+   "exp_r": 0.0746,
+   "max_dd_r": -10.88,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 181,
+   "exp_r": 0.0212,
+   "max_dd_r": -20.19,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XNGUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 240,
+   "exp_r": 0.0031,
+   "max_dd_r": -41.18,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XNIUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 47,
+   "exp_r": 0.0147,
+   "max_dd_r": -8.84,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "3M",
+     "A"
+    ]
+   },
+   "n": 316,
+   "exp_r": 0.3063,
+   "max_dd_r": -38.15,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 76,
+   "exp_r": 0.0511,
+   "max_dd_r": -10.09,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 263,
+   "exp_r": 0.0729,
+   "max_dd_r": -21.31,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 227,
+   "exp_r": 0.0315,
+   "max_dd_r": -22.51,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XZNUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 99,
+   "exp_r": 0.2895,
+   "max_dd_r": -7.82,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XZNUSD",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "3M"
+   },
+   "n": 192,
+   "exp_r": 0.1129,
+   "max_dd_r": -23.73,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ZARJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 609,
+   "exp_r": 0.2106,
+   "max_dd_r": -3.39,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  }
+ ]
 }
