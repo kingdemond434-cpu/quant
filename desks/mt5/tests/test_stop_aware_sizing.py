@@ -32,10 +32,17 @@ def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import (
         BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+    # clamp_risk_frac: same gap as tests/test_risk_units.py's _load() -- gateway.py imports this
+    # from mt5desk.sizing at module level (2026-08-25 risk-fraction sizing rewrite) and
+    # promoted_lot()'s extracted body calls it directly. This harness execs ONLY the AST-
+    # extracted function bodies, never gateway.py's own imports, so the dependency must be
+    # seeded here too or the extracted function references an undefined name.
+    from mt5desk.sizing import clamp_risk_frac
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
+          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          "clamp_risk_frac": clamp_risk_frac}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "stop_distance",
                  "promoted_lot", "heat_budget", "cap_by_heat",
                  "_eur_per_price_unit", "min_lot_risk_eur"}
@@ -205,7 +212,12 @@ def test_the_promoted_ramp_floors_rather_than_rounds():
 def test_the_gateway_sizes_from_the_spec_and_refuses_when_it_cannot():
     """The fix is only real if the trade loop passes the distance."""
     assert "dist = stop_distance(spec)" in _SRC
-    assert "auto_lot(equity, dist)" in _SRC
+    # Checked as a prefix, not the old exact 2-arg call: auto_lot(equity, dist) gained trailing
+    # symbol/info/q arguments in later sizing work (still starts the same way, still the
+    # distance actually flowing from the spec -- see test_no_call_site_sizes_from_the_house_
+    # constant_by_omission for the AST-based check that this isn't losing the argument, just
+    # gaining more after it).
+    assert "auto_lot(equity, dist," in _SRC
     assert "refusing to size from the house average" in _SRC
 
 

@@ -73,10 +73,19 @@ def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import (
         BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+    # clamp_risk_frac: gateway.py imports this from mt5desk.sizing at module level (the
+    # 2026-08-25 risk-fraction sizing rewrite) and promoted_lot()'s extracted body calls it
+    # directly. This harness execs ONLY the AST-extracted function bodies below, never
+    # gateway.py's own imports, so any real dependency it gains must be seeded here too or the
+    # extracted function references a name that was never defined -- caught live 2026-08-26 as
+    # NameError: name 'clamp_risk_frac' is not defined, a test-harness gap, not a production bug
+    # (gateway.py itself imports and uses it correctly).
+    from mt5desk.sizing import clamp_risk_frac
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
+          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          "clamp_risk_frac": clamp_risk_frac}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
                  "min_lot_risk_eur"}
@@ -311,7 +320,11 @@ def test_the_trade_loop_passes_the_sleeve_s_own_symbol_and_live_info():
     """The fix is only real if the trade loop hands over the instrument. A source check,
     because the loop itself needs a live terminal to run."""
     assert 'auto_lot(equity, dist, s["symbol"], sym)' in _SRC
-    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym)' in _SRC
+    # promoted_lot() gained a trailing risk_frac arg in the 2026-08-25 risk-fraction sizing
+    # rewrite (s.get("risk_frac"), wiring the promoter's own dynamic-up justification through
+    # to sizing) -- checked as a prefix rather than the old exact-call text, so this survives
+    # further trailing kwargs the same way without going stale on the next legitimate one.
+    assert 'promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,' in _SRC
     assert 'realised_q(equity, dist, s["symbol"], sym)' in _SRC
     assert "cannot price" in _SRC
 

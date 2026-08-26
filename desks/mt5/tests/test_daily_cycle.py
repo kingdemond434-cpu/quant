@@ -56,13 +56,15 @@ def test_the_real_step_order_is_shadow_then_promoter_then_markout():
 
     export_aurum was appended 2026-08-22 and runs LAST on purpose: it exports findings derived
     from today's cycle, so it must see the promoter's output rather than yesterday's. The
-    load-bearing part is that shadow precedes promoter -- asserted explicitly below so a future
-    step appended at the end does not have to touch this test again, while a REORDERING of the
-    first three still fails it."""
+    load-bearing part is RELATIVE order -- shadow before promoter before markout -- not absolute
+    position: futures_curves/curve_strategies were legitimately prepended 2026-08-26 (unrelated
+    data-fetch steps, no dependency on shadow/promoter/markout), which broke a stricter
+    names[:3]==[...] version of this assertion that this replaced without catching a real bug.
+    A REORDERING of shadow/promoter/markout among themselves still fails this."""
     names = [n for n, _ in daily_cycle.STEPS]
-    assert names[:3] == ["shadow", "promoter", "markout"]
-    assert names.index("shadow") < names.index("promoter"), (
-        "the promoter must read state shadow has already written")
+    assert names.index("shadow") < names.index("promoter") < names.index("markout"), (
+        "the promoter must read state shadow has already written, and markout must read what "
+        "the promoter decided")
     assert "export_aurum" in names and names[-1] == "export_aurum"
 
 

@@ -88,9 +88,16 @@ def test_real_rate_needs_both_inputs(tmp_path):
 
 
 def test_is_fresh_matches_usable(tmp_path):
-    p = _write(tmp_path, NOW, {"X": 1.0})
+    """is_fresh() has no now= parameter (unlike load()) -- it always evaluates against real
+    wall-clock time, so this test writes against real now too, not the module's fixed NOW
+    constant. Using NOW here was a ticking bug: NOW is a hardcoded calendar date (2026-08-22),
+    and is_fresh() silently started reading it as stale the moment enough real time passed
+    (caught live 2026-08-26), with no error anywhere -- exactly the class of silent staleness
+    this whole module exists to catch, just in the test harness instead of production."""
+    real_now = datetime.now(timezone.utc)
+    p = _write(tmp_path, real_now, {"X": 1.0})
     assert mr.is_fresh(p) is True
-    old = _write(tmp_path, NOW - timedelta(days=30), {"X": 1.0})
+    old = _write(tmp_path, real_now - timedelta(days=30), {"X": 1.0})
     assert mr.is_fresh(old) is False
 
 
