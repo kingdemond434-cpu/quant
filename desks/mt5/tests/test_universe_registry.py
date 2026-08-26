@@ -162,3 +162,29 @@ def test_defects_is_silent_on_a_healthy_registry() -> None:
 def test_empty_registry_is_a_defect_not_a_clean_verdict() -> None:
     # WS-005: absence must never resolve to "nothing worth trading".
     assert defects({}) and "empty" in defects({})[0]
+
+
+def test_venue_currency_field_beats_the_name() -> None:
+    # A share CFD has no denomination in its name, so the ONLY correct route is the venue's own
+    # field. Without it these 67 equities and 15 index CFDs stay uncosted -- which is the honest
+    # state, not a bug to paper over with an assumed USD.
+    assert quote_currency("3M") is None
+    assert quote_currency("3M", {"currency_profit": "USD"}) == "USD"
+    assert quote_currency("AUS200", {"currency_profit": "AUD"}) == "AUD"
+    # The venue overrules a name that would otherwise parse: a EUR-denominated USDJPY CFD is a
+    # real product and the name would say JPY.
+    assert quote_currency("USDJPY", {"currency_profit": "EUR"}) == "EUR"
+    assert derive_tick_value("3M", 0.01, 1.0, CLOSES, {"currency_profit": "USD"}) == pytest.approx(
+        0.01 / 1.1585, rel=0.01)
+
+
+def test_exotics_named_by_the_fence_are_now_costable() -> None:
+    # The fence reported six exotics it could not cost; the seed was extended because it asked.
+    for sym in ("USDBRL", "USDINR", "USDKRW", "USDIDR", "USDRUB", "EURRUB"):
+        assert quote_currency(sym) == sym[3:], f"{sym} still unreadable"
+    # EURRUB bridges to EUR directly: one tick is 1 RUB, and at EURRUB=100 that is 0.01 EUR.
+    got = derive_tick_value("EURRUB", 1e-05, 100000.0, {"EURRUB": 100.0})
+    assert got == pytest.approx(0.01, rel=0.01)
+    # USDBRL has no EUR leg and must triangulate through USD.
+    tri = derive_tick_value("USDBRL", 1e-05, 100000.0, {"USDBRL": 5.0, "EURUSD": 1.1585})
+    assert tri == pytest.approx(1.0 / 5.0 / 1.1585, rel=0.01)

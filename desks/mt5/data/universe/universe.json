@@ -1,2169 +1,4026 @@
 {
-  "3M": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 28,
-    "spread_price": 0.28,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "ADAUSD": {
-    "point": 0.0001,
-    "digits": 4,
-    "tick_size": 0.0001,
-    "median_spread_pts": 31,
-    "spread_price": 0.0031,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "ADP": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 34,
-    "spread_price": 0.34,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AMD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 46,
-    "spread_price": 0.46,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AT&T": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 6,
-    "spread_price": 0.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AUDCAD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1,
-    "spread_price": 1e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "AUDCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "AUDHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 39506,
-    "spread_price": 0.39506,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "AUDJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 1,
-    "spread_price": 0.001,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "AUDNZD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 5,
-    "spread_price": 5e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "AUDSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1,
-    "spread_price": 1e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "AUDUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "AUS200": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 100,
-    "spread_price": 1.0,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "AVAXUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 35,
-    "spread_price": 0.035,
-    "contract_size": 1000.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "Accenture": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 9,
-    "spread_price": 0.09,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Adobe": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 34,
-    "spread_price": 0.34,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Airbnb": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 19,
-    "spread_price": 0.19,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AlibabaGroup": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 23,
-    "spread_price": 0.23,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Alphabet-A": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 27,
-    "spread_price": 0.27,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Alphabet-C": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 43,
-    "spread_price": 0.43,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Amazon": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 24,
-    "spread_price": 0.24,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AmericanExpress": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 29,
-    "spread_price": 0.29,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Amgen": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 45,
-    "spread_price": 0.45,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Apple": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 14,
-    "spread_price": 0.14,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "AppliedMaterials": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 69,
-    "spread_price": 0.69,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Atlassian": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 57,
-    "spread_price": 0.57,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "BCHUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 146,
-    "spread_price": 1.46,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "BNBUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 104,
-    "spread_price": 1.04,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "BTCUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 1804,
-    "spread_price": 18.04,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "BankofAmericaCorp": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 5,
-    "spread_price": 0.05,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Berkshire": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 22,
-    "spread_price": 0.22,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "BeyondMeat": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 8,
-    "spread_price": 0.08,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "BlackRock": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 297,
-    "spread_price": 2.97,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "BlockInc": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 500,
-    "spread_price": 5.0,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Boeing": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 9,
-    "spread_price": 0.09,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Booking": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 11,
-    "spread_price": 0.11,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Broadcom": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 39,
-    "spread_price": 0.39,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "CA60": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 120,
-    "spread_price": 1.2,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "CADCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "CADJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "CHFDKK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 81,
-    "spread_price": 0.00081,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHFHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 65144,
-    "spread_price": 0.65144,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHFJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 3,
-    "spread_price": 0.003,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "CHFNOK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 739,
-    "spread_price": 0.00739,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHFPLN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 738,
-    "spread_price": 0.00738,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHFSEK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1298,
-    "spread_price": 0.01298,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHFSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 5,
-    "spread_price": 5e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "CHINAH": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 180,
-    "spread_price": 1.8,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "CVSHealth": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 11,
-    "spread_price": 0.11,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Caterpillar": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 106,
-    "spread_price": 1.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "CharlesSchwab": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 14,
-    "spread_price": 0.14,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Charter": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 30,
-    "spread_price": 0.3,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Chevron": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 14,
-    "spread_price": 0.14,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Cisco": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 9,
-    "spread_price": 0.09,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Citigroup": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 10,
-    "spread_price": 0.1,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Coca-Cola": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 8,
-    "spread_price": 0.08,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Coinbase": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 66,
-    "spread_price": 0.66,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Comcast": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 6,
-    "spread_price": 0.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "CostcoWholesale": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 76,
-    "spread_price": 0.76,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "DOGEUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 42,
-    "spread_price": 0.00042,
-    "contract_size": 1000.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "DOTUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 31,
-    "spread_price": 0.031,
-    "contract_size": 50.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "DocuSign": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 18,
-    "spread_price": 0.18,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Doordash": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 28,
-    "spread_price": 0.28,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Dow": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 8,
-    "spread_price": 0.08,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "E35": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 1200,
-    "spread_price": 12.0,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "EOSUSD": {
-    "point": 0.0001,
-    "digits": 4,
-    "tick_size": 0.0001,
-    "median_spread_pts": 103,
-    "spread_price": 0.0103,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "ETHUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 302,
-    "spread_price": 3.02,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "EURAUD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 4,
-    "spread_price": 4e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURCAD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURCZK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3260,
-    "spread_price": 0.0326,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURDKK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 52,
-    "spread_price": 0.00052,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURGBP": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURHKD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 69,
-    "spread_price": 0.00069,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 60504,
-    "spread_price": 0.60504,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURILS": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 887,
-    "spread_price": 0.00887,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURMXN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 495,
-    "spread_price": 0.00495,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURNOK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 632,
-    "spread_price": 0.00632,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURNZD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 8,
-    "spread_price": 8e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURPLN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 155,
-    "spread_price": 0.00155,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURRUB": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1397460,
-    "spread_price": 13.9746,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURSEK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 456,
-    "spread_price": 0.00456,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3,
-    "spread_price": 3e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURTRY": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3854,
-    "spread_price": 0.03854,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EURUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "EURZAR": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 912,
-    "spread_price": 0.00912,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "EUSTX50": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 140,
-    "spread_price": 1.4,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "ElectronicArts": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 10,
-    "spread_price": 0.1,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "ExxonMobil": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 20,
-    "spread_price": 0.2,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "FRA40": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 120,
-    "spread_price": 1.2,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "GBPAUD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3,
-    "spread_price": 3e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPCAD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPDKK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 71,
-    "spread_price": 0.00071,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 68452,
-    "spread_price": 0.68452,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 4,
-    "spread_price": 0.004,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPMXN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 886,
-    "spread_price": 0.00886,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPNOK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1087,
-    "spread_price": 0.01087,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPNZD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 8,
-    "spread_price": 8e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPPLN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 780,
-    "spread_price": 0.0078,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPSEK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 566,
-    "spread_price": 0.00566,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 4,
-    "spread_price": 4e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPTRY": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 4339,
-    "spread_price": 0.04339,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GBPUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "GBPZAR": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1266,
-    "spread_price": 0.01266,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "GER40": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 320,
-    "spread_price": 3.2,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "GileadSciences": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 17,
-    "spread_price": 0.17,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "GoldmanSachs": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 23,
-    "spread_price": 0.23,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "HK50": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 420,
-    "spread_price": 4.2,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "HKDJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 1,
-    "spread_price": 0.001,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "HomeDepot": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 36,
-    "spread_price": 0.36,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Honeywell": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 25,
-    "spread_price": 0.25,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "IBM": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 22,
-    "spread_price": 0.22,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Intel": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 6,
-    "spread_price": 0.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "JPMorganChase": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 15,
-    "spread_price": 0.15,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "JPN225": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 600,
-    "spread_price": 6.0,
-    "contract_size": 10.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "Johnson&Johnson": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 21,
-    "spread_price": 0.21,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "LNKUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 38,
-    "spread_price": 0.038,
-    "contract_size": 10.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "LTCUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 35,
-    "spread_price": 0.35,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "MATICUSD": {
-    "point": 0.0001,
-    "digits": 4,
-    "tick_size": 0.0001,
-    "median_spread_pts": 32,
-    "spread_price": 0.0032,
-    "contract_size": 10000.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "MXNJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 26,
-    "spread_price": 0.026,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "McDonalds": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 14,
-    "spread_price": 0.14,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Merck": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 28,
-    "spread_price": 0.28,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Meta": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 133,
-    "spread_price": 1.33,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Microsoft": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 21,
-    "spread_price": 0.21,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "NAS100": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 80,
-    "spread_price": 0.8,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "NETH25": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 42,
-    "spread_price": 0.42,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "NOKJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 31,
-    "spread_price": 0.031,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "NOKSEK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 43,
-    "spread_price": 0.00043,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "NZDCAD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2,
-    "spread_price": 2e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "NZDCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3,
-    "spread_price": 3e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "NZDHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 34580,
-    "spread_price": 0.3458,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "NZDJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 3,
-    "spread_price": 0.003,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "NZDSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 3,
-    "spread_price": 3e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "NZDUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "Netflix": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 8,
-    "spread_price": 0.08,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Nike": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 6,
-    "spread_price": 0.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "PayPal": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 8,
-    "spread_price": 0.08,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Pepsi": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 13,
-    "spread_price": 0.13,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Procter&Gamble": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 25,
-    "spread_price": 0.25,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "SEKJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 31,
-    "spread_price": 0.031,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "SGDJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 2,
-    "spread_price": 0.002,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "SOLUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 180,
-    "spread_price": 0.18,
-    "contract_size": 1000.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "Salesforce": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 19,
-    "spread_price": 0.19,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Tesla": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 54,
-    "spread_price": 0.54,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Travelers": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 23,
-    "spread_price": 0.23,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "UK100": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 180,
-    "spread_price": 1.8,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "US30": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 280,
-    "spread_price": 2.8,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "US500": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 36,
-    "spread_price": 0.36,
-    "contract_size": 1.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "USDBRL": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 328,
-    "spread_price": 0.00328,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDCAD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "USDCHF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "USDCNH": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 48,
-    "spread_price": 0.00048,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDCZK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 2758,
-    "spread_price": 0.02758,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDDKK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 54,
-    "spread_price": 0.00054,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDHKD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 5,
-    "spread_price": 5e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "USDHUF": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 54680,
-    "spread_price": 0.5468,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDIDR": {
-    "point": 0.1,
-    "digits": 1,
-    "tick_size": 0.1,
-    "median_spread_pts": 165,
-    "spread_price": 16.5,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDILS": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 680,
-    "spread_price": 0.0068,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDINR": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 62,
-    "spread_price": 0.062,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 0,
-    "spread_price": 0.0,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex",
-    "bars": 0
-  },
-  "USDKRW": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 76,
-    "spread_price": 0.76,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDMXN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 374,
-    "spread_price": 0.00374,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDNOK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 464,
-    "spread_price": 0.00464,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDPLN": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 146,
-    "spread_price": 0.00146,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDRUB": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 146623,
-    "spread_price": 1.46623,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDSEK": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 433,
-    "spread_price": 0.00433,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDSGD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1,
-    "spread_price": 1e-05,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDTHB": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 430,
-    "spread_price": 0.0043,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDTRY": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 1166,
-    "spread_price": 0.01166,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "USDX": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 19,
-    "spread_price": 0.019,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Indices",
-    "bars": 0
-  },
-  "USDZAR": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 808,
-    "spread_price": 0.00808,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "UnitedHealth": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 46,
-    "spread_price": 0.46,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Verizon": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 6,
-    "spread_price": 0.06,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Visa": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 16,
-    "spread_price": 0.16,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Walgreens": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 5,
-    "spread_price": 0.05,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "Walmart": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 10,
-    "spread_price": 0.1,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "WaltDisney": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 9,
-    "spread_price": 0.09,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  },
-  "XAGEUR": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 50,
-    "spread_price": 0.05,
-    "contract_size": 5000.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XAGUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 33,
-    "spread_price": 0.033,
-    "contract_size": 5000.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XALUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 4200,
-    "spread_price": 4.2,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XAUAUD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 30,
-    "spread_price": 0.3,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XAUEUR": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 14,
-    "spread_price": 0.14,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XAUUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 10,
-    "spread_price": 0.1,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XBRUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 30,
-    "spread_price": 0.03,
-    "contract_size": 1000.0,
-    "volume_min": 0.01,
-    "category": "Energy",
-    "bars": 0
-  },
-  "XCUUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 6600,
-    "spread_price": 6.6,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XLMUSD": {
-    "point": 1e-05,
-    "digits": 5,
-    "tick_size": 1e-05,
-    "median_spread_pts": 52,
-    "spread_price": 0.00052,
-    "contract_size": 10000.0,
-    "volume_min": 0.01,
-    "category": "Crypto",
-    "bars": 0
-  },
-  "XNGUSD": {
-    "point": 0.0001,
-    "digits": 4,
-    "tick_size": 0.0001,
-    "median_spread_pts": 70,
-    "spread_price": 0.007,
-    "contract_size": 10000.0,
-    "volume_min": 0.01,
-    "category": "Energy",
-    "bars": 0
-  },
-  "XNIUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 20190,
-    "spread_price": 20.19,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XPBUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 4700,
-    "spread_price": 4.7,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XPDUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 813,
-    "spread_price": 8.13,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XPTUSD": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 951,
-    "spread_price": 9.51,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "XTIUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 30,
-    "spread_price": 0.03,
-    "contract_size": 1000.0,
-    "volume_min": 0.01,
-    "category": "Energy",
-    "bars": 0
-  },
-  "XZNUSD": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 2720,
-    "spread_price": 2.72,
-    "contract_size": 100.0,
-    "volume_min": 0.01,
-    "category": "Commodities",
-    "bars": 0
-  },
-  "ZARJPY": {
-    "point": 0.001,
-    "digits": 3,
-    "tick_size": 0.001,
-    "median_spread_pts": 8,
-    "spread_price": 0.008,
-    "contract_size": 100000.0,
-    "volume_min": 0.01,
-    "category": "Forex Exotics",
-    "bars": 0
-  },
-  "eBay": {
-    "point": 0.01,
-    "digits": 2,
-    "tick_size": 0.01,
-    "median_spread_pts": 16,
-    "spread_price": 0.16,
-    "contract_size": 1.0,
-    "volume_min": 0.1,
-    "category": "Equities",
-    "bars": 0
-  }
+ "3M": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9739,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 28,
+  "point": 0.01,
+  "spread_price": 0.28,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ADAUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47577,
+  "category": "Crypto",
+  "contract_size": 100.0,
+  "digits": 4,
+  "median_spread_pts": 31,
+  "point": 0.0001,
+  "spread_price": 0.0031,
+  "tick_size": 0.0001,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "ADP": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9629,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 34,
+  "point": 0.01,
+  "spread_price": 0.34,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AMD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9633,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 46,
+  "point": 0.01,
+  "spread_price": 0.46,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AT&T": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 17288,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AUDCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 48660,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1,
+  "point": 1e-05,
+  "spread_price": 1e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.618566904196358,
+  "volume_min": 0.01
+ },
+ "AUDCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 48547,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 1.0673155945481518,
+  "volume_min": 0.01
+ },
+ "AUDHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43341,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 39506,
+  "point": 1e-05,
+  "spread_price": 0.39506,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "AUDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48565,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 1,
+  "point": 0.001,
+  "spread_price": 0.001,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01
+ },
+ "AUDNZD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48614,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 5,
+  "point": 1e-05,
+  "spread_price": 5e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.5097723356748877,
+  "volume_min": 0.01
+ },
+ "AUDSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 46007,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1,
+  "point": 1e-05,
+  "spread_price": 1e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "AUDUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48668,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01
+ },
+ "AUS200": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 41039,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 100,
+  "point": 0.01,
+  "spread_price": 1.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "AVAXUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 38959,
+  "category": "Crypto",
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 35,
+  "point": 0.001,
+  "spread_price": 0.035,
+  "tick_size": 0.001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "Accenture": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 12995,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Adobe": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9574,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 34,
+  "point": 0.01,
+  "spread_price": 0.34,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Airbnb": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8117,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 19,
+  "point": 0.01,
+  "spread_price": 0.19,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AlibabaGroup": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9684,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Alphabet-A": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9342,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 27,
+  "point": 0.01,
+  "spread_price": 0.27,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Alphabet-C": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9525,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 43,
+  "point": 0.01,
+  "spread_price": 0.43,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Amazon": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8945,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 24,
+  "point": 0.01,
+  "spread_price": 0.24,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AmericanExpress": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9588,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 29,
+  "point": 0.01,
+  "spread_price": 0.29,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Amgen": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9616,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 45,
+  "point": 0.01,
+  "spread_price": 0.45,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Apple": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9634,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "AppliedMaterials": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9605,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 69,
+  "point": 0.01,
+  "spread_price": 0.69,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Atlassian": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9286,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 57,
+  "point": 0.01,
+  "spread_price": 0.57,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BCHUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 50000,
+  "category": "Crypto",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 146,
+  "point": 0.01,
+  "spread_price": 1.46,
+  "tick_size": 0.01,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "BNBUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47869,
+  "category": "Crypto",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 104,
+  "point": 0.01,
+  "spread_price": 1.04,
+  "tick_size": 0.01,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "BTCUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 50000,
+  "category": "Crypto",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 1804,
+  "point": 0.01,
+  "spread_price": 18.04,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_min": 0.01
+ },
+ "BankofAmericaCorp": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 16876,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Berkshire": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 14306,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 22,
+  "point": 0.01,
+  "spread_price": 0.22,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BeyondMeat": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 6542,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BlackRock": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 13480,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 297,
+  "point": 0.01,
+  "spread_price": 2.97,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "BlockInc": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 6637,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 500,
+  "point": 0.01,
+  "spread_price": 5.0,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Boeing": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9586,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Booking": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9282,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 11,
+  "point": 0.01,
+  "spread_price": 0.11,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Broadcom": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9570,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 39,
+  "point": 0.01,
+  "spread_price": 0.39,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CA60": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 22323,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 120,
+  "point": 0.01,
+  "spread_price": 1.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "CADCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 46121,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 1.0673155945481518,
+  "volume_min": 0.01
+ },
+ "CADJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "realized_fills"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 46668,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 2.0,
+  "point": 0.001,
+  "spread_price": 0.0,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01
+ },
+ "CHFDKK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 41595,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 81,
+  "point": 1e-05,
+  "spread_price": 0.00081,
+  "tick_size": 1e-05,
+  "tick_value": 0.13377479014079796,
+  "volume_min": 0.01
+ },
+ "CHFHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42213,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 65144,
+  "point": 1e-05,
+  "spread_price": 0.65144,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "CHFJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48282,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 3,
+  "point": 0.001,
+  "spread_price": 0.003,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01
+ },
+ "CHFNOK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43785,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 739,
+  "point": 1e-05,
+  "spread_price": 0.00739,
+  "tick_size": 1e-05,
+  "tick_value": 0.09190847019270448,
+  "volume_min": 0.01
+ },
+ "CHFPLN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42638,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 738,
+  "point": 1e-05,
+  "spread_price": 0.00738,
+  "tick_size": 1e-05,
+  "tick_value": 0.23251596222080648,
+  "volume_min": 0.01
+ },
+ "CHFSEK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 41585,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1298,
+  "point": 1e-05,
+  "spread_price": 0.01298,
+  "tick_size": 1e-05,
+  "tick_value": 0.09060515180893186,
+  "volume_min": 0.01
+ },
+ "CHFSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 44510,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 5,
+  "point": 1e-05,
+  "spread_price": 5e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "CHINAH": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 25182,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 180,
+  "point": 0.01,
+  "spread_price": 1.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "CVSHealth": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 17219,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 11,
+  "point": 0.01,
+  "spread_price": 0.11,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Caterpillar": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9610,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 106,
+  "point": 0.01,
+  "spread_price": 1.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CharlesSchwab": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 16075,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Charter": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9642,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 30,
+  "point": 0.01,
+  "spread_price": 0.3,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Chevron": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9749,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Cisco": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9819,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Citigroup": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 5000,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Coca-Cola": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9599,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Coinbase": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8068,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 66,
+  "point": 0.01,
+  "spread_price": 0.66,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Comcast": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9811,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "CostcoWholesale": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9706,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 76,
+  "point": 0.01,
+  "spread_price": 0.76,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "DOGEUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47044,
+  "category": "Crypto",
+  "contract_size": 1000.0,
+  "digits": 5,
+  "median_spread_pts": 42,
+  "point": 1e-05,
+  "spread_price": 0.00042,
+  "tick_size": 1e-05,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "DOTUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 45112,
+  "category": "Crypto",
+  "contract_size": 50.0,
+  "digits": 3,
+  "median_spread_pts": 31,
+  "point": 0.001,
+  "spread_price": 0.031,
+  "tick_size": 0.001,
+  "tick_value": 0.04286694101508917,
+  "volume_min": 0.01
+ },
+ "DocuSign": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8812,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 18,
+  "point": 0.01,
+  "spread_price": 0.18,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Doordash": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8138,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 28,
+  "point": 0.01,
+  "spread_price": 0.28,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Dow": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9644,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "E35": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 26459,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 1200,
+  "point": 0.01,
+  "spread_price": 12.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "EOSUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 41306,
+  "category": "Crypto",
+  "contract_size": 100.0,
+  "digits": 4,
+  "median_spread_pts": 103,
+  "point": 0.0001,
+  "spread_price": 0.0103,
+  "tick_size": 0.0001,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "ETHUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 50000,
+  "category": "Crypto",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 302,
+  "point": 0.01,
+  "spread_price": 3.02,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_min": 0.01
+ },
+ "EURAUD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48242,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 4,
+  "point": 1e-05,
+  "spread_price": 4e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_min": 0.01
+ },
+ "EURCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 46961,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.618566904196358,
+  "volume_min": 0.01
+ },
+ "EURCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 44659,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_min": 0.01
+ },
+ "EURCZK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42285,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3260,
+  "point": 1e-05,
+  "spread_price": 0.0326,
+  "tick_size": 1e-05,
+  "tick_value": 0.04157139887757223,
+  "volume_min": 0.01
+ },
+ "EURDKK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43043,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 52,
+  "point": 1e-05,
+  "spread_price": 0.00052,
+  "tick_size": 1e-05,
+  "tick_value": 0.13377479014079796,
+  "volume_min": 0.01
+ },
+ "EURGBP": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48669,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 1.1696316829830289,
+  "volume_min": 0.01
+ },
+ "EURHKD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 36678,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 69,
+  "point": 1e-05,
+  "spread_price": 0.00069,
+  "tick_size": 1e-05,
+  "tick_value": 0.10935152359477826,
+  "volume_min": 0.01
+ },
+ "EURHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42191,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 60504,
+  "point": 1e-05,
+  "spread_price": 0.60504,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "EURILS": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43653,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 887,
+  "point": 1e-05,
+  "spread_price": 0.00887,
+  "tick_size": 1e-05,
+  "tick_value": 0.288487058470557,
+  "volume_min": 0.01
+ },
+ "EURJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "median_spread_pts": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "realized_fills"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 46821,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 5.0,
+  "point": 0.001,
+  "spread_price": 0.0,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01
+ },
+ "EURMXN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42342,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 495,
+  "point": 1e-05,
+  "spread_price": 0.00495,
+  "tick_size": 1e-05,
+  "tick_value": 0.050600322222851914,
+  "volume_min": 0.01
+ },
+ "EURNOK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42967,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 632,
+  "point": 1e-05,
+  "spread_price": 0.00632,
+  "tick_size": 1e-05,
+  "tick_value": 0.09190847019270448,
+  "volume_min": 0.01
+ },
+ "EURNZD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47129,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 8,
+  "point": 1e-05,
+  "spread_price": 8e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.510680890831746,
+  "volume_min": 0.01
+ },
+ "EURPLN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43810,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 155,
+  "point": 1e-05,
+  "spread_price": 0.00155,
+  "tick_size": 1e-05,
+  "tick_value": 0.23251596222080648,
+  "volume_min": 0.01
+ },
+ "EURRUB": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 15199,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1397460,
+  "point": 1e-05,
+  "spread_price": 13.9746,
+  "tick_size": 1e-05,
+  "tick_value": 0.008188177418153026,
+  "volume_min": 0.01
+ },
+ "EURSEK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43514,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 456,
+  "point": 1e-05,
+  "spread_price": 0.00456,
+  "tick_size": 1e-05,
+  "tick_value": 0.09060515180893186,
+  "volume_min": 0.01
+ },
+ "EURSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42937,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3,
+  "point": 1e-05,
+  "spread_price": 3e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "EURTRY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43769,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3854,
+  "point": 1e-05,
+  "spread_price": 0.03854,
+  "tick_size": 1e-05,
+  "tick_value": 0.017812598637264955,
+  "volume_min": 0.01
+ },
+ "EURUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48654,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01
+ },
+ "EURZAR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42690,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 912,
+  "point": 1e-05,
+  "spread_price": 0.00912,
+  "tick_size": 1e-05,
+  "tick_value": 0.053854849332980764,
+  "volume_min": 0.01
+ },
+ "EUSTX50": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 38857,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 140,
+  "point": 0.01,
+  "spread_price": 1.4,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "ElectronicArts": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9663,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "ExxonMobil": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 21003,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 20,
+  "point": 0.01,
+  "spread_price": 0.2,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "FRA40": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 32565,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 120,
+  "point": 0.01,
+  "spread_price": 1.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "GBPAUD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48373,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3,
+  "point": 1e-05,
+  "spread_price": 3e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_min": 0.01
+ },
+ "GBPCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47309,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.618566904196358,
+  "volume_min": 0.01
+ },
+ "GBPCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 47488,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 1.0673155945481518,
+  "volume_min": 0.01
+ },
+ "GBPDKK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 44157,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 71,
+  "point": 1e-05,
+  "spread_price": 0.00071,
+  "tick_size": 1e-05,
+  "tick_value": 0.13377479014079796,
+  "volume_min": 0.01
+ },
+ "GBPHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42212,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 68452,
+  "point": 1e-05,
+  "spread_price": 0.68452,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "GBPJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48167,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 4,
+  "point": 0.001,
+  "spread_price": 0.004,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01
+ },
+ "GBPMXN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42037,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 886,
+  "point": 1e-05,
+  "spread_price": 0.00886,
+  "tick_size": 1e-05,
+  "tick_value": 0.050600322222851914,
+  "volume_min": 0.01
+ },
+ "GBPNOK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43361,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1087,
+  "point": 1e-05,
+  "spread_price": 0.01087,
+  "tick_size": 1e-05,
+  "tick_value": 0.09190847019270448,
+  "volume_min": 0.01
+ },
+ "GBPNZD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 46280,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 8,
+  "point": 1e-05,
+  "spread_price": 8e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.510680890831746,
+  "volume_min": 0.01
+ },
+ "GBPPLN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43795,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 780,
+  "point": 1e-05,
+  "spread_price": 0.0078,
+  "tick_size": 1e-05,
+  "tick_value": 0.23251596222080648,
+  "volume_min": 0.01
+ },
+ "GBPSEK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43370,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 566,
+  "point": 1e-05,
+  "spread_price": 0.00566,
+  "tick_size": 1e-05,
+  "tick_value": 0.09060515180893186,
+  "volume_min": 0.01
+ },
+ "GBPSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 44588,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 4,
+  "point": 1e-05,
+  "spread_price": 4e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "GBPTRY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 35749,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 4339,
+  "point": 1e-05,
+  "spread_price": 0.04339,
+  "tick_size": 1e-05,
+  "tick_value": 0.017812598637264955,
+  "volume_min": 0.01
+ },
+ "GBPUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 39409,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01
+ },
+ "GBPZAR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 32459,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1266,
+  "point": 1e-05,
+  "spread_price": 0.01266,
+  "tick_size": 1e-05,
+  "tick_value": 0.053854849332980764,
+  "volume_min": 0.01
+ },
+ "GER40": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 31809,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 320,
+  "point": 0.01,
+  "spread_price": 3.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "GileadSciences": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9805,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 17,
+  "point": 0.01,
+  "spread_price": 0.17,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "GoldmanSachs": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9680,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "HK50": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 25922,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 420,
+  "point": 0.01,
+  "spread_price": 4.2,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "HKDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 38113,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 1,
+  "point": 0.001,
+  "spread_price": 0.001,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "HomeDepot": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9705,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 36,
+  "point": 0.01,
+  "spread_price": 0.36,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Honeywell": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9631,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 25,
+  "point": 0.01,
+  "spread_price": 0.25,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "IBM": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9755,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 22,
+  "point": 0.01,
+  "spread_price": 0.22,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Intel": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9785,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "JPMorganChase": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9114,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 15,
+  "point": 0.01,
+  "spread_price": 0.15,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "JPN225": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 39979,
+  "category": "Indices",
+  "contract_size": 10.0,
+  "digits": 2,
+  "median_spread_pts": 600,
+  "point": 0.01,
+  "spread_price": 6.0,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "Johnson&Johnson": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9126,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 21,
+  "point": 0.01,
+  "spread_price": 0.21,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "LNKUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42542,
+  "category": "Crypto",
+  "contract_size": 10.0,
+  "digits": 3,
+  "median_spread_pts": 38,
+  "point": 0.001,
+  "spread_price": 0.038,
+  "tick_size": 0.001,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "LTCUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 50000,
+  "category": "Crypto",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 35,
+  "point": 0.01,
+  "spread_price": 0.35,
+  "tick_size": 0.01,
+  "tick_value": 0.008573388203017833,
+  "volume_min": 0.01
+ },
+ "MATICUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 39041,
+  "category": "Crypto",
+  "contract_size": 10000.0,
+  "digits": 4,
+  "median_spread_pts": 32,
+  "point": 0.0001,
+  "spread_price": 0.0032,
+  "tick_size": 0.0001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "MXNJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 36277,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 26,
+  "point": 0.001,
+  "spread_price": 0.026,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "McDonalds": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9741,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Merck": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9593,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 28,
+  "point": 0.01,
+  "spread_price": 0.28,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Meta": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9654,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 133,
+  "point": 0.01,
+  "spread_price": 1.33,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Microsoft": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9075,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 21,
+  "point": 0.01,
+  "spread_price": 0.21,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "NAS100": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 41966,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 80,
+  "point": 0.01,
+  "spread_price": 0.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "NETH25": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 22949,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 42,
+  "point": 0.01,
+  "spread_price": 0.42,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "NOKJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42470,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 31,
+  "point": 0.001,
+  "spread_price": 0.031,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "NOKSEK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42574,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 43,
+  "point": 1e-05,
+  "spread_price": 0.00043,
+  "tick_size": 1e-05,
+  "tick_value": 0.09060515180893186,
+  "volume_min": 0.01
+ },
+ "NZDCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 44853,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2,
+  "point": 1e-05,
+  "spread_price": 2e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_min": 0.01
+ },
+ "NZDCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43742,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3,
+  "point": 1e-05,
+  "spread_price": 3e-05,
+  "tick_size": 1e-05,
+  "tick_value": 1.0673155945481518,
+  "volume_min": 0.01
+ },
+ "NZDHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43130,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 34580,
+  "point": 1e-05,
+  "spread_price": 0.3458,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "NZDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 48656,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 3,
+  "point": 0.001,
+  "spread_price": 0.003,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_min": 0.01
+ },
+ "NZDSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 45997,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 3,
+  "point": 1e-05,
+  "spread_price": 3e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "NZDUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 45094,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01
+ },
+ "Netflix": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 5000,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Nike": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9736,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "PayPal": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9673,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 8,
+  "point": 0.01,
+  "spread_price": 0.08,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Pepsi": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9462,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 13,
+  "point": 0.01,
+  "spread_price": 0.13,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Procter&Gamble": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9760,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 25,
+  "point": 0.01,
+  "spread_price": 0.25,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "SEKJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 44600,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 31,
+  "point": 0.001,
+  "spread_price": 0.031,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "SGDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 44069,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 2,
+  "point": 0.001,
+  "spread_price": 0.002,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "SOLUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 37118,
+  "category": "Crypto",
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 180,
+  "point": 0.001,
+  "spread_price": 0.18,
+  "tick_size": 0.001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "Salesforce": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8030,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 19,
+  "point": 0.01,
+  "spread_price": 0.19,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Tesla": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9591,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 54,
+  "point": 0.01,
+  "spread_price": 0.54,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Travelers": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9545,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 23,
+  "point": 0.01,
+  "spread_price": 0.23,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "UK100": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 38628,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 180,
+  "point": 0.01,
+  "spread_price": 1.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "US30": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 41963,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 280,
+  "point": 0.01,
+  "spread_price": 2.8,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "US500": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 43262,
+  "category": "Indices",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 36,
+  "point": 0.01,
+  "spread_price": 0.36,
+  "tick_size": 0.01,
+  "volume_min": 0.01
+ },
+ "USDBRL": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 9676,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 328,
+  "point": 1e-05,
+  "spread_price": 0.00328,
+  "tick_size": 1e-05,
+  "tick_value": 0.16575197302264383,
+  "volume_min": 0.01
+ },
+ "USDCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 45071,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_min": 0.01
+ },
+ "USDCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 45067,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 0,
+  "point": 1e-05,
+  "spread_price": 0.0,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_min": 0.01
+ },
+ "USDCNH": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43309,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 48,
+  "point": 1e-05,
+  "spread_price": 0.00048,
+  "tick_size": 1e-05,
+  "tick_value": 0.12756670356283537,
+  "volume_min": 0.01
+ },
+ "USDCZK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42077,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 2758,
+  "point": 1e-05,
+  "spread_price": 0.02758,
+  "tick_size": 1e-05,
+  "tick_value": 0.04157139887757223,
+  "volume_min": 0.01
+ },
+ "USDDKK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42003,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 54,
+  "point": 1e-05,
+  "spread_price": 0.00054,
+  "tick_size": 1e-05,
+  "tick_value": 0.13377479014079796,
+  "volume_min": 0.01
+ },
+ "USDHKD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43468,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 5,
+  "point": 1e-05,
+  "spread_price": 5e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.10935152359477826,
+  "volume_min": 0.01
+ },
+ "USDHUF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 41976,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 54680,
+  "point": 1e-05,
+  "spread_price": 0.5468,
+  "tick_size": 1e-05,
+  "tick_value": 0.002776266409192018,
+  "volume_min": 0.01
+ },
+ "USDIDR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 22175,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 1,
+  "median_spread_pts": 165,
+  "point": 0.1,
+  "spread_price": 16.5,
+  "tick_size": 0.1,
+  "tick_value": 0.4828391324167239,
+  "volume_min": 0.01
+ },
+ "USDILS": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43299,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 680,
+  "point": 1e-05,
+  "spread_price": 0.0068,
+  "tick_size": 1e-05,
+  "tick_value": 0.288487058470557,
+  "volume_min": 0.01
+ },
+ "USDINR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 21887,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 62,
+  "point": 0.001,
+  "spread_price": 0.062,
+  "tick_size": 0.001,
+  "tick_value": 0.8986874289057362,
+  "volume_min": 0.01
+ },
+ "USDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 45096,
+  "category": "Forex",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 0,
+  "point": 0.001,
+  "spread_price": 0.0,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_min": 0.01
+ },
+ "USDKRW": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 23008,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 2,
+  "median_spread_pts": 76,
+  "point": 0.01,
+  "spread_price": 0.76,
+  "tick_size": 0.01,
+  "tick_value": 0.6188161393783849,
+  "volume_min": 0.01
+ },
+ "USDMXN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42785,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 374,
+  "point": 1e-05,
+  "spread_price": 0.00374,
+  "tick_size": 1e-05,
+  "tick_value": 0.050600322222851914,
+  "volume_min": 0.01
+ },
+ "USDNOK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43054,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 464,
+  "point": 1e-05,
+  "spread_price": 0.00464,
+  "tick_size": 1e-05,
+  "tick_value": 0.09190847019270448,
+  "volume_min": 0.01
+ },
+ "USDPLN": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43576,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 146,
+  "point": 1e-05,
+  "spread_price": 0.00146,
+  "tick_size": 1e-05,
+  "tick_value": 0.23251596222080648,
+  "volume_min": 0.01
+ },
+ "USDRUB": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:50:16+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 24941,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 146623,
+  "point": 1e-05,
+  "spread_price": 1.46623,
+  "tick_size": 1e-05,
+  "tick_value": 0.008188177418153026,
+  "volume_min": 0.01
+ },
+ "USDSEK": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42880,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 433,
+  "point": 1e-05,
+  "spread_price": 0.00433,
+  "tick_size": 1e-05,
+  "tick_value": 0.09060515180893186,
+  "volume_min": 0.01
+ },
+ "USDSGD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43700,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1,
+  "point": 1e-05,
+  "spread_price": 1e-05,
+  "tick_size": 1e-05,
+  "tick_value": 0.6751100429369987,
+  "volume_min": 0.01
+ },
+ "USDTHB": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43731,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 430,
+  "point": 1e-05,
+  "spread_price": 0.0043,
+  "tick_size": 1e-05,
+  "tick_value": 0.026183201434827708,
+  "volume_min": 0.01
+ },
+ "USDTRY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42762,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 1166,
+  "point": 1e-05,
+  "spread_price": 0.01166,
+  "tick_size": 1e-05,
+  "tick_value": 0.017812598637264955,
+  "volume_min": 0.01
+ },
+ "USDX": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 30627,
+  "category": "Indices",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 19,
+  "point": 0.001,
+  "spread_price": 0.019,
+  "tick_size": 0.001,
+  "volume_min": 0.01
+ },
+ "USDZAR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43739,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 5,
+  "median_spread_pts": 808,
+  "point": 1e-05,
+  "spread_price": 0.00808,
+  "tick_size": 1e-05,
+  "tick_value": 0.053854849332980764,
+  "volume_min": 0.01
+ },
+ "UnitedHealth": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9688,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 46,
+  "point": 0.01,
+  "spread_price": 0.46,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Verizon": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9835,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 6,
+  "point": 0.01,
+  "spread_price": 0.06,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Visa": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9723,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 16,
+  "point": 0.01,
+  "spread_price": 0.16,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Walgreens": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 8079,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 5,
+  "point": 0.01,
+  "spread_price": 0.05,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "Walmart": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9765,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "WaltDisney": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9718,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 9,
+  "point": 0.01,
+  "spread_price": 0.09,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ },
+ "XAGEUR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43649,
+  "category": "Commodities",
+  "contract_size": 5000.0,
+  "digits": 3,
+  "median_spread_pts": 50,
+  "point": 0.001,
+  "spread_price": 0.05,
+  "tick_size": 0.001,
+  "tick_value": 5.0,
+  "volume_min": 0.01
+ },
+ "XAGUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 43336,
+  "category": "Commodities",
+  "contract_size": 5000.0,
+  "digits": 3,
+  "median_spread_pts": 33,
+  "point": 0.001,
+  "spread_price": 0.033,
+  "tick_size": 0.001,
+  "tick_value": 4.316149304236733,
+  "volume_min": 0.01
+ },
+ "XALUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 31398,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 4200,
+  "point": 0.001,
+  "spread_price": 4.2,
+  "tick_size": 0.001,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "XAUAUD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42960,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 30,
+  "point": 0.01,
+  "spread_price": 0.3,
+  "tick_size": 0.01,
+  "tick_value": 0.615547498722739,
+  "volume_min": 0.01
+ },
+ "XAUEUR": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42566,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 14,
+  "point": 0.01,
+  "spread_price": 0.14,
+  "tick_size": 0.01,
+  "tick_value": 1.0,
+  "volume_min": 0.01
+ },
+ "XAUUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 43288,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 10,
+  "point": 0.01,
+  "spread_price": 0.1,
+  "tick_size": 0.01,
+  "tick_value": 0.8632298608473467,
+  "volume_min": 0.01
+ },
+ "XBRUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 29699,
+  "category": "Energy",
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 30,
+  "point": 0.001,
+  "spread_price": 0.03,
+  "tick_size": 0.001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "XCUUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 31410,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 6600,
+  "point": 0.001,
+  "spread_price": 6.6,
+  "tick_size": 0.001,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "XLMUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 42495,
+  "category": "Crypto",
+  "contract_size": 10000.0,
+  "digits": 5,
+  "median_spread_pts": 52,
+  "point": 1e-05,
+  "spread_price": 0.00052,
+  "tick_size": 1e-05,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "XNGUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 33277,
+  "category": "Energy",
+  "contract_size": 10000.0,
+  "digits": 4,
+  "median_spread_pts": 70,
+  "point": 0.0001,
+  "spread_price": 0.007,
+  "tick_size": 0.0001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "XNIUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 27092,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 20190,
+  "point": 0.001,
+  "spread_price": 20.19,
+  "tick_size": 0.001,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "XPBUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 31398,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 4700,
+  "point": 0.001,
+  "spread_price": 4.7,
+  "tick_size": 0.001,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "XPDUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 40489,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 813,
+  "point": 0.01,
+  "spread_price": 8.13,
+  "tick_size": 0.01,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "XPTUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 40609,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 2,
+  "median_spread_pts": 951,
+  "point": 0.01,
+  "spread_price": 9.51,
+  "tick_size": 0.01,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "XTIUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 33274,
+  "category": "Energy",
+  "contract_size": 1000.0,
+  "digits": 3,
+  "median_spread_pts": 30,
+  "point": 0.001,
+  "spread_price": 0.03,
+  "tick_size": 0.001,
+  "tick_value": 0.8573388203017833,
+  "volume_min": 0.01
+ },
+ "XZNUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 31378,
+  "category": "Commodities",
+  "contract_size": 100.0,
+  "digits": 3,
+  "median_spread_pts": 2720,
+  "point": 0.001,
+  "spread_price": 2.72,
+  "tick_size": 0.001,
+  "tick_value": 0.08573388203017834,
+  "volume_min": 0.01
+ },
+ "ZARJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "account_ccy": "EUR",
+    "at": "2026-08-26T19:49:05+00:00",
+    "source": "derived"
+   }
+  },
+  "bars": 43430,
+  "category": "Forex Exotics",
+  "contract_size": 100000.0,
+  "digits": 3,
+  "median_spread_pts": 8,
+  "point": 0.001,
+  "spread_price": 0.008,
+  "tick_size": 0.001,
+  "tick_value": 0.5391998274560552,
+  "volume_min": 0.01
+ },
+ "eBay": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-26T19:51:08+00:00",
+    "source": "parquet_on_disk"
+   }
+  },
+  "bars": 9768,
+  "category": "Equities",
+  "contract_size": 1.0,
+  "digits": 2,
+  "median_spread_pts": 16,
+  "point": 0.01,
+  "spread_price": 0.16,
+  "tick_size": 0.01,
+  "volume_min": 0.1
+ }
 }

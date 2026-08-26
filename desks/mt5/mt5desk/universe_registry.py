@@ -79,19 +79,36 @@ ZERO_IS_A_STUB = ("tick_size", "contract_size", "tick_value", "bars")
 QUOTE_CCY_SEED = frozenset({
     "USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD", "SEK", "NOK", "DKK",
     "PLN", "CZK", "HUF", "TRY", "ZAR", "MXN", "SGD", "HKD", "CNH", "THB", "ILS",
+    # Added 2026-08-26 because the fence named the six exotics it could not cost. That is the
+    # seed working as designed: the gap announced itself instead of being priced by assumption.
+    "RUB", "BRL", "IDR", "INR", "KRW",
 })
+
+#: The field MetaTrader5 itself uses for the currency a symbol's profit is denominated in. When a
+#: producer captures it, NOTHING has to be inferred from the symbol name -- which is the only way
+#: to cost a share or index CFD, whose name carries no denomination at all. None of the three
+#: producers records it today; `check_universe_registry` reports every symbol that needs it.
+VENUE_CCY_FIELD = "currency_profit"
 
 _ALNUM = re.compile(r"[^A-Z0-9]")
 
 
-def quote_currency(symbol: str) -> str | None:
-    """The currency a symbol's PRICE is expressed in, or None when it cannot be read off the name.
+def quote_currency(symbol: str, row: dict[str, Any] | None = None) -> str | None:
+    """The currency a symbol's PRICE is expressed in, or None when it cannot be established.
 
-    Returns None rather than guessing USD. A three-letter SHAPE is not a currency -- `AAPL` ends
-    in "APL" and a shape test reads it as one, then prices a share CFD off a currency that does
-    not exist. An assumed denomination is exactly the error this module exists to stop, and a
-    caller that gets None records UNMEASURED instead of charging a made-up cost.
+    THE VENUE'S OWN ANSWER WINS. If `row` carries `currency_profit`, that is MetaTrader5's own
+    field and no inference happens -- which is the only correct route for a share or index CFD,
+    whose name ("3M", "AUS200") carries no denomination to read.
+
+    Otherwise the name is parsed against a seed of known codes, and an unknown one returns None
+    rather than guessing USD. A three-letter SHAPE is not a currency: `AAPL` ends in "APL" and a
+    shape test reads it as one, then prices a share CFD off a currency that does not exist. An
+    assumed denomination is exactly the error this module exists to stop, and a caller that gets
+    None records UNMEASURED instead of charging a made-up cost.
     """
+    venue = (row or {}).get(VENUE_CCY_FIELD)
+    if isinstance(venue, str) and len(venue.strip()) == 3:
+        return venue.strip().upper()
     s = _ALNUM.sub("", str(symbol).upper())
     if len(s) == 6 and s[:3] in QUOTE_CCY_SEED and s[3:] in QUOTE_CCY_SEED:
         return s[3:]
@@ -138,7 +155,8 @@ def _rate_to_account(quote: str, closes: dict[str, float]) -> float | None:
 
 
 def derive_tick_value(symbol: str, tick_size: Any, contract_size: Any,
-                      closes: dict[str, float]) -> float | None:
+                      closes: dict[str, float], row: dict[str, Any] | None = None
+                      ) -> float | None:
     """Value of one tick of `symbol` for 1.0 lot, IN ACCOUNT CURRENCY. None when underivable.
 
     This is the field three producers dropped. It is not a convenience: it is the only basis on
@@ -151,7 +169,7 @@ def derive_tick_value(symbol: str, tick_size: Any, contract_size: Any,
         return None
     if ts <= 0 or cs <= 0:
         return None
-    quote = quote_currency(symbol)
+    quote = quote_currency(symbol, row)
     if quote is None:
         return None
     rate = _rate_to_account(quote, closes)
@@ -232,7 +250,7 @@ def backfill_tick_values(registry: dict[str, Any], closes: dict[str, float], *,
             continue
         if not _degenerate("tick_value", row.get("tick_value")):
             continue
-        tv = derive_tick_value(sym, row.get("tick_size"), row.get("contract_size"), closes)
+        tv = derive_tick_value(sym, row.get("tick_size"), row.get("contract_size"), closes, row)
         if tv is None:
             missing.append(sym)
             continue
