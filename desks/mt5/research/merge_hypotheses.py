@@ -11,11 +11,10 @@ the gate had no input, here the producers had no consumer. A pipeline stage whos
 consumes is not a stage, it is a log line -- and it would have kept the book at 95% one family
 indefinitely while every dashboard showed the searcher running nightly.
 
-WHAT THIS DOES, and what it deliberately does not. It merges the sources, deduplicates by
-executable identity, and carries `search_trials` through so the canonical `deflated_sharpe`
-deflates against the true multiplicity. It applies NO threshold of its own -- L1.60: discovery →
-backtest → the ten gates → certificate → forward → live, and no screen may insert a gate in
-either direction. Everything discovered reaches the gauntlet; the gauntlet decides.
+WHAT THIS DOES, and what it deliberately does not. It merges the sources and deduplicates by
+executable identity. It applies NO threshold of its own AND attaches no deflation input -- L1.60:
+discovery → backtest → the ten gates AS DEFINED → certificate → forward → live. Everything
+discovered reaches the gauntlet; the gauntlet decides, using its own sealed constants.
 """
 from __future__ import annotations
 
@@ -63,7 +62,6 @@ def main() -> int:
     now = datetime.now(tz=UTC)
     merged: dict[str, dict] = {}
     per_source: dict[str, int] = {}
-    max_trials = 0
 
     for name, key in SOURCES:
         doc = _read(HYP / name)
@@ -74,11 +72,6 @@ def main() -> int:
         if not isinstance(rows, list):
             per_source[name] = 0
             continue
-        try:
-            max_trials = max(max_trials, int(doc.get("total_trials") or 0)
-                             if isinstance(doc, dict) else 0)
-        except (TypeError, ValueError):
-            pass
         kept = 0
         for row in rows:
             if not isinstance(row, dict):
@@ -95,13 +88,11 @@ def main() -> int:
             kept += 1
         per_source[name] = kept
 
-    # THE SEARCH'S OWN WIDTH TRAVELS WITH EVERY ROW. A candidate selected as best-of-N has already
-    # survived a selection the gauntlet cannot see; if that N does not reach `deflated_sharpe`,
-    # the gate credits it with significance the search already spent.
-    for row in merged.values():
-        declared = int(row.get("search_trials") or 0)
-        if max_trials and declared < max_trials and row.get("producer") != SOURCES[0][0]:
-            row["search_trials"] = max_trials
+    # NOTHING ABOUT SEARCH WIDTH TRAVELS WITH A ROW. An earlier revision copied the search's
+    # trial count onto every hypothesis so `deflated_sharpe` would deflate against it -- making
+    # the ten gates harsher than their sealed definition. That is an unsanctioned bar, merely
+    # hidden inside the gate instead of sitting in front of it. Trial counts stay in the search's
+    # own report, for audit, and reach no gate.
 
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)
@@ -109,7 +100,6 @@ def main() -> int:
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),
         "per_source": per_source, "total": len(rows_out),
-        "declared_search_trials": max_trials,
         "families": {f: sum(1 for r in rows_out if r.get("family") == f)
                      for f in sorted({str(r.get("family")) for r in rows_out})},
         "note": ("no threshold applied here (L1.60) -- every discovered candidate reaches the "

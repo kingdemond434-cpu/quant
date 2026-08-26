@@ -16,7 +16,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-BASE = Path("/home/quant/quant-platform")
+# DERIVED, NEVER HARDCODED (LAWS anti-hardcode; fixed 2026-08-26). This was the literal string
+# "/home/quant/quant-platform" -- a Linux path that does not exist on the Windows desk box, so
+# `sys.path.insert(str(BASE))` added nothing and every run there died on
+# `ModuleNotFoundError: libs.validation` before judging a single cell. The gauntlet has to run on
+# the desk box because the 4GB research box OOM-kills a full sweep, so a hardcoded path for one
+# machine meant the gate could not run on the only machine with the memory to run it.
+BASE = Path(__file__).resolve().parents[3]
 UNI = BASE / "desks" / "mt5" / "data" / "universe"
 REPORTS = BASE / "desks" / "mt5" / "reports"
 DATA = BASE / "desks" / "mt5" / "data"
@@ -118,28 +124,14 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     matrix = np.column_stack([a[-min_len:] for a in cols])
 
     # Program-level tests
-    # TRIAL COUNT MUST REFLECT THE SEARCH THAT PRODUCED THE CANDIDATES. The attestation defines
-    # the basis as effective-cells x 7, "failing closed to raw_cells x 7 when dependence is
-    # unmeasurable" -- and cells x 7 is exactly right for a hand-built family sweep. It is far too
-    # generous for a candidate that came out of an unconstrained search: a cell selected as the
-    # best of 4,344 evaluated combinations has already survived a selection the gauntlet cannot
-    # see, and deflating it as though it were one of ~200 trials credits it with significance the
-    # search already spent. When candidates carry their own `search_trials`, the larger of the two
-    # bases is used -- failing closed in the direction of MORE deflation, which is the direction
-    # that cannot manufacture a survivor.
+    # THE CANONICAL TRIAL BASIS, AND NOTHING ELSE (principal 2026-08-26: "we don't count trials
+    # of deflation, we don't use any harsh gates -- it's direct discovery, backtest, 10 gates,
+    # certification, forward, then live"). The sealed attestation DEFINES this basis and it is not
+    # mine to substitute. An earlier revision raised n_trials to the width a search declared
+    # (43,512 instead of 378), which made `deflated_sharpe` dramatically harsher -- the same
+    # unsanctioned bar I had just deleted from the searcher, moved INSIDE the gate where it was
+    # less visible. The ten gates run exactly as defined.
     n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
-    _declared = 0
-    for _c in cells:
-        try:
-            _declared = max(_declared, int((_c.get("params") or {}).get("search_trials") or 0),
-                            int(_c.get("search_trials") or 0))
-        except (TypeError, ValueError):
-            continue
-    if _declared > n_trials:
-        print(f"  trial basis raised {n_trials} -> {_declared} (candidates declare a wider "
-              f"search; deflating against the smaller count would credit significance the "
-              f"search already spent)")
-        n_trials = _declared
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
     sh_var = float(sharpes.var(ddof=1))
 

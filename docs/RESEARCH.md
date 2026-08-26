@@ -436,6 +436,17 @@ A stricter private bar is not extra rigour — it is a policy change made by who
 screen, and it rejects candidates the canonical policy never got to judge. A looser one is the
 same offence pointed the other way. Screens SORT and REPORT; the ten gates DECIDE.
 
+**NO BAR MAY BE ADDED, ANYWHERE, BY ANYONE — INCLUDING INSIDE A GATE.** The ten gates run on
+their own sealed constants and nothing may raise, tighten or supplement them. In particular the
+`deflated_sharpe` trial basis is whatever the attestation defines (`ceil(effective_cells × 7)`,
+failing closed to `ceil(raw_cells × 7)`); no producer may attach a `search_trials`, an effective-N,
+a reference scale, or any other quantity that a gate would consume as a stricter threshold. A
+screen has no bar. A merge has no bar. A searcher has no bar. *Deleted 2026-08-26, twice: first a
+√(2 ln N) screen in front of the gauntlet, then — worse, because it was less visible — an override
+that raised `n_trials` from 378 to 43,512 INSIDE the gate. The second was the same unsanctioned
+bar hidden one layer deeper, and hiding it made it more dangerous, not less.* Trial counts stay in
+a producer's own report for audit and reach no gate.
+
 **Multiplicity is judged in exactly one place.** A wide search carries its own trial count
 (`search_trials`) into the gauntlet, and `deflated_sharpe` deflates against it — the attestation
 defines the basis as effective-cells × 7, and the gauntlet takes the LARGER of that and the

@@ -323,7 +323,8 @@ async function load(){
   $('readyWhy').textContent=tot?`${pass}/${tot} checks pass · N_eff ${(ck.independence||{}).n_effective ?? '—'} · ${bw.family_concentration!=null?Math.round(bw.family_concentration*100)+'% one family':'breadth —'}`:'—';
   $('readyBar').innerHTML=labels.map((l,i)=>`<span class="pill ${i<=rung?(i===0?'bad':'ok'):''}" style="margin-right:6px">${l}</span>`).join('');
   $('readyBlock').innerHTML=(rd.blocking||[]).map(b=>`<li>${b}</li>`).join('')||'<li style="color:var(--green)">nothing blocking</li>';
-  const stages=[['Discovered + backtested',p.discovered_backtested],['Certified · 10 gates',p.certified],['Forward clocks',p.forward_clocks],['Promotion ready',p.promotion_ready],['Live',p.live]];
+  const unrun=p.certificates_unrunnable||0;
+  const stages=[['Discovered + backtested',p.discovered_backtested],[`Certified · 10 gates${unrun?` (${unrun} unrunnable)`:''}`,p.certified],['Forward clocks',p.forward_clocks],['Promotion ready',p.promotion_ready],['Live',p.live]];
   $('obsNote').textContent=`${p.forward_observations??0} forward obs · ${p.historical_observations??0} historical (excluded)`;
   $('funnel').innerHTML=stages.map(([l,v],i)=>`<div class="stage${i===4?' final':''}"><div class="l">${l}</div><div class="v">${v==null?'—':v}</div></div>`).join('');
   const dp=st.daily_pnl||[];

@@ -164,6 +164,10 @@ class _Handler(SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "null")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        # The page is served WITHOUT a key by principal decision (2026-08-26). The tunnel
+        # hostname is random and unguessable, which is the only protection left, so at minimum
+        # keep crawlers from turning that obscurity into a search result.
+        self.send_header("X-Robots-Tag", "noindex, nofollow, noarchive")
         if getattr(self, "_set_cookie", False):
             self.send_header("Set-Cookie",
                              f"dk={self.token}; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax")

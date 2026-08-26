@@ -207,8 +207,10 @@ certificate → 14-day forward → live, in that order, for everything. No scree
 may apply a threshold of its own in EITHER direction: a stricter private bar rejects what the
 policy never judged, a looser one waves through what it would have caught, and both are policy
 changes made outside the policy. Screens sort and report; the ten gates decide. Multiplicity is
-judged once, inside `deflated_sharpe`, against the trial count the search declares. Full text:
-RESEARCH §6d.
+judged once, inside `deflated_sharpe`, on the SEALED constants of the policy itself — never on a
+quantity a producer supplies. No screen, merge or searcher may attach a `search_trials`,
+reference scale or effective-N that a gate would consume as a stricter threshold: a bar hidden
+inside a gate is the same breach as one in front of it, and harder to see. Full text: RESEARCH §6d.
 
 **Named absorbed laws (in force):** NO-CEILING ("we are at max" requires evidence);
 FREE-FRONTIER (a free alternative exists and has not been found yet; never English-only);

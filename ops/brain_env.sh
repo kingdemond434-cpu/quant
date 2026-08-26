@@ -153,7 +153,7 @@ brain_auth_check() {
     # model (opus-5, then opus-4-8 -- both on the Max subscription seat) and only then try the
     # metered API key. Tonight every organ died out-of-credits because no model fallback existed.
     local out m
-    for m in ${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}; do
+    for m in ${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}; do
         export ANTHROPIC_MODEL="$m"
         out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
@@ -222,7 +222,7 @@ anthropic_api_key at data/secrets/; organs are down until the subscription reset
 if [ -f /home/quant/quant-platform/ops/model_chain.env ]; then
     . /home/quant/quant-platform/ops/model_chain.env
 fi
-export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
+export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-opus-5}"  # primary = OPUS 5 (principal 2026-08-26: Fable removed -- it draws a METERED pool the fleet exhausted; opus sits on the subscription seat). Was: FABLE 5 (principal 2026-07-30); _BRAIN_MODEL_CHAIN below walks to opus-5 on exhaustion and PAGES when it does. Fable draws a pool that CAN exhaust; opus-5/opus-4-8 sit on the Max subscription seat and carry the rest of the week.
 # MODEL ROUTING POLICY (principal 2026-07-30, supersedes the 2026-07-24 ordering):
 # "every claude cycle, mining, audit, everything uses FABLE 5 MAXIMUM always initially until the
 # full week's sessions of it end, then only OPUS 5 after that in the week."
@@ -240,7 +240,7 @@ export ANTHROPIC_MODEL="${ANTHROPIC_MODEL:-claude-fable-5}"  # primary = FABLE 5
 # it explains the failure this chain now absorbs.
 # NOTE the frontier miners already ran fable-first via their own export; this makes the global
 # default agree with them instead of contradicting them (the miners were right).
-export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-fable-5 claude-opus-5 claude-opus-4-8}"
+export _BRAIN_MODEL_CHAIN="${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}"
 
 # LAW GATE AT ORGAN SPAWN (L1.37, principal order 2026-07-31 "enforced 24/7 with every
 # interaction"). Every organ sources this file, so this is the one place that runs before ALL of

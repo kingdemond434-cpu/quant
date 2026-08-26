@@ -220,7 +220,20 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     live_rows = {k: v for k, v in (live_rows or {}).items() if isinstance(v, dict)}
     forward_obs = sum(r["n"] for r in forward)
     hist_obs = sum(r.get("n_historical", 0) for r in forward)
+    # WHY CERTIFIED != CLOCKS. A certificate with no `params` cannot be executed -- there is no
+    # parameterisation to run -- so it never becomes a clock. Six of the desk's certificates are
+    # in that state (the five original external.* rows plus AUDNZD, which runs in the qquant lane
+    # under its own spec). Showing only the two totals makes that look like sleeves are going
+    # missing; naming the gap turns a mystery into a work item.
+    certs = (_read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}).get("survivors") or {}
+    unrunnable = [k for k, v in certs.items()
+                  if not ((v.get("shadow_spec") or {}).get("params"))]
     return {
+        "certificates_unrunnable": len(unrunnable),
+        "unrunnable_reason": ("no `params` in shadow_spec -- nothing to execute. Re-certify "
+                              "through the current gauntlet, which records the parameterisation "
+                              "it tested."),
+        "unrunnable_examples": sorted(unrunnable)[:6],
         "forward_observations": forward_obs,
         "historical_observations": hist_obs,
         "discovered_backtested": hyp,

@@ -450,24 +450,20 @@ def main(symbols: list[str] | None = None) -> int:
                 "n": row["n_oos"], "t_stat": row["t_stat"],
                 "exp_r": row["sharpe_like"],
                 "source": f"edge_search:{row['feature']}",
-                # The two fields that keep this honest downstream.
-                "search_trials": None,          # filled below with the DESK-WIDE total
+                # Trial count lives in the REPORT for audit, never on a hypothesis: anything
+                # attached to a row travels into the gates and becomes a bar.
                 "mechanism_status": "STATISTICAL_ONLY",
                 "mechanism_note": ("discovered by unconstrained search; NO economic mechanism is "
                                    "claimed. economic_prior must be satisfied by a named cause "
                                    "before this can certify -- a statistical edge with no story "
                                    "is a coincidence until someone shows otherwise."),
             })
-    # NO BAR IS COMPUTED HERE, NOT EVEN FOR DISPLAY (principal 2026-08-26: "never use or consider
+    # NO BAR IS COMPUTED HERE, AND NO DEFLATION INPUT LEAVES HERE (principal 2026-08-26: "never use or consider
     # the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused
     # as a filter, a threshold sitting next to the results is one a reader -- or a later edit --
     # will start treating as a verdict, and it competes with the only pipeline this desk has:
     # discovery -> backtest -> ten gates -> certificate -> forward -> live. The trial count is
     # carried to the gauntlet, where deflation is the canonical policy's job and nobody else's.
-    for h in hypotheses:
-        h["search_trials"] = total_trials
-        # search_trials is the ONLY multiplicity artefact this file emits; the gauntlet's
-        # deflated_sharpe is what judges against it.
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
@@ -491,8 +487,9 @@ def main(symbols: list[str] | None = None) -> int:
     }, indent=1, default=str), "utf-8")
     print(f"edge search: {len(symbols)} symbol(s), {total_trials:,} trials evaluated, "
           f"{len(hypotheses)} DIVERSE hypotheses emitted")
-    print(f"  all {len(hypotheses)} go to the ten-gate gauntlet carrying "
-          f"search_trials={total_trials:,}; deflation is the gauntlet's job, not this file's")
+    print(f"  all {len(hypotheses)} go to the ten gates AS DEFINED -- no bar set here, no "
+          f"deflation input attached")
+    print(f"  ({total_trials:,} trials recorded in the report for audit only)")
     for h in hypotheses[:8]:
         p = h["params"]
         print(f"   {h['symbol']:8} {p['feature']:18} band={p['band']} h={p['horizon']:>3} "
