@@ -14,6 +14,35 @@ cd /home/quant/quant-platform
 {
 PY=.venv/bin/python
 LOGF=data/cro_ai_logs/external_pipeline_gauntlet.log
+
+# ---------------------------------------------------------------------------------------
+# EVERY REMOTE STAGE IS TIME-BOUNDED (2026-08-26). `ssh -o ConnectTimeout=20` bounds the
+# HANDSHAKE and nothing else: once connected, a remote command may run forever and this script
+# blocks on it. The only backstop was the unit's TimeoutStartSec=2h, and when that fires it
+# kills the WHOLE pipeline -- so a single slow remote search silently costs stage 2c (merge),
+# stage 3 (the ten-gate gauntlet) and stage 4 (canon sync). That is L1.58's machinery failing
+# to complete end-to-end, and it is invisible: the unit just reads `activating` for two hours.
+#
+# MEASURED: the 11:54 run reached stage 2b at 12:45, pulled the orthogonal artifact, and then
+# sat on edge_search until the 2h unit timeout at 13:54. Zero candidates certified that run.
+# The 05:36, 06:15 and 09:05 runs died the same way (3x oom-kill, 1x timeout in unit_deaths).
+#
+# A bound means a hung stage costs ITS OWN stage and the pipeline carries on. The default is a
+# first estimate deliberately marked as one: tighten it from measured successful-run durations,
+# not from another guess. `timeout` exits 124 on expiry and that is reported distinctly from a
+# remote failure, because the two demand different repairs.
+REMOTE_STAGE_TIMEOUT="${REMOTE_STAGE_TIMEOUT:-25m}"
+
+remote_stage () {   # remote_stage <label> <remote command>
+  local label="$1"; shift
+  timeout "$REMOTE_STAGE_TIMEOUT" ssh -o ConnectTimeout=20 contabo-mt5 "$@" >> "$LOGF" 2>&1
+  local rc=$?
+  if [ "$rc" -eq 124 ]; then
+    echo "$label TIMED OUT after $REMOTE_STAGE_TIMEOUT on the desk box -- later stages still run"
+  fi
+  return "$rc"
+}
+# ---------------------------------------------------------------------------------------
 export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 
 echo "[$(date -u +%FT%TZ)] stage 2: external backtest"
@@ -47,9 +76,8 @@ scp -q desks/mt5/data/hypotheses/mined_targets.json \
 # These are independent discovery methods. Running them behind `A && B` made an OOM in the
 # family-free search suppress the much cheaper orthogonal sweep. Pull an artifact only when its
 # own producer succeeds; merge_hypotheses also rejects any artifact older than this pipeline run.
-if ssh -o ConnectTimeout=20 contabo-mt5 \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py" \
-     >> "$LOGF" 2>&1; then
+if remote_stage "orthogonal frontier" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py"; then
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
       desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null \
     && echo "orthogonal frontier artifact pulled" \
@@ -58,9 +86,8 @@ else
   echo "orthogonal frontier FAILED on the desk box -- see $LOGF"
 fi
 
-if ssh -o ConnectTimeout=20 contabo-mt5 \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py" \
-     >> "$LOGF" 2>&1; then
+if remote_stage "family-free frontier" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py"; then
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
       desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null \
     && echo "family-free frontier artifact pulled" \
@@ -84,9 +111,8 @@ $PY desks/mt5/research/merge_hypotheses.py || echo "merge FAILED (rc=$?)"
 echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet (on the desk box)"
 scp -q desks/mt5/data/hypotheses/external_survivors.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
-if ssh -o ConnectTimeout=20 contabo-mt5 \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py" \
-     >> "$LOGF" 2>&1; then
+if remote_stage "ten-gate gauntlet" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py"; then
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \
       desks/mt5/reports/UNIVERSAL_SURVIVORS.json 2>/dev/null
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/universal_gates_external.json' \

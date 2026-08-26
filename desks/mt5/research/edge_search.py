@@ -619,15 +619,49 @@ def main(symbols: list[str] | None = None) -> int:
                 "cursor": cursor + PER_RUN,
                 "note": "rotation cursor -- coverage is a cycle, never a completed sweep",
             }), "utf-8")
-        # The desk box owns the heavy search and currently fits the complete Fusion registry in
-        # one hourly run. Keep the cursor as future overflow ordering, but do not truncate today:
-        # every registered instrument and asset class is searched every hour.
-        print(f"  covering the complete registry: {len(symbols)} symbol(s) this run; cursor "
-              "retained only as deterministic overflow ordering for a future larger universe")
+        # THE BUDGET IS APPLIED, AND NOT APPLYING IT WAS COSTING THE WHOLE RUN (2026-08-26).
+        # The previous comment here read "the desk box ... currently fits the complete Fusion
+        # registry in one hourly run" and therefore refused to truncate. It does not fit. The
+        # pipeline log records the consequence exactly:
+        #     covering the complete registry: 295 symbol(s) this run
+        #     File "...\research\edge_search.py", line 427, in evaluate
+        #     MemoryError
+        # The process died partway through, so `edge_search_results.json` was never written --
+        # `family-free frontier pull FAILED` -- and the merge received NOTHING from the
+        # family-free searcher. Measured while writing this: the artifact was 3.8h stale across
+        # two completed pipeline runs, and the book is 95.2% one family (session_range_breakout,
+        # 20 of 21 certificates) with eight target families absent. The organ whose whole job is
+        # to break that concentration had been producing zero output.
+        #
+        # SLICING IS NOT TRUNCATION HERE, AND IT IS THE OPPOSITE OF TIMIDITY. Attempting 295
+        # symbols completes ZERO of them; 40 that COMPLETE, on an hourly cursor, is ~960
+        # symbol-searches a day against the current zero. Coverage stays a CYCLE, never a
+        # finished sweep (RESEARCH 6c-bis): the cursor advances every run, so every symbol is
+        # re-searched on newer bars forever, and mined ground still jumps the queue ahead of it.
+        budget = PER_RUN + len(ranked)
+        if len(symbols) > budget:
+            print(f"  budgeted slice: {budget} of {len(symbols)} symbol(s) this run "
+                  f"({len(ranked)} mined-ground + {PER_RUN} on the rotation cursor at "
+                  f"{cursor}); the rest are covered by following runs and then covered again")
+            symbols = symbols[:budget]
+        else:
+            print(f"  covering {len(symbols)} symbol(s) this run (registry fits inside the "
+                  f"{budget}-symbol budget)")
     results, hypotheses = [], []
     total_trials = 0
+    unsearched: list[dict[str, str]] = []
     for sym in symbols:
-        res = search_symbol(sym)
+        try:
+            res = search_symbol(sym)
+        except MemoryError:
+            # RECORDED, NEVER SWALLOWED. One symbol exhausting memory must not void the run's
+            # other 39 -- that is how a whole hour of search produced nothing. But a skipped
+            # symbol is NOT a searched symbol with no edge, and conflating the two is the
+            # absence-read-as-verdict class: the symbol lands in `unsearched`, is reported, and
+            # the cursor brings it back on a later run with different neighbours.
+            unsearched.append({"symbol": sym, "reason": "MemoryError during evaluate"})
+            print(f"  {sym}: MemoryError -- NOT searched, recorded and left to the cursor")
+            continue
         results.append(res)
         total_trials += int(res.get("trials") or 0)
         for row in res.get("selected", []):
@@ -655,7 +689,8 @@ def main(symbols: list[str] | None = None) -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "searched_at": now.isoformat(timespec="seconds"),
-        "symbols": len(symbols), "total_trials": total_trials,
+        "symbols": len(results), "symbols_offered": len(symbols),
+        "unsearched": unsearched, "total_trials": total_trials,
         "hypotheses": hypotheses, "per_symbol": results,
         "arbiter": ("the canonical ten-gate policy, and nothing else. This searcher discovers "
                     "and reports; it sets no threshold of its own. Pipeline: discovery -> "
