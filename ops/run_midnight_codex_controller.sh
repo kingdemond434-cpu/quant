@@ -78,13 +78,24 @@ fi
 # moved. `--approve-for-me` remains a sandboxed, automatic-review compatibility fallback.
 CODEX_GLOBAL_ARGS=()
 CODEX_EXEC_APPROVAL_ARGS=()
+CODEX_EXECUTION_ARGS=()
 CODEX_HELP=$(codex --help 2>&1)
 CODEX_EXEC_HELP=$(codex exec --help 2>&1)
-if grep -q -- "--ask-for-approval" <<<"$CODEX_HELP"; then
+if grep -q -- "--dangerously-bypass-approvals-and-sandbox" <<<"$CODEX_HELP"; then
+    # This private VPS unit is already fenced by a single-writer lease, constitution checks,
+    # systemd timeout, git checkpoints and the repository's survival gates. Codex 0.147 still
+    # starts bubblewrap for --sandbox danger-full-access; on this host bwrap cannot create its
+    # loopback namespace (RTM_NEWADDR EPERM), so the model exits before its first repository read.
+    # Keep the CLI's automation-specific bypass scoped to this fenced controller invocation.
+    CODEX_GLOBAL_ARGS=(--dangerously-bypass-approvals-and-sandbox)
+elif grep -q -- "--ask-for-approval" <<<"$CODEX_HELP"; then
+    CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)
     CODEX_GLOBAL_ARGS=(--ask-for-approval never)
 elif grep -q -- "--ask-for-approval" <<<"$CODEX_EXEC_HELP"; then
+    CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)
     CODEX_EXEC_APPROVAL_ARGS=(--ask-for-approval never)
 elif grep -q -- "--approve-for-me" <<<"$CODEX_EXEC_HELP"; then
+    CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)
     CODEX_EXEC_APPROVAL_ARGS=(--approve-for-me)
 else
     write_status "CLI_INCOMPATIBLE" "Installed Codex has no supported unattended approval mode" 124
@@ -164,7 +175,7 @@ CODEX_NIGHTLY_REASONING_EFFORT="${CODEX_NIGHTLY_REASONING_EFFORT_OVERRIDE:-${COD
 # workspace-write is not viable on this VPS: bubblewrap can start but denies every
 # apply_patch while Codex still exits zero. Keep approvals disabled and rely on the
 # repository's survival/statistical gates, lease fencing, timeout and checkpointing.
-CODEX_ARGS=(exec -C "$PWD" --sandbox danger-full-access "${CODEX_EXEC_APPROVAL_ARGS[@]}"
+CODEX_ARGS=(exec -C "$PWD" "${CODEX_EXECUTION_ARGS[@]}" "${CODEX_EXEC_APPROVAL_ARGS[@]}"
     --output-last-message "$LAST_MESSAGE"
     --config "model_reasoning_effort=${CODEX_NIGHTLY_REASONING_EFFORT}"
     --model "$CODEX_NIGHTLY_MODEL")
