@@ -5430,5 +5430,49 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"8076e0eca86e670f": {
+"t0": "2026-08-26T19:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "foxelabs/foxelabs.com",
+"url": "https://github.com/foxelabs/foxelabs.com",
+"text": "Official website for Foxe Labs",
+"symbols": [],
+"found_at": "2026-08-26T19:24:29+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T18:51:06Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b4b965b5d0c30ec2": {
+"t0": "2026-08-26T19:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "TheHolderCollective/MetatraderSharp",
+"url": "https://github.com/TheHolderCollective/MetatraderSharp",
+"text": "A C# wrapper library which simplifies the use of MTsocketAPI for MT4 and MT5",
+"symbols": [],
+"found_at": "2026-08-26T19:24:29+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-26T18:48:02Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

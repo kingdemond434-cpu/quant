@@ -1,6 +1,6 @@
 {
- "merged_at": "2026-08-26T17:43:19+00:00",
- "pipeline_started_at": "2026-08-26T17:15:58+00:00",
+ "merged_at": "2026-08-26T18:59:43+00:00",
+ "pipeline_started_at": "2026-08-26T18:05:00+00:00",
  "per_source": {
   "external_backtest_results.json": 132,
   "edge_search_results.json": -2,
