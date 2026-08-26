@@ -41,11 +41,13 @@ import sys
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGS = ROOT / "data" / "cro_ai_logs"
 OUT = ROOT / "data" / "seat_launch_yield.json"
 FLOOR = ROOT / "data" / "seat_launch_yield_floor.json"
+QUOTA_LOG = ROOT / "data" / "brain_quota_windows.jsonl"
 
 #: A real dig log. NOT a new magic number: run_frontier_rotation.sh already treats `-size +1500c`
 #: as "this region really produced today" for its resume rule, so the fence and the resume logic
@@ -153,6 +155,53 @@ def scan(days: float) -> dict[str, object]:
         "starved_hours_utc": starved_hours,
         "dead_seats": dead_seats,
         "productive_hours_utc": live_hours,
+        "quota_walls": quota_walls(now - days * 86400.0, now),
+    }
+
+
+def quota_walls(since: float, until: float) -> dict[str, object]:
+    """The MEASURED brain-quota wall over the window, or an honest UNMEASURED.
+
+    This is the consumer half of the quota memo added to ops/brain_env.sh on 2026-08-26. The
+    memo exists because AUTH_UNAVAILABLE was 55 of the 94 billable launches this fence measured,
+    and every one of them re-discovered the same wall with its own probes because the reset stamp
+    `brain_reset_wait_s` computes was never written down. `blocked_hours` is what the desk now
+    knows about when its brain is actually reachable -- previously UNMEASURED, which is why the
+    dead windows below could only be inferred from log forensics done by hand.
+
+    ABSENCE IS NOT ZERO (L1.28a). No jsonl means no observation has been recorded yet, which is a
+    different statement from "the wall never went up", and reporting it as 0 hours would let a
+    silent recorder read as a healthy quota.
+    """
+    if not QUOTA_LOG.is_file():
+        return {"recorded": False, "note": "no quota observations yet -- UNMEASURED, not zero"}
+    rows: list[dict[str, Any]] = []
+    for line in QUOTA_LOG.read_text("utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rows.append(json.loads(line))
+        except ValueError:
+            continue          # a torn append is one lost observation, never a crashed fence
+    blocked_s = 0.0
+    walls = 0
+    for r in rows:
+        try:
+            at = float(r.get("observed_at_epoch") or 0)
+            end = float(r.get("blocked_until_epoch") or 0)
+        except (TypeError, ValueError):
+            continue
+        if r.get("state") != "blocked" or end <= at:
+            continue
+        walls += 1
+        # clip to the measurement window so a wall straddling its edge is not double counted
+        blocked_s += max(0.0, min(end, until) - max(at, since))
+    return {
+        "recorded": True,
+        "observations": len(rows),
+        "walls_in_window": walls,
+        "blocked_hours": round(blocked_s / 3600.0, 2),
     }
 
 

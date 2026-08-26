@@ -146,6 +146,109 @@ brain_reset_wait_s() {
     printf '%s' "$wait"
 }
 
+# --- BRAIN QUOTA MEMO (2026-08-26) -----------------------------------------------------------
+# THE WALL IS RE-DISCOVERED BY EVERY ORGAN, ONE PROBE AT A TIME, AND NEVER WRITTEN DOWN.
+#
+# MEASURED, not theorised (scripts/check_seat_launch_yield.py --days 7, run 2026-08-26T07:20Z):
+# 108 seat launches, 94 billable, 26 produced -- 27.7% yield -- and AUTH_UNAVAILABLE alone
+# accounts for 55 of the 94. Every one of those 55 walked the FULL model chain first: a PING per
+# model in $_BRAIN_MODEL_CHAIN, then the keyfile branch, then (once) a sleep-to-reset and a
+# recursive re-walk. The organ that hit the wall at 15:00 learned the exact reset time, used it
+# for one sleep, and threw it away; the organ that fired at 15:10 started from zero and paid for
+# the same discovery again. The desk therefore has no answer at all to "when is the brain
+# available" -- that is UNMEASURED, which under L1.28a is a real answer and a defect, not a
+# clean bill of health.
+#
+# WHAT THIS ADDS, and deliberately nothing more: the reset stamp brain_reset_wait_s already
+# computes is PERSISTED, and brain_auth_check consults it BEFORE spending a probe. It is a memo,
+# never a rail:
+#   - it can only ever SKIP A PROBE, never skip a dig that would have run (a skipped organ
+#     leaves its attempt stub, stays below organ_catchup's success_bytes, and is re-fired by the
+#     catchup loop exactly as an auth death is today -- the retry path is unchanged);
+#   - it expires by wall clock, is capped at _BRAIN_QUOTA_MEMO_CAP_S so a bad parse cannot
+#     silence the desk for a day, and is CLEARED by any successful PING;
+#   - BRAIN_IGNORE_QUOTA_MEMO=1 overrides it entirely, so a human or a probe organ is never
+#     locked out by the desk's own bookkeeping.
+# It is recorded ONLY for genuine limit/credit failures. A missing token or a bad key is not a
+# quota event and must keep failing loudly and immediately (that distinction is the whole reason
+# the seat-yield fence separates AUTH_UNAVAILABLE from DIED_AT_ATTEMPT).
+#
+# The jsonl is the point as much as the memo: data/brain_quota_windows.jsonl accrues one row per
+# observed open/blocked transition, so a later cycle can schedule seats against a MEASURED quota
+# rhythm instead of the current guess. Today the productive hours (05-09 UTC) and the dead ones
+# (14, 15, 18, 19) are known only from log forensics done by hand.
+# FALSIFIER: if brain_quota_windows.jsonl shows `open` rows recorded inside a window this memo
+# was simultaneously reporting blocked, the memo is over-blocking and its cap must shrink.
+_BRAIN_QUOTA_MEMO="${_BRAIN_QUOTA_MEMO:-/home/quant/quant-platform/data/brain_quota_state.json}"
+_BRAIN_QUOTA_LOG="${_BRAIN_QUOTA_LOG:-/home/quant/quant-platform/data/brain_quota_windows.jsonl}"
+_BRAIN_QUOTA_MEMO_CAP_S="${_BRAIN_QUOTA_MEMO_CAP_S:-21600}"   # 6h -- longer than any real window
+_BRAIN_QUOTA_SOFT_S="${_BRAIN_QUOTA_SOFT_S:-1200}"            # limit hit, reset time unparseable
+
+# brain_quota_record <open|blocked> <blocked_until_epoch|0> <organ> <reason-text>
+brain_quota_record() {
+    [ "${BRAIN_DRY_RUN:-0}" = "1" ] && return 0
+    BQ_STATE="$1" BQ_UNTIL="${2:-0}" BQ_ORGAN="${3:-brain}" BQ_REASON="${4:-}" \
+    BQ_MEMO="$_BRAIN_QUOTA_MEMO" BQ_LOG="$_BRAIN_QUOTA_LOG" \
+    python3 - <<'PY' 2>/dev/null || true
+import json, os, time
+state = os.environ["BQ_STATE"]
+until = int(os.environ.get("BQ_UNTIL") or 0)
+row = {
+    "observed_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "observed_at_epoch": int(time.time()),
+    "state": state,
+    "blocked_until_epoch": until if state == "blocked" else 0,
+    "organ": os.environ.get("BQ_ORGAN", "brain"),
+    "reason": (os.environ.get("BQ_REASON") or "")[:200],
+    "model": os.environ.get("ANTHROPIC_MODEL", ""),
+}
+memo = os.environ["BQ_MEMO"]
+os.makedirs(os.path.dirname(memo), exist_ok=True)
+tmp = memo + ".tmp"
+with open(tmp, "w", encoding="utf-8") as fh:
+    json.dump(row, fh, indent=1)
+os.replace(tmp, memo)
+# APPEND ONLY ON A TRANSITION. A row per probe would bury the signal under the desk's own
+# polling: what a later scheduler needs is when the wall went up and when it came down.
+prev = None
+try:
+    with open(os.environ["BQ_LOG"], encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if line:
+                prev = line
+except OSError:
+    pass
+prev_state = None
+if prev:
+    try:
+        prev_state = json.loads(prev).get("state")
+    except ValueError:
+        prev_state = None
+if prev_state != state:
+    with open(os.environ["BQ_LOG"], "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+PY
+}
+
+# brain_quota_blocked -> 0 (blocked: do not spend a probe), 1 (go)
+brain_quota_blocked() {
+    [ "${BRAIN_IGNORE_QUOTA_MEMO:-0}" = "1" ] && return 1
+    [ "${BRAIN_DRY_RUN:-0}" = "1" ] && return 1
+    [ -r "$_BRAIN_QUOTA_MEMO" ] || return 1
+    local until now
+    until="$(sed -n 's/.*"blocked_until_epoch"[[:space:]]*:[[:space:]]*\([0-9]\{1,\}\).*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" 2>/dev/null | head -1)"
+    [ -n "$until" ] || return 1
+    case "$until" in (*[!0-9]*) return 1 ;; esac
+    now="$(date -u +%s)" || return 1
+    [ "$until" -gt "$now" ] || return 1
+    # A memo pointing further ahead than any real window is a PARSE FAULT, not a long outage.
+    # Distrust it and probe: over-blocking costs digs, and digs are the desk's primary output.
+    [ $((until - now)) -le "$_BRAIN_QUOTA_MEMO_CAP_S" ] || return 1
+    return 0
+}
+
 brain_auth_check() {
     # Cheap auth self-test at cycle start: fail LOUD (page), never silently no-op.
     # MODEL FALLBACK CHAIN (principal 2026-07-24): a STARVED MODEL must never kill the organ.
@@ -153,16 +256,44 @@ brain_auth_check() {
     # model (opus-5, then opus-4-8 -- both on the Max subscription seat) and only then try the
     # metered API key. Tonight every organ died out-of-credits because no model fallback existed.
     local out m
+    # QUOTA MEMO FIRST -- a probe into a wall another organ already measured buys nothing and
+    # costs quota that a dig could have spent. Never a page: this is the EXPECTED state inside a
+    # closed window, and paging on it is how a pager gets ignored.
+    if brain_quota_blocked; then
+        printf '%s brain_auth_check SKIPPED -- quota memo says blocked (see %s)\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_BRAIN_QUOTA_MEMO" >&2
+        return 1
+    fi
     for m in ${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}; do
         export ANTHROPIC_MODEL="$m"
         out="$(claude -p 'Reply with exactly: PING-OK' --dangerously-skip-permissions 2>&1 | tail -3)"
         if printf '%s' "$out" | grep -q "PING-OK"; then
+            # An OPEN observation CLEARS the memo -- the wall is only ever believed until the
+            # next successful ping, so a stale or wrong memo self-heals on first contact.
+            brain_quota_record open 0 "${_BRAIN_ORGAN:-brain}" "PING-OK on $m"
             if [ "$m" != "${_BRAIN_MODEL_CHAIN%% *}" ]; then
                 _brain_page "model fallback ACTIVE: primary starved, organs running on $m"
             fi
             return 0
         fi
     done
+    # RECORD THE WALL. Only for genuine limit/credit exhaustion: a missing token or a rejected
+    # key is an auth defect that must keep failing loudly and immediately, and blocking probes on
+    # it would hide the one failure a human has to fix.
+    if printf '%s' "$out" | grep -qiE "limit|usage credits"; then
+        local _until _w
+        _w="$(brain_reset_wait_s "$out" "$_BRAIN_QUOTA_MEMO_CAP_S")"
+        if [ -n "$_w" ]; then
+            _until=$(( $(date -u +%s) + _w ))
+        else
+            # The message names a limit but not a reset. A short soft backoff is still strictly
+            # better than every later organ re-walking the chain blind; organ_catchup re-fires on
+            # a much shorter cycle than this, so nothing is stranded.
+            _until=$(( $(date -u +%s) + _BRAIN_QUOTA_SOFT_S ))
+        fi
+        brain_quota_record blocked "$_until" "${_BRAIN_ORGAN:-brain}" \
+            "$(printf '%s' "$out" | head -1 | cut -c1-140)"
+    fi
     if printf '%s' "$out" | grep -qiE "limit|usage credits" && [ -f "$_BRAIN_KEYFILE" ]; then
         unset CLAUDE_CODE_OAUTH_TOKEN
         ANTHROPIC_API_KEY="$(cat "$_BRAIN_KEYFILE")"
