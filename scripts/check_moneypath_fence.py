@@ -24,7 +24,7 @@ LOG = ROOT / "data" / "moneypath_fence.log"
 #: Known-good commit holding every protected file with its marker; the fallback source when
 #: HEAD itself has been swept stale. Advancing this pin is a deliberate act in a commit that
 #: also changes the protected file -- never automatic.
-CANON_COMMIT = "6ef21311"  # verified 2026-08-26: every PROTECTED marker present in this tree
+CANON_COMMIT = "73ca07b9"  # verified 2026-08-26 (2nd advance): all 16 markers present in this tree
                            # (b239108d, the prior pin, lacked BOTH shadow_forward markers, so a
                            # canon-fallback restore would itself have stripped the properties)
 
