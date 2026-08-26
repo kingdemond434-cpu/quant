@@ -275,6 +275,13 @@ def main() -> None:
             st["sleeve_id"] = _ident["sleeve_id"]
         except Exception as exc:                                         # noqa: BLE001
             slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
+        # EVERY EVALUATION STAMPS ITSELF. The idle-clock fence judges freshness by
+        # `last_attempt_at`, and this engine was evaluating rows every 15 minutes without
+        # updating it -- so the four pre-params rows kept a 13-hour-old stamp from the previous
+        # engine and were flagged IDLE while demonstrably accruing (XAUUSD.asia took its first
+        # forward trade under the stale stamp). An organ that does the work but does not sign it
+        # is indistinguishable from one that stopped.
+        st["last_attempt_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         st["bar_source"] = bars.source
         st["evidence_venue"] = bars.evidence_venue
         st["bar_source_stale"] = bars.stale

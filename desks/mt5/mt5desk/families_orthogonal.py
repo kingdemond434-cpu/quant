@@ -126,7 +126,7 @@ def family_carry(
         stop = px - side * stop_atr * a
         signals.append(Signal(time=d.index[i], side=side, stop=stop,
                               target=px + side * stop_atr * a * rr,
-                              ttl_bars=hold_bars, tag="carry", trigger=px, wait_bars=0))
+                              ttl_bars=hold_bars, tag="carry", trigger=None, wait_bars=1))
     return signals
 
 
@@ -181,7 +181,7 @@ def family_relative_value(
                               stop=px - side * stop_atr * av,
                               target=px + side * abs(zi - exit_z) * sd.iloc[i] * px,
                               ttl_bars=ttl_bars, tag="relative_value",
-                              trigger=px, wait_bars=0))
+                              trigger=None, wait_bars=1))
     return signals
 
 
@@ -226,7 +226,7 @@ def family_vol_transition(
         side = 1 if float(ret.iloc[i]) >= 0 else -1
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="vol_transition", trigger=px, wait_bars=0))
+                              tag="vol_transition", trigger=None, wait_bars=1))
     return signals
 
 
@@ -276,7 +276,7 @@ def family_liquidity_regime(
         px = float(d["close"].iloc[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="liquidity_regime", trigger=px, wait_bars=0))
+                              tag="liquidity_regime", trigger=None, wait_bars=1))
     return signals
 
 
@@ -333,12 +333,21 @@ def family_cot_positioning(
         px = float(d["close"].iloc[idx])
         signals.append(Signal(time=d.index[idx], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="cot_positioning", trigger=px, wait_bars=0))
+                              tag="cot_positioning", trigger=None, wait_bars=1))
     return signals
 
 
 #: The registry the hypothesis router reads. Keyed by the SAME family names the breadth check
 #: reports as missing, so a miner's discovery in any of them now has a testable path.
+
+#: ENTRY SEMANTICS, LEARNT THE EXPENSIVE WAY (2026-08-26). Every family here enters AT THE NEXT
+#: OPEN after its condition is observed -- spelled `trigger=None` in the engine. An earlier
+#: revision spelled it `trigger=px, wait_bars=0`: a resting stop order AT the current close whose
+#: armed window is `range(i, i+0)` -- empty -- so the engine discarded every signal. The result
+#: was thousands of signals, ZERO trades, in every gauntlet run, for every orthogonal family, and
+#: 575 discovered cells dying at the "under 60 days" filter after paying for a full backtest
+#: each. The daily series was not short; it was EMPTY, and the drop reason said "days" because
+#: nothing distinguished an empty series from a brief one.
 ORTHOGONAL_FAMILIES = {
     "carry": family_carry,
     "relative_value": family_relative_value,
@@ -401,7 +410,7 @@ def family_turn_of_month(
         signals.append(Signal(time=d.index[i], side=side_bias,
                               stop=px - side_bias * stop_atr * a,
                               target=px + side_bias * stop_atr * a * rr,
-                              ttl_bars=ttl_bars, tag="turn_of_month", trigger=px, wait_bars=0))
+                              ttl_bars=ttl_bars, tag="turn_of_month", trigger=None, wait_bars=1))
     return signals
 
 
@@ -439,7 +448,7 @@ def family_overnight_gap_decay(
         px = float(d["open"].iloc[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * abs(gap) * rr, ttl_bars=ttl_bars,
-                              tag="overnight_gap_decay", trigger=px, wait_bars=0))
+                              tag="overnight_gap_decay", trigger=None, wait_bars=1))
     return signals
 
 
@@ -479,7 +488,7 @@ def family_vol_mean_reversion(
         side = 1 if float(ret.iloc[i]) >= 0 else -1
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="vol_mean_reversion", trigger=px, wait_bars=0))
+                              tag="vol_mean_reversion", trigger=None, wait_bars=1))
     return signals
 
 
@@ -526,7 +535,7 @@ def family_correlation_regime(
         side = 1 if float(ra.iloc[i]) >= 0 else -1
         signals.append(Signal(time=j.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="correlation_regime", trigger=px, wait_bars=0))
+                              tag="correlation_regime", trigger=None, wait_bars=1))
     return signals
 
 
@@ -568,7 +577,7 @@ def family_orderflow_imbalance(
         px = float(d["close"].iloc[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="orderflow_imbalance", trigger=px, wait_bars=0))
+                              tag="orderflow_imbalance", trigger=None, wait_bars=1))
     return signals
 
 
@@ -625,7 +634,7 @@ def family_cross_asset_residual(
         px = float(frame["y"].iloc[i])
         signals.append(Signal(time=cum.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="cross_asset_residual", trigger=px, wait_bars=0))
+                              tag="cross_asset_residual", trigger=None, wait_bars=1))
     return signals
 
 
@@ -664,7 +673,7 @@ def family_macro_conditional(
         px = float(d["close"].iloc[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="macro_conditional", trigger=px, wait_bars=0))
+                              tag="macro_conditional", trigger=None, wait_bars=1))
     return signals
 
 
@@ -706,7 +715,7 @@ def family_event_reaction(
         px = float(d["close"].iloc[i])
         signals.append(Signal(time=d.index[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="event_reaction", trigger=px, wait_bars=0))
+                              tag="event_reaction", trigger=None, wait_bars=1))
     return signals
 
 
@@ -749,7 +758,7 @@ def family_drawdown_conditional(
         px = float(close.iloc[i])
         signals.append(Signal(time=d.index[i], side=1, stop=px - stop_atr * a,
                               target=px + stop_atr * a * rr, ttl_bars=ttl_bars,
-                              tag="drawdown_conditional", trigger=px, wait_bars=0))
+                              tag="drawdown_conditional", trigger=None, wait_bars=1))
     return signals
 
 
@@ -876,7 +885,7 @@ def family_discovered(
         px = float(close_v[i])
         signals.append(Signal(time=times[i], side=side, stop=px - side * stop_atr * a,
                               target=px + side * stop_atr * a * rr, ttl_bars=ttl,
-                              tag=f"discovered:{feature}", trigger=px, wait_bars=0))
+                              tag=f"discovered:{feature}", trigger=None, wait_bars=1))
     return signals
 
 
