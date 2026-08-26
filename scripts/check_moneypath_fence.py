@@ -24,9 +24,7 @@ LOG = ROOT / "data" / "moneypath_fence.log"
 #: Known-good commit holding every protected file with its marker; the fallback source when
 #: HEAD itself has been swept stale. Advancing this pin is a deliberate act in a commit that
 #: also changes the protected file -- never automatic.
-CANON_COMMIT = "73ca07b9"  # verified 2026-08-26 (2nd advance): all 16 markers present in this tree
-                           # (b239108d, the prior pin, lacked BOTH shadow_forward markers, so a
-                           # canon-fallback restore would itself have stripped the properties)
+CANON_COMMIT = "b0497287"  # verified 2026-08-26 (3rd advance): all 21 markers present
 
 #: file -> marker(s) that exist ONLY in the canonical lineage of that file. A tuple means
 #: EVERY marker must be present: one marker per protected property, because a trample can
