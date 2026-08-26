@@ -106,18 +106,28 @@ def main() -> int:
         mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
         age_h = (now - mtime).total_seconds() / 3600
         status = "OK"
+        checks_per_window = max(3, int(max_age_h * 2))   # manifest runs ~every 30 minutes
         if age_h > max_age_h:
             status = "STALE"
             findings.append(
                 f"STALE {rel}: {age_h:.1f}h old, limit {max_age_h}h. The job is scheduled and "
                 f"silent -- exit codes do not catch this, only the artifact does. "
                 f"Consumer: {consumer}")
-        elif digest and digest == prior.get("hash") and prior.get("hash_runs", 0) >= 3:
+        # FROZEN MUST BE JUDGED AGAINST THE ARTIFACT'S OWN CADENCE, not a flat count. This read
+        # "identical across 3 checks", but the manifest runs every 30 minutes while some artifacts
+        # are DAILY -- execution_quality legitimately holds the same bytes across ~48 checks and
+        # was reported FROZEN for it, which is a false alarm that trains the reader to ignore the
+        # real ones. The honest test is whether the content has stood still for longer than the
+        # job's own update interval allows.
+        elif (digest and digest == prior.get("hash")
+                and prior.get("hash_runs", 0) >= checks_per_window):
             status = "FROZEN"
             findings.append(
                 f"FROZEN {rel}: fresh ({age_h:.1f}h) but byte-identical across "
-                f"{prior['hash_runs'] + 1} checks -- the job runs and writes the same output. A "
-                f"loop turning without cutting. Consumer: {consumer}")
+                f"{prior['hash_runs'] + 1} checks -- longer than its own {max_age_h}h update "
+                f"window allows, so the job is running and writing the same output rather than "
+                f"simply not being due yet. A loop turning without cutting. "
+                f"Consumer: {consumer}")
 
         rows[rel] = {"status": status, "age_h": round(age_h, 2), "hash": digest,
                      "consumer": consumer}
