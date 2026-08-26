@@ -122,10 +122,10 @@ def h18_survivor_sleeves() -> tuple[list[dict], list[dict]]:
             h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
             h4, d1 = r17resample(h1)
             sigs = fn(h4, d1, side, **params)
-            m = meta[sym]
-            costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-                m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-                commission_per_lot=3.50, contract_oz=m["contract_size"])
+            # GAP 114 (re-applied 2026-08-26 after the unification reverted it): 0.48 is
+            # dollars-per-OUNCE and this field is dollars-per-LOT; the direct constructor is
+            # how that unit error stayed for months. from_symbol prices from universe.json.
+            costs = Costs.from_symbol(meta[sym], mult=2.0)
             r = run_backtest(h4, sigs, costs)
         except Exception as e:
             excluded.append({**rec, "why": f"rebuild error {e!r}"})
@@ -142,7 +142,10 @@ def build_sleeves() -> list[dict]:
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     sleeves = []
     h1g = families._h1(pd.read_parquet(UNI / "XAUUSD_H1.parquet"))
-    gold_costs = Costs(spread_per_lot=0.48, commission_per_lot=3.50, contract_oz=100)
+    # GAP 114: `Costs(spread_per_lot=0.48, ...)` charged gold 0.0048/oz against a measured
+    # 0.16/oz median -- 3% of its real spread, on every projected trade. from_symbol recovers
+    # the real number; mult=2.0 is the honest baseline, not a stress.
+    gold_costs = Costs.from_symbol(meta["XAUUSD"], mult=2.0)
     for wname, wp in GOLD_WINDOWS.items():
         tr = cell_trades("XAUUSD", wname, None, h1g, gold_costs, None)
         sleeves.append(dict(name=f"gold_{wname}", sym="XAUUSD", win=wname,
@@ -153,10 +156,7 @@ def build_sleeves() -> list[dict]:
     for cell in load_h12_survivors():
         sym, win, state = cell["sym"], cell["win"], cell["state"]
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))
-        m = meta[sym]
-        costs = Costs(spread_per_lot=0.48 if sym == "XAUUSD" else max(
-            m["median_spread_pts"] * m["tick_size"] * m["contract_size"], 0.05),
-            commission_per_lot=3.50, contract_oz=m["contract_size"])
+        costs = Costs.from_symbol(meta[sym], mult=2.0)  # GAP 114: never the direct constructor
         states = day_states(h1)
         tr = cell_trades(sym, win, state, h1, costs, states)
         sleeves.append(dict(name=f"{sym}_{win}_{state}", sym=sym, win=win,
