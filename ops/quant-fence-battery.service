@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily fence battery (bar_span, recoverability, disposition-landed, frozen-values, knob-sensitivity, ledger-reversion)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/usr/bin/bash /home/quant/quant-platform/ops/run_fence_battery.sh
+StandardOutput=append:/home/quant/quant-platform/data/cro_ai_logs/fence_battery.log
+StandardError=append:/home/quant/quant-platform/data/cro_ai_logs/fence_battery.log
+TimeoutStartSec=2400

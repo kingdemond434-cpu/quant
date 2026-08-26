@@ -5,4 +5,5 @@ Description=Fetch CFTC COT weekly positioning data
 Type=oneshot
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/scripts/fetch_cot.py
+ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/scripts/screen_cot_positioning.py
 TimeoutStartSec=180

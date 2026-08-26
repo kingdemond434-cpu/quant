@@ -7778,7 +7778,15 @@ def check_unwired_modules(defects) -> None:
     # it into a Linux cadence would schedule a guaranteed ImportError every cycle, which is noise
     # dressed as coverage. The module it keeps alive (libs.costs.mt5_calibration) is reachable the
     # day the desk runs an MT5 leg, and not before.
-    _CALLER_EXEMPT = {"scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only"}
+    _CALLER_EXEMPT = {
+        "scripts/run_autodiscovery.py": "imports MetaTrader5 -- Windows-only",
+        # The funding-interval/venue-risk-parameter axis is crypto-exchange-NATIVE ground, which
+        # the 2026-08-18 universe mandate bans from ever being hunted again -- wiring this screen
+        # to a schedule would manufacture usage of a retired axis (the III.16 inverse). Retained
+        # for provenance; re-entry only via a named enabling change under L1.16a.
+        "scripts/screen_venue_risk_params.py":
+            "crypto-exchange-native axis -- banned universe (MT5 mandate 2026-08-18)",
+    }
 
     dead_links = []
     for mod, script in sorted(sole_importer.items()):
@@ -8062,11 +8070,19 @@ def check_constitution_review(defects) -> None:
         doct = (ROOT / "ops/principal_doctrine.txt").read_text("utf-8", errors="ignore")
     except OSError:
         doct = ""   # ABSENT doctrine injects nothing: same defect as de-cored, reported not crashed
-    if "docs/CONSTITUTION.md" not in doct or "E[log(W_T)]" not in doct:
+    # CONSOLIDATION 2026-08-25: docs/LAWS.md is the operative constitution and the doctrine
+    # writes the objective as E[log W_T]; the old strings (CONSTITUTION.md, parenthesised W_T)
+    # made this detector fire on the CORRECT consolidated doctrine -- a stale detector accusing
+    # a healthy artifact. Either generation of either token satisfies the same property: the
+    # doctrine names its governing document and states the objective.
+    _governs = ("docs/LAWS.md" in doct) or ("docs/CONSTITUTION.md" in doct)
+    _objective = ("E[log W_T]" in doct) or ("E[log(W_T)]" in doct)
+    if not _governs or not _objective:
         defects.append(("constitution-not-injected",
-                        "the doctrine no longer declares docs/CONSTITUTION.md governing (or lost "
-                        "the L1.1 objective) -- organs are being briefed without the "
-                        "constitutional core, which voids universal enforcement"))
+                        "the doctrine no longer declares docs/LAWS.md (or the legacy "
+                        "CONSTITUTION.md) governing, or lost the E[log W_T] objective -- organs "
+                        "are being briefed without the constitutional core, which voids "
+                        "universal enforcement"))
     if CONST_REVIEW.exists():
         age_d = (NOW - CONST_REVIEW.stat().st_mtime) / 86400.0
         if age_d > 92:

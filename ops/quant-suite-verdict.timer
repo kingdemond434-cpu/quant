@@ -1,0 +1,9 @@
+[Unit]
+Description=Sunday 04:00 UTC whole-suite verdict (quiet market, low box contention)
+
+[Timer]
+OnCalendar=Sun *-*-* 04:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1122,3 +1122,81 @@ H1/D1 loader imports is_out_of_calendar yet -- a "D1" bar holding 3 hours of mar
 reaches DSR/CPCV inputs unmarked. Wire the shared rule into desks/mt5 data loading; the two
 old-branch tests that asserted the CRYPTO breadth loader's wiring were dropped (retired
 machinery), the MT5 wiring test comes with the wiring.
+
+---
+
+_Appended 2026-08-26 ~02:00Z (weekly gap-fixer/wirer cycle, principal-ordered 2026-08-25):_
+
+**CLOSED this cycle (each fix landed, forced through one real run, detector re-run and cleared):**
+- **qquant-shadow FAILED unit** (found in STEP-0 liveness, not previously rowed): the 00:00 run
+  died on `ModuleNotFoundError: MetaTrader5` — a sync trample had re-welded
+  `shadow_forward.fetch_h1` to the Windows terminal while KEEPING the fence's single marker, so
+  GAP-128's fence read the file as healthy. Re-applied the h1_source repoint (a0c3de04); forced
+  run → 10 legacy sleeves replayed from CACHE parquet, `errors {}`, OPERATING. Fence gained
+  MULTI-MARKER support (one marker per protected property).
+- **§33 T2 SGE card #38 + R0649**: parser rebuilt for the real graph payload (both contracts via
+  `?instid=`; `heyue` check refuses the silent fallback); history self-records forward to
+  `desks/mt5/data/lake/sge_daily.parquet`; premium legs re-based (FRED's LBMA series is 404 →
+  desk Fusion XAUUSD 07:00Z close + ECB same-snapshot USDCNY cross, DEXCHUS fallback); wired
+  `quant-sge-premium.timer` daily 07:45 UTC; first row on disk. mine_gate → BACKLOG-CLEAR.
+- **#131 → CLOSED**: gate0_evidence shared reader re-applied to both organs (the unification had
+  kept the module and dropped its wiring+tests, c1123f29). Verified live: stage_gate.why now
+  measures principal_signoff=True / symbol_count_4_5=True from the real artifacts; gate still
+  refuses on keys_present=False.
+- **#132 → CLOSED**: `families.d1_session_filtered` (delegating to libs/research/bar_span) wired
+  into the three D1 builders — hunt17 resample, regime_discovery daily features, fragility
+  market_daily (whose `resample("D").sum()` also manufactured 0.0-return Saturday rows). Tests
+  in `desks/mt5/tests/test_bar_span_wiring.py` incl. source-marker fences.
+- **Desk test suite resurrected**: 4 collection errors → 0, exposing 53 silent failures → 18.
+  Fixed en route (each was a REAL lost fix, not test hygiene): survivor-DELETION in incremental
+  sweeps (`retained_exact_survivors` re-applied — canon started every sweep from `{}`);
+  allocation `Q_TOTAL` literal 0.055 vs gateway-derived 0.0127 (allocator budgeting 4.3× the
+  account's risk — THIRD reversion of this exact line); `Costs.from_symbol` at 3 projection
+  sites (GAP 114: dollars-per-oz in a dollars-per-lot field); `config.desk_root` portability;
+  `day_states` AVAILABILITY (at 07:00 today carried no label, so gateway.state_allows and
+  run_family_sleeves refused every state-conditioned sleeve LIVE while replay traded them — a
+  silent live/replay divergence) + weekend-stub breakout levels; **the ENGINE itself** — canon
+  ran the 246-line pre-fix engine that pays a limit entry from its own fill bar (measured:
+  59.7% of trades resolved on the fill bar at E[R] +0.283 vs +0.105 later) and charges
+  gold 3% of its real spread; adopted the corrected 381-line engine (pessimistic intrabar
+  order, stall-conditioned trail, pyramiding, Fusion's real $2.25/side).
+- **max_audit unwired-caller 9 → 0**: `quant-fence-battery.timer` (daily 05:20) now runs the six
+  orphan fence scripts incl. `check_ledger_reversion` (whose first battery run found and
+  repaired 2 reverted ledger rows) and `check_bar_span` (whose only schedule was the crontab
+  that dead root cron never runs); `quant-suite-verdict.timer` (Sun 04:00) banks the weekly
+  whole-suite verdict via `record_suite_run.py`; COT positioning screen chained after Friday's
+  fetch (first run live: SCREEN-WEAK/UNDERPOWERED — honest negatives);
+  `screen_venue_risk_params.py` exempted as crypto-exchange-native (banned universe).
+- **constitution-not-injected detector repointed** to the consolidated canon (LAWS.md /
+  `E[log W_T]`) — it was accusing the CORRECT post-consolidation doctrine.
+
+**#134 OPEN — the C:-side hourly pusher overwrites VPS-owned code and the sweep launders it
+(GAP 128's root cause, still alive).** MEASURED end-to-end 01:19–01:21Z: stale copies of EVERY
+unmarkered fixed file landed via the long-lived sftp session and the hourly sync commit
+(eb1818f4, author codex@openai.local, Windows-local timestamp label) wrote them into history
+within two minutes. Containment shipped this cycle: fence markers 10 → 21 files, fence cadence
+30m → 10m → **5m**, canon pin advanced to the re-land commit. THE ROOT FIX IS C:-SIDE AND
+PRINCIPAL-GATED: the Windows box's hourly push task must stop shipping `*.py` under
+`desks/mt5/{mt5desk,research,scripts}/` (code flows VPS→Windows only; data/reports keep
+flowing) — one edit to its push file-list. Until then every VPS-side fix must carry a fence
+marker to survive.
+
+**#135 OPEN — 18 remaining desk-test failures, all old-lineage policy pins vs canon's same-day
+rework** (state_chain 5, shadow_admission_policy 3, portfolio_projection refusal-class 3,
+trial_matrix_alignment 2, universe_discovery 1, daily_cycle, fusion_zero_costs 1, others).
+Each needs old-vs-canon adjudication like the ones closed above; several sit in files the
+same-day-pipeline sibling is actively reworking, so they are queued rather than raced.
+
+**#136 OPEN (watch) — certificates re-derive under the corrected engine.** Every existing
+ten-gate certificate was graded on the optimistic engine; the daily certify-gauntlet/
+full-pipeline passes re-grade through the one door. Expect survivor count movement; a sleeve
+losing its certificate is the correction WORKING, not a regression. Compare
+`UNIVERSAL_SURVIVORS.json` n before/after the next sweep.
+
+**PRINCIPAL CONSOLE BLOCK — re-measured this cycle, all still outstanding:** (1) `systemctl
+restart cron` (dead since 08-20, OOM; the user crontab incl. 06:53 bar_span is dead letter —
+now covered by user timers, but other manifest rows may not be); (2) 4G swapfile (zero swap;
+frontier_ru/prospector/cro OOM-killed again yesterday); (3) root research units' journal look
+(cro-ai/dataaxis/blindrediscovery exit-1s); (4) **NEW: edit the C:-side hourly push task to
+exclude `desks/mt5/**/*.py` (#134)** — the single highest-leverage line on this list, it ends
+the GAP-128 class instead of fencing it.

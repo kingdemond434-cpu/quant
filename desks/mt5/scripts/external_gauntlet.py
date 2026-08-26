@@ -290,35 +290,91 @@ def main():
     out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
     print(f"\nSaved to {out}")
 
-    # Update UNIVERSAL_SURVIVORS.json
-    survivors_all = {}
+    # Update UNIVERSAL_SURVIVORS.json -- FULL AUTHORITY OR NOTHING. An earlier revision of this
+    # block wrote certificates without the top-level `gate_policy` attestation and without a
+    # per-survivor `shadow_spec`; `shadow_admission.is_exact_policy` fails closed on the missing
+    # attestation, so one run of this script would have stripped promotion authority from EVERY
+    # certificate in the file while printing "Updated". A certifier that demotes what it did not
+    # examine is the certifier-wipe defect again, one layer up.
+    sys.path.insert(0, str(BASE / "desks" / "mt5" / "research"))
+    from gate_policy import ATTESTATION
+
     surv_path = REPORTS / "UNIVERSAL_SURVIVORS.json"
+    survivors_all, old_doc = {}, {}
     if surv_path.exists():
         try:
-            old = json.loads(surv_path.read_text("utf-8"))
-            survivors_all = old.get("survivors", {})
+            old_doc = json.loads(surv_path.read_text("utf-8"))
+            survivors_all = old_doc.get("survivors", {})
         except Exception:
             pass
+    n_before = len(survivors_all)
+
+    WINDOWS_KNOWN = {
+        "asia": {"range_start": 7},
+        "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13},
+        "ny_open": {"range_start": 13, "range_end": 14, "signal_at": 14},
+        "afternoon": {"range_start": 14, "range_end": 17, "signal_at": 17},
+    }
+
+    def _selector(params: dict) -> str | None:
+        """Map a cell's params to the ONE forward engine's window name -- or None, visibly.
+
+        A certificate whose selector cannot be named cannot be enrolled, and an un-enrollable
+        certificate trips the same-day fence (CERTIFIED-NOT-ENROLLED) rather than silently
+        running under guessed hours. The default family session (range_start=7) IS "asia"."""
+        if params.get("window") in WINDOWS_KNOWN:
+            return params["window"]
+        keys = {k: params[k] for k in ("range_start", "range_end", "signal_at") if k in params}
+        if not keys or keys == {"range_start": 7}:
+            return "asia"
+        for name, w in WINDOWS_KNOWN.items():
+            if all(w.get(k) == v for k, v in keys.items()):
+                return name
+        return None
 
     for v in result.get("verdicts", []):
-        if v.get("passed"):
-            key = f"external.{v['cell']}"
-            survivors_all[key] = {
-                "hunt": "external_discoveries",
-                "cell": v["cell"],
-                "sym": v["sym"],
-                "days": v["days"],
-                "gates": v["stages"],
-                "gated_at": datetime.now(timezone.utc).isoformat(),
-            }
+        if not v.get("passed"):
+            continue
+        key = f"external.{v['cell']}"
+        params = next((c["params"] for c in cell_objs
+                       if f"{c['sym']}.{c['family']}" in v["cell"]), {})
+        sel = _selector(params or {})
+        row = {
+            "hunt": "external_discoveries",
+            "cell": v["cell"],
+            "sym": v["sym"],
+            "days": v["days"],
+            "gates": v["stages"],
+            "gated_at": datetime.now(timezone.utc).isoformat(),
+        }
+        if sel is not None:
+            row["shadow_spec"] = {"symbol": v["sym"], "selector": sel,
+                                  "family": v.get("family", "session_range_breakout"),
+                                  "is_universe": True, "hunt": "external_discoveries",
+                                  "condition": None}
+        else:
+            print(f"  NO-SPEC {key}: params {params} match no known window; certificate "
+                  f"written WITHOUT shadow_spec -- it cannot enrol until the selector is wired")
+        survivors_all[key] = row
 
-    surv_path.write_text(json.dumps({
+    # NEVER SHRINK (2026-08-26, the certifier wipe): merging can only grow this file; a sweep
+    # that certified nothing preserves what stands, because re-running a gauntlet is not
+    # revoking a pass.
+    if len(survivors_all) < n_before:
+        print(f"REFUSING to write: merge would shrink {n_before} -> {len(survivors_all)}")
+        return
+
+    doc = dict(old_doc)
+    doc.update({
         "n": len(survivors_all),
+        "gate_policy": ATTESTATION,
         "survivors": survivors_all,
         "note": "UNIVERSAL 10-GATE PASS ONLY.",
         "swept_at": datetime.now(timezone.utc).isoformat(),
-    }, indent=2, default=str), encoding="utf-8")
-    print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total")
+    })
+    surv_path.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
+    print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total "
+          f"({len(survivors_all) - n_before:+d})")
 
 
 if __name__ == "__main__":
