@@ -35,35 +35,8 @@ if str(_R) not in sys.path:
 from libs.ops.disk import PAUSE_FRAC, headroom  # noqa: E402
 
 
-def _retired_exit(label: str) -> None:
-    """Exit immediately when the desk has PERMANENTLY retired this recorder.
-
-    `RECORDERS_OFF` is a PAUSE and deliberately does not exit -- systemd would restart it, so a
-    paused recorder idles in memory ready to resume. That trade is correct for a pause and wrong
-    for a retirement: under the MT5 universe mandate these crypto-venue recorders will never
-    resume, and five of them idling held 313MB on a 4GB box for weeks while doing nothing. The
-    cash-carry executor logged "RETIRED: idling permanently" and kept 143MB resident to do it.
-
-    So retirement gets its own switch with the opposite behaviour. The process exits; systemd
-    restarts it; it exits again; within seconds the unit's own start-rate limiter trips and
-    systemd stops trying. The memory is genuinely returned. This is documented systemd behaviour,
-    not a trick, and it is fully reversible by someone with root:
-
-        systemctl reset-failed <unit>     # after removing data/RECORDERS_RETIRED
-    """
-    import sys as _sys
-    from pathlib import Path as _P
-    flag = _P(__file__).resolve().parent.parent / "data" / "RECORDERS_RETIRED"
-    if flag.exists():
-        print(f"{label}: data/RECORDERS_RETIRED present -- this venue is retired under the MT5 "
-              f"mandate. Exiting so the memory is returned rather than idled. Remove the flag "
-              f"and `systemctl reset-failed` to revive.", flush=True)
-        _sys.exit(0)
-
-
 def _switch_wait(label: str) -> None:
     """Pause while data/RECORDERS_OFF exists. See scripts/recorder_switch.py."""
-    _retired_exit(label)
     import time as _t
     from pathlib import Path as _P
     flag = _P(__file__).resolve().parent.parent / "data" / "RECORDERS_OFF"

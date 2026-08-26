@@ -2585,28 +2585,10 @@ def main() -> None:
                        "KILL: closing all carries + idling until the kill file clears")
                 print(msg)
                 killed = True
-                # IDLING PERMANENTLY IS NOT FREE. This branch printed "idling permanently" and
-                # then held the process resident -- measured 2026-08-26 at 214MB on a 4GB box,
-                # three days after retirement, with the book already flat. A retired executor with
-                # nothing to manage should return its memory, not hold it to keep saying so.
-                # Exit only once the carries are actually closed (killed is set above and the
-                # rebalance below runs), and only under the explicit retirement flag, so a
-                # temporary KILL still idles and can resume.
-                if _PERMANENTLY_RETIRED and (
-                        Path(__file__).resolve().parent.parent / "data" / "RECORDERS_RETIRED"
-                ).exists():
-                    _retire_and_exit = True
-                else:
-                    _retire_and_exit = False
             with contextlib.suppress(Exception):
                 _daily_data_tasks()                       # halted book must not starve the flywheel
             try:
                 rb = _rebalance(0, 0, 0.0, dry=dry)       # top=0, hold=0 -> closes everything
-                if locals().get("_retire_and_exit"):
-                    print("RETIRED: book flat and desk mandate is MT5-only -- exiting so the "
-                          "memory is returned. Remove data/RECORDERS_RETIRED and "
-                          "`systemctl reset-failed quant-cashcarry` to revive.", flush=True)
-                    raise SystemExit(0)
             except Exception as exc:
                 # A venue outage/ban must not kill the KILL loop: close-all is idempotent and
                 # retried every tick while any leg remains. Crashing here made systemd respawn-
