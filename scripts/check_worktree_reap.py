@@ -25,7 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from libs.ops.worktree_reaper import classify, reap_plan  # noqa: E402
+from libs.ops.worktree_reaper import classify, reap_plan, remove_checkout  # noqa: E402
 
 OUT = ROOT / "data" / "worktree_reap.json"
 
@@ -55,9 +55,8 @@ def main() -> int:
     failed: list[str] = []
     if args.reap:
         for w in reapable:
-            rc = subprocess.run(["git", "-C", str(ROOT), "worktree", "remove", str(w.path)],
-                                capture_output=True, text=True, check=False)
-            (reaped if rc.returncode == 0 else failed).append(str(w.path))
+            ok, why = remove_checkout(w.path, ROOT)
+            (reaped if ok else failed).append(f"{w.path} ({why})")
 
     payload = {
         "measured": datetime.now(tz=UTC).isoformat(),

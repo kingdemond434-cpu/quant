@@ -62,16 +62,27 @@ class Worktree:
 
     @property
     def verdict(self) -> str:
-        """REAP | KEEP-AHEAD | KEEP-DIRTY | KEEP-ACTIVE | KEEP-UNMEASURED."""
-        if not self.landed:
-            return "KEEP-AHEAD"
+        """REAP | REAP-CLEAN-AHEAD | KEEP-AHEAD | KEEP-DIRTY | KEEP-ACTIVE | KEEP-UNMEASURED."""
         if self.dirty:
             return "KEEP-DIRTY"
         if self.idle_h is None:
             return "KEEP-UNMEASURED"
+        if not self.landed:
+            # KEEP-AHEAD PROTECTS THE BRANCH, NOT THE CHECKOUT. Measured 2026-08-26: 25
+            # unlanded-but-CLEAN worktrees held ~3.5 GB and pushed the box to 83% -- under the
+            # moat backup's 15%-free fuse, freezing L1.23 replication for 2 days. A clean
+            # checkout is redundant with its branch (every commit lives in shared .git;
+            # `git worktree add` recreates it in seconds), so an unlanded branch only protects
+            # its DIRECTORY while there is uncommitted work or recent activity. 72h idle is the
+            # cool-off; `git worktree remove` without --force re-verifies cleanliness at removal
+            # time, so a session that returned mid-decision is still safe.
+            if self.idle_h >= self._min_idle_ahead_h:
+                return "REAP-CLEAN-AHEAD"
+            return "KEEP-AHEAD"
         return "REAP" if self.idle_h >= self._min_idle_h else "KEEP-ACTIVE"
 
     _min_idle_h: float = 8.0
+    _min_idle_ahead_h: float = 72.0
 
 
 def _run(args: list[str], cwd: Path | None = None) -> str:
@@ -130,10 +141,37 @@ def classify(path: Path, live_head: str, main_repo: Path, now: float,
                     size_mb=size_mb, _min_idle_h=min_idle_h)
 
 
+def remove_checkout(path: Path, main_repo: Path) -> tuple[bool, str]:
+    """Remove one reapable checkout losslessly. Plain `worktree remove` first; `--force` ONLY
+    after re-verifying AT REMOVAL TIME that every dirt line is an untracked _EXPECTED_UNTRACKED
+    path (a worktree-local `.venv` blocks plain remove but is not work -- measured 2026-08-26:
+    all 9 REAP-CLEAN-AHEAD candidates failed plain removal on exactly `?? .venv`). Any other
+    dirt refuses: the working copy may be the sole copy, and the re-check at removal time is
+    what makes the --force escalation race-safe against a session that returned mid-decision."""
+    r = subprocess.run(["git", "-C", str(main_repo), "worktree", "remove", str(path)],
+                       capture_output=True, text=True, check=False)
+    if r.returncode == 0:
+        return True, "removed"
+    status = subprocess.run(["git", "-C", str(path), "status", "--porcelain"],
+                            capture_output=True, text=True, check=False)
+    if status.returncode != 0:
+        return False, f"status unreadable: {status.stderr.strip()[:120]}"
+    lines = [ln for ln in status.stdout.splitlines() if ln.strip()]
+    unexpected = [ln for ln in lines if not (
+        ln.startswith("??") and ln[3:].strip().rstrip("/") in _EXPECTED_UNTRACKED)]
+    if unexpected:
+        return False, f"unexpected dirt: {unexpected[0][:80]}"
+    r2 = subprocess.run(["git", "-C", str(main_repo), "worktree", "remove", "--force", str(path)],
+                        capture_output=True, text=True, check=False)
+    if r2.returncode == 0:
+        return True, "removed --force (expected-untracked only)"
+    return False, r2.stderr.strip()[:120]
+
+
 def reap_plan(worktrees: list[Worktree]) -> tuple[list[Worktree], dict[str, int]]:
     """(reapable, verdict histogram). The histogram is published so a reap that frees nothing is
     distinguishable from a reap that examined nothing (L1.57)."""
     hist: dict[str, int] = {}
     for w in worktrees:
         hist[w.verdict] = hist.get(w.verdict, 0) + 1
-    return [w for w in worktrees if w.verdict == "REAP"], hist
+    return [w for w in worktrees if w.verdict in ("REAP", "REAP-CLEAN-AHEAD")], hist

@@ -1,4 +1,4 @@
-"""Only LANDED + CLEAN + IDLE worktrees may be reaped, and an unmeasured one is KEPT.
+"""LANDED+CLEAN+IDLE reaps at 8h; unlanded-but-CLEAN reaps at 72h; unmeasured is KEPT.
 
 The reap is lossless because of ONE condition -- the tip is already an ancestor of the live branch
 -- not because a tree looks old or finished. Every other condition guards a different way this
@@ -24,9 +24,17 @@ class TestVerdict:
     def test_landed_clean_and_idle_is_reapable(self) -> None:
         assert wt().verdict == "REAP"
 
-    def test_unlanded_is_never_reaped_however_old(self) -> None:
-        """The ONLY condition that makes this lossless. A 1000h-idle tree may hold the sole copy."""
-        assert wt(landed=False, idle_h=1000.0).verdict == "KEEP-AHEAD"
+    def test_unlanded_clean_reaps_only_after_long_cooloff(self) -> None:
+        """KEEP-AHEAD protects the BRANCH, not the checkout: a clean tree's commits live in
+        shared .git, so past 72h idle the DIRECTORY is redundant (measured 2026-08-26: 25 such
+        trees held ~3.5GB and froze the moat backup under its 15%-free disk fuse). DIRTY stays
+        absolute -- the working copy may be the sole copy."""
+        assert wt(landed=False, idle_h=24.0).verdict == "KEEP-AHEAD"
+        assert wt(landed=False, idle_h=71.99).verdict == "KEEP-AHEAD"
+        assert wt(landed=False, idle_h=72.0).verdict == "REAP-CLEAN-AHEAD"
+        assert wt(landed=False, idle_h=1000.0).verdict == "REAP-CLEAN-AHEAD"
+        assert wt(landed=False, dirty=1, idle_h=1000.0).verdict == "KEEP-DIRTY"
+        assert wt(landed=False, idle_h=None).verdict == "KEEP-UNMEASURED"
 
     def test_dirty_is_never_reaped(self) -> None:
         assert wt(dirty=1).verdict == "KEEP-DIRTY"
@@ -47,7 +55,7 @@ class TestVerdict:
         assert wt(idle_h=None).verdict == "KEEP-UNMEASURED"
 
     def test_conditions_compose__dirty_and_unlanded_still_kept(self) -> None:
-        assert wt(landed=False, dirty=3).verdict == "KEEP-AHEAD"
+        assert wt(landed=False, dirty=3).verdict == "KEEP-DIRTY"
 
     @pytest.mark.parametrize("min_idle", [1.0, 48.0])
     def test_threshold_is_injectable(self, min_idle: float) -> None:
@@ -132,3 +140,52 @@ def test_discover_excludes_the_primary_checkout(tmp_path) -> None:
     assert primary(wt).resolve() == main.resolve()
     assert main.resolve() not in {p.resolve() for p in discover(wt, str(tmp_path))}
     assert wt.resolve() in {p.resolve() for p in discover(wt, str(tmp_path))}
+
+
+class TestRemoveCheckout:
+    """remove_checkout escalates to --force ONLY for expected-untracked dirt, re-verified at
+    removal time (measured 2026-08-26: all 9 clean-ahead candidates failed plain removal on
+    `?? .venv` while genuinely-dirty trees must stay refused)."""
+
+    @pytest.fixture()
+    def repo_with_worktree(self, tmp_path: Path) -> tuple[Path, Path]:
+        import subprocess
+        repo, wt_dir = tmp_path / "repo", tmp_path / "wt"
+        repo.mkdir()
+        def run(*a: str) -> None:
+            subprocess.run(a, cwd=repo, capture_output=True, text=True, check=True)
+        run("git", "init", "-q")
+        run("git", "config", "user.email", "t@t")
+        run("git", "config", "user.name", "t")
+        (repo / "f.txt").write_text("x")
+        run("git", "add", "f.txt")
+        run("git", "commit", "-q", "-m", "base")
+        run("git", "worktree", "add", "-q", "--detach", str(wt_dir))
+        return repo, wt_dir
+
+    def test_venv_only_dirt_is_force_removed(self, repo_with_worktree: tuple[Path, Path]) -> None:
+        from libs.ops.worktree_reaper import remove_checkout
+        repo, wt_dir = repo_with_worktree
+        (wt_dir / ".venv").mkdir()
+        (wt_dir / ".venv" / "lib.py").write_text("cache")
+        ok, why = remove_checkout(wt_dir, repo)
+        assert ok, why
+        assert not wt_dir.exists()
+
+    def test_real_dirt_refuses(self, repo_with_worktree: tuple[Path, Path]) -> None:
+        from libs.ops.worktree_reaper import remove_checkout
+        repo, wt_dir = repo_with_worktree
+        (wt_dir / "f.txt").write_text("MODIFIED -- the sole copy")
+        ok, why = remove_checkout(wt_dir, repo)
+        assert not ok
+        assert "unexpected dirt" in why
+        assert wt_dir.exists()
+        assert (wt_dir / "f.txt").read_text() == "MODIFIED -- the sole copy"
+
+    def test_untracked_non_venv_refuses(self, repo_with_worktree: tuple[Path, Path]) -> None:
+        from libs.ops.worktree_reaper import remove_checkout
+        repo, wt_dir = repo_with_worktree
+        (wt_dir / "notes.md").write_text("uncommitted finding")
+        ok, _why = remove_checkout(wt_dir, repo)
+        assert not ok
+        assert wt_dir.exists()
