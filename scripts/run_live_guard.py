@@ -40,8 +40,8 @@ from pathlib import Path
 from typing import Any
 
 from libs.execution import canary as canary_mod
+from libs.execution import gate0_evidence, ramp_gate, staging
 from libs.execution import protective_stops as stops
-from libs.execution import ramp_gate, staging
 from libs.ops.derisk_ladder import LadderState, unacked_since
 from libs.ops.input_provenance import Inputs
 
@@ -281,6 +281,47 @@ def _ramp(now: float) -> tuple[float, str, dict[str, bool], Inputs]:
     return nxt, why, checks, inp
 
 
+def _promo_evidence(inp: Inputs, *, root: Path, keys_present: bool,
+                    connector_verified: bool, capital_fraction: float) -> dict[str, Any]:
+    """The evidence dict `staging.s1_entry_met`/`s2_entry_met` is judged on.
+
+    L1.61 FABRICATED-SIDE REPAIR (R0536/R0537). Two of the five S1 criteria used to be built from
+    sources that DO NOT EXIST: consent was read from `data/stage_state.json['principal_signoff']`
+    -- A KEY NO CODE ANYWHERE WRITES -- and `symbol_count` arrived only through the ramp_state
+    evidence spread, a file that has never existed, so `int(...)` defaulted to 0. Both published
+    False permanently while the Gate-0 board, calling this SAME gate function, measured both True
+    from the real artifacts. Neither side could see it, because each read its own source
+    successfully; that is exactly the contradiction no single-artifact instrument can detect.
+
+    The repair is the INPUT, never the verdict, and it is ONE SHARED READER per criterion
+    (libs/execution/gate0_evidence.py) so a future edit cannot re-diverge the two organs.
+
+    IT OPENS NOTHING. `keys_present` is False on an unarmed box, so the gate stays shut on its own
+    genuine grounds, and `effective_size_fraction` -- the only number the executor consumes from
+    this artifact -- never reads either value. What changes is that two criteria stop being
+    DEFAULTS rendered as measurements.
+
+    Extracted from `main()` so the repair is testable without constructing a venue connector: the
+    defect it closes was invisible precisely because nothing ever exercised this dict.
+    """
+    symbols = gate0_evidence.symbol_count(root)
+    if symbols is None:
+        # None is not zero. An unreadable config must not publish a count nobody measured -- leave
+        # the key absent and let s1_entry_met's own fail-closed default refuse it.
+        inp.defaulted(gate0_evidence.CONFIG_REL, "config unreadable -- symbol_count unmeasured")
+    return {
+        # The ramp spread still supplies the S2 criteria (live_weeks, calibration_rows,
+        # critical_drill_failures, cost_ratio). Every key below it is explicit and wins.
+        **((inp.read_json(root / "data" / "ramp_state.json", default={},
+                          max_age_h=_RAMP_MAX_AGE_H) or {}).get("evidence", {}) or {}),
+        "keys_present": keys_present,
+        "connector_verified": connector_verified,
+        "capital_fraction": capital_fraction,
+        "principal_signoff": gate0_evidence.principal_signoff(root),
+        **({} if symbols is None else {"symbol_count": symbols}),
+    }
+
+
 def main() -> int:
     now = time.time()
     allow_flatten = "--allow-flatten" in sys.argv
@@ -339,15 +380,9 @@ def main() -> int:
     # principal-action file telling a human the preconditions for LIVE CAPITAL are met, so the
     # provenance of the evidence behind it is published beside the verdict and never assumed.
     promo_inp = Inputs("run_live_guard.promo_evidence")
-    promo_evidence = {
-        **((promo_inp.read_json(_RAMP, default={}, max_age_h=_RAMP_MAX_AGE_H) or {})
-           .get("evidence", {}) or {}),
-        "keys_present": venue is not None,
-        "connector_verified": can.last_ok_ts is not None,
-        "capital_fraction": size_fraction,
-        "principal_signoff": bool(_load(_ROOT / "data" / "stage_state.json", {})
-                                  .get("principal_signoff")),
-    }
+    promo_evidence = _promo_evidence(
+        promo_inp, root=_ROOT, keys_present=venue is not None,
+        connector_verified=can.last_ok_ts is not None, capital_fraction=size_fraction)
     gate_met, gate_why = (staging.s1_entry_met(promo_evidence) if stage == "S0"
                           else staging.s2_entry_met(promo_evidence))
 
