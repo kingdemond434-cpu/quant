@@ -62,6 +62,11 @@ JOBS: dict[str, tuple[float, str]] = {
     "web/desk_state.json": (0.5, "dashboard (Dell/phone)"),
     "data/authority_ratchet.json": (1.0, "earned-evidence floors"),
     "data/sameday_pipeline.json": (2.0, "same-day fence"),
+    # A FIX THAT NEVER REACHED THE BOX IS NOT A FIX. Measured 2026-08-27: the only
+    # code-sync path ships a hardcoded four-file list, so the whole forward/promotion
+    # chain the desk box executes was outside it and `h1_source.py` had silently
+    # diverged. Nothing measured that, which is why it lasted.
+    "data/desk_code_parity.json": (1.0, "desk-parity fence (is the box running this code)"),
 }
 
 
