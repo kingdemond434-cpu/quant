@@ -89,10 +89,49 @@ def remote_hashes(files: list[str], timeout: int) -> dict[str, str] | None:
     return dict(zip(files, lines, strict=False))
 
 
+def heal(diverged: list[dict[str, str]], missing: list[str], timeout: int) -> list[str]:
+    """Ship the money-path files the desk is missing or has drifted on, verified by re-hash.
+
+    DETECTION WITHOUT REPAIR IS A HUMAN LOOP (principal 2026-08-27: "everything should always be
+    automated without me or you"). This check ran every 30 minutes for weeks, correctly reported
+    DIVERGED, and waited for a person -- so the desk box traded on stale engines for hours at a
+    time while a green-looking report accumulated.
+
+    THE ORDER MATTERS AND IS NOT NEGOTIABLE. A replayer reverts this tree to ancient copies on
+    roughly an hourly cadence, so shipping "local" blindly would push a trample straight onto the
+    box that trades. The money-path fence runs FIRST: it restores any protected file that has
+    lost its canon marker, and only a tree that then passes may be shipped. If the fence cannot
+    heal the tree, nothing is shipped and the divergence is left standing and loud.
+    """
+    fence = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "check_moneypath_fence.py")],
+        cwd=ROOT, capture_output=True, text=True, timeout=timeout, check=False)
+    if fence.returncode != 0:
+        print("  HEAL REFUSED: the money-path fence cannot bring this tree to canon; "
+              "shipping unverified code to the trading box is never the safer option")
+        return []
+    shipped: list[str] = []
+    for rel in [d["file"] for d in diverged] + list(missing):
+        src = ROOT / rel
+        if not src.is_file():
+            continue
+        res = subprocess.run(["scp", "-q", str(src), f"{REMOTE}:C:/opt/quant/{rel}"],
+                             capture_output=True, text=True, timeout=timeout, check=False)
+        if res.returncode == 0:
+            shipped.append(rel)
+            print(f"  HEALED {rel} -> {REMOTE}")
+        else:
+            print(f"  HEAL FAILED {rel}: {(res.stderr or '').strip()[:120]}")
+    return shipped
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--timeout", type=int, default=300)
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--heal", action="store_true",
+                    help="ship diverged/missing money-path files to the desk after the "
+                         "money-path fence verifies this tree")
     args = ap.parse_args()
 
     files = protected_files()
@@ -130,6 +169,20 @@ def main() -> int:
         "n_checked": len(local), "n_matched": len(matched),
         "diverged": diverged, "missing_on_desk": missing}
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
+
+    if (diverged or missing) and args.heal:
+        shipped = heal(diverged, missing, args.timeout)
+        if shipped:
+            # RE-VERIFY: scp exits 0 in cases that did not land, which is this module's own
+            # founding lesson. The stored verdict reflects the box as it is AFTER healing.
+            remote2 = remote_hashes(files, args.timeout) or {}
+            diverged = [d for d in diverged if remote2.get(d["file"]) != local.get(d["file"])]
+            missing = [f for f in missing if remote2.get(f) == "MISSING"]
+            doc["healed"] = shipped
+            doc["status"] = "OK" if not diverged else "DIVERGED"
+            doc["diverged"], doc["missing_on_desk"] = diverged, missing
+            doc["checked_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+            OUT.write_text(json.dumps(doc, indent=1), "utf-8")
 
     if not args.quiet:
         for d in diverged:

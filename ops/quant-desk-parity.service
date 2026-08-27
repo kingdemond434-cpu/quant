@@ -1,0 +1,8 @@
+[Unit]
+Description=Desk code parity: is the trading box running THIS repo's money-path code?
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_desk_code_parity.py --heal
+ExecStopPost=/bin/bash /home/quant/quant-platform/scripts/unit_death_log.sh quant-desk-parity.service
