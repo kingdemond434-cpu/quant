@@ -98,6 +98,7 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "orthogonal_candidates.json" in script
     assert "miner_candidate_compiler.py" in script
     assert "merge_hypotheses.py" in script
+    assert "desks/mt5/mt5desk/families_orthogonal.py" in script
 
 
 def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) -> None:
