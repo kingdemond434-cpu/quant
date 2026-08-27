@@ -112,6 +112,13 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         breaches.append("DOCKET: zero candidate rows shipped -- the empty-docket seals held "
                         "upstream, but the flow itself is dry")
 
+    # --- gauntlet: last sweep's actual judgment numbers, for the dashboard pulse
+    gates = _read(DESK / "reports" / "universal_gates_external.json") or {}
+    verd = gates.get("verdicts")
+    if isinstance(verd, list):
+        m["last_sweep_judged"] = len(verd)
+        m["last_sweep_passed"] = sum(1 for v in verd if isinstance(v, dict) and v.get("passed"))
+
     # --- gauntlet: verdicts still being minted, canon never shrinking?
     surv = _read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
     if surv is None:
@@ -171,6 +178,21 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             m["active_clocks"] = "UNMEASURED (desk_state carries no forward rows)"
 
     return breaches, m
+
+
+def publish_pulse(breaches: list[str], m: dict) -> None:
+    """The dashboard IS the proof of life (principal 2026-08-27: "if I don't see it, I'll
+    assume it isn't working"). Every fence run lands its verdict and the stage ages where the
+    brain page reads them -- nobody should ever have to ask a session whether the loop ran."""
+    try:
+        (ROOT / "web" / "research_pulse.json").write_text(json.dumps({
+            "at": m.get("at"),
+            "verdict": "ALL FLOWING" if not breaches else "BREACH",
+            "breaches": breaches,
+            "measurements": m,
+        }, indent=1), "utf-8")
+    except OSError as exc:
+        print(f"pulse publish failed ({exc}) -- the fence verdict stands regardless")
 
 
 def journal(breaches: list[str], m: dict) -> None:
@@ -235,6 +257,7 @@ def main() -> int:
     now = datetime.now(tz=UTC)
     breaches, m = collect(now)
     journal(breaches, m)
+    publish_pulse(breaches, m)
     if not breaches:
         print(f"research health: ALL FLOWING at {m['at']} "
               f"(targets={m.get('mined_targets_n')}, docket={m.get('docket_rows')}, "

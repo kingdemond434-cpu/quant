@@ -104,6 +104,15 @@ td:first-child{font-family:Inter;font-weight:600;font-size:12px}
 
 <div class="wrap">
 <div class="grid">
+  <section class="card c12" id="pulseCard" style="border-left:3px solid var(--green)">
+    <div class="hd"><span>Hourly research pulse</span><span id="pulseAge">—</span></div>
+    <div class="bd" style="padding:10px 16px">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:baseline">
+        <span id="pulseVerdict" style="font:700 13px var(--mono);color:var(--green)">—</span>
+        <span class="s" id="pulseLine">waiting for the fence's first verdict…</span>
+      </div>
+      <ul id="pulseBreaches" style="margin:6px 0 0;padding-left:18px;color:var(--red);font:11px var(--mono)"></ul>
+    </div></section>
   <section class="card c3 kpi"><div class="hd"><span>Today's P&L</span><span id="venue">—</span></div>
     <div class="bd"><div class="v" id="today">—</div><div class="s" id="srcAge">source —</div></div></section>
   <section class="card c3 kpi"><div class="hd"><span>Equity</span><span>live</span></div>
@@ -342,5 +351,29 @@ async function load(){
   chart(d.equity_curve);
  }catch(err){$('health').textContent='STATE UNAVAILABLE';$('badge').classList.add('err')}
 }
-load();setInterval(load,10000);
+async function pulse(){
+ try{
+  const q=await fetch(`research_pulse.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
+  const m=q.measurements||{},ok=q.verdict==='ALL FLOWING';
+  const age=Math.round((Date.now()-Date.parse(q.at))/60000);
+  $('pulseAge').textContent=`checked ${age}m ago · every 30m`;
+  $('pulseVerdict').textContent=q.verdict;
+  $('pulseVerdict').style.color=ok?'var(--green)':'var(--red)';
+  document.getElementById('pulseCard').style.borderLeftColor=ok?'var(--green)':'var(--red)';
+  const f=(h)=>h==null?'—':(h<1?`${Math.round(h*60)}m`:`${n(h,1)}h`)+' ago';
+  $('pulseLine').textContent=
+    `miners ${f(m.mined_targets_age_h)} (${m.mined_targets_n??'—'} targets, ${m.miner_sources??'—'} sources) · `+
+    `docket ${m.docket_rows??'—'} candidates ${f(m.docket_age_h)} · `+
+    `gauntlet swept ${f(m.certs_swept_age_h)}: ${m.last_sweep_judged??'—'} judged, canon ${m.certs_n??'—'} · `+
+    `moat tape wrote ${f(m.moat_newest_write_age_h)} (${m.moat_symbols??'—'} symbols) · `+
+    `stale ${(q.at&&age>75)?'YES — FENCE ITSELF SILENT':'no'}`;
+  $('pulseBreaches').innerHTML=(q.breaches||[]).map(b=>`<li>${b}</li>`).join('');
+ }catch(err){
+  $('pulseVerdict').textContent='PULSE UNAVAILABLE';
+  $('pulseVerdict').style.color='var(--red)';
+  document.getElementById('pulseCard').style.borderLeftColor='var(--red)';
+  $('pulseLine').textContent='research_pulse.json unreadable — the health fence is not publishing; that IS the breach';
+ }
+}
+load();pulse();setInterval(load,10000);setInterval(pulse,60000);
 </script></body></html>
