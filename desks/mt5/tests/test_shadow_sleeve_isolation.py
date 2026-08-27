@@ -141,3 +141,32 @@ def test_a_terminal_verdict_survives_a_blocked_evaluation(tmp_path: Path, monkey
     assert row["status"] == "KILL", "a blocked pass overwrote a verdict the desk already reached"
     assert row["n"] == 51, "a blocked pass destroyed evidence it did not re-measure"
     assert "KeyError" in row["last_error"]
+
+
+def test_a_block_clears_itself_once_the_cause_is_repaired(tmp_path: Path, monkeypatch) -> None:
+    """MEASURED 2026-08-27: EURZAR and USDZAR were blocked at 21:45:10 against a 23-row cost map,
+    evaluated successfully at 21:47:07 against the repaired 251-row map -- `last_attempt_at`
+    proves the pass reached them -- and still reported `BLOCKED_SLEEVE_ERROR`.
+
+    A one-way status leaves `evidence_blocked_sleeves` permanently non-zero, which turns the
+    watchdog red forever and buries the next real block (L1.37). Isolation has to heal.
+    """
+    good_meta = {"contract_size": 100000.0, "tick_size": 0.001, "tick_value": 0.5,
+                 "min_volume": 0.01, "volume_step": 0.01, "median_spread_pts": 10.0}
+    enrolled = [("EURZAR", "asia", {}, "overnight_gap_decay")]
+    shadow_dir = _wire(monkeypatch, tmp_path, enrolled, {"EURZAR": good_meta})
+    (shadow_dir / "shadow_state.json").write_text(json.dumps({
+        "EURZAR.overnight_gap_decay.asia": {
+            "n": 0, "cum_r": 0.0, "max_dd_r": 0.0, "status": "BLOCKED_SLEEVE_ERROR",
+            "last_error": "KeyError: 'EURZAR'", "last_error_at": "2026-08-27T21:45:10+00:00"},
+    }), encoding="utf-8")
+
+    shadow_forward.main()
+
+    row = json.loads((shadow_dir / "shadow_state.json").read_text("utf-8"))[
+        "EURZAR.overnight_gap_decay.asia"]
+    assert row["status"] == "ACTIVE", "the block outlived the defect that caused it"
+    assert "last_error" not in row, "a healed row still advertises an error it no longer has"
+    # The history is preserved rather than erased -- it just stops reading as a live failure.
+    assert row["last_error_seen_at"] == "2026-08-27T21:45:10+00:00"
+    assert "KeyError" in row["last_error_cleared"]

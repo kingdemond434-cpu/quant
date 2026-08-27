@@ -409,6 +409,21 @@ def main() -> None:
             # engine and were flagged IDLE while demonstrably accruing (XAUUSD.asia took its first
             # forward trade under the stale stamp). An organ that does the work but does not sign it
             # is indistinguishable from one that stopped.
+            # A BLOCK MUST CLEAR ITSELF WHEN THE CAUSE IS REPAIRED. Reaching this line means the
+            # sleeve evaluated end to end, so a `BLOCKED_SLEEVE_ERROR` left by an earlier pass is
+            # now stale -- and a status that only ever goes one way would leave
+            # `evidence_blocked_sleeves` permanently non-zero, which is the always-red detector
+            # this desk retires on sight (L1.37). MEASURED 2026-08-27: EURZAR and USDZAR blocked
+            # at 21:45:10 on a 23-row cost map, evaluated successfully at 21:47:07 on the
+            # repaired 251-row map, and still reported blocked. The error text is dropped WITH
+            # the status -- keeping it would leave the row reading as failing while it accrues --
+            # and `last_error_seen_at` preserves that it once did, so the history is not erased.
+            if st.get("status") == "BLOCKED_SLEEVE_ERROR":
+                st["status"] = "ACTIVE"
+                st["last_error_seen_at"] = st.pop("last_error_at", None)
+                st["last_error_cleared"] = st.pop("last_error", None)
+                slog(f"{key}: block CLEARED -- evaluated end to end; previous error was "
+                     f"{st['last_error_cleared']}")
             st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
             st["bar_source"] = bars.source
             st["evidence_venue"] = bars.evidence_venue
