@@ -387,6 +387,11 @@ def build() -> dict[str, Any]:
                                               if _newest else None)}, indent=1), "utf-8")
     except Exception:
         pass
+    # The stall watchdog's latest verdict travels to the dashboard: healing nobody can see
+    # is healing nobody can trust (principal 2026-08-27: "nothing should ever be stalled,
+    # I won't be here to tell you").
+    payload["stall_watch"] = _read(DESK / "data" / "stall_watch.json") or {
+        "status": "UNMEASURED", "note": "watchdog has not reported yet"}
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}
