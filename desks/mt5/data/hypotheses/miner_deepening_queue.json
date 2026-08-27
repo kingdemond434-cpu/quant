@@ -1,0 +1,4783 @@
+{
+ "built_at": "2026-08-27T00:16:06+00:00",
+ "tasks": [
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+   "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+   "symbols": [],
+   "mechanism_tags": [
+    "scalping",
+    "swing"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
+   "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution supp",
+   "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+   "url": "https://github.com/ilahuerta-IA/tradingsystem",
+   "symbols": [],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
+   "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
+   "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "momentum"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
+   "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
+   "symbols": [],
+   "mechanism_tags": [
+    "SMA",
+    "smart money"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
+   "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
+   "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
+   "symbols": [],
+   "mechanism_tags": [
+    "SMA",
+    "smart money"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Smart Money Concepts (SMC) trading strategy project for analyzing Gold (XAUUSD) using market structure, liquidity, order blocks, and fair value gaps.",
+   "url": "https://github.com/itsmustafa119/structure-scope",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "SMA",
+    "order block",
+    "fair value gap",
+    "liquidity",
+    "smart money"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
+   "url": "https://github.com/rolling-panda-san/notebooks",
+   "symbols": [],
+   "mechanism_tags": [
+    "RSI",
+    "EMA"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "LLM-powered trading agents that turn plain natural language into a five-pillar strategy: Trend, Mean-Reversion, Momentum, Volume, and Risk. Each strategy is hosted, self-evolving, configurable through 30+ tunable parameters, and bit-exact between backtest and live execution. Built for simulated Hype",
+   "url": "https://github.com/moss-site/moss-trade-bot-skills",
+   "symbols": [],
+   "mechanism_tags": [
+    "momentum",
+    "RSI"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Here I go through the processing of prototyping a mean reversion trading strategy using statistical concepts, then test it in backtrader.",
+   "url": "https://github.com/orangepineapple/mean_reversion_strategies",
+   "symbols": [],
+   "mechanism_tags": [
+    "mean reversion",
+    "RSI"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "MetaTrader 5 gold (XAUUSD) M1 mean-reversion scalpers \u2014 Z-Score entries, cost-aware TickRobust variant, and dual MR + breakout EA",
+   "url": "https://github.com/n30dyn4m1c/gold-pro-scalper",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout",
+    "RSI"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Pairs Trading Strategy: ES=F and NQ=F Mean Reversion",
+   "url": "https://github.com/honoreaa/Futures-MeanReversion",
+   "symbols": [],
+   "mechanism_tags": [
+    "mean reversion",
+    "RSI",
+    "pairs trading"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Low-latency Rust prediction-market trading bot for Kalshi & Polymarket. 9 autonomous strategies (Momentum, Maker, Arbitrage, ML, etc.), real-time Next.js Control Tower, and an AI LLM Advisor that delivers optimization recommendations via Ollama (local or remote), MCP + Telegram and OpenClaw.",
+   "url": "https://github.com/mbordash/DRADIS",
+   "symbols": [],
+   "mechanism_tags": [
+    "momentum"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
+   "url": "https://github.com/nmj94/momentum-lab",
+   "symbols": [],
+   "mechanism_tags": [
+    "momentum"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Momentum investing strategy backtester with statistical validation and interactive Streamlit dashboard ",
+   "url": "https://github.com/utplawan/momentum-trading-backtester-",
+   "symbols": [],
+   "mechanism_tags": [
+    "momentum"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "\u26a1 A professional open-source algorithmic trading suite for TradingView. Features 16 Pine Script v6 strategies covering Smart Money Concepts (SMC), Order Flow, Momentum, and Trend Breakouts.",
+   "url": "https://github.com/Ahmed-GoCode/Quant-Edge-Indicators",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "momentum",
+    "SMA",
+    "smart money"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opening Range Breakout system in Python \u2014 reproducible backtest, risk management and walk-forward validation. Results are in the repo; no return promises.",
+   "url": "https://github.com/jefrnc/strategy-orb15-momentum",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "momentum"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Kalshi trading bot for prediction markets \u2014 browse event contracts and watch the order book in real time, run market making and momentum/reversion strategies with paper trading, risk limits and position sizing. Educational toolkit \u2014 not financial advice. Unofficial community project, not affiliated ",
+   "url": "https://github.com/else24/kalshi-market-bot",
+   "symbols": [],
+   "mechanism_tags": [
+    "momentum",
+    "position",
+    "RSI"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Financ",
+   "url": "https://github.com/JustinGuese/python_tradingbot_framework",
+   "symbols": [],
+   "mechanism_tags": [
+    "bollinger",
+    "RSI",
+    "MACD"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Este repositorio contiene las funciones b\u00e1sicas del curso de Trading Algor\u00edtmico con Python y MT5 dictado en la Universidad del Rosario as\u00ed como los robots desarrollados durante el curso",
+   "url": "https://github.com/ELOSPO/algorithmic-tradingUR2023I",
+   "symbols": [],
+   "mechanism_tags": [
+    "RSI"
+   ]
+  },
+  {
+   "source": "github",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "This project is a Python-based trading simulator that allows users to simulate trading strategies, manage an order book, and interact with a mock trading environment using various algorithmic traders. The simulator includes a FIX (Financial Information eXchange) protocol handler, a market-making alg",
+   "url": "https://github.com/ThePredictiveDev/Automated-Financial-Market-Trading-System",
+   "symbols": [],
+   "mechanism_tags": [
+    "liquidity"
+   ]
+  },
+  {
+   "source": "mql5_signals",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "signals/mt5 page shape drifted",
+   "url": "https://www.mql5.com/en/signals/mt5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_forum",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GOLD, Gold and XAUUSD",
+   "url": "https://www.mql5.com/en/forum/393267",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_forum",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Looking for complete EURUSD real tick history from 2016 to 2026",
+   "url": "https://www.mql5.com/en/forum/515128",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quantconnect",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "forum shape drifted",
+   "url": "https://www.quantconnect.com/forum",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD SETUP 25 AUGUST",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Question of FVGS AND OB, XAUUSD",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "resistance",
+    "order block"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Is Gold Ready for Another Push Higher?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Thoughts on EURUSD",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": [
+    "scalp",
+    "swing",
+    "trend"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Some setups I called before the move last Friday",
+   "url": "",
+   "symbols": [
+    "GBPJPY",
+    "NAS100",
+    "USDJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Watching GBPJPY for a potential sell setup.",
+   "url": "",
+   "symbols": [
+    "GBPJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Why do all my XAUUSD strategies suddenly work better after 2023",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "reversal",
+    "fibonacci",
+    "liquidity"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "When a \u201cstable\u201d EA suddenly stops being stable",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold Pullback: Can 4580 Hold? \ud83d\udc40",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "pullback",
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "What I'm watching after last week's HTF moves",
+   "url": "",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDCAD"
+   ],
+   "mechanism_tags": [
+    "pullback"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Monday price actin prediction (XAUUSD). Thoughts ?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "reversal",
+    "momentum"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold at 4608 \u2014 What\u2019s Your Monday Bias?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "pullback",
+    "liquidity"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Good enough strategy?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "retest",
+    "support",
+    "resistance",
+    "liquidity"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Friday",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "SMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Waiting to Buy from 159.22- USDJPY (H1)",
+   "url": "",
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism_tags": [
+    "breakout",
+    "resistance",
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "WARNING: Vantage Markets caught manipulating MT5 Server Logs to withhold client profits \u2013 Six support agents exposed!",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "support",
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "I'm Really Pissed \ud83e\udd2c. Please give me Genuine advice rather than usual Bshit",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Ending day",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "EURGBP historically bearish in month 8 (avg -0.001%)",
+   "url": "",
+   "symbols": [
+    "EURGBP"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GBPUSD historically bullish in month 8 (avg 0.001%)",
+   "url": "",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "EURUSD historically bullish in month 8 (avg 0.000%)",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "AUDCAD historically bullish in month 8 (avg 0.001%)",
+   "url": "",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "BTCUSD historically bullish in month 8 (avg 1.417%)",
+   "url": "",
+   "symbols": [
+    "BTCUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "shipping",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "BDI: 926 (neutral)",
+   "url": "",
+   "symbols": [
+    "AUDUSD",
+    "NAS100",
+    "NZDUSD",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "myfxbook_outlook",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ANTIBOT_CHALLENGE (probe not due)",
+   "url": "https://www.myfxbook.com/community/outlook",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "darwinex",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "404 Client Error: Not Found for url: https://www.darwinex.com/darwins",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "tradingview_scripts",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "scripts page shape drifted",
+   "url": "https://www.tradingview.com/scripts/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "fxblue",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "404 Client Error: Not Found for url: https://www.fxblue.com/users",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "collective2",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "HTTP_403 (probe not due)",
+   "url": "https://collective2.com/leaderboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forexpeacearmy",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ROBOTS_DISALLOW (probe not due)",
+   "url": "https://www.forexpeacearmy.com/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "CNY CB Leading Index m/m",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "All Jackson Hole Symposium",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/",
+   "url": "https://web.archive.org/web/20051016184519/http://www.forex-tsd.com:80/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "url": "https://web.archive.org/web/20081214163953/http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140428/http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140922142037/http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141007050806/http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141006124851/http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-6",
+   "url": "https://web.archive.org/web/20150425044026/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-657.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140431/http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-7",
+   "url": "https://web.archive.org/web/20140610002310/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-733.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140828201458/http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "url": "https://web.archive.org/web/20130114235826/http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpa",
+   "url": "https://web.archive.org/web/20140816211013/http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpassed=aHR0cDovL2FuYWx5c2lzLmZvcmV4LXRyYWRpbmctc2lnbmFscy5pbmZvLz93eXNpamFwPXN1YnNjcmlwdGlvbnMmYW1wO2VtYWlsX2lkPTMmYW1wO3VzZXJfaWQ9MiZhbXA7dXJscGFzc2VkPWFIUjBjRG92TDJGdVlXeDVjMmx6TG1admNtVjRMWFJ5WVdScGJtY3RjMmxuYm1Gc2N5NXBibVp2THo5M2VYTnBhbUZ3UFhOMVluTmpjbWx3ZEdsdmJuTW1ZVzF3TzJWdFlXbHNYMmxrUFRNbVlXMXdPM1Z6WlhKZmFXUTlNaVpoYlhBN2RYSnNjR0Z6YzJWa1BXRklVakJqUkc5MlRESkdkVmxYZURWak1teDZURzFhZG1OdFZqUk1XRko1V1ZkU2NHSnRZM1JqTW14dVltMUdjMk41TlhCaWJWcDJUSG81TTJWWVRuQmhiVVozVUZoT01WbHVUbXBqYld4M1pFZHNkbUp1VFcxWlZ6RjNUekpXZEZsWGJITllNbXhyVUZSTmJWbFhNWGRQTTFaNldsaEtabUZYVVRsTmFWcG9ZbGhCTjJSWVNuTmpSMFo2WXpKV2ExQlhSa2xWYWtKcVVrYzVNbFJFU2tka1ZteFlaVVJXYWsxdGVEWlVSekZoWkcxT2RGWnFVazFYUmtvMVYxWmtVMk5IU25SWk0xSnFUVzE0ZFZsdE1VZGpNazQxVGxoQ2FXSldjREpVU0c4MVRUSldXVlJ1UW1oaVZWb3pWVVpvVDAxV2JIVlViWEJxWWxkNE0xcEZaSE5rYlVwMVZGY3hXbFo2UmpOVWVrcFhaRVpzV0dKSVRsbE5iWGh5VlVaU1RtSldiRmhOV0dSUVRURmFObGRzYUV0YWJVWllWVlJzVGxaRlJqVlViV3hoWVVkS1dWRlVaR3RYUlhCNldUQmtSMlZ0VFhsV2JYUlJWakJhU2xaWGNFTmhiRXBJVDFSS1ZWSkZOWEpVVkVwVFRsVTFXRTFYYkU1TlNFSjZWMnhXVG1WRk1VaFVibEpUWWxoU2IxWnVjRmRrVmxKSFlVVTVhbEp0T1RWVWJHUnZZVlpPUmsxVVJscFdiVTE0V1d4a1MwNVZPVVJXV0hCVFVURndiMWxzYUVKT01XdDVUMWhXYTFORmNESlphMlEwWWtkT2NVMVljR3RTTUZsM1dUTnNZV0ZIU2xsUlZHUmFWakEwZDFsV1l6VmtWa0pZVW01V1dsWXpaekZaZWtwV1lsWnNXRTFZWkZCTk1sRXhXWHBLYzJOV2JGUk5XR1JhVmpKU2MxVkdVa1ppVm14WVRWaGtVRTB5VVRGWmVrcHpZMVpzV1ZGVWJHcE5NVnB3V1hwS1QyVlhSbGxSYWtKb1ZucHNNVmt6WTJ4Tk1GRnNUVEJSYlZsWE1YZFBNazUyWW01U2VXSXllSE5hV0VrNVl6TlNhR1JJVFcxWlZ6RjNUekpHYW1SSGJIWmlhakZvWW0xR2MyVllUbXhLYlVaMFkwUjBNMlZZVG5CaGJVVjBZMGRHYmxwVU1IaEtiVVowWTBSME0yVllUbkJoYlVaM1VGaE9NVmx1VG1wamJXeDNaRWRzZG1KdVRTVXpSQ1poYlhBN1kyOXVkSEp2Ykd4bGNqMXpkR0YwY3laaGJYQTdZV04wYVc5dVBXRnVZV3g1YzJVbVlXMXdPM2Q1YzJscVlTMXdZV2RsUFRFbVlXMXdPM2Q1YzJscVlYQTljM1ZpYzJOeWFYQjBhVzl1Y3clM0QlM0QmYW1wO2NvbnRyb2xsZXI9c3RhdHMmYW1wO2FjdGlvbj1hbmFseXNlJmFtcDt3eXNpamEtcGFnZT0xJmFtcDt3eXNpamFwPXN1YnNjcmlwdGlvbnM%3D&controller=stats&action=analyse&wysija-page",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "url": "https://web.archive.org/web/20090420185718/http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "url": "https://web.archive.org/web/20080227113739/http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "url": "https://web.archive.org/web/20080405231746/http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "url": "https://web.archive.org/web/20080224020717/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "url": "https://web.archive.org/web/20080323102645/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "url": "https://web.archive.org/web/20080218140249/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "url": "https://web.archive.org/web/20080322021252/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "url": "https://web.archive.org/web/20080321110204/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "url": "https://web.archive.org/web/20080226234853/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "url": "https://web.archive.org/web/20080219103755/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "url": "https://web.archive.org/web/20080219111128/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "url": "https://web.archive.org/web/20080403033155/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "url": "https://web.archive.org/web/20080523161606/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "url": "https://web.archive.org/web/20080609191658/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "url": "https://web.archive.org/web/20080201033805/http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "url": "https://web.archive.org/web/20080121025202/http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "url": "https://web.archive.org/web/20080404111826/http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "url": "https://web.archive.org/web/20080323102650/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "url": "https://web.archive.org/web/20080219005053/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "url": "https://web.archive.org/web/20080321221930/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "url": "https://web.archive.org/web/20080321210031/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "url": "https://web.archive.org/web/20080405231751/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "url": "https://web.archive.org/web/20080415013026/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "url": "https://web.archive.org/web/20090218092018/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "url": "https://web.archive.org/web/20080418081454/http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "url": "https://web.archive.org/web/20080226224920/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "url": "https://web.archive.org/web/20080323151004/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "url": "https://web.archive.org/web/20080415093556/http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "url": "https://web.archive.org/web/20080319000716/http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "url": "https://web.archive.org/web/20080322021657/http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "url": "https://web.archive.org/web/20080218142517/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "url": "https://web.archive.org/web/20080628015958/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%23",
+   "url": "https://web.archive.org/web/20070113020933/http://www.forex-tsd.com:80/%23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E",
+   "url": "https://web.archive.org/web/20100211171926/http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E3%80%82",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/)",
+   "url": "https://web.archive.org/web/20080108064552/http://www.forex-tsd.com:80/)",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/),",
+   "url": "https://web.archive.org/web/20080108064301/http://www.forex-tsd.com:80/),",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/+1-888-591-2951",
+   "url": "https://web.archive.org/web/20140814151245/http://www.forex-tsd.com/+1-888-591-2951",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-post.html",
+   "url": "https://web.archive.org/web/20061208063057/http://www.forex-tsd.com:80/-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "url": "https://web.archive.org/web/20150403085923/http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "url": "https://web.archive.org/web/20150403085853/http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "url": "https://web.archive.org/web/20130409023128/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "url": "https://web.archive.org/web/20130409023133/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "url": "https://web.archive.org/web/20130409024521/http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "url": "https://web.archive.org/web/20121115232421/http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "url": "https://web.archive.org/web/20130411045245/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "url": "https://web.archive.org/web/20130409024527/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "url": "https://web.archive.org/web/20120727043327/http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "url": "https://web.archive.org/web/20130412094616/http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "url": "https://web.archive.org/web/20130412094922/http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.ic-trading.html",
+   "url": "https://web.archive.org/web/20071024032302/http://www.forex-tsd.com:80/.ic-trading.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.od-revised.html",
+   "url": "https://web.archive.org/web/20071219185114/http://www.forex-tsd.com:80/.od-revised.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.php",
+   "url": "https://web.archive.org/web/20150612030139/http://www.forex-tsd.com:80/.php",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-187.html",
+   "url": "https://web.archive.org/web/20080108064559/http://www.forex-tsd.com:80/.rading-187.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "url": "https://web.archive.org/web/20080218043410/http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "url": "https://web.archive.org/web/20150101162534/http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "url": "https://web.archive.org/web/20110711161538/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=",
+   "url": "https://web.archive.org/web/20120423070242/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=81414",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1-post.html",
+   "url": "https://web.archive.org/web/20070210094610/http://www.forex-tsd.com:80/1-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "url": "https://web.archive.org/web/20140701073938/http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "url": "https://web.archive.org/web/20140424054214/http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "url": "https://web.archive.org/web/20140424054219/http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "url": "https://web.archive.org/web/20141016032009/http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "url": "https://web.archive.org/web/20141016033219/http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "url": "https://web.archive.org/web/20141016033224/http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10-post6.html",
+   "url": "https://web.archive.org/web/20070106122056/http://www.forex-tsd.com:80/10-post6.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100%.txt",
+   "url": "https://web.archive.org/web/20130520192043/http://www.forex-tsd.com:80/100%.txt",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100-post2.html",
+   "url": "https://web.archive.org/web/20080226234858/http://www.forex-tsd.com:80/100-post2.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10000-post3.html",
+   "url": "https://web.archive.org/web/20061026043608/http://www.forex-tsd.com:80/10000-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100001-post9.html",
+   "url": "https://web.archive.org/web/20080821180706/http://www.forex-tsd.com/100001-post9.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100002-post44.html",
+   "url": "https://web.archive.org/web/20090822232151/http://www.forex-tsd.com:80/100002-post44.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100003-post22.html",
+   "url": "https://web.archive.org/web/20070519133558/http://www.forex-tsd.com:80/100003-post22.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100004-post10.html",
+   "url": "https://web.archive.org/web/20080830070132/http://www.forex-tsd.com/100004-post10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100005-post45.html",
+   "url": "https://web.archive.org/web/20090823002110/http://www.forex-tsd.com:80/100005-post45.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100006-post3.html",
+   "url": "https://web.archive.org/web/20080411084146/http://www.forex-tsd.com:80/100006-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100008-post128.html",
+   "url": "https://web.archive.org/web/20071207170449/http://www.forex-tsd.com:80/100008-post128.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100009-post92.html",
+   "url": "https://web.archive.org/web/20070423224401/http://www.forex-tsd.com:80/100009-post92.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10001-post25.html",
+   "url": "https://web.archive.org/web/20081005130726/http://www.forex-tsd.com:80/10001-post25.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100011-post93.html",
+   "url": "https://web.archive.org/web/20070618141552/http://www.forex-tsd.com:80/100011-post93.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100012-post94.html",
+   "url": "https://web.archive.org/web/20070503113312/http://www.forex-tsd.com:80/100012-post94.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100013-post95.html",
+   "url": "https://web.archive.org/web/20070918192247/http://www.forex-tsd.com:80/100013-post95.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100015-post96.html",
+   "url": "https://web.archive.org/web/20070501024727/http://www.forex-tsd.com:80/100015-post96.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100016-post89.html",
+   "url": "https://web.archive.org/web/20070501204510/http://www.forex-tsd.com:80/100016-post89.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100017-post97.html",
+   "url": "https://web.archive.org/web/20070503183311/http://www.forex-tsd.com:80/100017-post97.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100019-post98.html",
+   "url": "https://web.archive.org/web/20070921002113/http://www.forex-tsd.com:80/100019-post98.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10002-post143.html",
+   "url": "https://web.archive.org/web/20080202185535/http://www.forex-tsd.com:80/10002-post143.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100024-post99.html",
+   "url": "https://web.archive.org/web/20070501175727/http://www.forex-tsd.com:80/100024-post99.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100025-post100.html",
+   "url": "https://web.archive.org/web/20070430235912/http://www.forex-tsd.com:80/100025-post100.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100027-post4.html",
+   "url": "https://web.archive.org/web/20070520092111/http://www.forex-tsd.com:80/100027-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100029-post109.html",
+   "url": "https://web.archive.org/web/20071114003837/http://www.forex-tsd.com:80/100029-post109.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10003-post11.html",
+   "url": "https://web.archive.org/web/20060310004217/http://www.forex-tsd.com:80/10003-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100032-post110.html",
+   "url": "https://web.archive.org/web/20071114003839/http://www.forex-tsd.com:80/100032-post110.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100033-post5.html",
+   "url": "https://web.archive.org/web/20071123112114/http://www.forex-tsd.com:80/100033-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100035-post4.html",
+   "url": "https://web.archive.org/web/20080411084152/http://www.forex-tsd.com:80/100035-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100036-post5.html",
+   "url": "https://web.archive.org/web/20080411071944/http://www.forex-tsd.com:80/100036-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100037-post321.html",
+   "url": "https://web.archive.org/web/20071103214411/http://www.forex-tsd.com:80/100037-post321.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post16.html",
+   "url": "https://web.archive.org/web/20080108033235/http://www.forex-tsd.com:80/100038-post16.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post40.html",
+   "url": "https://web.archive.org/web/20081005105455/http://www.forex-tsd.com:80/100038-post40.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10004-post144.html",
+   "url": "https://web.archive.org/web/20080202185541/http://www.forex-tsd.com:80/10004-post144.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100040-post101.html",
+   "url": "https://web.archive.org/web/20070503042226/http://www.forex-tsd.com:80/100040-post101.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100042-post111.html",
+   "url": "https://web.archive.org/web/20071024003834/http://www.forex-tsd.com:80/100042-post111.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post17.html",
+   "url": "https://web.archive.org/web/20080108033240/http://www.forex-tsd.com:80/100044-post17.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post41.html",
+   "url": "https://web.archive.org/web/20081005103717/http://www.forex-tsd.com:80/100044-post41.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100046-post214.html",
+   "url": "https://web.archive.org/web/20070521171935/http://www.forex-tsd.com:80/100046-post214.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100047-post11.html",
+   "url": "https://web.archive.org/web/20070717075537/http://www.forex-tsd.com:80/100047-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100048-post1.html",
+   "url": "https://web.archive.org/web/20070422193747/http://www.forex-tsd.com:80/100048-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10005-post1.html",
+   "url": "https://web.archive.org/web/20070521085716/http://www.forex-tsd.com:80/10005-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100050-post13.html",
+   "url": "https://web.archive.org/web/20071023074725/http://www.forex-tsd.com:80/100050-post13.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100053-post861.html",
+   "url": "https://web.archive.org/web/20090921025802/http://www.forex-tsd.com:80/100053-post861.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How can I separate MPC policy error from the value of perfect information in event-driven portfolio allocation?",
+   "url": "https://quant.stackexchange.com/questions/85800/how-can-i-separate-mpc-policy-error-from-the-value-of-perfect-information-in-eve",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Model Price vs Market Price in terms of Fair Price (Options)",
+   "url": "https://quant.stackexchange.com/questions/21443/model-price-vs-market-price-in-terms-of-fair-price-options",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What best price fit by option P/L means in math terms?",
+   "url": "https://quant.stackexchange.com/questions/82259/what-best-price-fit-by-option-p-l-means-in-math-terms",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Portfolio Optimization with Options Using Only the P Measure",
+   "url": "https://quant.stackexchange.com/questions/85748/portfolio-optimization-with-options-using-only-the-p-measure",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Calculate return for a set of securities downloaded using quantmod",
+   "url": "https://quant.stackexchange.com/questions/45581/calculate-return-for-a-set-of-securities-downloaded-using-quantmod",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Where can I find implied rates for central bank decisions?",
+   "url": "https://quant.stackexchange.com/questions/79073/where-can-i-find-implied-rates-for-central-bank-decisions",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What is the standard way to quote volatile products",
+   "url": "https://quant.stackexchange.com/questions/85798/what-is-the-standard-way-to-quote-volatile-products",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Pricing of Callable Bonds and Coupon Behavior",
+   "url": "https://quant.stackexchange.com/questions/85797/pricing-of-callable-bonds-and-coupon-behavior",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Possible typo in Markowitz (1952) \u201cPortfolio Selection\u201d illustration?",
+   "url": "https://quant.stackexchange.com/questions/85796/possible-typo-in-markowitz-1952-portfolio-selection-illustration",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Monte Carlo simulation for OTM options under stochastic volatility",
+   "url": "https://quant.stackexchange.com/questions/59469/monte-carlo-simulation-for-otm-options-under-stochastic-volatility",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Using the Hull-White model to find the 2026 value in the US bond plot",
+   "url": "https://quant.stackexchange.com/questions/85789/using-the-hull-white-model-to-find-the-2026-value-in-the-us-bond-plot",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How can mutation adequacy be quantified for look-ahead leakage tests in backtests?",
+   "url": "https://quant.stackexchange.com/questions/85794/how-can-mutation-adequacy-be-quantified-for-look-ahead-leakage-tests-in-backtest",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Trading strategies rank",
+   "url": "https://quant.stackexchange.com/questions/85721/trading-strategies-rank",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How should correlated, regime-dependent return-path forecasts be combined into a trading consensus?",
+   "url": "https://quant.stackexchange.com/questions/85792/how-should-correlated-regime-dependent-return-path-forecasts-be-combined-into-a",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Using AI tools to map RIC to Bloomberg ticker",
+   "url": "https://quant.stackexchange.com/questions/85505/using-ai-tools-to-map-ric-to-bloomberg-ticker",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Stock price modelling under binomial tree model?",
+   "url": "https://quant.stackexchange.com/questions/77585/stock-price-modelling-under-binomial-tree-model",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How should static Kelly sizing be extended to asynchronous trading signals with capital lock-up and stochastic future arrivals?",
+   "url": "https://quant.stackexchange.com/questions/85781/how-should-static-kelly-sizing-be-extended-to-asynchronous-trading-signals-with",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Invested Capital: operating approach vs financing approach",
+   "url": "https://quant.stackexchange.com/questions/75621/invested-capital-operating-approach-vs-financing-approach",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "PaymentLag in ql.OvernightIndexedSwap()",
+   "url": "https://quant.stackexchange.com/questions/83811/paymentlag-in-ql-overnightindexedswap",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How to download full daily historical data of MSCI AC Asia Index",
+   "url": "https://quant.stackexchange.com/questions/55793/how-to-download-full-daily-historical-data-of-msci-ac-asia-index",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Asymmetric Choppiness in Swaption Vol Smile with SABR Model",
+   "url": "https://quant.stackexchange.com/questions/85761/asymmetric-choppiness-in-swaption-vol-smile-with-sabr-model",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Does delta-hedging change the transaction cost picture for option momentum strategies?",
+   "url": "https://quant.stackexchange.com/questions/85743/does-delta-hedging-change-the-transaction-cost-picture-for-option-momentum-strat",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How to approximate a function in the H-model",
+   "url": "https://quant.stackexchange.com/questions/75426/how-to-approximate-a-function-in-the-h-model",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Proxy Volatility",
+   "url": "https://quant.stackexchange.com/questions/85666/proxy-volatility",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How is VaR calculated for a pension company?",
+   "url": "https://quant.stackexchange.com/questions/85784/how-is-var-calculated-for-a-pension-company",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Show that a zero-coupon bond discounted by a bond with mautrity $T$ is a martingale under the $T$-Forward measure",
+   "url": "https://quant.stackexchange.com/questions/51730/show-that-a-zero-coupon-bond-discounted-by-a-bond-with-mautrity-t-is-a-marting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Syntethic short vs short position for a hard to borrow stock",
+   "url": "https://quant.stackexchange.com/questions/85724/syntethic-short-vs-short-position-for-a-hard-to-borrow-stock",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Covariance between payoff and consumption in consumption model from Asset Pricing",
+   "url": "https://quant.stackexchange.com/questions/82132/covariance-between-payoff-and-consumption-in-consumption-model-from-asset-pricin",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Canada House Trust Floater pricing",
+   "url": "https://quant.stackexchange.com/questions/63396/canada-house-trust-floater-pricing",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Difference between replicating portfolio and option price",
+   "url": "https://quant.stackexchange.com/questions/78798/difference-between-replicating-portfolio-and-option-price",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Harvesting the Volatility Risk Premium: A Learning-to-Rank Approach",
+   "url": "http://arxiv.org/abs/2608.24786v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Lead-Lag Relationships in Financial Markets: A Comparison of Multiple Clustering Algorithms",
+   "url": "http://arxiv.org/abs/2608.24703v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Generalizing Markowitz Portfolio Optimization by a Quadratic Risk Measure",
+   "url": "http://arxiv.org/abs/2608.24449v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Equilibrium in closed constant-function market maker economies",
+   "url": "http://arxiv.org/abs/2608.23915v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Equity Strategy Backtesting: Luck or Edge? The MinervaScore as a Statistical Robustness Grade",
+   "url": "http://arxiv.org/abs/2608.23808v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The Axiomatic Trader: Latent Regularity, Information Budgets, and the Canonical Form of a Quantitative Investment System",
+   "url": "http://arxiv.org/abs/2608.23416v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "KellyBoost: Growth-Optimal Portfolio Construction with Gradient-Boosted Trees",
+   "url": "http://arxiv.org/abs/2608.23393v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "tse_tick: A Python Library for Parsing and Querying Nikkei NEEDS Tick Data from the Tokyo Stock Exchange",
+   "url": "http://arxiv.org/abs/2608.23053v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "From Exponential to Polynomial: An Exact Filter for High-Dimensional MSM Models",
+   "url": "http://arxiv.org/abs/2608.22864v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The Loop-Gain Matrix: Coupled Rebalancing Feedback and the Blind Spots of Scalar Stability Monitoring",
+   "url": "http://arxiv.org/abs/2608.22768v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Short-horizon mean reversion in cryptocurrency markets: a matched cross-market measurement",
+   "url": "http://arxiv.org/abs/2608.21888v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "A Multiscale Ball Test for Conditional Mean Independence",
+   "url": "http://arxiv.org/abs/2608.20727v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Dynamic Portfolio Optimization under CVaR Constraints",
+   "url": "http://arxiv.org/abs/2608.20179v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The Reconfiguration Premium: Co-movement Structure as an Unspanned Dimension of the Variance Risk Premium",
+   "url": "http://arxiv.org/abs/2608.20020v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Concentrated Liquidity Provision: a Reinforcement Learning Perspective",
+   "url": "http://arxiv.org/abs/2608.19389v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The Market's Conditioning Representation: Equilibrium, Crowding, and Convention Multiplicity",
+   "url": "http://arxiv.org/abs/2608.18299v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Entropic Value-at-Risk portfolio optimization for tempered stable L\u00e9vy processes",
+   "url": "http://arxiv.org/abs/2608.18022v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Multi-Level Market Making with Reinforcement Learning",
+   "url": "http://arxiv.org/abs/2608.18195v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice",
+   "url": "http://arxiv.org/abs/2608.17808v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Scalable Pontryagin-Guided Adjoint-to-Control Recovery for Constrained Dynamic Portfolio Choice",
+   "url": "http://arxiv.org/abs/2608.15667v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "A contribution to the critique of blockchain censorship",
+   "url": "http://arxiv.org/abs/2608.15640v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Disclosed Human-Capital Disruption and Firm-Specific Risk",
+   "url": "http://arxiv.org/abs/2608.14859v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Dependence-Informed Sparse Neural Architecture for Stock Return Prediction",
+   "url": "http://arxiv.org/abs/2608.14323v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Photonic Quantum Computing vs. Classical Solvers in Constrained Factor Portfolio Optimization",
+   "url": "http://arxiv.org/abs/2608.14134v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Buy the Rumor, Sell the News: When Is News Priced In?",
+   "url": "http://arxiv.org/abs/2608.14014v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "universe registry carries no swap fields yet -- run expand_universe.py on the desk box, which records swap_long/swap_short from symbol_info",
+   "url": "/home/quant/quant-platform/desks/mt5/data/universe/universe.json",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "7skooooo/mql5-systems-mirror",
+   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
+   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DaggerConsole/metatrader-4-boost",
+   "url": "https://github.com/DaggerConsole/metatrader-4-boost",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
+   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "shazzadu1/Trade-Halting-Safeguard",
+   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "TheHolderCollective/MetatraderSharp",
+   "url": "https://github.com/TheHolderCollective/MetatraderSharp",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "youcefito/mt5-quiet-automata",
+   "url": "https://github.com/youcefito/mt5-quiet-automata",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "dendyerbrace/myfxbook-core",
+   "url": "https://github.com/dendyerbrace/myfxbook-core",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "pierskinkpit/forex-tester-studio",
+   "url": "https://github.com/pierskinkpit/forex-tester-studio",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Trujillofa/mt5-arch-integration",
+   "url": "https://github.com/Trujillofa/mt5-arch-integration",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "propfirm_boards",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "404 Client Error: Not Found for url: https://ftmo.com/en/leaderboards/",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Nosotros",
+   "url": "https://trading-latam.com/nosotros-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Nuestros Eventos",
+   "url": "https://trading-latam.com/eventos-capacitacion-entrenamiento/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Elecci\u00f3n de broker",
+   "url": "https://trading-latam.com/eleccion-de-broker/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Cursos",
+   "url": "https://trading-latam.com/educacion-financiera/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Blog",
+   "url": "https://trading-latam.com/blog-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Blog de Trading Latam",
+   "url": "https://trading-latam.com/blog-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Scanner Pro",
+   "url": "https://trading-latam.com/scanner/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Terminal de Inversi\u00f3n",
+   "url": "https://trading-latam.com/terminal/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Calculadora de trading",
+   "url": "https://trading-latam.com/calculadora-de-trading/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Sal\u00f3n de la Fama",
+   "url": "https://trading-latam.com/ranking-toptraders/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Ranking de Traders",
+   "url": "https://trading-latam.com/ranking-toptraders/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Audita tu Cuenta",
+   "url": "https://trading-latam.com/auditor/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Iniciar sesi\u00f3n",
+   "url": "https://trading-latam.com/iniciar-sesion/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Escritorio",
+   "url": "https://trading-latam.com/escritorio/",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Cursos",
+   "url": "https://trading-latam.com/educacion-financiera/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Blog de Trading Latam",
+   "url": "https://trading-latam.com/blog-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Scanner Pro",
+   "url": "https://trading-latam.com/scanner/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Terminal de Inversi\u00f3n",
+   "url": "https://trading-latam.com/terminal/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Calculadora de trading",
+   "url": "https://trading-latam.com/calculadora-de-trading/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Sal\u00f3n de la Fama",
+   "url": "https://trading-latam.com/ranking-toptraders/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Audita tu Cuenta",
+   "url": "https://trading-latam.com/auditor/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Iniciar sesi\u00f3n",
+   "url": "https://trading-latam.com/iniciar-sesion/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Escritorio",
+   "url": "https://trading-latam.com/escritorio/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quiero entrar al ranking",
+   "url": "https://trading-latam.com/auditor/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Conoce m\u00e1s sobre nosotros \u2192",
+   "url": "https://trading-latam.com/nosotros-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Calculadora",
+   "url": "https://trading-latam.com/calculadora-de-trading/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Auditor de Cuentas",
+   "url": "https://trading-latam.com/auditor/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Brokers",
+   "url": "https://trading-latam.com/eleccion-de-broker/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Blog",
+   "url": "https://trading-latam.com/blog-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Nosotros",
+   "url": "https://trading-latam.com/nosotros-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Ver cat\u00e1logo de copytrading",
+   "url": "https://trading-latam.com/copytrading/",
+   "symbols": [],
+   "mechanism_tags": [
+    "copy_trading",
+    "gold"
+   ]
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@TradingSCapital",
+   "url": "https://my.litefinance.org/traders/TradingSCapital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@SaiGon_Trading",
+   "url": "https://my.litefinance.org/traders/SaiGon_Trading",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@H_Trading",
+   "url": "https://my.litefinance.org/traders/H_Trading",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@UnicornFxCapital",
+   "url": "https://my.litefinance.org/traders/UnicornFxCapital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@OngHoang_EU",
+   "url": "https://my.litefinance.org/traders/OngHoang_EU",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@TrustTrade",
+   "url": "https://my.litefinance.org/traders/TrustTrade",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@mikenguyen",
+   "url": "https://my.litefinance.org/traders/mikenguyen",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Fire_Phoenix",
+   "url": "https://my.litefinance.org/traders/Fire_Phoenix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Quantum 9000",
+   "url": "https://my.litefinance.org/traders/Quantum 9000",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Golden_Eye",
+   "url": "https://my.litefinance.org/traders/Golden_Eye",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Bigold",
+   "url": "https://my.litefinance.org/traders/Bigold",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@PRIME500",
+   "url": "https://my.litefinance.org/traders/PRIME500",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Earth_Taurus",
+   "url": "https://my.litefinance.org/traders/Earth_Taurus",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Atlas_Capital",
+   "url": "https://my.litefinance.org/traders/Atlas_Capital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Aliakhavan72",
+   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "instaforex_copy",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ForexCopy System",
+   "url": "https://www.instaforex.com/forexcopy_system?mid=statcont",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "instaforex_copy",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ForexCopy System",
+   "url": "https://www.instaforex.com/forexcopy_system",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "instaforex_copy",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ForexCopy",
+   "url": "https://www.instaforex.com/forexcopy_system",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "instaforex_copy",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ForexCopy system",
+   "url": "https://www.instaforex.com/forexcopy_system",
+   "symbols": [],
+   "mechanism_tags": [
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430068/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430068/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1384990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1384990/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1388367/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1388367/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1229530/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1229530/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1138236/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1138236/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1103609/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1103609/",
+   "symbols": [],
+   "mechanism_tags": [
+    "trend",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418830/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418830/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1111877/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1111877/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1197228/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1197228/",
+   "symbols": [],
+   "mechanism_tags": [
+    "trend",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439202/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439202/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1182356/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1182356/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
+   "symbols": [],
+   "mechanism_tags": [
+    "copy_trading",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1103608/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1103608/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120503/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120503/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185038/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185038/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy974339/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy974339/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187258/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187258/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171380/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171380/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147804/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147804/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418015/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418015/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1073852/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1073852/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147807/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147807/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1419316/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1419316/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1255157/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1255157/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1197231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1197231/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1173792/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1173792/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1254212/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1254212/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185041/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185041/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1206690/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1206690/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1206693/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1206693/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433204/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433204/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1200146/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1200146/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1435143/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1435143/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1437742/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1437742/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1231164/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1231164/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1245070/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1245070/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1365195/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1365195/",
+   "symbols": [],
+   "mechanism_tags": [
+    "trend",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "symbols": [],
+   "mechanism_tags": [
+    "grid",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1437978/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1437978/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441927/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441927/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1353023/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1353023/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438375/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438375/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1419458/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1419458/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
+   "symbols": [],
+   "mechanism_tags": [
+    "scalping",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431729/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431729/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1436005/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1436005/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "fbs_tape",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "top-trades page shape drifted",
+   "url": "https://fbs.com/top-trades",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2304847",
+   "symbols": [
+    "AUDCAD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2375343",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "CADCHF",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2379208",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2280569",
+   "symbols": [
+    "AUDCAD",
+    "AUDUSD",
+    "NZDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2262642",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2231030",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2356441",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDUSD",
+    "CADCHF",
+    "CADJPY",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/1988269",
+   "symbols": [
+    "AUDCAD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2371777",
+   "symbols": [
+    "AUDNZD",
+    "CHFJPY",
+    "EURCAD",
+    "EURGBP",
+    "EURJPY",
+    "EURUSD",
+    "GBPJPY",
+    "GBPUSD",
+    "USDCAD",
+    "USDJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2329290",
+   "symbols": [
+    "AUDUSD",
+    "EURUSD",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2265877",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2271402",
+   "symbols": [
+    "AUDCAD",
+    "AUDNZD",
+    "EURGBP",
+    "NZDCAD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2339082",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2300694",
+   "symbols": [
+    "AUDCAD",
+    "AUDNZD",
+    "BTCUSD",
+    "EURAUD",
+    "EURUSD",
+    "NZDCAD",
+    "NZDUSD",
+    "USDCAD",
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2222743",
+   "symbols": [
+    "BTCUSD",
+    "EURUSD",
+    "USDJPY",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2204998",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "BTCUSD",
+    "CADCHF",
+    "CHFJPY",
+    "EURAUD",
+    "EURCAD",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2367701",
+   "symbols": [
+    "AUDCAD",
+    "AUDCHF",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "BTCUSD",
+    "CADCHF",
+    "CADJPY",
+    "CHFJPY",
+    "EURAUD",
+    "EURCAD",
+    "EURCHF"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2307342",
+   "symbols": [
+    "BTCUSD",
+    "US500",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold overbought ???",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Is Gold Finding Buyers Around 4635\u20134640?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD SETUP 26th August",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Yet another profitable \"IA Grail\" for trading gold on Forex?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Day 2 of learning forex as a complete beginner [EUR/USD + XAU/USD]",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "USDTHB historically bullish in month 8 (avg 0.004%)",
+   "url": "",
+   "symbols": [
+    "USDTHB"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "EOSUSD historically bullish in month 8 (avg 0.066%)",
+   "url": "",
+   "symbols": [
+    "EOSUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Merck historically bullish in month 8 (avg 0.106%)",
+   "url": "",
+   "symbols": [
+    "MERCK"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "EURSGD historically bearish in month 8 (avg -0.003%)",
+   "url": "",
+   "symbols": [
+    "EURSGD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "AUDNZD historically bullish in month 8 (avg 0.002%)",
+   "url": "",
+   "symbols": [
+    "AUDNZD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "UnitedHealth historically bullish in month 8 (avg 0.042%)",
+   "url": "",
+   "symbols": [
+    "UNITEDHEALTH"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "EURPLN historically bullish in month 8 (avg 0.002%)",
+   "url": "",
+   "symbols": [
+    "EURPLN"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "CHINAH historically bearish in month 8 (avg -0.005%)",
+   "url": "",
+   "symbols": [
+    "CHINAH"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Airbnb historically bullish in month 8 (avg 0.060%)",
+   "url": "",
+   "symbols": [
+    "AIRBNB"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Pepsi historically bearish in month 8 (avg -0.006%)",
+   "url": "",
+   "symbols": [
+    "PEPSI"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "USDHKD historically bullish in month 8 (avg 0.000%)",
+   "url": "",
+   "symbols": [
+    "USDHKD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "USDSGD historically bearish in month 8 (avg -0.001%)",
+   "url": "",
+   "symbols": [
+    "USDSGD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "BTCUSD historically bullish in month 8 (avg 0.100%)",
+   "url": "",
+   "symbols": [
+    "BTCUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "NOKJPY historically bullish in month 8 (avg 0.009%)",
+   "url": "",
+   "symbols": [
+    "NOKJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "USDILS historically bearish in month 8 (avg -0.007%)",
+   "url": "",
+   "symbols": [
+    "USDILS"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GBPJPY historically bullish in month 8 (avg 0.009%)",
+   "url": "",
+   "symbols": [
+    "GBPJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Bridgewater has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Renaissance has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Citadel has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Point72 has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Two Sigma has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Millennium has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Baupost has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Soros has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Appaloosa has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "#forex #riskmanagement #xauusd #mql5 #mt4 #forextrading #mt5 #expertadvisor #mql4 #tradingstrategy",
+   "url": "https://youtube.com/watch?v=EzojyhQ_D3Q",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "LIVE GOLD TRADING |  GOLD &amp; BTC LIVE ANALYSIS | 25 AUG 2026 #livetrading  #gold  | @sameersinghfx",
+   "url": "https://youtube.com/watch?v=VFQIcFkSKbw",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "RSI"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "AI Algo 2.5 Indicator \ud83d\udd25 | XAUUSD Gold BUY &amp; SELL Signals | Target 1 &amp; Target 2 &amp; Target 3 |",
+   "url": "https://youtube.com/watch?v=XBmdeWGzduw",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GOLD MARKET UPDATE \ud83d\udd25 | XAUUSD Yesterday Outlook | Key Levels &amp; Buy/Sell Zones | Gold Analysis",
+   "url": "https://youtube.com/watch?v=2kfEjHY6HkU",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "zone"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Trade gold xauusd - Buy #xauusd #buygold #trading",
+   "url": "https://youtube.com/watch?v=ahgKCsZuNpE",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "$190 \u27a1\ufe0f $112K+ \ud83d\udd25 XAUUSD Gold Trading Journey |  #trading  #bestgoldforexsignals  #goldmarket",
+   "url": "https://youtube.com/watch?v=qSA0_YnKnvc",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "What is Forex Trading? | My Engulfing Strategy &amp; Favorite Pair Gold (XAUUSD)",
+   "url": "https://youtube.com/watch?v=1kjpCwM36Fg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "engulfing"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
+   "url": "https://youtube.com/watch?v=uoaEM1uCjg0",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83e\udd47 GOLD TRADE: +150 PIPS PROFIT! \ud83c\udfaf\ud83d\udd25 | XAUUSD Trade",
+   "url": "https://youtube.com/watch?v=YNBmxIgHLFE",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "the logic trader What\u2019s your view on Gold today: BUY or SELL? Comment below! \ud83d\udc47 | XAUUSD",
+   "url": "https://youtube.com/watch?v=E_nPsL9Y-8s",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\u3010USD/JPY  \u5f85\u3064\u3082\u76f8\u5834\u30112026/8/25   #USDJPY\u3000#\u30c9\u30eb\u5186\u3000#FX\u3000#\u30c8\u30ec\u30fc\u30c9",
+   "url": "https://youtube.com/watch?v=NwmjgtYwyxs",
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 24/08/2026  #gold #liveforextrading,",
+   "url": "https://youtube.com/watch?v=k-1UyB_BLBk",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "21 AUG  l Ravvi Soni I Live Trading Session I   #forex, #xauusd, #trading #bitcoin",
+   "url": "https://youtube.com/watch?v=oASNEkaEsNs",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34 GOLD XAUUSD LIVE TRADING FROM TORONTO | $4,500 Breakout or Fakeout? | Gold News &amp; Analysis",
+   "url": "https://youtube.com/watch?v=2Cm9HdunQeI",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "This Gold Scalping Strategy Prints Money on the 1-Minute Chart (XAUUSD DragonBreak)",
+   "url": "https://youtube.com/watch?v=aStLB0P_u0c",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=Bt9kgTXFtpg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=keFUJeaDIls",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34 BTC Live trading 363 / 26.08.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
+   "url": "https://youtube.com/watch?v=5V1HH0zIXRg",
+   "symbols": [
+    "GBPJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD \ud83d\udd34Live 25.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+   "url": "https://youtube.com/watch?v=e9FwV61Aivw",
+   "symbols": [
+    "BTCUSD",
+    "NAS100",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAU/USD Live trading | 24.08.2026 #xauusd #trading #crypto #updownfx #nfp #forex #gold #cpi",
+   "url": "https://youtube.com/watch?v=4gUgIgwd7Hw",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD \ud83d\udd34Live 24.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+   "url": "https://youtube.com/watch?v=saqfAN8KkjU",
+   "symbols": [
+    "BTCUSD",
+    "NAS100",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  }
+ ],
+ "consumer": "hourly/daily research brains must recover a falsifiable rule or reject"
+}
