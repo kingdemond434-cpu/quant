@@ -109,7 +109,7 @@ def fetch_macro_series(series_id: str) -> tuple[dict[str, float], str]:
             data = fn(series_id)
             _record(f"macro:{series_id}", name, ok=True)
             return data, name
-        except Exception as exc:  # noqa: BLE001 -- each route's failure feeds the next
+        except Exception as exc:
             errors.append(f"{name}: {type(exc).__name__}: {exc}")
             _record(f"macro:{series_id}", name, ok=False, why=str(exc)[:120])
     raise RuntimeError(f"ALL routes failed for {series_id} -- " + " | ".join(errors))
