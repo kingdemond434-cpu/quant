@@ -188,3 +188,93 @@ def test_exotics_named_by_the_fence_are_now_costable() -> None:
     # USDBRL has no EUR leg and must triangulate through USD.
     tri = derive_tick_value("USDBRL", 1e-05, 100000.0, {"USDBRL": 5.0, "EURUSD": 1.1585})
     assert tri == pytest.approx(1.0 / 5.0 / 1.1585, rel=0.01)
+
+
+class _SI:
+    """The only `symbol_info` fields the cost reader touches."""
+
+    def __init__(self, tv=None, ccy=None):
+        if tv is not None:
+            self.trade_tick_value = tv
+        if ccy is not None:
+            self.currency_profit = ccy
+
+
+def test_cost_fields_reads_the_field_that_makes_a_symbol_priceable() -> None:
+    """82 of 197 rows were unpriceable because producers that HELD symbol_info dropped this."""
+    from mt5desk.universe_registry import cost_fields_from_symbol_info
+    assert cost_fields_from_symbol_info(_SI(tv=1.37, ccy="usd")) == {
+        "tick_value": 1.37, "currency_profit": "USD"}
+
+
+def test_cost_fields_omits_a_degenerate_tick_value_rather_than_writing_zero() -> None:
+    """A symbol with no fresh tick reports 0.0. A zero tick value is not a cheap instrument, it
+    is an unmeasured one -- and writing it would let `merge` delete a good prior value."""
+    from mt5desk.universe_registry import cost_fields_from_symbol_info, merge
+    assert cost_fields_from_symbol_info(_SI(tv=0.0, ccy="USD")) == {"currency_profit": "USD"}
+    assert cost_fields_from_symbol_info(_SI()) == {}
+    base = {"AAPL": {"tick_value": 1.0}}
+    out = merge(base, {"AAPL": cost_fields_from_symbol_info(_SI(tv=0.0))}, source="dl")
+    assert out["AAPL"]["tick_value"] == 1.0, "a stub reading must never delete a real one"
+
+
+def test_cost_fields_ignores_a_junk_currency() -> None:
+    from mt5desk.universe_registry import cost_fields_from_symbol_info
+    assert "currency_profit" not in cost_fields_from_symbol_info(_SI(tv=2.0, ccy="US"))
+    assert "tick_value" not in cost_fields_from_symbol_info(_SI(tv="n/a"))
+
+
+def test_bulk_downloader_merges_and_actually_writes() -> None:
+    """Two defects lived in ONE line of `download_all_symbols.py`: `json.dumps(..., encoding=)`
+    raises TypeError on every Python 3, so the script did the entire download and then died
+    before writing; and the write CLOBBERED, which is the exact defect this module exists to
+    stop (the script is named in its own docstring as one of the three offending producers)."""
+    src = (_DESK / "scripts" / "download_all_symbols.py").read_text(encoding="utf-8")
+    assert "json.dumps(universe, indent=2, encoding=" not in src
+    assert "merge(_prior, universe, source=" in src
+    assert "cost_fields_from_symbol_info" in src
+
+
+def _fake_mt5(values: dict):
+    class _M:
+        def symbol_select(self, sym, on):  # noqa: ANN001, ARG002
+            return True
+
+        def symbol_info(self, sym):  # noqa: ANN001
+            return values.get(sym)
+
+    return _M()
+
+
+def test_cost_refresh_fills_the_gap_without_touching_a_live_identity() -> None:
+    """`cost_hash` is part of sleeve identity: replacing an existing `tick_value` with the
+    terminal's would flip the hash and break every live forward clock on that symbol."""
+    sys.path.insert(0, str(_DESK / "scripts"))
+    import refresh_cost_fields
+    registry = {
+        "CADJPY": {"tick_value": 0.5417851821752675, "tick_size": 0.001},   # LIVE clock, derived
+        "AAPL": {"tick_size": 0.01},                                        # uncostable
+        "3M": {"tick_size": 0.01},                                          # uncostable
+        "GHOST": {"tick_size": 0.01},                                       # terminal has no answer
+    }
+    merged, report = refresh_cost_fields.refresh(registry, _fake_mt5({
+        "CADJPY": _SI(tv=0.9999, ccy="JPY"),     # DIFFERENT from the stored value on purpose
+        "AAPL": _SI(tv=1.0, ccy="USD"),
+        "3M": _SI(tv=0.0, ccy="USD"),            # no fresh tick -> degenerate, must not fill
+    }))
+    assert merged["CADJPY"]["tick_value"] == 0.5417851821752675, "a live identity was rewritten"
+    assert merged["AAPL"]["tick_value"] == 1.0
+    assert merged["3M"].get("tick_value") is None, "a 0.0 reading is unmeasured, not cheap"
+    assert report["costable_before"] == 1
+    assert report["costable_after"] == 2
+    assert report["filled"] == 1
+    assert set(report["still_uncostable"]) == {"3M", "GHOST"}
+
+
+def test_cost_refresh_reports_rather_than_guesses_when_the_terminal_is_silent() -> None:
+    sys.path.insert(0, str(_DESK / "scripts"))
+    import refresh_cost_fields
+    merged, report = refresh_cost_fields.refresh({"X": {"tick_size": 0.01}}, _fake_mt5({}))
+    assert merged["X"].get("tick_value") is None
+    assert report["terminal_unanswered"] == 1
+    assert report["filled"] == 0

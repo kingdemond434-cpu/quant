@@ -154,6 +154,38 @@ def _rate_to_account(quote: str, closes: dict[str, float]) -> float | None:
     return quote_usd / acct_usd
 
 
+def cost_fields_from_symbol_info(si: Any) -> dict[str, Any]:
+    """The ACCOUNT-CURRENCY cost fields a live MT5 ``symbol_info`` already holds.
+
+    `tick_value` is the field whose absence makes a symbol unpriceable: it is the only one
+    carrying a price in account currency, so without it `spread_cost_per_lot` returns 0.0 and
+    gate 8 (stress_costs) cannot judge the candidate at all. Measured 2026-08-27: 82 of 197
+    registry rows had none -- 67 Equities, 15 Indices, 23 uncategorised -- because the only
+    producer that ever wrote it carries a hardcoded 32-symbol list, while the producers covering
+    all 197 read `symbol_info` on every iteration and threw the field away.
+
+    `currency_profit` is MT5's OWN answer to the denomination question and is the only correct
+    route for a share or index CFD, whose name ("3M", "AUS200") carries no code to parse --
+    `quote_currency` prefers it over any inference for exactly that reason.
+
+    A DEGENERATE READING IS OMITTED, never written as 0. A symbol with no fresh tick reports
+    `trade_tick_value == 0.0`, and a zero tick value is not a cheap instrument, it is an
+    unmeasured one -- writing it would let this producer delete a good prior value through
+    `merge`, which is the clobber this module exists to stop.
+    """
+    out: dict[str, Any] = {}
+    tv = getattr(si, "trade_tick_value", None)
+    try:
+        if tv is not None and float(tv) != 0.0:
+            out["tick_value"] = float(tv)
+    except (TypeError, ValueError):
+        pass
+    ccy = getattr(si, VENUE_CCY_FIELD, None)
+    if isinstance(ccy, str) and len(ccy.strip()) == 3:
+        out[VENUE_CCY_FIELD] = ccy.strip().upper()
+    return out
+
+
 def derive_tick_value(symbol: str, tick_size: Any, contract_size: Any,
                       closes: dict[str, float], row: dict[str, Any] | None = None
                       ) -> float | None:

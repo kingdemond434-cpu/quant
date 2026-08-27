@@ -2,17 +2,23 @@
 Runs on Windows where MetaTrader5 is installed.
 Then SCP to VPS.
 """
+import json
+import sys
+import time
+from pathlib import Path
+
 import MetaTrader5 as mt5
 import pandas as pd
-import json
-import time
-import os
-from pathlib import Path
 
 OUT_DIR = Path(r"C:\Users\dell\mt5-research\data\mt5_universe")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from mt5desk.universe_registry import cost_fields_from_symbol_info, merge  # noqa: E402
+
 UNIVERSE_OUT = OUT_DIR / "universe.json"
+
+
 PARQUET_DIR = OUT_DIR / "parquets"
 PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -74,6 +80,16 @@ for i, sym_info in enumerate(to_download):
         "contract_size": contract_size,
         "volume_min": volume_min,
         "category": category,
+        # THE FIELD WHOSE ABSENCE MAKES 42% OF THE UNIVERSE UNPRICEABLE. `tick_value` is the only
+        # field carrying a price in ACCOUNT currency, so without it `spread_cost_per_lot` returns
+        # 0.0 and gate 8 (stress_costs) cannot judge the candidate at all. Measured 2026-08-27:
+        # 82 of 197 registry rows had none -- 67 Equities, 15 Indices, 23 uncategorised -- because
+        # the ONLY producer that ever wrote it (`fetch_universe.py`) carries a hardcoded 32-symbol
+        # list. The terminal has had the answer in hand on every one of these iterations and this
+        # writer was dropping it. `currency_profit` rides along because it is MT5's OWN answer to
+        # the denomination question, and it is the only correct route for a share or index CFD
+        # whose name ("3M", "AUS200") carries no code to parse -- see universe_registry.
+        **cost_fields_from_symbol_info(sym_info),
         "bars": len(df),
         "first_bar": str(df.index[0]),
         "last_bar": str(df.index[-1]),
@@ -98,6 +114,7 @@ for sym_name in existing:
                     "spread_price": round(si.spread * si.point, 6),
                     "contract_size": getattr(si, "trade_contract_size", 1.0),
                     "volume_min": si.volume_min, "category": cat,
+                    **cost_fields_from_symbol_info(si),
                     "bars": len(df_tmp),
                     "first_bar": str(df_tmp.index[0]),
                     "last_bar": str(df_tmp.index[-1]),
@@ -105,8 +122,26 @@ for sym_name in existing:
 
 mt5.shutdown()
 
-# Save universe.json
-UNIVERSE_OUT.write_text(json.dumps(universe, indent=2, encoding="utf-8"))
+# Save universe.json -- MERGED, never clobbered, and it now actually writes.
+# TWO DEFECTS IN ONE LINE (measured 2026-08-27):
+#   1. `json.dumps(..., encoding="utf-8")` raises `TypeError: JSONEncoder.__init__() got an
+#      unexpected keyword argument 'encoding'` on every Python 3. This script did the ENTIRE
+#      download -- hundreds of symbols, minutes of terminal I/O -- and then died on the write, so
+#      nobody who ran it ever got a universe.json out of it. `encoding` belongs to write_text.
+#   2. It CLOBBERED. `universe_registry` exists because three producers each wrote their own
+#      field set over the others, and this script is named in its docstring as one of the three;
+#      the merge it prescribes was never adopted here. A producer that does not know a field must
+#      not be able to delete it.
+_prior = {}
+if UNIVERSE_OUT.exists():
+    try:
+        _prior = json.loads(UNIVERSE_OUT.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        print(f"  WARN: prior universe.json unreadable ({exc}); writing this run's rows alone")
+        _prior = {}
+_merged = merge(_prior, universe, source="download_all_symbols")
+UNIVERSE_OUT.write_text(json.dumps(_merged, indent=2), encoding="utf-8")
+print(f"universe.json: {len(universe)} row(s) this run merged into {len(_merged)} total")
 
 # Summary
 cats = {}
