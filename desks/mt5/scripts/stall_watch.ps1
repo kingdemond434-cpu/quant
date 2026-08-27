@@ -102,6 +102,26 @@ foreach ($tn in $researchTasks) {
   }
 }
 
+# UNIVERSE REGISTRY RATCHET (desk side). A rogue writer keeps rebuilding universe.json from
+# the terminal's 23 MarketWatch rows (three strikes on 2026-08-27; the last one blocked both
+# gap-decay forward clocks with KeyError: EURZAR while every fence read green). The VPS repair
+# organ ratchets its own copy; THIS is the desk's local ratchet -- rows may never shrink below
+# the canon superset, and a shrunken file is restored from canon within one 10-minute pass.
+$uniPath = 'C:\opt\quant\desks\mt5\data\universe\universe.json'
+$canPath = 'C:\opt\quant\desks\mt5\data\universe\universe.canon.json'
+try {
+  $uni = Get-Content $uniPath -Raw -ErrorAction Stop | ConvertFrom-Json
+  $can = Get-Content $canPath -Raw -ErrorAction Stop | ConvertFrom-Json
+  $nU = ($uni.PSObject.Properties | Measure-Object).Count
+  $nC = ($can.PSObject.Properties | Measure-Object).Count
+  if ($nU -lt $nC) {
+    Copy-Item $canPath $uniPath -Force
+    $actions += "UNIVERSE: registry shrank to $nU rows (canon $nC) -- restored from canon"
+  } elseif ($nU -gt $nC) {
+    Copy-Item $uniPath $canPath -Force    # the ratchet grows with the registry
+  }
+} catch { $actions += "UNIVERSE: guard could not read registry/canon ($_)" }
+
 # DESK DISK FLOOR. A full C: kills the terminal, every task and every artifact write at once,
 # silently. Below 5GB: prune the two safe reclaim pools -- logs older than 14 days and the
 # gauntlet series cache (pure recompute) -- and REPORT. Below 2GB after pruning: loud breach
