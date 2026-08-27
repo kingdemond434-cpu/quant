@@ -5684,5 +5684,141 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"cc7fa68782cc4932": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Gold_LiveTop",
+"url": "https://my.litefinance.org/traders/Gold_LiveTop",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-27T15:22:29+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.34
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0f80d3c7b692edc4": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "motional-tammy18/systematic-trading-framework",
+"url": "https://github.com/motional-tammy18/systematic-trading-framework",
+"text": "Backtest systematic trading strategies using walk-forward optimization, Monte Carlo simulations, and rigorous statistical validation.",
+"symbols": [],
+"found_at": "2026-08-27T15:24:27+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-27T15:14:07Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1c7dedb6a5bf5127": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Aljawa831/MT5-MT4-Close-Orders-Script",
+"url": "https://github.com/Aljawa831/MT5-MT4-Close-Orders-Script",
+"text": "Close all open MetaTrader 4 and MetaTrader 5 positions instantly with this automated script.",
+"symbols": [],
+"found_at": "2026-08-27T15:24:27+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T15:11:04Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"12653174f367d345": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "mdarcshuvo/programming-advisor",
+"url": "https://github.com/mdarcshuvo/programming-advisor",
+"text": "\ud83d\udee0\ufe0f Assess build vs. buy choices with Programming Advisor, your tool for finding solutions, estimating costs, and planning seamless integrations.",
+"symbols": [],
+"found_at": "2026-08-27T15:24:27+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T14:51:41Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"96299779d1f07efe": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Infini8y/Apex-Trading",
+"url": "https://github.com/Infini8y/Apex-Trading",
+"text": "\ud83d\ude80 Enhance your trading experience with Apex, the cutting-edge platform that outperforms competitors in speed, design, and AI-driven insights.",
+"symbols": [],
+"found_at": "2026-08-27T15:24:28+00:00",
+"topic": "metatrader5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-27T14:52:10Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b2d51dc907773e82": {
+"t0": "2026-08-27T15:24:33+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "jingling-gingerbeer626/decentralized-forex-broker",
+"url": "https://github.com/jingling-gingerbeer626/decentralized-forex-broker",
+"text": "Enable permissionless, on-chain synthetic forex trading with leveraged exposure and vault-based liquidity for efficient market participation.",
+"symbols": [],
+"found_at": "2026-08-27T15:24:30+00:00",
+"topic": "forex-trading",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T15:05:54Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

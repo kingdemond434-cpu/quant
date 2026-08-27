@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-27T14:24:58+00:00",
+ "rebuilt_at": "2026-08-27T15:24:33+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -844,6 +844,81 @@
    },
    "cohorts": [
     "f2e95961b4fafa56"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "motional-tammy18": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "0f80d3c7b692edc4"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "aljawa831": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "1c7dedb6a5bf5127"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "mdarcshuvo": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "12653174f367d345"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "infini8y": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "96299779d1f07efe"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "jingling-gingerbeer626": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "b2d51dc907773e82"
    ],
    "scores": {
     "independent_evidence": 1,

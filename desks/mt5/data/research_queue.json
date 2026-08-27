@@ -6541,5 +6541,173 @@
    "win_rate": null,
    "symbol": "EURZAR"
   }
+ },
+ {
+  "id": "ext-20260827-5214ae",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAGEUR event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAGEUR"
+  }
+ },
+ {
+  "id": "ext-20260827-f171c4",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUEUR event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAUEUR"
+  }
+ },
+ {
+  "id": "ext-20260827-64b295",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFDKK event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFDKK"
+  }
+ },
+ {
+  "id": "ext-20260827-adc9df",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFHUF event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFHUF"
+  }
+ },
+ {
+  "id": "ext-20260827-b9beba",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFNOK event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFNOK"
+  }
+ },
+ {
+  "id": "ext-20260827-4369de",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFPLN event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFPLN"
+  }
+ },
+ {
+  "id": "ext-20260827-9dc3e8",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFSEK event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFSEK"
+  }
+ },
+ {
+  "id": "ext-20260827-931f1a",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFSGD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T14:50:00.357375+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFSGD"
+  }
  }
 ]

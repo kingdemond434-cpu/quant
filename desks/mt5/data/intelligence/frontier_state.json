@@ -1,5 +1,5 @@
 {
-"cursor": 43,
+"cursor": 44,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -85,6 +85,9 @@
 "keuntungan MT4",
 "keuntungan MT5",
 "keuntungan ranking",
+"penurunan maksimum MT4",
+"penurunan maksimum MT5",
+"penurunan maksimum ranking",
 "salin perdagangan MT4",
 "salin perdagangan MT5",
 "salin perdagangan ranking",
