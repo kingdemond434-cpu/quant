@@ -151,3 +151,34 @@ def test_retirement_revokes_promotion_authority(tmp_path, monkeypatch) -> None:
         enrolled={"SOMETHING.else"}, cert_keys=set())
     assert state[key]["status"].startswith("RETIRED")
     assert state[key]["promotion_authority"] is False
+
+
+def test_running_clock_without_a_frozen_identity_is_reported(tmp_path, monkeypatch) -> None:
+    """`sleeve_registry.json` is idempotent, so its FILE AGE says nothing -- an unchanged registry
+    is the healthy state. The property that matters is that no clock runs unfrozen."""
+    key = "GBPJPY.asia"
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"sleeves": {}}), encoding="utf-8")
+    import sleeve_registry
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", reg)
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    _reconcile_tmp(tmp_path, monkeypatch, {key: {"status": "ACTIVE", "n": 2}},
+                   enrolled={key}, cert_keys={key})
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["identity_unfrozen"] == 1
+    assert any(a["action"] == "IDENTITY_UNFROZEN" and a["key"] == key for a in doc["actions"])
+
+
+def test_frozen_clock_raises_no_identity_finding(tmp_path, monkeypatch) -> None:
+    key = "GBPJPY.asia"
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"sleeves": {key: {"identity": {"a": 1}}}}), encoding="utf-8")
+    import sleeve_registry
+    monkeypatch.setattr(sleeve_registry, "REGISTRY", reg)
+    out = tmp_path / "forward_reconcile.json"
+    monkeypatch.setattr(forward_reconcile, "OUT", out)
+    _reconcile_tmp(tmp_path, monkeypatch, {key: {"status": "ACTIVE", "n": 2}},
+                   enrolled={key}, cert_keys={key})
+    doc = json.loads(out.read_text(encoding="utf-8"))
+    assert doc["identity_unfrozen"] == 0

@@ -197,6 +197,18 @@ def main() -> int:
 
     actions: list[dict] = []
     to_gauntlet: list[dict] = []
+    # IDENTITY COVERAGE -- the property `sleeve_registry.json` actually guarantees. The registry is
+    # IDEMPOTENT by construction (`freeze` returns early once a key is frozen), so its file age
+    # says nothing at all: an unchanged registry is the HEALTHY state. The job manifest was
+    # nonetheless gauging it by age with a 3h window, which is red whenever the desk is well --
+    # exactly the fence that trains readers to skim. What matters is that no clock RUNS without a
+    # frozen identity, because an unfrozen clock is one whose parameters can drift mid-window.
+    try:
+        from sleeve_registry import REGISTRY as _REG_PATH
+        _frozen = set((_read(_REG_PATH).get("sleeves") or {}).keys())
+    except Exception as exc:
+        print(f"  WARN: sleeve registry unreadable ({exc}); identity coverage UNMEASURED")
+        _frozen = None
     try:
         from shadow_forward import WINDOWS
     except Exception:
@@ -246,6 +258,12 @@ def main() -> int:
                 continue
             if _status in TERMINAL:
                 continue
+            # shadow_forward's lane is the one `freeze()` serves; qquant/scalp own their own rows.
+            if _frozen is not None and fname == "shadow_state.json" and key not in _frozen:
+                actions.append({"key": key, "action": "IDENTITY_UNFROZEN", "why": (
+                    "running clock with no frozen identity in sleeve_registry.json; its "
+                    "parameters can drift mid-window and nothing would notice. Reported, never "
+                    "retired -- freezing is the engine's job, not the reconciler's.")})
             # STRIP THE PARAMETER SIGNATURE FIRST. Clock keys are `SYM.selector#p=v_p=v` since
             # each certified parameterization owns its own clock; splitting on "." alone made
             # `sel` come out as "asia#rr=1.5", which matched no window and no certificate, so
@@ -400,7 +418,10 @@ def main() -> int:
         {"checked_at": now, "enrolled": None if enrolled is None else len(enrolled),
          "enrolment_readable": not unknown_enrolment,
          "certified_clocks": None if cert_clock_keys is None else len(cert_clock_keys),
-         "certified_pairs": len(certs), "actions": actions}, indent=1), "utf-8")
+         "certified_pairs": len(certs),
+         "identity_unfrozen": (None if _frozen is None
+                               else sum(a["action"] == "IDENTITY_UNFROZEN" for a in actions)),
+         "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:
         counts[a["action"]] = counts.get(a["action"], 0) + 1

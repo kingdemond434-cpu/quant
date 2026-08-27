@@ -55,7 +55,15 @@ JOBS: dict[str, tuple[float, str]] = {
     "desks/mt5/reports/shadow/scalp_shadow_state.json": (3.0, "shadow_cycle, dashboard"),
     "desks/mt5/reports/shadow/qquant_shadow_state.json": (3.0, "promoter, dashboard"),
     "desks/mt5/reports/execution_quality.json": (36.0, "promoter (promotion gate), dashboard"),
-    "desks/mt5/data/sleeve_registry.json": (3.0, "shadow_forward identity check"),
+    # sleeve_registry.json is DELIBERATELY NOT HERE. `freeze()` is idempotent -- it returns
+    # early once a key is frozen -- so the file only changes when a NEW sleeve enrols and an
+    # unchanged registry is the HEALTHY state. Gauging it by age (it carried a 3.0h window)
+    # made it red whenever the desk was well, and it was only ever GREEN because
+    # `pull_desk_state.sh` restamped it every two minutes without `scp -p`. The property
+    # that matters -- no clock RUNS without a frozen identity -- is measured every pass by
+    # `forward_reconcile` as IDENTITY_UNFROZEN, and forward_reconcile.json IS age-gauged
+    # below because it rewrites on every run. Do not "restore" this row: age is the wrong
+    # instrument here, not a missing one.
     "desks/mt5/data/decay_live.json": (26.0, "dashboard, gateway risk"),
     "desks/mt5/data/forward_reconcile.json": (26.0, "operator audit"),
     "data/gauntlet_survivors.json": (26.0, "promotion_gate"),

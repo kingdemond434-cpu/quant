@@ -10,12 +10,21 @@
 # WHAT TRAVELS: the built dashboard state and the shadow ledgers it summarises -- read-only
 # artifacts. No secrets, no credentials, no order path. If the desk box is unreachable the last
 # good copy stays in place and `age_seconds` on the page tells the truth about how old it is.
+# FRESHNESS MUST BE THE BOX'S, NOT THE PULLER'S (-p, measured 2026-08-27). Without `-p` every
+# scp stamps the local copy with NOW, so this script rewrote ~10 artifacts every two minutes and
+# each one read FRESH forever -- including `shadow_state.json` (3h limit), `decay_live.json` and
+# `forward_reconcile.json` (26h). The desk box had not written `sleeve_registry.json` since
+# 03:34 (4.6h, past its own 3h window) and the local copy still showed an age of one minute; only
+# the job manifest's separate byte-identical heuristic caught it, and nothing at all would have
+# caught a box that simply stopped. That is this desk's oldest lesson wearing new clothes: an
+# artifact's mtime proves the COPY happened, never that the producer ran. `-p` carries the
+# remote's modification time across, so every staleness gauge downstream measures the box.
 set -u
 cd /home/quant/quant-platform
 REMOTE=contabo-mt5
 ok=0
 
-scp -q "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev/null \
+scp -pq "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev/null \
   && mv web/desk_state.json.tmp web/desk_state.json && ok=1
 
 # Pull every state producer consumed by the read-only watchdog. Omitting shadow_health meant the
@@ -23,21 +32,21 @@ scp -q "$REMOTE:C:/opt/quant/web/desk_state.json" web/desk_state.json.tmp 2>/dev
 # external_shadow_state made newly certified generic frontiers invisible after they enrolled.
 for f in shadow_state.json qquant_shadow_state.json scalp_shadow_state.json \
          external_shadow_state.json shadow_health.json; do
-  scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/$f" \
+  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/$f" \
       "desks/mt5/reports/shadow/$f.tmp" 2>/dev/null \
     && mv "desks/mt5/reports/shadow/$f.tmp" "desks/mt5/reports/shadow/$f"
 done
-scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
+scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
     desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp 2>/dev/null \
   && mv desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 
 # The job manifest judges FRESHNESS, so it has to see the trading box's own artifacts rather than
 # this box's stale copies -- otherwise it would report a dead organ as healthy, which is the exact
 # failure mode it exists to catch.
-scp -q "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
+scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
     desks/mt5/reports/execution_quality.json 2>/dev/null || true
 for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json moat_coverage.json; do
-  scp -q "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
+  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
 done
 
 rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
