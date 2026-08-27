@@ -54,8 +54,42 @@ foreach ($rel in $relPaths) {
     if (Test-Path $full) { $existing += $rel }
 }
 if ($existing.Count -eq 0) {
-    Write-SyncLog "SKIP: none of the tracked state files exist yet on this box"
-    exit 0
+    # EXIT 3, NOT 0. Publishing nothing is not the same as publishing, and this
+    # branch reported them identically: the task fired every 15 minutes, wrote
+    # LastTaskResult 0, and the artifact in git sat frozen for 33 HOURS while
+    # every watchdog read a healthy task. Observed 2026-08-28.
+    #
+    # The comment three lines above says this script exists to avoid "look like
+    # success while publishing nothing" -- it guarded `git add` on an ignored
+    # path and not the files simply being absent, which is the same failure
+    # through a different door.
+    #
+    #   0  published
+    #   3  nothing to publish -- the sources do not exist on this box
+    #   1  genuine failure
+    #
+    # Naming the missing paths matters: "none exist" sends a reader looking for
+    # a broken shadow run when the usual cause is this script pointed at the
+    # wrong RepoRoot.
+    foreach ($rel in $relPaths) {
+        Write-SyncLog "  MISSING: $(Join-Path $RepoRoot ($rel -replace '/', '\'))"
+    }
+    Write-SyncLog ("SKIP: none of the {0} tracked state files exist under RepoRoot " +
+                   "'{1}'. Either the producers have not run, or this script is " +
+                   "pointed at the wrong checkout." -f $relPaths.Count, $RepoRoot)
+    exit 3
+}
+
+# A PARTIAL SET IS ALSO WORTH SAYING. Publishing 1 of 4 exits 0 and looks
+# identical to publishing all 4, and the three that vanished are exactly the
+# ones a reader would assume were fresh.
+if ($existing.Count -lt $relPaths.Count) {
+    foreach ($rel in $relPaths) {
+        if ($existing -notcontains $rel) { Write-SyncLog "  MISSING: $rel" }
+    }
+    Write-SyncLog ("PARTIAL: publishing {0} of {1} tracked files; the rest are " +
+                   "absent and whatever reads them in git is now STALE, not " +
+                   "merely unchanged." -f $existing.Count, $relPaths.Count)
 }
 
 $addRc = Git-In-Repo (@("add", "--") + $existing)
