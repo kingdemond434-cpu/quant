@@ -8639,6 +8639,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0673",
+   "source": "deep_sweep",
+   "summary": "FREE PER-SYMBOL x PER-BROKER-SERVER REAL-ACCOUNT SLIPPAGE PANEL EXISTS ON THE DESKS OWN VENUE, KEYLESS, AND THE DESK MEASURES SLIPPAGE AT ZERO INSTEAD (prospector 2026-08-27, VERIFIED live). desks/mt5 backtests charge median spread + commission and NO slippage -- desks/mt5/research/book_reality.py:10 states it and substitutes GUESSED 2x/3x cost multiples, on sleeves it itself describes as STOP-ENTRY breakouts that \"slip in one direction by construction\". MQL5 Signals publishes the measurement: endpoint GET https://www.mql5.com/signals/charts/slippage?id=<signal_id>&to=<broker_server> returns per-symbol average slippage IN PIPS with a per-cell trade count, keyed on the triple (symbol, provider broker, subscriber broker) -- stated by MQL5 CTO Renat Fatkhullin in /ru/forum/9761 posts #3 and #5 (2012-12-29/31) and confirmed live today. MEASURED on signal 2204998: 209 broker-server rows, >=25 distinct servers INCLUDING FusionMarkets-Demo -- the desks own counterparty -- returning XAUUSD 1.00 pip, EURUSD 0.00, GBPUSD 0.00. S13: /signals/charts/slippage is NOT in robots.txt; its SIBLING /signals/charts/risks IS disallowed, so the exact path matters. REPAIR: harvest the panel across many signals filtered to FusionMarkets servers, aggregate per symbol, and replace book_reality.pys guessed multiple with a measured per-symbol slippage distribution. HONEST LIMITATION AND FALSIFIER: this measures a COPY-TRADE SUBSCRIBERs fill, so it includes copy latency and is an UPPER bound on a directly-executing desk, not an unbiased estimate; per-cell n is tiny (x 1 here) so power comes only from aggregating across many signals. Test both by comparing the aggregate against the desks OWN request-to-deal record.",
+   "roi_bps": null,
+   "rank": 88.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T06:21:07.296322+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0674",
+   "source": "deep_sweep",
+   "summary": "THE MT5 STRATEGY TESTER HAS NO LIQUIDITY MODEL: it fills ANY volume at the ticks Bid/Ask because MqlTick carries no bid/ask volume, and it converts CROSSES VIA THE DOLLAR -- together these MANUFACTURE arbitrage opportunities that do not exist even on demo (prospector 2026-08-27, VERIFIED, primary source). EVIDENCE: /ru/forum/91039 (2016-07-10), practitioner fxsaber opening post: \"even after millisecond-precision multi-currency tick delivery I get a huge number of arbitrage situations. The tester executes them perfectly (obtaining a grail on real ticks), which does not happen in life even on demo\"; his post #5: \"MqlTick contains no information about volumes at Bid and Ask. And the tester pours ANY volume at those prices.\" Maxim Kuznetsov post #3 names the second defect: crosses are converted through the dollar, \"otherwise arbitrage EAs really do look like a grail\". MQL5 CTO Renat Fatkhullin post #4 offers only \"random delay mode\", which the practitioner rejects as not matching reality -- i.e. THE VENDOR HAS NO FIX. WHY IT BINDS HERE: this is the same class as R0670 (the tester applies TODAYs swap table to all history) landing on a second axis, and it means any tester-derived verdict on a spread-crossing, short-horizon, cross-pair or arbitrage-shaped candidate is optimistic BY CONSTRUCTION rather than by degree. REPAIR: (a) record which desk verdicts are tester-derived vs own-engine-derived and mark the former UNVALIDATED for fill-sensitive families; (b) never screen a cross-pair arbitrage candidate in the tester at all; (c) the desks own engine shares the root defect -- it charges spread+commission and no depth -- so the honest repair is the measured slippage distribution in R0673, not a bigger guessed multiple.",
+   "roi_bps": null,
+   "rank": 84.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T06:21:21.593467+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0675",
+   "source": "deep_sweep",
+   "summary": "THE DESKS SCRAPERS ARE STRUCTURALLY BLIND TO AJAX TAB CONTENT, WHICH IS WHERE THE VALUABLE NUMBERS LIVE -- and the page-level scrape returns 200 with plausible bytes, so it certifies itself healthy (prospector 2026-08-27, measured). TWO MEASUREMENTS TODAY. (1) desks/mt5/data/intelligence/mql5/signals_20260827_0600.json contains rows named \"Filter\", \"Broker server\", \"Maximum profit\", \"Reliability\" -- the organ is scraping the FILTER SIDEBAR of /en/signals, not signals. That is the 4th MQL5 organ confirmed dark and is fresh evidence for the still-open R0667; the correct list route is /en/signals/mt5/list/pageN (measured 200, 137KB, yields /en/signals/<id> links). (2) The per-symbol per-broker slippage table that R0673 is built on is NOT in the signal pages HTML at all: the tab div is empty and the data arrives from GET /signals/charts/slippage?id=&to=, discovered only by reading the inline LoadBrokerSlippage() JS. A regex over the rendered page finds nothing and reports success. REPAIR, GENERAL: for every collector, assert a CONTENT invariant that only real payload can satisfy (a signal row must carry a numeric growth or drawdown; a slippage row must carry a symbol and a pip value) rather than asserting HTTP 200 / non-empty bytes -- this is the classify_row shape the desk already adopted for miner health. REPAIR, SPECIFIC: when a target renders a tab client-side, grep the inline JS for the Ajax.get URL and harvest the endpoint directly; record the endpoint in the source registry so it is never re-derived.",
+   "roi_bps": null,
+   "rank": 70.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T06:21:39.213696+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

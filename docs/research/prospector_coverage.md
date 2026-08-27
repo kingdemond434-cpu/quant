@@ -7606,3 +7606,163 @@ its §13 read and its measured rate limit). 3 catalog artifacts committed. 1 des
 The public MQL5 alpha layer stayed picked-clean, exactly as expected. **The yield of this run was
 not alpha — it was three execution/data-integrity facts on the desk's own binding constraint, and
 the discovery that the desk's four MQL5 miners have been dark for 144 runs while reporting success.**
+
+---
+
+## SESSION 2026-08-27 (prospector, standing daily) — CLOSED
+
+Backlog verified clear before opening ground: 68 catalogued / 39 resolved / **0 pending
+verification** / 29 deferred (earliest return 2026-09-01). Mining authorised.
+
+**ITEMS TAKEN THIS RUN** (bounded breadth, unbounded depth per item; resume points from the
+2026-08-26(b) note's "NEXT UN-EXHAUSTED GROUND" list):
+
+1. **MQL5 `/en/blogs`** (ground #4, ~10,001+ posts) — never parsed by any desk organ, and it is
+   exactly the solo-practitioner long-form genre the capped hand-priority names. Plus
+   **`/en/jobs`** (ground #5, 158 rows) — small enough to EXHAUST in one run; clients describing
+   in their own words, with a budget attached, the strategy they pay to have automated.
+2. **The RU `trading_systems` board** (ground #2, 2,141 threads) — the EN threads mined on
+   2026-08-26 are largely translated RU practitioners; this is the source, not the mirror.
+3. Carry-forward check on the two MQL5 collectors that archive `[]` (articles, codebase) — still
+   2 bytes in today's 06:00 pull.
+
+_(status updated in place as each item resolves — findings are never held in context to the end)_
+
+### ITEM 1a — `/en/job` — **EXHAUSTED** (census, first ever by any desk organ)
+
+**154 of 158 rows, pages 1–9; page 10 returns 404** — that 404 *is* the end of the ground, not a
+block. Artifact: `data/intelligence/mql5_catalog/mql5_jobs_20260827.json` (title, full brief,
+budget, applications, categories, skills, date). Arrival rate ≈ 5/day, so the whole board turns
+over in ~30 days: this is cheap to re-census forever, not a one-time dig.
+
+**What it is: positioning intel, not alpha.** These are clients describing, in their own words
+with a budget attached, the strategy they are paying to have automated. Measured over the 154
+briefs (median brief 413 chars, **median budget \$50**, mean \$465, max \$10,000):
+
+| mentions | term | mentions | term |
+|---|---|---|---|
+| **68** | **XAUUSD + gold** | 24 | scalp |
+| 44 | RSI | 16 | prop firm + FTMO |
+| 20 | trend | 13 | grid |
+| 14 | MACD | 13 | telegram |
+| 14 | risk management | 11 | ICT |
+
+**The honest reading, and it is uncomfortable for this desk:** gold is, by a factor of ~2.5 over
+any other instrument, where retail automation demand concentrates — and the desk's own flagship
+sleeves are XAUUSD session-range breakouts. This is not a reason to retire them (a crowded
+*retail* venue is not a crowded *edge*, and nothing here measures capital). It is a measured prior
+that belongs in the capacity and counterparty argument of **R0671** — broker-side termination
+risk falls hardest on the flow a broker watches most, and this board says gold EAs are that flow.
+**Routed to `improvement_inbox.md`; NOT carded** — no forced participant is named, so it fails
+the mechanism test by construction. **0 watchlist cards from this ground.**
+
+### ITEM 1b — `/en/blogs` — first 60 pages (1,200 posts), **NOT exhausted**
+
+Artifact: `mql5_blogs_20260827.json`. **Route + ground facts worth keeping:** 20 posts/page,
+`div.blogPostItem` carries title + a ~240-char real excerpt + author + tags + views/likes/comments.
+1,200 posts spans **28 June → 27 Aug 2026 only** — so the board runs ≈600 posts/month and the
+sitemap's 10,001 is a floor covering roughly the last 18 months. 1,194 distinct authors in 1,200
+posts: this is a **vendor broadcast channel**, not a community.
+
+Genre split of the 1,200 (regex-classified, not eyeballed): 747 unclassified, **283
+mechanism-essay**, 133 product manual, 31 signal-selling, 6 daily market call. Ranking the whole
+1,200 by mechanism-keyword density, **the top layer is almost entirely execution, cost and
+broker-feed quality** — the desk's own binding constraint — not signals. Representative titles:
+*"Why the Same EA Backtests Differently on Every Broker: Spread and Feed Quality"* (774859),
+*"Execution Agents, Slippage, and Real Fill Quality in MetaTrader 5"* (774718), *"How to Audit
+Request-to-Deal Execution Logs"* (774169), *"A Year of Real-Tick Testing on Gold: Why Most XAUUSD
+Backtests Flatter You"* (774275). **Zero new tradeable mechanisms in the top 28.** The one price
+mechanism seen (774413, stop-clusters swept on abnormally wide spread) is a product page and its
+body was NOT read — my blog-body selector returned 350 chars and failed; **that is my defect and
+it is the named resume point, not a verdict on the post.**
+
+### ITEM 2 — RU `trading_systems` — **listing census COMPLETE**, bodies begun
+
+**2,140 of 2,141 threads**, pages 1–72, all unique. Artifact: `mql5_ru_20260827.json`.
+**Parser gap, reported: the reply-count field did not parse (all 2,140 read 0)** — the RU board
+does not use `title="Ответов"`. So this ranking is title+preview only and the engagement axis is
+UNMEASURED, not zero (L1.28a). Fixing that selector is a resume item.
+
+Four threads read at post level. **Two hard findings, both VERIFIED against primary sources
+(MQL5's CTO Renat Fatkhullin, and the practitioner fxsaber), both carded:**
+
+- **R0673 — a free per-symbol × per-broker-server REAL-ACCOUNT slippage panel exists on the
+  desk's own venue, and the desk measures slippage at zero instead.** `/ru/forum/9761` #3/#5
+  (2012): MQL5 collects slippage keyed on the triple *(symbol, provider broker, subscriber
+  broker)*, per-symbol detail **in real pips**. Verified live today: `GET
+  /signals/charts/slippage?id=<id>&to=<broker_server>`, keyless, 200. On signal 2204998 — **209
+  broker-server rows, ≥25 distinct, including `FusionMarkets-Demo`, the desk's own counterparty**,
+  returning **XAUUSD 1.00 pip**, EURUSD 0.00, GBPUSD 0.00. Against
+  `desks/mt5/research/book_reality.py:10`, which states the engine charges spread + commission and
+  **no slippage** and substitutes *guessed* 2×/3× multiples on sleeves it itself calls stop-entry
+  breakouts that "slip in one direction by construction". **§13 near-miss worth keeping: the
+  sibling path `/signals/charts/risks` IS disallowed in robots.txt; `/signals/charts/slippage` is
+  not.** Falsifier stated in the row: this is a copy-*subscriber's* fill, so it includes copy
+  latency and is an UPPER bound, and per-cell n is tiny — power comes only from aggregating many
+  signals, and the test is against the desk's own request-to-deal record.
+- **R0674 — the MT5 Strategy Tester has no liquidity model.** `/ru/forum/91039` (2016): fxsaber —
+  the tester fills **any** volume at the tick's Bid/Ask because `MqlTick` carries no bid/ask
+  volume, producing "a grail on real ticks, which does not happen in life even on demo"; Kuznetsov
+  adds that the tester **converts crosses via the dollar**, manufacturing arbitrage that is not
+  there. The CTO's only offered remedy is random-delay mode, which the practitioner rejects — **the
+  vendor has no fix.** Same class as R0670 (today's swap table applied to all history), second axis.
+
+### ITEM 3 — the dark MQL5 collectors — **still unrepaired, verified today, no new row**
+
+`desks/mt5/side_channels/mql5_codebase.py:20` still requests `/en/code_base`, which 404s (the
+working route is `/en/code/mt5/{experts,indicators,libraries,scripts}/pageN`), and today's 06:00
+artifacts for **articles and codebase are 2 bytes (`[]`) again**. **R0660 and R0667 are already
+open and own this** — no duplicate row was raised. New measured evidence was routed into
+**R0675** instead: `signals_20260827_0600.json` contains rows named *"Filter"*, *"Broker server"*,
+*"Maximum profit"* — the organ is scraping the **filter sidebar**, the 4th organ confirmed dark —
+and, generalising, the numbers worth having on this site live behind **AJAX tab endpoints a
+page-level regex can never see** (R0673's panel is invisible in the signal page's HTML; it was
+found only by reading the inline `LoadBrokerSlippage()` JS).
+
+### DEPTH LINE (honest)
+- `/en/job`: **EXHAUSTED** — full census, 154/158, natural 404 terminus. Bodies: the listing brief
+  IS the body for this ground.
+- RU `trading_systems`: **listing EXHAUSTED (2,140/2,141)**; thread bodies **4**; reply chains
+  ≥2 levels **4** (both carded findings came from the reply layer, neither is visible in any title).
+- `/en/blogs`: 1,200 of ~10,001, ranked; bodies read **0 of 1,200** (selector defect, named).
+- Forks/citations chased: **0** — wrong ground, and saying so beats padding.
+- **Breadth-theater check: 3 grounds touched, 2 closed to a census, 4 reply chains mined, 2
+  VERIFIED findings from the reply layer. Not breadth-theater — but the blogs item is
+  surface-only and I am naming it rather than dressing it up.**
+
+### FAILURES, REPORTED BECAUSE THEY ARE MINE
+- **I wrote `pgrep -f "mq_dig.py jobs"` inside a `bash -c` whose own cmdline contains that string**
+  — the waiter self-matches and never exits. This is already a desk lesson and I did it anyway.
+- **Then I "fixed" it with `pkill -f "ALLDONE"` — and `ALLDONE` was in my own command string, so I
+  killed my own shell mid-heredoc and lost the script I was writing.** Same defect, second costume,
+  same run. Cost: two restarted chains.
+- The jobs corpus had to be crawled **twice**: my first selector took `job-item__desc` (which is the
+  budget, median 8 chars) instead of `job-item__text` (the actual brief, median 413). The first
+  keyword table was therefore titles-only and I nearly reported it as brief-level.
+- Blog body selector returned 350 chars; **0 blog bodies were read.**
+
+### NEXT UN-EXHAUSTED GROUND (named before closing)
+1. **Harvest R0673's panel at scale** — walk `/en/signals/mt5/list/pageN`, pull
+   `/signals/charts/slippage` per signal filtered to **Fusion** servers, aggregate per symbol.
+   This is the run that converts a verified route into a measured cost input.
+2. **Fix the blog body selector, then read the top-283 mechanism-essay bucket** — ranked list is
+   already on disk, so this is body-reading, not re-scanning.
+3. **Fix the RU reply-count selector and re-rank the 2,140** on engagement × mechanism density;
+   then mine the top RU threads — `/ru/forum/448777` (pair trading / multi-currency arbitrage) and
+   `/ru/forum/284779` (DOM & real volumes) were fetched but not yet read, and
+   **STATISTICAL-ARBITRAGE and MARKET-MAKING-EXECUTION are both THIN families** in
+   `data/strategy_coverage.json`.
+4. Carried unchanged from 2026-08-26(b): EN `trading_systems` pages 26–138; `forum_general_en`
+   (45,001+) and `forum_ea_en` (15,683), both never touched; article bodies below rank 9.
+
+**RUN CLOSE 2026-08-27:** backlog verified clear before opening ground (0 pending verification).
+**3 ledger rows raised — R0673, R0674, R0675.** 2 grounds taken to a **census** (`/en/job`
+154/158; RU `trading_systems` 2,140/2,141), 1 opened and ranked (blogs 1,200). 4 catalog artifacts
+committed. 1 verified keyless data route on the desk's own venue, with its §13 read and its
+falsifier. 1 vendor-unfixable backtest-validity defect. 1 positioning measurement routed to the
+inbox. **Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forward clocks minted, 0 video
+fetched, 0 video locked (no route tried and failed), 0 forks or citations chased.**
+The public MQL5 alpha layer was picked clean again, exactly as expected and exactly as the last
+three runs found. **The yield was not alpha — it was a free measurement of the desk's own binding
+constraint, and the confirmation that both the vendor's backtester and the desk's own charge
+slippage of zero.**

@@ -2985,3 +2985,32 @@ as GAP #148's tracked-vs-gitignored files. Consequences for any shared loader (R
   expectation) — so one loader can serve the whole lake, but it must NOT branch on `dtype.tz`.
 - A fence should assert the two halves agree, not merely that each parses: the census is a
   one-line check (`getattr(idx.dtype,'tz',None)`) and today it returns two different answers.
+
+---
+
+## 2026-08-27 — prospector: MQL5 `/en/job` is a free, censusable retail-positioning instrument
+
+**Measured, not inferred.** Full census of the MQL5 job board (154 of 158 rows; page 10 404s),
+artifact `data/intelligence/mql5_catalog/mql5_jobs_20260827.json`. Every row is a client
+describing, in their own words with a budget attached, the strategy they are paying to have
+automated. Median budget **$50**, mean $465, max $10,000; arrival ≈5/day, so the board fully turns
+over in ~30 days and a standing weekly census costs 9 requests.
+
+Term frequency over the 154 briefs: **XAUUSD + gold 68**, RSI 44, scalp 24, trend 20, MACD 14,
+risk-management 14, grid 13, telegram 13, session 12, ICT 11, prop-firm + FTMO 16, martingale 6.
+
+**What this is and is not.** It is NOT a mechanism and it is not carded — no forced participant is
+named, so it fails the mechanism test by construction. It IS a cheap, repeatable measurement of
+where retail automation demand concentrates, and it is decision-relevant in exactly one place:
+**R0671's counterparty-termination and capacity argument.** Broker-side termination risk falls
+hardest on the flow the broker watches most closely, and this board says — by a factor of ~2.5
+over any other instrument — that gold EAs are that flow. The desk's own flagship sleeves are
+XAUUSD session-range breakouts.
+
+**The honest caveat against over-reading it:** a crowded *retail* venue is not a crowded *edge*,
+and nothing in this corpus measures capital. This belongs in the capacity prior, not in a
+retirement argument.
+
+**Proposed instrument (cheap):** weekly census of `/en/job` pages 1–9, append-only, tracking term
+share over time. The interesting series is not the level but the *change* — what retail starts
+paying to automate, and how fast. Nobody else keeps it.
