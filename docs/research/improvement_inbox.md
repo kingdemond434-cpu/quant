@@ -2973,3 +2973,15 @@ failed — the same defect the desk already carded as "`errors/rows` is blind to
 Its `summary` block is also inconsistent with its own body in the committed artifact
 (`latest_discoveries.json`: `total_miners: 25 / total_discoveries: 92` over a results dict holding
 **56 miners and ~600 rows**) — a producer/consumer collapse worth its own measurement.
+
+## 2026-08-27 (free-data-alternatives miner) — lake tz semantics, method finding
+`desks/mt5/data/universe/*_H1.parquet` is written by two producers with two clock conventions:
+**24 tz-aware (falsely stamped UTC over server-local wall time) / 173 tz-naive** — the same split
+as GAP #148's tracked-vs-gitignored files. Consequences for any shared loader (R0660's fix):
+- `idx.tz_convert('UTC')` on the aware 24 is a **silent no-op** that preserves the full 2-3h
+  offset while type-checking clean. The offset is invisible to mypy and to any dtype assertion.
+- `idx.tz_localize(None).tz_localize('Europe/Athens').tz_convert('UTC')` was tested against BOTH
+  halves this run and is correct for both (it does NOT raise on the naive index, contrary to
+  expectation) — so one loader can serve the whole lake, but it must NOT branch on `dtype.tz`.
+- A fence should assert the two halves agree, not merely that each parses: the census is a
+  one-line check (`getattr(idx.dtype,'tz',None)`) and today it returns two different answers.

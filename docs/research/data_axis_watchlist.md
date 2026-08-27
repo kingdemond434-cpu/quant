@@ -3910,17 +3910,116 @@ Tokyo 09:55 nakane vs USDJPY) to confirm R0660's offset symbol-wide and date the
 exactly; (iii) the 24-symbol lake vs the far larger universe registry — every axis above is
 gated on symbols the lake does not hold (no USDCNH is why item 1 needed an external FX leg).
 
-## SESSION 2026-08-27 (free-data-alternatives miner, standing daily run) — IN PROGRESS
+## SESSION 2026-08-27 (free-data-alternatives miner, standing daily run) — CLOSED
 
 Backlog: `source_backlog_next.py` reports **0 pending verification, 0 pending legitimacy** (39
-resolved, 29 deferred to dates 2026-09-01 → 09-15). Mining authorised; items taken are the
+resolved, 29 deferred to 2026-09-01 → 09-15). Mining authorised; the three items are exactly the
 un-exhausted ground the 08-26 note named.
 
-Items taken this run (bounded per COMPLETION CONTRACT, depth per item unbounded):
-1. **(ii) Clock oracle applied symbol-wide** — confirm R0660's EET/EEST offset across the whole
-   lake, not the 3 symbols it was found on, and date the DST seams exactly from the bars alone.
-2. **(iii) Lake-vs-universe symbol coverage** — the 08-26 note recorded a 24-symbol lake against a
-   197-row registry; re-measure (321 parquets now on disk) and grade the residual honestly.
-3. **(i) IBA per-round LBMA transparency reports** — card 39's named residual.
+**RESULT: all three items closed. One new free axis ADOPTED (verified-clean), one residual graded
+needs-monitoring with its documented failed search (§38), and — the run's real find — R0660 was
+shown to be measured on only 12% of the lake, then independently re-confirmed on the other 88%.**
 
-(updated as each item resolves)
+### THE FIND — the lake is TWO lakes with different clock semantics (extends R0660)
+A tz census of all 197 `*_H1.parquet`:
+
+| index dtype | symbols | which |
+|---|---|---|
+| tz-**aware**, stamped UTC | **24** | AUDCAD…USDCHF, XAGUSD, **XAUUSD, EURUSD, USDJPY**, BTCUSD, ETHUSD |
+| tz-**naive** | **173** | everything else (shares, indices, exotics, base metals, XPTUSD…) |
+
+That 24/173 split is **exactly** GAP #148's tracked-vs-gitignored split — two producers write one
+lake with two clock conventions. R0660 was measured on XAUUSD, EURUSD and USDJPY, **all three of
+which are in the tz-aware 24**. So the 08-26 finding covered 12% of the lake and the other 88% had
+never been clock-tested. The aware 24 are the worse half: they carry a *false* UTC tz stamp over
+server-local wall time, so the natural loader call `idx.tz_convert('UTC')` is a **silent no-op**
+that preserves the whole 2–3h error while being type-correct and passing mypy.
+
+**Re-confirmed on the naive half, price-anchored, with a second metal.** LBMA Platinum PM (14:00
+London) fitted to `XPTUSD_H1` (tz-naive), n=609 since 2024-01-01:
+
+| bar label | sd all | summer | winter |
+|---|---|---|---|
+| 14 | 73.4 bps | 67.8 | 87.0 |
+| **15** | **35.5** | **26.3** | **34.9** |
+| 16 | 63.2 | 59.7 | 65.3 |
+| 17 | 93.6 | 85.8 | 115.1 |
+
+Bar 15 closes 16:00 server = 14:00 London in **both** seasons ⟹ server = London+2 = **EEST (UTC+3)
+summer / EET (UTC+2) winter**. Independent of the gold evidence, on the opposite half of the lake.
+**R0660 is now universe-wide.** The 08-26 fix as named
+(`tz_localize(None).tz_localize('Europe/Athens').tz_convert('UTC')`) was checked against both
+halves this run and is correct for both — I had expected it to raise on the naive index; it does
+not.
+
+**A correction to my own 08-26 note, because it matters for what counts as evidence.** That note
+argued the offset from the *week boundary* ("Friday's last bar is 23 in both seasons ⟹ UTC+3/+2").
+That argument does **not** hold. I tested every session edge across the 2025/2026 DST **mismatch
+windows** — the ~3 weeks in March and ~1 week in Oct/Nov when the US and EU shift on different
+dates, which is the only in-lake period that can separate a European clock from a US one:
+
+- FX Friday-last label: **23 in every window, every year** (EURUSD, USDJPY, XAUUSD).
+- US share CFD session: **first=16, last=22 on every single day**, straight through both windows.
+
+Session boundaries are pinned to *server local time* and are therefore label-constant **by
+construction** — true for any server offset, so they carry no information about which offset.
+Only the **price-anchored** fits (gold on 08-26, platinum today) discriminate. A weekly US 08:30-ET
+jobless-claims volatility beacon was also tried as a seam-dating instrument and is reported as
+**non-discriminating**: n=27 and n=13 Thursdays in the mismatch windows, peak hours scattered
+(h18/h10/h16), noise well above the 1-hour effect. **The exact DST seam dates remain UNMEASURED** —
+that is a real answer, not a clean verdict (L1.28a).
+
+### Item 3 — NEW FREE AXIS, adopted: LBMA **Platinum + Palladium** benchmarks (verified-clean)
+Chasing card 39's per-round residual through the IBA/ICE page surfaced a press release that IBA now
+operates the LBMA **Platinum and Palladium** Prices from 2026-07-01 — so I probed the free JSON host
+for the new metals and they are there, keyless:
+`https://prices.lbma.org.uk/json/{platinum_am,platinum_pm,palladium_am,palladium_pm}.json` —
+**1990-04-02 → 2026-08-26**, n=9198/9129/9198/9132, **zero nulls in the USD leg**, fresh to T-1.
+**XPTUSD and XPDUSD are both in the MT5 registry and both have H1 parquets** — 36 years of
+point-in-time benchmark history for two already-traded symbols, at zero cost. Verified against the
+desk's own tape (the table above), not merely opened.
+**Failure mode worth the card on its own:** `/json/platinum.json` and `/json/palladium.json` both
+**404** — only the `_am`/`_pm` suffixed files exist. A collector probing the bare metal name
+records a live source as dead. Same silent-null class as the SGE GET-returns-zeros trap.
+
+### Item 3 residual — per-round transparency: needs-monitoring, NOT destroyed-at-source (§38)
+`gold_pm_rounds.json` / `auction_rounds.json` → 404. `theice.com/iba/lbma-gold-price` → 200 but the
+only downloads are the Gold Auction *Specification* and the Gold/Silver *Factsheet* — methodology,
+not data. `theice.com/iba/lbma-silver-price` → 404. **§13 boundary respected and recorded:**
+`theice.com/robots.txt` disallows `/report-center/category/` and `/report-partial/`, so the
+report-center category listing was **not** crawled; `/report-center` itself is permitted and is the
+named next probe. Replacement hunt opened in the universe map.
+
+### Item 2 — lake-vs-universe coverage: symbol gap CLOSED, residual moved to TIMEFRAME
+Measured, not assumed: **197/197 registry symbols now have an H1 parquet; zero missing; zero orphan
+parquet stems.** The 08-26 note's 24-symbol lake is superseded — that number was the *tz-aware*
+subset, not the lake. The honest residual is depth, not breadth:
+
+| timeframe | symbols |
+|---|---|
+| H1 | **197** |
+| M15 | 4 |
+| M5 | 1 |
+| M1 | 1 |
+
+Sub-hourly coverage is **~2%** of the universe. This is the JP-s6 finding recurring on MT5 ground:
+candidates that prescribe M1–M15 cannot be tested on this lake. Recorded as the standing next
+ground, not silently absorbed. Incidental: 64 symbols carry Sunday bars and 22 carry Saturday bars
+(weekend-quoting CFDs) — any day-of-week or weekly-resample study must handle it explicitly.
+
+**DEPTH:** item 2 exhausted (census over all 197 files, both axes, argmax + volatility profiles);
+the clock item taken to **exhaustion and past it** — four instruments (LBMA gold, LBMA platinum,
+session boundaries, US-anchored claims beacon), two of which I report as *non-discriminating*
+rather than dressing them as confirmation, plus a correction to my own prior note; item 3 exhausted
+on the free-host side (five endpoint probes, three ICE pages, robots read before crawling) with the
+residual named and a replacement hunt opened. Depth is again what produced the find: a surface
+adoption of the platinum JSON would have shipped it, and the tz census only happened because a
+`TypeError` on a *different* symbol forced me to look at dtypes.
+
+**NEXT UN-EXHAUSTED GROUND (next run):** (i) sub-hourly lake depth — which MT5 symbols can be
+pulled at M15/M5/M1 and what the terminal actually retains, since ~2% coverage gates every
+intraday candidate the desk has carded; (ii) `/report-center` permitted report ids for IBA
+auction-results (card 39 residual); (iii) date the DST seams with a genuinely US-anchored
+*price* instrument (CME metals/FX settlement times) rather than a volatility beacon — the one
+thing this run could not measure.
+
