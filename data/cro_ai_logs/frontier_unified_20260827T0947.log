@@ -1,0 +1,183 @@
+=== frontier-unified attempt Thu Aug 27 09:47:02 AM UTC 2026 ===
+=== frontier-unified start Thu Aug 27 09:47:11 AM UTC 2026 ===
+
+# UNIFIED FRONTIER DIG — 2026-08-27
+
+## ALLOCATION (the reasoning is the deliverable)
+
+I took ONE ground deep — **creator/track-record (RESEARCH §4)** — and it was not close. Measured
+basis: it is the desk's best source class by survivor yield (94 stage-A survivors, the only exact
+ten-gate certificate the desk holds), and it had **four tier:1/tier:2 seeds that had NEVER been
+probed** (S10 Myfxbook, S11 Darwinex, S12 TradingView, S13 FX Blue), plus a named owed residual
+from 08-26 (FX Blue population enumeration). Nothing else on the board had that combination of
+measured yield and untouched surface. The §33 backlog was already BACKLOG-CLEAR, so the
+convert-first duty had nothing owed and the whole budget was mining — which is what the
+arrivals-collapsed banner (29/wk vs a 161.25 baseline) asked for.
+
+**Grounds NOT worked, each with its reason (no ground was skipped by a cap):**
+- **en, cn** — covered 08-25 with real logs (3.3KB, 2.7KB), no owed debt carried forward, and
+  the 08-26 unified run worked their residuals. Not starved.
+- **ru, jp, kr, ar, br** — these DO trip the 7-day starvation floor (last real logs are 08-20/08-21;
+  everything since is a 131-byte `auth unavailable` stub). They got no pass and I am naming why
+  rather than pretending otherwise: **their floor pass is defined as working OWED CARDS, and every
+  one of their cards is currently carrying a valid future deferral (09-01 → 09-12) — there is no
+  owed unit to work.** Their real blocker is not dig time, it is that the seat has not run in a
+  week. That is ledgered as R0676 and is the correct place for the effort, not a token pass.
+- **Regional seats generally** — see FINDING 0: the 08-26 owed item said "restore the regional
+  seat auth" and that diagnosis is now **out of date**. Auth is fine. The seats are being killed.
+
+## FINDING 0 (T2, ops) — the miner is not auth-blocked, it is being OOM-killed, by banned ground
+
+The 08-26 log's #1 owed item was "RESTORE THE REGIONAL SEAT AUTH — seven straight days of
+131-byte stubs is the largest single suppressor of this desk's arrival rate". **That is no longer
+the failure.** Today's two unified runs (0620, 0800) both passed `brain_auth_check` — their logs
+contain the `start` line, which is written *after* the auth gate. What they do NOT contain is the
+`exit` line, and that line is unconditional. A missing unconditional line means the process group
+was SIGKILLed.
+
+Cause, measured: the box is 3814MB with **no swap** and had **298MB free**. Resident at the time:
+`memecoin-shadow --dry-run` (367MB, systemd user unit) and
+`scripts/run_cashcarry_executor.py --live --top 10 --capital 4500` (30h uptime, 144MB). **~510MB
+held by two processes on the crypto-exchange ground the 2026-08-18 mandate bans**, on a box where
+that is the difference between a miner running and a miner dying. `memecoin-shadow` was itself
+OOM-killed at 00:09:36 today, which is the corroborating record.
+
+**NOT ACTED ON.** The cashcarry process is LIVE CAPITAL and LAWS §4 reserves arming and disarming
+to the principal; a research organ that stops a live executor to free RAM has done the exact thing
+the firewall exists to prevent. Ledgered **R0676** with the two-step principal act (confirm the
+book is flat then stop the unit; `systemctl --user disable --now memecoin-shadow`).
+
+**The honest limit on this finding:** kernel-log channels are UNREADABLE from this box (R0350), so
+I cannot produce a kill record for the *miner* processes specifically. The OOM is inferred from the
+missing unconditional exit line plus the memory arithmetic plus a confirmed OOM of a neighbour
+process in the same hour. That is strong, and it is not a kill record, and I am not writing it up
+as one.
+
+## FINDING 1 (T1, the cycle's find) — OP-098: Wayback CDX is a POPULATION ENUMERATOR, and it
+## reopens two grounds the desk had recorded as dead
+
+A track-record ground has two independent routes: **per-entity** (one trader's page) and
+**population** (who exists). Sites routinely leave the first open and hide the second. The standing
+failure is to confirm per-entity, fail to find a listing, and stop — which is verbatim where the
+08-25 EN dig stopped on FX Blue: *"sitemap.xml enumerates exactly ONE user (`/users/example`) —
+there is no population route, and a track-record ground without a population cannot be mined."*
+
+That verdict was wrong and the correction is one keyless command. The archive's URL index is a
+population enumerator; it returns identifiers only, so every subsequent fetch goes to the live
+origin and archive staleness cannot contaminate the data.
+
+**Measured, both this session:** `fxblue.com/users/*` → **5,077 handles**;
+`darwinex.com/invest/*` → **1,479 DARWIN tickers**. Both grounds were on the books as
+population-blocked. Written up as **OP-098** with the recipe, the two real caveats (path-prefix CDX
+is subdomain-blind; robots is not a reuse grant), the standing target list (Myfxbook, Collective2,
+ZuluTrade, eToro) and MQL5 named as the CONTROL — it has a natively-enumerated population, so
+running CDX there validates the operator against a known answer. **Corollary now standing under
+L1.51: "no population route" is a claim that requires the CDX probe, and it costs one request.**
+
+## FINDING 2 (T1) — FX Blue is fully open, and it is a black-box reverse-engineering corpus
+
+Walked the whole data layer keyless. The 08-25 dig had stopped at "the per-trade XHR endpoint is
+not in scripts.aspx nor the preloaded chunks"; the route was in `wl/strive/strive_account.js`,
+a bundle that read had not opened.
+
+- population — CDX, 5,077 handles (above)
+- liveness   — `api.fxblue.com/strivewidget.aspx?displayUserId=<u>`
+- headline   — `api.fxblue.com/wl/view.aspx?id=<uid>&mode=overview&isinline=1` → balance, equity,
+               closed profit, currency, real-vs-demo, last update
+- mechanism  — `api.fxblue.com/wl/charts/<chart>.aspx?id=<uid>`, **51 charts**, numbers literal in
+               a Google-Charts `addRows([...])` block
+
+One false lead recorded so nobody re-walks it: `_StatsData.aspx` looks like the data endpoint and
+is a CSV **export sink** (client→server POST). It is not a source.
+
+The 51 charts are the point, because they are precisely the §4 black-box axes and they are
+published: **hour-of-day** (session bias), **symbol** (instrument set), **duration/profitability**
+(holding-time structure), **direction** (long/short asymmetry), **day-of-week**, **lots by symbol**
+(sizing habits), **balance drawdown %** (drawdown geometry). This reconstructs a published trader's
+MECHANISM without ever touching a trade — which is what §4 asks for and what copying is not.
+
+§13: `www.fxblue.com/robots.txt` is `Allow: /`; `api.fxblue.com` serves no robots. Recorded with
+the OP-096 caveat that robots is not a reuse grant — this is internal research, never redistribution.
+
+**Wired, not just built:** `desks/mt5/scripts/fxblue_track_record_miner.py` (rotation cursor +
+stride, resumable, polite) and `desks/mt5/scripts/fxblue_mechanism_summary.py`.
+
+## FINDING 3 (T2) — my own first harvest was a false positive, and the population is block-structured
+
+First run graded **95/120 "live"** at offset 400. Every one of them was **zero-filled**: a
+contiguous run of bulk-registered `22-*` handles, balance 0.0, last update 2022. I had defined
+liveness as *the widget returned >2000 bytes* — the desk's own lesson that **a 200 and a byte count
+are not content**, reproduced by me in the same session I quoted it.
+
+Two repairs, both in the code rather than in a note:
+1. **Liveness is `has_data`** — a non-zero number in a mechanism chart — and `shell` is kept as its
+   own status. A shell is a real account with nothing to mine; that is neither a fetch failure nor
+   a mineable record and the consumer must not collapse the three.
+2. **Sampling is STRIDED.** A contiguous slice of a block-structured population measures one block,
+   not the population.
+
+Re-measured on a 117-handle stride sample: **83 data-bearing / 27 shell / 10 dead ≈ 71%** ⇒
+**~3,600 mineable track records**, against the ~100% my broken test had claimed.
+
+## FINDING 4 (T2) — first read of the corpus: MT5-native, and one number that is NOT a finding
+
+Instrument mix (accounts trading each symbol, n=83): EURUSD 50.6%, GBPUSD 41.0%, USDJPY 34.9%,
+AUDUSD 31.3%, USDCHF 26.5%, USDCAD 25.3%, EURJPY 22.9%, **XAUUSD 21.7%**. Entirely inside the
+MT5/Fusion mandate — this ground needs no translation layer, which is exactly what the crypto-era
+corpora did need.
+
+Activity clock (per-account normalised, so one whale cannot set it): peaks **15:00–17:00**
+(London/NY overlap, 7.45%/6.79%/7.36%) and **09:00–11:00** (London open). **A caveat I am recording
+rather than reading as a result:** 00:00 shows 6.66%, higher than any hour around it, which has the
+shape of a null/rollover bucket rather than Sydney-open activity. Untested; do not build on it.
+
+Survivorship-conditioned profitable-share by hour peaks at 15:00 (63.9%) and 16:00 (60.2%) against
+a ~50% base. **This is not a finding and I am not carding it as one.** At n=83 the binomial SE is
+~5.5pp, so 63.9% is ~2.5 SE from the null on a **24-hour scan** — multiplicity alone accounts for
+it. It is also not independent of the activity clock: the same hours carry the most trades. The
+population is maximally survivorship-biased (§4, master 23). The summariser prints ACTIVITY and
+PERFORMANCE under separate headings with that warning inline, because the tempting mistake here is
+to read a survivor-conditioned hour bucket as a session edge.
+
+## FINDING 5 (T2) — TradingView is KILLED on §13, and a one-group robots read inverts the verdict
+
+`tradingview.com/robots.txt` carries two user-agent groups. The `*` group bars almost nothing
+relevant. A **second group enumerates 16 AI crawlers — including `ClaudeBot`** — and gives that
+group `Disallow: /ideas/*, /scripts/*, /script/*, /v/*, /u/*, /chat/*, /chart/*, /watchlists/*`.
+The publisher has specifically withheld this exact ground from this exact class of agent. Seeds S12
+(card 52) and S3 (card 43) are the same ground described twice and are **recorded as ONE kill**,
+with a graveyard entry and named re-open triggers (robots change / published research API /
+explicit written permission — a human in a browser is not a re-open trigger and does not become one
+at scale). No UA-substitution route will be built.
+
+This is the false-POSITIVE twin of the KR-s5 lesson: read only the `*` group and TradingView looks
+wide open. **Group-scope every robots read against the desk's own agent identity, never `*`.**
+
+## FINDING 6 (T3) — Darwinex half-solved; Myfxbook walled at the edge, which is not a verdict
+
+**Darwinex (S11, card 51).** Population solved (1,479 tickers). Per-entity live and keyless:
+`/darwin/<T>` 302s to `/invest/<T>`, 165KB, robots-permitted (`Disallow` covers /api, /private,
+/darwinex-index — not /invest). **Residual, stated so nothing reads as done:** the 12 investable
+attributes and D-Score are client-side and the XHR is not in the landing bundle. `/api` is
+robots-BARRED, so that route is closed by §13 rather than by difficulty. Deferred 09-03, tier:1.
+
+**Myfxbook (S10, card 50).** Cloudflare managed challenge returns **HTTP 403 on robots.txt itself**.
+The §13 read is not unfavourable — it is UNOBTAINABLE from this box. Under L1.28a/WS-005 that is its
+own status and **not** a licence verdict, and it is a ROUTE problem, not a ground verdict. The
+untried rediscovery route is OP-098 against `myfxbook.com/members/*`. Deferred 09-03, tier:1.
+
+## OWED NEXT RUN
+1. **R0676 is a principal act and blocks everything else** — two banned-ground crypto processes are
+   OOM-killing this desk's miners. No amount of digging compensates for seats that die on launch.
+2. **Harvest the FX Blue population properly** — 117 of 5,077 sampled. The miner is resumable
+   (`--offset`/`--stride`); this wants a timer, not another manual run.
+3. **Convert the corpus to preregistered hypotheses** — the corpus is a hypothesis SOURCE and has
+   produced none yet. The honest state is: ground opened, conversion owed. Do not let it become
+   "interesting finds" that never entered the gauntlet.
+4. **Run OP-098 against MQL5 Signals as the CONTROL** (known population = 2,529) before trusting the
+   operator anywhere else; then Myfxbook `/members/*`, Collective2 `/strategies/*`.
+5. **Darwinex metrics XHR** (D-Score + 12 attributes), respecting the `/api` robots bar.
+6. Still owed from 08-26 and untouched today: **central-bank document BODIES** (turns cb_documents
+   from an attention stream into the hawkish/dovish series), **RBA/AUD + SNB/CHF replacement feeds**,
+   and the **body-line `[§33:]` parser fix** (card-side patched, engineering-owned, re-creates the
+   phantom backlog on the next doc written with a body tag).

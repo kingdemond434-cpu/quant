@@ -126,6 +126,16 @@ def parse_overview(html: str) -> dict[str, Any]:
     return out
 
 
+def _has_data(rec: dict[str, Any]) -> bool:
+    """A record is mineable only if some mechanism chart carries a NON-ZERO number."""
+    for parsed in rec.get("charts", {}).values():
+        for _, value in parsed.get("rows") or []:
+            if value:
+                return True
+    ov = rec.get("overview") or {}
+    return bool(ov.get("closed_profit") or ov.get("balance"))
+
+
 def harvest_user(user: str, delay: float) -> dict[str, Any]:
     rec: dict[str, Any] = {"user": user, "charts": {}}
     widget = _get(f"{API}/strivewidget.aspx?displayUserId={user}")
@@ -137,7 +147,11 @@ def harvest_user(user: str, delay: float) -> dict[str, Any]:
         rec["status"] = "dead"
         rec["bytes"] = len(widget)
         return rec
-    rec["status"] = "live"
+    # BYTES ARE NOT CONTENT. A 52KB widget is only the page SHELL: the 2026-08-27 first harvest
+    # graded 95/120 "live" at offset 400 and every one of them carried zeros -- the block is a
+    # bulk-registered `22-*` series with balance 0.0 and no trades. Liveness is decided BELOW,
+    # from whether the mechanism charts contain a non-zero number, never from the byte count.
+    rec["status"] = "shell"
     uid = (re.search(r'glbUserId\s*=\s*"([^"]+)"', widget) or [None, user])[1]
     rec["user_id"] = uid
     time.sleep(delay)
@@ -152,6 +166,10 @@ def harvest_user(user: str, delay: float) -> dict[str, Any]:
         parsed = parse_chart(html)
         if parsed is not None:
             rec["charts"][chart] = parsed
+    # THE REAL LIVENESS TEST: usable output. `has_data` and `shell` are different facts and the
+    # consumer must never collapse them -- a shell is a real account with nothing to mine, which
+    # is neither a fetch failure nor a mineable record.
+    rec["status"] = "has_data" if _has_data(rec) else "shell"
     return rec
 
 
@@ -159,6 +177,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=50, help="accounts to harvest this run")
     ap.add_argument("--offset", type=int, default=0, help="rotation cursor into the population")
+    ap.add_argument("--stride", type=int, default=1, help="sample every Nth handle -- the population is "
+                    "BLOCK-STRUCTURED (contiguous bulk-registered runs like `22-*`), so a contiguous "
+                    "slice measures one block, not the population")
     ap.add_argument("--delay", type=float, default=0.35, help="seconds between requests (politeness)")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
@@ -166,24 +187,25 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     pop = enumerate_population(OUT / "population.txt")
     print(f"population: {len(pop)} handles")
-    batch = pop[args.offset : args.offset + args.limit]
+    batch = pop[args.offset :: args.stride][: args.limit]
     out_path = Path(args.out) if args.out else OUT / "track_records.jsonl"
 
-    live = dead = failed = 0
+    has_data = shell = dead = failed = 0
     with out_path.open("a", encoding="utf-8") as fh:
         for i, user in enumerate(batch, 1):
             rec = harvest_user(user, args.delay)
             rec["harvested_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
             fh.flush()
-            live += rec["status"] == "live"
+            has_data += rec["status"] == "has_data"
+            shell += rec["status"] == "shell"
             dead += rec["status"] == "dead"
             failed += rec["status"] == "fetch_failed"
             if i % 10 == 0:
-                print(f"  {i}/{len(batch)} live={live} dead={dead} failed={failed}", flush=True)
+                print(f"  {i}/{len(batch)} data={has_data} shell={shell} dead={dead} failed={failed}", flush=True)
             time.sleep(args.delay)
 
-    print(f"DONE offset={args.offset} n={len(batch)} live={live} dead={dead} failed={failed} -> {out_path}")
+    print(f"DONE offset={args.offset} n={len(batch)} data={has_data} shell={shell} dead={dead} failed={failed} -> {out_path}")
     return 0
 
 
