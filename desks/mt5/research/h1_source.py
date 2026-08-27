@@ -94,6 +94,10 @@ class Bars:
     why: str = ""
     promotion_authority: bool = False
     venue: str = ""                 # WHOSE PRINTS these are -- see evidence_venue
+    #: True when the cache file arrived tz-naive and `from_cache` restored the UTC label its
+    #: epoch source already implies. Recorded rather than done silently: a reader must be able to
+    #: tell a file that declared its clock from one whose clock was reconstructed.
+    naive_index_restored: bool = False
 
     @property
     def evidence_venue(self) -> str:
@@ -342,12 +346,31 @@ def from_cache(sym: str, start: datetime) -> Bars | None:
         except Exception:
             pass
 
+    # RESTORE THE LABEL THE EPOCH ALREADY IMPLIES -- this is provenance, not an assumption.
+    # Every file in this directory comes from MT5 `rates["time"]`, which is UNIX EPOCH SECONDS:
+    # the instants are unambiguous and no server offset can apply to them. Five bulk downloaders
+    # called `pd.to_datetime(..., unit="s")` without `utc=True`, which keeps the same instants and
+    # merely drops the tz label -- and `_normalise` then refused the file. MEASURED 2026-08-27:
+    # 173 of 197 H1 parquets were tz-naive, so `fetch_h1` returned None for 88% of the registry
+    # and the desk's universal-ground mandate (LAWS L1.61) was running on 24 symbols. The
+    # generic guard in `_normalise` STAYS STRICT -- a naive index from an arbitrary feed really
+    # is ambiguous. This localisation is confined to the one directory whose provenance is known,
+    # and it is verified by the session structure: the naive files' Friday tail (21,22,23) and
+    # Monday head (0,1,2) match the tz-aware files exactly, which a server-offset shift would not.
+    if isinstance(df.index, pd.DatetimeIndex) and df.index.tz is None:
+        df = df.copy()
+        df.index = df.index.tz_localize("UTC")
+        naive_restored = True
+    else:
+        naive_restored = False
+
     b = Bars(_normalise(df), f"CACHE:{p.name}",
              datetime.now(UTC).isoformat(timespec="seconds"),
              "cached history \u2014 valid evidence up to its own end, and NO DATA "
              "after it. Re-run research/fetch_universe.py to extend.",
              promotion_authority=is_fusion,
              venue=f"MT5:{server}" if server else "UNKNOWN-VENUE")
+    b.naive_index_restored = naive_restored
     return b
 
 

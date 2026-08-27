@@ -110,9 +110,31 @@ def _frame_for(sym: str, family: str):
     return frame
 
 
-def build_cell(sym: str, family: str, params: dict, meta: dict):
-    """Build a Cell from external survivor spec."""
-    h1 = _frame_for(sym, family)
+def build_cell(sym: str, family: str, params: dict, meta: dict,
+               h1_override: pd.DataFrame | None = None):
+    """Build a Cell from external survivor spec.
+
+    `h1_override` lets a caller supply bars it has already vetted instead of whatever parquet
+    happens to be on disk. `external_shadow` needs exactly that: it fetches with
+    `prefer_promotion_authority=True`, so its forward clock must run on the source that CARRIES
+    that authority -- rebuilding from disk would run the clock on a different tape than the one
+    the caller checked, and nothing downstream could tell.
+
+    This parameter was added on 2026-08-26 (6098dcfd) and dropped again by the cache refactor
+    that introduced `_frame_for`, which broke `external_shadow` with a TypeError. Because that
+    organ is scheduled by NOTHING, the break was silent and the entire `overnight_gap_decay`
+    family -- the desk's only certificates outside session_range_breakout, against a
+    largest_family_share of 0.87 -- never started a forward clock at all.
+    """
+    if h1_override is not None:
+        # NEVER silently resample: `_frame_for` exists to keep an M5-native hypothesis off an H1
+        # clock, and an override must not become the hole in that rule. A caller handing H1 bars
+        # for an M5 family is a wiring error, and returning None reports it as one.
+        if family == "lvc_asia_london":
+            return None
+        h1 = families._h1(h1_override)
+    else:
+        h1 = _frame_for(sym, family)
     if h1 is None:
         return None
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in
