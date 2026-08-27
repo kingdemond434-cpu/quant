@@ -6,10 +6,9 @@ The discovery chain (12 miners -> hypotheses -> bridge_to_hunt -> external backt
 stage-A passes into desks/mt5/data/hypotheses/external_survivors.json -- and until this wire,
 they STOPPED there: screen-passes with no path to the canonical ten-gate gauntlet, the exact
 III.16 defect at the discovery system's last mile. This script promotes each NEW external
-survivor into desks/mt5/data/research_queue.json as a PENDING card, where the existing
-supervisor/hunt/certify machinery (15-min cadence on the desk box) carries it to the exact
-gauntlet, shadow_spec certification, and the qquant forward clock -- the same door as
-everything else, never a side entrance.
+survivor into desks/mt5/data/research_queue.json as a canonical-gauntlet lineage card.
+external_gauntlet.py consumes the source docket directly and reconcile_external_queue.py
+records its verdict here. The generic run_hunt18 worker must not consume this different route.
 
 Dedup is content-keyed (symbol+family+params) against BOTH the queue and its own ledger, so
 re-runs and re-discoveries never double-mint a trial (novelty-gate discipline). Ranked by
@@ -75,7 +74,9 @@ def main() -> int:
             "side": str(s.get("side", "BOTH")).upper(),
             "params": s.get("params", {}),
             "created_at": now.isoformat(),
-            "status": "PENDING",
+            "status": "QUEUED_CANONICAL_GAUNTLET",
+            "route": "external_gauntlet",
+            "promotion_authority": False,
             "external_screen": {kk: s.get(kk) for kk in
                                 ("n", "exp_r", "t_stat", "profit_factor", "max_dd_r",
                                  "win_rate", "symbol")},

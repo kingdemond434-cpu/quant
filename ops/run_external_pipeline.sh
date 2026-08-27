@@ -187,6 +187,7 @@ if remote_stage "ten-gate gauntlet" \
       desks/mt5/reports/UNIVERSAL_SURVIVORS.json 2>/dev/null
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/universal_gates_external.json' \
       desks/mt5/reports/universal_gates_external.json 2>/dev/null
+  $PY scripts/reconcile_external_queue.py || echo "external queue reconciliation FAILED (rc=$?)"
   echo "gauntlet done on the desk box; certificates pulled back"
 else
   echo "stage 3 FAILED on the desk box -- see $LOGF"
