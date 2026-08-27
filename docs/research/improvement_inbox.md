@@ -3014,3 +3014,32 @@ retirement argument.
 **Proposed instrument (cheap):** weekly census of `/en/job` pages 1–9, append-only, tracking term
 share over time. The interesting series is not the level but the *change* — what retail starts
 paying to automate, and how fast. Nobody else keeps it.
+
+---
+
+## 2026-08-27(c) — PROSPECTOR — twelve FX majors are backtested at a spread of zero, and it is UNMEASURED whether that is the raw-account truth or a rounding artifact
+
+**Measured, not inferred.** `desks/mt5/data/universe/universe.json` holds 251 symbols; **12 carry
+`median_spread_pts == 0`**, and they are not a random 12 — they are precisely the major pairs:
+`AUDCHF AUDUSD CADCHF EURCAD EURCHF EURGBP EURUSD GBPUSD NZDUSD USDCAD USDCHF USDJPY`.
+
+**What that does downstream.** `engine.py::Costs.from_symbol` computes
+`spread = median_spread_pts * tick_size * contract_size`, which is exactly 0 for these twelve, and
+then `max(spread * mult, 0.05)`. So for every major the spread term is the **0.05 floor**, a
+constant that is independent of the symbol, independent of `mult`, and therefore **immune to every
+cost-stress scenario the desk runs** — the x2 and x3 multipliers move nothing on the twelve most
+liquid instruments in the universe.
+
+**Why this is NOT filed as a defect (the honest reading).** Fusion is a raw-spread,
+commission-charging broker; a genuine median major spread of 0.0–0.2 pips can legitimately round to
+0 points, and the commission term (2.25/lot, converted) dominates the spread term for majors
+anyway. So `0` may be *true*. **What is not known is which**, and the two cases have different
+consequences: if true, the floor is harmless; if it is a rounding artifact of an integer
+points field, then every major is stress-tested at a spread that cannot widen.
+
+**UNMEASURED is the answer here (L1.28a), and the resolving measurement is cheap and already owned:**
+the desk has its own MT5 tick tape — take the empirical median of `(ask - bid)` per symbol in
+**price units**, not rounded points, and compare. That is a read of data the desk already paid for.
+Related and stronger: **R0679** shows the engine has no slippage term at all, so the cost model's
+only symbol-varying component for the majors is the commission.
+
