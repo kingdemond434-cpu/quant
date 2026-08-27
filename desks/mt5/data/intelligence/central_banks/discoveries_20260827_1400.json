@@ -1,0 +1,18 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoE",
+    "currency": "GBP",
+    "feed": "https://www.bankofengland.co.uk/rss/news",
+    "published_utc": "2026-08-27T13:16:29+00:00",
+    "title": "Delay to the November 2026 RTGS standards release",
+    "link": "https://www.bankofengland.co.uk/news/2026/august/delay-to-the-november-2026-rtgs-standards-release",
+    "policy_signals": [],
+    "instruments": [
+      "GBPUSD",
+      "GBPJPY",
+      "EURGBP",
+      "GBPAUD"
+    ]
+  }
+]

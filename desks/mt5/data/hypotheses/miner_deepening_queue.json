@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T13:06:41+00:00",
+ "built_at": "2026-08-27T14:06:49+00:00",
  "tasks": [
   {
    "source": "github",
@@ -2058,8 +2058,464 @@
   {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "universe registry carries no swap fields yet -- run expand_universe.py on the desk box, which records swap_long/swap_short from symbol_info",
-   "url": "/home/quant/quant-platform/desks/mt5/data/universe/universe.json",
+   "title": "fusion Baidu swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion COFARA swap long=3.2800000000000002 short=-10.93 diff=+14.2100",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion COFROB swap long=67.71 short=-178.13 diff=+245.8400",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion CORN swap long=-28.15 short=8.92 diff=-37.0700",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion COTTON swap long=-25.2 short=7.3 diff=-32.5000",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Ford swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion GeneralElectric swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion GeneralMotors swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Intuit swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion IntuitiveSurgical swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion LucidGroup swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Lyft swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Mastercard swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Medtronic swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion MicronTechnology swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion MorganStanley swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion NIO swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion NVIDIA swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion OJ swap long=1.28 short=-52.65 diff=+53.9300",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Oracle swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Pfizer swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion PhilipMorrisInternational swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Pinterest swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Qualcomm swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion RobinhoodMarkets swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Roku swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion S&PGlobal swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion SOYBEAN swap long=-26.09 short=3.45 diff=-29.5400",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion SUGAR swap long=-1.6099999999999999 short=-5.59 diff=+3.9800",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion SUGARRAW swap long=-7.92 short=3.01 diff=-10.9300",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion ServiceNow swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Shopify swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Snapchat swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Snowflake swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Spotify swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Starbucks swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion TMEGroup swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion TSMC swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Target swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion TexasInstruments swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion ThermoFisherScientific swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Toyota swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Twilio swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UKCOCOA swap long=-4.6899999999999995 short=-2.51 diff=-2.1800",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UKGILT swap long=1.92 short=-8.42 diff=+10.3400",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion US2000 swap long=-5.9 short=1.54 diff=-7.4400",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion USCOCOA swap long=-183.58 short=3.59 diff=-187.1700",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UST05Y swap long=-3.56 short=-2.74 diff=-0.8200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UST10Y swap long=-3.06 short=-3.24 diff=+0.1800",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion Uber swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UnionPacific swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion UnitedParcelService swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion WHEAT swap long=-20.82 short=5.93 diff=-26.7500",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "broker_swaps",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "fusion WellsFargo swap long=-7.31 short=2.81 diff=-10.1200",
+   "url": "mt5://symbol_info",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "tharindu2028/Trade-Terminator-Closer",
+   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
+   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2154,32 +2610,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
-   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
-   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tipcsy/TradeForge",
-   "url": "https://github.com/tipcsy/TradeForge",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-MT4-Close-Orders-Script",
-   "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
+   "title": "dceoy/mt5cli",
+   "url": "https://github.com/dceoy/mt5cli",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2188,6 +2620,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "nodalytics/till_infinity",
    "url": "https://github.com/nodalytics/till_infinity",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "foxelabs/foxelabs.com",
+   "url": "https://github.com/foxelabs/foxelabs.com",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2210,16 +2650,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "RPNATION1/Tradingalgos",
-   "url": "https://github.com/RPNATION1/Tradingalgos",
+   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2809,8 +3249,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2820,8 +3260,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2999,8 +3439,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3010,8 +3450,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3208,8 +3648,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3219,8 +3659,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120505/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3384,8 +3824,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3395,8 +3835,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3560,17 +4000,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1258405/",
    "symbols": [],
@@ -3595,6 +4024,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3648,8 +4088,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3659,8 +4099,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1244953/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3683,17 +4123,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3792,8 +4221,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3803,11 +4232,10 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1387738/",
    "symbols": [],
    "mechanism_tags": [
-    "grid",
     "ea_robot",
     "gold"
    ]
@@ -3841,6 +4269,18 @@
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1353023/",
    "symbols": [],
    "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "symbols": [],
+   "mechanism_tags": [
+    "grid",
     "ea_robot",
     "gold"
    ]
@@ -4504,7 +4944,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "D.E. Shaw has recent 13F filing - check for position changes",
+   "title": "Two Sigma has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -4515,7 +4955,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Two Sigma has recent 13F filing - check for position changes",
+   "title": "Millennium has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
