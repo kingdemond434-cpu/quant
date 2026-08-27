@@ -16,6 +16,7 @@ if str(DESK) not in sys.path:
 
 from research import edge_search
 from research import merge_hypotheses
+from research import orthogonal_sweep
 from research.frontier_identity import cell_id, economic_prior
 from scripts import external_gauntlet
 from side_channels import bridge_to_hunt
@@ -239,6 +240,13 @@ def test_orthogonal_candidates_persist_runtime_provenance() -> None:
     assert '"input_source": "fusion_tick_tape"' in source
     assert '"input_source": "ff_calendar_vintage"' in source
     assert 'dict((kw and {}) or {})' not in source
+
+
+def test_orthogonal_sweep_caches_are_memory_bounded() -> None:
+    # Full-universe coverage remains unchanged; only resident dataframes are bounded.
+    assert orthogonal_sweep._bars.cache_parameters()["maxsize"] == 16
+    assert orthogonal_sweep._cot_frame.cache_parameters()["maxsize"] == 32
+    assert orthogonal_sweep._event_index.cache_parameters()["maxsize"] == 1
 
 
 def test_external_bridge_only_emits_parameters_the_family_accepts() -> None:

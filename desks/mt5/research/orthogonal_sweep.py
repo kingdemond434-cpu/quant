@@ -53,7 +53,12 @@ def _read(p: Path):
         return None
 
 
-@lru_cache(maxsize=None)
+# MEMORY IS A THROUGHPUT RAIL, NOT A UNIVERSE LIMIT.  ``maxsize=None`` retained every complete
+# H1 dataframe in the 293-symbol sweep.  The process climbed until Windows terminated it after
+# ~23 minutes, before OUT was written, so the gauntlet kept consuming yesterday's artifact.
+# Sixteen holds the current symbol plus the twelve-factor working set; eviction changes only
+# residency and every symbol is still loaded and tested in the same pass.
+@lru_cache(maxsize=16)
 def _bars(symbol: str):
     import pandas as pd
     path = UNIVERSE / f"{symbol}_H1.parquet"
@@ -104,7 +109,7 @@ def _macro_series(index):
     return pd.Series(float(pairs[0][1]), index=index)
 
 
-@lru_cache(maxsize=None)
+@lru_cache(maxsize=32)
 def _cot_frame(symbol: str | None = None):
     import pandas as pd
 
@@ -142,6 +147,7 @@ def _cot_frame(symbol: str | None = None):
     return None
 
 
+@lru_cache(maxsize=1)
 def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
     import pandas as pd
