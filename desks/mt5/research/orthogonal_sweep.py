@@ -289,7 +289,10 @@ def main() -> int:
 
 
 def _cli_main() -> int:
-    from research.job_lock import exclusive_job
+    try:
+        from research.job_lock import exclusive_job
+    except ModuleNotFoundError:            # entrypoint put research/ on the path, not desks/mt5
+        from job_lock import exclusive_job
 
     with exclusive_job("orthogonal_sweep") as acquired:
         return main() if acquired else 75

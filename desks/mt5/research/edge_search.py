@@ -44,8 +44,8 @@ from __future__ import annotations
 
 import json
 import math
-from functools import lru_cache
 from datetime import UTC, datetime
+from functools import cache
 from itertools import combinations
 from pathlib import Path
 
@@ -97,7 +97,7 @@ def _interaction_pool_size(n_rows: int, n_features: int) -> int:
     return max(2, min(n_features, affordable_features))
 
 
-@lru_cache(maxsize=None)
+@cache
 def _close(symbol: str):
     """Load a close series once per run; all-peer discovery otherwise rereads N² parquet files."""
     import pandas as pd
@@ -721,7 +721,8 @@ def main(symbols: list[str] | None = None) -> int:
                 "mechanism_note": mechanism_note,
             })
     # NO BAR HERE, AND NO DEFLATION INPUT LEAVES HERE (principal 2026-08-26: "never use or
-    # consider the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context". Even unused
+    # consider the harsher bars ever"). An earlier version printed sqrt(2 ln N) as "context":
+    # even unused
     # as a filter, a threshold sitting next to the results is one a reader -- or a later edit --
     # will start treating as a verdict, and it competes with the only pipeline this desk has:
     # discovery -> backtest -> ten gates -> certificate -> forward -> live. The trial count is
@@ -761,7 +762,17 @@ def main(symbols: list[str] | None = None) -> int:
 
 
 def _cli_main() -> int:
-    from research.job_lock import exclusive_job
+    # ENTRYPOINT-PROOF IMPORT. The desk runs this as `py -3 research\\edge_search.py` from the
+    # desk root, so sys.path[0] is research/ -- `research.job_lock` is then unimportable and the
+    # searcher died at startup. Measured 2026-08-27: BOTH search legs silent ~25h, the docket
+    # running on miners alone the whole time, while the run looked like a clean exit.
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))       # research/
+    _sys.path.insert(0, str(Path(__file__).resolve().parent.parent))  # desks/mt5
+    try:
+        from research.job_lock import exclusive_job
+    except ModuleNotFoundError:
+        from job_lock import exclusive_job
 
     with exclusive_job("edge_search") as acquired:
         return main() if acquired else 75
