@@ -192,8 +192,12 @@ def authorized_runs(base: Path = BASE) -> list[dict]:
         if not isinstance(spec, dict):
             continue
         params = spec.get("params")
-        if not isinstance(params, dict) or not params:
-            continue                       # unrunnable without guessing -- excluded, not guessed
+        if not isinstance(params, dict):
+            continue                       # ABSENT params -- unrunnable without guessing
+        # {} is NOT "lost parameters": it is the complete parameterization "family defaults",
+        # byte-exactly what the gauntlet executed (build_cell with params={}) and what the
+        # p=<hash-of-empty> cell identity certifies. Excluding it kept both overnight_gap_decay
+        # certificates CERTIFIED-NOT-ENROLLED while the same-day fence flagged them (2026-08-27).
         runs.append({
             "certificate": name,
             "symbol": str(spec["symbol"]), "selector": str(spec["selector"]),
