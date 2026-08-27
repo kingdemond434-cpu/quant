@@ -7951,5 +7951,173 @@
    "win_rate": null,
    "symbol": "AT&T"
   }
+ },
+ {
+  "id": "ext-20260827-7d4da6",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD carry params={'input_symbol': 'AUDCAD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDCAD"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDCAD"
+  }
+ },
+ {
+  "id": "ext-20260827-c9ee0b",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCHF carry params={'input_symbol': 'AUDCHF'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDCHF"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDCHF"
+  }
+ },
+ {
+  "id": "ext-20260827-50f9d9",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDHUF carry params={'input_symbol': 'AUDHUF'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDHUF"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDHUF"
+  }
+ },
+ {
+  "id": "ext-20260827-62d682",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDJPY carry params={'input_symbol': 'AUDJPY'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDJPY"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-877bdc",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD carry params={'input_symbol': 'AUDNZD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDNZD"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  }
+ },
+ {
+  "id": "ext-20260827-4e1654",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDSGD carry params={'input_symbol': 'AUDSGD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDSGD"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDSGD"
+  }
+ },
+ {
+  "id": "ext-20260827-09e9ea",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD carry params={'input_symbol': 'AUDUSD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUDUSD"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-4e33fc",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUS200 carry params={'input_symbol': 'AUS200'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AUS200"
+  },
+  "created_at": "2026-08-27T22:50:00.415296+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUS200"
+  }
  }
 ]
