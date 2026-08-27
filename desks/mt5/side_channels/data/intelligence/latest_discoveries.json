@@ -206,13 +206,13 @@
         "repo": "nmj94/momentum-lab",
         "url": "https://github.com/nmj94/momentum-lab",
         "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
-        "stars": 38,
+        "stars": 39,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.188
+        "confidence": 0.189
       },
       {
         "source": "github",
@@ -425,7 +425,7 @@
     ]
   },
   "mql5_forum": {
-    "count": 6,
+    "count": 3,
     "discoveries": [
       {
         "source": "mql5_forum",
@@ -439,15 +439,6 @@
       },
       {
         "source": "mql5_forum",
-        "title": "GOLD, Gold and XAUUSD",
-        "url": "https://www.mql5.com/en/forum/393267",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "confidence": 0.2
-      },
-      {
-        "source": "mql5_forum",
         "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
         "url": "https://www.mql5.com/en/forum/515220",
         "symbols": [
@@ -458,29 +449,11 @@
       },
       {
         "source": "mql5_forum",
-        "title": "GOLD, Gold and XAUUSD",
-        "url": "https://www.mql5.com/en/forum/393267",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "confidence": 0.2
-      },
-      {
-        "source": "mql5_forum",
         "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
         "url": "https://www.mql5.com/en/forum/515220",
         "symbols": [
           "XAUUSD",
           "EURUSD"
-        ],
-        "confidence": 0.2
-      },
-      {
-        "source": "mql5_forum",
-        "title": "GOLD, Gold and XAUUSD",
-        "url": "https://www.mql5.com/en/forum/393267",
-        "symbols": [
-          "XAUUSD"
         ],
         "confidence": 0.2
       }
@@ -495,8 +468,19 @@
     "discoveries": []
   },
   "reddit": {
-    "count": 36,
+    "count": 18,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "You see the chart differently? Then you must be an idiot!",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -546,17 +530,6 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
-        "title": "Yet another profitable \"IA Grail\" for trading gold on Forex?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
         "title": "Day 2 of learning forex as a complete beginner [EUR/USD + XAU/USD]",
         "url": "",
         "symbols": [
@@ -569,6 +542,17 @@
         "source": "reddit",
         "subreddit": "Forex",
         "title": "XAUUSD SETUP 25 AUGUST",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Yet another profitable \"IA Grail\" for trading gold on Forex?",
         "url": "",
         "symbols": [
           "XAUUSD"
@@ -624,9 +608,9 @@
         "title": "Some setups I called before the move last Friday",
         "url": "",
         "symbols": [
-          "NAS100",
+          "GBPJPY",
           "USDJPY",
-          "GBPJPY"
+          "NAS100"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -688,9 +672,9 @@
         "title": "What I'm watching after last week's HTF moves",
         "url": "",
         "symbols": [
-          "USDCAD",
+          "EURUSD",
           "GBPUSD",
-          "EURUSD"
+          "USDCAD"
         ],
         "patterns": [
           "pullback"
@@ -710,229 +694,6 @@
           "momentum"
         ],
         "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Gold at 4608 \u2014 What\u2019s Your Monday Bias?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "pullback",
-          "liquidity"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Good enough strategy?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "retest",
-          "support",
-          "resistance",
-          "liquidity"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Went to Costco for some creatine",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "State of the stack (2 years)",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Secured the Kirkland Ounce Bar",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "1oz Kirkland silver today $69.99. I paid tax\u2026 no regrats. With obligatory hot dog and soda to make the trip worthwhile \ud83d\ude09",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "MORE!",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "This is my first purchase of Junk Silver. I think I'm addicted",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Kirkland Silver",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Silver has grown on me since I\u2019ve started my stacking journey. Anyone else?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "A humble reminder",
-        "url": "",
-        "symbols": [
-          "XAGUSD",
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Sterling silver belt buckle, mirror, YOYO",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "FAKE COINS ON FB MARKET PLACE",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Pretty pickups - 1 Monark silver rounds",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Private sellers?",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "I need $800",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "Facebook marketplace find, I probably paid a little high but look at the shiny",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "First Silver Stack",
-        "url": "",
-        "symbols": [
-          "XAGUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "silverbugs",
-        "title": "1934 Peace Dollar\u2026MS??",
-        "url": "",
-        "symbols": [
-          "DXY"
-        ],
-        "patterns": [],
-        "confidence": 0.3
       }
     ]
   },
@@ -951,16 +712,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-24T13:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Treasury Sec Bessent Speaks"
@@ -973,16 +734,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-25T10:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: CB Consumer Confidence"
@@ -995,12 +756,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
+          "AUDNZD",
           "AUDJPY",
           "AUDUSD",
-          "GBPAUD",
-          "EURAUD",
           "AUDCAD",
-          "AUDNZD"
+          "GBPAUD",
+          "EURAUD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI m/m"
@@ -1013,12 +774,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
+          "AUDNZD",
           "AUDJPY",
           "AUDUSD",
-          "GBPAUD",
-          "EURAUD",
           "AUDCAD",
-          "AUDNZD"
+          "GBPAUD",
+          "EURAUD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI y/y"
@@ -1031,12 +792,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
+          "AUDNZD",
           "AUDJPY",
           "AUDUSD",
-          "GBPAUD",
-          "EURAUD",
           "AUDCAD",
-          "AUDNZD"
+          "GBPAUD",
+          "EURAUD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: Trimmed Mean CPI m/m"
@@ -1049,16 +810,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core PCE Price Index m/m"
@@ -1071,16 +832,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim GDP q/q"
@@ -1093,16 +854,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim GDP Price Index q/q"
@@ -1115,16 +876,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T08:30:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Unemployment Claims"
@@ -1137,14 +898,14 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T19:30:00-04:00",
         "symbols": [
-          "CHFJPY",
-          "CADJPY",
-          "AUDJPY",
           "XAUUSD",
+          "AUDJPY",
           "EURJPY",
-          "USDJPY",
+          "CADJPY",
+          "CHFJPY",
+          "NZDJPY",
           "GBPJPY",
-          "NZDJPY"
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact JPY event: Tokyo Core CPI y/y"
@@ -1157,9 +918,9 @@
         "impact": "HIGH",
         "date": "2026-08-28T08:30:00-04:00",
         "symbols": [
-          "USDCAD",
           "NZDCAD",
-          "AUDCAD"
+          "AUDCAD",
+          "USDCAD"
         ],
         "confidence": 0.7,
         "description": "High impact CAD event: GDP m/m"
@@ -1172,16 +933,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Fed Chairman Warsh Speaks"
@@ -1194,16 +955,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim Benchmark Payrolls Revision"
@@ -1216,16 +977,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Consumer Sentiment"
@@ -1238,16 +999,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCAD",
-          "NZDUSD",
           "XAUUSD",
-          "USDCHF",
-          "USDJPY",
+          "NZDUSD",
           "GBPUSD",
-          "AUDUSD",
-          "US500",
+          "USDCAD",
           "NAS100",
-          "EURUSD"
+          "EURUSD",
+          "AUDUSD",
+          "USDCHF",
+          "US500",
+          "USDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Inflation Expectations"
@@ -1776,7 +1537,7 @@
         "type": "historical_pattern",
         "symbol": "EURUSD",
         "month": 8,
-        "avg_return": 0.0004,
+        "avg_return": 0.0003,
         "overall_avg": 0.0001,
         "direction": "bullish",
         "symbols": [
@@ -1846,7 +1607,7 @@
         "type": "historical_pattern",
         "symbol": "BTCUSD",
         "month": 8,
-        "avg_return": 1.4093,
+        "avg_return": 1.4091,
         "overall_avg": 0.216,
         "direction": "bullish",
         "symbols": [

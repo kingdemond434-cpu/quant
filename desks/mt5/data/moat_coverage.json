@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T10:59:44+00:00",
+ "built_at": "2026-08-27T11:28:46+00:00",
  "window_days": 7,
  "coverage": {
   "3M": 8,
@@ -57,7 +57,7 @@
   "CITIGROUP": 8,
   "COCA-COLA": 8,
   "COFARA": 8,
-  "COFROB": 8,
+  "COFROB": 9,
   "COINBASE": 8,
   "COMCAST": 8,
   "CORN": 9,
@@ -179,8 +179,8 @@
   "SPACEX": 2,
   "SPOTIFY": 7,
   "STARBUCKS": 7,
-  "SUGAR": 8,
-  "SUGARRAW": 8,
+  "SUGAR": 9,
+  "SUGARRAW": 9,
   "TARGET": 7,
   "TESLA": 7,
   "TEXASINSTRUMENTS": 7,
@@ -248,5 +248,5 @@
   "XZNUSD": 10,
   "ZARJPY": 10
  },
- "newest_tape_write": "2026-08-27T10:16:25+00:00"
+ "newest_tape_write": "2026-08-27T11:16:39+00:00"
 }
