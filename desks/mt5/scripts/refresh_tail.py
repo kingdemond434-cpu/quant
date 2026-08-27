@@ -32,6 +32,14 @@ def refresh_symbol(sym: str) -> str:
     if not pq.exists():
         return "no-cache"
     old = pd.read_parquet(pq)
+    # SELECT BEFORE YOU READ. A symbol absent from Market Watch is not subscribed, so
+    # `copy_rates_from_pos` serves whatever history happens to be cached and reports no error --
+    # the terminal answers, just not with current bars. MEASURED 2026-08-27 on the desk box: with
+    # no select, USDCAD (a Market Watch symbol) refreshed to 08-27 10:00 while US500 stopped at
+    # 08-26 07:00 and USCOCOA at 08-25 20:00, all in the SAME run. That is the whole reason most
+    # of the 295-symbol store sat days stale: not a broken refresher, a subscription nobody asked
+    # for. `symbol_select` costs one call and makes the terminal fetch the real tail.
+    mt5.symbol_select(sym, True)
     rates = mt5.copy_rates_from_pos(sym, mt5.TIMEFRAME_H1, 0, N_BARS)
     if rates is None or len(rates) < 2:
         return f"fetch-fail({mt5.last_error()})"

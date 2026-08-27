@@ -338,3 +338,15 @@ def test_bar_refresh_restores_a_naive_index_instead_of_corrupting_it() -> None:
     fn = src.split("def refresh_symbol", 1)[1].split("\ndef ", 1)[0]
     assert 'old.index.tz_localize("UTC")' in fn
     assert fn.index("tz_localize") < fn.index("pd.concat([old, new])")
+
+
+def test_bar_refresh_selects_the_symbol_before_reading_its_history() -> None:
+    """A symbol absent from Market Watch is not subscribed, so `copy_rates_from_pos` serves
+    cached history and reports NO error. Measured in one run on the desk box: USDCAD reached
+    08-27 10:00 while US500 stopped at 08-26 07:00 and USCOCOA at 08-25 20:00."""
+    src = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
+    fn = src.split("def refresh_symbol", 1)[1].split("\ndef ", 1)[0]
+    # Match the STATEMENTS, not the phrases: both names also appear in the comment explaining
+    # the bug, and a test that matches prose proves nothing about code.
+    assert "\n    mt5.symbol_select(sym, True)\n" in fn
+    assert fn.index("\n    mt5.symbol_select") < fn.index("\n    rates = mt5.copy_rates_from_pos")
