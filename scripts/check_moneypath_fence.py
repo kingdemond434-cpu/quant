@@ -43,6 +43,10 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/shadow_admission.py": ("authorized_runs", "authorized_specs",
                                                "all_ten_pass", "is_exact_policy"),
     "desks/mt5/research/qquant_shadow.py": "PROMOTION_CANDIDATE",
+    # the scalp lane's certificate gate: uncertified cells must QUARANTINE, never accrue.
+    # 2026-08-27: a desk-side revert re-admitted four uncertified sleeves within one pass of
+    # the gate landing -- unprotected, the gate lasted 43 minutes.
+    "desks/mt5/research/scalp_shadow.py": ("QUARANTINED_UNCERTIFIED", "forward_start"),
     "desks/mt5/moat/moat_recorder.py": "copy_ticks_range",
     "desks/mt5/moat/moat_fence.py": "symbols_floor",
     # 2026-08-26: the hourly sync bus committed the DESK BOX's stale copies over these two
