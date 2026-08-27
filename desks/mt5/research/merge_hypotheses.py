@@ -35,6 +35,10 @@ SOURCES = (
     ("miner_candidates.json", "hypotheses"),
     ("edge_search_results.json", "hypotheses"),
     ("orthogonal_candidates.json", "hypotheses"),
+    # Historical STATISTICAL_ONLY rejects re-stamped after a mechanism-map extension
+    # (scripts/requeue_named_mechanisms.py). Merged when freshly rebuilt; hourly runs skip it
+    # as stale once consumed -- a map extension re-opens gate 1, never any later gate.
+    ("requeue_named.json", "hypotheses"),
 )
 
 
