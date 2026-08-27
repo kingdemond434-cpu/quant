@@ -146,19 +146,20 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
                             str(row.get("mechanism") or "source supplied exact recipe"))
                  for s in symbols], "EXACT_RECIPE")
 
-    if source_l == "cot" or kind == "positioning" and "cot" in source_l:
-        if symbols:
-            return ([_candidate(s, "cot_positioning", {"input_source": "cot_point_in_time"},
-                                source, row,
-                                "reported positioning extremes can unwind or continue conditionally")
-                     for s in symbols], "STRUCTURED_COT")
+    if (source_l == "cot" or (kind == "positioning" and "cot" in source_l)) and symbols:
+        return ([_candidate(s, "cot_positioning", {"input_source": "cot_point_in_time"},
+                            source, row,
+                            "reported positioning extremes can unwind or continue "
+                            "conditionally")
+                 for s in symbols], "STRUCTURED_COT")
 
     event_like = (source_l in {"ff_calendar_vintage", "forexfactory", "central_bank"}
                   or kind in {"calendar_event", "calendar_vintage", "cb_speech"})
     if event_like and symbols:
         return ([_candidate(s, "event_reaction", {"input_source": "ff_calendar_vintage"},
                             source, row,
-                            "scheduled information releases create conditional repricing and liquidity")
+                            "scheduled information releases create conditional repricing "
+                            "and liquidity")
                  for s in symbols], "STRUCTURED_EVENT")
 
     if source_l == "broker_swaps" and symbols and (
@@ -186,12 +187,42 @@ def compile_row(source: str, row: dict, universe: set[str]) -> tuple[list[dict],
         side = 1 if direction in {"up", "long"} else -1
         return ([_candidate(s, "calendar_month", {"active_month": month, "side_bias": side},
                             source, row,
-                            "calendar-linked allocation and hedging flows can create monthly seasonality")
+                            "calendar-linked allocation and hedging flows can create "
+                            "monthly seasonality")
                  for s in symbols], "STRUCTURED_CALENDAR")
 
     if not symbols:
         return [], "NEEDS_SYMBOL_EXTRACTION"
     return [], "NEEDS_EXACT_RULE_EXTRACTION"
+
+
+def structurally_untestable_families() -> dict[str, str]:
+    """Families the gauntlet has MEASURED as producing zero judgeable cells, from its own report.
+
+    Data-driven, never a hardcoded list (LAWS anti-hardcode): a family joins this set only when
+    the last sweep built >=5 of its cells and judged NONE (all under the 60 trading days the
+    gates need) -- measured 2026-08-27: carry 193/193, event_reaction 113/113, calendar_month
+    2/2, lvc_asia_london 3/3 re-shipped every hour, ~310 guaranteed-unjudgeable builds per
+    sweep. Routing them to the DEEPENING queue is not a rejection: it is the statement that
+    these parameterizations need widening (pooled events, longer windows) before any gate can
+    rule, which is exactly what the deepening queue exists to ask the research brains for.
+    A family leaves the set the moment one of its cells becomes judgeable.
+    """
+    report = BASE / "reports" / "universal_gates_external.json"
+    try:
+        doc = json.loads(report.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    per_fam: dict[str, list[int]] = {}
+    for v in doc.get("verdicts") or []:
+        if not isinstance(v, dict):
+            continue
+        fam = str(v.get("family") or "?")
+        n_all, n_unm = per_fam.setdefault(fam, [0, 0])
+        per_fam[fam] = [n_all + 1, n_unm + (1 if v.get("unmeasured") else 0)]
+    return {fam: (f"last sweep built {n} cell(s), judged 0 -- every one under the 60 trading "
+                  f"days the gates need; parameters need DEEPENING before judgment is possible")
+            for fam, (n, unm) in per_fam.items() if n >= 5 and unm == n}
 
 
 def main() -> int:
@@ -200,6 +231,10 @@ def main() -> int:
     candidates: dict[str, dict] = {}
     deepening: dict[str, dict] = {}
     per_source: dict[str, dict[str, int]] = {}
+    untestable = structurally_untestable_families()
+    if untestable:
+        print("families routed to DEEPENING (measured untestable at current parameters): "
+              + ", ".join(sorted(untestable)))
 
     for source, row in recent_rows(now):
         produced, disposition = compile_row(source, row, universe)
@@ -208,6 +243,13 @@ def main() -> int:
         for candidate in produced:
             identity = json.dumps({k: candidate[k] for k in ("symbol", "family", "params")},
                                   sort_keys=True, default=str)
+            fam = str(candidate.get("family") or "")
+            if fam in untestable:
+                if identity not in deepening:
+                    deepening[identity] = {**candidate,
+                                           "deepening_reason": untestable[fam]}
+                    stats["deepening"] += 1
+                continue
             if identity not in candidates:
                 candidates[identity] = candidate
                 stats["candidates"] += 1
@@ -220,7 +262,8 @@ def main() -> int:
                 "symbols": resolve_symbols(row, universe),
                 "mechanism_tags": row.get("mechanism_tags") or row.get("patterns") or [],
             }
-            key = hashlib.sha256(json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
+            key = hashlib.sha256(
+                json.dumps(compact, sort_keys=True, default=str).encode()).hexdigest()
             deepening[key] = compact
             stats["deepening"] += 1
 
