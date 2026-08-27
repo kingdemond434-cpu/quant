@@ -74,7 +74,7 @@ def main() -> int:
     )
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=2), "utf-8")
-    print(f"external shadow compatibility: retired {retired} duplicate clock(s); "
+    print(f"external shadow compatibility: retired {retired} obsolete private clock(s); "
           "canonical shadow_forward remains sole owner")
     return 0
 

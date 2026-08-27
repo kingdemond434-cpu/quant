@@ -93,6 +93,7 @@ def main() -> int:
     now = datetime.now(tz=UTC)
     certs = (read(CERTS) or {}).get("survivors") or {}
     rows = forward_rows()
+    live_rows = {k: v for k, v in rows.items() if not _is_terminal(v.get("status"))}
     findings: list[str] = []
 
     # 1. certified but never put on a clock -----------------------------------------------
@@ -101,7 +102,7 @@ def main() -> int:
         sym = spec.get("symbol") or ""
         sel = spec.get("selector") or ""
         # a clock counts if any forward row names this symbol+selector, however keyed
-        enrolled = any(sym and sym in k and (not sel or sel in k) for k in rows)
+        enrolled = any(sym and sym in k and (not sel or sel in k) for k in live_rows)
         if enrolled:
             continue
         stamp = cert.get("certified_at") or cert.get("at") or ""
@@ -177,7 +178,6 @@ def main() -> int:
     # The promote lanes gate on `days_active >= 14`. A row carrying the pre-correction number
     # would satisfy a forward window it never served, which is the one thing the back half of
     # this pipeline exists to prevent. Report it where the fence already looks.
-    live_rows = {k: v for k, v in rows.items() if not _is_terminal(v.get("status"))}
     overstated = overstated_rows(live_rows, now)
     if overstated:
         worst = max(overstated.values(), key=lambda v: v["overstated_by"])
@@ -190,13 +190,16 @@ def main() -> int:
 
     REPORT.write_text(json.dumps(
         {"checked_at": now.isoformat(timespec="seconds"),
-         "certificates": len(certs), "forward_clocks": len(rows),
+         "certificates": len(certs), "forward_clocks": len(live_rows),
+         "retired_rows_preserved": len(rows) - len(live_rows),
          "unstamped": len(unstamped), "findings": findings}, indent=1), "utf-8")
 
     if not findings:
         if ALARM.exists():
             ALARM.unlink()
-        print(f"same-day pipeline: ok ({len(certs)} certificate(s), {len(rows)} forward clock(s))")
+        print(f"same-day pipeline: ok ({len(certs)} certificate(s), "
+              f"{len(live_rows)} live forward clock(s), "
+              f"{len(rows) - len(live_rows)} retired row(s) preserved)")
         return 0
 
     body = (f"SAME-DAY PIPELINE BREACH {now.isoformat(timespec='seconds')}\n\n"
