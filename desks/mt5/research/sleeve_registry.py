@@ -136,6 +136,25 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None,
     reg = _read(REGISTRY)
     rows = reg.setdefault("sleeves", {})
     if key in rows and rows[key].get("identity"):
+        # BACKFILL THE CLOCK START, NEVER RE-BASE IT. Idempotence protects the IDENTITY; it must
+        # not also freeze in a MISSING pre-registration boundary. `shadow_forward` froze the row
+        # before it stamped `forward_start`, so every row was born `forward_start: null` and the
+        # early return made the null permanent -- measured 2026-08-27, 17/17 registry rows null
+        # while all 17 shadow rows carried a real stamp. The registry is the desk's only
+        # freeze-then-verify record of the one field L1.58 promotion turns on (`days >= 14`), so a
+        # null there leaves the boundary readable ONLY from the mutable state file the registry
+        # exists to be independent of -- and both `forward_reconcile` and `migrate_identity_venue`
+        # rewrite that file. A clock silently restarted at NOW would be indistinguishable from one
+        # that has run thirteen days. Filling an ABSENT value is therefore the opposite of
+        # re-basing: it can only move the boundary EARLIER or leave it unchanged, never later, so
+        # it can never buy a window it did not serve. A stamp already present is untouchable.
+        if forward_start and not rows[key].get("forward_start"):
+            rows[key]["forward_start"] = forward_start
+            rows[key]["forward_start_backfilled_at"] = datetime.now(tz=UTC).isoformat(
+                timespec="seconds")
+            reg["updated_at"] = rows[key]["forward_start_backfilled_at"]
+            REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+            REGISTRY.write_text(json.dumps(reg, indent=1, default=str), "utf-8")
         return rows[key]["identity"]
     rows[key] = {
         "identity": ident,

@@ -330,6 +330,15 @@ def main() -> None:
             st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
         except Exception:
             st.setdefault("broker_offset_h", 0.0)
+        # STAMP THE CLOCK BEFORE FREEZING IT. `freeze()` below passes `st["forward_start"]` into
+        # the registry, and this stamp used to be written ~50 lines LATER -- so on a row's first
+        # pass the registry froze `forward_start: null`, and because freeze() is idempotent by
+        # design that null was permanent. The stamp is unconditional-if-absent and uses the same
+        # `now` the later block would, so moving it earlier changes the value by nothing and only
+        # makes it visible to the freeze. The later block remains as the fallback for rows that
+        # never reach the registry branch (import failure), where it is still the only stamper.
+        if not st.get("forward_start"):
+            st["forward_start"] = datetime.now(UTC).isoformat()
         # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
         # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
         # while leaving every name and number intact, and a forward series that splices two of
