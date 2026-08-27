@@ -8681,6 +8681,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0676",
+   "source": "cycle",
+   "summary": "desks/mt5/data artifacts roll BACKWARD mid-session and the #157 doc-replay fence does not cover that tree. Measured 2026-08-27: forward_reconcile.json read at 07:58:08Z (enrolled 21, certified_clocks 17) then re-read minutes later as 2026-08-26T02:02:32Z (enrolled 19, certified_pairs 6). Extend check_doc_replay_fence.py blob-match to forward_reconcile.json / sleeve_registry.json / decay_live.json, one marker PER PROPERTY. Root cause is the Dell-side pusher with no ssh route, so this heals the symptom and must NAME the stale commit. GAP #161.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T09:36:32.585358+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0677",
+   "source": "cycle",
+   "summary": "Claim-filing into SURVIVORS_LEDGER.json is now a FOURTH copy of the same twelve lines (universal_gate.py:456, survivor_publication.py:93, ug_remote.py:373, external_gauntlet.py) -- which is exactly why one producer forgot it and 22 of 23 survivors went unclaimed (GAP #160). A fifth producer will forget too. Extract one file_claims() helper. Blocked today only because research/survivor_publication.py imports gate_policy FLAT, so it is not importable from external_gauntlet's sys.path; fix that import first.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T09:36:36.381806+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
