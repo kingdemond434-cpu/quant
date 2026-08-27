@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T04:07:06+00:00",
+ "built_at": "2026-08-27T05:06:25+00:00",
  "tasks": [
   {
    "source": "github",
@@ -1114,6 +1114,30 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
+   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "shazzadu1/Trade-Halting-Safeguard",
    "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
    "symbols": [],
@@ -1210,24 +1234,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
-   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
-   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/MT5-Forex-Session-indicator",
-   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+   "title": "youcefito/mt5-quiet-automata",
+   "url": "https://github.com/youcefito/mt5-quiet-automata",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -1250,14 +1266,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
@@ -1266,8 +1274,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Prop-Matrix-Engine",
-   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3530,17 +3538,6 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Renaissance has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Citadel has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -3553,17 +3550,6 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Point72 has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "D.E. Shaw has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",

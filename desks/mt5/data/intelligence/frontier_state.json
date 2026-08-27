@@ -1,5 +1,5 @@
 {
-"cursor": 33,
+"cursor": 34,
 "queries_done": {
 "zh": [
 "\u590d\u5236\u4ea4\u6613 MT4",
@@ -89,6 +89,9 @@
 "getiri MT4",
 "getiri MT5",
 "getiri ranking",
+"kazan\u00e7 MT4",
+"kazan\u00e7 MT5",
+"kazan\u00e7 ranking",
 "kopya ticaret MT4",
 "kopya ticaret MT5",
 "kopya ticaret ranking",
