@@ -2247,8 +2247,32 @@ def check_forensics_fresh(defects) -> None:
     """DAILY PnL/churn/loss analysis is GUARANTEED, not assumed (principal 2026-07-24): the
     trade-forensics probe (the mechanical version of the probes that found gaps #42/#43/#34)
     must have produced a fresh verdict within 26h, or the desk is flying without its daily
-    bleed detection -- the exact silent-leak failure mode the integrity watch exists to kill."""
+    bleed detection -- the exact silent-leak failure mode the integrity watch exists to kill.
+
+    THE DUTY SURVIVES THE MANDATE; ITS ARTIFACT DID NOT (2026-08-27). `web/trade_forensics.json`
+    is the funding/maker-fill/hold-bucket forensics of the crypto cashcarry book, retired by
+    principal order, and the MT5 desk holds no live capital yet (readiness rung 0). So there are
+    no fills to analyse, and reporting that as "not landing; check daily_research_cycle" blamed a
+    healthy organ for the absence of a book -- the same misattribution `live_readiness` made when
+    it called a desk defect a fact about the market.
+
+    UNMEASURABLE IS ITS OWN VERDICT (L1.28a), so it is reported rather than quietly skipped, and
+    the duty RE-ARMS BY ITSELF: the moment the desk reaches a rung above 0 the staleness bar
+    applies again with no edit here. Absence of a book is never permission to stop watching for
+    bleed; it is only the honest reason there is none to see."""
     fj = ROOT / "web/trade_forensics.json"
+    try:
+        rung = int(json.loads((ROOT / "data/live_readiness.json").read_text("utf-8"))["rung"])
+    except (OSError, ValueError, KeyError, TypeError):
+        rung = -1               # unreadable readiness is NOT "no book"; fall through and gauge
+    if rung == 0:
+        defects.append(("forensics-unmeasurable",
+                        "trade-class bleed forensics UNMEASURABLE, not stale: readiness is rung 0 "
+                        "(no live capital) and the only forensics artifact on disk belongs to the "
+                        "retired crypto cashcarry book, which the MT5 mandate bans re-running. "
+                        "The duty stands and re-arms automatically at rung > 0; nothing here is "
+                        "evidence the desk is bleeding unwatched"))
+        return
     if not fj.exists():
         defects.append(("forensics-stale", "web/trade_forensics.json MISSING -- daily "
                         "trade-class bleed analysis has never produced output"))
@@ -2573,8 +2597,23 @@ def check_production(defects) -> None:
         ("prospector-product", "docs/research/prospector_watchlist.md", 30, 100),
         ("litminer-product", "docs/research/*iterature*coverage*.md", 30, 50),
         ("frontier-product", "docs/research/prospector_coverage.md", 30, 100),
-        ("crypto-factory", "web/autodiscovery_crypto.json", 30, 100),
-        ("forensics", "web/trade_forensics.json", 30, 50),
+        # RETIRED 2026-08-27 BY THE MT5 MANDATE, not by neglect -- and retired rather than left
+        # red, because a cadence row nothing may legally satisfy is a permanent alarm, and a
+        # detector that is always red is one everybody learns to scroll past (L1.37 rule 1). Both
+        # products belong to the crypto-exchange universe the standing principal order of
+        # 2026-08-18 bans permanently (LAWS s1): `web/autodiscovery_crypto.json` is written only
+        # by ops/run_crypto_factory.sh, whose twelve `quant-autodiscovery*` timers are all
+        # disabled -- VERIFIED, none appears in `systemctl --user list-timers --all` and none has
+        # started this boot; `web/trade_forensics.json` is the funding/maker-fill/hold-bucket
+        # forensics of the retired cashcarry book (its last content is 4 closes on $25.85
+        # notional). Neither can be produced again without breaching the mandate.
+        #   ("crypto-factory", "web/autodiscovery_crypto.json", 30, 100),
+        #   ("forensics", "web/trade_forensics.json", 30, 50),
+        # THE DUTY TRANSFERS, THE ARTIFACT DOES NOT. Execution-quality forensics on MT5 ground is
+        # `desks/mt5/reports/execution_quality.json`, already age-gauged at 36h in
+        # check_job_manifest, so retiring the crypto row drops no coverage. If a crypto row is
+        # ever wanted back, the mandate must be lifted first -- restoring the cadence is not the
+        # act that lifts it.
     ]
     for label, pat, max_h, min_b in manifest:
         hits = [Path(q) for q in _glob.glob(str(ROOT / pat))]
