@@ -1,0 +1,41 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "From Producing to Validating: How AI Is Deskilling Freelancers",
+    "summary": "Generative AI is promoted as a way to enhance knowledge work, yet its benefits and drawbacks fall unevenly across the workforce. Freelance and gig workers, who commonly lack the upskilling pathways av",
+    "url": "https://arxiv.org/abs/2608.26089v1",
+    "published": "2026-08-26T17:51:34Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Planetary Prediction Engine: Autonomous Geospatial Prediction via Intelligent Data Selection and Foundation Model Embeddings",
+    "summary": "Addressing critical global challenges, from food security and disaster risk to disease outbreaks and socio-economic vulnerability, demands high-fidelity geospatial modeling. However, building predicti",
+    "url": "https://arxiv.org/abs/2608.26088v1",
+    "published": "2026-08-26T17:50:52Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Planetary Prediction Engine: Autonomous Geospatial Prediction via Intelligent Data Selection and Foundation Model Embeddings",
+    "summary": "Addressing critical global challenges, from food security and disaster risk to disease outbreaks and socio-economic vulnerability, demands high-fidelity geospatial modeling. However, building predicti",
+    "url": "https://arxiv.org/abs/2608.26088v1",
+    "published": "2026-08-26T17:50:52Z",
+    "trading_terms": [
+      "risk"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]
