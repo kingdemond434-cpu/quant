@@ -4,6 +4,7 @@ Reads test_grid.json, runs each cell, saves results + survivors.
 from __future__ import annotations
 
 import json
+import inspect
 import sys
 import time
 import warnings
@@ -34,6 +35,33 @@ FAMILY_FUNCS = {
     "monday_gap": families.family_monday_gap,
     "london_close_momentum": families.family_london_close_momentum,
 }
+
+
+def normalize_grid(grid: list[dict]) -> tuple[list[dict], int]:
+    """Keep only executable family parameters and collapse identities made equal by repair."""
+    normalized: list[dict] = []
+    seen: set[str] = set()
+    removed = 0
+    for cell in grid:
+        func = FAMILY_FUNCS.get(cell.get("family"))
+        if func is None:
+            continue
+        signature = inspect.signature(func)
+        accepts_kwargs = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in signature.parameters.values()
+        )
+        raw = dict(cell.get("params") or {})
+        legal = raw if accepts_kwargs else {k: v for k, v in raw.items()
+                                             if k in signature.parameters}
+        removed += len(raw) - len(legal)
+        repaired = {**cell, "params": legal}
+        identity = json.dumps({k: repaired.get(k) for k in ("symbol", "family", "params")},
+                              sort_keys=True, default=str)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        normalized.append(repaired)
+    return normalized, removed
 
 
 def h1(sym: str) -> pd.DataFrame:
@@ -82,8 +110,10 @@ def run_all() -> list[dict]:
     if not grid_file.exists():
         print("No test_grid.json. Run bridge_to_hunt.py first.")
         return []
-    grid = json.loads(grid_file.read_text(encoding="utf-8"))
-    print(f"Running {len(grid)} test cells...")
+    raw_grid = json.loads(grid_file.read_text(encoding="utf-8"))
+    grid, removed = normalize_grid(raw_grid)
+    print(f"Running {len(grid)} executable test cells ({len(raw_grid)} submitted; "
+          f"{removed} unsupported parameter occurrence(s) removed)...")
 
     results = []
     t0 = time.time()

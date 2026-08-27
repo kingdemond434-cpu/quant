@@ -10,12 +10,17 @@ This is the missing link between DISCOVER and BACKTEST phases.
 from __future__ import annotations
 import json
 import itertools
+import sys
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 DATA = BASE / "data"
 INTEL = DATA / "intelligence"
 HYPO = DATA / "hypotheses"
+if str(BASE) not in sys.path:
+    sys.path.insert(0, str(BASE))
+
+from mt5desk import families
 
 # Existing families from families.py
 EXISTING_FAMILIES = {
@@ -89,17 +94,23 @@ def generate_test_grid(mapped: list[dict]) -> list[dict]:
                 continue
             seen_families.add(h["mapped_family"])
 
-            # Generate param grid
-            for rr in [1.5, 2.0, 2.5]:
-                for extra_kw in [{"wait_bars": 8}, {"wait_bars": 12}]:
-                    grid.append({
-                        "symbol": sym,
-                        "family": h["mapped_family"],
-                        "family_func": h["family_func"],
-                        "params": {"rr": rr, **extra_kw},
-                        "source_hypothesis": h["id"],
-                        "source_url": h.get("url", ""),
-                    })
+            # The old bridge imposed ``rr`` + ``wait_bars`` on every family. That is not a
+            # generic strategy interface: asia_momentum has no wait_bars, dow_effect has neither,
+            # and all 162 hourly cells consequently errored before a backtest. The family registry
+            # is the executable source of truth for its own legal search degrees of freedom.
+            family_grid = families.get_param_grid(family)
+            keys = list(family_grid)
+            values = [family_grid[key] for key in keys]
+            combinations = itertools.product(*values) if keys else [()]
+            for values_row in combinations:
+                grid.append({
+                    "symbol": sym,
+                    "family": h["mapped_family"],
+                    "family_func": h["family_func"],
+                    "params": dict(zip(keys, values_row, strict=True)),
+                    "source_hypothesis": h["id"],
+                    "source_url": h.get("url", ""),
+                })
 
     return grid
 

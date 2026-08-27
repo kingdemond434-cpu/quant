@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import UTC, datetime, timedelta
+import inspect
 import json
 import os
 import sys
@@ -17,6 +18,9 @@ from research import edge_search
 from research import merge_hypotheses
 from research.frontier_identity import cell_id, economic_prior
 from scripts import external_gauntlet
+from side_channels import bridge_to_hunt
+from side_channels import run_external_backtest
+from mt5desk import families
 
 
 def _bars(n: int = 720) -> pd.DataFrame:
@@ -98,7 +102,9 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "orthogonal_candidates.json" in script
     assert "miner_candidate_compiler.py" in script
     assert "merge_hypotheses.py" in script
+    assert "desks/mt5/mt5desk/families.py" in script
     assert "desks/mt5/mt5desk/families_orthogonal.py" in script
+    assert "libs/research/bar_span.py" in script
 
 
 def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) -> None:
@@ -212,3 +218,34 @@ def test_orthogonal_candidates_persist_runtime_provenance() -> None:
     assert '"input_source": "fusion_tick_tape"' in source
     assert '"input_source": "ff_calendar_vintage"' in source
     assert 'dict((kw and {}) or {})' not in source
+
+
+def test_external_bridge_only_emits_parameters_the_family_accepts() -> None:
+    mapped = [{
+        "id": "source-1",
+        "symbol": "XAUUSD",
+        "mapped_family": "asia_momentum",
+        "family_func": "family_asia_momentum",
+        "url": "https://example.invalid/source",
+    }]
+
+    grid = bridge_to_hunt.generate_test_grid(mapped)
+    accepted = set(inspect.signature(families.family_asia_momentum).parameters)
+
+    assert len(grid) == 9
+    assert all(set(cell["params"]) <= accepted for cell in grid)
+    assert all("wait_bars" not in cell["params"] for cell in grid)
+
+
+def test_external_runner_repairs_and_deduplicates_legacy_invalid_grid() -> None:
+    legacy = [
+        {"symbol": "XAUUSD", "family": "asia_momentum",
+         "params": {"rr": 1.5, "wait_bars": wait}}
+        for wait in (8, 12)
+    ]
+
+    repaired, removed = run_external_backtest.normalize_grid(legacy)
+
+    assert removed == 2
+    assert len(repaired) == 1
+    assert repaired[0]["params"] == {"rr": 1.5}
