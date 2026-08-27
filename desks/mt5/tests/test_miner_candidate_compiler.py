@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 import sys
 
 import numpy as np
@@ -53,6 +54,20 @@ def test_vague_miner_claim_routes_to_deepening_not_a_guessed_family() -> None:
     )
     assert rows == []
     assert disposition == "NEEDS_EXACT_RULE_EXTRACTION"
+
+
+def test_deployed_script_can_import_registered_families_from_any_working_directory(
+    tmp_path,
+) -> None:
+    module = DESK / "research" / "miner_candidate_compiler.py"
+    probe = (
+        "import runpy; "
+        f"m=runpy.run_path({str(module)!r}); "
+        "raise SystemExit(0 if m['_registered_family']('lvc_asia_london') else 1)"
+    )
+    result = subprocess.run([sys.executable, "-c", probe], cwd=tmp_path, check=False)
+
+    assert result.returncode == 0
 
 
 def test_calendar_month_family_uses_the_mined_month_and_direction() -> None:

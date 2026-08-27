@@ -12,11 +12,17 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 ROOT = BASE.parent.parent
+if str(BASE) not in sys.path:
+    # The hourly service executes this file by path. Python then adds ``research/`` rather than
+    # ``desks/mt5/`` to sys.path, so exact recipes otherwise cannot see the family registry and
+    # are silently routed to deepening instead of the gauntlet.
+    sys.path.insert(0, str(BASE))
 UNIVERSE = BASE / "data" / "universe"
 INTEL_ROOTS = (BASE / "data" / "intelligence", ROOT / "data" / "intelligence")
 OUT = BASE / "data" / "hypotheses" / "miner_candidates.json"
