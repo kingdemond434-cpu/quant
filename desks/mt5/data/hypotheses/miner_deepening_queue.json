@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T21:08:11+00:00",
+ "built_at": "2026-08-27T22:12:10+00:00",
  "tasks": [
   {
    "source": "github",
@@ -273,8 +273,8 @@
   {
    "source": "mql5_signals",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
-   "url": "",
+   "title": "signals/mt5 page shape drifted",
+   "url": "https://www.mql5.com/en/signals/mt5",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2498,6 +2498,54 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "bipbopcompany-droid/Risk-Nexus-Command",
    "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
    "symbols": [],
@@ -2570,8 +2618,40 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "DaggerConsole/metatrader-4-boost",
-   "url": "https://github.com/DaggerConsole/metatrader-4-boost",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "TheHolderCollective/MetatraderSharpCookbook",
+   "url": "https://github.com/TheHolderCollective/MetatraderSharpCookbook",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "TheHolderCollective/MetatraderSharp",
+   "url": "https://github.com/TheHolderCollective/MetatraderSharp",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "dendyerbrace/myfxbook-core",
+   "url": "https://github.com/dendyerbrace/myfxbook-core",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2580,22 +2660,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZovraT/MT5-MT4-Close-Orders-Script",
    "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "n30dyn4m1c/ichimoku-h4-m1-align",
-   "url": "https://github.com/n30dyn4m1c/ichimoku-h4-m1-align",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "thieucong98/quant-backtest-pro",
-   "url": "https://github.com/thieucong98/quant-backtest-pro",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2612,110 +2676,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
    "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "TheHolderCollective/MetatraderSharp",
-   "url": "https://github.com/TheHolderCollective/MetatraderSharp",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "TheHolderCollective/MetatraderSharpCookbook",
-   "url": "https://github.com/TheHolderCollective/MetatraderSharpCookbook",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dendyerbrace/myfxbook-core",
-   "url": "https://github.com/dendyerbrace/myfxbook-core",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "pierskinkpit/forex-tester-studio",
-   "url": "https://github.com/pierskinkpit/forex-tester-studio",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "justwinstuff/hakarutrade",
-   "url": "https://github.com/justwinstuff/hakarutrade",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Confluence-Signal-Matrix",
-   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3282,8 +3242,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3293,8 +3253,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3472,17 +3432,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "symbols": [],
@@ -3496,6 +3445,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3868,8 +3828,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3912,8 +3872,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4000,8 +3960,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4011,8 +3971,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4110,8 +4070,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4121,8 +4081,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4471,6 +4431,262 @@
    "mechanism_tags": []
   },
   {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2304847",
+   "symbols": [
+    "AUDCAD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2375343",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "CADCHF",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2379208",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2280569",
+   "symbols": [
+    "AUDCAD",
+    "AUDUSD",
+    "NZDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2262642",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2231030",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2356441",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDUSD",
+    "CADCHF",
+    "CADJPY",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/1988269",
+   "symbols": [
+    "AUDCAD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2371777",
+   "symbols": [
+    "AUDNZD",
+    "CHFJPY",
+    "EURCAD",
+    "EURGBP",
+    "EURJPY",
+    "EURUSD",
+    "GBPJPY",
+    "GBPUSD",
+    "USDCAD",
+    "USDJPY"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2329290",
+   "symbols": [
+    "AUDUSD",
+    "EURUSD",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2265877",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2271402",
+   "symbols": [
+    "AUDCAD",
+    "AUDNZD",
+    "EURGBP",
+    "NZDCAD",
+    "USDJPY",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2339082",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2300694",
+   "symbols": [
+    "AUDCAD",
+    "AUDNZD",
+    "BTCUSD",
+    "EURAUD",
+    "EURUSD",
+    "NZDCAD",
+    "NZDUSD",
+    "USDCAD",
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2222743",
+   "symbols": [
+    "BTCUSD",
+    "EURUSD",
+    "USDJPY",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2204998",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "BTCUSD",
+    "CADCHF",
+    "CHFJPY",
+    "EURAUD",
+    "EURCAD",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2308095",
+   "symbols": [
+    "AUDCAD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2367701",
+   "symbols": [
+    "AUDCAD",
+    "AUDCHF",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "BTCUSD",
+    "CADCHF",
+    "CADJPY",
+    "CHFJPY",
+    "EURAUD",
+    "EURCAD",
+    "EURCHF"
+   ],
+   "mechanism_tags": []
+  },
+  {
    "source": "arxiv",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "From Producing to Validating: How AI Is Deskilling Freelancers",
@@ -4776,6 +4992,39 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Millennium has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Baupost has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Soros has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Appaloosa has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",

@@ -7783,5 +7783,173 @@
    "win_rate": null,
    "symbol": "GBPSEK"
   }
+ },
+ {
+  "id": "ext-20260827-2e8441",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPSGD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPSGD"
+  }
+ },
+ {
+  "id": "ext-20260827-4d548c",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPTRY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPTRY"
+  }
+ },
+ {
+  "id": "ext-20260827-25b3ac",
+  "geneology_id": "external:miner:ff_calendar_vintage",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPZAR event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPZAR"
+  }
+ },
+ {
+  "id": "ext-20260827-a6b61a",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: 3M carry params={'input_symbol': '3M'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "3M"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "3M"
+  }
+ },
+ {
+  "id": "ext-20260827-c730af",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: ADAUSD carry params={'input_symbol': 'ADAUSD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "ADAUSD"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "ADAUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-47aa5d",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: ADP carry params={'input_symbol': 'ADP'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "ADP"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "ADP"
+  }
+ },
+ {
+  "id": "ext-20260827-663df3",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AMD carry params={'input_symbol': 'AMD'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AMD"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AMD"
+  }
+ },
+ {
+  "id": "ext-20260827-e4a7d7",
+  "geneology_id": "external:miner:broker_swaps",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AT&T carry params={'input_symbol': 'AT&T'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "carry",
+  "side": "BOTH",
+  "params": {
+   "input_symbol": "AT&T"
+  },
+  "created_at": "2026-08-27T21:50:00.521599+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AT&T"
+  }
  }
 ]
