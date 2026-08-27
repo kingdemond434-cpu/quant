@@ -143,7 +143,9 @@ def track_tunnel_url() -> str | None:
     carries the live link even when the old one is dead."""
     import re
     url = None
-    for log in sorted((ROOT / "data" / "cro_ai_logs").glob("*tunnel*"), reverse=True):
+    candidates = [ROOT / "data" / "desk_tunnel.log",
+                  *sorted((ROOT / "data" / "cro_ai_logs").glob("*tunnel*"), reverse=True)]
+    for log in candidates:
         try:
             hits = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",
                               log.read_text("utf-8", errors="replace"))
