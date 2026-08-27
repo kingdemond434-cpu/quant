@@ -63,19 +63,56 @@ def _read(p: Path) -> dict:
         return {}
 
 
-def enrolled_keys() -> set[str]:
-    """Exactly what the running engines will touch this cycle -- the only real clocks."""
+def _engine_clock_keys() -> set[str]:
+    """Every clock key the engine will build from a certificate, named by the ENGINE.
+
+    ARITY IS NOT UNPACKED POSITIONALLY. `certified_sleeves()` was widened from
+    (sym, window, params) to (sym, window, params, family) and this reader still destructured
+    three, so it raised `too many values to unpack` on EVERY pass from 2026-08-26 onward and
+    `enrolled_keys` returned an empty set. Measured consequence: the reconciler ran blind for a
+    full day -- orphan retirement (its whole purpose) silently disabled, while two certified,
+    running overnight_gap_decay clocks were retired as UNRECONSTRUCTIBLE because the family-shaped
+    key `SYM.family.window` parses as selector="overnight_gap_decay". Slicing with a default keeps
+    this reader alive across the NEXT widening too; a second implementation of the engine's key
+    format is the drift this whole function exists to avoid.
+    """
+    import shadow_forward as sf
+    keys: set[str] = {sf.sleeve_key(s, w, dict(sf.WINDOWS.get(w, {}))) for s, w in sf.SLEEVES}
+    for row in sf.certified_sleeves():
+        sym, win, params = row[0], row[1], row[2]
+        family = row[3] if len(row) > 3 else "session_range_breakout"
+        keys.add(sf.sleeve_key(sym, win, params, family))
+    return keys
+
+
+def certified_clock_keys() -> set[str] | None:
+    """The exact keys of clocks that are BOTH certified and runnable, or None if unreadable.
+
+    `certified_sleeves()` is derived exclusively from `authorized_runs` -- the fail-closed
+    admission door -- so membership here is proof of a ten-gate certificate that needs no string
+    parsing at all. Every retirement branch below that guessed a certificate from the key's dots
+    was guessing at something this set already knows exactly.
+    """
+    try:
+        return _engine_clock_keys()
+    except Exception as exc:
+        print(f"  WARN: certified clock keys unreadable ({exc}); refusing to retire on cert")
+        return None
+
+
+def enrolled_keys() -> set[str] | None:
+    """Exactly what the running engines will touch this cycle -- the only real clocks.
+
+    Returns None for UNKNOWN (the enrolment source could not be read) and never conflates it with
+    the empty set: absence is not a clean verdict, and an unreadable engine must not read as "no
+    engine enrols anything", which is a licence to retire the entire forward book.
+    """
     keys: set[str] = set()
     try:
-        import shadow_forward as sf
-        # certified_sleeves now yields (sym, window, params) and the engine keys each
-        # parameterization separately -- ask the engine for its own key rather than
-        # reconstructing one here, so the two can never disagree about what is enrolled.
-        keys |= {sf.sleeve_key(s, w, dict(sf.WINDOWS.get(w, {}))) for s, w in sf.SLEEVES}
-        keys |= {sf.sleeve_key(s, w, p) for s, w, p in sf.certified_sleeves()}
+        keys |= _engine_clock_keys()
     except Exception as exc:
         print(f"  WARN: shadow_forward enrolment unreadable ({exc}); treating its rows as enrolled")
-        return set()
+        return None
     # qquant/scalp own their rows; this reconciler never calls another engine's rows orphaned.
     for f in ("qquant_shadow_state.json", "scalp_shadow_state.json"):
         d = _read(SHADOW / f)
@@ -146,8 +183,14 @@ def gauntlet(cells: list[dict]) -> dict:
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     enrolled = enrolled_keys()
+    cert_clock_keys = certified_clock_keys()
     certs = certified_pairs()
     cert_ids = certified_ids()
+    # UNKNOWN IS NOT ZERO. If either the engine's enrolment or its certified-clock list is
+    # unreadable, this pass has no basis on which to retire anything -- it can only report.
+    unknown_enrolment = enrolled is None or cert_clock_keys is None
+    if unknown_enrolment:
+        print("forward reconcile: enrolment UNKNOWN -- retirement disabled for this pass")
     if not certs:
         print("forward reconcile: admission unreadable -- FAIL SOFT, nothing changed")
         return 0
@@ -175,7 +218,33 @@ def main() -> int:
         for key, row in rows_here:
             if not isinstance(row, dict) or "status" not in row:
                 continue
-            if str(row.get("status") or "").upper() in TERMINAL:
+            _status = str(row.get("status") or "").upper()
+            # REPAIR WHAT THIS ORGAN GOT WRONG. Only the two branches that INFER a verdict from
+            # the key's shape are reversible here -- RETIRED_GATE_FAIL is a measured gauntlet
+            # result and KILL/PROMOTED are decisions elsewhere, so none of them are touched. The
+            # proof required to reverse is exact and needs no parsing: the engine itself names
+            # this key from a live certificate (`cert_clock_keys`) AND will run it this cycle
+            # (`enrolled`). Measured 2026-08-27: EURZAR and USDZAR overnight_gap_decay were
+            # retired at 04:01 and the engine was still writing `last_attempt_at` to them at
+            # 07:45 -- sleeves being traded while their evidence was discarded.
+            # The revived clock is stamped FRESH, never inherited: the engine re-derives n,
+            # n_historical and exp_r from `forward_start` on its next pass, so every trade before
+            # this moment falls back to HISTORICAL exactly as the two-stage law requires.
+            if (_status in {"RETIRED_ORPHAN", "RETIRED_UNRECONSTRUCTIBLE"}
+                    and not unknown_enrolment and cert_clock_keys is not None
+                    and key in cert_clock_keys and enrolled and key in enrolled):
+                row["status"] = "ACTIVE"
+                row["forward_start"] = datetime.now(tz=UTC).isoformat()
+                row.pop("retired_at", None)
+                row.pop("retire_reason", None)
+                row.pop("promotion_authority", None)
+                actions.append({"key": key, "action": "REVIVED_CERTIFIED", "why": (
+                    "retired on a key-shape inference while holding a live ten-gate certificate "
+                    "and an active enrolment; clock restamped FRESH so no pre-registration "
+                    "boundary is inherited")})
+                changed = True
+                continue
+            if _status in TERMINAL:
                 continue
             # STRIP THE PARAMETER SIGNATURE FIRST. Clock keys are `SYM.selector#p=v_p=v` since
             # each certified parameterization owns its own clock; splitting on "." alone made
@@ -203,12 +272,19 @@ def main() -> int:
                         sel = _t
                         break
             certificate_id = str(row.get("certificate") or key)
-            has_cert = certificate_id in cert_ids or any(
-                sym == a and (sel == b or not sel) for a, b in certs
+            # EXACT FIRST, PARSED SECOND. `cert_clock_keys` is named by the engine's own
+            # `sleeve_key`, so a match is proof of certification with no dot-splitting involved.
+            # The parsed fallbacks below only ever ADD matches; they can no longer be the reason a
+            # family-shaped key like `EURZAR.overnight_gap_decay.asia` is judged uncertified.
+            has_cert = (
+                (cert_clock_keys is not None and key in cert_clock_keys)
+                or certificate_id in cert_ids
+                or any(sym == a and (sel == b or not sel) for a, b in certs)
             )
 
-            if enrolled and key not in enrolled:
+            if not unknown_enrolment and enrolled and key not in enrolled:
                 row["status"] = "RETIRED_ORPHAN"
+                row["promotion_authority"] = False
                 row["retired_at"] = now
                 row["retire_reason"] = (
                     "no engine enrols this row; its day count and trade count are FROZEN. A "
@@ -255,8 +331,12 @@ def main() -> int:
             if sel in WINDOWS and len(parts) == 2:
                 to_gauntlet.append({"key": key, "sym": sym, "family": "session_range_breakout",
                                     "params": dict(WINDOWS[sel]), "file": fname})
+            elif unknown_enrolment:
+                # cannot prove it is uncertified while the certificate list is unreadable
+                continue
             else:
                 row["status"] = "RETIRED_UNRECONSTRUCTIBLE"
+                row["promotion_authority"] = False
                 row["retired_at"] = now
                 row["retire_reason"] = (
                     "running without a ten-gate certificate, and its exact parameters cannot be "
@@ -313,8 +393,13 @@ def main() -> int:
             CERTS.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
             CANON.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
 
+    # REPORT UNKNOWN AS UNKNOWN. `"enrolled": 0` is what a reader saw for a full day while the
+    # real cause was an unpack error -- indistinguishable from an engine that legitimately enrols
+    # nothing, which is why nobody chased it. Null carries the distinction the count cannot.
     OUT.write_text(json.dumps(
-        {"checked_at": now, "enrolled": len(enrolled),
+        {"checked_at": now, "enrolled": None if enrolled is None else len(enrolled),
+         "enrolment_readable": not unknown_enrolment,
+         "certified_clocks": None if cert_clock_keys is None else len(cert_clock_keys),
          "certified_pairs": len(certs), "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:
