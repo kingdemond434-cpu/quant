@@ -68,7 +68,10 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     # desk simply being slow, which is how it would survive.
     "desks/mt5/mt5desk/families_orthogonal.py": (
         "_PRIM_CACHE", "family_discovered", "ORTHOGONAL_FAMILIES"),
-    "desks/mt5/scripts/external_gauntlet.py": ("ATTESTATION", "_H1_CACHE", "_h1_for"),
+    "desks/mt5/scripts/external_gauntlet.py": ("ATTESTATION", "_H1_CACHE", "_h1_for",
+                                               "CACHE SAVE FAILING",
+                                               "REFUSING to write an EMPTY canon",
+                                               "HALT: 0 candidates"),
     # grandfathering is over: SLEEVES must stay empty and enrolment must stay certificate-driven
     "desks/mt5/research/forward_reconcile.py": "RETIRED_ORPHAN",
     # 2026-08-26 (gap-wirer): five more unification-reverted properties re-applied and fenced.
