@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T08:09:41+00:00",
+ "built_at": "2026-08-27T09:14:05+00:00",
  "tasks": [
   {
    "source": "github",
@@ -2066,6 +2066,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "tipcsy/TradeForge",
+   "url": "https://github.com/tipcsy/TradeForge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZovraT/MT5-MT4-Close-Orders-Script",
    "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
    "symbols": [],
@@ -2178,16 +2186,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
+   "title": "justwinstuff/hakarutrade",
+   "url": "https://github.com/justwinstuff/hakarutrade",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2220,6 +2228,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "RPNATION1/Tradingalgos",
    "url": "https://github.com/RPNATION1/Tradingalgos",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2575,16 +2591,16 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@SaiGon_Trading",
-   "url": "https://my.litefinance.org/traders/SaiGon_Trading",
+   "title": "@H_Trading",
+   "url": "https://my.litefinance.org/traders/H_Trading",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@H_Trading",
-   "url": "https://my.litefinance.org/traders/H_Trading",
+   "title": "@SaiGon_Trading",
+   "url": "https://my.litefinance.org/traders/SaiGon_Trading",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2828,8 +2844,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2839,8 +2855,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3018,8 +3034,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3029,8 +3045,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3238,8 +3254,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3249,8 +3265,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3271,8 +3287,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3282,8 +3298,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1033952/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3326,8 +3342,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3337,8 +3353,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1173877/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3403,8 +3419,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3414,8 +3430,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3458,6 +3474,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1093252/",
    "symbols": [],
@@ -3482,17 +3509,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3557,17 +3573,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1440990/",
    "symbols": [],
@@ -3581,6 +3586,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1427023/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3844,6 +3860,18 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "symbols": [],
+   "mechanism_tags": [
+    "grid",
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
    "symbols": [],
@@ -3881,18 +3909,6 @@
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
    "symbols": [],
    "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
-   "symbols": [],
-   "mechanism_tags": [
-    "grid",
     "ea_robot",
     "gold"
    ]
@@ -3958,6 +3974,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4246,20 +4273,20 @@
   },
   {
    "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "You see the chart differently? Then you must be an idiot!",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "XAUUSD SETUP",
    "url": "",
    "symbols": [
     "XAUUSD"
    ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "You see the chart differently? Then you must be an idiot!",
-   "url": "",
-   "symbols": [],
    "mechanism_tags": []
   },
   {
@@ -4311,6 +4338,150 @@
    "url": "",
    "symbols": [
     "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Went to Costco for some creatine",
+   "url": "",
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "State of the stack (2 years)",
+   "url": "",
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Secured the Kirkland Ounce Bar",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Silver has grown on me since I\u2019ve started my stacking journey. Anyone else?",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "1oz Kirkland silver today $69.99. I paid tax\u2026 no regrats. With obligatory hot dog and soda to make the trip worthwhile \ud83d\ude09",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "MORE!",
+   "url": "",
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Sterling silver belt buckle, mirror, YOYO",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "This is my first purchase of Junk Silver. I think I'm addicted",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Kirkland Silver",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "A humble reminder",
+   "url": "",
+   "symbols": [
+    "XAGUSD",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Private sellers?",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Pretty pickups - 1 Monark silver rounds",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "I need $800",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Facebook marketplace find, I probably paid a little high but look at the shiny",
+   "url": "",
+   "symbols": [
+    "XAGUSD"
    ],
    "mechanism_tags": []
   },
@@ -4597,18 +4768,8 @@
   {
    "source": "youtube",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 27/08/2026. #xauusd                #forextrading",
-   "url": "https://youtube.com/watch?v=l_mQuM0BCos",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 27/08/2026. #xauusd                #forextrading",
-   "url": "https://youtube.com/watch?v=f2u0It5kJC4",
+   "title": "LIVE GOLD TRADING || XAUUSD LIVE ANALYSIS || 27 AUGUST 2026 || A TRADING MONK #gold #btc",
+   "url": "https://youtube.com/watch?v=OUYtBwRVlLs",
    "symbols": [
     "XAUUSD"
    ],
@@ -4619,6 +4780,71 @@
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "26 August 2026 Forex Market Review \ud83d\udd25 | XAUUSD Gold Analysis | BTI TradeLab",
    "url": "https://youtube.com/watch?v=j74oSQd6di4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Decoding today\u2019s Gold price action \ud83e\udde0 #shorts #trading #viralvideo",
+   "url": "https://youtube.com/watch?v=tp1LAe_8Ewg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "SMA",
+    "liquidity",
+    "smart money",
+    "ICT"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "#xauusd #trading #nfplivetrade #gold #stockmarket #propfirmtrading #nifty #bestgoldforexsignals",
+   "url": "https://youtube.com/watch?v=hE1ABSDVAsA",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold Market Update Today | XAUUSD Analysis",
+   "url": "https://youtube.com/watch?v=juWxZ_oUORw",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "the logic trader What\u2019s your view on Gold today: BUY or SELL? Comment below! \ud83d\udc47 | XAUUSD",
+   "url": "https://youtube.com/watch?v=CInQ0JTHTw8",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Is #gold  Ready for a Buying Move Today? Today&#39;s Market Update #xauusd #shortsfeed",
+   "url": "https://youtube.com/watch?v=SS4Igf_wufs",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD Live, QO, GC, MGC, Gold #xauusd #trading #gold",
+   "url": "https://youtube.com/watch?v=3h2OmzWrZ4A",
    "symbols": [
     "XAUUSD"
    ],
@@ -4661,36 +4887,6 @@
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "GOLD XAUUSD Trading Strategy TODAY 27-28 AUG | XAUUSD Analysis TODAY 27-28 AUG | GOLD Forecast TODAY",
    "url": "https://youtube.com/watch?v=9-birU90bzw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Zero Float, Huge Take Profit #xauusd #gold #trading #forex",
-   "url": "https://youtube.com/watch?v=tHGQsZH8rnQ",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=ffKWF777FZo",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "#gold #xauusd #crypto #jackpot #trader #trade #paisa #strategy #indicator # #forex #hack #winning",
-   "url": "https://youtube.com/watch?v=-aJSbFD3aa8",
    "symbols": [
     "XAUUSD"
    ],

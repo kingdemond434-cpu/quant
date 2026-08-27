@@ -1,769 +1,799 @@
 {
- "built_at": "2026-08-27T08:09:16+00:00",
+ "built_at": "2026-08-27T09:13:13+00:00",
  "window_days": 7,
  "universe_size": 197,
  "targets": [
   {
    "symbol": "XAUUSD",
-   "score": 2554.0,
-   "from_miners": 2527.0,
-   "from_moat": 27.0
+   "score": 2692.0,
+   "from_miners": 2662.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURUSD",
-   "score": 1303.0,
-   "from_miners": 1276.0,
-   "from_moat": 27.0
+   "score": 1348.0,
+   "from_miners": 1318.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "NAS100",
-   "score": 1110.0,
-   "from_miners": 1083.0,
-   "from_moat": 27.0
+   "score": 1164.0,
+   "from_miners": 1134.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AUDUSD",
-   "score": 1030.0,
-   "from_miners": 1003.0,
-   "from_moat": 27.0
+   "score": 1071.0,
+   "from_miners": 1041.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "US500",
-   "score": 1023.0,
-   "from_miners": 996.0,
-   "from_moat": 27.0
+   "score": 1068.0,
+   "from_miners": 1038.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AUDCAD",
-   "score": 934.0,
-   "from_miners": 907.0,
-   "from_moat": 27.0
+   "score": 969.0,
+   "from_miners": 939.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPUSD",
-   "score": 889.0,
-   "from_miners": 862.0,
-   "from_moat": 27.0
+   "score": 924.0,
+   "from_miners": 894.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDJPY",
-   "score": 828.0,
-   "from_miners": 801.0,
-   "from_moat": 27.0
+   "score": 863.0,
+   "from_miners": 833.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDCAD",
-   "score": 702.0,
-   "from_miners": 675.0,
-   "from_moat": 27.0
+   "score": 733.0,
+   "from_miners": 703.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "NZDUSD",
-   "score": 572.0,
-   "from_miners": 545.0,
-   "from_moat": 27.0
+   "score": 597.0,
+   "from_miners": 567.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AUDNZD",
-   "score": 565.0,
-   "from_miners": 538.0,
-   "from_moat": 27.0
+   "score": 586.0,
+   "from_miners": 556.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDCHF",
-   "score": 482.0,
-   "from_miners": 455.0,
-   "from_moat": 27.0
+   "score": 505.0,
+   "from_miners": 475.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AUDJPY",
-   "score": 472.0,
-   "from_miners": 445.0,
-   "from_moat": 27.0
+   "score": 491.0,
+   "from_miners": 461.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "BTCUSD",
-   "score": 391.0,
-   "from_miners": 358.0,
-   "from_moat": 33.0
+   "score": 410.0,
+   "from_miners": 374.0,
+   "from_moat": 36.0
   },
   {
    "symbol": "EURJPY",
-   "score": 373.0,
-   "from_miners": 346.0,
-   "from_moat": 27.0
+   "score": 387.0,
+   "from_miners": 357.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURAUD",
-   "score": 362.0,
-   "from_miners": 335.0,
-   "from_moat": 27.0
+   "score": 377.0,
+   "from_miners": 347.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPAUD",
-   "score": 297.0,
-   "from_miners": 270.0,
-   "from_moat": 27.0
+   "score": 310.0,
+   "from_miners": 280.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "CADCHF",
-   "score": 292.0,
-   "from_miners": 265.0,
-   "from_moat": 27.0
+   "score": 303.0,
+   "from_miners": 273.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFJPY",
-   "score": 272.0,
-   "from_miners": 245.0,
-   "from_moat": 27.0
+   "score": 283.0,
+   "from_miners": 253.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "META",
-   "score": 271.0,
-   "from_miners": 250.0,
-   "from_moat": 21.0
+   "score": 281.0,
+   "from_miners": 257.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "NZDCAD",
-   "score": 270.0,
-   "from_miners": 243.0,
-   "from_moat": 27.0
+   "score": 281.0,
+   "from_miners": 251.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPJPY",
-   "score": 259.0,
-   "from_miners": 232.0,
-   "from_moat": 27.0
+   "score": 270.0,
+   "from_miners": 240.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURCAD",
-   "score": 227.0,
-   "from_miners": 200.0,
-   "from_moat": 27.0
+   "score": 236.0,
+   "from_miners": 206.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURNZD",
-   "score": 227.0,
-   "from_miners": 200.0,
-   "from_moat": 27.0
+   "score": 236.0,
+   "from_miners": 206.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "CADJPY",
-   "score": 207.0,
-   "from_miners": 180.0,
-   "from_moat": 27.0
+   "score": 216.0,
+   "from_miners": 186.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURGBP",
-   "score": 197.0,
-   "from_miners": 170.0,
-   "from_moat": 27.0
+   "score": 206.0,
+   "from_miners": 176.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPCAD",
-   "score": 162.0,
-   "from_miners": 135.0,
-   "from_moat": 27.0
+   "score": 169.0,
+   "from_miners": 139.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPNZD",
-   "score": 162.0,
-   "from_miners": 135.0,
-   "from_moat": 27.0
+   "score": 169.0,
+   "from_miners": 139.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "XAUEUR",
-   "score": 162.0,
-   "from_miners": 135.0,
-   "from_moat": 27.0
+   "score": 169.0,
+   "from_miners": 139.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "XAGUSD",
-   "score": 130.0,
-   "from_miners": 103.0,
-   "from_moat": 27.0
+   "score": 149.0,
+   "from_miners": 119.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AUDCHF",
-   "score": 97.0,
-   "from_miners": 70.0,
-   "from_moat": 27.0
+   "score": 102.0,
+   "from_miners": 72.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURCHF",
-   "score": 97.0,
-   "from_miners": 70.0,
-   "from_moat": 27.0
+   "score": 102.0,
+   "from_miners": 72.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "NZDJPY",
-   "score": 77.0,
-   "from_miners": 50.0,
-   "from_moat": 27.0
+   "score": 82.0,
+   "from_miners": 52.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "US30",
-   "score": 69.0,
+   "score": 72.0,
    "from_miners": 42.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "ADP",
-   "score": 63.0,
-   "from_miners": 42.0,
-   "from_moat": 21.0
+   "score": 67.0,
+   "from_miners": 43.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "CHINAH",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURPLN",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "EURSGD",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "NOKJPY",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDHKD",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDILS",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDSGD",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "USDTHB",
-   "score": 52.0,
-   "from_miners": 25.0,
-   "from_moat": 27.0
+   "score": 57.0,
+   "from_miners": 27.0,
+   "from_moat": 30.0
   },
   {
    "symbol": "AIRBNB",
-   "score": 46.0,
-   "from_miners": 25.0,
-   "from_moat": 21.0
+   "score": 51.0,
+   "from_miners": 27.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "MERCK",
-   "score": 46.0,
-   "from_miners": 25.0,
-   "from_moat": 21.0
+   "score": 51.0,
+   "from_miners": 27.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "PEPSI",
-   "score": 46.0,
-   "from_miners": 25.0,
-   "from_moat": 21.0
+   "score": 51.0,
+   "from_miners": 27.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "UNITEDHEALTH",
-   "score": 46.0,
-   "from_miners": 25.0,
-   "from_moat": 21.0
+   "score": 51.0,
+   "from_miners": 27.0,
+   "from_moat": 24.0
   },
   {
    "symbol": "ETHUSD",
-   "score": 39.0,
+   "score": 42.0,
    "from_miners": 6.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "ADAUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "AVAXUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "BCHUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "BNBUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "DOGEUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "DOTUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "LNKUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "LTCUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "MATICUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "SOLUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "USDZAR",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 11.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XLMUSD",
-   "score": 38.0,
+   "score": 41.0,
    "from_miners": 5.0,
-   "from_moat": 33.0
+   "from_moat": 36.0
   },
   {
    "symbol": "3M",
-   "score": 37.0,
+   "score": 40.0,
    "from_miners": 16.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "AUDHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "AUS200",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFDKK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFNOK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFPLN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "CHFSGD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURCZK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURDKK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURHKD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURILS",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURMXN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURNOK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURSEK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURTRY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EURZAR",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "EUSTX50",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPCHF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPDKK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPMXN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPNOK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPPLN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPSEK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPSGD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPTRY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GBPZAR",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "GER40",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "HK50",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "HKDJPY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "JPN225",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "MXNJPY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "NOKSEK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "NZDCHF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "NZDHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "NZDSGD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "SEKJPY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "SGDJPY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "UK100",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDCNH",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDCZK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDDKK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDHUF",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDKRW",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDMXN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDNOK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDPLN",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDRUB",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDSEK",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDTRY",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "USDX",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XAGEUR",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XALUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XAUAUD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XBRUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XCUUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XNGUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XNIUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XPBUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XPDUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XPTUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XTIUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "XZNUSD",
-   "score": 32.0,
+   "score": 35.0,
    "from_miners": 5.0,
-   "from_moat": 27.0
+   "from_moat": 30.0
   },
   {
    "symbol": "ZARJPY",
+   "score": 35.0,
+   "from_miners": 5.0,
+   "from_moat": 30.0
+  },
+  {
+   "symbol": "AMD",
+   "score": 34.0,
+   "from_miners": 10.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "DOW",
+   "score": 34.0,
+   "from_miners": 10.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CA60",
    "score": 32.0,
    "from_miners": 5.0,
    "from_moat": 27.0
   },
   {
-   "symbol": "AMD",
-   "score": 31.0,
-   "from_miners": 10.0,
-   "from_moat": 21.0
+   "symbol": "FRA40",
+   "score": 32.0,
+   "from_miners": 5.0,
+   "from_moat": 27.0
+  },
+  {
+   "symbol": "NETH25",
+   "score": 32.0,
+   "from_miners": 5.0,
+   "from_moat": 27.0
+  },
+  {
+   "symbol": "USDIDR",
+   "score": 32.0,
+   "from_miners": 5.0,
+   "from_moat": 27.0
   },
   {
    "symbol": "APPLE",
@@ -772,13 +802,163 @@
    "from_moat": 21.0
   },
   {
-   "symbol": "DOW",
-   "score": 31.0,
-   "from_miners": 10.0,
-   "from_moat": 21.0
+   "symbol": "COINBASE",
+   "score": 30.0,
+   "from_miners": 6.0,
+   "from_moat": 24.0
   },
   {
-   "symbol": "CA60",
+   "symbol": "AT&T",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "ACCENTURE",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "ADOBE",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "ALIBABAGROUP",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "AMAZON",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "AMERICANEXPRESS",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "AMGEN",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "APPLIEDMATERIALS",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "ATLASSIAN",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BANKOFAMERICACORP",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BERKSHIRE",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BLACKROCK",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BOEING",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BOOKING",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "BROADCOM",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CVSHEALTH",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CATERPILLAR",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CHARLESSCHWAB",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CHARTER",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CHEVRON",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CISCO",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "CITIGROUP",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "COCA-COLA",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "COMCAST",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "COSTCOWHOLESALE",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "DOORDASH",
    "score": 29.0,
    "from_miners": 5.0,
    "from_moat": 24.0
@@ -790,370 +970,190 @@
    "from_moat": 24.0
   },
   {
-   "symbol": "FRA40",
-   "score": 29.0,
-   "from_miners": 5.0,
-   "from_moat": 24.0
-  },
-  {
-   "symbol": "NETH25",
-   "score": 29.0,
-   "from_miners": 5.0,
-   "from_moat": 24.0
-  },
-  {
-   "symbol": "USDIDR",
-   "score": 29.0,
-   "from_miners": 5.0,
-   "from_moat": 24.0
-  },
-  {
-   "symbol": "COINBASE",
-   "score": 27.0,
-   "from_miners": 6.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "AT&T",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "ACCENTURE",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "ADOBE",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "ALIBABAGROUP",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "AMAZON",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "AMERICANEXPRESS",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "AMGEN",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "APPLIEDMATERIALS",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "ATLASSIAN",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BANKOFAMERICACORP",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BERKSHIRE",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BLACKROCK",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BOEING",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BOOKING",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "BROADCOM",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CVSHEALTH",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CATERPILLAR",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CHARLESSCHWAB",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CHARTER",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CHEVRON",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CISCO",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "CITIGROUP",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "COCA-COLA",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "COMCAST",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "COSTCOWHOLESALE",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
-   "symbol": "DOORDASH",
-   "score": 26.0,
-   "from_miners": 5.0,
-   "from_moat": 21.0
-  },
-  {
    "symbol": "EXXONMOBIL",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "GILEADSCIENCES",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "GOLDMANSACHS",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "HOMEDEPOT",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "HONEYWELL",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "IBM",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "INTEL",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "JPMORGANCHASE",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "JOHNSON&JOHNSON",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "MCDONALDS",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "MICROSOFT",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "NETFLIX",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "NIKE",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "PAYPAL",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "PROCTER&GAMBLE",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "SALESFORCE",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "TRAVELERS",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "USDBRL",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "USDINR",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "VERIZON",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "VISA",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "WALMART",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "WALTDISNEY",
-   "score": 26.0,
+   "score": 29.0,
    "from_miners": 5.0,
-   "from_moat": 21.0
+   "from_moat": 24.0
   },
   {
    "symbol": "EBAY",
+   "score": 29.0,
+   "from_miners": 5.0,
+   "from_moat": 24.0
+  },
+  {
+   "symbol": "EOSUSD",
+   "score": 27.0,
+   "from_miners": 27.0,
+   "from_moat": 0.0
+  },
+  {
+   "symbol": "ALPHABET-A",
    "score": 26.0,
    "from_miners": 5.0,
    "from_moat": 21.0
   },
   {
-   "symbol": "EOSUSD",
-   "score": 25.0,
-   "from_miners": 25.0,
-   "from_moat": 0.0
+   "symbol": "TESLA",
+   "score": 26.0,
+   "from_miners": 5.0,
+   "from_moat": 21.0
   },
   {
    "symbol": "AUDSGD",
-   "score": 20.0,
+   "score": 23.0,
    "from_miners": 5.0,
-   "from_moat": 15.0
-  },
-  {
-   "symbol": "ALPHABET-A",
-   "score": 20.0,
-   "from_miners": 5.0,
-   "from_moat": 15.0
-  },
-  {
-   "symbol": "CHFSEK",
-   "score": 20.0,
-   "from_miners": 5.0,
-   "from_moat": 15.0
-  },
-  {
-   "symbol": "TESLA",
-   "score": 20.0,
-   "from_miners": 5.0,
-   "from_moat": 15.0
+   "from_moat": 18.0
   },
   {
    "symbol": "ALPHABET-C",
-   "score": 11.0,
+   "score": 23.0,
    "from_miners": 5.0,
-   "from_moat": 6.0
+   "from_moat": 18.0
+  },
+  {
+   "symbol": "CHFSEK",
+   "score": 23.0,
+   "from_miners": 5.0,
+   "from_moat": 18.0
   },
   {
    "symbol": "DOCUSIGN",
-   "score": 6.0,
+   "score": 21.0,
    "from_miners": 0.0,
-   "from_moat": 6.0
+   "from_moat": 21.0
   },
   {
    "symbol": "EURRUB",
@@ -1170,28 +1170,28 @@
  ],
  "miner_health": {
   "academic": {
-   "rows": 33,
+   "rows": 39,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "amarkets": {
-   "rows": 4335,
+   "rows": 4448,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "arxiv_qfin": {
-   "rows": 901,
+   "rows": 926,
    "fetch_errors": 1,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "broker_swaps": {
-   "rows": 1252,
+   "rows": 1253,
    "fetch_errors": 10,
    "rows_naming_a_symbol": 965,
-   "usable_rate": 0.771
+   "usable_rate": 0.77
   },
   "central_banks": {
    "rows": 310,
@@ -1200,20 +1200,20 @@
    "usable_rate": 0.0
   },
   "collective2": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "cot": {
-   "rows": 517,
+   "rows": 539,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "darwinex": {
-   "rows": 37,
-   "fetch_errors": 37,
+   "rows": 38,
+   "fetch_errors": 38,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
@@ -1230,15 +1230,15 @@
    "usable_rate": 1.0
   },
   "fbs_tape": {
-   "rows": 39,
+   "rows": 40,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 39,
+   "rows_naming_a_symbol": 40,
    "usable_rate": 1.0
   },
   "ff_calendar_vintage": {
-   "rows": 2553,
+   "rows": 2622,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 37,
+   "rows_naming_a_symbol": 38,
    "usable_rate": 0.014
   },
   "followme_cn": {
@@ -1248,39 +1248,39 @@
    "usable_rate": 0.0
   },
   "forexfactory": {
-   "rows": 675,
+   "rows": 705,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 675,
+   "rows_naming_a_symbol": 705,
    "usable_rate": 1.0
   },
   "forexpeacearmy": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "forextsd_cdx": {
-   "rows": 3607,
+   "rows": 3727,
    "fetch_errors": 7,
-   "rows_naming_a_symbol": 60,
+   "rows_naming_a_symbol": 62,
    "usable_rate": 0.017
   },
   "fxblue": {
-   "rows": 37,
-   "fetch_errors": 37,
+   "rows": 38,
+   "fetch_errors": 38,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "github": {
-   "rows": 1823,
+   "rows": 1875,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 855,
-   "usable_rate": 0.469
+   "rows_naming_a_symbol": 869,
+   "usable_rate": 0.463
   },
   "github_topics": {
-   "rows": 1665,
+   "rows": 1710,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 3,
+   "rows_naming_a_symbol": 4,
    "usable_rate": 0.002
   },
   "hfm_pamm": {
@@ -1290,16 +1290,16 @@
    "usable_rate": 0.0
   },
   "instaforex_copy": {
-   "rows": 153,
+   "rows": 157,
    "fetch_errors": 1,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "litefinance": {
-   "rows": 543,
+   "rows": 558,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 3,
-   "usable_rate": 0.006
+   "usable_rate": 0.005
   },
   "minfx_jp": {
    "rows": 4,
@@ -1308,19 +1308,19 @@
    "usable_rate": 0.0
   },
   "mql5_signals": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 3,
-   "rows_naming_a_symbol": 34,
-   "usable_rate": 0.919
+   "rows_naming_a_symbol": 35,
+   "usable_rate": 0.921
   },
   "mql5_survivors": {
-   "rows": 1170,
+   "rows": 1206,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 1105,
+   "rows_naming_a_symbol": 1139,
    "usable_rate": 0.944
   },
   "myfxbook_outlook": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 19,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1338,21 +1338,21 @@
    "usable_rate": 0.0
   },
   "propfirm_boards": {
-   "rows": 37,
-   "fetch_errors": 37,
+   "rows": 38,
+   "fetch_errors": 38,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "quant_se": {
-   "rows": 1110,
+   "rows": 1140,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "quantconnect": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 37,
+   "rows_naming_a_symbol": 38,
    "usable_rate": 1.0
   },
   "readitrades_africa": {
@@ -1362,15 +1362,15 @@
    "usable_rate": 0.0
   },
   "reddit": {
-   "rows": 974,
+   "rows": 1026,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 971,
-   "usable_rate": 0.997
+   "rows_naming_a_symbol": 1021,
+   "usable_rate": 0.995
   },
   "regional_survivors": {
-   "rows": 6082,
+   "rows": 6253,
    "fetch_errors": 10,
-   "rows_naming_a_symbol": 46,
+   "rows_naming_a_symbol": 47,
    "usable_rate": 0.008
   },
   "roboforex_copyfx": {
@@ -1386,15 +1386,15 @@
    "usable_rate": 0.0
   },
   "seasonality": {
-   "rows": 502,
+   "rows": 540,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 502,
+   "rows_naming_a_symbol": 540,
    "usable_rate": 1.0
   },
   "sec_edgar": {
-   "rows": 413,
+   "rows": 433,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 413,
+   "rows_naming_a_symbol": 433,
    "usable_rate": 1.0
   },
   "share4you": {
@@ -1410,21 +1410,21 @@
    "usable_rate": 1.0
   },
   "trading_latam": {
-   "rows": 1482,
+   "rows": 1520,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "tradingview_scripts": {
-   "rows": 37,
+   "rows": 38,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 37,
+   "rows_naming_a_symbol": 38,
    "usable_rate": 1.0
   },
   "youtube": {
-   "rows": 242,
+   "rows": 298,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 242,
+   "rows_naming_a_symbol": 298,
    "usable_rate": 1.0
   }
  },

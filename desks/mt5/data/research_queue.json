@@ -5363,5 +5363,341 @@
    "win_rate": null,
    "symbol": "USDTHB"
   }
+ },
+ {
+  "id": "ext-20260827-70be98",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDTRY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDTRY"
+  }
+ },
+ {
+  "id": "ext-20260827-aab98a",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDZAR event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDZAR"
+  }
+ },
+ {
+  "id": "ext-20260827-188319",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAGUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAGUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-4eb897",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XALUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XALUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-0ac8a2",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-4211d9",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XBRUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XBRUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-d156c6",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XCUUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XCUUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-ae08a5",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XLMUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T08:50:01.405818+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XLMUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-ba4a3b",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XNGUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XNGUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-09be07",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XNIUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XNIUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-209a59",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XPBUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XPBUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-ce7a9b",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XPDUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XPDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-cd23aa",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XPTUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XPTUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-b9906d",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XTIUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XTIUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-4d6638",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XZNUSD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "XZNUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-73f427",
+  "geneology_id": "external:miner:forexfactory",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T09:05:53.509421+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDCAD"
+  }
  }
 ]
