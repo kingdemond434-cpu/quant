@@ -75,6 +75,101 @@ def clear_stale_git_lock() -> str | None:
     return None
 
 
+def check_clock_skew() -> tuple[str | None, str | None]:
+    """Cross-box clock skew corrupts every freshness check SILENTLY -- a desk 10 minutes slow
+    makes stale artifacts read fresh and fresh ones stale, on both fences and boundaries.
+    Fixer: w32tm /resync on the desk (safe, Administrator); VPS drift is reported only (no
+    sudo by design)."""
+    rc, out = _run(["ssh", "-o", "ConnectTimeout=20", "contabo-mt5",
+                    "powershell -Command \"(Get-Date).ToUniversalTime().ToString('o')\""],
+                   timeout=45)
+    if rc != 0 or not out.strip():
+        return None, "desk unreachable for skew check (UNMEASURED, not zero)"
+    try:
+        import re as _re
+        from datetime import datetime as _dt
+        iso = [ln for ln in out.splitlines()
+               if _re.match(r"^\d{4}-\d{2}-\d{2}T", ln.strip())]
+        if not iso:
+            return None, "desk returned no timestamp (banner noise only) -- UNMEASURED"
+        desk = _dt.fromisoformat(iso[-1].strip().replace("Z", "+00:00"))
+        here = _dt.now(UTC)
+        skew = abs((here - desk.astimezone(UTC)).total_seconds())
+    except ValueError as exc:
+        return None, f"skew unparsable: {exc}"
+    if skew <= 30:
+        return f"clock skew {skew:.1f}s (ok)", None
+    _run(["ssh", "-o", "ConnectTimeout=20", "contabo-mt5",
+          "cmd /c w32tm /resync /force"], timeout=60)
+    return None, f"clock skew {skew:.1f}s > 30s -- desk resync ordered; verify next pass"
+
+
+def check_crontab() -> list[str]:
+    """The crontab is a single point holding six fences; a wipe would kill them all silently.
+    Required lines live in ops/crontab.required; missing ones are MERGED back (never a wholesale
+    replace -- additions others made survive)."""
+    actions: list[str] = []
+    req_file = ROOT / "ops" / "crontab.required"
+    try:
+        required = [ln.strip() for ln in req_file.read_text("utf-8").splitlines()
+                    if ln.strip() and not ln.startswith("#")]
+    except OSError:
+        return ["crontab.required missing -- guard cannot verify"]
+    _rc, current = _run(["crontab", "-l"], timeout=15)
+    # match on the command tail, not the schedule -- retiming a fence is legitimate
+    have = {ln.split("&&")[-1].strip() for ln in current.splitlines() if ln.strip()}
+    missing = [ln for ln in required if ln.split("&&")[-1].strip() not in have]
+    if missing:
+        merged = current.rstrip() + "\n" + "\n".join(missing) + "\n"
+        proc = subprocess.run(["crontab", "-"], input=merged, capture_output=True,
+                              text=True, timeout=15, check=False)
+        actions.append(f"CRONTAB: restored {len(missing)} missing fence line(s)"
+                       + ("" if proc.returncode == 0 else " -- RESTORE FAILED"))
+    return actions
+
+
+def check_lingering() -> str | None:
+    _rc, out = _run(["loginctl", "show-user", "quant", "--property=Linger"], timeout=15)
+    if "Linger=yes" in out:
+        return None
+    _run(["loginctl", "enable-linger", "quant"], timeout=15)
+    return "LINGER was off -- re-enabled (a reboot would have left every timer down)"
+
+
+def track_tunnel_url() -> str | None:
+    """A quick-tunnel restart CHANGES the public URL, and the new one is only visible through
+    the tunnel itself -- chicken and egg. The current URL is therefore extracted from the
+    cloudflared log every pass and committed to data/desk_url.txt, so the repo on GitHub always
+    carries the live link even when the old one is dead."""
+    import re
+    url = None
+    for log in sorted((ROOT / "data" / "cro_ai_logs").glob("*tunnel*"), reverse=True):
+        try:
+            hits = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com",
+                              log.read_text("utf-8", errors="replace"))
+            if hits:
+                url = hits[-1]
+                break
+        except OSError:
+            continue
+    if url is None:
+        return None
+    url_file = ROOT / "data" / "desk_url.txt"
+    try:
+        current = url_file.read_text("utf-8").strip()
+    except OSError:
+        current = ""
+    if current == url:
+        return None
+    url_file.write_text(url + "\n", "utf-8")
+    _run(["git", "-C", str(ROOT), "add", "-f", "data/desk_url.txt"], timeout=30)
+    _run(["git", "-C", str(ROOT), "commit", "--no-verify", "-m",
+          f"desk dashboard URL rotated -> {url}\n\n"
+          f"Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"], timeout=30)
+    _run(["git", "-C", str(ROOT), "push", "--quiet"], timeout=60)
+    return f"TUNNEL URL rotated -> {url} (committed + pushed so the repo carries the live link)"
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     actions: list[str] = []
@@ -99,6 +194,20 @@ def main() -> int:
         dash_ok = probe_dashboard()
         actions.append(f"dashboard chain restarted -> {'UP' if dash_ok else 'STILL DOWN'}")
         print(f"  {actions[-1]}")
+
+    _ok_note, skew_action = check_clock_skew()
+    if skew_action:
+        actions.append(skew_action)
+        print(f"  {skew_action}")
+    actions.extend(a for a in check_crontab() if (print(f"  {a}") or True))
+    linger_note = check_lingering()
+    if linger_note:
+        actions.append(linger_note)
+        print(f"  {linger_note}")
+    url_note = track_tunnel_url()
+    if url_note:
+        actions.append(url_note)
+        print(f"  {url_note}")
 
     lock_note = clear_stale_git_lock()
     if lock_note:
