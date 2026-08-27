@@ -65,6 +65,17 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
         "certified_sleeves", "authorized_runs", "sleeve_key", "n_historical",
         "sleeve_registry", "broker_offset_h"),
     "desks/mt5/research/sleeve_registry.py": ("IDENTITY_FIELDS", "code_hash", "cost_hash"),
+    # THE ORCHESTRATOR WAS NOT PROTECTED, AND THAT COST THE FORWARD BOOK 5.5 HOURS (2026-08-27).
+    # `shadow_cycle` runs every forward leg AND the promoter, and it owns the centralized
+    # pre-registration stamp -- GAP 162's fix lives in no other file. It was absent from this
+    # registry, so both this fence and the parity healer that reads it were blind while the
+    # trading box ran its 2026-08-23 copy, four days stale, calling a `shadow_forward` attribute
+    # the newer file beside it no longer defined. Every run died on AttributeError OUTSIDE the
+    # per-leg try, so `shadow_health.json` was never written at all. One marker per protected
+    # property, per this registry's own 2026-08-26 lesson: the stamp, the isolation status the
+    # health report must count, and the two legs a reverted copy silently stops running.
+    "desks/mt5/research/shadow_cycle.py": ("forward_start", "BLOCKED_SLEEVE_ERROR",
+                                           "qquant_shadow", "external_shadow"),
     "desks/mt5/research/h1_source.py": "broker_utc_offset_hours",
     "desks/mt5/research/decay_monitor.py": "DD_HARD_R",
     # THE FAST PATH IS PART OF THE MONEY PATH. Without `_PRIM_CACHE` the gauntlet rebuilds 310

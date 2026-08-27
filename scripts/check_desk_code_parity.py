@@ -125,6 +125,73 @@ def heal(diverged: list[dict[str, str]], missing: list[str], timeout: int) -> li
     return shipped
 
 
+def uncommitted_here(files: list[str]) -> list[str] | None:
+    """Which money-path files are dirty in THIS checkout?
+
+    From an earlier draft of this organ, whose lesson still stands: the first cut certified
+    `families_orthogonal.py` as "byte-identical" when its content existed in NO COMMIT -- a
+    sibling's in-flight edit that had already been shipped to the trading box. Parity against an
+    uncommitted tree can certify a state nothing can reproduce.
+
+    It is REPORTED rather than made a heal condition, because the heal path already runs the
+    money-path fence first and refuses to ship a tree that fence cannot bring to canon. This
+    dimension answers the different question of whether the matching bytes are RECORDED anywhere,
+    on either side of the wire.
+    """
+    try:
+        res = subprocess.run(["git", "status", "--porcelain", "--", *files],
+                             cwd=ROOT, capture_output=True, text=True, timeout=60, check=False)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if res.returncode != 0:
+        return None
+    dirty = set()
+    for line in res.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        code, rel = line[:2], line[3:].strip().strip('"')
+        if code.strip() in {"M", "??", "A", "AM", "MM"}:
+            dirty.add(rel)
+    return sorted(dirty)
+
+
+def uncommitted_on_desk(files: list[str], timeout: int) -> list[str] | None:
+    """Which of these files exist on the desk box ONLY as working-tree edits?
+
+    BYTE PARITY IS NOT DURABILITY, and this organ was structurally blind to the difference until
+    2026-08-27. On that day `shadow_forward.py` was byte-identical on both boxes -- this check
+    read green for it -- while it existed there as an uncommitted working-tree edit, and
+    `shadow_cycle.py` beside it had reverted to its 2026-08-23 form. The newer `shadow_forward`
+    no longer defined `UNIVERSE_SLEEVES`; the older `shadow_cycle` still read it. Every shadow
+    run died on AttributeError, `shadow_health.json` was never written, and the desk's entire
+    forward book stopped accruing for 5.5 hours.
+
+    A file that is right in the working tree and absent from every commit is one `git checkout`
+    from gone, and that checkout is not hypothetical: the money-path fence's own log records
+    healing a worktree-only trample of ten of these same modules at 02:10Z the same day. So
+    "the bytes match" is a HALF verdict here, and the missing half is the one that failed.
+
+    None means UNMEASURED -- never an empty list, which would read as "everything is committed".
+    """
+    try:
+        res = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=20", REMOTE,
+             f'powershell -Command "cd {REMOTE_ROOT} ; git status --porcelain"'],
+            capture_output=True, text=True, timeout=timeout, check=False)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if res.returncode != 0:
+        return None
+    dirty = set()
+    for line in res.stdout.replace("\r", "").splitlines():
+        if len(line) < 4:
+            continue
+        code, rel = line[:2], line[3:].strip().strip('"').replace("\\", "/")
+        if code.strip() in {"M", "??", "A", "AM", "MM"}:
+            dirty.add(rel)
+    return sorted(f for f in files if f in dirty)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--timeout", type=int, default=300)
@@ -163,11 +230,23 @@ def main() -> int:
         else:
             diverged.append({"file": f, "local": want, "remote": have or "UNREADABLE"})
 
+    uncommitted = uncommitted_on_desk(files, args.timeout)
+    here = uncommitted_here(files)
     doc: dict[str, object] = {
         "checked_at": now, "remote": REMOTE,
         "status": "OK" if not diverged else "DIVERGED",
         "n_checked": len(local), "n_matched": len(matched),
-        "diverged": diverged, "missing_on_desk": missing}
+        "diverged": diverged, "missing_on_desk": missing,
+        "uncommitted_on_desk": uncommitted,
+        "uncommitted_here": here,
+        "uncommitted_note": "money-path files present on the desk box only as working-tree "
+                            "edits. Byte-correct and one `git checkout` from gone -- the exact "
+                            "shape that stopped the forward book on 2026-08-27. `null` means "
+                            "UNMEASURED, never 'none'."}
+    if uncommitted is None:
+        doc["status"] = "DIVERGED" if diverged else "UNCOMMITTED_UNMEASURED"
+    elif uncommitted and not diverged:
+        doc["status"] = "UNCOMMITTED_ON_DESK"
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
 
     if (diverged or missing) and args.heal:
@@ -189,9 +268,17 @@ def main() -> int:
             print(f"  DIVERGED {d['file']}\n    here {d['local']}\n    box  {d['remote']}")
         for f in missing:
             print(f"  MISSING-ON-DESK {f}")
+        for f in (uncommitted or []):
+            print(f"  UNCOMMITTED-ON-DESK {f}  (byte-correct, but one checkout from gone)")
+        if uncommitted is None:
+            print("  UNCOMMITTED-ON-DESK: UNMEASURED -- git on the desk box did not answer")
+        for f in (here or []):
+            print(f"  UNCOMMITTED-HERE {f}  (whatever the box runs is not in git on this side)")
+    n_unc = "UNMEASURED" if uncommitted is None else len(uncommitted)
     print(f"desk code parity: {len(matched)}/{len(local)} money-path module(s) byte-identical "
-          f"on {REMOTE}; {len(diverged)} diverged, {len(missing)} missing")
-    return 1 if diverged else 0
+          f"on {REMOTE}; {len(diverged)} diverged, {len(missing)} missing, "
+          f"{n_unc} uncommitted-there")
+    return 1 if (diverged or uncommitted is None or uncommitted) else 0
 
 
 if __name__ == "__main__":

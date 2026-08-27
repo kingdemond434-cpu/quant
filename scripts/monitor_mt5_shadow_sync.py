@@ -61,8 +61,26 @@ def main() -> int:
             defects.append(f"{name}:{key}: source bars stale")
     expected = int(health.get("certified_sleeves_total", 0) or 0)
     represented = int(health.get("represented_sleeves", 0) or 0)
-    if represented < expected:
-        defects.append(f"shadow missing {expected - represented} certified sleeve(s)")
+    # THESE TWO COUNT DIFFERENT POPULATIONS, so `represented < expected` was a structurally
+    # false alarm (measured 2026-08-27). `represented_sleeves` is the count of rows still
+    # ACTIVE; `certified_sleeves_total` is every certificate ENROLLED this pass. The moment one
+    # enrolled certificate takes a KILL verdict -- which is the pipeline working -- the first is
+    # permanently smaller than the second, and this fired `shadow missing 1 certified sleeve(s)`
+    # against a book whose own producer reported OPERATING with `missing_sleeves: []`. Kills
+    # accumulate, so the gap could only ever widen: a detector that is always red is one
+    # everybody scrolls past (L1.37), and it would have buried the next REAL missing sleeve.
+    #
+    # The producer holds the key sets and already publishes the verdict, so import it rather
+    # than restating the computation from two counters that do not line up. The counters stay in
+    # the report as INFORMATION -- they are worth reading, they are just not a defect test.
+    missing_rows = health.get("missing_sleeves")
+    if missing_rows is None:
+        # ABSENCE IS NOT A PASS. A health file with no missing-sleeve verdict is one this
+        # watchdog cannot judge on that axis, and saying nothing would be a clean verdict
+        # manufactured from a gap (WS-005).
+        defects.append("shadow health publishes no missing_sleeves verdict -- UNMEASURED")
+    elif missing_rows:
+        defects.append(f"shadow reports missing certified sleeve(s): {missing_rows}")
     blocked = int(health.get("evidence_blocked_sleeves", 0) or 0)
     health_status = str(health.get("status") or "UNKNOWN").upper()
     if blocked:
@@ -78,6 +96,9 @@ def main() -> int:
         "shadow_health_age_seconds": age,
         "certified": expected,
         "represented": represented,
+        "counter_note": "certified = certificates ENROLLED this pass; represented = rows still "
+                        "ACTIVE. A gap between them is normally a KILL verdict, not a missing "
+                        "sleeve -- the missing-sleeve verdict is the producer's own.",
         "active_rows": len(active),
         "rows_with_forward_trades": sum(int(row.get("n", 0) or 0) > 0
                                          for _name, _key, row in active),
