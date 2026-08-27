@@ -196,6 +196,19 @@ ALLOWLIST: dict[str, str] = {
                                         "direct read on the 0.87 single-family concentration",
     "scripts/run_law_police.py": "law-enforcement audit; live rc=1 'FALL VANISHED "
                                  "test-suite-passfail' -> reports/law_police.json",
+    "scripts/daily_research_cycle.py": "THE DAILY RESEARCH CYCLE ITSELF. Its root unit "
+                                       "`quant-cro.service` was OOM-killed 2026-08-26 09:05 and "
+                                       "is still `failed`; restarting it needs the console. Its "
+                                       "cron row (02:00) has been dead since the 08-20 cron "
+                                       "death, so NOTHING scheduled the desk's daily cycle at "
+                                       "all. Verified running this cycle (110MB RSS) after "
+                                       "`watchdog.py` respawned it by hand. The dispatcher's "
+                                       "MIN_AVAIL_MB governor is the right home for it: it "
+                                       "peaked 1.2G when the kernel took it, and a deferred run "
+                                       "is strictly better than an OOM kill that picks a random "
+                                       "victim. If the principal revives the root unit its 08:01 "
+                                       "slot does not collide with this 02:00 one, and the row "
+                                       "keeps its own flock either way",
     # ------------------------------------------------------------------------------------
     # REFUSED THIS WAVE, each with the reason it was refused. Recording these matters as much as
     # the additions: a token that was examined and rejected must not look like one nobody reached.
