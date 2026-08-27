@@ -731,6 +731,34 @@ def main():
     print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total "
           f"({len(survivors_all) - n_before:+d})")
 
+    # FILE THE CLAIM. Every other certified producer writes SURVIVORS_LEDGER.json alongside the
+    # survivor file (universal_gate, survivor_publication, ug_remote); this one never did, and it
+    # is the producer of the `external.*` lane. Measured 2026-08-27: 23 survivors, 1 claim -- 22
+    # `external.*` passes with no ledger row, the ledger two days stale while the survivor file
+    # was rewritten that morning. desks/mt5/CLAUDE.md makes this ledger a binding session-start
+    # read ("count them and act"), so a session obeying it saw ONE pipeline claim while
+    # twenty-three certificates stood and seventeen were already on forward clocks. A survivor
+    # invisible to the ledger is a survivor nobody is required to action.
+    # Merge, never replace: another producer may have published while this sweep was running,
+    # exactly as the survivor merge above already guards.
+    ledger_path = REPORTS / "SURVIVORS_LEDGER.json"
+    claims: dict = {}
+    if ledger_path.exists():
+        try:
+            loaded = json.loads(ledger_path.read_text("utf-8")).get("claims")
+            claims = loaded if isinstance(loaded, dict) else {}
+        except (OSError, ValueError):
+            # A torn ledger must not be silently replaced by this run's rows alone -- that would
+            # erase every other lane's claims. Report and leave it for repair.
+            print("REFUSING to file claims: SURVIVORS_LEDGER.json exists but is unreadable")
+            return
+    now_iso = datetime.now(UTC).isoformat()
+    for k, v in survivors_all.items():
+        claims[k] = {**v, "status": "UNIVERSAL", "updated_at": now_iso}
+    ledger_path.write_text(json.dumps({"n": len(claims), "claims": claims},
+                                      indent=2, default=str), encoding="utf-8")
+    print(f"SURVIVORS_LEDGER.json: {len(claims)} claim(s)")
+
 
 if __name__ == "__main__":
     main()
