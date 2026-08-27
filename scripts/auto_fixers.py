@@ -133,7 +133,15 @@ def fix_forward() -> tuple[bool, str]:
     return ok, out
 
 
+def fix_pull() -> tuple[bool, str]:
+    """Desk->VPS artery down: restart the pull unit, re-trigger the desk-side builder."""
+    rc, _out = _run(["systemctl", "--user", "restart", "quant-desk-pull.service"], timeout=120)
+    ok2, o2 = _desk_task("MT5-DeskState")
+    return rc == 0 or ok2, f"pull_restart_rc={rc} builder={o2[-60:]}"
+
+
 FIXERS = {
+    "PULL": fix_pull,
     "SEARCH": fix_search,
     "SWEEP": fix_sweep,
     "DOCKET": fix_docket,

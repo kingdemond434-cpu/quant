@@ -195,8 +195,14 @@ def collect(now: datetime) -> tuple[list[str], dict]:
 
     # --- shadow: clocks stamping themselves, nothing silently stopped?
     ds = _read(ROOT / "web" / "desk_state.json")
+    ds_age = _age_h((ds or {}).get("generated_at"), now)
+    m["desk_state_age_h"] = round(ds_age, 2) if ds_age is not None else None
     if ds is None:
         breaches.append("SHADOW: desk_state.json not pulled -- no off-box view of the clocks")
+    elif ds_age is not None and ds_age > FRESH_H["desk_state"]:
+        breaches.append(f"PULL: desk_state is {round(ds_age, 1)}h old (5-min builder + 2-min "
+                        f"pull) -- the desk->VPS artery is down; every desk-side reading on "
+                        f"this pulse is that stale too")
     else:
         # forward_detail is what the dashboard itself renders -- one source, same numbers
         rows_f = (ds.get("pipeline") or {}).get("forward_detail")
@@ -238,6 +244,21 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         elif sw_age > 0.5:
             breaches.append(f"STALL-WATCH: the watchdog itself has been silent "
                             f"{round(sw_age, 1)}h (10-min cadence) -- the healer needs healing")
+
+    # --- the box itself: available memory. The kernel OOM killer chose the REPAIR ORGAN as
+    # its victim at 09:01 today; below this floor it will choose again, and whichever organ
+    # dies will die silently. Report-only: killing things to free memory is the kernel's
+    # mistake, not a fixer to imitate.
+    try:
+        avail_kb = int(next(ln for ln in Path("/proc/meminfo").read_text().splitlines()
+                            if ln.startswith("MemAvailable")).split()[1])
+        m["mem_available_mb"] = avail_kb // 1024
+        if avail_kb < 300 * 1024:
+            breaches.append(f"MEMORY: {avail_kb // 1024}MB available on the research box -- "
+                            f"below the 300MB floor at which the kernel OOM killer starts "
+                            f"choosing victims among the organs")
+    except (OSError, StopIteration, ValueError):
+        m["mem_available_mb"] = None
 
     return breaches, m
 

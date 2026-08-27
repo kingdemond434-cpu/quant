@@ -102,7 +102,22 @@ foreach ($tn in $researchTasks) {
   }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut } |
+# DESK DISK FLOOR. A full C: kills the terminal, every task and every artifact write at once,
+# silently. Below 5GB: prune the two safe reclaim pools -- logs older than 14 days and the
+# gauntlet series cache (pure recompute) -- and REPORT. Below 2GB after pruning: loud breach
+# line the desk-state builder carries to the dashboard.
+$free = (Get-PSDrive C).Free / 1GB
+if ($free -lt 5) {
+  Get-ChildItem 'C:\opt\quant\desks\mt5\logs' -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-14) } |
+    ForEach-Object { Remove-Item $_.FullName -Force -ErrorAction SilentlyContinue }
+  Remove-Item 'C:\opt\quant\desks\mt5\reports\gauntlet_cache\*' -Force -ErrorAction SilentlyContinue
+  $free2 = (Get-PSDrive C).Free / 1GB
+  $actions += "DISK: C: was $([math]::Round($free,1))GB free -- pruned old logs + series cache -> $([math]::Round($free2,1))GB"
+  if ($free2 -lt 2) { $actions += "DISK CRITICAL: $([math]::Round($free2,1))GB free AFTER pruning -- needs a human decision" }
+}
+
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1) } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }
