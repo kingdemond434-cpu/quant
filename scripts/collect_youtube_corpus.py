@@ -25,6 +25,10 @@ import urllib.request
 from datetime import UTC, datetime
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from fetch_video_transcript import TranscriptUnavailable as _TranscriptUnavailable
+from fetch_video_transcript import youtube as _yt_transcript
+
 ROOT = Path(__file__).resolve().parent.parent
 KEYFILE = ROOT / "data" / "secrets" / "youtube_api_key"
 REGISTRY = ROOT / "data" / "youtube_channels.json"
@@ -65,40 +69,32 @@ def read_json(p: Path, default):
 TRANSCRIPTS_PER_RUN = 3     # best-effort; each is a watch-page fetch + one timedtext fetch
 
 
-def fetch_transcript(video_id: str) -> str | None:
-    """Best-effort public captions via the player's own timedtext route (no API quota).
+def fetch_transcript(video_id: str) -> tuple[str | None, str | None]:
+    """Return (text, unresolved_reason) via the shared multi-route fetcher.
 
-    The official Data API only serves captions to the video's OWNER, so this parses the watch
-    page's captionTracks (the exact data the player uses) and pulls the track text. Returns
-    None quietly on any miss -- this box previously measured YouTube data routes as flaky, and
-    the pipeline treats video as an INDEX (titles/descriptions/links) with transcripts a bonus,
-    never a dependency.
+    THE POINT OF THE SECOND RETURN VALUE: this collector previously swallowed every failure into
+    None and reported `transcripts: 0` with no reason, so 512 enumerated videos carried ZERO
+    transcripts for weeks and the coverage ledger looked merely quiet. A miss is now typed --
+    ACCESS_LIMIT when every legitimate route refused, TRANSCRIPT_UNAVAILABLE when the video
+    genuinely has no public captions -- exactly the vocabulary the video-hunter brief requires so
+    the retry queue stays economic and a blocked video never reads as an empty one.
+
+    The route itself is scripts/fetch_video_transcript.py (Piped + Invidious rotation). This
+    collector must NOT grow a second private copy: youtube.com's own /api/ and /youtubei/ caption
+    routes are robots-Disallowed (SS13 hard stop) and the previous inline implementation was
+    reading exactly those.
     """
     try:
-        req = urllib.request.Request(
-            f"https://www.youtube.com/watch?v={video_id}",
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            html = r.read().decode("utf-8", errors="replace")
-        m = re.search(r'"captionTracks":(\[.*?\])', html)
-        if not m:
-            return None
-        tracks = json.loads(m.group(1))
-        track = next((t for t in tracks if t.get("languageCode", "").startswith("en")),
-                     tracks[0] if tracks else None)
-        if not track or not track.get("baseUrl"):
-            return None
-        url = track["baseUrl"].replace("\\u0026", "&") + "&fmt=json3"
-        with urllib.request.urlopen(url, timeout=20) as r:
-            data = json.load(r)
-        words = []
-        for ev in data.get("events", []):
-            for seg in ev.get("segs", []) or []:
-                words.append(seg.get("utf8", ""))
-        text = "".join(words).strip()
-        return text[:20000] if text else None
+        text, _route = _yt_transcript(video_id)
+    except _TranscriptUnavailable as exc:
+        reason = ("TRANSCRIPT_UNAVAILABLE"
+                  if all("no subtitle tracks" in a or "no caption tracks" in a
+                         for a in exc.attempts) and exc.attempts
+                  else "ACCESS_LIMIT")
+        return None, reason
     except Exception:
-        return None
+        return None, "FETCH_FAILED"
+    return (text[:20000], None) if text else (None, "TRANSCRIPT_UNAVAILABLE")
 
 
 def main() -> int:
@@ -198,18 +194,35 @@ def main() -> int:
         report["errors"].append(str(exc))
 
     # 3. TRANSCRIPTS, best-effort, newest videos first, hard-capped per run.
-    got_t = 0
+    got_t, attempted = 0, 0
+    unresolved: dict[str, int] = {}
     for row in sorted(rows, key=lambda r: r.get("published", ""), reverse=True):
         if got_t >= TRANSCRIPTS_PER_RUN:
             break
         vid = row.get("video_id")
         if not vid:
             continue
-        t = fetch_transcript(vid)
+        attempted += 1
+        t, reason = fetch_transcript(vid)
         row["transcript"] = t
+        row["transcript_status"] = "NEAR_FULL" if t else "UNAVAILABLE"
+        # start/end are NOT verified by an automated pull -- the brief requires both before any
+        # extraction may be recorded, so this route can never mint a FULL row on its own.
+        row["start_verified"] = False
+        row["end_verified"] = False
+        if reason:
+            row["unresolved_reason"] = reason
+            unresolved[reason] = unresolved.get(reason, 0) + 1
         if t:
             got_t += 1
     report["transcripts"] = got_t
+    report["transcript_attempts"] = attempted
+    report["transcripts_unresolved"] = unresolved
+    if attempted and not got_t:
+        # L1.28a: a silent zero is not a clean verdict. Say so where the ledger is read.
+        report["errors"].append(
+            f"TRANSCRIPT ROUTE DEAD: {attempted} attempted, 0 served ({unresolved}) -- "
+            "video-hunter Role A is blind until a route is restored")
 
     report["videos"] = len(rows)
     report["units_spent"] = spent[0]

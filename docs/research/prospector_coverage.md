@@ -37,6 +37,46 @@ covered. Actual state on 2026-07-20:
   00:15Z 07-21). Non-English coverage to date = ONE session touching surface-layer CN
   (CSDN/VeighNa/BigQuant/Zhihu/FMZ) + one JP note.com blog. The richmanbtc/note.com botter
   lineage (addendum C62, the named gem) is NOT yet dug.
+* VIDEO ROUTE STATUS **RE-MEASURED 2026-08-27 (GPT video seat) -- the Piped capability below is
+  DEAD, and it had been failing SILENTLY for weeks.** Evidence: `data/intelligence/youtube/` holds
+  **511 enumerated videos and ZERO transcripts**, and `video_channel_coverage.json` reported
+  `transcripts: 0` every day with no reason attached. Route census, 22 endpoints, all on 08-27:
+  **PIPED 11/11 dead or refusing** (403/502/DNS/SSL; the 4 instances hardcoded in the fetcher had
+  ALL DNS-failed); **INVIDIOUS 11/11 serve the caption INDEX but serve the caption TEXT as
+  `200` with ZERO BYTES** -- a 200 is not content; **youtube.com `/api/` and `/youtubei/` are
+  robots-Disallowed under `User-agent: *`**, so the timedtext and InnerTube routes are a SS13 HARD
+  STOP and are never to be routed around. Verdict: YouTube transcript retrieval is **UNRESOLVED,
+  not exhausted and not a clean zero** -- videos stay in the retry queue as `ACCESS_LIMIT`.
+  Bilibili is unaffected. REPAIRED the same day: the fetcher now refreshes both instance
+  directories at call time (no hardcoded host list), rotates both families, and raises a typed
+  `TranscriptUnavailable`; the collector records `unresolved_reason` per video and SHOUTS in
+  `errors[]` when attempts > 0 and served == 0, so this can never again read as a quiet market.
+  **Descriptions, chapters and description LINKS remain fully available and are the seat's live
+  route** -- that layer is what produced the fxmerge find below.
+* VENUES FOUND 2026-08-27 (GPT video seat), harvested from the 511-video DESCRIPTION-LINK layer
+  -- the route that still works while transcripts are blocked. Method: enumerate every URL in
+  every collected description, rank by domain frequency, verify robots + liveness per host.
+  | `fxmerge.com/strategies-results/` | published MT4/MT5 EA track records, "Verified Real
+  Account" badges, per-account stats + a follow-graph of an owner's other systems | myfxbook-
+  adjacent link in a ResponsibleForexTrading description | **DEAD LIVE / RICH ARCHIVED** -- the
+  live section 404s and the sitemap's newest `lastmod` is 2023, but robots is `Allow: /` and
+  Wayback CDX yields **209 snapshots -> 194 distinct accounts**; 49 extracted this run into
+  `data/intelligence/fxmerge/`, **137 unresolved on Wayback rate-limit and RETAINED**, not closed.
+  The trade-by-trade tables are JS-hydrated and archive as placeholders, so this is an
+  AGGREGATE-ONLY corpus -- headline stats yes, trade-level verification NO. |
+  | `myfxbook.com` (11 distinct `lilredry` accounts linked from one channel) | live MT4/MT5
+  statement-backed track records | same description layer | **WALLED** -- Cloudflare managed
+  challenge on *`/robots.txt` itself*, so the site's access preference cannot even be read
+  without solving a challenge. SS13 hard stop for automated access; not circumvented, not retried.
+  Wayback is the only admissible route and is untried -- **named as next ground**. |
+  | `skool.com` (64), `t.me` (49), `discord.gg`/`discord.com` (33), `beacons.ai` (49) | the
+  community layer these practitioners actually migrated to | description links | **UNPROBED** --
+  recorded so the next run inherits them rather than rediscovering the domain histogram. |
+  | `app.strategyfactory.ai` (29), `backtestbootcamp.com` (31), `backtestingcheatsheet.com` (50)
+  | RESEARCH-PROCESS artifacts (candidate generation + validation workflow), which the brief
+  ranks above entry rules as the part that compounds | description links | **UNPROBED, HIGH
+  PRIORITY** -- this is the `research_process`/`validation_process` axis, the one almost nobody
+  transcribes. |
 * VIDEO: **~~direct transcript fetch is IP-BLOCKED from this VPS~~ SUPERSEDED 2026-07-26,
   MARKED HERE 2026-08-07.** The 07-18 finding was about ONE ROUTE (youtube.com/api/timedtext),
   never about the capability, and `scripts/fetch_video_transcript.py` has fetched real

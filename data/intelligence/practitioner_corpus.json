@@ -93,5 +93,19 @@
    "tested_here": true,
    "resolution": "Not a real disagreement once stated plainly: a two-week realised-P&L filter over ten agents selects noise with near-certainty. The automation pattern is worth taking and the evidence standard is not."
   }
+ ],
+ "negative_knowledge": [
+  {
+   "id": "NK-20260827-fxmerge-balance-dd",
+   "recorded": "2026-08-27T10:41:11.815992+00:00",
+   "extracted_by": "claude-opus-5 (gpt video/extreme-return seat)",
+   "corpus": "fxmerge.com archived strategy-results (49 extracted records, Wayback)",
+   "finding": "On published retail MT4/MT5 track records, a LOW reported drawdown paired with a HIGH gain is a grid/martingale DETECTOR, not evidence of risk control. The reported figure is BALANCE drawdown; a grid holds losing legs open, so balance-DD stays near zero precisely while equity risk is at its maximum. 4/49 rows report drawdown of exactly 0.00% alongside gains of 1,350-1,979%, which is arithmetically impossible for a closed-equity series.",
+   "supporting_structure": "41/49 automated; leverage 1:500 or higher on 38/49; brokers are offshore high-leverage venues (FBS, JustMarkets, Headway, Tradehall, FX Winning); EA names cluster on gold (GOLDLOVER, XG Gold, Gold Hunter). That is the martingale-on-XAUUSD population, not a sample of systematic edges.",
+   "why_it_is_worth_recording": "It prunes search space at zero cost: this desk should NEVER rank a public track record by gain/drawdown ratio, and any leaderboard-derived hypothesis whose parent shows balance-DD < ~12% at gain > 500% is presumed grid until the trade list proves otherwise. Selection-bias defense (RESEARCH SS4) applies on top: this section was REMOVED from the live site, so even the survivors here are survivors of a dead venue.",
+   "transferable_mechanism": null,
+   "reversible": true,
+   "reopen_on": "trade-by-trade tables becoming extractable (the archive renders them as JS placeholders), which would let the grid hypothesis be tested rather than inferred."
+  }
  ]
 }

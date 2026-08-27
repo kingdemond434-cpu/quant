@@ -28,16 +28,32 @@
    ]
   }
  ],
- "last_sweep": "2026-08-26T03:37:00.488574+00:00",
- "ts": "2026-08-26T03:37:00.488574+00:00",
+ "last_sweep": "2026-08-27T10:37:48.084203+00:00",
+ "ts": "2026-08-27T10:37:48.084203+00:00",
  "videos": 0,
- "channels_swept": 2,
+ "channels_swept": 14,
  "new_links": 0,
  "discovered_channels": 0,
- "units_spent": 9,
+ "units_spent": 29,
  "errors": [
-  "search Lewis Jackson trading: HTTP Error 429: Too Many Requests",
   "channel Unbiased Trading: HTTP Error 404: Not Found"
  ],
- "transcripts": 0
+ "transcripts": 0,
+ "transcript_attempts": 0,
+ "transcripts_unresolved": {},
+ "route_status": {
+  "measured": "2026-08-27T10:41:58.555024+00:00",
+  "by": "claude-opus-5 (gpt video/extreme-return/practitioner seat)",
+  "youtube_transcripts": "UNRESOLVED",
+  "unresolved_reason": "ACCESS_LIMIT",
+  "endpoints_tested": 22,
+  "detail": {
+   "piped": "11/11 dead or refusing (403/502/DNS/SSL)",
+   "invidious": "11/11 caption index serves, caption TEXT serves 200 with zero bytes",
+   "youtube_native": "robots.txt Disallow /api/ and /youtubei/ under User-agent:* -- S13 HARD STOP"
+  },
+  "note": "511 videos enumerated to date, 0 transcripts EVER. Do NOT read any of those 511 as 'mined': descriptions and links only (DESCRIPTION_ONLY), which gives the TITLES of ideas and none of their content. No extraction may be recorded against them.",
+  "retry_queue": "all 511 retained; reopen on any working caption route",
+  "still_live": "descriptions, chapters and description LINKS -- the fxmerge track-record corpus came from this layer"
+ }
 }
