@@ -4023,3 +4023,117 @@ auction-results (card 39 residual); (iii) date the DST seams with a genuinely US
 *price* instrument (CME metals/FX settlement times) rather than a volatility beacon — the one
 thing this run could not measure.
 
+
+---
+
+## 2026-08-27 (session B) — FREE-DATA-ALTERNATIVES, standing daily run
+
+**Backlog checked first (RESUME order):** `source_backlog_next.py --limit 6` → **68 catalogued, 42
+resolved, 0 pending verification, 0 pending a legitimacy decision, 26 deferred** (next returns
+2026-09-01). Nothing to verify; cataloguing is not the bottleneck this cycle, so this run goes to
+the ground the 08-27 session-A note named.
+
+**ITEMS TAKEN THIS RUN (bounded per the completion contract):**
+1. **Sub-hourly lake depth** — named standing next ground: H1 covers 197/197 symbols but M15/M5/M1
+   cover ~2%, which gates every intraday candidate the desk has carded. Measure what is actually
+   retrievable, not what is stored.
+2. **IBA `/report-center` permitted report ids** — card 39 residual (per-round LBMA auction data).
+3. **Free sub-hourly FX/metals replacement hunt (§38)** — if the terminal cannot supply M1/M5
+   depth, the exclusion spawns a hunt for a free primary source that can.
+
+*(items resolved below as they close — never held in context)*
+
+### Item 1 — sub-hourly gap: the cause is a HARDCODED TIMEFRAME, not terminal retention
+The ~2% sub-hourly coverage was read last run as a lake-depth fact. It is a producer defect:
+`desks/mt5/research/fetch_universe.py:54` calls `copy_rates_range(sym, mt5.TIMEFRAME_H1, ...)` — the
+one producer that fills the lake for all 197 symbols is **hardcoded to H1**, so no amount of
+terminal retention could ever have produced M15/M5/M1 breadth. Current census: **H1 221 files,
+M15 8, M5 1, M1 1** (the sub-hourly six are XAUUSD, AUDCAD, AUDNZD, NZDCAD and duplicates). This
+is the anti-hardcode class (LAWS §1, L1.61): a literal that silently caps exploration.
+**What the terminal actually retains at M1/M5 is UNMEASURED from this box** — `MetaTrader5` does
+not import here (`ModuleNotFoundError`) and there is no code-sync route to the Windows box. That is
+a real answer, not a clean verdict (L1.28a). Routed to the ledger, not fixed here (research freeze).
+
+### Item 3 — §38 replacement, ADOPTED: **Dukascopy tick datafeed** (verified-clean)
+Because the terminal is unreachable and the producer is capped, the exclusion spawned its hunt.
+`https://datafeed.dukascopy.com/datafeed/<SYM>/<YYYY>/<MM-1>/<DD>/<HH>h_ticks.bi5` — keyless, no
+registration, **millisecond bid/ask ticks from ~2003 to T-1**, decodable with stdlib `lzma` +
+`struct` (`>IIIff`). Probed live: EURUSD 200/28,952B (**5,626 ticks in one hour**), XAUUSD 200/
+38,977B, USA500IDXUSD 200/4,085B — FX, metals and index CFDs all served. robots read **in full and
+group-scoped** (KR-s5 lesson): the `*` group ends `Allow: /`, and the datafeed host serves no
+robots of its own. This is a strictly better source than the terminal for the sub-hourly gap: tick,
+not M1, and it needs no Windows box.
+**Failure modes that would have silently corrupted a collector, all measured:** the URL **month is
+ZERO-INDEXED** (January = `00`) — a 1-indexed collector pulls the wrong month and every derived
+number still looks plausible; **throttling** returns 503/107B or resets the connection on the 2nd
+request in a tight loop (stable at ~12–20s spacing — my first three-date batch reported all-dead
+purely from pacing, the "records a live source as dead" class); symbol naming is Dukascopy's own,
+not the MT5 registry's.
+
+### THE FIND OF THE RUN — the broker clock follows **US** DST, and the offset is **not a constant**
+Diffing Dukascopy (true UTC) against `EURUSD_H1.parquet` did not merely confirm the known offset —
+it measured its **rule**. Method: decode a known-UTC tick hour, aggregate to OHLC, and let the
+matching tape bar's index be the argmin. Discrimination is clean (best-vs-runner-up abs error
+differs 10–20×), and the dates were chosen **inside the US/EU DST disagreement windows** so the two
+rule-sets give different answers:
+
+| true-UTC hour | DST state | measured tape offset | abs err (runner-up) |
+|---|---|---|---|
+| 2024-01-02 10:00 | both off | **+2h** | 0.00021 |
+| **2024-03-20 10:00** | **US on, EU off** | **+3h** | 0.00021 |
+| 2024-07-02 10:00 | both on | **+3h** | 0.00025 |
+| 2024-10-25 10:00 | both on | **+3h** | 0.00023 |
+| **2024-10-30 10:00** | **EU off, US on** | **+3h** | 0.00020 (+2h: 0.00264) |
+| 2024-11-06 10:00 | both off | **+2h** | 0.00025 (+1h: 0.00450) |
+
+**Both disagreement probes side with the US calendar.** The Fusion server clock is UTC+2/UTC+3
+switching on the **2nd Sunday of March / 1st Sunday of November** — so the obvious guess,
+`Europe/Athens` EET/EEST, is wrong for ~3 weeks each March and ~1 week each autumn.
+Independent free corroboration from the tape alone: EURUSD carries **zero Sunday bars** and 447–449
+Friday bars at hours 22 and 23 — impossible in real UTC (the FX week closes Friday 20:00–21:00 UTC),
+exactly right for a server clock whose week ends Friday 23:59.
+
+**This closes the residual the 08-26 and 08-27(A) notes both carried as UNMEASURED**, for free and
+with no terminal — after session A's two volatility-beacon attempts were honestly reported as
+non-discriminating. A price-anchored instrument was the right shape; Dukascopy supplied it.
+
+**Honest scoping — I am not claiming a live bug.** `h1_source.py:195` already documents the offset
+(measured 2026-08-26 by live tick), and I checked every caller of `broker_utc_offset_hours()`:
+`scalp_shadow.py:83` and `shadow_forward.py:329` both compare a **live** clock to a **live** clock,
+which is correct. The defect is **latent and specific**: the function returns ONE scalar from a
+live tick, and `h1_source.py:292` publishes it in the `Bars` description for a history spanning
+2018→now. **The offset is not constant.** Any consumer that converts *history* with that scalar is
+wrong by exactly 1 hour for ~5 months a year, with the errors sitting precisely on the DST seams.
+The correct object is a **function of timestamp**, and this run establishes the rule to write it.
+
+### Item 2 — IBA per-round auction data: §13 WALL, family confirmed to exist
+`theice.com/report-center` → 301 → `ice.com/report-center` (200, 108,449B). The page names an
+**"ICE Benchmark Administration — LIBOR, ICE Swap Rate, LBMA Gold and Silver prices and treasuries"**
+category and an **"Auction Historical Transparency reports"** family (single-day and multi-day). But
+it is a client-side selector: the report ids load from routes under `/report-center/category/`,
+which is **exactly what `theice.com/robots.txt` disallows**. Boundary respected, not circumvented.
+Card 39's residual is upgraded from "endpoints 404" to "the family exists; its ids sit behind a
+robots-barred route" — graded **UNVERIFIED**, not destroyed-at-source; the §38 hunt stays open.
+
+**CROSS-SOURCE PAIR (joint value > either alone):** *Dukascopy ticks × the desk's own MT5 tape.*
+Neither carries a clock verdict alone — the tape has no true-UTC anchor and Dukascopy has no
+knowledge of the broker. Joined, the pair is a **point-in-time clock instrument for any past date**,
+which is what turned a known scalar into a measured rule. It also generalises: the same diff prices
+the desk's spread and fill quality against an independent venue on any historical hour.
+
+**DEPTH:** item 1 → exhausted to the producer line that causes it (census → producer → `git`-visible
+hardcode → every `broker_utc_offset_hours` caller read); item 3 → **exhausted and past it** (three
+asset classes probed, binary format decoded and OHLC-verified against the desk tape, three silent-
+corruption failure modes measured rather than guessed, robots read in full and group-scoped); the
+clock question → **taken well past where I would have stopped**: a surface run would have stopped at
+"+3h, confirms the known offset"; going one layer past produced the *seam rule*, and the two probes
+that decide it were placed specifically where US and EU calendars disagree. Item 2 → exhausted on
+the permitted surface, closed at a §13 wall with the wall's exact path named.
+**Not breadth-theater:** 3 items, 1 adopted verified-clean source, 1 rule measured, 1 honest wall.
+
+**NEXT UN-EXHAUSTED GROUND (next run):** (i) **Dukascopy symbol-map ← MT5 registry** — enumerate
+Dukascopy's instrument list and map it onto all 197 registry symbols, so the sub-hourly gap can be
+closed at tick resolution without the terminal; the unmapped residue is the honest gap. (ii) Extend
+the clock probe **backwards to 2018** and forwards — a handful of cheap probes converts the measured
+*rule* into a verified per-year seam table covering the whole tape. (iii) The §38 IBA replacement:
+LBMA's own site and the auction operator's publications for per-round data on a permitted route.

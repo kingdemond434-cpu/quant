@@ -1281,6 +1281,63 @@
    ],
    "grade": "verified-clean",
    "yield": "FEE-DIRECTION GAP CLOSED WITHOUT THE ANNOUNCEMENT FEED: the Au(T+D)-minus-Au99.99 basis IS the deferred fee's price footprint - measured mean -3.2bps, sd 7.6bps, same endpoint, one extra POST. Card 38's 'collector owed' for fee direction no longer blocks the axis."
+  },
+  "dukascopy_tick_datafeed": {
+   "provides": "Free keyless historical TICK data (bid/ask + volumes, millisecond stamps) for FX, metals, index CFDs and commodities, from ~2003 to T-1. URL scheme: https://datafeed.dukascopy.com/datafeed/<SYM>/<YYYY>/<MM-1 zero-indexed>/<DD>/<HH>h_ticks.bi5 -- one LZMA-compressed file per instrument-hour, 20-byte records: >IIIff = (ms offset into the hour, ask*10^point, bid*10^point, ask volume, bid volume).",
+   "replaces": "Tardis/Kaiko tick archives and any paid sub-hourly FX/metals feed; also replaces the MT5 terminal itself as the source of M1/M5/M15 depth, which is the desk's ~2% sub-hourly coverage gap.",
+   "provenance": [
+    "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/00/02/10h_ticks.bi5 (200, 28,952B, 5,626 ticks decoded)",
+    "https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/06/02/10h_ticks.bi5 (200, 38,977B)",
+    "https://datafeed.dukascopy.com/datafeed/USA500IDXUSD/2024/06/02/10h_ticks.bi5 (200, 4,085B)",
+    "https://www.dukascopy.com/robots.txt (read in full and group-scoped: the '*' group ends with 'Allow: /'; the Disallow set is /cgi-bin/, /mama/, /refpro/, /fxspider/* and /fxcomm/*/blog -- the datafeed host is not covered and serves no robots.txt of its own, 404)"
+   ],
+   "method": "plain keyless GET, no registration; decode with python stdlib lzma + struct. Dukascopy's own JForex platform reads this feed.",
+   "cadence": "hourly files, complete to T-1; dead history never changes (one-time exhaustible per instrument-hour).",
+   "license": "publicly served historical market data (facts, not copyrightable) from the broker's own public feed; adopted for own-benefit research only, never redistributed. No paywall circumvented, no credential used.",
+   "verified": "2026-08-27 VERIFIED against the desk's own MT5 tape, not merely opened: 6 independent instrument-hours decoded and OHLC-matched to EURUSD_H1.parquet bars with absolute 4-point error 0.00020-0.00025 (runner-up hour off by 10-20x that), which is bid-vs-mid residue.",
+   "failure_modes": [
+    "MONTH IS ZERO-INDEXED in the URL (January = 00, July = 06). A 1-indexed collector silently pulls the WRONG MONTH and every number still looks plausible -- the truncation-class failure with no exception.",
+    "AGGRESSIVE THROTTLING: the 2nd and later requests in a tight loop return HTTP 503 (107B) or reset the connection (curl 35 / 28, HTTP 000). Measured stable at ~12-20s between requests. A collector without pacing records a live source as dead; note HTTP 000 has several byte-identical causes.",
+    "Dukascopy symbol naming is its own (USA500IDXUSD, LIGHTCMDUSD), NOT the MT5 registry's -- a mapping table is required and an unmapped symbol 404s, which reads as 'not offered'.",
+    "Empty market hours legitimately return tiny or zero-length files; zero bytes is a real weekend, not necessarily a failure.",
+    "Prices are integers scaled by the instrument's point size; using the wrong scale yields silently wrong prices of the right shape."
+   ],
+   "grade": "verified-clean",
+   "yield": "HIGH -- supplied the point-in-time clock evidence that measured the broker DST rule (below), and is the standing free route to the sub-hourly depth the MT5 lake lacks for 191/197 symbols."
+  },
+  "mt5_broker_clock_dst_rule": {
+   "provides": "Point-in-time measurement of the Fusion MT5 server clock vs true UTC: UTC+2 in winter, UTC+3 in summer, switching on the US DST calendar (2nd Sunday March / 1st Sunday November) -- NOT the EU calendar.",
+   "replaces": "Nothing paid; it corrects a desk-internal assumption. The obvious guess (Europe/Athens EET/EEST) is wrong for ~4 weeks every year.",
+   "provenance": [
+    "desks/mt5/data/universe/EURUSD_H1.parquet (the desk's own tape)",
+    "Dukascopy tick files for 2024-01-02, 2024-03-20, 2024-07-02, 2024-10-25, 2024-10-30, 2024-11-06 (see dukascopy_tick_datafeed)"
+   ],
+   "method": "decode a known true-UTC tick hour, aggregate to OHLC, and search the tape for the bar that matches; the argmin IS the offset. Discrimination is clean -- best-vs-runner-up absolute error differs by 10-20x. Dates chosen inside the US/EU DST disagreement windows so the two rule-sets give different answers.",
+   "cadence": "structural; re-verify after any broker server change.",
+   "license": "desk-internal measurement over own tape + public feed.",
+   "verified": "2026-08-27 VERIFIED, 6 probes. 2024-01-02 -> +2h. 2024-03-20 (US on DST, EU not) -> +3h. 2024-07-02 -> +3h. 2024-10-25 -> +3h. 2024-10-30 (EU off DST, US still on) -> +3h. 2024-11-06 (both off) -> +2h. The two disagreement-window probes both side with the US rule.",
+   "failure_modes": [
+    "THE LATENT TRAP: h1_source.broker_utc_offset_hours() measures the offset from a LIVE tick and returns ONE scalar, which is then published in the Bars description for a history spanning 2018 -> now. The offset is not constant. Every current caller compares a live clock to a live clock and is correct; any future caller that converts HISTORY with that scalar is wrong by exactly 1 hour for roughly five months of every year, and the errors sit precisely on the DST seams.",
+    "The tape's index dtype is datetime64[ms, UTC] -- the label asserts a timezone the data does not have (already documented at desks/mt5/research/h1_source.py:195). Any join to a genuinely-UTC source (FRED, LBMA, macro calendars) is misaligned by 2-3h unless converted.",
+    "Assuming EET/EEST is wrong in the ~3 March weeks and ~1 autumn week when the US and EU calendars disagree."
+   ],
+   "grade": "verified-clean",
+   "yield": "HIGH -- closes the 'exact DST seam dates remain UNMEASURED' residual carried by the 2026-08-26 and 2026-08-27(A) notes, using a free source and no terminal access."
+  },
+  "ice_report_center_iba": {
+   "provides": "ICE Report Center hosts an 'ICE Benchmark Administration -- LIBOR, ICE Swap Rate, LBMA Gold and Silver prices and treasuries' category and an 'Auction Historical Transparency reports' family (single-day and multi-day).",
+   "replaces": "Sought as the per-round LBMA auction transparency residual behind card 39.",
+   "provenance": [
+    "https://www.theice.com/report-center -> 301 -> https://www.ice.com/report-center (200, 108,449B; strings extracted from the returned HTML)"
+   ],
+   "method": "the landing page is a client-side category selector; the actual report ids load from routes under /report-center/category/.",
+   "license": "public page.",
+   "verified": "2026-08-27 UNVERIFIED as a data route. The family is confirmed to EXIST by name on the permitted landing page; its ids were NOT retrieved.",
+   "failure_modes": [
+    "theice.com/robots.txt disallows /report-center/category/ and /report-partial/ -- exactly the routes holding the report ids. Boundary respected, not circumvented (s13)."
+   ],
+   "grade": "UNVERIFIED",
+   "yield": "partial -- upgrades card 39's residual from 'endpoints 404' to 'family exists, ids behind a robots-barred route'; the s38 replacement hunt stays open."
   }
  },
  "residual_gaps_unpurchasable": [

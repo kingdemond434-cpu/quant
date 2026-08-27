@@ -8695,6 +8695,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0677",
+   "source": "cycle",
+   "summary": "MT5 broker-clock offset is published as a SCALAR over a 2018-now history but is NOT constant: measured +2h winter / +3h summer, switching on the US DST calendar (2nd Sun Mar / 1st Sun Nov), NOT the EU one. h1_source.broker_utc_offset_hours() reads one live tick; h1_source.py:292 stamps that single number into the Bars description for the whole history. Every CURRENT caller (scalp_shadow.py:83, shadow_forward.py:329) compares live-to-live and is correct, so this is latent, not live -- but any consumer converting HISTORY with that scalar is wrong by exactly 1h for ~5 months a year, with errors on the DST seams. Fix: make it a function of timestamp using the US-rule seam table. Evidence: 6 Dukascopy-vs-tape probes, docs/research/data_axis_watchlist.md 2026-08-27 session B; two probes placed inside the US/EU DST disagreement windows both side with the US rule.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T14:13:54.669117+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0678",
+   "source": "cycle",
+   "summary": "The MT5 lake's ~2% sub-hourly coverage is a HARDCODED TIMEFRAME, not a terminal-retention fact: desks/mt5/research/fetch_universe.py:54 calls copy_rates_range with mt5.TIMEFRAME_H1, so the one producer filling the lake for all 197 symbols can never produce M15/M5/M1 breadth (census: H1 221 files, M15 8, M5 1, M1 1). Anti-hardcode class, LAWS section 1 / L1.61 -- a literal silently capping exploration. What the terminal actually retains at M1/M5 is UNMEASURED from the Linux box (MetaTrader5 does not import; no code-sync route). Free replacement already adopted and verified this run: the Dukascopy tick datafeed gives millisecond bid/ask for FX, metals and index CFDs with no terminal at all -- see data/data_universe_map.json dukascopy_tick_datafeed.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T14:14:05.110581+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
