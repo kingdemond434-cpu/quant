@@ -78,6 +78,12 @@ JOBS: dict[str, tuple[float, str]] = {
     # A register silently rolled back six hours is worse than a missing one: it still reads
     # as authoritative. Measured 2026-08-27, two heals in 44 seconds.
     "data/doc_replay_fence.json": (0.5, "doc replay fence (stale-snapshot rollback)"),
+    # THE ONE NUMBER THE PATH TO LIVE CAPITAL TURNS ON, and until 2026-08-27 nothing measured
+    # it. The whole forward book was silently re-based to day zero three times in 32 hours
+    # (registry history: 08-26T01:42, 08-27T01:13, 08-27T03:31) against a `days >= 14`
+    # promotion bar, while the shadow watchdog reported OPERATING/defects:[] throughout. If
+    # this artifact goes stale the ratchet has stopped and the next re-base is invisible again.
+    "data/forward_clock_ratchet.json": (1.5, "forward-clock ratchet (silent re-base detector)"),
 }
 
 

@@ -37,6 +37,8 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import os
+import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -59,12 +61,71 @@ IDENTITY_FIELDS = ("family", "symbol", "direction", "timeframe", "selector", "co
 IDENTITY_SCHEMA = "venue-2026-08-26"
 
 
+class RegistryUnreadable(RuntimeError):
+    """The registry file EXISTS but could not be read or parsed.
+
+    This is NOT the same answer as "there is no registry yet", and conflating them is what
+    re-based the desk's entire forward book (see `_read`).
+    """
+
+
 def _read(path: Path) -> dict:
+    """ABSENCE AND UNREADABILITY ARE DIFFERENT ANSWERS, and only one of them is safe.
+
+    This returned `{}` for both, and `freeze()` treats an empty registry as "no clock has ever
+    been frozen" -- so a single failed read re-minted every row with `frozen_at = now` and
+    silently re-based every forward clock to day zero. MEASURED 2026-08-27 on the committed
+    history of `sleeve_registry.json`: 08-26 02:02 all 15 rows frozen 08-26T01:42; 08-27 02:10
+    all 15 frozen 08-27T01:13; 08-27 09:25 all 17 frozen 08-27T03:31-03:34. Three complete
+    re-bases in 32 hours, none of them archived anywhere -- against a promotion law that requires
+    `days >= 14`. No clock had ever survived a day, so the desk was structurally incapable of
+    promoting anything to live capital, and `live_readiness.json` reported the cause as "the
+    market has not yet supplied the unseen observations" -- a desk defect attributed to the world.
+
+    THE READ FAILS FOR ORDINARY REASONS. The authoritative copy lives on the Windows trading box
+    and `ops/pull_desk_state.sh` scp's this exact path every ~2 minutes while `freeze()` writes
+    it non-atomically; on Windows an open handle raises `PermissionError` (an OSError), which the
+    old `except` swallowed into a clean empty verdict -- WS-005, the one direction nothing
+    downstream catches.
+
+    A missing file is still legitimately empty: that is a desk with no registry yet, and
+    `freeze()` may create one. Anything else raises, and the writers below let it propagate:
+    `shadow_forward` already wraps every registry call in `except Exception` and logs
+    "registry unavailable", which skips the row and leaves the running clock untouched. Refusing
+    to write is the only safe response to an unknown base -- writing on `{}` is what destroys it.
+    """
     try:
         value = json.loads(path.read_text("utf-8"))
-        return value if isinstance(value, dict) else {}
-    except (OSError, ValueError):
+    except FileNotFoundError:
         return {}
+    except (OSError, ValueError) as exc:
+        raise RegistryUnreadable(
+            f"{path} exists but could not be read ({type(exc).__name__}: {exc}); refusing to "
+            f"treat an unreadable registry as an empty one -- that re-bases every forward clock"
+        ) from exc
+    if not isinstance(value, dict):
+        raise RegistryUnreadable(
+            f"{path} parsed as {type(value).__name__}, not an object; refusing to treat a "
+            f"malformed registry as an empty one -- that re-bases every forward clock")
+    return value
+
+
+def _write(reg: dict) -> None:
+    """Atomic replace -- a half-written registry is exactly the input `_read` must never see.
+
+    `write_text` truncates first, so every write opened a window in which a concurrent reader
+    (the 2-minute artifact pull, the dashboard, the reconciler) observes a truncated file. That
+    window is the generator of the `RegistryUnreadable` condition above; closing it removes the
+    cause rather than only refusing to act on the symptom.
+    """
+    REGISTRY.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(REGISTRY.parent), prefix=".sleeve_registry.")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            json.dump(reg, fh, indent=1, default=str)
+        os.replace(tmp, REGISTRY)
+    finally:
+        Path(tmp).unlink(missing_ok=True)
 
 
 def code_hash(fn: Any) -> str:
@@ -153,8 +214,7 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None,
             rows[key]["forward_start_backfilled_at"] = datetime.now(tz=UTC).isoformat(
                 timespec="seconds")
             reg["updated_at"] = rows[key]["forward_start_backfilled_at"]
-            REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-            REGISTRY.write_text(json.dumps(reg, indent=1, default=str), "utf-8")
+            _write(reg)
         return rows[key]["identity"]
     rows[key] = {
         "identity": ident,
@@ -167,8 +227,7 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None,
         rows[key]["cost_fields"] = {k: round(float(v), 6) for k, v in cost_fields.items()
                                     if isinstance(v, (int, float)) and not isinstance(v, bool)}
     reg["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
-    REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-    REGISTRY.write_text(json.dumps(reg, indent=1, default=str), "utf-8")
+    _write(reg)
     return ident
 
 
@@ -198,8 +257,7 @@ def mark(key: str, status: str, why: str) -> None:
     row["status_why"] = why
     row["status_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     reg["updated_at"] = row["status_at"]
-    REGISTRY.parent.mkdir(parents=True, exist_ok=True)
-    REGISTRY.write_text(json.dumps(reg, indent=1, default=str), "utf-8")
+    _write(reg)
 
 
 def live_keys() -> set[str]:
