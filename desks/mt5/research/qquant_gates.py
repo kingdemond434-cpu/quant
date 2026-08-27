@@ -28,11 +28,11 @@ Output: reports/QQUANT_GATES.json + reports/DONE_qquant_gates.
 
 from __future__ import annotations
 
-import json
 import itertools
+import json
 import math
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -44,14 +44,14 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
 
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
 from libs.validation.cpcv import CPCV  # noqa: E402
 from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
-
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
@@ -68,8 +68,9 @@ _worker_ctx: dict = {}
 def _init_worker() -> None:
     """Per-process imports + caches (spawn-safe: no closures over main state)."""
     global _worker_ctx
-    from run_hunt12 import WINDOWS as W12, day_states
-    from run_hunt16 import WINDOWS as W16, FAMILIES as F16
+    from run_hunt12 import WINDOWS as W12
+    from run_hunt16 import FAMILIES as F16
+    from run_hunt16 import WINDOWS as W16
     _worker_ctx = {"W12": W12, "W16": W16, "F16": F16,
                    "h1_cache": {}, "sig_cache": {}, "states_cache": {},
                    "meta": json.loads((BASE / "data" / "universe" / "universe.json")
@@ -171,7 +172,11 @@ def worker_eval(row: dict, pbo_val: float, spa_p: float, n_trials: int,
            row["win"], row["state"])
     if key not in cell_map or cell_map[key] is None:
         return {"error": f"series missing for {key}"}
-    arr = np.asarray(list(cell_map[key].values()), dtype=float)
+    # SORTED BY DATE, NEVER DICT ORDER: CPCV and the walk-forward engine split by POSITION and
+    # assume chronology; dict order only happens to be chronological until a pickle or a merge
+    # reorders it, and Sharpe is order-invariant so the break would hide inside the two gates
+    # whose whole purpose is respecting time. (Regressed once via hourly sync; test pins it.)
+    arr = pd.Series(cell_map[key]).sort_index().to_numpy(dtype=float)
     if len(arr) < 60:
         return {"error": f"series too short ({len(arr)})"}
     stages: dict[str, dict] = {}
@@ -244,6 +249,7 @@ def worker_eval_row(r: dict, pbo12_v: float, pbo16_v: float, spa12_v: float,
 
 def main() -> int:
     import multiprocessing as mp
+
     from run_hunt12 import WINDOWS as W12  # noqa
     from run_hunt16 import WINDOWS as W16  # noqa
 
@@ -253,7 +259,7 @@ def main() -> int:
     all12 = h12.get("all", [])
     all16 = h16.get("all", [])
     n_cells = {12: len(all12), 16: len(all16)}
-    t0 = datetime.now(timezone.utc)
+    t0 = datetime.now(UTC)
 
     cells = []
     for c in all12:
@@ -267,7 +273,7 @@ def main() -> int:
         for k, r in enumerate(pool.imap_unordered(worker_cell, cells, chunksize=4)):
             results.append(r)
             if (k + 1) % 50 == 0:
-                el = (datetime.now(timezone.utc) - t0).total_seconds()
+                el = (datetime.now(UTC) - t0).total_seconds()
                 print(f"cells {k + 1}/{len(cells)} "
                       f"({el / (k + 1) * len(cells) / 60:.1f} min ETA)", flush=True)
 
@@ -281,26 +287,30 @@ def main() -> int:
         else:
             fail += 1
     print(f"cell series computed: {ok} ok, {fail} empty/failed "
-          f"in {(datetime.now(timezone.utc) - t0).total_seconds():.0f}s", flush=True)
+          f"in {(datetime.now(UTC) - t0).total_seconds():.0f}s", flush=True)
 
     # ----- original program-level stats on the full trial matrices ----------
     def build_matrix(hunt: int) -> tuple[np.ndarray | None, list]:
-        cols, col_meta = [], []
+        cols, col_meta = {}, []
         for c in (all12 if hunt == 12 else all16):
             key = (c["sym"], c.get("fam") or c.get("family"),
                    c.get("side") or "LONG", c["win"], c["state"])
             s = cell_map.get(key)
             if s is None:
                 continue
-            arr = np.asarray(list(s.values()), dtype=float)
-            if len(arr) < 60:
+            ser = pd.Series(s).sort_index()
+            if len(ser) < 60:
                 continue
-            cols.append(arr)
+            cols[len(col_meta)] = ser
             col_meta.append(c)
         if not cols:
             return None, []
-        min_len = min(len(a) for a in cols)
-        return np.column_stack([a[-min_len:] for a in cols]), col_meta
+        # JOIN ON THE DATE INDEX. Truncate-to-shortest compared cell A's Tuesday against cell
+        # B's Thursday whenever histories differed, and PBO/SPA are CROSS-SECTIONAL -- every
+        # row must be the same day. A day a cell did not trade is an honest 0.0 R, not a hole
+        # to be closed by shifting its history. (Regressed via hourly sync; tests pin this.)
+        mat = pd.DataFrame(cols).sort_index().fillna(0.0)
+        return mat.to_numpy(dtype=float), col_meta
 
     m12, cm12 = build_matrix(12)
     m16, cm16 = build_matrix(16)
@@ -322,20 +332,31 @@ def main() -> int:
     print(f"hunt12 PBO={pbo12.pbo:.3f} SPA p={spa12.p_value:.3f} | "
           f"hunt16 PBO={pbo16.pbo:.3f} SPA p={spa16.p_value:.3f}", flush=True)
 
-    rows = sv["real_survivors"]
-    print(f"running the universal gauntlet on {len(rows)} REAL survivors "
-          f"({WORKERS} workers)...", flush=True)
+    # The old path evaluated only rows that had already cleared the hunt battery,
+    # making that later/harsher diagnostic an undeclared pre-veto on the original
+    # ten gates. Evaluate EVERY tested cell; only these ten verdicts decide shadow.
+    rows = ([{**r, "hunt": "hunt12.json"} for r in all12]
+            + [{**r, "hunt": "hunt16.json"} for r in all16])
+    print(f"running the original universal gauntlet on all {len(rows)} tested cells "
+          f"({WORKERS} workers; no battery prefilter)...", flush=True)
 
+    # pool.imap() passes exactly one argument per call from its iterable -- it cannot fan out
+    # the 8 constant arguments worker_eval_row also needs. starmap() unpacks a tuple per call;
+    # zip() builds those tuples. Confirmed live 2026-08-23: the imap form crashed with
+    # `TypeError: Pool.imap() takes from 3 to 4 positional arguments but 11 were given` after
+    # ~5 minutes of real upstream computation. (Restored after the desk sync re-trampled it.)
     with mp.Pool(WORKERS, initializer=_init_eval_worker, initargs=(cell_map,)) as pool:
-        verdicts = list(pool.imap(worker_eval_row, rows,
-                                  itertools.repeat(float(pbo12.pbo)),
-                                  itertools.repeat(float(pbo16.pbo)),
-                                  itertools.repeat(float(spa12.p_value)),
-                                  itertools.repeat(float(spa16.p_value)),
-                                  itertools.repeat(n_trials12),
-                                  itertools.repeat(n_trials16),
-                                  itertools.repeat(sharpes12),
-                                  itertools.repeat(sharpes16)))
+        verdicts = pool.starmap(worker_eval_row, zip(
+            rows,
+            itertools.repeat(float(pbo12.pbo)),
+            itertools.repeat(float(pbo16.pbo)),
+            itertools.repeat(float(spa12.p_value)),
+            itertools.repeat(float(spa16.p_value)),
+            itertools.repeat(n_trials12),
+            itertools.repeat(n_trials16),
+            itertools.repeat(sharpes12),
+            itertools.repeat(sharpes16),
+        ))
     n_pass = sum(1 for v in verdicts if v.get("passed"))
     gate_fails: dict[str, int] = {}
     for v in verdicts:
@@ -357,16 +378,16 @@ def main() -> int:
         "survivors_total": len(verdicts),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
-        "wall_s": round((datetime.now(timezone.utc) - t0).total_seconds(), 1),
+        "swept_at": datetime.now(UTC).isoformat(),
+        "wall_s": round((datetime.now(UTC) - t0).total_seconds(), 1),
         "workers": WORKERS,
     }
     (REPORTS / "QQUANT_GATES.json").write_text(json.dumps(out, indent=2, default=str),
                                                encoding="utf-8")
     (REPORTS / "DONE_qquant_gates").write_text(
-        datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+        datetime.now(UTC).isoformat(), encoding="utf-8")
     print(f"\nUNIVERSAL GAUNTLET: {n_pass}/{len(verdicts)} survivors pass all 10 gates "
-          f"(wall {(datetime.now(timezone.utc) - t0).total_seconds() / 60:.1f} min)",
+          f"(wall {(datetime.now(UTC) - t0).total_seconds() / 60:.1f} min)",
           flush=True)
     for name, cnt in sorted(gate_fails.items()):
         print(f"  gate fail [{name}]: {cnt}", flush=True)

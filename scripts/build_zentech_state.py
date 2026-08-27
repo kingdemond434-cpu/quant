@@ -364,16 +364,27 @@ def build() -> dict[str, Any]:
         _tape = DESK / "data" / "tape" / "ticks"
         _cut = now - _td(days=7)
         _cov = {}
+        _newest = None
         if _tape.exists():
             for _d in _tape.iterdir():
                 if _d.is_dir():
-                    _days = sum(1 for f in _d.glob("*.parquet")
-                                if datetime.fromtimestamp(f.stat().st_mtime, UTC) >= _cut)
+                    _days = 0
+                    for f in _d.glob("*.parquet"):
+                        _mt = datetime.fromtimestamp(f.stat().st_mtime, UTC)
+                        if _mt >= _cut:
+                            _days += 1
+                        if _newest is None or _mt > _newest:
+                            _newest = _mt
                     if _days:
                         _cov[_d.name.upper()] = _days
+        # newest_tape_write is THE liveness signal: coverage day-counts stay green for a week
+        # after the recorder dies (measured 2026-08-27 -- recorder dead 9h, coverage fresh),
+        # so the health fence needs the raw newest write, not a windowed summary of it.
         (DESK / "data" / "moat_coverage.json").write_text(
             json.dumps({"built_at": now.isoformat(timespec="seconds"),
-                        "window_days": 7, "coverage": _cov}, indent=1), "utf-8")
+                        "window_days": 7, "coverage": _cov,
+                        "newest_tape_write": (_newest.isoformat(timespec="seconds")
+                                              if _newest else None)}, indent=1), "utf-8")
     except Exception:
         pass
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {

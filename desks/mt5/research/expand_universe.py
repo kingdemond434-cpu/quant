@@ -103,6 +103,11 @@ def main() -> int:
             registry[name] = {
                 "symbol": name, "asset_class": asset_class,
                 "tick_size": float(getattr(info, "trade_tick_size", 0) or 0),
+                # WITHOUT tick_value THERE IS NO CURRENCY CONVERSION: Costs.from_symbol and every
+                # sizing path need one tick's worth IN ACCOUNT CURRENCY, and this collector never
+                # asked MT5 for it -- so all 82 equity/index rows of the whole-broker expansion
+                # arrived uncostable and sat outside the hunt while looking "present".
+                "tick_value": float(getattr(info, "trade_tick_value", 0) or 0),
                 "contract_size": float(getattr(info, "trade_contract_size", 0) or 0),
                 "digits": int(getattr(info, "digits", 5) or 5),
                 "median_spread_pts": float(getattr(info, "spread", 0) or 0),

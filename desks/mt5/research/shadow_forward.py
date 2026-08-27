@@ -23,6 +23,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from mt5desk import families
+
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
@@ -68,32 +70,76 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
     A certificate whose selector this engine has no window for, or which carries no params, is
     reported and skipped -- a visible wiring gap for the gap-wirer, never a silent guess.
     """
-    rows: list[tuple[str, str, dict]] = []
+    rows: list[tuple[str, str, dict, str]] = []
     try:
         from shadow_admission import authorized_runs
         for run in sorted(authorized_runs(BASE), key=lambda r: (r["symbol"], r["selector"])):
-            if run["family"] != "session_range_breakout":
-                continue  # this engine runs one family; other families enrol as they are built
-            if run["selector"] not in WINDOWS:
-                slog(f"ENROL-GAP: certified {run['symbol']}.{run['selector']} has no window "
-                     f"mapping; certificate exists but cannot be run -- wire the selector")
+            fam = run["family"]
+            if fam == "session_range_breakout":
+                if run["selector"] not in WINDOWS:
+                    slog(f"ENROL-GAP: certified {run['symbol']}.{run['selector']} has no window "
+                         f"mapping; certificate exists but cannot be run -- wire the selector")
+                    continue
+                # The window supplies the SESSION hours; the certificate supplies everything it
+                # was gauntleted with. Certificate wins on overlap: it is the thing that passed.
+                params = dict(WINDOWS[run["selector"]])
+                params.update(run["params"])
+                rows.append((run["symbol"], run["selector"], params, fam))
                 continue
-            # The window supplies the SESSION hours; the certificate supplies everything it was
-            # gauntleted with. Certificate wins on overlap: it is the thing that passed.
-            params = dict(WINDOWS[run["selector"]])
-            params.update(run["params"])
-            rows.append((run["symbol"], run["selector"], params))
+            # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
+            # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
+            # was a bare `continue`). A price-only family replays here exactly as the gauntlet
+            # ran it; a family needing runtime inputs beyond bars is skipped BY NAME, because a
+            # silent skip is indistinguishable from enrolment that works.
+            fn = _family_fn(fam)
+            needs = _family_needs(fam)
+            if fn is None or needs:
+                why = "no constructor found" if fn is None else f"needs {needs}"
+                slog(f"ENROL-GAP: certified {run['symbol']}.{fam} cannot enrol here -- {why}; "
+                     f"certificate stands, forward evidence is NOT accruing")
+                continue
+            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
     return rows
 
 
-def sleeve_key(sym: str, win: str, params: dict) -> str:
-    """One clock per parameterization -- the key carries what makes them different."""
+def _family_fn(fam: str):
+    """The one constructor for `fam`, wherever it lives -- same resolution as the gauntlet."""
+    fn = getattr(families, f"family_{fam}", None)
+    if fn is None:
+        try:
+            from mt5desk import families_orthogonal as _fo
+            fn = _fo.ORTHOGONAL_FAMILIES.get(fam)
+        except ImportError:
+            fn = None
+    return fn
+
+
+def _family_needs(fam: str) -> str | None:
+    """Runtime input `fam` needs beyond bars, or None when price-only (replayable here)."""
+    try:
+        from mt5desk.families_orthogonal import FAMILY_INPUTS
+    except ImportError:
+        return "families_orthogonal unavailable"
+    desc = FAMILY_INPUTS.get(fam)
+    if desc is None:
+        return None  # a families.py native -- bars in, signals out
+    return None if desc[1] is None else str(desc[0])
+
+
+def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_breakout") -> str:
+    """One clock per parameterization -- the key carries what makes them different.
+
+    Breakout keys keep their historical `SYM.window` shape (running clocks must not be renamed);
+    every other family carries its family name, because `EURZAR.asia` alone cannot say WHICH
+    certified strategy's forward evidence this is.
+    """
     extra = {k: v for k, v in sorted(params.items()) if WINDOWS.get(win, {}).get(k) != v}
     sig = "_".join(f"{k}={v}" for k, v in extra.items())
-    return f"{sym}.{win}" + (f"#{sig}" if sig else "")
+    stem = f"{sym}.{win}" if family == "session_range_breakout" else f"{sym}.{family}.{win}"
+    return stem + (f"#{sig}" if sig else "")
 
 
 FETCH_DAYS = 45
@@ -178,7 +224,6 @@ def fetch_h1(sym: str):
 
 
 def main() -> None:
-    from mt5desk import families
     from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
@@ -194,10 +239,11 @@ def main() -> None:
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
     # here automatically -- the same day they are written -- with their clock stamped below.
-    enrolled = [(s, w, dict(WINDOWS.get(w, {}))) for s, w in SLEEVES] + certified_sleeves()
+    enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout") for s, w in SLEEVES]
+                + certified_sleeves())
     seen: set[str] = set()
-    for sym, win, params in enrolled:
-        key = sleeve_key(sym, win, params)
+    for sym, win, params, fam in enrolled:
+        key = sleeve_key(sym, win, params, fam)
         if key in seen:
             continue
         seen.add(key)
@@ -210,7 +256,14 @@ def main() -> None:
         if bars is None:
             continue
         h1 = bars.df
-        sigs = families.family_session_range_breakout(h1, **params)
+        fam_fn = _family_fn(fam)
+        if fam_fn is None:
+            slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
+            continue
+        try:
+            sigs = fam_fn(h1, **params)
+        except TypeError:
+            sigs = fam_fn(h1, side=1, **params)
         # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
         # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
         # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
@@ -254,7 +307,8 @@ def main() -> None:
             f"{len(trades)} forward observation(s) since the clock froze; "
             f"{len(all_trades) - len(trades)} earlier observation(s) retained as HISTORICAL and "
             f"excluded from every threshold (they predate pre-registration)")
-        ledger = SHADOW_DIR / f"ledger_{sym}_{win}.json"
+        ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
+                  else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
         # A trade replayed on the broker's own feed and one replayed on cached
         # or free bars are not the same evidence -- OHLC differ at the tick and
         # spreads differ materially -- so an expectancy averaged across them is
@@ -283,9 +337,9 @@ def main() -> None:
         try:
             import sleeve_registry as _reg
             _ident = _reg.identity(
-                family="session_range_breakout", symbol=sym, direction="LONG", timeframe="H1",
+                family=fam, symbol=sym, direction="LONG", timeframe="H1",
                 selector=win, condition=None, params=params,
-                code=_reg.code_hash(families.family_session_range_breakout),
+                code=_reg.code_hash(fam_fn),
                 cost=_reg.cost_hash(costs),
                 # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
                 # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made

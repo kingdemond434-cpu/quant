@@ -115,7 +115,10 @@ def test_coverage_counts_usable_separately_from_present():
 
 
 def test_the_real_universe_on_disk_classifies_cleanly():
-    """Against the actual 22-symbol universe.json, so the classifier is checked on real names."""
+    """Against the live universe.json -- the whole broker offering, so the classifier is checked
+    on real names. This test used to pin `usable == 19` from the 22-symbol era; the law is now
+    the WHOLE offering ("maximum classes, no limitations"), so the pins are floors and breadth --
+    coverage ratchets UP (L1.50) and an exact count would make growth read as a failure."""
     import json
     p = _DESK / "data" / "universe" / "universe.json"
     if not p.exists():
@@ -123,10 +126,16 @@ def test_the_real_universe_on_disk_classifies_cleanly():
     inst = classify_all(json.loads(p.read_text(encoding="utf-8")))
     unknown = [i.symbol for i in inst if i.asset_class == "unknown"]
     assert not unknown, f"unclassified symbols in the live universe: {unknown}"
-    # 19 of 22 usable: AUDCAD/AUDNZD/NZDCAD carry bars=0 in universe.json even though their
-    # parquet files hold full history (hunt12 swept AUDCAD over 53,625 bars). Stale summary
-    # metadata, not missing data -- pinned so a real regression is distinguishable from it.
-    usable = sorted(i.symbol for i in inst if i.usable)
-    stale = sorted(i.symbol for i in inst if not i.usable)
-    assert len(usable) == 19, f"expected 19 usable, got {len(usable)}: {usable}"
-    assert stale == ["AUDCAD", "AUDNZD", "NZDCAD"], f"different symbols unusable: {stale}"
+    usable = [i for i in inst if i.usable]
+    assert len(usable) >= 19, f"usable coverage may only ratchet UP, got {len(usable)}"
+    # Usable breadth for the classes whose cost model is measured today. Index and equity rows
+    # arrived from the whole-broker expansion WITHOUT tick_value (the collector never asked MT5
+    # for it -- fixed in expand_universe.py the same day), so demanding their usable-breadth
+    # here would assert data that is still being collected; they are pinned as PRESENT, and the
+    # moment the collection lands these move into the usable loop below and RATCHET (L1.50).
+    classes = {i.asset_class for i in usable}
+    for cls in ("fx_major", "fx_cross", "metal", "crypto"):
+        assert cls in classes, f"asset class {cls} has zero usable symbols"
+    present = {i.asset_class for i in inst}
+    for cls in ("index", "equity"):
+        assert cls in present, f"asset class {cls} vanished from the universe entirely"

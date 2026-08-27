@@ -69,16 +69,32 @@ def known_symbols() -> set[str]:
 
 
 def _symbols_in(row: dict, universe: set[str]) -> set[str]:
-    """Symbols a discovery actually names. Declared field first, then text, never a guess."""
+    """Symbols a discovery actually names. Declared field first, then text, never a guess.
+
+    THE OLD PATTERN ONLY SPOKE FX: `[A-Z]{3,6}(USD|JPY|...)` cannot match US500, NAS100 or a
+    company-name symbol like Apple -- so a miner writing about index breadth or a single stock
+    scored "names NO symbol" no matter how specific it was, and 20 of 42 miners sat dead on
+    ground the universe actually lists. Uppercase alnum tokens catch every code-style symbol;
+    the alias scan catches the equity CFDs the broker lists by NAME. Membership in the live
+    universe remains the only admission -- text never invents a symbol.
+    """
     found: set[str] = set()
     declared = row.get("symbols")
     if isinstance(declared, list):
         found |= {str(s).upper() for s in declared if str(s).upper() in universe}
     blob = " ".join(str(row.get(k) or "") for k in ("title", "text", "url", "mechanism"))
     if blob.strip():
-        for token in set(re.findall(r"\b[A-Z]{3,6}(?:USD|JPY|EUR|GBP|AUD|CAD|CHF|NZD)?\b", blob)):
+        up = blob.upper()
+        for token in set(re.findall(r"\b[A-Z][A-Z0-9]{1,9}\b", up)):
             if token in universe:
                 found.add(token)
+        # Company-name symbols carry chars the token walk cannot ('&', '-', length): scan for
+        # each such universe name directly, on word boundaries, in the uppercased text.
+        for sym in universe:
+            if sym in found or re.fullmatch(r"[A-Z][A-Z0-9]{1,9}", sym):
+                continue
+            if re.search(r"(?<![A-Z0-9])" + re.escape(sym) + r"(?![A-Z0-9])", up):
+                found.add(sym)
     return found
 
 

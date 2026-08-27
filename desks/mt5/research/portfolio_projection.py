@@ -21,8 +21,8 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from mt5desk import families
+from mt5desk.engine import Costs, run_backtest
 
 BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
@@ -49,7 +49,15 @@ def cell_trades(sym: str, win: str, state: str | None, h1: pd.DataFrame,
 def load_h12_survivors() -> list[dict]:
     p = BASE / "reports" / "hunt12_partial.json"
     if not p.exists():
-        return []
+        # AN ABSENT REPORT IS A REFUSAL, NOT A SMALLER BOOK. This returned [] on every fresh
+        # clone (the report is gitignored), main() then built a GOLD-ONLY four-sleeve book and
+        # overwrote the committed nine-sleeve artifact -- recomputing mean_corr, n_eff and
+        # port_sharpe consistently on the truncated book, so nothing downstream could tell.
+        raise SystemExit(
+            f"REFUSING to project a portfolio without {p}: hunt12_partial.json is absent, and "
+            f"an empty survivor list would silently produce a GOLD-ONLY book presented as the "
+            f"whole desk. Run research/run_hunt12.py on the desk box to produce the report."
+        )
     saved = json.loads(p.read_text(encoding="utf-8"))
     return [c for c in saved.get("all", []) if c.get("gate")]
 
@@ -73,9 +81,9 @@ def h18_survivor_sleeves() -> tuple[list[dict], list[dict]]:
     verdict, or any rebuild error -> survivor EXCLUDED with a reason."""
     survivors = load_universal_survivors()
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
-    from research.run_hunt17 import FAMILIES as F17  # noqa: PLC0415
-    from research.run_hunt17 import PARAMS as F17_PARAMS  # noqa: PLC0415
-    from research.run_hunt17 import resample as r17resample  # noqa: PLC0415
+    from research.run_hunt17 import FAMILIES as F17
+    from research.run_hunt17 import PARAMS as F17_PARAMS
+    from research.run_hunt17 import resample as r17resample
     sleeves: list[dict] = []
     excluded: list[dict] = []
     for rec in survivors:
@@ -152,7 +160,7 @@ def build_sleeves() -> list[dict]:
                             state="base",
                             r=[t.r_multiple for t in tr],
                             dates=[t.entry_time.date() for t in tr]))
-    from research.run_hunt12 import day_states  # noqa: PLC0415
+    from research.run_hunt12 import day_states
     for cell in load_h12_survivors():
         sym, win, state = cell["sym"], cell["win"], cell["state"]
         h1 = families._h1(pd.read_parquet(UNI / f"{sym}_H1.parquet"))

@@ -107,8 +107,14 @@ def test_production_path_has_no_harsher_prefilter() -> None:
     promoter = (DESK / "research" / "promoter.py").read_text(encoding="utf-8")
     assert 'rows = sv["real_survivors"]' not in qquant
     assert 'for r in all12' in qquant and 'for r in all16' in qquant
-    assert "partition_work(_declared, BASE)" in shadow, (
+    # The admission door was rebuilt as `authorized_runs` when params became certificate
+    # identity (2026-08-26); the LAW is unchanged -- every enrolment must come through
+    # shadow_admission, which requires the exact policy attestation and all ten gates.
+    assert "from shadow_admission import authorized_runs" in shadow, (
         "shadow admission must require the exact original-ten-gate certificate")
+    admission = (DESK / "research" / "shadow_admission.py").read_text(encoding="utf-8")
+    assert "all_ten_pass" in admission and "is_exact_policy" in admission, (
+        "the admission door itself must verify the certificate, not trust the file")
     assert "gate_spec not in gate_authority" in promoter, (
         "live promotion must still independently require a real certificate")
     supervisor = (DESK / "research" / "research_supervisor.py").read_text(encoding="utf-8")

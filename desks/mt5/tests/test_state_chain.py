@@ -66,18 +66,32 @@ def test_a_conditioned_sleeve_trades_on_a_match(monkeypatch):
     assert ok and why == ""
 
 
-def test_shadow_carries_state_for_hunt12_and_macro_candidates():
-    from shadow_forward import SLEEVES
-    assert all(len(t) == 3 for t in SLEEVES), "SLEEVES rows must be (sym, window, state)"
-    conditioned = [t for t in SLEEVES if t[2]]
-    assert len(conditioned) == 14, (
-        f"expected 9 hunt12 plus 5 macro-conditioned candidates, found {len(conditioned)}"
-    )
-    assert ("CADJPY", "asia", "FAILED_BREAK") in SLEEVES
-    assert len([t for t in SLEEVES if t[2] == "MACRO_FAV"]) == 5
-    # the hunt6 ten must survive unchanged
-    assert ("XAUUSD", "asia", None) in SLEEVES
-    assert len([t for t in SLEEVES if t[2] is None]) == 10
+def test_shadow_enrolment_is_certificates_never_a_hand_typed_list():
+    """GRANDFATHERING IS OVER (2026-08-26): this test used to assert 24 hand-typed sleeves,
+    which is exactly the defect the law forbids -- enrolment is a CERTIFICATE. The literal must
+    stay empty forever; clocks come from certified_sleeves() reading the admission door."""
+    from shadow_forward import SLEEVES, sleeve_key
+    assert SLEEVES == [], "a hand-typed sleeve bypasses the ten gates; the list must stay empty"
+    # Breakout keys keep their historical shape -- running clocks must never be renamed --
+    # while every other family carries its family name in the key (one clock per strategy).
+    assert sleeve_key("XAUUSD", "asia", {"range_start": 7, "wait_bars": 12,
+                                         "rr": 2.0, "ttl_bars": 12}) == "XAUUSD.asia"
+    assert (sleeve_key("EURZAR", "asia", {}, "overnight_gap_decay")
+            == "EURZAR.overnight_gap_decay.asia")
+    assert sleeve_key("XAUUSD", "asia", {"range_start": 7, "wait_bars": 12,
+                                         "rr": 1.5, "ttl_bars": 12}) == "XAUUSD.asia#rr=1.5"
+
+
+def test_every_certified_family_enrols_or_is_skipped_by_name():
+    """The one-pipeline law: a certificate IS enrolment. A family this engine cannot replay
+    (needs runtime inputs beyond bars) must be skipped BY NAME, and a price-only family must
+    resolve to a constructor -- a bare `continue` here is how two overnight_gap_decay
+    certificates sat CERTIFIED-NOT-ENROLLED while the same-day fence screamed."""
+    from shadow_forward import _family_fn, _family_needs
+    assert _family_fn("overnight_gap_decay") is not None
+    assert _family_needs("overnight_gap_decay") is None, "price-only: must enrol"
+    assert _family_needs("cot_positioning"), "needs COT data: skip must carry the input's name"
+    assert _family_fn("session_range_breakout") is not None
 
 
 def test_the_promoter_parses_a_three_part_key():
@@ -97,7 +111,12 @@ def test_every_link_in_the_chain_carries_the_state():
     assert '"state": cond' in _PR, "promoter does not write the state"
     assert '"state": s.get("state")' in _GW, "gateway does not read the state"
     assert "state_allows(s, df" in _GW, "the state gate is never applied in the trading path"
-    assert "day_states(h1)" in _SF, "shadow does not condition its replay"
+    # Shadow's conditioned replay retired WITH the conditioned sleeves (all hunt12/macro rows
+    # are RETIRED_ORPHAN/RETIRED_GATE_FAIL; enrolment is certificates only). What the law still
+    # requires here is that the CONDITION TRAVELS IN THE IDENTITY: a future conditioned
+    # certificate must freeze its condition, never silently drop it.
+    assert "condition=None, params=params" in _SF, (
+        "shadow must pass the condition into the frozen identity explicitly")
 
 
 def test_the_state_gate_runs_before_a_bracket_is_computed():
@@ -110,28 +129,27 @@ def test_the_state_gate_runs_before_a_bracket_is_computed():
 
 # --------------------------------------------------------- the verdict needs evidence
 
-def test_no_terminal_verdict_below_the_evidence_floor():
-    """THE 14-DAY CLOCK WAS EXECUTING SLOW SLEEVES AT RANDOM. A cell firing ~80x/yr produces
-    about 3 trades in 14 days, and at n=3 a genuinely good +0.276R edge is KILLED 36% of the
-    time -- permanently, in both directions. The clock still runs; it just cannot decide on a
-    sample that is more likely to be wrong than right."""
-    from shadow_forward import MIN_VERDICT_TRADES, VERDICT_MIN_DAYS
-    assert MIN_VERDICT_TRADES >= 20, "the evidence floor is too low to beat a coin flip"
+def test_the_evidence_floors_are_a_ratchet():
+    """THE 14-DAY CLOCK WAS EXECUTING SLOW SLEEVES AT RANDOM (n=3 kills a good +0.276R edge 36%
+    of the time). The floors that fixed it may rise, never fall -- and the sequential path may
+    only ever be STRICTER on marginal edges, not a side door."""
+    from shadow_forward import SEQ_MIN_T, SEQ_MIN_TRADES, VERDICT_MIN_DAYS, VERDICT_MIN_TRADES
+    assert VERDICT_MIN_TRADES >= 50, "the flat evidence floor may only ratchet UP"
+    assert SEQ_MIN_TRADES >= 20, "no verdict on a handful of trades, however pretty"
+    assert SEQ_MIN_T >= 2.5, "the early path must demand real significance"
     assert VERDICT_MIN_DAYS == 14, "the clock itself should be unchanged"
-    src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
-    assert 'if st["n"] < MIN_VERDICT_TRADES:' in src
-    i_defer = src.index('st["n"] < MIN_VERDICT_TRADES')
-    i_kill = src.index('st["status"] = "KILL"')
-    i_prom = src.index('st["status"] = "PROMOTION CANDIDATE"')
-    assert i_defer < i_prom < i_kill, (
-        "the evidence floor must be checked BEFORE either terminal branch")
 
 
-def test_deferral_keeps_the_sleeve_active_rather_than_killing_it():
-    """A slow edge must never be stuck AND never executed: it stays ACTIVE, keeps accruing, and
-    promotes the moment it has evidence. Shadow uses no capital, so waiting is free."""
+def test_no_verdict_without_sufficient_evidence():
+    """A slow edge must never be stuck AND never executed: below the evidence floors the status
+    stays ACTIVE and the clock keeps accruing. Sequential sufficiency (2026-08-26) replaced the
+    old deferral block: a verdict requires `enough` (flat n>=50 OR n>=20 with forward t>=2.5)
+    AND the day floor -- so no branch may kill or promote beneath it."""
     src = (_DESK / "research" / "shadow_forward.py").read_text(encoding="utf-8")
-    block = src[src.index('if st["n"] < MIN_VERDICT_TRADES:'):src.index('elif st["exp_r"]')]
-    assert '"KILL"' not in block, "the deferral branch kills the sleeve"
-    assert 'st["status"]' not in block, "the deferral branch changes status; it must not"
-    assert "DEFERRED" in block
+    gate = 'if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:'
+    assert gate in src, "the verdict gate must require sufficiency and the day floor together"
+    verdict_zone = src[src.index(gate):]
+    assert '"KILL"' in verdict_zone and '"PROMOTION CANDIDATE"' in verdict_zone
+    before_gate = src[:src.index(gate)]
+    loop_body = before_gate[before_gate.index("for sym, win, params, fam in enrolled:"):]
+    assert '= "KILL"' not in loop_body, "nothing may kill a sleeve before the evidence gate"

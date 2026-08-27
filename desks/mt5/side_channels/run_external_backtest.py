@@ -2,14 +2,16 @@
 Reads test_grid.json, runs each cell, saves results + survivors.
 """
 from __future__ import annotations
+
 import json
 import sys
 import time
 import warnings
+
 warnings.filterwarnings("ignore")
 
 from pathlib import Path
-import numpy as np
+
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
@@ -104,8 +106,12 @@ def run_all() -> list[dict]:
         print(f"  {s['symbol']:8s} {s['family']:25s} n={s['n']:4d} exp={s['exp_r']:+.4f}R "
               f"maxDD={s['max_dd_r']:+.1f}R PF={s['profit_factor']:.2f}")
 
-    surv_out = BASE / "data" / "hypotheses" / "external_survivors.json"
-    surv_out.write_text(json.dumps(survivors, indent=2, default=str), encoding="utf-8")
+    # ONE PRODUCER PER FILE. This used to ALSO write external_survivors.json directly, which
+    # clobbered the merged docket with just this stage's rows at :06 every hour -- measured
+    # 2026-08-27: the 00:47 merge shipped 122 candidates, stage 2 overwrote them with its own
+    # 0 stage-A passes at 01:06, and the docket sat empty until the next merge. Merge
+    # (merge_hypotheses.py) is the only writer of external_survivors.json; this stage's product
+    # is external_backtest_results.json above, which merge consumes like every other source.
     return survivors
 
 

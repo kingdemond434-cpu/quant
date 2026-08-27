@@ -40,11 +40,16 @@ from typing import Any
 #: Asset class inferred from the symbol name. Deliberately pattern-based rather than a lookup
 #: table: broker symbol sets change and a table would silently mark new instruments UNKNOWN.
 _FX_MAJORS = ("EUR", "GBP", "USD", "JPY", "CHF", "CAD", "AUD", "NZD")
+#: Non-major but liquid FX legs. A cross of two of these (NOKSEK) is still FX -- it read
+#: "unknown" when the whole broker offering landed, because the old rules demanded a MAJOR leg.
+_FX_MINORS = ("SEK", "NOK", "DKK", "SGD", "HKD", "MXN", "ZAR", "TRY", "PLN", "HUF", "CZK", "CNH")
 _METALS = ("XAU", "XAG", "XPT", "XPD", "GOLD", "SILVER")
 _ENERGY = ("WTI", "BRENT", "OIL", "NGAS", "NATGAS", "CRUDE", "UKOIL", "USOIL")
-_CRYPTO = ("BTC", "ETH", "LTC", "XRP", "BCH", "ADA", "SOL", "DOGE", "DOT", "LINK")
+_CRYPTO = ("BTC", "ETH", "LTC", "XRP", "BCH", "ADA", "SOL", "DOGE", "DOT", "LINK",
+           "AVAX", "MATIC", "XLM", "TRX", "UNI", "ATOM", "AAVE", "SHIB")
 _INDEX = ("US500", "US30", "USTEC", "NAS", "SPX", "SP500", "DAX", "GER", "UK100", "FTSE",
-          "JP225", "NIK", "HK50", "AUS200", "EU50", "STOXX", "FRA40", "USA")
+          "JP225", "JPN225", "NIK", "HK50", "AUS200", "EU50", "STOXX", "FRA40", "USA",
+          "USDX", "EUSTX", "NETH", "CHINAH", "SWI", "ESP", "CA60", "E35")
 
 #: Below this many bars a cell cannot be evaluated at all: the battery needs n > 60 trades, and
 #: a session-window family fires on a fraction of days. 1,000 H1 bars is roughly six weeks of
@@ -73,6 +78,22 @@ def asset_class(symbol: str) -> str:
         return "fx_major" if "USD" in (base, quote) else "fx_cross"
     if len(s) >= 6 and (base in _FX_MAJORS or quote in _FX_MAJORS):
         return "fx_exotic"
+    if len(s) >= 6 and base in _FX_MINORS and quote in _FX_MINORS:
+        return "fx_exotic"
+    # Letters-then-digits with no FX reading is an index code (CA60, E35, NETH25 already caught
+    # above; this keeps the NEXT broker index from silently reading unknown).
+    if re.fullmatch(r"[A-Z]{1,6}\d{2,4}", s):
+        return "index"
+    # EQUITY CFDs arrive as COMPANY NAMES, not codes: mixed case ("Apple", "CocaCola" after
+    # cleaning -- the raw string carries the lowercase), '&' or '-' in the raw, or a bare 1-5
+    # character ticker (IBM, AMD, 3M) that nothing above claimed. The whole-broker expansion
+    # (2026-08) brought ~70 of these and every one read "unknown", which kept an entire asset
+    # class out of the breadth ledger while the law says hunt EVERYTHING the broker lists.
+    raw = str(symbol)
+    if re.search(r"[a-z]", raw) or "&" in raw or "-" in raw:
+        return "equity"
+    if re.fullmatch(r"\d?[A-Z]{1,5}", s):
+        return "equity"
     return "unknown"
 
 
@@ -122,7 +143,8 @@ class Instrument:
         free and produces the best-looking cells in the sweep.
         """
         return (self.bars >= MIN_BARS and self.tick_size > 0
-                and self.contract_size > 0 and self.median_spread_pts >= 0)
+                and self.contract_size > 0 and self.median_spread_pts >= 0
+                and self.tick_value > 0)
 
 
 def classify_all(summary: dict[str, dict[str, Any]]) -> list[Instrument]:

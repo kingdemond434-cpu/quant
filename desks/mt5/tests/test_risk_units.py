@@ -44,8 +44,7 @@ LEGACY_CONSTANT = 100 * 0.92
 
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
-    from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+    from mt5desk.gateway_config_fallback import BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT
     from mt5desk.sizing import clamp_risk_frac
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
@@ -94,7 +93,7 @@ def test_the_venue_disagrees_with_the_constant_by_orders_of_magnitude():
 
 def test_risk_per_lot_is_the_tick_arithmetic_and_nothing_else():
     for sym, meta in UNIVERSE.items():
-        if not (meta["tick_size"] > 0 and meta["tick_value"] > 0):
+        if not (meta.get("tick_size", 0) > 0 and meta.get("tick_value", 0) > 0):
             continue
         expected = 2.0 / meta["tick_size"] * meta["tick_value"]
         assert ru.risk_per_lot(sym, 2.0) == pytest.approx(expected)

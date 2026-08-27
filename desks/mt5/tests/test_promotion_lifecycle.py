@@ -44,6 +44,27 @@ def desk(tmp_path, monkeypatch):
     monkeypatch.setattr(promoter, "LOG", tmp_path / "logs" / "promoter.log")
     monkeypatch.setattr(promoter.provenance, "current_account", lambda _acc: _ACC)
 
+    # LIVE PROMOTION REQUIRES THE CANONICAL CERTIFICATE (2026-08-26: authority revoked from
+    # uncertified lanes). These tests exercise the promotion MECHANICS, so the fixture grants
+    # authority for exactly the keys each test writes -- read from the tmp shadow file at call
+    # time, mirroring authorized_specs' spec shape. The refusal law has its own test below.
+    def _authority_from_shadow(base=None):
+        try:
+            blob = json.loads((shadow_dir / "shadow_state.json").read_text(encoding="utf-8"))
+        except OSError:
+            return set()
+        out = set()
+        for key, row in blob.items():
+            if not isinstance(row, dict):
+                continue
+            parts = key.split(".")
+            if len(parts) < 2:
+                continue
+            cond = parts[2] if len(parts) > 2 else None
+            out.add((parts[0], parts[1], cond, "session_range_breakout", False))
+        return out
+    monkeypatch.setattr(promoter, "authorized_specs", _authority_from_shadow)
+
     class Desk:
         root = tmp_path
 
@@ -73,6 +94,18 @@ def desk(tmp_path, monkeypatch):
 
 
 _GOOD = {"status": "PROMOTION CANDIDATE", "exp_r": 0.276, "n": 40, "max_dd_r": -8.0}
+
+
+def test_an_uncertified_candidate_is_blocked_not_promoted(desk, monkeypatch):
+    """The strengthened door: meeting every forward criterion promotes NOTHING without the
+    canonical ten-gate certificate -- the refusal is recorded, never silent."""
+    monkeypatch.setattr(promoter, "authorized_specs", lambda base=None: set())
+    desk.shadow({"CADJPY.asia": dict(_GOOD)})
+    promoter.main()
+    assert desk.sleeves() == []
+    st = desk.read_shadow()["CADJPY.asia"]
+    assert st["status"] == "BLOCKED_UNIVERSAL_GATES"
+    assert st["promotion_authority"] is False
 
 
 # --------------------------------------------------------------------- promote
