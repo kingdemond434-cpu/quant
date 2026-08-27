@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-27T19:24:00+00:00",
+ "rebuilt_at": "2026-08-27T20:23:51+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -742,7 +742,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -758,7 +758,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -994,6 +994,36 @@
    },
    "cohorts": [
     "314ba2287a903858"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "feliciien": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "1340c1077fa7f079"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "thefractalyst": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "5fe84acf9643470f"
    ],
    "scores": {
     "independent_evidence": 1,

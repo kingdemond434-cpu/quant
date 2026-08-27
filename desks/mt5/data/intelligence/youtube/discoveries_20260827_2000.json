@@ -1,0 +1,143 @@
+[
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34LIVE GOLD TRADING /XAUUSD LIVE /BTCUSDLIVE #crypto #goldtrading #livetrading #gold\u202a @tradesesikho",
+    "channel": "Trade Se Sikho",
+    "url": "https://youtube.com/watch?v=y2Bqxk-CtLw",
+    "published": "2026-08-27T19:51:41Z",
+    "symbols": [
+      "XAUUSD",
+      "BTCUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "MM Wealth \ud83c\udfe7 Trading Strategy \u201cInvite Only Link\u201d #dubai #trading #xauusd #gold #nasdaq #dubaitrading",
+    "channel": "shoaibkhandxb",
+    "url": "https://youtube.com/watch?v=NXRQsv2yhL4",
+    "published": "2026-08-27T19:38:23Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "McGinley Dynamic #trading #btc #forex #gold #xauusd #crypto #eurusd #cryptotrading #priceaction",
+    "channel": "BVault",
+    "url": "https://youtube.com/watch?v=J7B0RIHzph0",
+    "published": "2026-08-27T18:50:32Z",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.4
+  },
+  {
+    "source": "youtube",
+    "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+    "channel": "Live Forex Trading",
+    "url": "https://youtube.com/watch?v=ffKWF777FZo",
+    "published": "2026-08-27T18:10:16Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "DAY 3 \ud83d\udd25 | GOLD ME LIVE TRADE \ud83d\udcc8 #gold #goldtrading #xauusd #forex #trading #liquidity #trader",
+    "channel": "Abhay Trading",
+    "url": "https://youtube.com/watch?v=LUj8aZwypi4",
+    "published": "2026-08-27T18:00:01Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.35
+  },
+  {
+    "source": "youtube",
+    "title": "Live XAUUSD - Gold Trading - My Strategy - 27/08/2026 #gold, #xauusd, livetrading, #btc, #forex",
+    "channel": "Gold & Bitcoin",
+    "url": "https://youtube.com/watch?v=exBj-p9CMHA",
+    "published": "2026-08-27T17:49:46Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "Moving Average Crossover #trading #btc #forex #gold #xauusd #crypto #eurusd #cryptotrading",
+    "channel": "BVault",
+    "url": "https://youtube.com/watch?v=ZXr95BFNAT4",
+    "published": "2026-08-27T17:45:27Z",
+    "symbols": [
+      "XAUUSD",
+      "EURUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "moving average",
+      "SMA"
+    ],
+    "confidence": 0.7
+  },
+  {
+    "source": "youtube",
+    "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+    "channel": "Live Forex Trading",
+    "url": "https://youtube.com/watch?v=FqvBi8qyyFc",
+    "published": "2026-08-27T17:42:13Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  },
+  {
+    "source": "youtube",
+    "title": "How to Trade Gold for Beginners | XAUUSD Key Zone &amp; FVG Setup #goldtrading  #GoldTradingForBeginners",
+    "channel": "MarketRush",
+    "url": "https://youtube.com/watch?v=nQimFkDdVh4",
+    "published": "2026-08-27T17:30:25Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [
+      "FVG",
+      "zone"
+    ],
+    "confidence": 0.5
+  },
+  {
+    "source": "youtube",
+    "title": "\ud83d\udd34 Live XAUUSD Trading | Gold Scalping and Day Trading Strategy | Forex Live Signals",
+    "channel": "Steve Stocks",
+    "url": "https://youtube.com/watch?v=05ncIbw6Nhc",
+    "published": "2026-08-27T16:55:42Z",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "timeframes": [],
+    "patterns": [],
+    "confidence": 0.2
+  }
+]

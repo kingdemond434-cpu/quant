@@ -7441,5 +7441,178 @@
    "win_rate": 0.427,
    "symbol": "NZDUSD"
   }
+ },
+ {
+  "id": "ext-20260827-49fe3a",
+  "geneology_id": "external:ext_forexfactory_NAS100_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NAS100 session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1625 exp=0.0245R t=0.76 pf=1.042 maxDD=-43.43R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1625,
+   "exp_r": 0.0245,
+   "t_stat": 0.76,
+   "profit_factor": 1.042,
+   "max_dd_r": -43.43,
+   "win_rate": 0.4154,
+   "symbol": "NAS100"
+  }
+ },
+ {
+  "id": "ext-20260827-66d652",
+  "geneology_id": "external:ext_forexfactory_NAS100_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NAS100 session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1625 exp=0.0236R t=0.68 pf=1.039 maxDD=-46.03R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1625,
+   "exp_r": 0.0236,
+   "t_stat": 0.68,
+   "profit_factor": 1.039,
+   "max_dd_r": -46.03,
+   "win_rate": 0.3908,
+   "symbol": "NAS100"
+  }
+ },
+ {
+  "id": "ext-20260827-4d81db",
+  "geneology_id": "external:ext_shipping_NZDUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDUSD asia_momentum params={'rr': 2.0} screened at n=1855 exp=-0.0244R t=-0.66 pf=0.962 maxDD=-98.94R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1855,
+   "exp_r": -0.0244,
+   "t_stat": -0.66,
+   "profit_factor": 0.962,
+   "max_dd_r": -98.94,
+   "win_rate": 0.3795,
+   "symbol": "NZDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-0ae1eb",
+  "geneology_id": "external:ext_shipping_NZDUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDUSD asia_momentum params={'rr': 2.5} screened at n=1855 exp=-0.0254R t=-0.65 pf=0.962 maxDD=-112.37R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1855,
+   "exp_r": -0.0254,
+   "t_stat": -0.65,
+   "profit_factor": 0.962,
+   "max_dd_r": -112.37,
+   "win_rate": 0.3553,
+   "symbol": "NZDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-9bcc06",
+  "geneology_id": "external:ext_github_XAUUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD asia_momentum params={'rr': 2.5} screened at n=1690 exp=-0.0227R t=-0.6 pf=0.965 maxDD=-100.72R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1690,
+   "exp_r": -0.0227,
+   "t_stat": -0.6,
+   "profit_factor": 0.965,
+   "max_dd_r": -100.72,
+   "win_rate": 0.3361,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-12a5cb",
+  "geneology_id": "external:ext_forexfactory_AUDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD session_range_breakout params={'rr': 2.0, 'wait_bars': 8} screened at n=1985 exp=0.0106R t=0.51 pf=1.028 maxDD=-38.41R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1985,
+   "exp_r": 0.0106,
+   "t_stat": 0.51,
+   "profit_factor": 1.028,
+   "max_dd_r": -38.41,
+   "win_rate": 0.4695,
+   "symbol": "AUDCAD"
+  }
+ },
+ {
+  "id": "ext-20260827-d5665c",
+  "geneology_id": "external:ext_forexfactory_AUDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1985 exp=0.0087R t=0.41 pf=1.023 maxDD=-51.07R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1985,
+   "exp_r": 0.0087,
+   "t_stat": 0.41,
+   "profit_factor": 1.023,
+   "max_dd_r": -51.07,
+   "win_rate": 0.4675,
+   "symbol": "AUDCAD"
+  }
+ },
+ {
+  "id": "ext-20260827-31dfb7",
+  "geneology_id": "external:ext_forexfactory_NAS100_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NAS100 session_range_breakout params={'rr': 1.5, 'wait_bars': 8} screened at n=1625 exp=-0.0068R t=-0.24 pf=0.988 maxDD=-44.15R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T19:50:00.735866+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1625,
+   "exp_r": -0.0068,
+   "t_stat": -0.24,
+   "profit_factor": 0.988,
+   "max_dd_r": -44.15,
+   "win_rate": 0.4517,
+   "symbol": "NAS100"
+  }
  }
 ]

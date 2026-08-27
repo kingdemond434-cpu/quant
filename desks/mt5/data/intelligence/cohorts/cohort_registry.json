@@ -5955,5 +5955,51 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"1340c1077fa7f079": {
+"t0": "2026-08-27T20:23:51+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "feliciien/workfusionapp3",
+"url": "https://github.com/feliciien/workfusionapp3",
+"text": "Official Workfusionapp product repository for AI-assisted MT4/MT5 builder tooling, compiler diagnostics, EA readiness checks, and SaaS workflows.",
+"symbols": [],
+"found_at": "2026-08-27T20:23:45+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T19:50:18Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5fe84acf9643470f": {
+"t0": "2026-08-27T20:23:51+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "TheFractalyst/MetatraderMCP",
+"url": "https://github.com/TheFractalyst/MetatraderMCP",
+"text": "MCP server for MetaTrader MQL4/MQL5 documentation (4853 entries). Provides AI assistants with complete MQL reference for Expert Advisor development.",
+"symbols": [],
+"found_at": "2026-08-27T20:23:45+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-27T19:28:04Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
