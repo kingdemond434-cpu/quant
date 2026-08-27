@@ -39,3 +39,19 @@ def test_source_shift_bug_is_dormant_but_session_relative_repair_changes_trade()
     assert repaired and repaired[0].side == -1
     assert source[0].time == pd.Timestamp("2026-01-05 07:00", tz="UTC")
     assert repaired[0].time == pd.Timestamp("2026-01-05 07:05", tz="UTC")
+    assert source[0].ttl_bars == repaired[0].ttl_bars == 288
+
+
+def test_late_break_can_still_form_a_retest_but_not_an_immediate_true_break() -> None:
+    frame = _m5_day()
+    frame.loc[pd.Timestamp("2026-01-05 07:00", tz="UTC")] = [100.0, 100.1, 99.9, 100.0]
+    frame.loc[pd.Timestamp("2026-01-05 07:05", tz="UTC")] = [100.0, 100.1, 99.9, 100.0]
+    # The public freshness limit applies only to the immediate true-break entry. Its state
+    # machine still registers a later displacement and may trade a subsequent retest.
+    frame.loc[pd.Timestamp("2026-01-05 07:50", tz="UTC")] = [100.5, 102.0, 100.4, 101.8]
+    frame.loc[pd.Timestamp("2026-01-05 07:55", tz="UTC")] = [101.2, 101.4, 100.95, 101.1]
+
+    signals = family_lvc_asia_london(frame, bias_mode="off", max_range_atr=20.0)
+
+    assert signals and signals[0].side == 1
+    assert signals[0].time == pd.Timestamp("2026-01-05 07:55", tz="UTC")

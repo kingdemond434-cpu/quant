@@ -363,6 +363,7 @@ def family_lvc_asia_london(
     reversal_overshoot_atr: float = 0.50,
     reversal_return_atr: float = 1.00,
     reversal_stop_buffer_atr: float = 0.20,
+    ttl_bars: int = 288,
 ) -> list[Signal]:
     """Source-faithful London Volatility Capture challenger on native M5 bars.
 
@@ -370,7 +371,9 @@ def family_lvc_asia_london(
     the London-window start, making a three-bar M5 lookback impossible across the one-hour gap.
     ``session_relative`` is the preregistered repair: "recent" means within the last three bars
     *of the Asia session*. ``off`` is the required ablation. All other defaults are pinned to
-    public blob ``2868957900aa9a06e8d9eb6523f938947210f6e9``.
+    public blob ``2868957900aa9a06e8d9eb6523f938947210f6e9``. The source has no default
+    session-close exit, so ``ttl_bars`` is an explicit one-day replay bound rather than a hidden
+    one-hour exit assumption.
     """
     if bias_mode not in {"off", "source_shift", "session_relative"}:
         return []
@@ -431,8 +434,6 @@ def family_lvc_asia_london(
         consumed = False
         for bars_from_start, pos_raw in enumerate(trade):
             pos = int(pos_raw)
-            if bars_from_start > max_breakout_bars:
-                break
             av = float(atr.iloc[pos])
             if not np.isfinite(av) or av <= 0 or not (min_range_atr <= span / av <= max_range_atr):
                 continue
@@ -467,7 +468,7 @@ def family_lvc_asia_london(
                                 and returned >= reversal_return_atr * av):
                             stop = float(setup["extreme"]) + reversal_stop_buffer_atr * av
                             signals.append(Signal(time=d.index[pos], side=-1, stop=stop,
-                                                  target=asia_low, ttl_bars=12,
+                                                  target=asia_low, ttl_bars=ttl_bars,
                                                   tag="lvc_asia_london", trigger=None,
                                                   wait_bars=1))
                             consumed = True
@@ -480,7 +481,7 @@ def family_lvc_asia_london(
                                 and returned >= reversal_return_atr * av):
                             stop = float(setup["extreme"]) - reversal_stop_buffer_atr * av
                             signals.append(Signal(time=d.index[pos], side=1, stop=stop,
-                                                  target=asia_high, ttl_bars=12,
+                                                  target=asia_high, ttl_bars=ttl_bars,
                                                   tag="lvc_asia_london", trigger=None,
                                                   wait_bars=1))
                             consumed = True
@@ -498,19 +499,19 @@ def family_lvc_asia_london(
                         stop = close - breakout_side * true_break_stop_atr * av
                         target = close + breakout_side * true_break_tp_atr * av
                         signals.append(Signal(time=d.index[pos], side=breakout_side, stop=stop,
-                                              target=target, ttl_bars=12,
+                                              target=target, ttl_bars=ttl_bars,
                                               tag="lvc_asia_london", trigger=None,
                                               wait_bars=1))
                         consumed = True
                         break
-                if elapsed == 0:
+                if elapsed == 0 and bars_from_start <= max_breakout_bars:
                     opposite_recent = bias_active(-breakout_side, bars_from_start)
                     prefer_reversal = bias_active(breakout_side, bars_from_start)
                     if not opposite_recent and not prefer_reversal:
                         stop = close - breakout_side * true_break_stop_atr * av
                         target = close + breakout_side * true_break_tp_atr * av
                         signals.append(Signal(time=d.index[pos], side=breakout_side, stop=stop,
-                                              target=target, ttl_bars=12,
+                                              target=target, ttl_bars=ttl_bars,
                                               tag="lvc_asia_london", trigger=None,
                                               wait_bars=1))
                         consumed = True
