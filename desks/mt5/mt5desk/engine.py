@@ -64,7 +64,7 @@ class Costs:
         return (self.spread_per_lot
                 + self.commission_per_lot * 2.0 * float(self.quote_per_account))
 
-    def stressed(self, spread_mult: float) -> "Costs":
+    def stressed(self, spread_mult: float) -> Costs:
         """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
 
         THE DEFECT THIS CLOSES, measured live 2026-08-27 on the certificate path. Every stress
@@ -86,7 +86,7 @@ class Costs:
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 2.25) -> "Costs":
+                    commission_per_lot: float = 2.25) -> Costs:
         """Costs for one symbol from its universe.json metadata.
 
         `mult` scales the SPREAD ONLY. Commission is contractual and does not
@@ -229,7 +229,16 @@ def run_backtest(
     idx = df.index
     # epoch-ns lookups: tz-proof. `asi8` is UTC epoch-ns for an aware index and wall-clock ns for
     # a naive one, which is exactly what the previous astype chain produced for each.
-    idx_ns = np.asarray(idx.asi8, dtype="int64")
+    # UNIT-PROOF, NOT JUST TZ-PROOF. `asi8` returns the index's OWN resolution: nanoseconds for
+    # datetime64[ns], but MILLISECONDS for datetime64[ms] -- and `pd.Timestamp(...).value` below
+    # is always nanoseconds. A producer rewrote every universe parquet with a ms-resolution index
+    # (2026-08-27), so `searchsorted` compared 1.52e12 against 1.52e18 and placed EVERY signal
+    # past the end of the array: locs == len(idx) for all of them, every signal discarded as
+    # out-of-range, ZERO trades from 4,360 valid signals -- silently, on every cell, on both
+    # boxes. It read downstream as "this cell has too few observations to judge", which is how it
+    # survived: the gauntlet dropped 118 of 122 cells as untestable and nothing said why.
+    # `as_unit("ns")` pins the comparison to one resolution regardless of what wrote the file.
+    idx_ns = np.asarray(pd.DatetimeIndex(idx).as_unit("ns").asi8, dtype="int64")
     sig_ns = np.array(
         [pd.Timestamp(s.time).value for s in signals], dtype="int64"
     )

@@ -171,6 +171,10 @@ def _h1(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         df.index = (df.index.tz_localize("UTC") if df.index.tz is None
                     else df.index.tz_convert("UTC"))
+        # AND ONE RESOLUTION. A ms-resolution index makes `asi8` return milliseconds while every
+        # Timestamp.value is nanoseconds, which silently voided every backtest fill (see
+        # engine.run_backtest). Bars leave here as tz-aware UTC at ns, always.
+        df.index = df.index.as_unit("ns")
     if hasattr(df.index, "freq") and df.index.freq is not None:
         return df
     freq = pd.infer_freq(df.index)

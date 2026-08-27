@@ -36,6 +36,12 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/mt5desk/gateway.py": "run_family_sleeves",
     "desks/mt5/mt5desk/sizing.py": "BASE_RISK_FRAC",
     "desks/mt5/research/promoter.py": "authorized_specs",
+    # THE ADMISSION DOOR ITSELF was unprotected: `authorized_runs` (params-as-identity, the
+    # function the forward engine enrols through) vanished from the desk copy twice on
+    # 2026-08-27, and each time enrolment silently fell back to zero certificate clocks. A door
+    # that decides what may reach live capital belongs in this registry more than most.
+    "desks/mt5/research/shadow_admission.py": ("authorized_runs", "authorized_specs",
+                                               "all_ten_pass", "is_exact_policy"),
     "desks/mt5/research/qquant_shadow.py": "PROMOTION_CANDIDATE",
     "desks/mt5/moat/moat_recorder.py": "copy_ticks_range",
     "desks/mt5/moat/moat_fence.py": "symbols_floor",
