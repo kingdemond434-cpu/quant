@@ -13,10 +13,16 @@ import MetaTrader5 as mt5
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from mt5desk.config import terminal_path
+from mt5desk.config import desk_root, terminal_path
 
 TERMINAL = terminal_path()
-OUT = Path(r"C:\Users\dell\mt5-research\data\universe")
+# PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
+# docstring records that twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant the desk
+# could only ever run on one machine under one username"). This one never adopted it, so on the
+# trading box it targeted a directory that does not exist -- which is why NOTHING on that box
+# refreshes its bars and most of its 295 parquets were ~28h stale on 2026-08-27. `MT5_DESK_ROOT`
+# still overrides, so a machine keeping its store elsewhere sets one env var.
+OUT = desk_root() / "data" / "universe"
 OUT.mkdir(parents=True, exist_ok=True)
 
 CANDIDATES = [

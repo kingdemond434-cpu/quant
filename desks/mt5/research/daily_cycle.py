@@ -134,6 +134,23 @@ def _markout() -> None:
     }, indent=2), encoding="utf-8")
 
 
+def _refresh_bars() -> None:
+    """Extend every cached H1 parquet from the live terminal, before anything reads bars.
+
+    NOTHING SCHEDULED THIS. `refresh_tail` globs the whole store, so its SCOPE was never the
+    problem -- its output path was hardcoded to a third machine's home directory, so on the desk
+    box it refreshed nothing and no task ran it. Measured 2026-08-27: of 295 parquets on that box
+    only 49 had been written that day, 195 dated 08-26 and 51 dated 08-22, so the gauntlet was
+    screening most of the universe on bars up to five days old.
+    """
+    import refresh_tail
+
+    rc = refresh_tail.main()
+    # rc=2 is "no terminal on this box", the honest answer everywhere but the desk box.
+    if rc not in (0, 2):
+        raise RuntimeError(f"refresh_tail returned {rc}")
+
+
 def _cost_fields() -> None:
     """Fill `tick_value` for any registry symbol that lacks one, from the live terminal.
 
@@ -208,7 +225,7 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
-STEPS = (("cost_fields", _cost_fields),
+STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),

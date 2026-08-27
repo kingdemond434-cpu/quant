@@ -10,16 +10,27 @@ from pathlib import Path
 import MetaTrader5 as mt5
 import pandas as pd
 
-OUT_DIR = Path(r"C:\Users\dell\mt5-research\data\mt5_universe")
+# PATHS COME FROM `desk_root()`, NEVER A USERNAME (LAWS §1 anti-hardcode; the helper's own
+# docstring records that twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant the desk
+# could only ever run on one machine under one username"). This one never adopted it, so on the
+# trading box it targeted a directory that does not exist -- which is why NOTHING on that box
+# refreshes its bars and most of its 295 parquets were ~28h stale on 2026-08-27. `MT5_DESK_ROOT`
+# still overrides, so a machine keeping its store elsewhere sets one env var.
+OUT_DIR = desk_root() / "data" / "universe"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from mt5desk.config import desk_root  # noqa: E402
 from mt5desk.universe_registry import cost_fields_from_symbol_info, merge  # noqa: E402
 
 UNIVERSE_OUT = OUT_DIR / "universe.json"
 
 
-PARQUET_DIR = OUT_DIR / "parquets"
+# ONE LAYOUT. The desk keeps H1 bars as `data/universe/<SYM>_H1.parquet` -- that is where
+# `refresh_tail` reads them and where all 295 on the desk box actually live. A `parquets/`
+# subdirectory would make this writer's `existing` check see an empty store and
+# re-download the entire universe into a directory nothing else reads.
+PARQUET_DIR = OUT_DIR
 PARQUET_DIR.mkdir(parents=True, exist_ok=True)
 
 mt5.shutdown()

@@ -290,3 +290,51 @@ def test_cost_refresh_runs_before_anything_that_prices(monkeypatch) -> None:
     assert steps.index('"cost_fields"') < steps.index('"reconcile"')
     # rc=2 is "no terminal on this box" and must not fail the cycle
     assert "if rc not in (0, 2):" in src.split("def _cost_fields", 1)[1].split("def ", 1)[0]
+
+
+def test_no_bar_producer_targets_a_username() -> None:
+    """`desk_root()` exists because twenty-one files hardcoded `C:\\Users\\dell\\...`, "which meant
+    the desk could only ever run on one machine under one username". Three bar/universe producers
+    never adopted it, so on the trading box they targeted a directory that does not exist -- which
+    is why NOTHING on that box refreshed its bars and most of its 295 parquets were ~28h stale."""
+    for rel in ("scripts/refresh_tail.py", "scripts/download_all_symbols.py",
+                "research/fetch_universe.py"):
+        src = (_DESK / rel).read_text(encoding="utf-8")
+        code = "\n".join(ln for ln in src.splitlines()
+                         if not ln.lstrip().startswith("#"))
+        assert "Users\\dell" not in code, f"{rel} still targets a hardcoded username"
+        assert "desk_root()" in code, f"{rel} does not resolve its output from desk_root()"
+
+
+def test_bar_producers_agree_on_one_layout() -> None:
+    """A writer that puts bars somewhere the reader does not look re-downloads the universe."""
+    dl = (_DESK / "scripts" / "download_all_symbols.py").read_text(encoding="utf-8")
+    rt = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
+    assert "PARQUET_DIR = OUT_DIR\n" in dl
+    assert 'OUT / f"{sym}_H1.parquet"' in rt
+
+
+def test_bar_refresh_cannot_tear_down_the_daily_cycle() -> None:
+    """`SystemExit` is a BaseException. A bare `sys.exit(1)` in a daily-cycle step would tear
+    down the ENTIRE cycle -- promotion chain included -- because a terminal happened to be shut."""
+    src = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
+    body = src.split("def main()", 1)[1].split('if __name__', 1)[0]
+    assert "sys.exit(" not in body, "refresh_tail.main still exits instead of returning"
+    assert "return 2" in body and "return 0" in body
+
+
+def test_bar_refresh_runs_before_costs_and_before_anything_reads_bars() -> None:
+    src = (_DESK / "research" / "daily_cycle.py").read_text(encoding="utf-8")
+    steps = src.split("STEPS = (", 1)[1]
+    assert steps.index('"refresh_bars"') < steps.index('"cost_fields"')
+    assert steps.index('"refresh_bars"') < steps.index('"shadow"')
+
+
+def test_bar_refresh_restores_a_naive_index_instead_of_corrupting_it() -> None:
+    """Concatenating a naive DatetimeIndex onto an aware one yields an object-dtype index, and
+    `to_parquet` would then write a file no reader can use -- destroying the history it was
+    called to extend. 173 of 197 parquets in this tree were tz-naive."""
+    src = (_DESK / "scripts" / "refresh_tail.py").read_text(encoding="utf-8")
+    fn = src.split("def refresh_symbol", 1)[1].split("\ndef ", 1)[0]
+    assert 'old.index.tz_localize("UTC")' in fn
+    assert fn.index("tz_localize") < fn.index("pd.concat([old, new])")
