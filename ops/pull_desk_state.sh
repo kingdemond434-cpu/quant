@@ -45,9 +45,38 @@ scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
 # failure mode it exists to catch.
 scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
     desks/mt5/reports/execution_quality.json 2>/dev/null || true
-for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json moat_coverage.json; do
+for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json moat_coverage.json stall_watch.json; do
   scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
 done
+
+# THE UNIVERSE REGISTRY TRAVELS BACK, NEVER-SHRINKING. Only the desk box can read the terminal,
+# so it is the sole producer of tick_value/contract_size for all 251 symbols -- and every
+# consumer here (merge, the searchers' symbol list, breadth, costing) reads the VPS copy. Pulled
+# to a temp file and installed ONLY when it holds at least as many symbols as the copy in hand:
+# the registry ratchets (L1.50) and a truncated or mid-write file must never become the local
+# truth (measured 2026-08-27: a rogue writer left a 23-row stump that a sync then propagated).
+_UT=desks/mt5/data/universe/universe.json.tmp
+if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/universe/universe.json" "$_UT" 2>/dev/null; then
+  if python3 - "$_UT" desks/mt5/data/universe/universe.json <<'PY'
+import json, sys
+def n(p):
+    try:
+        d = json.load(open(p))
+        return len(d) if isinstance(d, dict) else 0
+    except Exception:
+        return 0
+new, cur = n(sys.argv[1]), n(sys.argv[2])
+print(f"universe pull: desk={new} local={cur}")
+sys.exit(0 if new and new >= cur else 1)
+PY
+  then
+    mv "$_UT" desks/mt5/data/universe/universe.json
+    echo "universe registry installed from the desk"
+  else
+    echo "universe pull REFUSED: desk copy is smaller than the local registry -- keeping local"
+  fi
+fi
+rm -f "$_UT" 2>/dev/null || true
 
 rm -f web/desk_state.json.tmp desks/mt5/reports/shadow/*.tmp desks/mt5/reports/*.tmp 2>/dev/null
 if [ "$ok" = "1" ]; then
