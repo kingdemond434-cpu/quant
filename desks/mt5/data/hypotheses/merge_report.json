@@ -1,23 +1,34 @@
 {
- "merged_at": "2026-08-27T01:56:54+00:00",
- "pipeline_started_at": "2026-08-27T01:05:00+00:00",
+ "merged_at": "2026-08-27T02:23:14+00:00",
+ "pipeline_started_at": null,
  "per_source": {
   "external_backtest_results.json": 0,
   "miner_candidates.json": 122,
-  "edge_search_results.json": -2,
-  "orthogonal_candidates.json": -2
+  "edge_search_results.json": 2760,
+  "orthogonal_candidates.json": 457,
+  "requeue_named.json": 0
  },
  "source_state": {
   "external_backtest_results.json": "FRESH",
   "miner_candidates.json": "FRESH",
-  "edge_search_results.json": "STALE_SKIPPED",
-  "orthogonal_candidates.json": "STALE_SKIPPED"
+  "edge_search_results.json": "FRESH",
+  "orthogonal_candidates.json": "FRESH",
+  "requeue_named.json": "FRESH"
  },
- "total": 122,
+ "total": 3339,
  "families": {
   "calendar_month": 2,
+  "correlation_regime": 47,
   "cot_positioning": 7,
-  "event_reaction": 113
+  "cross_asset_residual": 99,
+  "discovered": 2760,
+  "drawdown_conditional": 23,
+  "event_reaction": 113,
+  "overnight_gap_decay": 93,
+  "relative_value": 58,
+  "turn_of_month": 48,
+  "vol_mean_reversion": 35,
+  "vol_transition": 54
  },
  "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
 }

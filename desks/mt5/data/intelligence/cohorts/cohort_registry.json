@@ -5558,5 +5558,35 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"660a42bc98624c7b": {
+"t0": "2026-08-27T02:24:39+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1414868/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1414868/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-27T02:23:14+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"stats": {
+"return": 15.0,
+"drawdown": 54.0,
+"followers": 2.0,
+"age": 303.0
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

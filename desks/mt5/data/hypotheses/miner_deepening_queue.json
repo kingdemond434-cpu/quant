@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T01:06:50+00:00",
+ "built_at": "2026-08-27T02:15:05+00:00",
  "tasks": [
   {
    "source": "github",
@@ -1858,6 +1858,14 @@
   {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation",
+   "url": "http://arxiv.org/abs/2608.25844v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Harvesting the Volatility Risk Premium: A Learning-to-Rank Approach",
    "url": "http://arxiv.org/abs/2608.24786v1",
    "symbols": [],
@@ -1891,7 +1899,7 @@
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Equity Strategy Backtesting: Luck or Edge? The MinervaScore as a Statistical Robustness Grade",
-   "url": "http://arxiv.org/abs/2608.23808v1",
+   "url": "http://arxiv.org/abs/2608.23808v2",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2048,18 +2056,90 @@
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Buy the Rumor, Sell the News: When Is News Priced In?",
-   "url": "http://arxiv.org/abs/2608.14014v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "universe registry carries no swap fields yet -- run expand_universe.py on the desk box, which records swap_long/swap_short from symbol_info",
    "url": "/home/quant/quant-platform/desks/mt5/data/universe/universe.json",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "jeanettecapital5730/MT5-Risk-Management-EA",
+   "url": "https://github.com/jeanettecapital5730/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Gregorytestate3889/MT5-Forex-Session-indicator",
+   "url": "https://github.com/Gregorytestate3889/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+   "url": "https://github.com/Singni725/EUROUSD-EMA-Cross-MQL5-EA",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2106,8 +2186,32 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Eltano1985/tradememory-protocol",
+   "url": "https://github.com/Eltano1985/tradememory-protocol",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Trujillofa/mt5-arch-integration",
+   "url": "https://github.com/Trujillofa/mt5-arch-integration",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
    "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2140,78 +2244,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZrakD/Mt5-Forex-position-size-calculator",
    "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "bipbopcompany-droid/Risk-Nexus-Command",
-   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
-   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
-   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Eltano1985/tradememory-protocol",
-   "url": "https://github.com/Eltano1985/tradememory-protocol",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Trujillofa/mt5-arch-integration",
-   "url": "https://github.com/Trujillofa/mt5-arch-integration",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2663,8 +2695,8 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Aliakhavan72",
-   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "title": "@AlphaTrader2020",
+   "url": "https://my.litefinance.org/traders/AlphaTrader2020",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4206,7 +4238,37 @@
   {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD SETUP",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "What are the worst strategies?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Gold overbought ???",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD SETUP 26th August",
    "url": "",
    "symbols": [
     "XAUUSD"
@@ -4224,16 +4286,6 @@
    "mechanism_tags": [
     "EMA"
    ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD SETUP 26th August",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
   },
   {
    "source": "reddit",
@@ -4328,16 +4380,6 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "AUDNZD historically bullish in month 8 (avg 0.002%)",
-   "url": "",
-   "symbols": [
-    "AUDNZD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "seasonality",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "UnitedHealth historically bullish in month 8 (avg 0.042%)",
    "url": "",
    "symbols": [
@@ -4408,7 +4450,7 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "BTCUSD historically bullish in month 8 (avg 0.100%)",
+   "title": "BTCUSD historically bullish in month 8 (avg 1.410%)",
    "url": "",
    "symbols": [
     "BTCUSD"
@@ -4432,16 +4474,6 @@
    "url": "",
    "symbols": [
     "USDILS"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "seasonality",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "GBPJPY historically bullish in month 8 (avg 0.009%)",
-   "url": "",
-   "symbols": [
-    "GBPJPY"
    ],
    "mechanism_tags": []
   },
@@ -4482,6 +4514,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Point72 has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "D.E. Shaw has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -4541,230 +4584,6 @@
    "symbols": [
     "NAS100",
     "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "#forex #riskmanagement #xauusd #mql5 #mt4 #forextrading #mt5 #expertadvisor #mql4 #tradingstrategy",
-   "url": "https://youtube.com/watch?v=EzojyhQ_D3Q",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "LIVE GOLD TRADING |  GOLD &amp; BTC LIVE ANALYSIS | 25 AUG 2026 #livetrading  #gold  | @sameersinghfx",
-   "url": "https://youtube.com/watch?v=VFQIcFkSKbw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "RSI"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "AI Algo 2.5 Indicator \ud83d\udd25 | XAUUSD Gold BUY &amp; SELL Signals | Target 1 &amp; Target 2 &amp; Target 3 |",
-   "url": "https://youtube.com/watch?v=XBmdeWGzduw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "GOLD MARKET UPDATE \ud83d\udd25 | XAUUSD Yesterday Outlook | Key Levels &amp; Buy/Sell Zones | Gold Analysis",
-   "url": "https://youtube.com/watch?v=2kfEjHY6HkU",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "zone"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Trade gold xauusd - Buy #xauusd #buygold #trading",
-   "url": "https://youtube.com/watch?v=ahgKCsZuNpE",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "$190 \u27a1\ufe0f $112K+ \ud83d\udd25 XAUUSD Gold Trading Journey |  #trading  #bestgoldforexsignals  #goldmarket",
-   "url": "https://youtube.com/watch?v=qSA0_YnKnvc",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "What is Forex Trading? | My Engulfing Strategy &amp; Favorite Pair Gold (XAUUSD)",
-   "url": "https://youtube.com/watch?v=1kjpCwM36Fg",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "engulfing"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "LIVE XAUUSD TRADING | GOLD , BTC | Live Forex Trading \ud83d\ude80  @BullishMasterFX @bullishbullmaster",
-   "url": "https://youtube.com/watch?v=uoaEM1uCjg0",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83e\udd47 GOLD TRADE: +150 PIPS PROFIT! \ud83c\udfaf\ud83d\udd25 | XAUUSD Trade",
-   "url": "https://youtube.com/watch?v=YNBmxIgHLFE",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "the logic trader What\u2019s your view on Gold today: BUY or SELL? Comment below! \ud83d\udc47 | XAUUSD",
-   "url": "https://youtube.com/watch?v=E_nPsL9Y-8s",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\u3010USD/JPY  \u5f85\u3064\u3082\u76f8\u5834\u30112026/8/25   #USDJPY\u3000#\u30c9\u30eb\u5186\u3000#FX\u3000#\u30c8\u30ec\u30fc\u30c9",
-   "url": "https://youtube.com/watch?v=NwmjgtYwyxs",
-   "symbols": [
-    "USDJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 24/08/2026  #gold #liveforextrading,",
-   "url": "https://youtube.com/watch?v=k-1UyB_BLBk",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "21 AUG  l Ravvi Soni I Live Trading Session I   #forex, #xauusd, #trading #bitcoin",
-   "url": "https://youtube.com/watch?v=oASNEkaEsNs",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34 GOLD XAUUSD LIVE TRADING FROM TORONTO | $4,500 Breakout or Fakeout? | Gold News &amp; Analysis",
-   "url": "https://youtube.com/watch?v=2Cm9HdunQeI",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "This Gold Scalping Strategy Prints Money on the 1-Minute Chart (XAUUSD DragonBreak)",
-   "url": "https://youtube.com/watch?v=aStLB0P_u0c",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=Bt9kgTXFtpg",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=keFUJeaDIls",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34 BTC Live trading 363 / 26.08.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
-   "url": "https://youtube.com/watch?v=5V1HH0zIXRg",
-   "symbols": [
-    "GBPJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD \ud83d\udd34Live 25.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=e9FwV61Aivw",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAU/USD Live trading | 24.08.2026 #xauusd #trading #crypto #updownfx #nfp #forex #gold #cpi",
-   "url": "https://youtube.com/watch?v=4gUgIgwd7Hw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD \ud83d\udd34Live 24.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=saqfAN8KkjU",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
    ],
    "mechanism_tags": []
   }
