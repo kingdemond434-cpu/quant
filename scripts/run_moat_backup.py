@@ -70,6 +70,14 @@ _STORES: dict[str, tuple[str, str]] = {
     # silently again for any store.
     "alpha_registry": ("data/alpha_registry.sqlite", "sqlite"),
     "capital_events": ("data/capital_events.jsonl", "file"),
+    # FORWARD EVIDENCE (added 2026-08-27): the 14-day clocks are time that cannot be re-earned.
+    # The registry was re-based to day zero three times in 32 hours before atomic writes fixed
+    # the writer -- and had these been in the backup, the evidence would have been recoverable
+    # instead of gone. Every store here rides the existing sha256 manifest + per-backup drill.
+    "forward_registry": ("desks/mt5/data/sleeve_registry.json", "file"),
+    "shadow_state": ("desks/mt5/reports/shadow/shadow_state.json", "file"),
+    "shadow_ledgers": ("desks/mt5/reports/shadow", "tree"),
+    "universal_canon": ("desks/mt5/reports/UNIVERSAL_SURVIVORS.json", "file"),
     "cost_model": ("data/cost_model.json", "file"),
     "graveyard": ("docs/graveyard.md", "file"),
 }

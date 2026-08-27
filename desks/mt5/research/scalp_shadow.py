@@ -188,6 +188,12 @@ def run(now: datetime | None = None) -> dict:
         else:
             status = "KILL"
         state["sleeves"][name] = {
+            # THE CLOCK IS THE PREREGISTRATION, NEVER "NOW". These cells were declared when the
+            # lane's SHADOW_START was committed; a row-level stamp of the current wall clock on
+            # an already-declared cell DISCARDS every legitimate forward day since declaration
+            # (measured 2026-08-27: rows with 6 true forward days re-stamped to day 0). A row
+            # keeps an existing freeze; a row without one gets the lane preregistration.
+            "forward_start": _fs or SHADOW_START.isoformat(),
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
             "expectancy_r": exp, "max_drawdown_r": max_dd,

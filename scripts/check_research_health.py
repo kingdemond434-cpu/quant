@@ -157,6 +157,30 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             breaches.append(f"GAUNTLET: canon SHRANK {last_n} -> {m['certs_n']} -- a wipe got "
                             f"past the writer seals; restore from canon before anything else")
 
+    # --- data feeds: a starved input idles whole families while reading as quiet ground
+    # (measured: macro 5 days stale -> macro_conditional produced zero signals on 297 straight
+    # passes). Each feed owes its own freshness; fixers re-run the producer, and the producers
+    # now carry alternate foreign-ecosystem routes (DBnomics mirror) when a primary blocks.
+    for label, path, max_h in (
+            ("DATA-MACRO", DESK / "data" / "macro_state.json", 26.0),
+            ("DATA-COT", ROOT / "data" / "cot_zcache.parquet", 8 * 24.0),
+            ("DATA-EVENTS", DESK / "data" / "intelligence" / "ff_calendar_vintage", 26.0)):
+        try:
+            if path.is_dir():
+                newest = max((f.stat().st_mtime for f in path.iterdir()), default=None)
+                f_age = ((now.timestamp() - newest) / 3600.0) if newest else None
+            else:
+                f_age = _mtime_age_h(path, now)
+        except OSError:
+            f_age = None
+        m[label.lower().replace("-", "_") + "_age_h"] = (round(f_age, 2)
+                                                          if f_age is not None else None)
+        if f_age is None or f_age > max_h:
+            breaches.append(f"{label}: {path.name} is "
+                            f"{'missing' if f_age is None else str(round(f_age, 1)) + 'h old'} "
+                            f"(ceiling {max_h:.0f}h) -- the families reading it are starving "
+                            f"while the staleness reads as quiet ground")
+
     # --- certificates in the pipeline: the same-day fence is the authority on
     # CERTIFIED-NOT-ENROLLED / UNSTAMPED / IDLE-CLOCK; its verdict rides every pulse so the
     # dashboard shows certificate wiring at the same cadence as everything else.

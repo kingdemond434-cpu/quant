@@ -177,6 +177,21 @@ def _ledger_stats(rows: list[dict[str, Any]]) -> dict[str, Any]:
     return out
 
 
+def _funnel_docket() -> int | None:
+    try:
+        rows = json.loads((DESK / "data" / "hypotheses" / "external_survivors.json")
+                          .read_text("utf-8"))
+        return len(rows) if isinstance(rows, list) else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _gate_stat(key: str) -> int | None:
+    doc = _read(DESK / "reports" / "universal_gates_external.json")
+    v = doc.get(key)
+    return int(v) if isinstance(v, (int, float)) else None
+
+
 def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     """Stage counts for the ONE pipeline: discovered -> backtested -> certified -> forward -> live."""
     hyp = None
@@ -193,7 +208,8 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
     forward, promo_ready, live_rows = [], 0, {}
     for path in (DESK / "reports" / "shadow" / "shadow_state.json",
                  DESK / "reports" / "shadow" / "qquant_shadow_state.json",
-                 DESK / "reports" / "shadow" / "scalp_shadow_state.json"):
+                 DESK / "reports" / "shadow" / "scalp_shadow_state.json",
+                 DESK / "reports" / "shadow" / "external_shadow_state.json"):
         data = _read(path)
         for key, row in list(data.items()) + list((data.get("sleeves") or {}).items() if isinstance(data.get("sleeves"), dict) else []):
             if not isinstance(row, dict) or "status" not in row:
@@ -201,16 +217,26 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
             status = str(row.get("status") or "").upper()
             if _is_terminal(status):
                 continue
+            # DAYS ARE DERIVED, NEVER TRUSTED. A lane whose engine went stale keeps writing
+            # its last days_active forever (measured: XAGUSD stored 9 while forward_start said
+            # 1 -- a promote lane reading the stored field would clear a window never served).
+            # forward_start is the frozen clock; the wall clock is the other operand. Stored is
+            # the fallback only when no forward_start exists.
             days = int(_number(row.get("days_active")) or 0)
+            fs = _timestamp(row.get("forward_start"))
+            if fs is not None:
+                days = max(0, (datetime.now(UTC) - fs).days)
             forward.append({"name": key, "days": days, "of": 14,
                             "n": int(_number(row.get("n")) or 0),
                             # Shown beside the forward count, never added to it: an observation
                             # that predates the frozen clock is evidence about a different
                             # question and may not satisfy a forward threshold.
                             "n_historical": int(_number(row.get("n_historical")) or 0),
+                            # lanes name their stats differently; the dash shows the fact,
+                            # whatever the local field was called
+                            "exp_r": _number(row.get("exp_r"), row.get("expectancy_r")),
+                            "t": _number(row.get("forward_t"), row.get("t")),
                             "sleeve_id": row.get("sleeve_id"),
-                            "t": _number(row.get("forward_t")),
-                            "exp_r": _number(row.get("exp_r")),
                             "status": status})
             if status == "PROMOTION CANDIDATE":
                 promo_ready += 1
@@ -237,6 +263,14 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         "forward_observations": forward_obs,
         "historical_observations": hist_obs,
         "discovered_backtested": hyp,
+        # THE THROUGHPUT TILE MUST COUNT THE GAUNTLET. "141 backtested" was stage-A's little
+        # miner grid while the ten gates judged 1,315 cells the same hour -- the dashboard
+        # under-reported the machine by an order of magnitude and read as a stall (principal:
+        # "thousands flowed through the gauntlet but backtesting is so low"). Docket size and
+        # the last sweep's judged/unmeasured are the real funnel.
+        "docket_candidates": _funnel_docket(),
+        "gauntlet_last_judged": _gate_stat("n_judged"),
+        "gauntlet_last_unmeasured": _gate_stat("n_unmeasured"),
         "certified": universal.get("n"),
         "forward_clocks": len(forward),
         "promotion_ready": promo_ready,

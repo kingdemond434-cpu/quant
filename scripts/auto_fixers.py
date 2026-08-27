@@ -140,7 +140,26 @@ def fix_pull() -> tuple[bool, str]:
     return rc == 0 or ok2, f"pull_restart_rc={rc} builder={o2[-60:]}"
 
 
+def fix_data_macro() -> tuple[bool, str]:
+    """Stale macro state: re-run the producer; free_data now routes FRED -> DBnomics mirror."""
+    rc, out = _run([sys.executable, str(DESK / "research" / "macro_desk.py")], timeout=420)
+    return rc == 0, out[-160:]
+
+
+def fix_data_cot() -> tuple[bool, str]:
+    rc, out = _run(["systemctl", "--user", "start", "quant-cot-fetch.service"], timeout=60)
+    return rc == 0, out[-120:] or "cot fetch unit started"
+
+
+def fix_data_events() -> tuple[bool, str]:
+    rc, out = _run(["systemctl", "--user", "start", "quant-seed-miners.service"], timeout=60)
+    return rc == 0, out[-120:] or "calendar/miner seed unit started"
+
+
 FIXERS = {
+    "DATA-MACRO": fix_data_macro,
+    "DATA-COT": fix_data_cot,
+    "DATA-EVENTS": fix_data_events,
     "PULL": fix_pull,
     "SEARCH": fix_search,
     "SWEEP": fix_sweep,
