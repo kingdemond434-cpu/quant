@@ -86,8 +86,24 @@ def main() -> int:
     certs = (_read(DESK / "reports" / "UNIVERSAL_SURVIVORS.json") or {}).get("survivors") or {}
     fam = Counter(str((c.get("shadow_spec") or {}).get("family") or "unknown")
                   for c in certs.values())
-    runnable = sum(1 for c in certs.values() if (c.get("shadow_spec") or {}).get("params"))
+    # ``{}`` is an exact parameterization ("use the certified family defaults"), not a
+    # missing one.  Truthiness collapsed those certificates into the unrunnable bucket even
+    # though shadow_admission.authorized_runs correctly accepts them.  QQUANT's hunt16
+    # certificate is the one intentional specialized-runner case: its complete executable is
+    # frozen by hunt/family/side/selector/condition rather than a generic params mapping.
+    exact_param_runnable = sum(
+        isinstance((c.get("shadow_spec") or {}).get("params"), dict)
+        for c in certs.values() if isinstance(c, dict)
+    )
+    qquant_state = _read(DESK / "reports" / "shadow" / "qquant_shadow_state.json") or {}
+    specialized_runnable = min(
+        int(qquant_state.get("processed_qquant_sleeves", 0) or 0),
+        sum(str(name).startswith("qquant.") for name in certs),
+    )
+    runnable = exact_param_runnable + specialized_runnable
     facts["certificates"] = {"total": len(certs), "runnable": runnable,
+                             "exact_param_runnable": exact_param_runnable,
+                             "specialized_runner_runnable": specialized_runnable,
                              "unrunnable_no_params": len(certs) - runnable,
                              "by_family": dict(fam),
                              "largest_family_share": (round(max(fam.values()) / len(certs), 3)

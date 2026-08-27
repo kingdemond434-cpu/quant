@@ -120,6 +120,7 @@ def _terminal_status(value: object) -> bool:
 
 
 def run() -> tuple[dict, int]:
+    import external_shadow
     import promoter
     import qquant_shadow
     import scalp_shadow
@@ -129,6 +130,10 @@ def run() -> tuple[dict, int]:
     errors: dict[str, str] = {}
     for name, fn in (
         ("scalp_bar_refresh", _refresh_scalp_bars),
+        # Compatibility migration only: retires the old private external ledger. External
+        # certificates themselves run below in shadow_forward, so there is one evidence clock
+        # per identity rather than two competing ledgers with different freshness.
+        ("external_state_reconcile", external_shadow.main),
         ("legacy_shadow", shadow_forward.main),
         ("scalp_shadow", scalp_shadow.main),
         ("qquant_shadow", qquant_shadow.main),
