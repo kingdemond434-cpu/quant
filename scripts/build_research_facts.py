@@ -64,9 +64,22 @@ def main() -> int:
     # --- universe: how much ground exists and how much is covered ------------------------------
     pq = list((DESK / "data" / "universe").glob("*_H1.parquet"))
     registry = _read(DESK / "data" / "universe" / "universe.json") or {}
-    classes = Counter(str(v.get("asset_class", "unknown"))
+    # THE REGISTRY CALLS IT `category`. This read `asset_class`, which no row has ever carried,
+    # so the pack reported `{"unknown": 197}` -- a reader on the wrong key does not crash, it
+    # takes the empty branch and publishes a plausible zero, and every organ downstream read
+    # "this desk has no asset-class structure" when the structure was sitting in the file.
+    # `asset_class` is kept as a fallback so a future producer using that name still lands.
+    classes = Counter(str(v.get("category") or v.get("asset_class") or "unknown")
                       for v in registry.values() if isinstance(v, dict))
+    # COSTABLE = has a `tick_value`. Without it a candidate cannot be priced, so it cannot clear
+    # gate 8 (stress_costs) and is not really in the tradable universe however many bars it has.
+    # Counted here because the pack is where the desk goes for universe size, and a size that
+    # ignores costability overstates the ground the gauntlet can actually judge.
+    costable = sum(1 for v in registry.values()
+                   if isinstance(v, dict) and v.get("tick_value") is not None)
     facts["universe"] = {"symbols_with_bars": len(pq), "registry_rows": len(registry),
+                         "costable_rows": costable,
+                         "uncostable_rows": len(registry) - costable,
                          "by_asset_class": dict(classes)}
 
     # --- certificates: the only count that matters for promotion -------------------------------
