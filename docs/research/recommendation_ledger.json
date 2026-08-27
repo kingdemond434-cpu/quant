@@ -8723,6 +8723,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0679",
+   "source": "cycle",
+   "summary": "R0673 IS NOW MEASURED, NOT JUST ROUTED: the desk's own broker's real-account copy-slippage is 14.72 pips on XAUUSD against 1.79 on EURUSD -- and the engine charges slippage of ZERO on XAUUSD session-range breakouts, its flagship family (prospector 2026-08-27(c), harvested). WHAT WAS DONE. R0673 recorded that MQL5 publishes a per-symbol x per-broker-server real-account slippage panel and verified the route; it did not harvest it, so the desk still had no number. Harvested today: 48 signals, 883 broker-server rows, 254 DISTINCT broker servers, 311,777 copied trades, trade-weighted mean 2.189 pips; 61.5 pct of rows and 99.5 pct of trades sit in nonzero cells, so ~zero is NOT the modal answer as the single demo cell in R0673 suggested. Artifact committed: data/intelligence/mql5_catalog/mql5_slippage_panel_20260827.json. ROUTE, EXACT (R0673's text is right but underspecified and a naive fetch 404s): GET https://www.mql5.com/signals/charts/slippage?id=<id>&to=<broker_server> -- NO /en prefix (with it, 404) and the X-Requested-With: XMLHttpRequest header is required; broker-LEVEL aggregates need no AJAX at all, they are inline in /en/signals/<id> behind LoadBrokerSlippage(this,'<server>',N). FUSION CELLS, the desk's own counterparty, servers FusionMarkets-Live / FusionMarketsAU-Live / FusionMarkets-Demo, 2,728 copied trades over 22 symbols, trade-weighted pips: XAUUSD 14.724 (n=905), GBPUSD 4.002 (n=26), GBPCAD 2.530 (n=208), EURUSD 1.790 (n=846), AUDUSD 1.190 (n=42), AUDCAD 0.405 (n=527). AGAINST THE ENGINE: desks/mt5/mt5desk/engine.py Costs has NO slippage field of any kind -- spread_per_lot + commission_per_lot only -- and desks/mt5/research/book_reality.py:10 says so in words, substituting GUESSED 2x/3x spread multiples for slippage on a family it itself calls stop-entry breakouts that slip in one direction by construction. THE FALSIFIER, STATED FIRST AND IT IS STRONG: these are COPY-SUBSCRIBER fills, so each number is provider-to-subscriber latency PLUS instrument slip, and it is an UPPER bound on what the desk itself would suffer sending its own order. The level is therefore NOT usable as a cost input. The RATIO is what survives, because the same latency distribution applies across a copier's symbols: XAUUSD slips ~8.2x EURUSD on the desk's own broker, while the engine applies ONE uniform multiplier to every symbol -- so the cost stress is relatively too soft on gold and too harsh on the majors, in the exact direction that flatters the flagship. SECOND, HONEST UNMEASURED (L1.28a): MQL5's 'pip' is per-symbol and this harvest CANNOT resolve whether gold's pip is 0.01 or 0.1, a 10x swing that decides whether 14.72 pips is 2.9x or 29x the stored 5-point median spread; do not convert the number until this is settled. RESOLVING TEST, cheap: pick a signal with a nonzero XAUUSD cell and join it to that signal's own published deal prices, or read one Fusion contract spec. NEXT ACTION: harvest is resumable and checkpointing (one JSON line per signal) and a cooldown-waiter is armed -- the desk over-crawled MQL5 today and the host blocked this IP at ~175 signals, which is my defect and is why the sample is 48.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T18:08:39.979365+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
