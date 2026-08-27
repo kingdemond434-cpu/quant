@@ -5662,5 +5662,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"f2e95961b4fafa56": {
+"t0": "2026-08-27T13:24:37+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "dceoy/mt5cli",
+"url": "https://github.com/dceoy/mt5cli",
+"text": "CLI for MetaTrader 5",
+"symbols": [],
+"found_at": "2026-08-27T13:24:33+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T13:07:28Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
