@@ -1,0 +1,9 @@
+[Unit]
+Description=Research-loop health fence hourly at :33
+
+[Timer]
+OnCalendar=*:33
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for early-window seat: litminer
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-litminer.service
+
+[Install]
+WantedBy=timers.target

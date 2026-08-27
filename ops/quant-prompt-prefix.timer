@@ -1,0 +1,9 @@
+[Unit]
+Description=Prompt prefix fence, twice daily
+
+[Timer]
+OnCalendar=*-*-* 04,16:50:00 UTC
+Persistent=true
+
+[Install]
+WantedBy=timers.target

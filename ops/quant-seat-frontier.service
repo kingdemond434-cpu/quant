@@ -1,0 +1,9 @@
+[Unit]
+Description=Early-window seat: frontier (manifest slot re-homed; root timer fires into the exhausted quota window)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+TimeoutStartSec=3h
+SuccessExitStatus=0
+ExecStart=/bin/bash -c 'flock -n /tmp/seat_frontier.lock /bin/bash ops/run_frontier_rotation.sh >> data/cro_ai_logs/seat_frontier.log 2>&1'

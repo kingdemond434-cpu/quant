@@ -1,0 +1,8 @@
+[Unit]
+Description=Resume owed digs the moment LLM quota returns (not at the next fixed slot)
+
+[Service]
+Type=oneshot
+MemoryMax=150M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_quota_resume.py

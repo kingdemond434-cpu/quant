@@ -1,0 +1,9 @@
+[Unit]
+Description=Perishability fence: which unrecorded streams are permanently unbuyable per night
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_perishability.py >> data/cro_ai_logs/perishability.log 2>&1'
+SuccessExitStatus=0 1 2

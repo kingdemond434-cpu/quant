@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for early-window seat: dataaxis
+
+[Timer]
+OnCalendar=*-*-* 05:00:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-dataaxis.service
+
+[Install]
+WantedBy=timers.target

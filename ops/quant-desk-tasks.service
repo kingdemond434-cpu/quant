@@ -1,0 +1,9 @@
+[Unit]
+Description=Desk-box scheduler fence: a Disabled task is a silently stopped organ
+
+[Service]
+Type=oneshot
+MemoryMax=150M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_desk_tasks.py
+SuccessExitStatus=0 1

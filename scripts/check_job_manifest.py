@@ -84,6 +84,10 @@ JOBS: dict[str, tuple[float, str]] = {
     # promotion bar, while the shadow watchdog reported OPERATING/defects:[] throughout. If
     # this artifact goes stale the ratchet has stopped and the next re-base is invisible again.
     "data/forward_clock_ratchet.json": (1.5, "forward-clock ratchet (silent re-base detector)"),
+    # 17 live timers -- including the mt5-suite ratchet, the universe-registry cost repair and
+    # six research seats -- were firing from ~/.config/systemd/user with no committed copy
+    # anywhere (measured 2026-08-27). A rebuilt box schedules none of them and nothing says so.
+    "data/unit_parity.json": (2.0, "unit parity (live timer with no committed unit)"),
 }
 
 

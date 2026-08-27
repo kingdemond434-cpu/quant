@@ -1,0 +1,11 @@
+[Unit]
+Description=Timer for early-window seat: prospector
+
+[Timer]
+OnCalendar=*-*-* 06:00:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-prospector.service
+
+[Install]
+WantedBy=timers.target

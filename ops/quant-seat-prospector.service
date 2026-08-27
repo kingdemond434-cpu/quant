@@ -1,0 +1,9 @@
+[Unit]
+Description=Early-window seat: prospector (manifest slot re-homed; root timer fires into the exhausted quota window)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+TimeoutStartSec=3h
+SuccessExitStatus=0
+ExecStart=/bin/bash -c 'flock -n /tmp/seat_prospector.lock /bin/bash ops/run_prospector_dig.sh >> data/cro_ai_logs/seat_prospector.log 2>&1'

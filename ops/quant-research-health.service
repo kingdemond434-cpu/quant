@@ -1,0 +1,9 @@
+[Unit]
+Description=Consolidated research-loop health fence (miners, search, pipeline, gauntlet, shadow)
+
+[Service]
+Type=oneshot
+MemoryMax=400M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_research_health.py >> data/cro_ai_logs/research_health.log 2>&1'
+SuccessExitStatus=0 1 2

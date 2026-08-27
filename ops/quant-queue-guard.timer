@@ -1,0 +1,9 @@
+[Unit]
+Description=Queue guard every 10 minutes (the trample it defends against is hourly)
+
+[Timer]
+OnCalendar=*:4/10
+Persistent=true
+
+[Install]
+WantedBy=timers.target

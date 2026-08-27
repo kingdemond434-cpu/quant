@@ -1,0 +1,9 @@
+[Unit]
+Description=Research queue guard: unfinished queued intent may not vanish to a stale file copy
+
+[Service]
+Type=oneshot
+MemoryMax=200M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_research_queue.py
+SuccessExitStatus=0 1

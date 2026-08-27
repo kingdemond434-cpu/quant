@@ -1,0 +1,9 @@
+[Unit]
+Description=Early-window seat: litminer (manifest slot re-homed; root timer fires into the exhausted quota window)
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+TimeoutStartSec=3h
+SuccessExitStatus=0
+ExecStart=/bin/bash -c 'flock -n /tmp/seat_litminer.lock /bin/bash ops/run_litminer_dig.sh >> data/cro_ai_logs/seat_litminer.log 2>&1'

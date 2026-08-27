@@ -1,0 +1,9 @@
+[Unit]
+Description=Unit parity hourly at :48
+
+[Timer]
+OnCalendar=*:48
+Persistent=true
+
+[Install]
+WantedBy=timers.target

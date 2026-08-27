@@ -1,0 +1,16 @@
+[Unit]
+# STAGGERED off seat-frontier (2026-08-26). Both seats ran the SAME script under the SAME
+# `flock -n` lock, so whichever lost the race exited having done nothing -- a retry slot that
+# could never retry. These exist because the original root timer fired into an exhausted quota
+# window, and a retry is only a retry if it happens LATER, after the first attempt has resolved
+# and (crucially) after the credit pool has had a chance to refill.
+Description=Timer for early-window seat: frontier2
+
+[Timer]
+OnCalendar=*-*-* 06:20:00 UTC
+RandomizedDelaySec=180
+Persistent=true
+Unit=quant-seat-frontier2.service
+
+[Install]
+WantedBy=timers.target

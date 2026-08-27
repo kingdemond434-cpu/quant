@@ -1,8 +1,8 @@
 [Unit]
-Description=Daily 00:05 UTC, before the desk box certifies at 00:45 and shadows at 01:00
+Description=HOURLY at :05 -- discovery, search, merge, gauntlet, canon (principal: max diversity, no waiting a day)
 
 [Timer]
-OnCalendar=*-*-* 00:05:00 UTC
+OnCalendar=*:05
 Persistent=true
 
 [Install]

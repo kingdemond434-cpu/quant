@@ -5089,6 +5089,12 @@ def check_mine_evidence_base(defects) -> None:
 #: One-shot scripts that legitimately ran once and are kept for provenance. Anything NOT listed
 #: here must be reachable, so the exemption is a written decision rather than a silent default.
 _ONESHOT_SCRIPTS = frozenset({
+    # classified 2026-08-27: R0574's decisive study -- does the Kelly estimation shrink already
+    # absorb the best-of-12 PROMOTION winner's curse? It answers ONE question about the sizer's
+    # bias on a fixed body of evidence; re-running it on unchanged history re-derives the same
+    # verdict, so a cadence would buy nothing and would make a settled question look perpetually
+    # open. Its answer belongs in the ledger, not in a timer.
+    "study_promotion_selection_bias.py",
     "backfill_onchain_oos.py", "batch_onchain.py", "batch_premium.py", "build_dev_factor.py",
     "dl_metrics_history.py", "pull_cme.py",
     # classified 2026-07-31 (orphan-scripts sweep):
