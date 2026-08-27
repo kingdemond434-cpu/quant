@@ -1,5 +1,5 @@
 {
-"cursor": 45,
+"cursor": 46,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -122,6 +122,9 @@
 "kopya ticaret MT4",
 "kopya ticaret MT5",
 "kopya ticaret ranking",
+"k\u00e2r MT4",
+"k\u00e2r MT5",
+"k\u00e2r ranking",
 "sinyal MT4",
 "sinyal MT5",
 "sinyal ranking"

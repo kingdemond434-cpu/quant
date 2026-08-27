@@ -5863,5 +5863,73 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"480f8cda793ed418": {
+"t0": "2026-08-27T17:24:29+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "n30dyn4m1c/ichimoku-h4-m1-align",
+"url": "https://github.com/n30dyn4m1c/ichimoku-h4-m1-align",
+"text": "MetaTrader 5 Expert Advisors for multi-timeframe Ichimoku Kinko Hyo alignment with ATR risk protection and equity-scaled position sizing",
+"symbols": [],
+"found_at": "2026-08-27T17:24:23+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T17:16:51Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ecacec2d1c0f4ced": {
+"t0": "2026-08-27T17:24:29+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "thieucong98/quant-backtest-pro",
+"url": "https://github.com/thieucong98/quant-backtest-pro",
+"text": "Institutional-Grade Web-based Multi-Asset Replay, AI Strategy Generation & Trading Bot Deployment Platform",
+"symbols": [],
+"found_at": "2026-08-27T17:24:23+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-27T16:49:24Z"
+},
+"mechanism_tags": [
+"grid",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"314ba2287a903858": {
+"t0": "2026-08-27T17:24:29+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "avangardistic/MQL5-Knowledge-Graph-System",
+"url": "https://github.com/avangardistic/MQL5-Knowledge-Graph-System",
+"text": "A knowledge graph system for MQL5 codebases that helps AI coding",
+"symbols": [],
+"found_at": "2026-08-27T17:24:23+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T16:45:57Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T16:06:44+00:00",
+ "built_at": "2026-08-27T17:06:42+00:00",
  "tasks": [
   {
    "source": "github",
@@ -2498,6 +2498,22 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-volume-profile-indicator",
+   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "motional-tammy18/systematic-trading-framework",
    "url": "https://github.com/motional-tammy18/systematic-trading-framework",
    "symbols": [],
@@ -2508,6 +2524,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Aljawa831/MT5-MT4-Close-Orders-Script",
    "url": "https://github.com/Aljawa831/MT5-MT4-Close-Orders-Script",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2594,24 +2618,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tharindu2028/Trade-Terminator-Closer",
-   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "title": "Dasymetertrenchfever480/mt5-service-shade",
+   "url": "https://github.com/Dasymetertrenchfever480/mt5-service-shade",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2634,32 +2658,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ajayprabhuraj/institutional-orderflow-mt5",
    "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2674,6 +2674,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Designated-AICoder/sri-lankan-exchange-rates",
+   "url": "https://github.com/Designated-AICoder/sri-lankan-exchange-rates",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "jingling-gingerbeer626/decentralized-forex-broker",
    "url": "https://github.com/jingling-gingerbeer626/decentralized-forex-broker",
    "symbols": [],
@@ -2682,32 +2690,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
-   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
-   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Vandoriz/MT5-Economic-News-Filter",
-   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
-   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3135,14 +3135,6 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Gold_LiveTop",
-   "url": "https://my.litefinance.org/traders/Gold_LiveTop",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@PRIME500",
    "url": "https://my.litefinance.org/traders/PRIME500",
    "symbols": [],
@@ -3161,6 +3153,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Atlas_Capital",
    "url": "https://my.litefinance.org/traders/Atlas_Capital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Aliakhavan72",
+   "url": "https://my.litefinance.org/traders/Aliakhavan72",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3465,8 +3465,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3476,8 +3476,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3707,8 +3707,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3718,8 +3718,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3817,8 +3817,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3828,8 +3828,52 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1357333/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3861,41 +3905,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4070,8 +4081,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4081,8 +4092,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4260,17 +4271,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1411229/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4958,17 +4958,6 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Bridgewater has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Renaissance has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -4981,6 +4970,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Citadel has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Point72 has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
