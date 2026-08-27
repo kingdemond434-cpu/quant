@@ -94,6 +94,14 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                             f"(ceiling {FRESH_H['mined_targets']}h) -- the hourly stage stopped")
         if not m["mined_targets_n"]:
             breaches.append("MINERS: zero targets -- every miner is silent or unparseable")
+        all_err = sorted(k for k, v in health.items()
+                         if isinstance(v, dict) and v.get("rows") and
+                         v.get("fetch_errors") == v.get("rows"))
+        m["miners_all_errors"] = len(all_err)
+        if health and len(all_err) >= max(3, len(health) // 3):
+            breaches.append(f"MINERS: {len(all_err)}/{len(health)} sources produce ONLY fetch "
+                            f"errors -- dead selectors or blocked endpoints, not quiet ground: "
+                            f"{', '.join(all_err[:6])}")
         if health and len(dead) >= max(3, len(health) // 2):
             breaches.append(f"MINERS: {len(dead)}/{len(health)} sources produce rows naming NO "
                             f"symbol -- their selectors are broken ground, not absence of edge: "
@@ -149,6 +157,21 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             breaches.append(f"GAUNTLET: canon SHRANK {last_n} -> {m['certs_n']} -- a wipe got "
                             f"past the writer seals; restore from canon before anything else")
 
+    # --- certificates in the pipeline: the same-day fence is the authority on
+    # CERTIFIED-NOT-ENROLLED / UNSTAMPED / IDLE-CLOCK; its verdict rides every pulse so the
+    # dashboard shows certificate wiring at the same cadence as everything else.
+    try:
+        import subprocess as _sp
+        r = _sp.run([sys.executable, str(ROOT / "scripts" / "check_sameday_pipeline.py")],
+                    capture_output=True, text=True, timeout=120, check=False)
+        lines = [ln.strip()[2:].strip() for ln in (r.stdout or "").splitlines()
+                 if ln.strip().startswith("- ")]
+        m["certs_pipeline"] = "OK" if r.returncode == 0 else "BREACH"
+        for ln in lines[:4]:
+            breaches.append(f"CERTS: {ln[:220]}")
+    except Exception as exc:
+        m["certs_pipeline"] = f"UNMEASURED ({type(exc).__name__})"
+
     # --- moat: is the tape actually being written, not just summarized?
     mc = _read(DESK / "data" / "moat_coverage.json")
     if mc is None:
@@ -175,12 +198,13 @@ def collect(now: datetime) -> tuple[list[str], dict]:
     if ds is None:
         breaches.append("SHADOW: desk_state.json not pulled -- no off-box view of the clocks")
     else:
-        fwd = ds.get("forward") or ds.get("shadow") or {}
-        rows_f = fwd.get("rows") if isinstance(fwd, dict) else None
+        # forward_detail is what the dashboard itself renders -- one source, same numbers
+        rows_f = (ds.get("pipeline") or {}).get("forward_detail")
         if isinstance(rows_f, list) and rows_f:
-            stale = [r.get("key") for r in rows_f
+            stale = [r.get("key") or r.get("name") for r in rows_f
                      if isinstance(r, dict) and r.get("status") == "ACTIVE"
-                     and (_age_h(r.get("last_attempt_at"), now) or 99) > 1.0]
+                     and r.get("last_attempt_at")
+                     and (_age_h(r.get("last_attempt_at"), now) or 0) > 1.0]
             m["active_clocks"] = sum(1 for r in rows_f
                                      if isinstance(r, dict) and r.get("status") == "ACTIVE")
             m["stale_clocks"] = len(stale)
@@ -189,6 +213,22 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                                 f"(15-min engine): {', '.join(str(s) for s in stale[:5])}")
         else:
             m["active_clocks"] = "UNMEASURED (desk_state carries no forward rows)"
+        # FORWARD EVIDENCE MUST ACCRUE, not merely stamp. Clocks can tick every 15 minutes
+        # (last_attempt fresh, status ACTIVE) while every n stays 0 -- coverage refusals, a
+        # broken family constructor, a data gap. Three days of that across the WHOLE book is a
+        # pipeline fault, not patience (single quiet sleeves are normal; a silent BOOK is not).
+        if isinstance(rows_f, list) and rows_f:
+            active = [r for r in rows_f if isinstance(r, dict) and r.get("status") == "ACTIVE"]
+            with_n = sum(1 for r in active if (r.get("n") or r.get("trades") or 0) > 0)
+            oldest_days = max((int(r.get("days") or r.get("days_active") or 0)
+                               for r in active), default=0)
+            m["clocks_with_trades"] = with_n
+            m["oldest_clock_days"] = oldest_days
+            if active and with_n == 0 and oldest_days >= 3:
+                breaches.append(f"FORWARD: {len(active)} ACTIVE clock(s), oldest {oldest_days}d, "
+                                f"and not one holds a forward trade -- the book is stamping "
+                                f"without accruing; something upstream of every sleeve is broken")
+
         sw = ds.get("stall_watch") or {}
         sw_age = _age_h(sw.get("checked_at"), now)
         m["stall_watch_age_h"] = round(sw_age, 2) if sw_age is not None else None
@@ -288,6 +328,17 @@ def main() -> int:
     print(f"RESEARCH HEALTH BREACH {m['at']}\n")
     for b in breaches:
         print(f"  - {b}")
+    # IMMEDIATE FIRST-AID before the analyst. Deterministic per-class fixers run NOW (cleared
+    # locks, re-triggered tasks, re-run merges) -- rate-limited and journaled in
+    # data/auto_fixer_state.json, surfaced on the pulse. The gap-wirer below remains the
+    # deep-repair path for whatever first aid cannot close.
+    try:
+        sys.path.insert(0, str(ROOT / "scripts"))
+        from auto_fixers import apply as _apply_fixers
+        m["fixer_actions"] = _apply_fixers(breaches)
+        publish_pulse(breaches, m)      # re-publish so the dashboard shows the first aid
+    except Exception as exc:
+        print(f"  auto-fixers unavailable ({type(exc).__name__}: {exc}); breach stands")
     try:
         sys.path.insert(0, str(ROOT))
         from libs.ops.repair_invoke import request_repair

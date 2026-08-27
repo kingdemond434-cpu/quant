@@ -82,12 +82,23 @@ foreach ($pat in $patterns) {
   }
 }
 
-# DISABLED research tasks come back on
+# DISABLED research tasks come back on; a task whose last TWO results failed while idle is
+# re-run (IgnoreNew makes the retry safe; a task that fails again surfaces on the next pass).
 foreach ($tn in $researchTasks) {
-  $st = (schtasks /Query /TN $tn /FO CSV 2>$null | ConvertFrom-Csv).Status
-  if ($st -eq 'Disabled') {
+  $q = schtasks /Query /TN $tn /FO CSV /V 2>$null | ConvertFrom-Csv
+  if (-not $q) { continue }
+  if ($q.Status -eq 'Disabled') {
     Enable-ScheduledTask -TaskName $tn | Out-Null
     $actions += "DISABLED ${tn}: re-enabled"
+  }
+  $lr = [int64]($q.'Last Result')
+  if ($q.Status -eq 'Ready' -and $lr -ne 0 -and $lr -ne 267009 -and $lr -ne 267014) {
+    $failKey = "fail.$tn"
+    if ($prev.ContainsKey($failKey) -and [int64]$prev[$failKey].cpu -eq $lr) {
+      schtasks /Run /TN $tn | Out-Null
+      $actions += "FAILING ${tn}: last result $lr twice in a row -- re-run"
+    }
+    $procsOut[$failKey] = @{ cpu = $lr; at = $now.ToString('o') }
   }
 }
 

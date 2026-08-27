@@ -356,7 +356,7 @@ async function pulse(){
   const q=await fetch(`research_pulse.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
   const m=q.measurements||{},ok=q.verdict==='ALL FLOWING';
   const age=Math.round((Date.now()-Date.parse(q.at))/60000);
-  $('pulseAge').textContent=`checked ${age}m ago · every 30m`;
+  $('pulseAge').textContent=`checked ${age}m ago · every 5m`;
   $('pulseVerdict').textContent=q.verdict;
   $('pulseVerdict').style.color=ok?'var(--green)':'var(--red)';
   document.getElementById('pulseCard').style.borderLeftColor=ok?'var(--green)':'var(--red)';
@@ -366,7 +366,7 @@ async function pulse(){
     `docket ${m.docket_rows??'—'} candidates ${f(m.docket_age_h)} · `+
     `gauntlet swept ${f(m.certs_swept_age_h)}: ${m.last_sweep_judged??'—'} judged, canon ${m.certs_n??'—'} · `+
     `moat tape wrote ${f(m.moat_newest_write_age_h)} (${m.moat_symbols??'—'} symbols) · `+
-    `stale ${(q.at&&age>75)?'YES — FENCE ITSELF SILENT':'no'}`;
+    `stale ${(q.at&&age>20)?'YES — FENCE ITSELF SILENT':'no'}`;
   const heal=(m.stall_watch_actions||[]);
   $('pulseBreaches').innerHTML=(q.breaches||[]).map(b=>`<li>${b}</li>`).join('')
     +heal.map(a=>`<li style="color:var(--amber,#d9a441)">healed: ${a}</li>`).join('');
