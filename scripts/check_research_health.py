@@ -259,6 +259,22 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                                 f"and not one holds a forward trade -- the book is stamping "
                                 f"without accruing; something upstream of every sleeve is broken")
 
+        # BLOCKED CLOCKS ARE A BREACH, NOT A ROW STATE. A sleeve that errors out of evaluation
+        # (KeyError from a gutted registry, a missing input) keeps its certificate and its
+        # window while accruing NOTHING -- measured 2026-08-27: both gap-decay clocks sat
+        # BLOCKED_SLEEVE_ERROR while every fence read green, because "blocked" lived only as a
+        # string inside one row. The fixer heals the usual causes (the desk watchdog restores a
+        # shrunken registry) and re-runs the engine.
+        if isinstance(rows_f, list):
+            blocked = [str(r.get("name") or r.get("key")) for r in rows_f
+                       if isinstance(r, dict)
+                       and str(r.get("status") or "").upper().startswith("BLOCKED")]
+            m["blocked_clocks"] = len(blocked)
+            if blocked:
+                breaches.append(f"CLOCKS: {len(blocked)} sleeve(s) BLOCKED from evaluation -- "
+                                f"certificates with windows accruing nothing: "
+                                f"{', '.join(blocked[:4])}")
+
         sw = ds.get("stall_watch") or {}
         sw_age = _age_h(sw.get("checked_at"), now)
         m["stall_watch_age_h"] = round(sw_age, 2) if sw_age is not None else None

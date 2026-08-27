@@ -156,7 +156,16 @@ def fix_data_events() -> tuple[bool, str]:
     return rc == 0, out[-120:] or "calendar/miner seed unit started"
 
 
+def fix_clocks() -> tuple[bool, str]:
+    """Blocked sleeves: run the desk watchdog first (it restores a shrunken registry and other
+    local causes), then a shadow pass so the healed inputs are actually used this cycle."""
+    ok1, o1 = _desk_task("MT5-StallWatch")
+    ok2, o2 = _desk_task("MT5-Shadow")
+    return ok1 or ok2, f"stallwatch={o1[-50:]} shadow={o2[-50:]}"
+
+
 FIXERS = {
+    "CLOCKS": fix_clocks,
     "DATA-MACRO": fix_data_macro,
     "DATA-COT": fix_data_cot,
     "DATA-EVENTS": fix_data_events,
