@@ -202,6 +202,52 @@ def build() -> list[dict]:
                 "of cost.")),
         )
 
+    # THE CERTIFIED SURVIVORS -- THIS DESK'S HIGHEST-GRADE EVIDENCE, AND IT WAS NOT BEING SENT.
+    # Everything above is a negative result. Those are genuinely the rarer and more valuable
+    # class (CONTRIBUTOR_BRIEF says so, and this exporter's own docstring explains why), but
+    # exporting ONLY negatives meant the channel carried "here is what does not work" and never
+    # "here is what cleared the bar" -- while Aurum, which trades XAUUSD and nothing else, sat
+    # blind to gold sleeves that had just passed the full original ten-gate battery on the same
+    # instrument at the same broker.
+    #
+    # QQUANT_GATES.json is the right source rather than a nicer summary file: it is the exact
+    # artefact `promoter.py` itself requires before capital may move, so a claim built from it
+    # is backed by the same evidence the money path demands, not a parallel account of it.
+    gates = _load("QQUANT_GATES.json")
+    if gates:
+        verdicts = [v for v in gates.get("verdicts", []) if v.get("passed") is True]
+        gold = [v for v in verdicts if str(v.get("id", "")).upper().startswith("XAUUSD")]
+        if verdicts:
+            policy = gates.get("gate_policy") or {}
+            out.append(_f(
+                statement=(
+                    f"{len(verdicts)} cell(s) cleared this desk's full original ten-gate "
+                    f"battery, {len(gold)} of them on XAUUSD"
+                    + (": " + "; ".join(str(v.get("id")) for v in gold[:6]) if gold else "")
+                    + ". The battery is deflated Sharpe (DSR>=0.95 against a multiplicity-"
+                    "corrected trial count), CSCV PBO<=0.5, Hansen SPA p<0.05, CPCV with purge "
+                    "and embargo, walk-forward with a stability floor, a 3x cost stress, a "
+                    "lockbox holdout and an explicit expected-value gate -- every one of which "
+                    "must pass, with no partial credit. "
+                    "THESE HAVE NO FORWARD EVIDENCE YET: passing is a backtest result on "
+                    "historical bars, which is exactly why it enters Aurum at zero authority."),
+                source="quant desks/mt5 research/qquant_gates.py -> reports/QQUANT_GATES.json",
+                grade="E2",
+                measured_on=(f"{len(gates.get('verdicts', []))} tested cells, H1, "
+                             f"policy {policy.get('trial_count_basis', 'original-10')}"),
+                transfer_test=(
+                    "Aurum trades XAUUSD on the same broker, so the gold cells name entry "
+                    "families and session windows Aurum can form its own read on -- as EVIDENCE "
+                    "about where an edge has survived correction, never as an instruction to "
+                    "take a setup. To refute: show matched Aurum states in these windows where "
+                    "the certified family does not beat Aurum's own structural entries net of "
+                    "the live spread it actually pays. Note the venues differ on execution: "
+                    "quant's costs are Fusion's, Aurum's expectancy must be priced at the "
+                    "venue Aurum's operator actually trades."),
+                n_certified=len(verdicts), n_certified_gold=len(gold),
+                ids=[str(v.get("id")) for v in gold[:20]]),
+            )
+
     return out
 
 
