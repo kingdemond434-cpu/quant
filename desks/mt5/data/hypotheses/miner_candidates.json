@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-27T00:16:06+00:00",
+ "compiled_at": "2026-08-27T01:06:50+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -1585,9 +1585,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 34,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 34
+   "deepening": 36
   },
   "litefinance": {
    "rows": 15,
@@ -1614,6 +1614,11 @@
    "candidates": 0,
    "deepening": 18
   },
+  "scheduled_chatgpt": {
+   "rows": 3,
+   "candidates": 0,
+   "deepening": 3
+  },
   "sec_edgar": {
    "rows": 9,
    "candidates": 0,
@@ -1625,8 +1630,8 @@
    "deepening": 21
   }
  },
- "rows_accounted": 629,
+ "rows_accounted": 634,
  "executable_candidates": 122,
- "deepening_tasks": 492,
+ "deepening_tasks": 490,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
