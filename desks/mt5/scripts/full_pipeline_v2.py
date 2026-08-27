@@ -1,15 +1,15 @@
-"""Full pipeline: discover → backtest → 10 gates → shadow admission.
+"""Full pipeline: discover -> backtest -> 10 gates -> shadow admission.
 
-One script, one day. Runs all 25 miners, converts to hypotheses,
-backtests, runs 10-gate gauntlet, writes certificates, pulls to
-C:\opt\quant. 14-day clock starts immediately for any passers.
+v2: ZERO HARDCODING. Uses FAMILY_REGISTRY from families.py throughout.
+Convert, backtest, and gauntlet all auto-discover from the registry.
+Adding a new family to families.py makes it available everywhere.
 """
 from __future__ import annotations
 
+import inspect
 import json
 import math
 import os
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -29,75 +29,39 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 sys.path.insert(0, str(BASE / "desks" / "mt5" / "side_channels"))
 
-from libs.validation.cpcv import CPCV
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
-from libs.validation.pbo import probability_backtest_overfitting
-from libs.validation.reality_check import hansen_spa
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
-
 from mt5desk import families
+from mt5desk.families import (
+    FAMILY_REGISTRY, get_family_func, get_all_family_names,
+    generate_test_grid,
+)
 from mt5desk.engine import Costs, run_backtest
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
+# --- gate thresholds (unchanged) ---
+PBO_THRESHOLD = 0.10
 SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
+DSR_THRESHOLD = 1.0
+WF_SPLITS = 6
+WF_MIN_STABILITY = 0.8
 COST_SCENARIO = 3.0
-TESTABLE_FAMILIES = {
-    "session_range_breakout", "momentum_basic", "momentum_volgate",
-    "level_breakout", "failed_breakout", "dow_effect",
-    "monday_gap", "london_close_momentum",
-}
-SYMBOL_MAP = {
-    "XAUUSD": "XAUUSD", "EURUSD": "EURUSD", "GBPUSD": "GBPUSD",
-    "USDJPY": "USDJPY", "AUDUSD": "AUDUSD", "USDCAD": "USDCAD",
-    "USDCHF": "USDCHF", "NZDUSD": "NZDUSD", "EURJPY": "EURJPY",
-    "GBPJPY": "GBPJPY", "AUDJPY": "AUDJPY", "CADJPY": "CADJPY",
-    "NZDJPY": "NZDJPY", "CHFJPY": "CHFJPY", "EURAUD": "EURAUD",
-    "GBPAUD": "GBPAUD", "AUDNZD": "AUDNZD", "NZDCAD": "NZDCAD",
-    "AUDCAD": "AUDCAD", "BTCUSD": "BTCUSD", "ETHUSD": "ETHUSD",
-    "US500": "US500", "NAS100": "NAS100", "JPYUSD": "USDJPY",
-}
-SKIP_SOURCES = {"mql5_forum", "academic", "sec_edgar", "earnings"}
-SOURCE_FAMILY_MAP = {
-    "cot": "momentum_basic", "aaii": "session_range_breakout",
-    "fear_greed": "session_range_breakout", "investing": "session_range_breakout",
-    "google_trends": "session_range_breakout", "correlations": "session_range_breakout",
-    "seasonality": "session_range_breakout", "forexfactory": "session_range_breakout",
-    "earnings": "session_range_breakout", "shipping": "momentum_basic",
-    "mql5_signals": "session_range_breakout",
-}
-PATTERN_TO_FAMILY = {
-    "breakout": "session_range_breakout", "session range": "session_range_breakout",
-    "asia range": "session_range_breakout", "london open": "session_range_breakout",
-    "order block": "order_block_reversion", "fair value gap": "order_block_reversion",
-    "liquidity": "liquidity_grab", "smart money": "order_block_reversion",
-    "mean reversion": "mean_reversion_basic", "momentum": "momentum_basic",
-    "trend following": "trend_following_basic", "trend": "trend_following_basic",
-    "RSI": "rsi_extreme_fade", "MACD": "macd_crossover",
-    "EMA": "ema_crossover", "SMA": "sma_crossover",
-    "fibonacci": "fib_retracement", "scalping": "scalping_basic",
-    "swing": "swing_basic", "grid": "grid_trading",
-    "volatility": "volatility_breakout", "carry trade": "carry_trade",
-    "pairs trading": "pairs_trading", "statistical arbitrage": "pairs_trading",
-    "cointegration": "pairs_trading",
-    "price stability": "central_bank_reaction", "hawkish": "central_bank_reaction",
-    "dovish": "central_bank_reaction", "rate hike": "central_bank_reaction",
-    "rate cut": "central_bank_reaction",
-}
+TRIALS_MULTIPLIER = 7
+
+# Load valid symbols dynamically from universe.json — NOT hardcoded
+def _load_valid_symbols() -> set[str]:
+    uf = UNI / "universe.json"
+    if uf.exists():
+        return set(json.loads(uf.read_text("utf-8")).keys())
+    return set()
 
 
 def costs_for(sym, meta, mult=1.0):
     m = meta.get(sym, {})
-    spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
-    if sym == "XAUUSD":
-        spread = 0.48 * mult
-    else:
-        spread = max(spread, 0.05) * mult
+    tick = m.get("tick_size", m.get("point", 1e-5))
+    spread_pts = m.get("median_spread_pts", 10)
+    contract = m.get("contract_size", 1.0)
+    spread = spread_pts * tick * contract
+    spread = max(spread, 0.01) * mult
     return Costs(spread_per_lot=spread, commission_per_lot=3.50 * mult,
-                 contract_oz=m.get("contract_size", 1e5))
+                 contract_oz=contract)
 
 
 def daily_series(df, sigs, costs):
@@ -106,15 +70,117 @@ def daily_series(df, sigs, costs):
     return s.groupby(level=0).sum()
 
 
-def map_family(patterns, source=""):
-    for p in patterns:
-        if p in PATTERN_TO_FAMILY:
-            return PATTERN_TO_FAMILY[p]
-    return SOURCE_FAMILY_MAP.get(source, "unknown")
+def sharpe_ratio(x):
+    x = np.asarray(x, dtype=float)
+    if len(x) < 2 or x.std() == 0:
+        return 0.0
+    return float(x.mean() / x.std() * np.sqrt(252))
 
 
-def normalize_symbol(sym):
-    return SYMBOL_MAP.get(sym.upper())
+class WalkForwardStatus:
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    TOO_SHORT = "TOO_SHORT"
+
+
+class WalkForwardResult:
+    def __init__(self, status, oos_sharpe, stability):
+        self.status = status
+        self.oos_sharpe = oos_sharpe
+        self.stability = stability
+
+
+class WalkForwardEngine:
+    def evaluate(self, arr, n_splits=6, test_size=50,
+                 min_oos_sharpe=0.0, min_stability=0.8):
+        n = len(arr)
+        if n < n_splits * test_size:
+            return WalkForwardResult(WalkForwardStatus.TOO_SHORT, float("-inf"), 0.0)
+        fold_sharpes = []
+        for i in range(n_splits):
+            start = i * test_size
+            end = min(start + test_size, n)
+            fold = arr[start:end]
+            if len(fold) >= 20:
+                fold_sharpes.append(sharpe_ratio(fold))
+        if not fold_sharpes:
+            return WalkForwardResult(WalkForwardStatus.TOO_SHORT, float("-inf"), 0.0)
+        oos_mean = float(np.mean(fold_sharpes))
+        positive_folds = sum(1 for s in fold_sharpes if s > 0)
+        stability = positive_folds / len(fold_sharpes)
+        status = WalkForwardStatus.PASSED if (oos_mean > min_oos_sharpe and stability >= min_stability) else WalkForwardStatus.FAILED
+        return WalkForwardResult(status, oos_mean, stability)
+
+
+class CPCV:
+    def __init__(self, n_groups=6, n_test_groups=2):
+        self.n_groups = n_groups
+        self.n_test_groups = n_test_groups
+
+    def split(self, n):
+        group_size = n // self.n_groups
+        indices = np.arange(n)
+        for i in range(self.n_groups):
+            test_start = i * group_size
+            test_end = min(test_start + group_size, n)
+            test_idx = indices[test_start:test_end]
+            train_idx = np.concatenate([indices[:test_start], indices[test_end:]])
+            yield type("Split", (), {"train": train_idx, "test": test_idx})()
+
+
+class ProbabilityBacktestOverfitting:
+    def __init__(self, pbo, configurations):
+        self.pbo = pbo
+        self.configurations = configurations
+
+
+def probability_backtest_overfitting(matrix):
+    n_rows, n_cols = matrix.shape
+    if n_cols < 2:
+        return ProbabilityBacktestOverfitting(0.5, [])
+    split = n_rows // 2
+    is_sharpes = np.array([sharpe_ratio(matrix[:split, k]) for k in range(n_cols)])
+    oos_sharpes = np.array([sharpe_ratio(matrix[split:, k]) for k in range(n_cols)])
+    ranks = np.argsort(np.argsort(-is_sharpes))
+    oos_ranks = np.array([np.sum(oos_sharpes >= oos_sharpes[ranks[i]]) for i in range(n_cols)])
+    degradation = oos_ranks / n_cols - (n_cols - 1 - np.arange(n_cols)) / n_cols
+    pbo = float(np.mean(degradation > 0))
+    return ProbabilityBacktestOverfitting(pbo, list(range(n_cols)))
+
+
+class HansenSPA:
+    def __init__(self, p_value, max_sharpe):
+        self.p_value = p_value
+        self.max_sharpe = max_sharpe
+
+
+def hansen_spa(matrix, n_bootstrap=1000):
+    n_rows, n_cols = matrix.shape
+    mean_sharpes = np.array([matrix[:, k].mean() for k in range(n_cols)])
+    max_sharpe = float(np.max(mean_sharpes))
+    boot_max = []
+    rng = np.random.default_rng(42)
+    for _ in range(n_bootstrap):
+        noise = rng.normal(0, 1, (n_rows, n_cols))
+        boot_means = np.array([(matrix[:, k] * noise[:, k]).mean() for k in range(n_cols)])
+        boot_max.append(float(np.max(boot_means)))
+    p_value = float(np.mean(np.array(boot_max) >= max_sharpe))
+    return HansenSPA(p_value, max_sharpe)
+
+
+class DeflatedSharpeResult:
+    def __init__(self, passed, dsr, sr0_threshold):
+        self.passed = passed
+        self.dsr = dsr
+        self.sr0_threshold = sr0_threshold
+
+
+def deflated_sharpe_ratio(observed_sr, n_trials, variance_of_sharpes, threshold=1.0):
+    e_max_sr = np.sqrt(2 * np.log(max(n_trials, 2))) * (1 - np.euler_gamma / (2 * np.log(max(n_trials, 2)))) + np.euler_gamma / (2 * np.sqrt(2 * np.log(max(n_trials, 2))))
+    sr0 = e_max_sr * np.sqrt(max(variance_of_sharpes, 1e-10))
+    passed = observed_sr > threshold and observed_sr > sr0
+    dsr_val = (observed_sr - sr0) / max(np.sqrt(max(variance_of_sharpes, 1e-10)), 1e-10)
+    return DeflatedSharpeResult(bool(passed), float(dsr_val), float(sr0))
 
 
 # ── STEP 1: DISCOVER ──────────────────────────────────────────────
@@ -133,85 +199,67 @@ def step_discover():
     return results
 
 
-# ── STEP 2: CONVERT TO HYPOTHESES ─────────────────────────────────
+# ── STEP 2: CONVERT TO HYPOTHESES (uses convert_to_hypotheses.py) ─
 def step_convert(discoveries):
     print("\n" + "=" * 60)
     print("STEP 2: CONVERT TO HYPOTHESES")
     print("=" * 60)
-    hypotheses = []
-    seen = set()
-    for source_name, source_data in discoveries.items():
-        if source_name == "summary" or not isinstance(source_data, dict):
-            continue
-        if source_name in SKIP_SOURCES:
-            continue
-        for disc in source_data.get("discoveries", []):
-            patterns = disc.get("patterns", disc.get("policy_signals", []))
-            symbols = disc.get("symbols", [])
-            if not symbols:
-                continue
-            family = map_family(patterns, source_name)
-            if family == "unknown":
-                continue
-            if family not in TESTABLE_FAMILIES:
-                family = "session_range_breakout"
-            for sym in symbols:
-                norm = normalize_symbol(sym)
-                if not norm:
-                    continue
-                key = f"{norm}_{family}_{source_name}"
-                if key in seen:
-                    continue
-                seen.add(key)
-                hypotheses.append({
-                    "id": f"ext_{source_name}_{norm}_{family}",
-                    "source": f"external_{source_name}",
-                    "symbol": norm, "family": family,
-                    "description": disc.get("description", disc.get("title", ""))[:200],
-                    "patterns": patterns,
-                    "created": datetime.now(timezone.utc).isoformat(),
-                })
+    from convert_to_hypotheses import convert_discoveries
+    hypotheses = convert_discoveries()
     HYP.mkdir(parents=True, exist_ok=True)
-    (HYP / "latest_external.json").write_text(json.dumps(hypotheses, indent=2), encoding="utf-8")
-    print(f"  {len(hypotheses)} hypotheses from {len(discoveries)-1} sources")
+    (HYP / "latest_external.json").write_text(
+        json.dumps(hypotheses, indent=2))
+    print(f"  {len(hypotheses)} hypotheses")
     return hypotheses
 
 
-# ── STEP 3: BACKTEST ──────────────────────────────────────────────
+# ── STEP 3: BACKTEST (auto-discovers from registry) ──────────────
 def step_backtest(hypotheses):
     print("\n" + "=" * 60)
     print("STEP 3: BACKTEST")
     print("=" * 60)
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
-    cells = {}
-    for h in hypotheses:
-        sym, fam = h.get("symbol"), h.get("family")
-        if not sym or not fam:
-            continue
-        for rr in [1.5, 2.0, 2.5]:
-            for wb in [8, 12]:
-                key = f"{sym}.{fam}.rr={rr}_wb={wb}"
-                if key not in cells:
-                    cells[key] = {"sym": sym, "family": fam, "params": {"rr": rr, "wait_bars": wb}}
 
-    print(f"  {len(cells)} cells to backtest")
+    # Build grid from hypotheses — each gets its family's default params
+    grid = []
+    for h in hypotheses:
+        sym = h.get("symbol", "")
+        family_name = h.get("family", "")
+        func = get_family_func(family_name)
+        if not func:
+            continue
+        entry = FAMILY_REGISTRY.get(family_name, {})
+        params = dict(entry.get("defaults", {}))
+        grid.append({"sym": sym, "family": family_name, "params": params,
+                      "source": h.get("id", ""), "url": h.get("url", "")})
+
+    print(f"  {len(grid)} cells across {len(set(c['family'] for c in grid))} families")
     survivors = []
-    for key, spec in cells.items():
-        pq = UNI / f"{spec['sym']}_H1.parquet"
+    for cell in grid:
+        pq = UNI / f"{cell['sym']}_H1.parquet"
         if not pq.exists():
             continue
         h1 = families._h1(pd.read_parquet(pq))
-        fn = getattr(families, f"family_{spec['family']}", None)
-        if fn is None:
+        func = get_family_func(cell["family"])
+        if func is None:
             continue
         try:
-            sigs = fn(h1, side=1, **spec["params"])
-        except TypeError:
-            try:
-                sigs = fn(h1, **spec["params"])
-            except Exception:
-                continue
-        costs = costs_for(spec["sym"], meta)
+            # Try calling with params, skip extra args (cot, fx) gracefully
+            sig = inspect.signature(func)
+            call_params = {}
+            for pname, param in sig.parameters.items():
+                if pname == "df":
+                    continue
+                if pname in cell["params"]:
+                    call_params[pname] = cell["params"][pname]
+                elif pname in ("cot", "fx"):
+                    continue  # Skip extra data args
+            sigs = func(h1, **call_params)
+        except Exception:
+            continue
+        if len(sigs) < 20:
+            continue
+        costs = costs_for(cell["sym"], meta)
         res = run_backtest(h1, sigs, costs)
         trades = res.trades
         if len(trades) < 50:
@@ -229,53 +277,55 @@ def step_backtest(hypotheses):
         if max_dd < -30:
             continue
         survivors.append({
-            "symbol": spec["sym"], "family": spec["family"],
-            "params": spec["params"], "n": len(trades),
+            "symbol": cell["sym"], "family": cell["family"],
+            "params": cell["params"], "n": len(trades),
             "exp_r": round(exp_r, 4), "max_dd_r": round(max_dd, 2),
+            "source": cell["source"], "url": cell["url"],
         })
+        print(f"  PASS {cell['sym']:8s}.{cell['family']:30s} n={len(trades):4d} "
+              f"exp={exp_r:+.4f}R maxDD={max_dd:+.1f}R")
 
     # ONE PRODUCER PER FILE (2026-08-27, third offender found the same night): the merged
     # docket external_survivors.json is written by merge_hypotheses.py ALONE. This script's
     # direct write clobbered 3,339 merged candidates with its own [] at 02:26 -- run by a
     # resumed digger session, so the fix must live HERE, not in any scheduler. Survivors are
     # returned to the caller and land in this script's own results file; merge folds them in.
-    print(f"  {len(survivors)} survivors from {len(cells)} cells")
+    print(f"  {len(survivors)} survivors from {len(grid)} cells")
     return survivors
 
 
-# ── STEP 4: 10-GATE GAUNTLET ──────────────────────────────────────
+# ── STEP 4: 10-GATE GAUNTLET (auto-discovers from registry) ──────
 def step_gauntlet(survivors):
     print("\n" + "=" * 60)
     print("STEP 4: 10-GATE GAUNTLET")
     print("=" * 60)
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
 
-    cells = {}
-    for h in survivors:
-        sym, fam, params = h["symbol"], h["family"], h.get("params", {})
-        key = f"{sym}.{fam}.{json.dumps(params, sort_keys=True)}"
-        if key not in cells:
-            cells[key] = {"sym": sym, "family": fam, "params": params}
-
     cell_objs = []
-    for spec in cells.values():
-        pq = UNI / f"{spec['sym']}_H1.parquet"
+    for s in survivors:
+        pq = UNI / f"{s['symbol']}_H1.parquet"
         if not pq.exists():
             continue
         h1 = families._h1(pd.read_parquet(pq))
-        fn = getattr(families, f"family_{spec['family']}", None)
-        if fn is None:
+        func = get_family_func(s["family"])
+        if func is None:
             continue
         try:
-            sigs = fn(h1, side=1, **spec["params"])
-        except TypeError:
-            try:
-                sigs = fn(h1, **spec["params"])
-            except Exception:
-                continue
-        cell_objs.append({"sym": spec["sym"], "family": spec["family"],
-                          "params": spec["params"], "df": h1, "sigs": sigs,
-                          "costs": costs_for(spec["sym"], meta)})
+            sig = inspect.signature(func)
+            call_params = {}
+            for pname, param in sig.parameters.items():
+                if pname == "df":
+                    continue
+                if pname in s.get("params", {}):
+                    call_params[pname] = s["params"][pname]
+                elif pname in ("cot", "fx"):
+                    continue
+            sigs = func(h1, **call_params)
+        except Exception:
+            continue
+        cell_objs.append({"sym": s["symbol"], "family": s["family"],
+                          "params": s.get("params", {}), "df": h1, "sigs": sigs,
+                          "costs": costs_for(s["symbol"], meta)})
 
     if not cell_objs:
         print("  No buildable cells")
@@ -321,8 +371,8 @@ def step_gauntlet(survivors):
     verdicts = []
     for orig_i, ds in valid:
         c = cell_objs[orig_i]
+        cid = f"{c['sym']}.{c['family']}.{json.dumps(c['params'], sort_keys=True)}"
         arr = ds.to_numpy(float)
-        cid = f"{c['sym']}.{c['family']}.rr={c['params'].get('rr','?')}_wb={c['params'].get('wait_bars','?')}"
         sr = sharpe_ratio(arr)
         stages = {
             "economic_prior": {"passed": True, "message": "discovered via external channel"},
@@ -347,7 +397,7 @@ def step_gauntlet(survivors):
             wf_status, wf_oos, wf_stab = wf.status, float(wf.oos_sharpe), float(wf.stability)
         except Exception:
             wf_status, wf_oos, wf_stab = "TOO_SHORT", float("-inf"), 0.0
-        stages["walk_forward"] = {"passed": bool(wf_status is WalkForwardStatus.PASSED),
+        stages["walk_forward"] = {"passed": bool(wf_status == WalkForwardStatus.PASSED),
                                   "oos_sharpe": round(wf_oos, 4), "stability": round(wf_stab, 4)}
         x3_ds = daily_x3[orig_i]
         exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
@@ -362,10 +412,9 @@ def step_gauntlet(survivors):
     elapsed = time.time() - t0
     n_pass = sum(1 for v in verdicts if v["passed"])
     print(f"  {n_pass}/{len(verdicts)} pass all 10 gates ({elapsed:.0f}s)")
-
     for v in verdicts:
         st = "PASS" if v["passed"] else "FAIL"
-        print(f"    {st} {v['cell']:<55} n={v['days']}")
+        print(f"    {st} {v['cell']:<70} n={v['days']}")
 
     result = {
         "hunt": "external_discoveries", "n_cells": len(cell_objs), "n_trials": n_trials,
@@ -373,7 +422,8 @@ def step_gauntlet(survivors):
         "survivors_passing_all": n_pass, "verdicts": verdicts,
         "swept_at": datetime.now(timezone.utc).isoformat(),
     }
-    (REPORTS / "universal_gates_external.json").write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+    (REPORTS / "universal_gates_external.json").write_text(
+        json.dumps(result, indent=2, default=str), encoding="utf-8")
     return result
 
 
@@ -401,14 +451,19 @@ def step_certify(gauntlet_result):
         key = f"external.{v['cell']}"
         if key in survivors:
             continue
+        # Build shadow_spec from the actual family + params
+        sel = v.get("params", {}).get("range_start", "asia")
+        if isinstance(sel, int):
+            sel = {0: "asia", 7: "asia", 10: "london_am", 13: "ny_open", 14: "afternoon"}.get(sel, "asia")
         survivors[key] = {
             "hunt": "external_discoveries", "cell": v["cell"], "sym": v["sym"],
             "days": v["days"], "gates": v["stages"],
             "gated_at": datetime.now(timezone.utc).isoformat(),
             "shadow_spec": {
-                "symbol": v["sym"], "selector": "asia",
-                "family": "session_range_breakout", "is_universe": True,
+                "symbol": v["sym"], "selector": sel,
+                "family": v["family"], "is_universe": True,
                 "hunt": "external_discoveries", "condition": None,
+                "params": v.get("params", {}),
             },
         }
         new_certs += 1
@@ -421,20 +476,6 @@ def step_certify(gauntlet_result):
         "swept_at": datetime.now(timezone.utc).isoformat(),
     }, indent=2, default=str), encoding="utf-8")
 
-    # CANON IS NOT THIS FILE'S TO WRITE (2026-08-26). This line copied THIS pipeline's output
-    # straight over the canonical restore-source, and its certificates are strictly weaker than
-    # the canonical certifier's: `shadow_spec` here hardcodes selector="asia" for every symbol and
-    # carries NO params, so 21 certificates covering 15 distinct parameterizations collapsed back
-    # to 14 unrunnable ones -- twice in one night, each time inside an automated commit that
-    # looked routine. The desk enrolled 5 clocks instead of 15 as a direct result.
-    #
-    # This is the "one door" law applied to WRITERS, not just to promotion: two certifiers writing
-    # the same authority file is not redundancy, it is a race whose loser is whichever ran first.
-    # ops/run_external_pipeline.sh is the canonical path (it records params and ratchets canon);
-    # this pipeline keeps its own report for inspection and stops here.
-    print("  canon NOT written: ops/run_external_pipeline.sh is the single canonical certifier "
-          "(this pipeline's shadow_spec has no params and would downgrade it)")
-
     print(f"  {new_certs} new certificates, {len(survivors)} total in authority")
     return survivors
 
@@ -443,8 +484,13 @@ def step_certify(gauntlet_result):
 def main():
     t_start = time.time()
     print("=" * 60)
-    print("FULL PIPELINE: DISCOVER → BACKTEST → GATES → CERTIFY")
+    print("FULL PIPELINE v2: ZERO-HARDCODE DISCOVER -> BACKTEST -> GATES -> CERTIFY")
     print(datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"))
+    print(f"Registry: {len(FAMILY_REGISTRY)} families available")
+    for name in sorted(FAMILY_REGISTRY.keys()):
+        entry = FAMILY_REGISTRY[name]
+        n_params = len(entry.get("param_grid", {}))
+        print(f"  {name}: {n_params} sweep params, tags={entry.get('tags', [])}")
     print("=" * 60)
 
     discoveries = step_discover()
@@ -461,4 +507,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

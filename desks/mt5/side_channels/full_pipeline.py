@@ -281,8 +281,9 @@ def step_backtest(hypotheses):
         print(f"  PASS {cell['sym']:8s}.{cell['family']:30s} n={len(trades):4d} "
               f"exp={exp_r:+.4f}R maxDD={max_dd:+.1f}R")
 
-    (HYP / "external_survivors.json").write_text(
-        json.dumps(survivors, indent=2, default=str), encoding="utf-8")
+    # ONE PRODUCER PER FILE: the merged docket belongs to merge_hypotheses.py alone. This
+    # direct write was one of FOUR scripts clobbering it (measured 2026-08-27: 3,339 merged
+    # candidates overwritten with [] by a resumed digger session running one of them).
     print(f"  {len(survivors)} survivors from {len(grid)} cells")
     return survivors
 
