@@ -760,5 +760,12 @@ def main(symbols: list[str] | None = None) -> int:
     return 0
 
 
+def _cli_main() -> int:
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("edge_search") as acquired:
+        return main() if acquired else 75
+
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_cli_main())

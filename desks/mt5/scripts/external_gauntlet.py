@@ -770,5 +770,15 @@ def main():
     print(f"SURVIVORS_LEDGER.json: {len(claims)} claim(s)")
 
 
+def _cli_main() -> int:
+    from research.job_lock import exclusive_job
+
+    with exclusive_job("external_gauntlet") as acquired:
+        if not acquired:
+            return 75
+        main()
+        return 0
+
+
 if __name__ == "__main__":
-    main()
+    raise SystemExit(_cli_main())

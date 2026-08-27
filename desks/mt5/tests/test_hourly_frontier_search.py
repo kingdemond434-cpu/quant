@@ -17,6 +17,7 @@ if str(DESK) not in sys.path:
 from research import edge_search
 from research import merge_hypotheses
 from research import orthogonal_sweep
+from research import job_lock
 from research.frontier_identity import cell_id, economic_prior
 from scripts import external_gauntlet
 from side_channels import bridge_to_hunt
@@ -106,6 +107,7 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "desks/mt5/mt5desk/families.py" in script
     assert "desks/mt5/mt5desk/families_orthogonal.py" in script
     assert "libs/research/bar_span.py" in script
+    assert "desks/mt5/research/job_lock.py" in script
     assert "ServerAliveInterval=15" in script
     assert 'FAILED with rc=$rc' in script
 
@@ -247,6 +249,16 @@ def test_orthogonal_sweep_caches_are_memory_bounded() -> None:
     assert orthogonal_sweep._bars.cache_parameters()["maxsize"] == 16
     assert orthogonal_sweep._cot_frame.cache_parameters()["maxsize"] == 32
     assert orthogonal_sweep._event_index.cache_parameters()["maxsize"] == 1
+
+
+def test_heavy_writer_lock_refuses_concurrent_copy(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(job_lock, "LOCK_ROOT", tmp_path)
+    with job_lock.exclusive_job("edge_search") as first:
+        assert first is True
+        with job_lock.exclusive_job("edge_search") as second:
+            assert second is False
+    with job_lock.exclusive_job("edge_search") as after_release:
+        assert after_release is True
 
 
 def test_external_bridge_only_emits_parameters_the_family_accepts() -> None:
