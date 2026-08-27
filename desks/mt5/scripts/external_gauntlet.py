@@ -385,11 +385,31 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # (43,512 instead of 378), which made `deflated_sharpe` dramatically harsher -- the same
     # unsanctioned bar I had just deleted from the searcher, moved INSIDE the gate where it was
     # less visible. The ten gates run exactly as defined.
-    n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
     sh_var = float(sharpes.var(ddof=1)) if len(sharpes) > 1 else 0.0
+    # THE SEALED TRIAL CHARGE, EXACTLY (gate_spec.yaml deflated_sharpe.params):
+    #   trial_count_basis: ceil(null_calibrated_participation_ratio_effective_cells * 7)
+    #   fail_closed_to:    raw_cells * 7
+    # This door charged raw*7 UNCONDITIONALLY -- no census -- so a batch of correlated
+    # parameterizations (dozens of variants of related strategies, effectively FEW independent
+    # bets) was charged as fully independent: a HARSHER bar than the sealed policy, hidden
+    # inside the gate, on the one door every hourly candidate walks through (found 2026-08-27
+    # when the principal asked "are you sure we use the same tests for all of these").
+    # `charged_trial_count` fails closed to raw*7 whenever the census cannot measure.
+    try:
+        from mt5desk.canonical import calibrated_census_report
+        from research.gate_policy import charged_trial_count
+        _census = calibrated_census_report(
+            [matrix[:, k] for k in range(matrix.shape[1])],
+            sd_sharpe=float(sharpes.std(ddof=1)) if len(sharpes) > 1 else 0.0)
+        n_trials, _trial_basis = charged_trial_count(
+            matrix.shape[1], _census.get("n_effective"), _census.get("method"))
+    except Exception as _exc:
+        n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
+        _trial_basis = f"raw_cells_x7_fail_closed ({type(_exc).__name__})"
+        _census = {"unavailable": str(_exc)[:120]}
 
-    print(f"  Matrix: {matrix.shape}, n_trials={n_trials}")
+    print(f"  Matrix: {matrix.shape}, n_trials={n_trials} ({_trial_basis})")
     t0 = time.time()
 
     if matrix.shape[1] < 2:
@@ -560,6 +580,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         "hunt": hunt_name,
         "n_cells": len(cells),
         "n_trials": n_trials,
+        "trial_count_basis": _trial_basis,
+        "trial_census": _census,
         "program_level": {"pbo": round(pbo_val, 4), "spa_p": round(spa_p, 4)},
         "survivors_passing_all": n_pass,
         "n_judged": n_real,
