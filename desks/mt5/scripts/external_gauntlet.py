@@ -479,19 +479,55 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             "days": len(arr), "passed": passed, "stages": stages
         })
 
+    # A DROPPED CELL IS A MEASURED OUTCOME, NOT A DISAPPEARANCE (L1.28a / WS-005). Cells whose
+    # daily series is absent or shorter than the 60 observations CPCV+walk-forward require never
+    # entered the matrix above -- and used to leave no trace in the report at all: measured
+    # 2026-08-27, 122 cells were submitted and 4 verdicts were written, so 118 candidates read
+    # as "tested, no pass" to every consumer when in truth they were never judged. They are
+    # recorded here as UNMEASURED verdicts (passed=False, never a pass) carrying the reason and
+    # the observation count, so the funnel is honest and a search producing untestable
+    # candidates is VISIBLE rather than looking like a search producing failures.
+    _judged = {i for i, _ in valid}
+    for _i, _c in enumerate(cells):
+        if _i in _judged:
+            continue
+        _d = daily[_i] if _i < len(daily) else None
+        _n = 0 if _d is None else len(_d)
+        verdicts.append({
+            "cell": cell_id({"sym": _c["sym"], "family": _c["family"],
+                             "params": _c.get("params") or {}}),
+            "sym": _c["sym"], "family": _c["family"], "days": _n,
+            "passed": False, "unmeasured": True,
+            "stages": {"observations": {
+                "passed": False, "days": _n, "required": 60,
+                "why": ("no daily series could be built from this cell's signals"
+                        if _d is None else
+                        f"only {_n} daily observations; CPCV with purge+embargo and the "
+                        f"walk-forward folds require 60. This is UNMEASURED, not a failure: "
+                        f"the cell fires too rarely to be judged, which is a fact about the "
+                        f"SEARCH that proposed it, not evidence against the edge")}},
+        })
+
     elapsed = time.time() - t0
     n_pass = sum(1 for v in verdicts if v.get("passed"))
+    n_unmeasured = sum(1 for v in verdicts if v.get("unmeasured"))
     gate_fails = {}
     for v in verdicts:
+        if v.get("unmeasured"):
+            continue          # never judged: counting it as a gate failure would be a lie
         for name, s in v.get("stages", {}).items():
             if not s["passed"]:
                 gate_fails[name] = gate_fails.get(name, 0) + 1
 
-    print(f"\n  RESULT: {n_pass}/{len(verdicts)} pass all 10 gates ({elapsed:.0f}s)")
+    n_real = len(verdicts) - n_unmeasured
+    print(f"\n  RESULT: {n_pass}/{n_real} pass all 10 gates ({elapsed:.0f}s); "
+          f"{n_unmeasured} UNMEASURED (too few observations to judge)")
     if gate_fails:
         print(f"  Gate failures: {gate_fails}")
 
     for v in verdicts:
+        if v.get("unmeasured"):
+            continue                      # summarised in the RESULT line and the report file
         status = "PASS" if v["passed"] else "FAIL"
         print(f"  {status} {v['cell']:<50} n={v['days']}")
         if not v["passed"]:
@@ -505,6 +541,12 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         "n_trials": n_trials,
         "program_level": {"pbo": round(pbo_val, 4), "spa_p": round(spa_p, 4)},
         "survivors_passing_all": n_pass,
+        "n_judged": n_real,
+        "n_unmeasured": n_unmeasured,
+        "unmeasured_note": ("cells whose signals produced fewer than 60 daily observations were "
+                            "NOT judged; they are recorded as UNMEASURED verdicts, never as "
+                            "failures. A high count is a fact about the SEARCH (candidates that "
+                            "fire too rarely to test), not evidence against the edges."),
         "gate_fails": gate_fails,
         "verdicts": verdicts,
         "swept_at": datetime.now(UTC).isoformat(),
