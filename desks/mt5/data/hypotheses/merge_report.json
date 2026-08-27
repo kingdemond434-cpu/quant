@@ -1,36 +1,28 @@
 {
- "merged_at": "2026-08-27T22:50:07+00:00",
- "pipeline_started_at": null,
+ "merged_at": "2026-08-27T23:42:42+00:00",
+ "pipeline_started_at": "2026-08-27T23:05:00+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
   "miner_candidates.json": 12,
-  "edge_search_results.json": 4207,
-  "orthogonal_candidates.json": 1188,
-  "requeue_named.json": 1188
+  "edge_search_results.json": 4187,
+  "orthogonal_candidates.json": -2,
+  "requeue_named.json": -2
  },
  "source_state": {
   "external_backtest_results.json": "FRESH",
   "miner_candidates.json": "FRESH",
   "edge_search_results.json": "FRESH",
-  "orthogonal_candidates.json": "FRESH",
-  "requeue_named.json": "FRESH"
+  "orthogonal_candidates.json": "STALE_SKIPPED",
+  "requeue_named.json": "STALE_SKIPPED"
  },
- "total": 6736,
+ "total": 4340,
  "families": {
   "asia_momentum": 15,
   "calendar_month": 2,
-  "correlation_regime": 116,
-  "cot_positioning": 10,
-  "cross_asset_residual": 259,
-  "discovered": 5395,
-  "drawdown_conditional": 11,
-  "lvc_asia_london": 12,
-  "overnight_gap_decay": 227,
-  "relative_value": 149,
-  "session_range_breakout": 126,
-  "turn_of_month": 167,
-  "vol_mean_reversion": 144,
-  "vol_transition": 103
+  "cot_positioning": 7,
+  "discovered": 4187,
+  "lvc_asia_london": 3,
+  "session_range_breakout": 126
  },
  "note": "no threshold applied here (L1.60) -- every discovered candidate reaches the ten-gate gauntlet, which is the only arbiter"
 }

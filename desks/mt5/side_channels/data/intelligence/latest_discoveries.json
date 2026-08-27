@@ -206,13 +206,13 @@
         "repo": "nmj94/momentum-lab",
         "url": "https://github.com/nmj94/momentum-lab",
         "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
-        "stars": 39,
+        "stars": 40,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.189
+        "confidence": 0.19
       },
       {
         "source": "github",
@@ -608,8 +608,8 @@
         "title": "Some setups I called before the move last Friday",
         "url": "",
         "symbols": [
-          "GBPJPY",
           "USDJPY",
+          "GBPJPY",
           "NAS100"
         ],
         "patterns": [],
@@ -672,8 +672,8 @@
         "title": "What I'm watching after last week's HTF moves",
         "url": "",
         "symbols": [
-          "EURUSD",
           "GBPUSD",
+          "EURUSD",
           "USDCAD"
         ],
         "patterns": [
@@ -712,16 +712,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-24T13:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Treasury Sec Bessent Speaks"
@@ -734,16 +734,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-25T10:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: CB Consumer Confidence"
@@ -756,11 +756,11 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDNZD",
-          "AUDJPY",
-          "AUDUSD",
           "AUDCAD",
+          "AUDJPY",
+          "AUDNZD",
           "GBPAUD",
+          "AUDUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -774,11 +774,11 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDNZD",
-          "AUDJPY",
-          "AUDUSD",
           "AUDCAD",
+          "AUDJPY",
+          "AUDNZD",
           "GBPAUD",
+          "AUDUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -792,11 +792,11 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDNZD",
-          "AUDJPY",
-          "AUDUSD",
           "AUDCAD",
+          "AUDJPY",
+          "AUDNZD",
           "GBPAUD",
+          "AUDUSD",
           "EURAUD"
         ],
         "confidence": 0.7,
@@ -810,16 +810,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core PCE Price Index m/m"
@@ -832,16 +832,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim GDP q/q"
@@ -854,16 +854,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim GDP Price Index q/q"
@@ -876,16 +876,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T08:30:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Unemployment Claims"
@@ -898,14 +898,14 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T19:30:00-04:00",
         "symbols": [
-          "XAUUSD",
-          "AUDJPY",
           "EURJPY",
-          "CADJPY",
-          "CHFJPY",
+          "XAUUSD",
+          "USDJPY",
           "NZDJPY",
-          "GBPJPY",
-          "USDJPY"
+          "CHFJPY",
+          "CADJPY",
+          "AUDJPY",
+          "GBPJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact JPY event: Tokyo Core CPI y/y"
@@ -933,16 +933,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Fed Chairman Warsh Speaks"
@@ -955,16 +955,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim Benchmark Payrolls Revision"
@@ -977,16 +977,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Consumer Sentiment"
@@ -999,16 +999,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
+          "USDCHF",
+          "NAS100",
           "XAUUSD",
+          "USDCAD",
           "NZDUSD",
           "GBPUSD",
-          "USDCAD",
-          "NAS100",
-          "EURUSD",
-          "AUDUSD",
-          "USDCHF",
+          "USDJPY",
           "US500",
-          "USDJPY"
+          "AUDUSD",
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Inflation Expectations"
@@ -1607,14 +1607,14 @@
         "type": "historical_pattern",
         "symbol": "BTCUSD",
         "month": 8,
-        "avg_return": 1.4091,
-        "overall_avg": 0.216,
+        "avg_return": 1.4075,
+        "overall_avg": 0.2158,
         "direction": "bullish",
         "symbols": [
           "BTCUSD"
         ],
         "confidence": 0.6,
-        "description": "BTCUSD historically bullish in month 8 (avg 1.409%)"
+        "description": "BTCUSD historically bullish in month 8 (avg 1.408%)"
       },
       {
         "source": "seasonality",

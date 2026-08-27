@@ -16,14 +16,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:31:40+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T07:58:09.320587+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 912.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 18.56843
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "CADJPY.asia": {
    "identity": {
@@ -46,14 +47,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.144018+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1500.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.575
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:54+00:00"
   },
   "CADJPY.asia#rr=2.5": {
    "identity": {
@@ -76,14 +80,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.207994+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1500.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.575
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:55+00:00"
   },
   "CADJPY.asia#rr=1.5": {
    "identity": {
@@ -106,14 +113,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.257086+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1500.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.575
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:55+00:00"
   },
   "EURJPY.asia#rr=1.5": {
    "identity": {
@@ -136,14 +146,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.334302+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:55+00:00"
   },
   "EURJPY.asia": {
    "identity": {
@@ -166,14 +179,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.393594+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:55+00:00"
   },
   "EURJPY.asia#rr=2.5": {
    "identity": {
@@ -196,14 +212,17 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
-   "status": "LIVE",
+   "forward_start": "2026-08-27T03:34:48.450787+00:00",
+   "status": "IDENTITY_BROKEN",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "code_hash changed after the clock froze",
+   "status_at": "2026-08-27T15:31:55+00:00"
   },
   "GBPJPY.asia#rr=1.5": {
    "identity": {
@@ -226,14 +245,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.589564+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "GBPJPY.asia#rr=2.5": {
    "identity": {
@@ -256,14 +276,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.653793+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "USDJPY.asia#rr=1.5": {
    "identity": {
@@ -286,14 +307,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.716568+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "USDJPY.asia": {
    "identity": {
@@ -316,14 +338,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.772869+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "USDJPY.asia#rr=2.5": {
    "identity": {
@@ -346,14 +369,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.836782+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "USDZAR.overnight_gap_decay.asia": {
    "identity": {
@@ -371,14 +395,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T07:58:09.320618+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 808.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 18.56843
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "XAUUSD.asia#rr=1.5": {
    "identity": {
@@ -401,14 +426,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:48.973309+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "XAUUSD.asia": {
    "identity": {
@@ -431,14 +457,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:49.037701+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "XAUUSD.asia#rr=2.5": {
    "identity": {
@@ -461,14 +488,15 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:49.090008+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   },
   "XAUUSD.asia#rr=1.5_wait_bars=8": {
    "identity": {
@@ -491,17 +519,18 @@
    },
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
-   "forward_start": null,
+   "forward_start": "2026-08-27T03:34:49.147736+00:00",
    "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
-   }
+   },
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   }
  },
- "updated_at": "2026-08-27T03:34:49+00:00",
+ "updated_at": "2026-08-27T15:31:55+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",

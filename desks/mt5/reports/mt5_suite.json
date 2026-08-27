@@ -1,51 +1,16 @@
 {
- "checked_at": "2026-08-27T01:47:22+00:00",
- "verdict": "FAIL",
+ "checked_at": "2026-08-27T19:47:22+00:00",
+ "verdict": "OK",
  "counts": {
-  "passed": 571,
-  "failed": 2,
+  "passed": 657,
+  "failed": 0,
   "error": 0,
   "skipped": 0,
-  "total": 573
+  "total": 657
  },
- "new_failing": [
-  "desks.mt5.tests.test_cost_units::test_every_live_cost_helper_uses_the_sanctioned_constructor"
- ],
- "newly_passing": [
-  "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
-  "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout",
-  "desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip",
-  "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list",
-  "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source",
-  "desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_the_refusal_names_what_is_missing_and_where_to_run_it",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_conditioned_candidate_promotes_carrying_its_state",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_demo_fill_cannot_retire_a_live_sleeve",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_gold_challenger_that_beats_the_armed_book_promotes",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_gold_challenger_that_loses_to_the_armed_book_is_killed_not_promoted",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_retired_sleeve_is_never_re_promoted",
-  "desks.mt5.tests.test_promotion_lifecycle::test_a_winning_sleeve_is_not_retired",
-  "desks.mt5.tests.test_promotion_lifecycle::test_an_unconditioned_candidate_promotes_with_a_null_state",
-  "desks.mt5.tests.test_promotion_lifecycle::test_promotion_is_idempotent",
-  "desks.mt5.tests.test_promotion_lifecycle::test_retirement_reasons_are_recorded",
-  "desks.mt5.tests.test_promotion_lifecycle::test_retiring_a_conditioned_sleeve_kills_THAT_sleeve_in_shadow",
-  "desks.mt5.tests.test_promotion_lifecycle::test_unstamped_legacy_rows_are_not_counted_as_evidence",
-  "desks.mt5.tests.test_risk_units::test_risk_per_lot_is_the_tick_arithmetic_and_nothing_else",
-  "desks.mt5.tests.test_shadow_admission_policy::test_every_hunt_uses_the_same_calibrated_cost_and_trial_policy",
-  "desks.mt5.tests.test_shadow_admission_policy::test_hunt16_stage_one_rejects_remain_in_universal_trial_ledger",
-  "desks.mt5.tests.test_shadow_admission_policy::test_production_path_has_no_harsher_prefilter",
-  "desks.mt5.tests.test_state_chain::test_deferral_keeps_the_sleeve_active_rather_than_killing_it",
-  "desks.mt5.tests.test_state_chain::test_every_link_in_the_chain_carries_the_state",
-  "desks.mt5.tests.test_state_chain::test_no_terminal_verdict_below_the_evidence_floor",
-  "desks.mt5.tests.test_state_chain::test_shadow_carries_state_for_hunt12_and_macro_candidates",
-  "desks.mt5.tests.test_trial_matrix_alignment::test_build_matrix_joins_on_the_date_index",
-  "desks.mt5.tests.test_trial_matrix_alignment::test_the_per_survivor_series_is_sorted_by_date"
- ],
- "known_failing": [
-  "desks.mt5.tests.test_universe_discovery::test_the_real_universe_on_disk_classifies_cleanly"
- ],
- "reasons": [
-  "1 NEW failing test(s) on the money path: desks.mt5.tests.test_cost_units::test_every_live_cost_helper_uses_the_sanctioned_constructor",
-  "27 test(s) now pass and are struck from the floor -- a ratchet never gives ground back: desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it; desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout; desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_the_refusal_names_what_is_missing_and_where_to_run_it"
- ],
- "pytest_tail": "FAILED desks/mt5/tests/test_cost_units.py::test_every_live_cost_helper_uses_the_sanctioned_constructor\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n2 failed, 571 passed in 20.47s"
+ "new_failing": [],
+ "newly_passing": [],
+ "known_failing": [],
+ "reasons": [],
+ "pytest_tail": "........................................................................ [ 98%]\n.........                                                                [100%]\n657 passed in 19.89s"
 }

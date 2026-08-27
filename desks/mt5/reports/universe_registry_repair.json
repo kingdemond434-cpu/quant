@@ -1,7 +1,7 @@
 {
- "repaired_at": "2026-08-27T11:23:00+00:00",
+ "repaired_at": "2026-08-27T23:43:00+00:00",
  "account_ccy": "EUR",
- "symbols": 197,
+ "symbols": 251,
  "broker_tick_values_restored": 23,
  "tick_values_derived": 0,
  "spreads_from_realized_fills": [],
@@ -11,12 +11,12 @@
   "Walgreens"
  ],
  "defects_before": [
-  "tick_value: missing or stubbed on 3/197 symbol(s) (e.g. BeyondMeat, BlockInc, Walgreens)",
-  "cost: 3/197 symbol(s) cannot be costed in EUR at all (e.g. BeyondMeat, BlockInc, Walgreens)"
+  "tick_value: missing or stubbed on 3/251 symbol(s) (e.g. BeyondMeat, BlockInc, Walgreens)",
+  "cost: 3/251 symbol(s) cannot be costed in EUR at all (e.g. BeyondMeat, BlockInc, Walgreens)"
  ],
  "defects_after": [
-  "tick_value: missing or stubbed on 3/197 symbol(s) (e.g. BeyondMeat, BlockInc, Walgreens)",
-  "cost: 3/197 symbol(s) cannot be costed in EUR at all (e.g. BeyondMeat, BlockInc, Walgreens)"
+  "tick_value: missing or stubbed on 3/251 symbol(s) (e.g. BeyondMeat, BlockInc, Walgreens)",
+  "cost: 3/251 symbol(s) cannot be costed in EUR at all (e.g. BeyondMeat, BlockInc, Walgreens)"
  ],
  "note": "a symbol in `underivable_tick_value` has no readable quote currency (share CFDs) or no bridge to the account currency. It stays UNCOSTED and visible rather than being given a zero that would backtest as free trading."
 }
