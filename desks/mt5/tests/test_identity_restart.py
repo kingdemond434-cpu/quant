@@ -145,3 +145,27 @@ def test_restart_is_not_implied_by_apply(desk) -> None:
     reg, shadow, _ = _load(desk)
     assert "CADJPY.asia" in reg["sleeves"]
     assert shadow["CADJPY.asia"]["n"] == 7
+
+
+def test_code_hash_ignores_decorators_but_not_the_body():
+    """@register_family is SEARCH metadata (param grids, tags): registering a family must not
+    stop its live clocks. The body is the strategy: touching it must."""
+    import hashlib
+    import inspect
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "research"))
+    import sleeve_registry as reg
+
+    def _fake_decorator(fn):
+        return fn
+
+    @_fake_decorator
+    def decorated(x):
+        return x + 1
+
+    deco_src = inspect.getsource(decorated)
+    assert deco_src.splitlines()[0].lstrip().startswith("@")
+    stripped = "".join(deco_src.splitlines(keepends=True)[1:])
+    assert reg.code_hash(decorated) == hashlib.sha256(
+        stripped.encode("utf-8")).hexdigest()[:16], (
+        "the decorator line must never be part of a sleeve's identity")

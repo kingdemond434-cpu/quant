@@ -78,6 +78,16 @@ def code_hash(fn: Any) -> str:
         src = inspect.getsource(fn)
     except (OSError, TypeError):
         return "nosrc:" + getattr(fn, "__qualname__", str(fn))
+    # THE FUNCTION'S OWN SOURCE, NOT ITS REGISTRATION. inspect.getsource includes decorator
+    # lines, so adding @register_family (search-grid metadata -- param grids, tags) to a family
+    # would have broken every live clock on it (nearly happened 2026-08-27: the decorator landed
+    # while 15 fresh windows were running). A decorator changes how the SEARCH enumerates the
+    # family, never what the frozen sleeve executes; identity starts at the def line.
+    lines = src.splitlines(keepends=True)
+    for i, ln in enumerate(lines):
+        if ln.lstrip().startswith(("def ", "async def ")):
+            src = "".join(lines[i:])
+            break
     return hashlib.sha256(src.encode("utf-8")).hexdigest()[:16]
 
 
