@@ -44,6 +44,16 @@ OUT = BASE / "data" / "hypotheses" / "orthogonal_candidates.json"
 #: and a tight screen here would pre-reject candidates the canonical policy never got to judge.
 MIN_TRADES = 30
 MIN_EXP_R = 0.0
+#: THE GAUNTLET'S OWN NUMBER, quoted -- not a new bar (principal 2026-08-27: "it must all
+#: always be redirected to testable candidates"). `external_gauntlet` drops any cell whose daily
+#: series holds fewer than 60 observations, because CPCV with purge+embargo and the walk-forward
+#: folds cannot judge less. A cell that cannot reach 60 TRADING DAYS is therefore untestable by
+#: construction and proposing it spends the hour's compute on something no gate can ever rule on.
+#: Trades are not days: measured 2026-08-27, event_reaction emitted 113 cells that all cleared
+#: MIN_TRADES and every one died at under_60_days -- multiple trades per event, on ~70 event days
+#: in six years. This routes the search to ground it can actually settle; it screens nothing on
+#: quality and rejects nothing for being weak.
+MIN_TRADE_DAYS = 60
 
 
 def _read(p: Path):
@@ -177,6 +187,7 @@ def sweep() -> dict:
     hypotheses: list[dict] = []
     gaps: dict[str, int] = {}
     ran: dict[str, int] = {}
+    untestable: dict[str, int] = {}
 
     for sym in symbols:
         df = _bars(sym)
@@ -248,6 +259,13 @@ def sweep() -> dict:
             trades = list(res.trades)
             if len(trades) < MIN_TRADES:
                 continue
+            # TESTABILITY, REPORTED BY FAMILY. Never silent: a family that is structurally
+            # untestable at this parameterization is a fact about the SEARCH worth seeing.
+            _days = len({t.entry_time.date() for t in trades})
+            if _days < MIN_TRADE_DAYS:
+                key = f"{fam}:untestable ({_days} trading days < {MIN_TRADE_DAYS} the gates need)"
+                untestable[key] = untestable.get(key, 0) + 1
+                continue
             rs = [t.r_multiple for t in trades]
             exp = sum(rs) / len(rs)
             if exp <= MIN_EXP_R:
@@ -267,7 +285,14 @@ def sweep() -> dict:
 
     return {"swept_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "symbols": len(symbols), "families_ran": ran,
-            "input_gaps": gaps, "hypotheses": hypotheses}
+            "input_gaps": gaps,
+            "untestable_by_family": untestable,
+            "untestable_note": (
+                f"cells that traded but on fewer than {MIN_TRADE_DAYS} distinct days -- the "
+                f"gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need "
+                f"the observations), so proposing them wastes the cycle. This is a TESTABILITY "
+                f"route, not a quality screen: nothing here rejects a cell for being weak."),
+            "hypotheses": hypotheses}
 
 
 def main() -> int:

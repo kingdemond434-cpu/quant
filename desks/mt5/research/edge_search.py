@@ -61,6 +61,10 @@ BANDS = ((0.0, 0.1), (0.1, 0.25), (0.75, 0.9), (0.9, 1.0), (0.4, 0.6))
 FIT_FRACTION = 0.6
 #: A candidate needs at least this many held-out observations to be scored at all.
 MIN_OOS_OBS = 60
+#: The gauntlet's own floor, quoted: fewer than 60 distinct TRADING DAYS and no gate can rule on
+#: the cell. Bars are not days -- a band can fire 300 times inside 40 sessions and still be
+#: unjudgeable -- so testability is measured in days at proposal time, never on quality.
+MIN_TRADE_DAYS = 60
 #: Correlation above this to an already-selected edge means it is the same bet.
 REDUNDANCY_CORR = 0.5
 #: How many edges to keep PER SYMBOL. This is not a quality bar -- the diversity selector already
@@ -599,10 +603,35 @@ def search_symbol(symbol: str, extra: dict | None = None) -> dict:
     fit_end = int(len(df) * FIT_FRACTION)
     cands, trials = evaluate(prim, fwd, fit_end=fit_end)
     chosen = select_diverse(cands)
+    # TESTABILITY ROUTE (principal 2026-08-27: "it must all always be redirected to testable
+    # candidates"). `external_gauntlet` drops any cell whose daily series holds fewer than 60
+    # observations -- CPCV with purge+embargo and the walk-forward folds cannot judge less. A
+    # candidate whose selected events fall on fewer than 60 distinct DAYS therefore cannot be
+    # ruled on by any gate, however strong the underlying effect: proposing it spends the cycle
+    # on a question the desk has no way to answer. n_oos counts BARS, and bars cluster -- so the
+    # count that matters is days. This screens nothing on quality: no candidate is dropped here
+    # for being weak, and the number is the gauntlet's own, quoted rather than invented.
+    import numpy as _np
+    keep, untestable = [], 0
+    for c in chosen:
+        bits, mlen = c.get("_mask_bits"), c.get("_mask_len")
+        if bits is None or not mlen or mlen > len(df.index):
+            keep.append(c)                      # cannot measure: never guess, let it through
+            continue
+        m = _np.unpackbits(bits, count=int(mlen), bitorder="little").astype(bool)
+        days = len({ts.date() for ts in df.index[:int(mlen)][m]})
+        if days < MIN_TRADE_DAYS:
+            untestable += 1
+            continue
+        c["n_days"] = days
+        keep.append(c)
+    chosen = keep
     rows = [{k: v for k, v in c.items() if not k.startswith("_")} for c in chosen]
     return {"symbol": symbol, "status": "OK", "bars": len(df),
             "primitives": len(prim), "trials": trials,
-            "candidates_scored": len(cands), "selected": rows}
+            "candidates_scored": len(cands),
+            "untestable_dropped": untestable,
+            "selected": rows}
 
 
 def main(symbols: list[str] | None = None) -> int:
@@ -753,7 +782,10 @@ def main(symbols: list[str] | None = None) -> int:
           f"{len(hypotheses)} DIVERSE hypotheses emitted")
     print(f"  all {len(hypotheses)} go to the ten gates AS DEFINED -- no bar set here, no "
           f"deflation input attached")
-    print(f"  ({total_trials:,} trials recorded in the report for audit only)")
+    _untest = sum(int(r.get("untestable_dropped") or 0) for r in results)
+    print(f"  ({total_trials:,} trials recorded in the report for audit only; "
+          f"{_untest} candidate(s) dropped as UNTESTABLE -- fewer than 60 distinct trading "
+          f"days, which no gate can rule on)")
     for h in hypotheses[:8]:
         p = h["params"]
         print(f"   {h['symbol']:8} {p['feature']:18} band={p['band']} h={p['horizon']:>3} "
