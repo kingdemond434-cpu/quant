@@ -7270,5 +7270,176 @@
    "win_rate": 0.4901,
    "symbol": "NZDCAD"
   }
+ },
+ {
+  "id": "ext-20260827-bad826",
+  "geneology_id": "external:ext_shipping_AUDUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD asia_momentum params={'rr': 2.0} screened at n=1851 exp=-0.0542R t=-1.55 pf=0.916 maxDD=-124.8R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1851,
+   "exp_r": -0.0542,
+   "t_stat": -1.55,
+   "profit_factor": 0.916,
+   "max_dd_r": -124.8,
+   "win_rate": 0.3717,
+   "symbol": "AUDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-4ce290",
+  "geneology_id": "external:ext_forexfactory_EURAUD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURAUD session_range_breakout params={'rr': 1.5, 'wait_bars': 8} screened at n=1992 exp=0.0307R t=1.53 pf=1.084 maxDD=-33.37R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1992,
+   "exp_r": 0.0307,
+   "t_stat": 1.53,
+   "profit_factor": 1.084,
+   "max_dd_r": -33.37,
+   "win_rate": 0.4734,
+   "symbol": "EURAUD"
+  }
+ },
+ {
+  "id": "ext-20260827-837ba4",
+  "geneology_id": "external:ext_shipping_AUDUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD asia_momentum params={'rr': 2.5} screened at n=1851 exp=-0.0516R t=-1.36 pf=0.922 maxDD=-109.83R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1851,
+   "exp_r": -0.0516,
+   "t_stat": -1.36,
+   "profit_factor": 0.922,
+   "max_dd_r": -109.83,
+   "win_rate": 0.3468,
+   "symbol": "AUDUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-8ef1fb",
+  "geneology_id": "external:ext_forexfactory_NZDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDCAD session_range_breakout params={'rr': 2.5, 'wait_bars': 8} screened at n=1963 exp=0.0254R t=1.28 pf=1.075 maxDD=-26.21R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1963,
+   "exp_r": 0.0254,
+   "t_stat": 1.28,
+   "profit_factor": 1.075,
+   "max_dd_r": -26.21,
+   "win_rate": 0.4885,
+   "symbol": "NZDCAD"
+  }
+ },
+ {
+  "id": "ext-20260827-1aa129",
+  "geneology_id": "external:ext_github_XAUUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD asia_momentum params={'rr': 2.0} screened at n=1690 exp=-0.0366R t=-1.05 pf=0.942 maxDD=-109.23R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 2.0
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1690,
+   "exp_r": -0.0366,
+   "t_stat": -1.05,
+   "profit_factor": 0.942,
+   "max_dd_r": -109.23,
+   "win_rate": 0.3609,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-42ec8e",
+  "geneology_id": "external:ext_github_XAUUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: XAUUSD asia_momentum params={'rr': 1.5} screened at n=1690 exp=-0.0312R t=-0.99 pf=0.947 maxDD=-97.73R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1690,
+   "exp_r": -0.0312,
+   "t_stat": -0.99,
+   "profit_factor": 0.947,
+   "max_dd_r": -97.73,
+   "win_rate": 0.4172,
+   "symbol": "XAUUSD"
+  }
+ },
+ {
+  "id": "ext-20260827-c64aa8",
+  "geneology_id": "external:ext_forexfactory_AUDCAD_session_range_breakout",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD session_range_breakout params={'rr': 1.5, 'wait_bars': 8} screened at n=1985 exp=0.0172R t=0.87 pf=1.047 maxDD=-29.56R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "session_range_breakout",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5,
+   "wait_bars": 8
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1985,
+   "exp_r": 0.0172,
+   "t_stat": 0.87,
+   "profit_factor": 1.047,
+   "max_dd_r": -29.56,
+   "win_rate": 0.4776,
+   "symbol": "AUDCAD"
+  }
+ },
+ {
+  "id": "ext-20260827-76a5dd",
+  "geneology_id": "external:ext_shipping_NZDUSD_momentum_basic",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDUSD asia_momentum params={'rr': 1.5} screened at n=1855 exp=-0.0283R t=-0.84 pf=0.953 maxDD=-112.74R by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "asia_momentum",
+  "side": "BOTH",
+  "params": {
+   "rr": 1.5
+  },
+  "created_at": "2026-08-27T18:50:00.639203+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1855,
+   "exp_r": -0.0283,
+   "t_stat": -0.84,
+   "profit_factor": 0.953,
+   "max_dd_r": -112.74,
+   "win_rate": 0.427,
+   "symbol": "NZDUSD"
+  }
  }
 ]

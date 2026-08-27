@@ -5931,5 +5931,29 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"6f9b8fd2b56230bd": {
+"t0": "2026-08-27T19:23:59+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Consultar metodolog\u00eda",
+"url": "https://trading-latam.com/metodologia-ranking-traders/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-27T19:22:27+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"stats": {},
+"mechanism_tags": [
+"gold"
+],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

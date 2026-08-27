@@ -1,0 +1,12 @@
+[
+ {
+  "source": "mql5_signals",
+  "kind": "fetch_error",
+  "title": "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-27T19:23:31+00:00",
+  "needs_selector_work": true
+ }
+]
