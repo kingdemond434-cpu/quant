@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T06:07:45+00:00",
+ "built_at": "2026-08-27T07:06:35+00:00",
  "tasks": [
   {
    "source": "github",
@@ -2066,6 +2066,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "joni0108/joni0108",
+   "url": "https://github.com/joni0108/joni0108",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
    "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
    "symbols": [],
@@ -2178,8 +2186,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2188,14 +2196,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
    "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2212,6 +2212,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ajayprabhuraj/institutional-orderflow-mt5",
    "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "RPNATION1/Tradingalgos",
+   "url": "https://github.com/RPNATION1/Tradingalgos",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3348,8 +3356,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3359,8 +3367,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4256,6 +4264,14 @@
   },
   {
    "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "You see the chart differently? Then you must be an idiot!",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Gold overbought ???",
    "url": "",
@@ -4501,17 +4517,6 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Citadel has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Point72 has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -4583,6 +4588,255 @@
    "symbols": [
     "NAS100",
     "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 27/08/2026. #xauusd                #forextrading",
+   "url": "https://youtube.com/watch?v=l_mQuM0BCos",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud835\udc17\ud835\udc00\ud835\udc14\ud835\udc14\ud835\udc12\ud835\udc03 \ud835\udc00\ud835\udc27\ud835\udc1a\ud835\udc25\ud835\udc32\ud835\udc2c\ud835\udc22\ud835\udc2c \ud835\udc07\ud835\udfcf \u2013 \ud835\udfd0\ud835\udfd5 \ud835\udc00\ud835\udc2e\ud835\udc20\ud835\udc2e\ud835\udc2c\ud835\udc2d \ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #trading  #forex #xauusd #technicalanalysis",
+   "url": "https://youtube.com/watch?v=3hUWKdeTNhU",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udcca XAU/USD Multi-Timeframe Analysis: 1H + 15M + 5M Trading Strategy #xauusd",
+   "url": "https://youtube.com/watch?v=eiktY3hGs08",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GOLD XAUUSD Trading Strategy TODAY 27-28 AUG | XAUUSD Analysis TODAY 27-28 AUG | GOLD Forecast TODAY",
+   "url": "https://youtube.com/watch?v=9-birU90bzw",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Zero Float, Huge Take Profit #xauusd #gold #trading #forex",
+   "url": "https://youtube.com/watch?v=tHGQsZH8rnQ",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=ffKWF777FZo",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "#gold #xauusd #crypto #jackpot #trader #trade #paisa #strategy #indicator # #forex #hack #winning",
+   "url": "https://youtube.com/watch?v=-aJSbFD3aa8",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34 Live XAUUSD Trading | Gold Scalping and Day Trading Strategy | Forex Live Signals",
+   "url": "https://youtube.com/watch?v=05ncIbw6Nhc",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GOLD (XAUUSD) Daily Analysis &amp; Trade Setup | Where to Buy &amp; Sell Today?",
+   "url": "https://youtube.com/watch?v=gUUCZUp5aIk",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "PH\u00c2N T\u00cdCH XU H\u01af\u1edaNG V\u00c0NG (27/08/2026 ) TH\u1ef0C CHI\u1ebeN GI\u00c1 V\u00c0NG - \u0110I\u1ec2M V\u00c0O L\u1ec6NH XAUUSD  | Trading Map",
+   "url": "https://youtube.com/watch?v=asdX6dqcjZo",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Decoding today\u2019s Gold price action \ud83e\udde0 #shorts #trading #viralvideo",
+   "url": "https://youtube.com/watch?v=tp1LAe_8Ewg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "SMA",
+    "liquidity",
+    "smart money",
+    "ICT"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "USDJPY Maintains Its Gains Despite Negative Pressures (25 Aug 2026)",
+   "url": "https://youtube.com/watch?v=MDvrnnA-_tE",
+   "symbols": [
+    "USDJPY"
+   ],
+   "mechanism_tags": [
+    "resistance"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 26/08/2026  #gold #liveforextrading,",
+   "url": "https://youtube.com/watch?v=wkRVSPIzQhk",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 24/08/2026  #gold #liveforextrading,",
+   "url": "https://youtube.com/watch?v=k-1UyB_BLBk",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "21 AUG  l Ravvi Soni I Live Trading Session I   #forex, #xauusd, #trading #bitcoin",
+   "url": "https://youtube.com/watch?v=oASNEkaEsNs",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd34 GOLD XAUUSD LIVE TRADING FROM TORONTO | $4,500 Breakout or Fakeout? | Gold News &amp; Analysis",
+   "url": "https://youtube.com/watch?v=2Cm9HdunQeI",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=67MuG55UnaA",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=sXLDV0mepo0",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=Bt9kgTXFtpg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
+   "url": "https://youtube.com/watch?v=CwGZGufMrJM",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD Live EA BOT \ud83d\udd34Live 26.08.2026 \u202a\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+   "url": "https://youtube.com/watch?v=2sFd4ML3jr0",
+   "symbols": [
+    "BTCUSD",
+    "NAS100",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD \ud83d\udd34Live 26.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+   "url": "https://youtube.com/watch?v=2sJzIdxC8_g",
+   "symbols": [
+    "BTCUSD",
+    "NAS100",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD \ud83d\udd34Live 25.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
+   "url": "https://youtube.com/watch?v=e9FwV61Aivw",
+   "symbols": [
+    "BTCUSD",
+    "NAS100",
+    "XAUUSD"
    ],
    "mechanism_tags": []
   }
