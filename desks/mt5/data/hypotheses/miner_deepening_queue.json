@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-27T07:06:35+00:00",
+ "built_at": "2026-08-27T08:09:41+00:00",
  "tasks": [
   {
    "source": "github",
@@ -1618,6 +1618,14 @@
   {
    "source": "quant_se",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What is the most convenient data structure for backtesting a model of futures options prices?",
+   "url": "https://quant.stackexchange.com/questions/14351/what-is-the-most-convenient-data-structure-for-backtesting-a-model-of-futures-op",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "How can I separate MPC policy error from the value of perfect information in event-driven portfolio allocation?",
    "url": "https://quant.stackexchange.com/questions/85800/how-can-i-separate-mpc-policy-error-from-the-value-of-perfect-information-in-eve",
    "symbols": [],
@@ -1848,14 +1856,6 @@
    "mechanism_tags": []
   },
   {
-   "source": "quant_se",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Difference between replicating portfolio and option price",
-   "url": "https://quant.stackexchange.com/questions/78798/difference-between-replicating-portfolio-and-option-price",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation",
@@ -2066,6 +2066,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-MT4-Close-Orders-Script",
+   "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "joni0108/joni0108",
    "url": "https://github.com/joni0108/joni0108",
    "symbols": [],
@@ -2178,14 +2186,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "nodalytics/till_infinity",
    "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
@@ -2210,8 +2210,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ajayprabhuraj/institutional-orderflow-mt5",
-   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2220,14 +2220,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "RPNATION1/Tradingalgos",
    "url": "https://github.com/RPNATION1/Tradingalgos",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3367,17 +3359,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "symbols": [],
@@ -3501,6 +3482,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1113881/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3852,18 +3844,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
-   "symbols": [],
-   "mechanism_tags": [
-    "grid",
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1437408/",
    "symbols": [],
@@ -3901,6 +3881,18 @@
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1425133/",
    "symbols": [],
    "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434603/",
+   "symbols": [],
+   "mechanism_tags": [
+    "grid",
     "ea_robot",
     "gold"
    ]
@@ -4517,6 +4509,17 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Citadel has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Point72 has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -4604,8 +4607,40 @@
   {
    "source": "youtube",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud835\udc17\ud835\udc00\ud835\udc14\ud835\udc14\ud835\udc12\ud835\udc03 \ud835\udc00\ud835\udc27\ud835\udc1a\ud835\udc25\ud835\udc32\ud835\udc2c\ud835\udc22\ud835\udc2c \ud835\udc07\ud835\udfcf \u2013 \ud835\udfd0\ud835\udfd5 \ud835\udc00\ud835\udc2e\ud835\udc20\ud835\udc2e\ud835\udc2c\ud835\udc2d \ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #trading  #forex #xauusd #technicalanalysis",
-   "url": "https://youtube.com/watch?v=3hUWKdeTNhU",
+   "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 27/08/2026. #xauusd                #forextrading",
+   "url": "https://youtube.com/watch?v=f2u0It5kJC4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "26 August 2026 Forex Market Review \ud83d\udd25 | XAUUSD Gold Analysis | BTI TradeLab",
+   "url": "https://youtube.com/watch?v=j74oSQd6di4",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "#xauusd Trading plan",
+   "url": "https://youtube.com/watch?v=ddzIkzFI2To",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "flag"
+   ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Is your gold just sitting at home?",
+   "url": "https://youtube.com/watch?v=jwZRWwt0cZ8",
    "symbols": [
     "XAUUSD"
    ],
@@ -4664,51 +4699,6 @@
   {
    "source": "youtube",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34 Live XAUUSD Trading | Gold Scalping and Day Trading Strategy | Forex Live Signals",
-   "url": "https://youtube.com/watch?v=05ncIbw6Nhc",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "GOLD (XAUUSD) Daily Analysis &amp; Trade Setup | Where to Buy &amp; Sell Today?",
-   "url": "https://youtube.com/watch?v=gUUCZUp5aIk",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "PH\u00c2N T\u00cdCH XU H\u01af\u1edaNG V\u00c0NG (27/08/2026 ) TH\u1ef0C CHI\u1ebeN GI\u00c1 V\u00c0NG - \u0110I\u1ec2M V\u00c0O L\u1ec6NH XAUUSD  | Trading Map",
-   "url": "https://youtube.com/watch?v=asdX6dqcjZo",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Decoding today\u2019s Gold price action \ud83e\udde0 #shorts #trading #viralvideo",
-   "url": "https://youtube.com/watch?v=tp1LAe_8Ewg",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "SMA",
-    "liquidity",
-    "smart money",
-    "ICT"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "USDJPY Maintains Its Gains Despite Negative Pressures (25 Aug 2026)",
    "url": "https://youtube.com/watch?v=MDvrnnA-_tE",
    "symbols": [
@@ -4763,6 +4753,26 @@
    "mechanism_tags": [
     "breakout"
    ]
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\ude80 EA automated trading is the trend of the decade \u2014 and the profits are already here. \ud83d\udcc8\ud83d\udc8e",
+   "url": "https://youtube.com/watch?v=PZ9q-DZBadA",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83c\udfc6 Strategy + Automation = Success. Join EA now. \ud83d\udcb5",
+   "url": "https://youtube.com/watch?v=gLXQ9z12pGE",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
   },
   {
    "source": "youtube",

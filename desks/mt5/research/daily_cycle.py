@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
-for p in (str(BASE), str(BASE / "research")):
+for p in (str(BASE), str(BASE / "research"), str(BASE / "scripts")):
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -134,6 +134,25 @@ def _markout() -> None:
     }, indent=2), encoding="utf-8")
 
 
+def _cost_fields() -> None:
+    """Fill `tick_value` for any registry symbol that lacks one, from the live terminal.
+
+    RUNS FIRST BECAUSE EVERY LATER STEP PRICES SOMETHING. `tick_value` is the only field carrying
+    a price in ACCOUNT currency, so a symbol without one has `spread_cost_per_lot == 0.0` and
+    cannot clear gate 8 (stress_costs) however many bars it has. Measured 2026-08-27: 82 of 197
+    registry rows had none, so 42% of the desk's own universe was structurally incapable of
+    producing a certificate. Fill-only and merge-only, so it can never rewrite a live sleeve's
+    cost basis mid-window -- `cost_hash` is part of sleeve identity.
+    """
+    import refresh_cost_fields
+
+    rc = refresh_cost_fields.main()
+    # rc=2 is "no terminal here", which is the honest answer on any box but the desk box and must
+    # not fail the cycle; anything else is a real failure.
+    if rc not in (0, 2):
+        raise RuntimeError(f"refresh_cost_fields returned {rc}")
+
+
 def _futures_curves() -> None:
     """Accrue real contract curves so roll/calendar hypotheses stop remaining prose-blocked."""
     import fetch_futures_curves
@@ -189,7 +208,8 @@ def _zentech() -> None:
 #: unconditionally: it reads the live ledger, so it reports on the armed book whether or not
 #: shadow could reach a terminal. The Aurum export runs after all of them, so it can carry
 #: anything today's cycle produced.
-STEPS = (("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
+STEPS = (("cost_fields", _cost_fields),
+         ("futures_curves", _futures_curves), ("curve_strategies", _curve_strategies),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),

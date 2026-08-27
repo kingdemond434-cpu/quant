@@ -278,3 +278,15 @@ def test_cost_refresh_reports_rather_than_guesses_when_the_terminal_is_silent() 
     assert merged["X"].get("tick_value") is None
     assert report["terminal_unanswered"] == 1
     assert report["filled"] == 0
+
+
+def test_cost_refresh_runs_before_anything_that_prices(monkeypatch) -> None:
+    """A capability nothing runs is not wired (III.16), and ORDER is load-bearing here: every
+    later step prices something, so the field they price with must be filled first."""
+    src = (_DESK / "research" / "daily_cycle.py").read_text(encoding="utf-8")
+    assert '("cost_fields", _cost_fields)' in src, "the cost organ is not in the daily cycle"
+    steps = src.split("STEPS = (", 1)[1]
+    assert steps.index('"cost_fields"') < steps.index('"shadow"')
+    assert steps.index('"cost_fields"') < steps.index('"reconcile"')
+    # rc=2 is "no terminal on this box" and must not fail the cycle
+    assert "if rc not in (0, 2):" in src.split("def _cost_fields", 1)[1].split("def ", 1)[0]

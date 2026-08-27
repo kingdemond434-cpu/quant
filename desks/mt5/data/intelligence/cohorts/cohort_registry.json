@@ -5588,5 +5588,57 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"5733b7735e52db06": {
+"t0": "2026-08-27T08:24:53+00:00",
+"frozen": {
+"source": "amarkets",
+"kind": "track_record",
+"title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+"url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-27T08:23:13+00:00",
+"region": "CIS",
+"nearby_pcts": [],
+"stats": {
+"return": 1.0,
+"drawdown": 81.0,
+"followers": 0.0,
+"age": 186.0
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"evidence_grade": "A",
+"lang": "en+ru"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"936f3651eaa073d2": {
+"t0": "2026-08-27T08:24:53+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "justwinstuff/hakarutrade",
+"url": "https://github.com/justwinstuff/hakarutrade",
+"text": "A simple, Go-based platform for copying trades between trading accounts.",
+"symbols": [],
+"found_at": "2026-08-27T08:24:48+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T07:46:27Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
