@@ -190,6 +190,21 @@ def test_gauntlet_rebuilds_discovered_external_inputs(monkeypatch, tmp_path) -> 
     assert captured["extra"]["peer_marker"].equals(marker)
 
 
+def test_lvc_candidate_uses_native_m5_clock(monkeypatch, tmp_path) -> None:
+    universe = tmp_path / "universe"
+    universe.mkdir()
+    m5 = _bars(720).resample("5min").ffill()
+    m5.to_parquet(universe / "XAUUSD_M5.parquet")
+    monkeypatch.setattr(external_gauntlet, "UNI", universe)
+    external_gauntlet._NATIVE_CACHE.clear()
+
+    frame = external_gauntlet._frame_for("XAUUSD", "lvc_asia_london")
+
+    assert frame is not None
+    assert len(frame) == len(m5)
+    assert frame.index[1] - frame.index[0] == pd.Timedelta(minutes=5)
+
+
 def test_orthogonal_candidates_persist_runtime_provenance() -> None:
     source = (DESK / "research" / "orthogonal_sweep.py").read_text("utf-8")
     assert '"peer_symbol": peers[0]' in source

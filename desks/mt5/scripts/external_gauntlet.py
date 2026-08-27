@@ -80,6 +80,7 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
 #: (Re-applied 2026-08-26 after the first attempt was lost before it reached a commit -- the
 #: fence now carries `_H1_CACHE` as a marker so a second loss is caught rather than repeated.)
 _H1_CACHE: dict[str, object] = {}
+_NATIVE_CACHE: dict[tuple[str, str], object] = {}
 
 
 def _h1_for(sym: str):
@@ -93,9 +94,29 @@ def _h1_for(sym: str):
     return frame
 
 
+def _frame_for(sym: str, family: str):
+    """Load the family-authorized clock; never silently resample an M5 hypothesis to H1."""
+    if family != "lvc_asia_london":
+        return _h1_for(sym)
+    key = (sym, "M5")
+    frame = _NATIVE_CACHE.get(key)
+    if frame is None:
+        pq = UNI / f"{sym}_M5.parquet"
+        if not pq.exists():
+            return None
+        frame = pd.read_parquet(pq).sort_index()
+        if not isinstance(frame.index, pd.DatetimeIndex):
+            return None
+        frame.index = (frame.index.tz_localize("UTC") if frame.index.tz is None
+                       else frame.index.tz_convert("UTC"))
+        frame = frame[~frame.index.duplicated(keep="last")]
+        _NATIVE_CACHE[key] = frame
+    return frame
+
+
 def build_cell(sym: str, family: str, params: dict, meta: dict):
     """Build a Cell from external survivor spec."""
-    h1 = _h1_for(sym)
+    h1 = _frame_for(sym, family)
     if h1 is None:
         return None
     # THE GAUNTLET MUST REACH EVERY FAMILY, not just the breakout module. Looking only in

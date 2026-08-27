@@ -338,6 +338,188 @@ def family_cot_positioning(
     return signals
 
 
+def family_lvc_asia_london(
+    df: pd.DataFrame,
+    *,
+    bias_mode: str = "session_relative",
+    asia_start_minute: int = 0,
+    asia_end_minute: int = 6 * 60,
+    trade_start_minute: int = 7 * 60,
+    trade_end_minute: int = 10 * 60,
+    atr_n: int = 14,
+    min_range_atr: float = 0.50,
+    max_range_atr: float = 2.00,
+    max_breakout_bars: int = 9,
+    recent_extreme_bars: int = 3,
+    bias_block_bars: int = 3,
+    breakout_distance_atr: float = 0.50,
+    breakout_candle_atr: float = 1.20,
+    true_break_stop_atr: float = 0.75,
+    true_break_tp_atr: float = 2.00,
+    retest_max_bars: int = 5,
+    retest_touch_atr: float = 0.20,
+    retest_max_close_back_atr: float = 0.30,
+    reversal_max_bars: int = 3,
+    reversal_overshoot_atr: float = 0.50,
+    reversal_return_atr: float = 1.00,
+    reversal_stop_buffer_atr: float = 0.20,
+) -> list[Signal]:
+    """Source-faithful London Volatility Capture challenger on native M5 bars.
+
+    ``source_shift`` reproduces the public EA's defect: it measures an Asia extreme's age from
+    the London-window start, making a three-bar M5 lookback impossible across the one-hour gap.
+    ``session_relative`` is the preregistered repair: "recent" means within the last three bars
+    *of the Asia session*. ``off`` is the required ablation. All other defaults are pinned to
+    public blob ``2868957900aa9a06e8d9eb6523f938947210f6e9``.
+    """
+    if bias_mode not in {"off", "source_shift", "session_relative"}:
+        return []
+    if not isinstance(df.index, pd.DatetimeIndex) or df.empty:
+        return []
+    d = df.copy().sort_index()
+    d.index = d.index.tz_localize("UTC") if d.index.tz is None else d.index.tz_convert("UTC")
+    d = d[~d.index.duplicated(keep="last")].dropna(subset=["open", "high", "low", "close"])
+    if len(d) < atr_n + 2:
+        return []
+    atr = _atr(d, atr_n)
+    minute = pd.Series(d.index.hour * 60 + d.index.minute, index=d.index)
+    day = pd.Series(d.index.date, index=d.index)
+    signals: list[Signal] = []
+
+    for session_day in pd.unique(day):
+        positions = np.flatnonzero(day.to_numpy() == session_day)
+        if positions.size == 0:
+            continue
+        asia = positions[(minute.iloc[positions].to_numpy() >= asia_start_minute)
+                         & (minute.iloc[positions].to_numpy() < asia_end_minute)]
+        trade = positions[(minute.iloc[positions].to_numpy() >= trade_start_minute)
+                          & (minute.iloc[positions].to_numpy() < trade_end_minute)]
+        if asia.size == 0 or trade.size == 0:
+            continue
+        asia_high = float(d["high"].iloc[asia].max())
+        asia_low = float(d["low"].iloc[asia].min())
+        span = asia_high - asia_low
+        if span <= 0:
+            continue
+        # Last touch, matching the public implementation's nearest-to-window search.
+        high_touch = int(asia[np.flatnonzero(
+            d["high"].iloc[asia].to_numpy() >= asia_high - np.finfo(float).eps
+        )[-1]])
+        low_touch = int(asia[np.flatnonzero(
+            d["low"].iloc[asia].to_numpy() <= asia_low + np.finfo(float).eps
+        )[-1]])
+        start_pos = int(trade[0])
+        source_high_age = start_pos - high_touch
+        source_low_age = start_pos - low_touch
+        session_high_age = int(asia[-1]) - high_touch
+        session_low_age = int(asia[-1]) - low_touch
+
+        setups = {
+            1: {"seen": False, "pos": -1, "extreme": np.nan, "atr": np.nan},
+            -1: {"seen": False, "pos": -1, "extreme": np.nan, "atr": np.nan},
+        }
+
+        def bias_active(side: int, bars_from_start: int) -> bool:
+            if bias_mode == "off" or bars_from_start > bias_block_bars:
+                return False
+            if bias_mode == "source_shift":
+                age = source_high_age if side > 0 else source_low_age
+            else:
+                age = session_high_age if side > 0 else session_low_age
+            return age <= recent_extreme_bars
+
+        consumed = False
+        for bars_from_start, pos_raw in enumerate(trade):
+            pos = int(pos_raw)
+            if bars_from_start > max_breakout_bars:
+                break
+            av = float(atr.iloc[pos])
+            if not np.isfinite(av) or av <= 0 or not (min_range_atr <= span / av <= max_range_atr):
+                continue
+            bar = d.iloc[pos]
+            candle_range = float(bar["high"] - bar["low"])
+            if not setups[1]["seen"] and (
+                float(bar["high"]) - asia_high >= breakout_distance_atr * av
+                and candle_range >= breakout_candle_atr * av
+                and float(bar["close"]) > float(bar["open"])
+            ):
+                setups[1] = {"seen": True, "pos": pos, "extreme": float(bar["high"]), "atr": av}
+            if not setups[-1]["seen"] and (
+                asia_low - float(bar["low"]) >= breakout_distance_atr * av
+                and candle_range >= breakout_candle_atr * av
+                and float(bar["close"]) < float(bar["open"])
+            ):
+                setups[-1] = {"seen": True, "pos": pos, "extreme": float(bar["low"]), "atr": av}
+
+            # Public order: reversal, retest, then immediate true break.
+            for breakout_side in (1, -1):
+                setup = setups[breakout_side]
+                if not setup["seen"]:
+                    continue
+                elapsed = pos - int(setup["pos"])
+                close = float(bar["close"])
+                if 0 < elapsed <= reversal_max_bars:
+                    if breakout_side > 0:
+                        reentered = close < asia_high
+                        overshoot = float(setup["extreme"]) - asia_high
+                        returned = float(setup["extreme"]) - close
+                        if (reentered and overshoot >= reversal_overshoot_atr * av
+                                and returned >= reversal_return_atr * av):
+                            stop = float(setup["extreme"]) + reversal_stop_buffer_atr * av
+                            signals.append(Signal(time=d.index[pos], side=-1, stop=stop,
+                                                  target=asia_low, ttl_bars=12,
+                                                  tag="lvc_asia_london", trigger=None,
+                                                  wait_bars=1))
+                            consumed = True
+                            break
+                    else:
+                        reentered = close > asia_low
+                        overshoot = asia_low - float(setup["extreme"])
+                        returned = close - float(setup["extreme"])
+                        if (reentered and overshoot >= reversal_overshoot_atr * av
+                                and returned >= reversal_return_atr * av):
+                            stop = float(setup["extreme"]) - reversal_stop_buffer_atr * av
+                            signals.append(Signal(time=d.index[pos], side=1, stop=stop,
+                                                  target=asia_high, ttl_bars=12,
+                                                  tag="lvc_asia_london", trigger=None,
+                                                  wait_bars=1))
+                            consumed = True
+                            break
+                if 0 < elapsed <= retest_max_bars:
+                    if breakout_side > 0:
+                        valid = (float(bar["low"]) <= asia_high + retest_touch_atr * av
+                                 and close >= asia_high - retest_max_close_back_atr * av
+                                 and close >= asia_high)
+                    else:
+                        valid = (float(bar["high"]) >= asia_low - retest_touch_atr * av
+                                 and close <= asia_low + retest_max_close_back_atr * av
+                                 and close <= asia_low)
+                    if valid:
+                        stop = close - breakout_side * true_break_stop_atr * av
+                        target = close + breakout_side * true_break_tp_atr * av
+                        signals.append(Signal(time=d.index[pos], side=breakout_side, stop=stop,
+                                              target=target, ttl_bars=12,
+                                              tag="lvc_asia_london", trigger=None,
+                                              wait_bars=1))
+                        consumed = True
+                        break
+                if elapsed == 0:
+                    opposite_recent = bias_active(-breakout_side, bars_from_start)
+                    prefer_reversal = bias_active(breakout_side, bars_from_start)
+                    if not opposite_recent and not prefer_reversal:
+                        stop = close - breakout_side * true_break_stop_atr * av
+                        target = close + breakout_side * true_break_tp_atr * av
+                        signals.append(Signal(time=d.index[pos], side=breakout_side, stop=stop,
+                                              target=target, ttl_bars=12,
+                                              tag="lvc_asia_london", trigger=None,
+                                              wait_bars=1))
+                        consumed = True
+                        break
+            if consumed:
+                break
+    return signals
+
+
 #: The registry the hypothesis router reads. Keyed by the SAME family names the breadth check
 #: reports as missing, so a miner's discovery in any of them now has a testable path.
 
@@ -355,6 +537,7 @@ ORTHOGONAL_FAMILIES = {
     "vol_transition": family_vol_transition,
     "liquidity_regime": family_liquidity_regime,
     "cot_positioning": family_cot_positioning,
+    "lvc_asia_london": family_lvc_asia_london,
 }
 
 

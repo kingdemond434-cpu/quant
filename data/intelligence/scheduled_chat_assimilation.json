@@ -1,0 +1,54 @@
+{
+ "schema_version": 1,
+ "updated_at": "2026-08-27T00:30:00+00:00",
+ "authority": "cursor and disposition ledger only; hypotheses route through existing external-intelligence compiler and universal gauntlet",
+ "threads": {
+  "6a86cd6f-06f8-83eb-8381-68eabfc8a430": {
+   "latest_consumed_turn_id": "50e81907-fb8c-492e-8eff-98d563239608",
+   "consumed_agent_message_ids": [
+    "4022e301-6fc8-4b00-b61c-bb81235c0119",
+    "ff6eebdc-90cf-4bde-bb10-5a71b753f3e6"
+   ],
+   "source_fingerprint_sha256": "18b209ac554c27f8188923c492caffc59f0fa5224e7e1f8b6f751cbb70c7c7ad",
+   "dispositions": [
+    {
+     "item": "MT5_DEFECT_LVC_RECENT_EXTREME_v1",
+     "decision": "IMPLEMENTED_ISOLATED_CHALLENGER",
+     "route": "scheduled_chatgpt discoveries -> miner candidate compiler -> canonical ten-gate gauntlet"
+    },
+    {
+     "item": "MT5_XAU_EFP_NESTED_OU_v1",
+     "decision": "DATA_BLOCKED",
+     "reason": "requires synchronized point-in-time XAUUSD and executable GC futures quotes, expiry/roll and carry; naked Fusion XAU is not EFP arbitrage"
+    }
+   ]
+  },
+  "6a82b40e-dd04-83ed-972c-1b8ce9a7d9e0": {
+   "latest_consumed_turn_id": "ee4b2ecd-2a64-40cb-9019-b1714be1b525",
+   "material_turn_id": "72b11868-a003-46d8-a56d-68c447e98c6d",
+   "source_fingerprint_sha256": "75685ed66161c3ee7dbf03a85c31b9a166d5a773b36dc687a7392d84208caf1d",
+   "decision": "DEDUPED",
+   "reason": "residual-pair testing and evidence-conditioned fractional-Kelly capital migration already exist in the canonical desk; public return claims remain priors"
+  },
+  "6a7aca28-36dc-83eb-a1ca-b1d65256c745": {
+   "latest_consumed_turn_id": "043b04d2-741e-4e65-8191-5ba75f226644",
+   "material_turn_id": "c2f3f021-83a5-42d0-b48e-f9b253ad4fb5",
+   "source_fingerprint_sha256": "5716ff8ed9fc2a008143102c609e9f1990dbcf77a97baafc4074612db29d18c5",
+   "decision": "EXTERNAL_EVIDENCE_ONLY",
+   "reason": "model leaderboard, China crowding and regime evidence informs validation and hibernation doctrine but supplies no deterministic Fusion-MT5 executable rule"
+  },
+  "6a74d72b-21d4-83ed-bd48-6457b46e60b0": {
+   "latest_consumed_turn_id": "779c7fe8-a8b7-4a7c-8dbe-7d947f31d89a",
+   "material_turn_id": "c829d914-1957-4f09-b9af-75c6471b000a",
+   "source_fingerprint_sha256": "54bdbf954380cd75c20eddfca58c4f90f84a03acb98a094118213a806652828a",
+   "decision": "ALREADY_IMPLEMENTED",
+   "reason": "public-strategy/video mission, coverage ledger, dedupe and downstream hypothesis routing already exist in the GPT hunter and hourly external pipeline"
+  },
+  "6a5b5454-1688-83eb-a385-58c82e30f776": {
+   "latest_consumed_turn_id": "23d3c3a4-8c32-4b38-b1a7-98ac81ecb940",
+   "source_fingerprint_sha256": "36e20e0b20d3409fd1f62df5249a125ec3c4f63b394583d7357b34a56a11ff9f",
+   "decision": "OUT_OF_SCOPE",
+   "reason": "latest material is memecoin/Solana-specific and not transferable to instruments executable on Fusion MT5"
+  }
+ }
+}
