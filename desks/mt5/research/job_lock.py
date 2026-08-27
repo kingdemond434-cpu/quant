@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sys
 import uuid
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
@@ -39,7 +40,20 @@ def _owner_is_dead(path: Path) -> bool:
         return True
     except PermissionError:
         return False                      # alive under another user
-    except OSError:
+    except OSError as exc:
+        # WINDOWS NEVER RAISES ProcessLookupError HERE, so on the box this whole function could
+        # only ever return False and the liveness path -- the entire reason it exists -- was dead
+        # code. MEASURED on the desk box (win32) 2026-08-27: `os.kill(<nonexistent pid>, 0)`
+        # raises plain `OSError` with `winerror=87` (ERROR_INVALID_PARAMETER), errno 22, and a
+        # LIVE pid raises nothing. So on Windows the age rule was the only recovery there has
+        # ever been, and the docstring's promise -- that live work never waits 45 minutes on a
+        # corpse -- was true on Linux and false where the searcher actually runs.
+        # Narrow on purpose: only the documented not-a-process signature counts as dead. Any
+        # other OSError is still UNKNOWN and falls back to the age rule, because reclaiming a
+        # lock from a process that is merely unreachable would let two writers run at once, which
+        # is worse than waiting.
+        if sys.platform == "win32" and getattr(exc, "winerror", None) == 87:
+            return True
         return False
     return False
 

@@ -36,6 +36,16 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
+# THE REPO ROOT TOO, or this entry point only works from one directory. The hourly pipeline runs
+# it as `cd C:\opt\quant\desks\mt5 && py -3 research\orthogonal_sweep.py`, which puts
+# `desks/mt5/research` on sys.path and NOT the root -- so `mt5desk.families_orthogonal` ->
+# `mt5desk.families` -> `libs.research.bar_span` raised ModuleNotFoundError on the desk box, and
+# the orthogonal falsification sweep contributed NOTHING to the docket for 14 consecutive hourly
+# runs (measured 2026-08-27). It was invisible because the failure surfaced as
+# "orthogonal frontier TIMED OUT after 25m", a resource story, while the log held an import
+# traceback; and it never reproduced here, where the pipeline's own cwd IS the root.
+# `parents[3]` is the repo root: parents are [research, mt5, desks, root].
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 UNIVERSE = BASE / "data" / "universe"
 TAPE = BASE / "data" / "tape" / "ticks"
 OUT = BASE / "data" / "hypotheses" / "orthogonal_candidates.json"
