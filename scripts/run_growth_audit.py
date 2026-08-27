@@ -162,14 +162,41 @@ def main() -> None:
     })
 
     # 4) VALIDATION THROUGHPUT: every fast-track-eligible sleeve must be promoted same-day.
+    #
+    # ...UNLESS THE SLEEVE IS RETIRED. This item reads the cash-carry shadow, and item 1 above
+    # already consults `_clamp_state()` for the SAME book -- but this one never did, so it kept
+    # publishing `ACT-NOW / justified_by: NONE -- pure foregone growth` for a strategy that the
+    # principal PERMANENTLY RETIRED on real capital (b0fe6f50) and whose entire universe the
+    # standing MT5 mandate forbids trading or hunting ever again (LAWS section 1). Measured
+    # 2026-08-27: data/CASHCARRY_KILL latched since 2026-08-15T20:55, and
+    # web/cashcarry_shadow.json still rewritten that morning with `fast_track: ELIGIBLE ... ->
+    # live-promotable`, forward_days 62, forward_tstat 2.85.
+    #
+    # This is NOT softening the anti-timidity gate, and the direction matters. A safety gate that
+    # goes stale fails CLOSED and someone notices. An anti-timidity gate that goes stale fails by
+    # SHOUTING -- it agrees with desk doctrine, so nobody discounts it -- and this one was
+    # shouting "promote to live capital" at a banned universe every cycle. A gate that spends its
+    # authority on retired ground is how a real ACT-NOW gets read as noise. The check stays
+    # exactly as strict wherever a live sleeve is genuinely eligible: only a LATCHED RAIL moves
+    # the verdict, and the justification names the rail rather than claiming the clock is running.
     sh = _load("web/cashcarry_shadow.json")
     ft = str(sh.get("fast_track", ""))
+    eligible = ft.startswith("ELIGIBLE")
+    if eligible and clamp is not None:
+        verdict = "RETIRED"
+        why = (f"RAIL ({clamp['rail']}) -- {clamp['detail']}; latched {clamp['since']}. The "
+               f"sleeve is retired, so its eligibility is arithmetic about a book that will "
+               f"never take another fill, NOT foregone growth. Lifting condition: the same "
+               f"principal re-arm item 1 names -- re-arming a rail is never autonomous.")
+    elif eligible:
+        verdict, why = "ACT-NOW", "NONE -- eligible sleeve not promoted = pure foregone growth"
+    else:
+        verdict, why = "OK", "evidence clock"
     items.append({
         "check": "promotion_latency",
         "utilized": ft or "n/a", "authorized": "promote the DAY eligibility hits (40d + t>=1.65)",
-        "verdict": "OK" if not ft.startswith("ELIGIBLE") else "ACT-NOW",
-        "justified_by": "evidence clock" if not ft.startswith("ELIGIBLE")
-        else "NONE -- eligible sleeve not promoted = pure foregone growth",
+        "verdict": verdict,
+        "justified_by": why,
     })
 
     defects = [i["check"] for i in items if str(i["justified_by"]).startswith("NONE")]
