@@ -40,6 +40,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import math
 import numpy as np
 import pandas as pd
 from mt5desk.families import Signal, _atr, _h1
@@ -891,3 +892,118 @@ def family_discovered(
 
 ORTHOGONAL_FAMILIES["discovered"] = family_discovered
 FAMILY_INPUTS["discovered"] = ("whatever primitive the search named", "resolved by edge_search")
+
+
+def family_pca_residual(
+    df: pd.DataFrame,
+    *,
+    factors: list[pd.DataFrame] | None = None,
+    window: int = 720,
+    refit_stride: int = 24,
+    entry_z: float = 2.0,
+    atr_n: int = 20,
+    stop_atr: float = 2.0,
+    rr: float = 1.5,
+    ttl_bars: int = 48,
+) -> list[Signal]:
+    """Fade this instrument's residual after removing the universe's REAL latent factors.
+
+    THE MECHANISM (queued as xp-h1/xp-h2, external prior 2026-08-26; the method itself is
+    standard statistical arbitrage). A handful of latent forces -- USD, JPY, risk-on/off, rates,
+    metals beta -- explain most co-movement across the MT5 universe. What remains after removing
+    them is instrument-specific dislocation, and dislocation with no factor behind it reverts,
+    because nothing is sustaining it. The edge lives in the RESIDUAL, never the raw return.
+
+    WHY MARCHENKO-PASTUR AND NOT "TOP K COMPONENTS". A sample correlation matrix of p series over
+    n observations grows eigenvalues up to (1+sqrt(p/n))^2 FROM PURE NOISE. Keeping a fixed top-K
+    would sometimes keep noise and sometimes discard signal; the MP bound keeps exactly the
+    eigenvalues that cannot be noise at this p/n, so the factor count adapts to the data instead
+    of being someone's guess.
+
+    NO LOOKAHEAD BY CONSTRUCTION. Factors are re-estimated every `refit_stride` bars from the
+    TRAILING `window` only, and each bar's residual uses the latest estimate strictly behind it.
+    A full-sample PCA would leak tomorrow's correlations into today's residual and manufacture a
+    reversion that never existed -- the gauntlet's walk-forward would kill it, but the honest
+    screen does not submit it in the first place.
+
+    REFUSES without at least 4 factor instruments: a "universe factor" extracted from two peers
+    is just a pair spread wearing a bigger name.
+    """
+    if not factors or len(factors) < 4:
+        return []
+    d = _h1(df)
+    cols = {"y": np.log(d["close"].astype(float)).diff()}
+    for k, fdf in enumerate(factors):
+        f = _h1(fdf)
+        cols[f"f{k}"] = np.log(f["close"].astype(float)).diff().reindex(d.index)
+    mat = pd.DataFrame(cols).dropna()
+    if len(mat) < window * 2:
+        return []
+    ret = mat.to_numpy(dtype="float64")
+    n_obs, _ = ret.shape
+    atr = _atr(d, atr_n).reindex(mat.index).ffill()
+    close = d["close"].reindex(mat.index).astype(float)
+
+    resid = np.full(n_obs, np.nan)
+    beta, keep_basis, mu, sd = None, None, None, None
+    for i in range(window, n_obs):
+        if (i - window) % refit_stride == 0:
+            seg = ret[i - window:i]
+            m = seg.mean(axis=0)
+            s = seg.std(axis=0, ddof=1)
+            s[s == 0] = np.nan
+            z = (seg - m) / s
+            z = np.nan_to_num(z)
+            fac = z[:, 1:]                       # factor instruments only
+            corr = (fac.T @ fac) / max(1, len(fac) - 1)
+            try:
+                evals, evecs = np.linalg.eigh(corr)
+            except np.linalg.LinAlgError:
+                continue
+            p_dim = fac.shape[1]
+            mp_max = (1.0 + math.sqrt(p_dim / window)) ** 2
+            keep = evals > mp_max                # only what noise cannot produce
+            if not keep.any():
+                beta = None
+                continue
+            basis = evecs[:, keep]               # p x k
+            fscores = fac @ basis                # window x k latent factor returns
+            y = z[:, 0]
+            try:
+                beta, *_ = np.linalg.lstsq(fscores, y, rcond=None)
+            except np.linalg.LinAlgError:
+                beta = None
+                continue
+            keep_basis, mu, sd = basis, m, s
+        if beta is None or keep_basis is None:
+            continue
+        zr = (ret[i] - mu) / sd
+        zr = np.nan_to_num(zr)
+        expl = float((zr[1:] @ keep_basis) @ beta)
+        resid[i] = float(zr[0]) - expl
+
+    rs = pd.Series(resid, index=mat.index)
+    cum = rs.fillna(0.0).rolling(window // 6).sum()   # dislocation accumulates over days
+    rm = cum.rolling(window).mean()
+    rsd = cum.rolling(window).std(ddof=1)
+    z = (cum - rm) / rsd
+
+    signals: list[Signal] = []
+    for i in range(window, n_obs - 1):
+        zi = float(z.iloc[i]) if np.isfinite(z.iloc[i]) else np.nan
+        if not np.isfinite(zi) or abs(zi) < entry_z:
+            continue
+        a = float(atr.iloc[i])
+        if not np.isfinite(a) or a <= 0:
+            continue
+        side = -1 if zi > 0 else 1               # fade the unexplained extreme
+        px = float(close.iloc[i])
+        signals.append(Signal(time=mat.index[i], side=side, stop=px - side * stop_atr * a,
+                              target=px + side * stop_atr * a * rr, ttl_bars=ttl_bars,
+                              tag="pca_residual", trigger=None, wait_bars=1))
+    return signals
+
+
+ORTHOGONAL_FAMILIES["pca_residual"] = family_pca_residual
+FAMILY_INPUTS["pca_residual"] = ("4+ factor instruments' H1 (the more of the universe, the "
+                                 "better the latent factors)", "data/universe/*_H1.parquet")

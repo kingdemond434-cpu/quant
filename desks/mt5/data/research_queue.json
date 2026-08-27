@@ -3900,5 +3900,229 @@
    "win_rate": 0.4941,
    "symbol": "AUDUSD"
   }
+ },
+ {
+  "id": "xp-h1-pca-residual",
+  "title": "PCA/Marchenko-Pastur residual mean reversion across the MT5 universe",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "latent common factors (USD, JPY, risk, rates, metals beta) explain most co-movement; the residual after removing NON-NOISE eigenvalues mean-reverts because it is instrument-specific dislocation with no persistent information behind it",
+  "family": "pca_residual",
+  "evidence_grade": "S+++",
+  "needs_acquisition": [],
+  "note": "highest-value direct alpha of the batch; runs on the 197-symbol H1 universe already on disk",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h2-ou-sscore",
+  "title": "OU half-life + s-score entry/exit for residual trades",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "residual deviation speed-of-reversion is measurable; entries at extreme s-score with exit near equilibrium harvest the reversion while bounding holding time",
+  "family": "pca_residual",
+  "evidence_grade": "S+++",
+  "needs_acquisition": [],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h3-ref-venue-lag",
+  "title": "Reference-venue composite vs Fusion CFD quote convergence (BTC/ETH CFDs)",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "price discovery happens on the liquid reference venues; the CFD quote is a follower, and a divergence beyond cost hurdle converges because the market maker re-marks to reference",
+  "family": "discovered",
+  "evidence_grade": "S+++",
+  "needs_acquisition": [
+   "free reference composite feed (Binance/Coinbase public REST) recorded point-in-time"
+  ],
+  "note": "the desk's own Fusion tick tape measures the lag structure nobody else has",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h4-survivor-sync",
+  "title": "Independent elite-survivor synchronization (consensus within a tight window)",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "independent profitable systems agreeing near-simultaneously implies shared detection of a real state; the consensus event carries information none of the copies alone does. Independence via the identity/fingerprint miner -- clones count as ONE vote",
+  "family": "discovered",
+  "evidence_grade": "S++",
+  "needs_acquisition": [
+   "fresh-timestamped public survivor positions (MQL5/FXBlue where licit)"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h5-cot-divergence",
+  "title": "COT commercial-vs-speculator divergence extremes as directional/regime input",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "commercials hedge real flows and speculators chase; extreme divergence marks positioning that must unwind, loading the odds of reversion in gold/oil/FX futures proxies",
+  "family": "cot_positioning",
+  "evidence_grade": "S++",
+  "needs_acquisition": [],
+  "note": "COT data already mined (220 rows/7d); extends the existing cot_positioning family",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h6-weather-commodities",
+  "title": "Point-in-time weather forecast REVISIONS vs commodity CFDs",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "supply/demand of gas, crude and softs is weather-driven; the tradeable event is the forecast DISTRIBUTION changing faster than the instrument reprices, not bad weather itself",
+  "family": "event_reaction",
+  "evidence_grade": "S++",
+  "needs_acquisition": [
+   "NOAA/GFS point-in-time forecast archive (free), revision deltas recorded live"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h7-shortclock-micro",
+  "title": "Short-clock cross-market microstructure on Fusion BTC/XAU/indices",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "reference-market moves, tick intensity and spread state lead the CFD quote at 5s-5m horizons; the edge is net payoff after spread/slippage, never candle direction",
+  "family": "discovered",
+  "evidence_grade": "S++",
+  "needs_acquisition": [
+   "tick-resolution features from the desk's own tape (already recorded)"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h8-copy-decay",
+  "title": "Survivor copy-decay surface: alpha vs observation/execution delay",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "copied edges decay with latency; measuring decay at 100ms/1s/5s/30s/5m separates copyable public records from mirages profitable only at the provider's own fill",
+  "family": null,
+  "evidence_grade": "S+",
+  "needs_acquisition": [],
+  "note": "a FILTER for the survivor-copy project, not a standalone sleeve",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h9-action-resolver",
+  "title": "Continuous position re-optimisation (hold/add/reduce/hedge/exit by incremental E[log W])",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "the original entry is not sacred; each new state re-ranks the transitions. Extends execution_resolver from entry-expression choice to lifecycle choice",
+  "family": null,
+  "evidence_grade": "S+",
+  "needs_acquisition": [],
+  "note": "infrastructure upgrade to execution_resolver.py, not a new signal",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h10-gex-regime",
+  "title": "Dealer gamma exposure sign/level as index regime conditioner",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "dealer hedging damps movement under positive GEX and amplifies under negative; conditions WHEN breakout vs mean-reversion sleeves should fire on US500/NAS100",
+  "family": "macro_conditional",
+  "evidence_grade": "S+",
+  "needs_acquisition": [
+   "free GEX estimate source or reconstruction from public options OI"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h11-filing-contradiction",
+  "title": "Filing/earnings-call contradiction score vs post-event drift (US share CFDs)",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "story-number disagreement between filings, prior statements and guidance predicts drift because narratives correct slower than prices gap",
+  "family": "event_reaction",
+  "evidence_grade": "S+",
+  "needs_acquisition": [
+   "EDGAR filings + transcript source, point-in-time"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h12-insider-cluster",
+  "title": "Form-4 cluster purchases (3+ independent insiders, tight window) vs residual return",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "multiple insiders independently buying their own stock is costly-signal information; cluster timing and size grade the strength",
+  "family": "event_reaction",
+  "evidence_grade": "S+",
+  "needs_acquisition": [
+   "EDGAR Form 4 feed (free)"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h13-chatter-velocity",
+  "title": "Abnormal mention-velocity z-score (authors, novelty, dispersion) vs continuation/exhaustion",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "attention shocks move retail flow; the measurable object is mention ACCELERATION vs the name's own baseline, tested both directions",
+  "family": "discovered",
+  "evidence_grade": "A",
+  "needs_acquisition": [],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h14-dependency-graph",
+  "title": "Sleeve/factor/venue dependency graph -- are 20 survivors 4 bets?",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "shared USD/JPY/rates/equity-beta exposure makes nominally distinct sleeves one bet; the graph feeds N_eff and blocks fake diversification from sizing as real",
+  "family": null,
+  "evidence_grade": "S+",
+  "needs_acquisition": [],
+  "note": "extends portfolio_evidence; allocation infrastructure, not a signal",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h15-pm-probability-surface",
+  "title": "Prediction-market implied BTC distribution changes as Fusion BTCUSD features",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "barrier-market probability revisions aggregate informed forecasts ahead of spot reaction; admissible as reference information informing an MT5 instrument (LAWS 1)",
+  "family": "discovered",
+  "evidence_grade": "S++",
+  "needs_acquisition": [
+   "Polymarket public API, point-in-time recording"
+  ],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "xp-h16-capital-velocity",
+  "title": "Capital-velocity tracker (OI growth, participation change, rotation speed)",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:00:38+00:00",
+  "source": "external-prior mining 2026-08-26 (@bl888m_eth, @Livsun, @shmidtqq ecosystems)",
+  "mechanism": "UNRESOLVED mechanism -- source rules not recovered; do NOT invent the missing rule. Recover exact public rules first or leave dormant",
+  "family": null,
+  "evidence_grade": "UNRESOLVED",
+  "needs_acquisition": [],
+  "note": "",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
  }
 ]

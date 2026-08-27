@@ -149,8 +149,15 @@ $PY desks/mt5/research/merge_hypotheses.py || echo "merge FAILED (rc=$?)"
 # here would silently truncate the gauntlet to whatever fits, which is worse than not running it:
 # a partial gauntlet still writes verdicts.
 echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet (on the desk box)"
-scp -q desks/mt5/data/hypotheses/external_survivors.json \
-    contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
+# Ship the docket ONLY when it holds candidates -- an empty file here becomes an empty sweep
+# there, and an empty sweep once wiped the authority file. Belt to the two braces above.
+ROWS=$($PY -c "import json;print(len(json.load(open('desks/mt5/data/hypotheses/external_survivors.json'))))" 2>/dev/null || echo 0)
+if [ "$ROWS" -gt 0 ]; then
+  scp -q desks/mt5/data/hypotheses/external_survivors.json \
+      contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
+else
+  echo "NOT shipping an empty docket ($ROWS rows) to the desk box"
+fi
 if remote_stage "ten-gate gauntlet" \
      "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py"; then
   scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \

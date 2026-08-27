@@ -383,6 +383,15 @@ def main():
         return
     survivors = json.loads(surv_file.read_text("utf-8"))
     print(f"Loaded {len(survivors)} external survivors")
+    # EMPTY INPUT IS A HALT, NOT A SWEEP (2026-08-26, measured). The hourly merge briefly wrote
+    # a 0-row input; this gauntlet then ran "normally" on nothing and rewrote the AUTHORITY file
+    # to n=0 -- wiping 21 certificates with exit code 0. Zero candidates means there is nothing
+    # to judge, and a judge with an empty docket must not touch the records of past verdicts.
+    if not survivors:
+        print("HALT: 0 candidates in the input -- nothing to judge. Refusing to write any "
+              "report or touch UNIVERSAL_SURVIVORS.json; an empty docket does not revoke past "
+              "verdicts.")
+        return
 
     # Group by unique (sym, family, params) combos
     cells = {}

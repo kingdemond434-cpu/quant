@@ -136,6 +136,18 @@ def main() -> int:
 
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)
+    # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
+    # on any run where producers have not written yet, and this merge then emitted an EMPTY file
+    # -- which the pipeline shipped, and on which the gauntlet wiped the authority file to n=0.
+    # An hourly cycle where "the searcher was slow this hour" cascades into "all certificates
+    # revoked" is not a freshness contract, it is a self-destruct. If this run gathered nothing
+    # fresh, the existing docket STANDS: yesterday's candidates are still candidates.
+    if not rows_out:
+        prior = _read(TARGET)
+        if isinstance(prior, list) and prior:
+            print(f"merge: 0 fresh rows this run -- PRESERVING the existing docket of "
+                  f"{len(prior)} candidate(s) rather than shipping an empty file downstream.")
+            return 0
     TARGET.write_text(json.dumps(rows_out, indent=1, default=str), "utf-8")
     (HYP / "merge_report.json").write_text(json.dumps({
         "merged_at": now.isoformat(timespec="seconds"),

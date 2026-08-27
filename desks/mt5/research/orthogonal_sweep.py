@@ -161,7 +161,9 @@ def sweep() -> dict:
         df = _bars(sym)
         if df is None or len(df) < 2000:
             continue
-        peers = [s for s in symbols if s != sym][:3]
+        # pca_residual needs a real cross-section: latent factors extracted from 3 peers are a
+        # pair spread wearing a bigger name. Give it a dozen; the MP bound decides what is real.
+        peers = [s for s in symbols if s != sym][:12]
         peer_df = _bars(peers[0]) if peers else None
         factor_dfs = [f for f in (_bars(s) for s in peers[:2]) if f is not None]
         spread, flow = _tape_series(sym, df.index)
