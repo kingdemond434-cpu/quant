@@ -139,6 +139,31 @@ def main() -> int:
     # hidden inside the gate instead of sitting in front of it. Trial counts stay in the search's
     # own report, for audit, and reach no gate.
 
+    # THE MECHANISM STAMP IS DERIVED HERE, FROM THE CURRENT MAP -- never trusted from a
+    # producer. Discovered rows re-emitted from the banked corpus carried the stamps of the map
+    # AS IT WAS when they were first mined; measured 2026-08-27: the behavioural-flow extension
+    # named 1,285 features whose corpus rows still said STATISTICAL_ONLY, and the dedupe then
+    # kept those stale stamps over freshly re-derived ones. One map, one derivation point, at
+    # the last hop before the gauntlet -- a map extension reaches every candidate the same hour.
+    try:
+        from edge_search import mechanism_for_feature
+        restamped = 0
+        for row in merged.values():
+            if row.get("family") != "discovered":
+                continue
+            feature = str((row.get("params") or {}).get("feature") or "")
+            if not feature:
+                continue
+            status, note = mechanism_for_feature(feature)
+            if status != row.get("mechanism_status"):
+                restamped += 1
+            row["mechanism_status"], row["mechanism_note"] = status, note
+        if restamped:
+            print(f"   mechanism map: {restamped} discovered row(s) re-stamped under the "
+                  f"current map")
+    except ImportError as exc:
+        print(f"   mechanism map unavailable ({exc}); producer stamps carried unchanged")
+
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
