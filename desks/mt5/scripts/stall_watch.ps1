@@ -33,6 +33,8 @@ if (Test-Path $stateFile) {
 $now = Get-Date
 $actions = @()
 $procsOut = @{}
+# one snapshot of every python process, so child CPU can be attributed to its parent's tree
+$allProcs = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'")
 
 foreach ($pat in $patterns) {
   $procs = Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
@@ -48,19 +50,31 @@ foreach ($pat in $patterns) {
     }
   }
 
-  # STALLED: CPU barely moved since the previous watchdog pass
+  # STALLED: the WHOLE PROCESS TREE barely moved since the previous pass.
+  # Measuring only the parent was a self-inflicted wound (2026-08-27): a multiprocessing search
+  # parent sits idle by design while its worker children compute, so it read as "CPU +0s in 10m"
+  # and this watchdog killed every edge_search and orthogonal_sweep at ~20 minutes -- minutes
+  # before each would have written its artifact. A job is stalled only when NOTHING in its tree
+  # is working, so children's CPU counts toward the parent's liveness.
   $gp = Get-Process -Id $keeper.ProcessId
   if ($gp) {
     $cpu = $gp.TotalProcessorTime.TotalSeconds
+    $kids = @($allProcs | Where-Object { $_.ParentProcessId -eq $keeper.ProcessId })
+    foreach ($k in $kids) {
+      $kp = Get-Process -Id $k.ProcessId -ErrorAction SilentlyContinue
+      if ($kp) { $cpu += $kp.TotalProcessorTime.TotalSeconds }
+    }
     $key = "$pat.$($keeper.ProcessId)"
     $ageMin = ($now - $keeper.CreationDate).TotalMinutes
     if ($prev.ContainsKey($key)) {
       $delta = $cpu - [double]$prev[$key].cpu
       $sinceMin = ($now - [datetime]$prev[$key].at).TotalMinutes
-      if ($ageMin -gt 15 -and $sinceMin -ge 8 -and $delta -lt 5) {
+      # 40-minute floor and a 25-minute quiet window: the measured searches run 20-30 minutes,
+      # so anything tighter kills real work. A truly hung job still dies, just not a slow one.
+      if ($ageMin -gt 40 -and $sinceMin -ge 25 -and $delta -lt 5) {
         Stop-Process -Id $keeper.ProcessId -Force
         # children die with the parent or become the next pass's STACKED kill
-        $actions += "STALLED ${pat}: pid $($keeper.ProcessId) alive $([math]::Round($ageMin))m, CPU +$([math]::Round($delta,1))s in $([math]::Round($sinceMin))m -- killed; next trigger resumes"
+        $actions += "STALLED ${pat}: pid $($keeper.ProcessId) alive $([math]::Round($ageMin))m, TREE CPU +$([math]::Round($delta,1))s in $([math]::Round($sinceMin))m -- killed; next trigger resumes"
         continue
       }
     }
