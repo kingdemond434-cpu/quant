@@ -6,3 +6,10 @@ Type=oneshot
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_desk_code_parity.py --heal
 ExecStopPost=/bin/bash /home/quant/quant-platform/scripts/unit_death_log.sh quant-desk-parity.service
+
+# A DEFECT REPORT IS NOT A PROCESS DEATH (gap-wirer 2026-08-27). Without this, every honest
+# nonzero verdict from the checker below was recorded by the global death-visibility drop-in as
+# an "abnormal unit stop" -- and on 2026-08-27 max_audit read `64 abnormal user-unit stop(s)`,
+# a line in which a 41-hour forward-book outage was indistinguishable from noise. The artifact
+# carries the verdict; the exit code must be reserved for the organ actually dying.
+SuccessExitStatus=0 1 2
