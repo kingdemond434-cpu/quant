@@ -5,13 +5,43 @@ import json
 import os
 import socket
 import uuid
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
 STALE_SECONDS = 45 * 60
+
+
+def _owner_is_dead(path: Path) -> bool:
+    """True when the lock names a process on THIS host that no longer exists.
+
+    A time-only stale rule makes live work wait on a corpse: a killed ssh leaves an orphaned
+    writer, or the box reboots mid-run, and the next 45 minutes of hourly attempts are refused
+    by a lock nobody holds (measured 2026-08-27 -- the searcher was blocked this way minutes
+    after its import crash was fixed). Liveness is checked first and the timer remains the
+    backstop for the cases liveness cannot answer: a lock written by a DIFFERENT host, or an
+    unreadable/short-write lock file, is never reclaimed on this basis.
+    """
+    try:
+        row = json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return False                      # unreadable: fall back to the age rule, never guess
+    if str(row.get("host") or "") != socket.gethostname():
+        return False                      # another machine's lock is not ours to judge
+    pid = row.get("pid")
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)                   # signal 0: existence check, never delivers a signal
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False                      # alive under another user
+    except OSError:
+        return False
+    return False
 
 
 @contextmanager
@@ -33,11 +63,12 @@ def exclusive_job(name: str):
                 stale = datetime.now(UTC).timestamp() - path.stat().st_mtime > STALE_SECONDS
             except OSError:
                 stale = False
+            if _owner_is_dead(path):
+                print(f"{name}: reclaiming lock from dead owner (pid gone) -- {path}")
+                stale = True
             if stale:
-                try:
+                with suppress(OSError):
                     path.unlink()
-                except OSError:
-                    pass
                 continue
             print(f"{name}: REFUSED duplicate writer; active lock {path}")
             yield False
