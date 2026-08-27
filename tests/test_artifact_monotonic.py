@@ -132,3 +132,42 @@ def test_report_mode_never_writes_the_artifact(fence):
     assert fence.main() == 1
     assert json.loads(fence._path.read_text())["checked_at"] == OLD, "report mode must not heal"
     assert _report(fence)["regressions"][0]["action"] == "REPORT_ONLY"
+
+
+def _module():
+    """The real module against the real repo -- these two tests are about the SHIPPED registry,
+    not about a scratch desk, so they deliberately do not use the `fence` fixture."""
+    spec = importlib.util.spec_from_file_location("artifact_monotonic_registry", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_the_artifact_the_shadow_watchdog_judges_the_book_by_is_watched() -> None:
+    """MEASURED 2026-08-27, during the repair of the 5.5-hour forward-book outage.
+
+    `shadow_health.json` is the ONE file `monitor_mt5_shadow_sync` reads to decide whether the
+    whole shadow book is healthy -- freshness, aggregate status, blocked count, missing
+    certificates -- and it was the only shadow artifact absent from this fence. Its `updated_at`
+    was observed going 21:25:47 -> 15:31:55 -> 21:39:08: six hours BACKWARDS, carrying the
+    pre-fix `KeyError: 'EURZAR'` back with it and re-reporting a repaired outage as live.
+
+    The cause of that single rollback was never established, which is the argument FOR the fence
+    rather than against it: a stamp that moves backwards is a defect whoever moved it.
+    """
+    assert "desks/mt5/reports/shadow/shadow_health.json" in _module().WATCHED
+
+
+def test_every_watched_shadow_artifact_the_watchdog_consumes_is_covered() -> None:
+    """Pinned as a RELATIONSHIP, not a list: whatever the watchdog reads, this fence watches.
+
+    The two organs drifted apart silently once. Deriving the requirement from the watchdog's own
+    source means adding a file there fails HERE rather than in production.
+    """
+    mod = _module()
+    watchdog = (ROOT / "scripts" / "monitor_mt5_shadow_sync.py").read_text("utf-8")
+    consumed = {name for name in ("shadow_health.json", "shadow_state.json")
+                if name in watchdog}
+    watched = {Path(rel).name for rel in mod.WATCHED}
+    missing = consumed - watched
+    assert not missing, f"the shadow watchdog reads {sorted(missing)} and nothing guards rollback"

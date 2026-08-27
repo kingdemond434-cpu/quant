@@ -59,6 +59,17 @@ WATCHED: dict[str, str] = {
         "the promotion gate's execution evidence",
     "desks/mt5/reports/shadow/shadow_state.json":
         "every forward clock's n, boundary and status",
+    # OBSERVED REGRESSING, 2026-08-27. This is the ONE artifact the read-only shadow watchdog
+    # judges the entire forward book by -- freshness, aggregate status, blocked count, missing
+    # certificates -- and it was the only shadow file NOT watched here. During the repair of the
+    # 5.5-hour outage its `updated_at` was measured going 21:25:47 -> 15:31:55 -> 21:39:08: a
+    # six-hour jump BACKWARDS, carrying the pre-fix `KeyError: 'EURZAR'` back with it. The cause
+    # of that single rollback was not established, which is exactly why it belongs to a fence
+    # rather than to a diagnosis: a stamp that moves backwards is a defect whoever moved it, and
+    # this fence restores the newer copy and escalates on a writer that keeps doing it.
+    "desks/mt5/reports/shadow/shadow_health.json":
+        "the aggregate the shadow watchdog reads; a rollback here re-reports a repaired outage "
+        "as live, or a live one as repaired",
 }
 
 #: Recognised top-level generation stamps, newest wins. Producers name this field differently and
