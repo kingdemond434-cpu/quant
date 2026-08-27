@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-27T02:15:05+00:00",
+ "compiled_at": "2026-08-27T03:10:36+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -1500,7 +1500,7 @@
    "deepening": 0
   },
   "forexfactory": {
-   "rows": 30,
+   "rows": 29,
    "candidates": 62,
    "deepening": 0
   },
@@ -1510,9 +1510,9 @@
    "deepening": 0
   },
   "seasonality": {
-   "rows": 22,
+   "rows": 23,
    "candidates": 2,
-   "deepening": 21
+   "deepening": 22
   },
   "shipping": {
    "rows": 1,
@@ -1585,9 +1585,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 37,
+   "rows": 35,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 35
   },
   "litefinance": {
    "rows": 15,
@@ -1600,9 +1600,9 @@
    "deepening": 4
   },
   "amarkets": {
-   "rows": 111,
+   "rows": 112,
    "candidates": 0,
-   "deepening": 111
+   "deepening": 112
   },
   "fbs_tape": {
    "rows": 1,
@@ -1613,6 +1613,11 @@
    "rows": 18,
    "candidates": 0,
    "deepening": 18
+  },
+  "arxiv": {
+   "rows": 2,
+   "candidates": 0,
+   "deepening": 2
   },
   "scheduled_chatgpt": {
    "rows": 3,
@@ -1625,8 +1630,8 @@
    "deepening": 10
   }
  },
- "rows_accounted": 627,
+ "rows_accounted": 628,
  "executable_candidates": 122,
- "deepening_tasks": 474,
+ "deepening_tasks": 476,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

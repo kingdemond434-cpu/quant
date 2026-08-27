@@ -4307,5 +4307,221 @@
   ],
   "note": "Extends fetch_sge_premium.py pattern. Zero cost. Rate-limit politely.",
   "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; record-from-now only, revised history is lookahead"
+ },
+ {
+  "id": "ext-20260827-ad8dc6",
+  "geneology_id": "external:edge_search:dd_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURCHF discovered params={'feature': 'dd_3', 'band': [0.4, 0.6], 'horizon': 1, 'side': -1} screened at n=4304 exp=0.07519954341949917R t=4.93345686172251 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "dd_3",
+   "band": [
+    0.4,
+    0.6
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 4304,
+   "exp_r": 0.07519954341949917,
+   "t_stat": 4.93345686172251,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURCHF"
+  }
+ },
+ {
+  "id": "ext-20260827-5ced97",
+  "geneology_id": "external:edge_search:tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURGBP discovered params={'feature': 'tick_volume', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=2872 exp=0.0907452354147075R t=4.863131906431472 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "tick_volume",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2872,
+   "exp_r": 0.0907452354147075,
+   "t_stat": 4.863131906431472,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURGBP"
+  }
+ },
+ {
+  "id": "ext-20260827-b7c4ad",
+  "geneology_id": "external:edge_search:rng_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURJPY discovered params={'feature': 'rng_3', 'band': [0.0, 0.1], 'horizon': 1, 'side': -1} screened at n=566 exp=0.20307863866403705R t=4.831394038019193 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "rng_3",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 566,
+   "exp_r": 0.20307863866403705,
+   "t_stat": 4.831394038019193,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-8e0b5c",
+  "geneology_id": "external:edge_search:gap",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPJPY discovered params={'feature': 'gap', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=2859 exp=0.08993750658765298R t=4.808924079849108 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "gap",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2859,
+   "exp_r": 0.08993750658765298,
+   "t_stat": 4.808924079849108,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-4d257d",
+  "geneology_id": "external:edge_search:tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY discovered params={'feature': 'tick_volume', 'band': [0.0, 0.1], 'horizon': 3, 'side': 1} screened at n=1751 exp=0.19602482941356603R t=4.735801931047072 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "tick_volume",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 3,
+   "side": 1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 1751,
+   "exp_r": 0.19602482941356603,
+   "t_stat": 4.735801931047072,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-d41666",
+  "geneology_id": "external:edge_search:tick_volume_z_12",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURGBP discovered params={'feature': 'tick_volume_z_12', 'band': [0.0, 0.1], 'horizon': 6, 'side': 1} screened at n=2590 exp=0.2278194134393648R t=4.733310408023606 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "tick_volume_z_12",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 6,
+   "side": 1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 2590,
+   "exp_r": 0.2278194134393648,
+   "t_stat": 4.733310408023606,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURGBP"
+  }
+ },
+ {
+  "id": "ext-20260827-fe41e0",
+  "geneology_id": "external:edge_search:ru_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURCHF discovered params={'feature': 'ru_3', 'band': [0.4, 0.6], 'horizon': 1, 'side': -1} screened at n=4064 exp=0.07294554611967616R t=4.650242807371231 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ru_3",
+   "band": [
+    0.4,
+    0.6
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 4064,
+   "exp_r": 0.07294554611967616,
+   "t_stat": 4.650242807371231,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURCHF"
+  }
+ },
+ {
+  "id": "ext-20260827-efa368",
+  "geneology_id": "external:edge_search:hour",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY discovered params={'feature': 'hour', 'band': [0.75, 0.9], 'horizon': 3, 'side': -1} screened at n=3588 exp=0.1339765156391351R t=4.633341047709836 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "hour",
+   "band": [
+    0.75,
+    0.9
+   ],
+   "horizon": 3,
+   "side": -1
+  },
+  "created_at": "2026-08-27T02:50:00.890509+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": 3588,
+   "exp_r": 0.1339765156391351,
+   "t_stat": 4.633341047709836,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFJPY"
+  }
  }
 ]
