@@ -137,6 +137,93 @@ ALLOWLIST: dict[str, str] = {
                                          "generating. Directly watches the 0.952 concentration",
     "scripts/check_panel_breadth.py": "L1.62; live rc=0 -- 53/53 panel cells, 0 over-claimed",
     "scripts/check_citation_integrity.py": "L2.3/s42; live rc=0 -- 0 unresolvable of 298 citations",
+    # ------------------------------------------------------------------------------------
+    # FOURTH WAVE, gap-fixer 2026-08-27. Same standard as the third: every token below was RUN
+    # BY HAND this cycle and the reason quotes WHAT IT ACTUALLY PRINTED. rc=2 on a fence is
+    # correct behaviour. Twelve more candidates were run and DELIBERATELY LEFT OUT -- see the
+    # REFUSED block below, because a wave that reports only what it added hides the judgement.
+    #
+    # These are weighted toward DISCOVERY. The §33 arrivals counter reads 30/week against a
+    # 160/week baseline, and the mechanism is visible here: the organs that RAISE findings have
+    # had no scheduler since root cron OOM-died on 08-20.
+    # ------------------------------------------------------------------------------------
+    "scripts/run_fusion_search.py": "MT5/FUSION-NATIVE SEARCH -- the mandated universe's own "
+                                    "searcher, scheduled by nothing; live rc=0 -> "
+                                    "data/fusion_search.json",
+    "scripts/run_rejection_rescore.py": "the near-survivor bank (GAP 96); live rc=0 queued 50 "
+                                        "near-miss rejects of 420 eligible and wrote 2 forward "
+                                        "scores -- the cheapest survivor-manufacturing device "
+                                        "the desk has, and it was running never",
+    "scripts/graveyard_resurrect.py": "L1.16a re-open on a NAMED enabling change; live rc=0 -> "
+                                      "data/graveyard_resurrection_queue.json",
+    "scripts/hunt_source_alternatives.py": "the PERMANENT free-frontier hunt (RESEARCH §3); live "
+                                           "rc=2 REGISTRY GAP 'zenn is DEAD with no registered "
+                                           "alternatives'. max_audit reports last_free_dig 7.8d "
+                                           "against a DAILY cadence -- this is that producer",
+    "scripts/blindspot_prober.py": "unknown-unknown probing (L1.32); live rc=0 -> "
+                                   "data/blindspot_probes.json",
+    "scripts/run_mechanism_census.py": "mechanism supply census; live rc=0, 32 classes over 150 "
+                                       "readable records, 0 unclassified",
+    "scripts/report_mechanism_supply.py": "the census's report half; live rc=0 -> "
+                                          "reports/mechanism_supply.json",
+    "scripts/run_generation_diversity.py": "generator concentration (L1.32); live rc=0, most "
+                                           "attempted carry/carry/months x20 -> data/gen_diversity.json",
+    "scripts/mine_research_queue.py": "daily research-queue miner. NOTE: exceeded a 240s hand-run "
+                                      "probe (rc=124), so it is a LONG organ, not a fast one -- "
+                                      "the dispatcher detaches and its manifest row holds a flock, "
+                                      "so a slow run blocks nothing. Listed with that measured "
+                                      "runtime rather than an assumed one",
+    "scripts/run_reality_gap.py": "L2.10 backtest->shadow->paper->live->venue-truth comparison; "
+                                  "live rc=0, currently NO-DATA on two links and saying so",
+    "scripts/run_execution_quality.py": "the BOTTLENECK LAW's own instrument; live rc=0 MEASURED "
+                                        "exit_timing 0.5802 capture ratio over n=35 real fills",
+    "scripts/run_execution_intel.py": "execution intel roll-up; live rc=0 DEGRADED "
+                                      "(cost_drift=NO-DATA, fee_attribution=DEGRADED)",
+    "scripts/score_forecasts.py": "L1.29 calibration; live rc=0. max_audit reports 20 forecasts "
+                                  "past their grading deadline and this is what grades them",
+    "scripts/run_organ_er.py": "the organ emergency room -- on a box with 36 abnormal unit stops "
+                               "in 24h this is the triage desk; live rc=2 naming CRASHED "
+                               "capability_hunt and BLOCKED kimi_hunter",
+    "scripts/meta_research_review.py": "§12 meta-research review; live rc=0",
+    "scripts/check_timidity_language.py": "L1.28/LAWS §2a timidity fence, repaired this cycle "
+                                          "(it read one of the two files brain_env injects and "
+                                          "declared a live law absent every run); live rc=1 now "
+                                          "surfacing two REAL quota-caps in prompt surfaces",
+    "scripts/check_calendar_gates.py": "L1.48 evidence-is-the-clock fence; live rc=1 with a "
+                                       "declared denominator (36286 offered -> 1789 scanned)",
+    "scripts/run_strategy_coverage.py": "L1.32 strategy breadth; live rc=0 naming THIN families "
+                                        "(STATISTICAL-ARBITRAGE 1 tested, LEAD-LAG 2) -- the "
+                                        "direct read on the 0.87 single-family concentration",
+    "scripts/run_law_police.py": "law-enforcement audit; live rc=1 'FALL VANISHED "
+                                 "test-suite-passfail' -> reports/law_police.json",
+    # ------------------------------------------------------------------------------------
+    # REFUSED THIS WAVE, each with the reason it was refused. Recording these matters as much as
+    # the additions: a token that was examined and rejected must not look like one nobody reached.
+    #
+    #   scripts/watchdog.py            REFUSED, and it is the important one. Its arms spawn
+    #                                  `run_cashcarry_executor.py --live --capital 4500` and a
+    #                                  public tunnel -- a LIVE CRYPTO EXECUTOR that LAWS §1 bans
+    #                                  permanently and that the principal retired by order
+    #                                  (b0fe6f50). Scheduling it would have the desk re-arming
+    #                                  banned organs every 3 minutes. Its ONE valuable arm
+    #                                  (respawning daily_research_cycle after an OOM kill, which
+    #                                  it did when run by hand this cycle -- the CRO cycle is
+    #                                  alive again because of it) needs extracting into a scoped
+    #                                  organ before any of this can be scheduled. Carded.
+    #   scripts/check_clock_provenance.py  input retired by the mandate: "Start the recorders:
+    #                                  there is no tape to measure". No MT5 tape reaches it.
+    #   scripts/check_crowding.py      crypto ground (universe 875 snapshots).
+    #   scripts/run_fee_attribution.py crypto-era ledger (COOKIEUSDT, 1000CATUSDT, MOVEUSDT).
+    #   scripts/check_margin_topology.py  crypto venue topology (split_spot_usdtm).
+    #   scripts/check_partition_power.py  its partitions are funding_state/funding_breadth --
+    #                                  crypto vocabulary; the FINDING is real but the axes are
+    #                                  retired ground, so it needs MT5 partitions first.
+    #   scripts/check_coverage_floors.py  precondition unmet standalone: it needs coverage.json
+    #                                  from a --cov suite run, so hourly it would only ever print
+    #                                  FileNotFoundError. Belongs after the suite, not here.
+    #   scripts/run_execution_economics.py  exits 1 while still writing its artifact; that
+    #                                  disagreement needs diagnosing before it is scheduled.
+    # ------------------------------------------------------------------------------------
     "scripts/check_private_bisection.py": "live rc=0 -- guards against a private bar in front of "
                                           "the canonical ten (L1.60; two were deleted on 08-26)",
     "scripts/refresh_panel_roster.py": "live rc=0 -- 416 catalog models recorded. The desk-state "
