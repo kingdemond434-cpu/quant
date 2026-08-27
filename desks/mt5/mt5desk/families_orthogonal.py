@@ -38,9 +38,9 @@ to say, and it says nothing.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 
-import math
 import numpy as np
 import pandas as pd
 from mt5desk.families import Signal, _atr, _h1
