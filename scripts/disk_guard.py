@@ -26,6 +26,7 @@ from __future__ import annotations
 import gzip
 import json
 import shutil
+import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -33,6 +34,9 @@ from typing import Any
 
 ROOT = Path("/home/quant/quant-platform")
 INTEL_DIRS = [ROOT / "desks/mt5/data/intelligence", ROOT / "data/intelligence"]
+#: The reaper asks THIS repo which worktrees it registered; a checkout under /tmp that
+#: this repo never registered is somebody else's and is left entirely alone.
+REPO = ROOT
 LOG = ROOT / "data" / "disk_guard.json"
 
 #: Keep this many days of individual discovery files; older ones roll up per source per day.
@@ -98,6 +102,15 @@ TMP_RETAIN_HOURS = 24.0
 MEM_FLOOR_MB = 600.0
 KEEP_PREFIXES = ("claude-", "systemd-private", ".X", "snap", "pytest-of-",
                  "node-compile-cache", ".font", "ssh-", ".ICE", "tmux-")
+#: A REGISTERED GIT WORKTREE IS NOT SCRATCH, and unlinking its files one at a time is the worst
+#: available outcome: the checkout is gutted while `.git/worktrees/<name>` still registers it, so
+#: `git worktree list` keeps advertising a tree whose every tracked file now reads as deleted --
+#: and this desk has repeatedly had stale checkouts launder mass deletions into a commit (R0423).
+#: The file reaper therefore SKIPS anything inside a registered worktree, and a separate arm
+#: removes the whole worktree through git, which refuses when the tree is dirty. Measured
+#: 2026-08-27: /tmp/gw_base and /tmp/lawgate-head-w59v694v/t held 433MB of RAM between them on a
+#: 3.8GB no-swap box that had OOM-killed its research organs 221 times in three days.
+WORKTREE_STALE_HOURS = 12.0
 
 
 def free_gb() -> float:
@@ -164,16 +177,112 @@ def _open_files() -> set[str]:
     return held
 
 
+def _git(args: list[str], cwd: Path | None = None) -> tuple[int, str]:
+    try:
+        proc = subprocess.run(["git", *args], cwd=str(cwd) if cwd else None,
+                              capture_output=True, text=True, timeout=60, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 1, f"{type(exc).__name__}: {exc}"
+    return proc.returncode, (proc.stdout + proc.stderr).strip()
+
+
+def tmpfs_worktrees(repo: Path) -> list[Path]:
+    """Registered worktrees whose checkout lives under the /tmp tmpfs."""
+    rc, out = _git(["worktree", "list", "--porcelain"], repo)
+    if rc != 0:
+        return []
+    found: list[Path] = []
+    for line in out.splitlines():
+        if line.startswith("worktree "):
+            path = Path(line.split(" ", 1)[1].strip())
+            if TMP_DIR in path.parents:
+                found.append(path)
+    return found
+
+
+def _cwds() -> set[str]:
+    """Every visible process's cwd -- a worktree someone is standing in is never reclaimed."""
+    out: set[str] = set()
+    for proc in Path("/proc").iterdir():
+        if not proc.name.isdigit():
+            continue
+        try:
+            out.add(str((proc / "cwd").resolve()))
+        except OSError:
+            continue
+    return out
+
+
+def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str]) -> tuple[int, int]:
+    """Remove stale git worktrees checked out onto tmpfs. Returns (bytes_freed, n_removed).
+
+    Every refusal is REPORTED rather than forced: a worktree that is dirty, holds untracked
+    work, sits at a sha no branch contains, or has a live process inside it is left alone with
+    its reason named. `git worktree remove` is the only removal path -- it refuses a dirty tree
+    itself, which is the second half of the safety argument.
+    """
+    freed = 0
+    removed = 0
+    cwds = _cwds()
+    for wt in tmpfs_worktrees(repo):
+        if not wt.exists():
+            continue
+        try:
+            size = sum(f.stat().st_size for f in wt.rglob("*")
+                       if f.is_file() and not f.is_symlink())
+            newest = max((max(f.stat().st_mtime, f.stat().st_atime) for f in wt.rglob("*")
+                          if f.is_file() and not f.is_symlink()), default=0.0)
+        except OSError:
+            continue
+        if now.timestamp() - newest < WORKTREE_STALE_HOURS * 3600.0:
+            continue
+        if any(c == str(wt) or c.startswith(f"{wt}/") for c in cwds):
+            actions.append(f"tmpfs-worktree: {wt} HELD by a live process -- not reclaimed")
+            continue
+        rc, dirty = _git(["status", "--porcelain"], wt)
+        if rc != 0 or dirty:
+            actions.append(f"tmpfs-worktree: {wt} has uncommitted work "
+                           f"({len(dirty.splitlines())} path(s)) -- not reclaimed, relocate it "
+                           f"to real disk instead of deleting it")
+            continue
+        rc, head = _git(["rev-parse", "HEAD"], wt)
+        if rc != 0:
+            actions.append(f"tmpfs-worktree: {wt} HEAD unreadable -- not reclaimed")
+            continue
+        rc, contains = _git(["branch", "-a", "--contains", head], repo)
+        if rc != 0 or not contains.strip():
+            actions.append(f"tmpfs-worktree: {wt} sits at {head[:8]}, which NO branch contains "
+                           f"-- not reclaimed; tag it before it can be freed")
+            continue
+        rc, out = _git(["worktree", "remove", str(wt)], repo)
+        if rc != 0:
+            actions.append(f"tmpfs-worktree: git refused to remove {wt} ({out[:120]})")
+            continue
+        freed += size
+        removed += 1
+        actions.append(f"tmpfs-worktree: reclaimed {size / 1e6:.0f}MB of RAM from {wt} "
+                       f"(clean, HEAD {head[:8]} reachable)")
+    if removed:
+        _git(["worktree", "prune"], repo)
+    return freed, removed
+
+
 def reap_tmpfs(now: datetime, actions: list[str]) -> tuple[int, int]:
     """Free RAM held by stale scratch under the /tmp tmpfs. Returns (bytes_freed, n_files)."""
     if not TMP_DIR.is_dir():
         return 0, 0
     held = _open_files()
+    # A registered worktree is a CHECKOUT, not scratch. Unlinking its files would leave git
+    # advertising a tree of phantom deletions; `reap_tmpfs_worktrees` removes it wholesale or
+    # not at all.
+    worktrees = tmpfs_worktrees(REPO)
     cutoff = now.timestamp() - TMP_RETAIN_HOURS * 3600.0
     freed = 0
     removed = 0
     for entry in TMP_DIR.iterdir():
         if entry.name.startswith(KEEP_PREFIXES):
+            continue
+        if any(wt == entry or entry in wt.parents or wt in entry.parents for wt in worktrees):
             continue
         candidates = [entry] if entry.is_file() and not entry.is_symlink() else (
             [f for f in entry.rglob("*") if f.is_file() and not f.is_symlink()]
@@ -205,7 +314,9 @@ def main() -> int:
     mem_before = mem_available_mb()
     actions: list[str] = []
     big: list[str] = []
+    wt_freed, wt_removed = reap_tmpfs_worktrees(now, REPO, actions)
     tmp_freed, tmp_files = reap_tmpfs(now, actions)
+    tmp_freed += wt_freed
     cutoff = (now - timedelta(days=RETAIN_DAYS)).strftime("%Y%m%d")
     freed = 0
 
@@ -229,7 +340,10 @@ def main() -> int:
               "mem_available_mb_after": round(mem_after, 1),
               "tmpfs_reclaimed_mb": round(tmp_freed / 1e6, 1),
               "tmpfs_files_removed": tmp_files,
-              "tmp_retain_hours": TMP_RETAIN_HOURS}
+              "tmp_retain_hours": TMP_RETAIN_HOURS,
+              "tmpfs_worktrees_removed": wt_removed,
+              "tmpfs_worktrees_reclaimed_mb": round(wt_freed / 1e6, 1),
+              "tmpfs_worktrees_remaining": [str(w) for w in tmpfs_worktrees(REPO)]}
     # The memory arm alerts on the SAME footing as the disk arm. `/tmp` is RAM here, so a
     # reclaim that still leaves the box under the floor is not a cleanup that worked -- it is
     # evidence the pressure is coming from resident processes, and the honest next move is the
