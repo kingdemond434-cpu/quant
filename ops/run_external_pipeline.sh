@@ -130,27 +130,27 @@ scp -q data/cot_zcache.parquet \
     contabo-mt5:'C:/opt/quant/data/cot_zcache.parquet' 2>/dev/null || true
 
 # These are independent discovery methods. Running them behind `A && B` made an OOM in the
-# family-free search suppress the much cheaper orthogonal sweep. Pull an artifact only when its
-# own producer succeeds; merge_hypotheses also rejects any artifact older than this pipeline run.
-if remote_stage "orthogonal frontier" \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py"; then
-  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
-      desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null \
-    && echo "orthogonal frontier artifact pulled" \
-    || echo "orthogonal frontier pull FAILED"
-else
-  echo "orthogonal frontier FAILED on the desk box -- see $LOGF"
-fi
+# family-free search suppress the much cheaper orthogonal sweep. THE ARTIFACT IS ALWAYS PULLED,
+# whatever this cycle's remote invocation did: measured 2026-08-27, the desk finished a 3.9MB
+# search at 03:29 AFTER the ssh leg had timed out, and the success-gated pull then left the VPS
+# merging a copy 25 hours old for the rest of the day. `scp -p` preserves the artifact's TRUE
+# mtime, so merge_hypotheses' freshness contract -- not this script's guess about the run --
+# decides whether the content is this cycle's discovery or yesterday's.
+remote_stage "orthogonal frontier" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py" \
+  || echo "orthogonal frontier run FAILED/timed out on the desk box -- see $LOGF"
+scp -p -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
+    desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null \
+  && echo "orthogonal frontier artifact pulled (true mtime preserved)" \
+  || echo "orthogonal frontier pull FAILED"
 
-if remote_stage "family-free frontier" \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py"; then
-  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
-      desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null \
-    && echo "family-free frontier artifact pulled" \
-    || echo "family-free frontier pull FAILED"
-else
-  echo "family-free frontier FAILED on the desk box -- see $LOGF"
-fi
+remote_stage "family-free frontier" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py" \
+  || echo "family-free frontier run FAILED/timed out on the desk box -- see $LOGF"
+scp -p -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
+    desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null \
+  && echo "family-free frontier artifact pulled (true mtime preserved)" \
+  || echo "family-free frontier pull FAILED"
 
 # STAGE 2c: merge every producer into the ONE file the gauntlet reads. Without this the search
 # and the sweep write files nothing consumes -- producers with no consumer, which is how the book
