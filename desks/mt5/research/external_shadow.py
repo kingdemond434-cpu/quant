@@ -14,6 +14,7 @@ from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 STATE = BASE / "reports" / "shadow" / "external_shadow_state.json"
+CERTS = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
 _TERMINAL = ("RETIRED", "KILL", "DEAD", "REJECT", "QUARANTIN", "PROMOTED")
 
 
@@ -28,19 +29,33 @@ def main() -> int:
             state = {}
     except (OSError, ValueError):
         state = {}
+    try:
+        certs = json.loads(CERTS.read_text("utf-8")).get("survivors", {})
+    except (OSError, ValueError, AttributeError):
+        certs = {}
+    runnable = {
+        str(key) for key, cert in certs.items()
+        if isinstance(cert, dict)
+        and isinstance((cert.get("shadow_spec") or {}).get("params"), dict)
+    }
     now = datetime.now(UTC).isoformat()
     retired = 0
     for key, row in state.items():
         if not str(key).startswith("external.") or not isinstance(row, dict):
             continue
         if not _is_terminal(row.get("status")):
+            duplicate = key in runnable
             row.update(
-                status="RETIRED_DUPLICATE_CLOCK",
+                status=("RETIRED_DUPLICATE_CLOCK" if duplicate
+                        else "RETIRED_UNRECONSTRUCTIBLE"),
                 retired_at=now,
                 promotion_authority=False,
                 order_authority=False,
-                why=("retired without deleting evidence: canonical shadow_state.json owns "
-                     "this certificate through shadow_forward"),
+                why=(("retired without deleting evidence: canonical shadow_state.json owns "
+                      "this exact certificate through shadow_forward") if duplicate else
+                     ("retired without deleting evidence: certificate omitted exact params; "
+                      "the old private runner guessed family defaults, which cannot form a "
+                      "valid forward clock")),
             )
             retired += 1
     state.update(
@@ -50,6 +65,10 @@ def main() -> int:
         active_external_sleeves=0,
         retired_duplicate_sleeves=sum(
             isinstance(row, dict) and row.get("status") == "RETIRED_DUPLICATE_CLOCK"
+            for key, row in state.items() if str(key).startswith("external.")
+        ),
+        retired_unreconstructible_sleeves=sum(
+            isinstance(row, dict) and row.get("status") == "RETIRED_UNRECONSTRUCTIBLE"
             for key, row in state.items() if str(key).startswith("external.")
         ),
     )

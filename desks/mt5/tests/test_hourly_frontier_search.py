@@ -105,6 +105,8 @@ def test_hourly_pipeline_runs_both_frontiers_on_desk_box() -> None:
     assert "desks/mt5/mt5desk/families.py" in script
     assert "desks/mt5/mt5desk/families_orthogonal.py" in script
     assert "libs/research/bar_span.py" in script
+    assert "ServerAliveInterval=15" in script
+    assert 'FAILED with rc=$rc' in script
 
 
 def test_hourly_merge_refuses_stale_producer_artifacts(monkeypatch, tmp_path) -> None:

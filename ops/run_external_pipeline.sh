@@ -35,10 +35,17 @@ REMOTE_STAGE_TIMEOUT="${REMOTE_STAGE_TIMEOUT:-25m}"
 
 remote_stage () {   # remote_stage <label> <remote command>
   local label="$1"; shift
-  timeout "$REMOTE_STAGE_TIMEOUT" ssh -o ConnectTimeout=20 contabo-mt5 "$@" >> "$LOGF" 2>&1
+  # These searches legitimately keep one SSH session open for 20+ minutes.  The default
+  # connection was reset at 23m during a healthy orthogonal run, discarding the artifact just
+  # before completion.  Keepalives distinguish a live long computation from a dead socket.
+  timeout "$REMOTE_STAGE_TIMEOUT" ssh -o ConnectTimeout=20 \
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=20 \
+    contabo-mt5 "$@" >> "$LOGF" 2>&1
   local rc=$?
   if [ "$rc" -eq 124 ]; then
     echo "$label TIMED OUT after $REMOTE_STAGE_TIMEOUT on the desk box -- later stages still run"
+  elif [ "$rc" -ne 0 ]; then
+    echo "$label FAILED with rc=$rc on the desk box -- later stages still run"
   fi
   return "$rc"
 }
