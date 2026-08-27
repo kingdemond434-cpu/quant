@@ -3523,7 +3523,7 @@ Beyond ad-hoc searches: topic/language sweeps for MT5/MQL/FX strategy repos, for
 high-star strategy repos, Issues/Discussions of broker-API wrappers, dead-repo archaeology
 (L1.11a). GitHub maximalism is already law; this seed makes the DAILY cycle own it.
 
-### 43. [seed S3] TradingView public scripts — grade: **route verified-live 2026-08-26 (HTTP 200 on /scripts/); NOT new ground — duplicate of seed S12** [§33: deferred(2026-09-01) tier:3]
+### 43. [seed S3] TradingView public scripts — grade: **KILLED 2026-08-27 — duplicate of seed S12 (card 52), which this run closed on §13: the robots `ClaudeBot` group bars /scripts/* and /script/*. Recorded as ONE kill, not two** [§33: killed tier:3 -> docs/graveyard.md `tradingview_pine_agentic_mining`]
 - **Merged, not double-counted:** S3 and S12 are the same ground described twice (S12's own text
   concedes S3 is "already covered in 8 docs — the seed here is the DAILY cadence, not novelty").
   S12 carries the live deferral and owns the work; this card is a pointer, so that the pair is one
@@ -3740,21 +3740,21 @@ count. LIVE verified track records on the desk's own platform — the single ric
 reverse-engineering ground (RESEARCH §4). Extract stats + rank deltas; flag high-growth/low-dd
 signals for mechanism inference. [§33: deferred(2026-09-01) tier:1]
 
-### 50. [seed S10] Myfxbook public systems + community outlook — grade: pending verification [§33: deferred(2026-09-01) tier:1]
+### 50. [seed S10] Myfxbook public systems + community outlook — grade: **WALLED-AT-EDGE 2026-08-27 (unified frontier dig): Cloudflare managed challenge returns **HTTP 403 on robots.txt itself** — the §13 read is not merely unfavourable, it is UNOBTAINABLE from this box, which is its own status and NOT a licence verdict (L1.28a / WS-005). This is a ROUTE problem, not a ground verdict: OP-098 (CDX over `myfxbook.com/members/*`) is the untried rediscovery route and is the owed unit** [§33: deferred(2026-09-03) tier:1]
 Verified track records (equity curves, per-trade history where public) AND the community outlook
 endpoint (retail % long/short per pair) — the positioning axis, consumed WITH the standing
 B-book debias prior (retail ruin is cost extraction, never naive fade).
 
-### 51. [seed S11] Darwinex public DARWIN metrics — grade: pending verification [§33: deferred(2026-09-01) tier:1]
+### 51. [seed S11] Darwinex public DARWIN metrics — grade: **route HALF-SOLVED 2026-08-27 (unified frontier dig). POPULATION SOLVED: Wayback CDX over `darwinex.com/invest/*` = **1,479 DARWIN tickers** (OP-098). Per-entity page live and keyless — `/darwin/<T>` 302s to `/invest/<T>`, 165KB, robots-permitted (`Disallow` covers /api, /private, /darwinex-index, not /invest). RESIDUAL, stated so nothing reads as done: the 12 investable attributes + D-Score are client-side and the XHR was NOT found in the landing bundle — metrics extraction is OWED. `/api` is robots-BARRED, so that route is closed by §13, not by difficulty** [§33: deferred(2026-09-03) tier:1]
 Public API: d-scores, return series, investor capacity per DARWIN. A regulated, curated
 track-record universe with its own risk-normalization to reverse-engineer.
 
-### 52. [seed S12] TradingView public Pine library, systematic — grade: pending verification [§33: deferred(2026-09-01) tier:1]
+### 52. [seed S12] TradingView public Pine library, systematic — grade: **KILLED on §13 2026-08-27 (unified frontier dig; robots read in full and group-scoped, the KR-s5 discipline). TradingView publishes a SECOND user-agent group naming `ClaudeBot` alongside 15 other AI crawlers, and that group's rules are `Disallow: /ideas/*, /scripts/*, /script/*, /v/*, /u/*, /chat/*, /chart/*, /watchlists/*` — it bars EXACTLY the ground this seed wanted. The `*` group permits /scripts/, so a naive one-group read INVERTS the verdict (OP-103 class). The desk's agent is Claude-family; §13 is absolute; this ground is closed to agentic mining and no UA-substitution route will be built** [§33: killed tier:3 -> docs/graveyard.md `tradingview_pine_agentic_mining`]
 Open-source script pages (full Pine source = direct strategy corpus), per-script boost/use
 counts, author graphs, per-symbol ideas streams. hunt16's families were TradingView-style
 indicator recreations — this is that ground, mined at the source.
 
-### 53. [seed S13] FX Blue public profiles — grade: pending verification [§33: deferred(2026-09-05) tier:2]
+### 53. [seed S13] FX Blue public profiles — grade: **verified-clean — POPULATION SOLVED AND CORPUS BUILDING 2026-08-27 (unified frontier dig): the 08-25 verdict "there is no population route" was WRONG — Wayback CDX over `fxblue.com/users/*` enumerates **5,077 handles** (OP-098). Full data layer resolved keyless: liveness `strivewidget.aspx?displayUserId=` (52KB live / 88b dead), headline `wl/view.aspx?id=&mode=overview`, and **51 mechanism charts** `wl/charts/<ch>.aspx?id=` whose numbers are literal in a Google-Charts `addRows([...])` block — hour-of-day, per-symbol, direction, duration, day-of-week and lot-sizing, i.e. the exact §4 black-box axes. §13: `Allow: /`, no robots on the api host. Harvester wired: `desks/mt5/scripts/fxblue_track_record_miner.py`** [§33: wired tier:1 -> desks/mt5/data/intelligence/fxblue/track_records.jsonl]
 Public stats pages of live accounts (many prop-firm passers publish here).
 
 ### 54. [seed S14] Collective2 public strategy leaderboards — grade: pending verification [§33: deferred(2026-09-05) tier:2]

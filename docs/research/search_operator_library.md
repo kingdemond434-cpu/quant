@@ -3416,3 +3416,49 @@ ALL SEATS — a venue-adjacent PORTAL (financial-media quote API) often carries 
 for a venue's instruments than the venue's own site, whose official endpoint serves only the
 current session (measured here: SGE official = today's minute tape; Eastmoney = 22 years) — probe
 the portal layer FIRST for history, the venue for provenance/spec.
+
+---
+
+## OP-098 — WAYBACK CDX IS THE POPULATION ENUMERATOR FOR ANY TRACK-RECORD SITE WHOSE PER-ENTITY ROUTE IS PUBLIC AND WHOSE LISTING IS HIDDEN (unified frontier dig, 2026-08-27)   [active]
+
+**THE CLASS.** A track-record ground has TWO routes and they fail independently: the **per-entity**
+route (one trader's page) and the **population** route (who exists). Sites routinely leave the
+first wide open and the second behind a JS filter, a POST search or an investor login. The
+standing failure mode is to confirm the per-entity route, fail to find a listing, and stop —
+which is exactly where the FX Blue dig stopped on 2026-08-25 ("sitemap.xml enumerates exactly ONE
+user, `/users/example` — there is no population route, and a track-record ground without a
+population cannot be mined"). **That verdict was wrong, and the correction is one command.**
+
+**THE OPERATOR.** The archive's URL index is a population enumerator. It is not a content fetch —
+it is a keyless list of every URL ever crawled under a prefix, so it recovers the listing the
+site declines to publish, INCLUDING entities the current site has delisted:
+
+```
+curl -sS "http://web.archive.org/cdx/search/cdx?url=<host>/<entity-path>/*\
+&output=text&fl=original&collapse=urlkey&limit=40000&filter=statuscode:200"
+```
+
+Then regex the entity id out of the URLs and de-duplicate. **Measured 2026-08-27, both in one
+session:** `fxblue.com/users/*` -> **5,077 handles**; `darwinex.com/invest/*` -> **1,479 DARWIN
+tickers**. Both grounds had been recorded as population-blocked. The hits are LIVE against the
+current site, not archive reads — CDX supplies only the identifier list, and every subsequent
+fetch goes to the origin, so archive staleness cannot contaminate the data (it costs only a dead
+rate: measured ~0-33% dead handles, which is itself a real attrition number to record, never to
+hide).
+
+**WHY IT GENERALISES.** The prerequisite is only that entity pages were once publicly crawlable
+under a stable path prefix. That is true of essentially every leaderboard, signal marketplace,
+copy-trading platform and public-statement host — the ground RESEARCH §4 calls first-class.
+Standing targets to run this against before declaring any of them population-blocked: Myfxbook
+`/members/*` and `/portfolio/*`, Collective2 `/strategies/*`, ZuluTrade `/traders/*`, eToro
+`/people/*`, MQL5 `/signals/*` (already enumerated natively, use as the CONTROL — if CDX recovers
+a comparable count there, the operator is validated against a known population).
+
+**THE TWO CAVEATS, both real.** (1) Path-prefix CDX is **subdomain-blind** (OP, AR s4 2026-08-20) —
+enumerate each host separately. (2) **robots is not a reuse grant** (OP-096): CDX legitimises
+DISCOVERY of identifiers, never the licence to redistribute what you then fetch. The §13 read on
+the origin still has to happen and is unchanged by the enumeration route.
+
+**COROLLARY — "no population route" is a claim requiring the CDX probe.** Under L1.51 ("exhausted"
+requires evidence), a track-record ground may not be graded population-blocked until this command
+has been run against it and returned nothing. It costs one request.
