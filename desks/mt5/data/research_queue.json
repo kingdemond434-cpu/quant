@@ -4124,5 +4124,188 @@
   "needs_acquisition": [],
   "note": "",
   "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
+ },
+ {
+  "id": "ext-20260827-132d80",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-2de8b0",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CADJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-1dc146",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-4fd8e3",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-31e25d",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-c0ab41",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: HKDJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "HKDJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-832ada",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: MXNJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "MXNJPY"
+  }
+ },
+ {
+  "id": "ext-20260827-f3f361",
+  "geneology_id": "external:miner:central_bank",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NOKJPY event_reaction params={'input_source': 'ff_calendar_vintage'} screened at n=None exp=NoneR t=None pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "event_reaction",
+  "side": "BOTH",
+  "params": {
+   "input_source": "ff_calendar_vintage"
+  },
+  "created_at": "2026-08-27T00:50:00.695814+00:00",
+  "status": "PENDING",
+  "external_screen": {
+   "n": null,
+   "exp_r": null,
+   "t_stat": null,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "NOKJPY"
+  }
+ },
+ {
+  "id": "xp-h17-china-macro-pulse",
+  "title": "China macro pulse via AkShare (free) as external features on symbols we ALREADY trade",
+  "status": "PENDING",
+  "queued_at": "2026-08-27T00:58:02+00:00",
+  "source": "principal 2026-08-27: Chinese Bloomberg-alternative list. Only the PROGRAMMATIC item is usable ground: AkShare python library (also Baostock). Terminals/apps (iFinD, Choice, Wind mobile, Fincept) are human UIs -- nothing to wire. A-shares themselves are NOT in the Fusion universe and are never traded.",
+  "mechanism": "NAMED: China is the marginal buyer of iron ore, copper, gold and the anchor of AUD/NZD/commodity flow. Scheduled China data (PMI, credit impulse, fixing, SGE gold premium -- we already fetch SGE) moves hedging and export-revenue flow in AUDUSD/NZDUSD/AUDJPY/XAUUSD/copper-linked symbols with an identifiable counterparty. Feature enters edge_search as ext_* primitives, judged by the same 10 gates; multiplicity only inside deflated_sharpe.",
+  "family": "family_discovered via ext_* external features",
+  "evidence_grade": "S (mechanism named, data free+programmatic, point-in-time discipline required)",
+  "needs_acquisition": [
+   "AkShare point-in-time recorder on VPS (record-from-now like NOAA card; NO backfilled vintages -- revisions leak)"
+  ],
+  "note": "Extends fetch_sge_premium.py pattern. Zero cost. Rate-limit politely.",
+  "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; record-from-now only, revised history is lookahead"
  }
 ]

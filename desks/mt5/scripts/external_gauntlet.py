@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import json
 import math
-import os
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -34,15 +33,15 @@ HYP = DATA / "hypotheses"
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "desks" / "mt5"))
 
-from libs.validation.cpcv import CPCV
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio
-from libs.validation.pbo import probability_backtest_overfitting
-from libs.validation.reality_check import hansen_spa
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+from research.frontier_identity import cell_id, economic_prior  # noqa: E402
 
-from mt5desk import families
-from mt5desk.engine import Costs, run_backtest
-from research.frontier_identity import cell_id, economic_prior
+from libs.validation.cpcv import CPCV  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.reality_check import hansen_spa  # noqa: E402
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
 TRIALS_MULTIPLIER = 7.0
 DSR_THRESHOLD = 0.95
@@ -56,10 +55,7 @@ COST_SCENARIO = 3.0
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     m = meta.get(sym, {})
     spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
-    if sym == "XAUUSD":
-        spread = 0.48 * mult
-    else:
-        spread = max(spread, 0.05) * mult
+    spread = 0.48 * mult if sym == "XAUUSD" else max(spread, 0.05) * mult
     return Costs(spread_per_lot=spread,
                  commission_per_lot=3.50 * mult,
                  contract_oz=m.get("contract_size", 1e5))
@@ -257,17 +253,32 @@ def cache_load(key: str):
         return None
 
 
+_CACHE_SAVE_WARNED = [False]
+
+
 def cache_save(key: str, ds1, ds3) -> None:
+    """Persist one cell's series pair. A save failure is REPORTED once, never swallowed.
+
+    The first deployment produced ZERO files on the desk box and nobody knew: every save failed
+    inside a bare `except: pass`, the warm sweep ran exactly as slow as the cold one (12.2 vs
+    12.4 min), and the only symptom was a missing speedup -- which reads as "the box is slow",
+    not "the cache is broken". The loud path then caught the actual bug within one run: some
+    families' daily series carry plain datetime.date objects, not a DatetimeIndex, and
+    astype("int64") on those raises TypeError, so pd.to_datetime normalizes first.
+    """
     try:
         import numpy as _np
         CACHE_DIR.mkdir(parents=True, exist_ok=True)
         common = ds1.index.intersection(ds3.index)
         _np.savez_compressed(CACHE_DIR / f"{key}.npz",
-                             dates=common.astype("int64"),
+                             dates=pd.to_datetime(common).astype("int64").to_numpy(),
                              v1=ds1.reindex(common).to_numpy(float),
                              v3=ds3.reindex(common).to_numpy(float))
-    except Exception:
-        pass
+    except Exception as exc:
+        if not _CACHE_SAVE_WARNED[0]:
+            _CACHE_SAVE_WARNED[0] = True
+            print(f"  CACHE SAVE FAILING ({type(exc).__name__}: {exc}) -- sweeps will run at "
+                  f"cold speed until this is fixed; reporting once, not per cell")
 
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
@@ -366,7 +377,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 
     # Per-cell verdicts
     verdicts = []
-    for idx, (orig_i, ds) in enumerate(valid):
+    for _idx, (orig_i, ds) in enumerate(valid):
         c = cells[orig_i]
         arr = ds.to_numpy(float)
         cid = cell_id(c)
@@ -419,10 +430,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
 
         # Stress costs (3x)
         x3_ds = daily_x3[orig_i]
-        if x3_ds is not None and len(x3_ds) > 0:
-            exp3 = float(x3_ds.to_numpy(float).mean())
-        else:
-            exp3 = 0.0
+        exp3 = float(x3_ds.to_numpy(float).mean()) if x3_ds is not None and len(x3_ds) > 0 else 0.0
         stages["stress_costs"] = {"passed": bool(exp3 > 0.0), "exp_x3": round(exp3, 4)}
 
         # Lockbox
@@ -467,7 +475,7 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         "survivors_passing_all": n_pass,
         "gate_fails": gate_fails,
         "verdicts": verdicts,
-        "swept_at": datetime.now(timezone.utc).isoformat(),
+        "swept_at": datetime.now(UTC).isoformat(),
     }
 
 
@@ -583,7 +591,7 @@ def main():
             "survivors_passing_all": 0,
             "gate_fails": {},
             "verdicts": [],
-            "swept_at": datetime.now(timezone.utc).isoformat(),
+            "swept_at": datetime.now(UTC).isoformat(),
         }
     result["n_cells_discovered"] = len(cells)
     result["n_cells_advanced_beyond_economic_prior"] = len(cell_objs)
@@ -657,7 +665,7 @@ def main():
             "sym": v["sym"],
             "days": v["days"],
             "gates": v["stages"],
-            "gated_at": datetime.now(timezone.utc).isoformat(),
+            "gated_at": datetime.now(UTC).isoformat(),
         }
         if sel is not None:
             # PARAMS ARE PART OF THE IDENTITY. Without them the spec says only "XAUUSD asia",
@@ -688,7 +696,7 @@ def main():
         "gate_policy": ATTESTATION,
         "survivors": survivors_all,
         "note": "UNIVERSAL 10-GATE PASS ONLY.",
-        "swept_at": datetime.now(timezone.utc).isoformat(),
+        "swept_at": datetime.now(UTC).isoformat(),
     })
     surv_path.write_text(json.dumps(doc, indent=2, default=str), encoding="utf-8")
     print(f"Updated UNIVERSAL_SURVIVORS.json: {len(survivors_all)} total "

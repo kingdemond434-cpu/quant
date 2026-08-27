@@ -407,6 +407,29 @@ def mechanism_for_feature(feature: str) -> tuple[str, str]:
          "broker swap differential compensates inventory funding and carry demand"),
         (("ext_cot",),
          "reported positioning extremes create crowding and forced-unwind asymmetry"),
+        # BEHAVIOURAL-FLOW CAUSES (added 2026-08-27, principal: "all miners hunt real
+        # mechanisms"). These are not price-shape numerology: each names a documented flow with
+        # an identifiable counterparty, and each is falsifiable -- the prior fails if the
+        # counterparty flow is absent. Held to the same standard as the venue-data entries.
+        (("dd_",),
+         "distance below a rolling peak measures forced selling -- margin calls, stop cascades "
+         "and risk-limit liquidations supply at prices unrelated to value; buying that supply "
+         "earns the liquidity premium and fails when the decline is informed"),
+        (("ru_",),
+         "distance above a rolling trough measures chase intensity -- late-crowd entries whose "
+         "stops sit below, an exhaustible flow with a known unwind path"),
+        (("gap",),
+         "an opening gap is a failed auction between sessions: participants trapped on the "
+         "wrong side must trade out, driving fill-or-run dynamics"),
+        (("hour", "dow"),
+         "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional "
+         "flow tied to the clock, not to price"),
+        (("dom", "month"),
+         "month-end rebalancing, payment cycles and seasonal production/demand are scheduled "
+         "flows with identifiable counterparties"),
+        (("volratio_", "rngratio_"),
+         "a declared volatility/participation regime TRANSITION -- compression breaking into "
+         "expansion is the moment resting-order behaviour stops paying and breakout flow starts"),
         (("ext_resid_", "ext_residz_", "ext_triangle_resid_"),
          "cross-instrument pricing residuals can converge when common risk is re-arbitraged"),
         (("ext_lead_",),
