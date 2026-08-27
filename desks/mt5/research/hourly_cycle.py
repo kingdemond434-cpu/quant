@@ -17,11 +17,22 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
+# BASE ON THE PATH, AT MODULE LEVEL. `record_tape()` runs BEFORE `daily()`, and `daily_cycle` is
+# the module that happened to insert BASE -- so every hourly run reached `from mt5desk import
+# tape` with BASE still absent and died on ModuleNotFoundError. MEASURED 2026-08-27: 66
+# consecutive "tick tape FAILED" lines since the log was created on 08-22, i.e. five days of
+# broker-native ticks never recorded. That tape is the desk's own moat data and it CANNOT be
+# backfilled -- a tick nobody recorded is gone, unlike a bar you can re-download. Depending on
+# another module's import side effect for your own path is the bug; this makes it explicit.
+for _p in (str(BASE), str(BASE / "research")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 PY = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\pythonw.exe"
 PYE = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe"
 
