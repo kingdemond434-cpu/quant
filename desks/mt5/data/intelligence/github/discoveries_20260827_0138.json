@@ -1,0 +1,1690 @@
+{
+  "discoveries": [
+    {
+      "repo": "Pesci1134/gbpjpy-macd-divergence-strategy",
+      "url": "https://github.com/Pesci1134/gbpjpy-macd-divergence-strategy",
+      "description": "\ud83d\udcca Optimize your GBPJPY trades with the MACD Divergence Strategy to identify entries based on market reversals and enhance your profit potential.",
+      "stars": 1,
+      "language": "Python",
+      "created": "2022-05-23T01:30:19Z",
+      "updated": "2026-08-27T00:20:09Z",
+      "symbols": [
+        "GBPJPY"
+      ],
+      "patterns": [
+        "MACD"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "Trujillofa/manual-trading-agent",
+      "url": "https://github.com/Trujillofa/manual-trading-agent",
+      "description": "Manual forex agent with multi-timeframe RSI strategy",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-03-30T02:13:23Z",
+      "updated": "2026-08-26T16:52:17Z",
+      "symbols": [],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "api-evangelist/capital-com-public-api",
+      "url": "https://github.com/api-evangelist/capital-com-public-api",
+      "description": "Capital.com is a European trading platform offering CFDs across shares, indices, commodities, forex, and cryptocurrencies. The Capital.com Public API provides direct access to the trading engine for automated strategies, giving programmatic control of positions, working orders, account preferences, ",
+      "stars": 0,
+      "language": null,
+      "created": "2024-12-03T15:43:10Z",
+      "updated": "2026-08-26T12:29:12Z",
+      "symbols": [],
+      "patterns": [
+        "position"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "ashikscreativemath-commits/Paldo-ALM",
+      "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+      "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+      "stars": 21,
+      "language": "Python",
+      "created": "2025-08-14T03:21:01Z",
+      "updated": "2026-08-26T03:32:55Z",
+      "symbols": [],
+      "patterns": [
+        "scalping",
+        "swing",
+        "EMA"
+      ],
+      "confidence": 0.59
+    },
+    {
+      "repo": "motional-tammy18/systematic-trading-framework",
+      "url": "https://github.com/motional-tammy18/systematic-trading-framework",
+      "description": "Backtest systematic trading strategies using walk-forward optimization, Monte Carlo simulations, and rigorous statistical validation.",
+      "stars": 1,
+      "language": "Python",
+      "created": "2026-06-03T22:28:50Z",
+      "updated": "2026-08-25T04:02:59Z",
+      "symbols": [],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "Anna-007-tech/algorithmic-trading-ai",
+      "url": "https://github.com/Anna-007-tech/algorithmic-trading-ai",
+      "description": "\ud83d\udcc8 Explore AI-driven trading strategies through data analysis of forex and crypto volatility using PCA, K-means, and neural networks.",
+      "stars": 2,
+      "language": null,
+      "created": "2025-04-14T12:13:03Z",
+      "updated": "2026-08-25T03:27:17Z",
+      "symbols": [],
+      "patterns": [
+        "volatility"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
+      "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
+      "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
+      "stars": 55,
+      "language": null,
+      "created": "2026-08-09T14:22:43Z",
+      "updated": "2026-08-26T14:34:02Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "JasonPieterK/MT5Bot",
+      "url": "https://github.com/JasonPieterK/MT5Bot",
+      "description": "Multi-strategy MT5 auto-trading bot with a local web dashboard (Python + Flask). Trend, scalping, SMC, grid, and pivot-breakout strategies, risk manager, trailing/BE automation, alerts, journal, analytics, backtesting, multi-symbol watchlist.",
+      "stars": 2,
+      "language": "Python",
+      "created": "2026-08-17T03:59:06Z",
+      "updated": "2026-08-25T06:49:16Z",
+      "symbols": [],
+      "patterns": [
+        "breakout",
+        "grid",
+        "scalping"
+      ],
+      "confidence": 0.59
+    },
+    {
+      "repo": "dlaminismangaliso669-lgtm/fx-academy",
+      "url": "https://github.com/dlaminismangaliso669-lgtm/fx-academy",
+      "description": "A free, hands-on Forex course \u2014 23 interactive modules covering pips, candlesticks, chart patterns, risk management, technical & fundamental analysis, trading psychology, MT5 basics, and strategy building, with live calculators and quizzes throughout",
+      "stars": 0,
+      "language": null,
+      "created": "2026-08-19T19:18:43Z",
+      "updated": "2026-08-19T19:48:10Z",
+      "symbols": [],
+      "patterns": [
+        "SMA"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "goodie1972/algoforge",
+      "url": "https://github.com/goodie1972/algoforge",
+      "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+      "stars": 4,
+      "language": "HTML",
+      "created": "2026-05-26T07:01:20Z",
+      "updated": "2026-08-26T12:32:39Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "arturobravostart-prog/GoldAI",
+      "url": "https://github.com/arturobravostart-prog/GoldAI",
+      "description": "Personal AI trading research system for XAUUSD using cTrader Open API, machine learning and algorithmic analysis.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-07-22T00:44:12Z",
+      "updated": "2026-08-20T04:47:27Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "nazhmi12/-XAUUSD-Hybrid-Trading-Bot-MT5-",
+      "url": "https://github.com/nazhmi12/-XAUUSD-Hybrid-Trading-Bot-MT5-",
+      "description": "An algorithmic trading bot built with Python for MetaTrader 5 (MT5). This bot is specifically designed for trading XAUUSD (Gold) by utilizing a Dual-Confirmation Strategy: combining Technical Analysis (TA) and Fundamental News Sentiment.",
+      "stars": 2,
+      "language": "Python",
+      "created": "2026-07-21T14:40:17Z",
+      "updated": "2026-08-19T16:31:27Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "a1shmuk/Klasa_QuantTrading",
+      "url": "https://github.com/a1shmuk/Klasa_QuantTrading",
+      "description": "Research-first algorithmic trading system for gold (XAUUSD). Thousands of candidate strategies pass seven empirical validation gates, a live paper-trading gate, and a Darwinian tournament before reaching a risk-managed execution desk that learns from every trade. 890+ tests, CI, Docker.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-08-02T12:09:57Z",
+      "updated": "2026-08-06T10:57:49Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "itsmustafa119/structure-scope",
+      "url": "https://github.com/itsmustafa119/structure-scope",
+      "description": "Smart Money Concepts (SMC) trading strategy project for analyzing Gold (XAUUSD) using market structure, liquidity, order blocks, and fair value gaps.",
+      "stars": 8,
+      "language": "Python",
+      "created": "2026-07-13T19:48:19Z",
+      "updated": "2026-08-26T18:47:24Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "SMA",
+        "order block",
+        "fair value gap",
+        "liquidity",
+        "smart money"
+      ],
+      "confidence": 0.7000000000000001
+    },
+    {
+      "repo": "agntdev/goldpulse-xau-bot",
+      "url": "https://github.com/agntdev/goldpulse-xau-bot",
+      "description": "Telegram bot for live XAUUSD prices, configurable alerts, admin/algorithmic signals, chart snapshots, position tracking, and subscription payments.",
+      "stars": 0,
+      "language": "TypeScript",
+      "created": "2026-07-19T06:41:13Z",
+      "updated": "2026-07-19T06:55:19Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "position"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "zero-was-here/tradingbot",
+      "url": "https://github.com/zero-was-here/tradingbot",
+      "description": "DRL Trading - AI Gold Trading Bot    Deep reinforcement learning system for autonomous XAUUSD trading using:   - PPO & Dreamer algorithms (PyTorch)   - 140+ features: multi-timeframe, macro data, economic events   - MetaTrader 5 live trading   - 2M steps trained, targeting 80-120% annual returns   -",
+      "stars": 176,
+      "language": "Python",
+      "created": "2025-12-27T11:16:00Z",
+      "updated": "2026-08-26T12:25:59Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "swing"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "veraedgar7/algo_trading_metalabeling_validation",
+      "url": "https://github.com/veraedgar7/algo_trading_metalabeling_validation",
+      "description": "An algorithmic trading system for XAUUSD (gold) made of two pieces. This repository is not the story of \"I built a profitable bot\" \u2014 it is the story of how to validate (or rule out) whether an ML filter genuinely adds value on top of a rule-based strategy, including the real bugs found and fixed alo",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-07-10T22:29:12Z",
+      "updated": "2026-07-10T23:17:24Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "Kiran-Kumbar/XAU-USD-Signal-Bot",
+      "url": "https://github.com/Kiran-Kumbar/XAU-USD-Signal-Bot",
+      "description": "An algorithmic XAU/USD (Gold) trading bot using Smart Money Concepts (SMC), Market Structure, and FVG to send high-probability signals via Telegram.",
+      "stars": 7,
+      "language": "Python",
+      "created": "2026-06-16T05:43:44Z",
+      "updated": "2026-08-23T04:03:53Z",
+      "symbols": [],
+      "patterns": [
+        "SMA",
+        "smart money"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "Peter0707-ctrl/Copetranovax",
+      "url": "https://github.com/Peter0707-ctrl/Copetranovax",
+      "description": "CopeTranovaX is an AI-powered algorithmic trading system for XAUUSD (Gold) that combines feature engineering, machine learning models (Random Forest & XGBoost), and structured market analysis to generate high-probability trading signals with built-in risk and performance evaluation engines.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-06-27T14:52:32Z",
+      "updated": "2026-06-27T14:54:50Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "4kGoldSignals/Gold-Signal-Confirmation-Guide",
+      "url": "https://github.com/4kGoldSignals/Gold-Signal-Confirmation-Guide",
+      "description": "A practical, methodology-driven guide for traders who use algorithmic signal indicators to trade gold (XAUUSD). This resource covers how to identify high-probability signal instances, confirm entries through price action, and avoid common pitfalls that lead to premature or low-quality trade executio",
+      "stars": 0,
+      "language": null,
+      "created": "2026-06-08T02:08:13Z",
+      "updated": "2026-06-08T02:08:17Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "enhk2728-ui/gold-analysis-v4",
+      "url": "https://github.com/enhk2728-ui/gold-analysis-v4",
+      "description": "XAUUSD price action analysis (Al Brooks methodology) - MT5 data + algorithmic structure extraction + LLM narrative + Streamlit dashboard",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-05-31T03:23:41Z",
+      "updated": "2026-05-31T03:33:13Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "loktari/goldbreakout",
+      "url": "https://github.com/loktari/goldbreakout",
+      "description": "Landing page for GoldBreakout AI \u2013 an asymmetric breakout EA for XAUUSD. Professional algorithmic trading tool with AI\u2011ready adaptability. Includes full documentation and a free backtest\u2011only version.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-04-29T19:07:51Z",
+      "updated": "2026-05-25T16:35:10Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "breakout",
+        "RSI"
+      ],
+      "confidence": 0.6100000000000001
+    },
+    {
+      "repo": "azhannazam/xauusd-algorithmic-trading-system",
+      "url": "https://github.com/azhannazam/xauusd-algorithmic-trading-system",
+      "description": "Algorithmic trading logic designed for XAUUSD (Gold) that automates market structure mapping and executes engulfing candlestick entries.",
+      "stars": 0,
+      "language": null,
+      "created": "2025-09-12T17:29:47Z",
+      "updated": "2026-05-18T15:42:09Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "lewisalfiescott89-dotcom/goldsniper-ea",
+      "url": "https://github.com/lewisalfiescott89-dotcom/goldsniper-ea",
+      "description": "GoldSniper EA \u2014 XAUUSD algorithmic trading bot landing page",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-05-17T23:54:15Z",
+      "updated": "2026-05-18T00:20:29Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "Blazor1/gold-trading-system",
+      "url": "https://github.com/Blazor1/gold-trading-system",
+      "description": "Python-based algorithmic trading system for XAUUSD (Gold)",
+      "stars": 1,
+      "language": "Python",
+      "created": "2026-05-04T03:40:12Z",
+      "updated": "2026-06-01T19:52:40Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "RobertN1D/XAUUSD-GOLD-SCALPER-MT5-EA-FREE-SOURCE-CODE",
+      "url": "https://github.com/RobertN1D/XAUUSD-GOLD-SCALPER-MT5-EA-FREE-SOURCE-CODE",
+      "description": "A pure algorithmic XAUUSD scalper for MT5. Built for low-latency and prop firms, it reads raw market tape via tick velocity and DOM order flow imbalance. Instead of fixed rules, a 9-strategy ranking engine dynamically scores and executes VWAP reclaims, ORBs, and momentum spikes. Includes tick-level ",
+      "stars": 7,
+      "language": null,
+      "created": "2026-05-03T21:40:07Z",
+      "updated": "2026-08-21T05:38:02Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "momentum"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "JesseLivermoreB-coder/XAUUSD-Quant-Research",
+      "url": "https://github.com/JesseLivermoreB-coder/XAUUSD-Quant-Research",
+      "description": "Quantitative research and statistical validation framework for a proprietary Gold trading algorithm",
+      "stars": 0,
+      "language": null,
+      "created": "2026-04-24T23:13:03Z",
+      "updated": "2026-04-24T23:30:04Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "UJjwaleSib/PersianLionTrader",
+      "url": "https://github.com/UJjwaleSib/PersianLionTrader",
+      "description": "PersianLionTrader AI An Advanced MetaTrader 5 Algorithmic Trading Bot with AI Filtering and Risk Management.  PersianLionTrader is a high-performance Python-based trading engine designed specifically for XAUUSD (Gold). It combines technical analysis strategy with an OpenAI-powered filter and a robus",
+      "stars": 0,
+      "language": null,
+      "created": "2026-04-01T14:30:44Z",
+      "updated": "2026-04-01T14:30:45Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "beingmushfiq/XAUUSD-Gold-SMC-Blueprint",
+      "url": "https://github.com/beingmushfiq/XAUUSD-Gold-SMC-Blueprint",
+      "description": "An enterprise-grade, standalone algorithmic trading dashboard specifically engineered for the XAU/USD (Gold) market. This platform completely bypasses external script engines like TradingView's PineScript by running complex Smart Money Concept (SMC) mathematics locally in the browser securely agains",
+      "stars": 2,
+      "language": "TypeScript",
+      "created": "2026-03-29T19:31:54Z",
+      "updated": "2026-08-22T11:02:05Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "EMA",
+        "SMA",
+        "smart money"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "repo": "aureliusaiauto-collab/aureliusai",
+      "url": "https://github.com/aureliusaiauto-collab/aureliusai",
+      "description": "Aurelius Elite V3 \u2013 Institutional Grade MQL4 Trading Algorithm. Specialized in Gold (XAUUSD) and Indices (NAS100/US30). High-precision execution based on 10+ years of market experience.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-03-29T15:59:53Z",
+      "updated": "2026-03-29T15:59:53Z",
+      "symbols": [
+        "NAS100",
+        "XAUUSD",
+        "US30"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "GifariKemal/last-bot-ai-trading",
+      "url": "https://github.com/GifariKemal/last-bot-ai-trading",
+      "description": "Algorithmic trading bots for XAUUSD (Gold) \u2014 SMC V4 + Claude AI validation",
+      "stars": 10,
+      "language": "Python",
+      "created": "2026-02-22T07:10:00Z",
+      "updated": "2026-08-21T15:24:39Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "HIR0NA/ea-gold",
+      "url": "https://github.com/HIR0NA/ea-gold",
+      "description": "An algorithmic trading system for XAUUSD (Gold) developed with MQL4/5. Features dynamic position sizing and automated risk management protocols.\" (\u0e23\u0e30\u0e1a\u0e1a\u0e40\u0e17\u0e23\u0e14\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e17\u0e2d\u0e07\u0e04\u0e33 \u0e1e\u0e31\u0e12\u0e19\u0e32\u0e14\u0e49\u0e27\u0e22 MQL4/5 \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e1f\u0e35\u0e40\u0e08\u0e2d\u0e23\u0e4c\u0e04\u0e33\u0e19\u0e27\u0e13\u0e02\u0e19\u0e32\u0e14\u0e2d\u0e2d\u0e40\u0e14\u0e2d\u0e23\u0e4c\u0e41\u0e1a\u0e1a\u0e44\u0e14\u0e19\u0e32\u0e21\u0e34\u0e01\u0e41\u0e25\u0e30\u0e42\u0e1b\u0e23\u0e42\u0e15\u0e04\u0e2d\u0e25\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e04\u0e27\u0e32\u0e21\u0e40\u0e2a\u0e35\u0e48\u0e22\u0e07\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34)",
+      "stars": 2,
+      "language": null,
+      "created": "2026-02-05T11:30:48Z",
+      "updated": "2026-03-25T13:06:55Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [
+        "position"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "cryptocoin81/Bot-Trading-XAUUSD_MT5",
+      "url": "https://github.com/cryptocoin81/Bot-Trading-XAUUSD_MT5",
+      "description": "High-performance Algorithmic Trading System for XAUUSD (Gold) on MetaTrader 5. Built with MQL5 focusing on risk management and trend analysis",
+      "stars": 1,
+      "language": null,
+      "created": "2026-01-03T02:29:10Z",
+      "updated": "2026-07-16T02:53:16Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "S44dMas00d/Project_Chimera",
+      "url": "https://github.com/S44dMas00d/Project_Chimera",
+      "description": "Project Chimera is an algorithmic trading system designed for capital growth through multi-asset analysis and phased compounding. The system implements a sophisticated correlation-based strategy by analyzing three instruments simultaneously (XAUUSD, US30, DXY) while executing trades only on XAUUSD (",
+      "stars": 1,
+      "language": "MQL5",
+      "created": "2025-12-24T16:07:35Z",
+      "updated": "2026-05-29T05:02:07Z",
+      "symbols": [
+        "XAUUSD",
+        "US30"
+      ],
+      "patterns": [
+        "correlation"
+      ],
+      "confidence": 0.63
+    },
+    {
+      "repo": "Shivkeerth-Laj/XAUUSD-Backtesting",
+      "url": "https://github.com/Shivkeerth-Laj/XAUUSD-Backtesting",
+      "description": "This repo contains code for back testing a rules-based strategy on XAUUSD (spot gold) using 5-minute data exported from MetaTrader 5 and processed in Python with pandas and mplfinance. The notebook is designed for traders and data analysts curious about algorithmic strategy evaluation, with exportab",
+      "stars": 2,
+      "language": "Jupyter Notebook",
+      "created": "2025-10-28T14:53:33Z",
+      "updated": "2026-01-09T03:54:32Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "ilahuerta-IA/backtrader-pullback-window-xauusd",
+      "url": "https://github.com/ilahuerta-IA/backtrader-pullback-window-xauusd",
+      "description": "Professional algorithmic trading strategy for Gold (XAU/USD) with 4-phase state machine entry system. Sharpe 0.89 | PF 1.64 | WR 55.43% | DD 5.81% | +44.75% return over 5 years.",
+      "stars": 70,
+      "language": "Python",
+      "created": "2025-10-11T17:49:02Z",
+      "updated": "2026-08-25T04:27:24Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "saeedsamie/RLTradingAgent",
+      "url": "https://github.com/saeedsamie/RLTradingAgent",
+      "description": "A comprehensive RL trading system for XAUUSD (Gold/USD) featuring market cycle-based configurations, automated data processing, and a real-time web dashboard. Built with Stable Baselines3 PPO algorithm, includes quarterly episode optimization (25,920 bars), technical indicators, and professional Tra",
+      "stars": 1,
+      "language": "Python",
+      "created": "2025-07-24T13:49:28Z",
+      "updated": "2025-08-19T14:28:28Z",
+      "symbols": [
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "jayadevrana/mt5-london-breakout-research-agent",
+      "url": "https://github.com/jayadevrana/mt5-london-breakout-research-agent",
+      "description": "Demo-first, safety-latched MT5 research agent for the Asian-range / London-session breakout strategy with acceptance gates before any live order is possible.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-07-18T14:23:05Z",
+      "updated": "2026-08-08T07:01:36Z",
+      "symbols": [],
+      "patterns": [
+        "breakout"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "jayadevrana/pinescript-orb-indicator-2",
+      "url": "https://github.com/jayadevrana/pinescript-orb-indicator-2",
+      "description": "TradingView Pine Script indicator for RSI, ORB, breakout, session filter, chart analysis, alerts, and market research.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-06-23T11:50:44Z",
+      "updated": "2026-08-08T06:56:36Z",
+      "symbols": [],
+      "patterns": [
+        "breakout",
+        "RSI"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "jayadevrana/pinescript-range-filter-buy-and-sell-5min-indicator",
+      "url": "https://github.com/jayadevrana/pinescript-range-filter-buy-and-sell-5min-indicator",
+      "description": "TradingView Pine Script indicator for EMA, RSI, breakout, session filter, chart analysis, alerts, and market research.",
+      "stars": 1,
+      "language": null,
+      "created": "2026-06-23T11:42:58Z",
+      "updated": "2026-08-08T06:52:28Z",
+      "symbols": [],
+      "patterns": [
+        "breakout",
+        "RSI",
+        "EMA"
+      ],
+      "confidence": 0.59
+    },
+    {
+      "repo": "getdata-finance/eurusd-1w-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-1w-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality weekly OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 1970 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:23:13Z",
+      "updated": "2026-08-05T09:23:51Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-3d-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-3d-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 3-day OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 1971 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:10:15Z",
+      "updated": "2026-08-05T09:11:39Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-1d-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-1d-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality daily OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 1971 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:01:00Z",
+      "updated": "2026-08-05T09:02:07Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-12h-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-12h-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 12-hour OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T08:24:57Z",
+      "updated": "2026-08-05T08:27:13Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-4h-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-4h-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 4-hour OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T07:50:27Z",
+      "updated": "2026-08-05T07:51:53Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-1h-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-1h-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 1-hour OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T07:28:22Z",
+      "updated": "2026-08-05T07:29:20Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-30m-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-30m-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 30-minute OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T04:23:39Z",
+      "updated": "2026-08-05T04:26:57Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-15m-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-15m-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 15-minute OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T00:52:36Z",
+      "updated": "2026-08-05T00:54:19Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-5m-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-5m-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 5-minute OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-04T22:27:00Z",
+      "updated": "2026-08-04T22:28:18Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/eurusd-3m-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-3m-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 3-minute OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-04T21:14:42Z",
+      "updated": "2026-08-04T21:15:27Z",
+      "symbols": [
+        "3M",
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.6
+    },
+    {
+      "repo": "getdata-finance/eurusd-1m-ohlcv-forex-historical-data",
+      "url": "https://github.com/getdata-finance/eurusd-1m-ohlcv-forex-historical-data",
+      "description": "Ultra high-quality 1-minute OHLCV historical data for EURUSD Forex. 24/5 sessions \u2014 Asia, Europe & US coverage from 2022 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 1,
+      "language": "HTML",
+      "created": "2026-08-04T20:37:57Z",
+      "updated": "2026-08-15T12:41:55Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "syngyn/Metatrader-5-GGTH-Forex-Predictions-with-News-Sentiment",
+      "url": "https://github.com/syngyn/Metatrader-5-GGTH-Forex-Predictions-with-News-Sentiment",
+      "description": "GGTH is a two-process algorithmic trading system for EURUSD on MetaTrader 5. Python handles all computation \u2014 machine learning price prediction and news sentiment analysis. The MQL5 Expert Advisor reads the results from shared JSON files in real time and manages live trades. ",
+      "stars": 6,
+      "language": "Python",
+      "created": "2026-05-19T16:30:32Z",
+      "updated": "2026-08-23T12:58:13Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "EmmanuelElechiAmadi/eurusd-bot",
+      "url": "https://github.com/EmmanuelElechiAmadi/eurusd-bot",
+      "description": "Production\u2011ready algorithmic trading system: MT5 bridge, strategy framework, portfolio risk controls, equity curve tracking, and Telegram alerts.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-05-18T13:50:17Z",
+      "updated": "2026-05-18T15:29:15Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "toveisi/EURUSD-Algorithmic-Trading-Assignment",
+      "url": "https://github.com/toveisi/EURUSD-Algorithmic-Trading-Assignment",
+      "description": "Automated Trading Bot and Data Mining Analysis for EURUSD (Nov 2024 - Oct 2025).",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-01-24T11:47:16Z",
+      "updated": "2026-01-30T23:15:51Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "twinksmikes9-beep/ai-trading-bot",
+      "url": "https://github.com/twinksmikes9-beep/ai-trading-bot",
+      "description": "AI-powered intraday Forex trading bot for MetaTrader 5 (Exness compatible), designed with modular architecture, strict risk management, and H1 session-based strategies for EURUSD and GBPUSD.forex trading-bot mt5 exness python algorithmic-trading quant",
+      "stars": 0,
+      "language": null,
+      "created": "2026-01-22T07:44:06Z",
+      "updated": "2026-01-22T07:44:10Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.6
+    },
+    {
+      "repo": "samiragah/hctp-eurusd-amiragah",
+      "url": "https://github.com/samiragah/hctp-eurusd-amiragah",
+      "description": "Hybrid Candlestick Trend Predictor (HCTP) for EUR/USD \u2014 A modular, reproducible framework integrating deep learning with technical analysis for algorithmic trading.",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "created": "2025-09-17T21:48:09Z",
+      "updated": "2026-07-20T18:08:18Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "thino-dev/Optimus-Prime-ICT_EA",
+      "url": "https://github.com/thino-dev/Optimus-Prime-ICT_EA",
+      "description": "Optimus Prime is an enterprise-grade algorithmic trading system implementing Inner Circle Trader (ICT) concepts exclusively for EURUSD",
+      "stars": 0,
+      "language": null,
+      "created": "2025-12-26T11:53:07Z",
+      "updated": "2025-12-26T11:53:07Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "Sheyswaggz/cfd-signal-provider-bot---eurusd--gbpusd--xauusd",
+      "url": "https://github.com/Sheyswaggz/cfd-signal-provider-bot---eurusd--gbpusd--xauusd",
+      "description": "This is a medium complexity project. Recommended: 2 milestones, 3 sprints, 8-10 tasks. A trading signal bot that analyzes live market data for three CFD pairs (EURUSD, GBPUSD, XAUUSD) and generates trading signals with a 1:5 risk-to-reward ratio. Requires real-time data integration, technical analys",
+      "stars": 1,
+      "language": "Python",
+      "created": "2025-11-20T14:30:44Z",
+      "updated": "2026-03-24T16:10:42Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD",
+        "XAUUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "mdletshewandile98/AuralisFX",
+      "url": "https://github.com/mdletshewandile98/AuralisFX",
+      "description": "AuralisFX is an AI-powered forex analysis bot built to decode EURUSD market behavior on the 1-hour timeframe. It analyzes chart screenshots in seconds using candlestick patterns, trend continuation, technical and fundamental indicators, and algorithmic logic to deliver precise buy/sell signals with ",
+      "stars": 0,
+      "language": null,
+      "created": "2025-10-16T15:18:13Z",
+      "updated": "2025-10-16T15:22:13Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "mhaghverdi/swing-trading-bot",
+      "url": "https://github.com/mhaghverdi/swing-trading-bot",
+      "description": " \"An automated swing trading bot for Forex (EURUSD) using EMA, MACD, and algorithmic support/resistance detection, with trailing stop management and automatic trade report (with chart screenshot) via email.\"",
+      "stars": 0,
+      "language": "Python",
+      "created": "2025-07-26T12:32:10Z",
+      "updated": "2025-07-27T13:07:26Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [
+        "swing",
+        "MACD",
+        "EMA"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "repo": "rishindra2005/Binary-bot",
+      "url": "https://github.com/rishindra2005/Binary-bot",
+      "description": "Binary-bot is a collection of algorithmic trading bots for IQ Option platform, using machine learning to predict market movements with ~60% accuracy. The system combines RandomForest and DecisionTree models with technical analysis to trade currency pairs including EURUSD, USDJPY, and EURJPY.",
+      "stars": 1,
+      "language": "Python",
+      "created": "2023-12-27T05:33:53Z",
+      "updated": "2026-05-20T11:57:41Z",
+      "symbols": [
+        "USDJPY",
+        "EURJPY",
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "XBT3K/VOLUME-ALGO-EURUSD",
+      "url": "https://github.com/XBT3K/VOLUME-ALGO-EURUSD",
+      "description": "The code is a EUR/USD algorithm that uses moving averages and the On-Balance Volume (OBV) and Chaikin Money Flow (CMF) indicators to buy or sell the currency pair. It retrieves historical data, calculates indicators, and executes trades based on price crossing the moving average and OBV/CMF signals.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2023-02-18T12:22:22Z",
+      "updated": "2023-09-13T12:24:53Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "XBT3K/MeanReversionAlgo",
+      "url": "https://github.com/XBT3K/MeanReversionAlgo",
+      "description": " Python algorithm for trading the EUR/USD forex pair using a mean reversion strategy. The algorithm retrieves price data from OANDA's API, calculates the z-score of the closing prices, and executes a trade if the z-score is above a certain threshold (indicating an overbought condition) or below a ce",
+      "stars": 9,
+      "language": "Python",
+      "created": "2023-02-17T19:41:05Z",
+      "updated": "2026-05-16T16:45:45Z",
+      "symbols": [],
+      "patterns": [
+        "mean reversion",
+        "RSI"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "Sautii/Forex-EURUSD-_Trading_Bot",
+      "url": "https://github.com/Sautii/Forex-EURUSD-_Trading_Bot",
+      "description": "A Bollinger Bands forex algorithm trading bot that uses the QuantCast to trade EURUSD.",
+      "stars": 1,
+      "language": null,
+      "created": "2023-06-23T16:55:08Z",
+      "updated": "2025-02-22T19:13:05Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [
+        "bollinger"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "nicolasxu/price_plot",
+      "url": "https://github.com/nicolasxu/price_plot",
+      "description": "plot filtered EURUSD price data using jFreeChart, it can be used to see the effect of smoothing algorithm ",
+      "stars": 0,
+      "language": "Java",
+      "created": "2015-07-05T09:16:11Z",
+      "updated": "2015-07-05T09:18:28Z",
+      "symbols": [
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+      "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+      "description": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution supp",
+      "stars": 14,
+      "language": "Python",
+      "created": "2025-04-18T17:59:03Z",
+      "updated": "2026-08-17T10:36:30Z",
+      "symbols": [
+        "GBPUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "Suman903/smc-backtester",
+      "url": "https://github.com/Suman903/smc-backtester",
+      "description": "Multi-timeframe SMC (Smart Money Concepts) order block confluence strategy for GBPUSD \u2014 Python backtester with 50 tests plus a TradingView Pine Script strategy. 4H/1D bias filter, 15m/30m/1H order block confluence, structure-based TP/SL.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-07-10T06:58:49Z",
+      "updated": "2026-07-10T07:01:45Z",
+      "symbols": [
+        "GBPUSD"
+      ],
+      "patterns": [
+        "SMA",
+        "order block",
+        "smart money"
+      ],
+      "confidence": 0.64
+    },
+    {
+      "repo": "TshifhunguCodes/aqrs_fx_v3_pro",
+      "url": "https://github.com/TshifhunguCodes/aqrs_fx_v3_pro",
+      "description": "This repo contains a system which extracts datsets of 5 forex markets EURUSD, USDZAR, GBPUSD and etc and then clean data create a strategy which trades and predicts the next price action zones which the market is likely to reach",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-05-14T13:13:56Z",
+      "updated": "2026-05-22T19:23:11Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD",
+        "USDZAR"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "romanButkus/BB-and-RSI-trading-bot-MT5",
+      "url": "https://github.com/romanButkus/BB-and-RSI-trading-bot-MT5",
+      "description": "Bot for Meta trading 5, strategy is based on Bollinger Bands and RSI indicators. Trading pairs such as EURUSD, GBPUSD, etc. ",
+      "stars": 1,
+      "language": "MQL5",
+      "created": "2026-04-22T20:12:05Z",
+      "updated": "2026-04-29T09:30:57Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD"
+      ],
+      "patterns": [
+        "bollinger",
+        "RSI"
+      ],
+      "confidence": 0.6599999999999999
+    },
+    {
+      "repo": "susannduku266-ux/gu-strategy",
+      "url": "https://github.com/susannduku266-ux/gu-strategy",
+      "description": "GBPUSD trading strategy ict smc concepts sessions",
+      "stars": 0,
+      "language": null,
+      "created": "2026-04-27T20:22:50Z",
+      "updated": "2026-04-27T20:27:09Z",
+      "symbols": [
+        "GBPUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "NipunDilshanSenevirathne/TraderAuto_V2_Compounding_Suite",
+      "url": "https://github.com/NipunDilshanSenevirathne/TraderAuto_V2_Compounding_Suite",
+      "description": "TraderAuto V2 is a professional grade automated trading engine built to execute an aggressive compounding strategy. It focuses on high-frequency, 1-minute (M1) timeframe execution across four major currency pairs (EURUSD, GBPUSD, USDJPY, GBPJPY), while strictly enforcing a \"One Trade at a Time\" rule",
+      "stars": 0,
+      "language": "MQL5",
+      "created": "2026-04-04T00:50:22Z",
+      "updated": "2026-04-04T14:14:50Z",
+      "symbols": [
+        "USDJPY",
+        "GBPUSD",
+        "EURUSD",
+        "GBPJPY"
+      ],
+      "patterns": [],
+      "confidence": 0.7
+    },
+    {
+      "repo": "Anwar-Projects/gp-fx-strategy",
+      "url": "https://github.com/Anwar-Projects/gp-fx-strategy",
+      "description": "Autonomous Genetic Programming FX trading \u2014 98.71% win rate on USDJPY | vectorbt | DEAP | Kimi-K2.5 AI advisor | Phase 2 active",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "created": "2026-03-28T16:02:55Z",
+      "updated": "2026-03-28T16:09:00Z",
+      "symbols": [
+        "USDJPY"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "denzelhybrid-dot/Ultra-V-6-bot",
+      "url": "https://github.com/denzelhybrid-dot/Ultra-V-6-bot",
+      "description": "A trading bot that gives signals on when to trade and when not to the pairs are EURUSD GBPUSD XAUUSD the bot is fitted with smc strategy and also trend following together with chart analysis also it analyzes the real market chart gives proper risk management and also tells you when to trade and when",
+      "stars": 0,
+      "language": null,
+      "created": "2026-03-14T19:13:34Z",
+      "updated": "2026-03-14T19:13:35Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD",
+        "XAUUSD"
+      ],
+      "patterns": [
+        "trend following"
+      ],
+      "confidence": 0.68
+    },
+    {
+      "repo": "moskong-quant/src6-ema-trend-crossover",
+      "url": "https://github.com/moskong-quant/src6-ema-trend-crossover",
+      "description": "EMA Trend Crossover Strategy applied to FX markets (EURUSD, GBPUSD), designed for trend-following regimes with strict risk control.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-02-14T14:40:20Z",
+      "updated": "2026-02-14T14:43:13Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD"
+      ],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.63
+    },
+    {
+      "repo": "twinksmikes9-beep/ai-trading-bot",
+      "url": "https://github.com/twinksmikes9-beep/ai-trading-bot",
+      "description": "AI-powered intraday Forex trading bot for MetaTrader 5 (Exness compatible), designed with modular architecture, strict risk management, and H1 session-based strategies for EURUSD and GBPUSD.forex trading-bot mt5 exness python algorithmic-trading quant",
+      "stars": 0,
+      "language": null,
+      "created": "2026-01-22T07:44:06Z",
+      "updated": "2026-01-22T07:44:10Z",
+      "symbols": [
+        "GBPUSD",
+        "EURUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.6
+    },
+    {
+      "repo": "nifemiojo/gbpusd-yield-spreads-v1",
+      "url": "https://github.com/nifemiojo/gbpusd-yield-spreads-v1",
+      "description": "GBPUSD FX Strategy Using Bond Yield Spreads as an IRD Proxy",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2025-09-10T18:48:53Z",
+      "updated": "2025-12-01T19:49:27Z",
+      "symbols": [
+        "GBPUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "mattdburke/SimpleTradingBacktest",
+      "url": "https://github.com/mattdburke/SimpleTradingBacktest",
+      "description": "Basic backtest of the GBPUSD currency pair using an RSI trading strategy",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "created": "2023-01-25T15:25:43Z",
+      "updated": "2026-06-06T10:17:05Z",
+      "symbols": [
+        "GBPUSD"
+      ],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "algorithmcode/DataDT",
+      "url": "https://github.com/algorithmcode/DataDT",
+      "description": "DataDT provides Free API for querying forex historical data,fxcm,oanda,MT4,MT5 JSON format... Quant trading backtest strategy, www.datadt.com  \u514d\u8d39\u5386\u53f2\u6570\u636e\u5916\u6c47\u63a5\u53e3,\u7121\u6599\u306e\u5916\u56fd\u70ba\u66ff\u30a4\u30f3\u30bf\u30fc\u30d5\u30a7\u30fc\u30b9,USDJPY,EURUSD,GBPUSD,XAUUSD,XAGUSD....",
+      "stars": 7,
+      "language": null,
+      "created": "2019-04-09T13:02:11Z",
+      "updated": "2026-04-18T10:24:28Z",
+      "symbols": [
+        "USDJPY",
+        "GBPUSD",
+        "EURUSD",
+        "XAUUSD",
+        "XAGUSD"
+      ],
+      "patterns": [],
+      "confidence": 0.75
+    },
+    {
+      "repo": "Antoniividrinskiy/Quantum-Fund-15-strategies-in-one",
+      "url": "https://github.com/Antoniividrinskiy/Quantum-Fund-15-strategies-in-one",
+      "description": " US100: it combines eight strategies into one, with each component utilizing different timeframes and trade timings to better withstand market unpredictability. The US500 incorporates five strategies, while XAU combines two. Crucially, they all possess a mathematical edge; the strategy is built on m",
+      "stars": 0,
+      "language": "MQL5",
+      "created": "2026-08-17T08:06:19Z",
+      "updated": "2026-08-17T08:08:14Z",
+      "symbols": [
+        "US500"
+      ],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "mahmoud20138/MultiStrategy-Trader-Pro",
+      "url": "https://github.com/mahmoud20138/MultiStrategy-Trader-Pro",
+      "description": "19-strategy MT5 trading system across Gold, NAS100, US30, US500, Crypto. Real-time Dash dashboard, alerts, journal, risk management.",
+      "stars": 5,
+      "language": "Python",
+      "created": "2026-03-08T17:49:06Z",
+      "updated": "2026-08-22T04:00:54Z",
+      "symbols": [
+        "US500",
+        "NAS100",
+        "US30"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "Adrien13800/MT5-Trading-Bot",
+      "url": "https://github.com/Adrien13800/MT5-Trading-Bot",
+      "description": "Bot de trading automatique pour MetaTrader 5. Ex\u00e9cute des strat\u00e9gies algorithmiques sur indices US (US30, US100, US500) avec backtesting int\u00e9gr\u00e9, gestion du risque quotidien et s\u00e9lection dynamique de l'actif selon les jours de la semaine. Con\u00e7u pour les prop firms (FTMO).",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-01-28T22:51:54Z",
+      "updated": "2026-04-01T17:26:21Z",
+      "symbols": [
+        "US500",
+        "US30"
+      ],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.63
+    },
+    {
+      "repo": "gekkoPY/US500-strategy-with-semivariance-momentum",
+      "url": "https://github.com/gekkoPY/US500-strategy-with-semivariance-momentum",
+      "description": "An institutional-grade algorithmic trading backtester that leverages Asymmetric Realized Semivariance (RSV) to predict and bypass momentum crashes on the S&P 500.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-03-22T10:38:12Z",
+      "updated": "2026-03-22T10:45:38Z",
+      "symbols": [
+        "US500"
+      ],
+      "patterns": [
+        "momentum"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "adamdabou-code/us500-reversion-strategy",
+      "url": "https://github.com/adamdabou-code/us500-reversion-strategy",
+      "description": "",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2025-10-06T20:14:01Z",
+      "updated": "2025-10-06T20:57:37Z",
+      "symbols": [
+        "US500",
+        "AMD"
+      ],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.63
+    },
+    {
+      "repo": "eaklamavo/US500_Global-Macro_Fund_Strategy_Project",
+      "url": "https://github.com/eaklamavo/US500_Global-Macro_Fund_Strategy_Project",
+      "description": "A S&P500 Index Gtrading strategyt - using leading indicators to generate trade ideas with S&P500 as an instrument.",
+      "stars": 1,
+      "language": "Python",
+      "created": "2020-10-31T00:00:31Z",
+      "updated": "2022-12-18T16:02:41Z",
+      "symbols": [
+        "US500"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-1w-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-1w-ohlcv-index-historical-data",
+      "description": "Ultra high-quality weekly OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 1985 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:27:09Z",
+      "updated": "2026-08-05T09:27:51Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-3d-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-3d-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 3-day OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 1985 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:13:48Z",
+      "updated": "2026-08-05T09:14:10Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-1d-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-1d-ohlcv-index-historical-data",
+      "description": "Ultra high-quality daily OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 1985 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T09:03:11Z",
+      "updated": "2026-08-05T09:04:12Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-12h-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-12h-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 12-hour OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T08:46:30Z",
+      "updated": "2026-08-05T08:48:28Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-4h-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-4h-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 4-hour OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T07:57:24Z",
+      "updated": "2026-08-05T07:58:38Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-1h-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-1h-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 1-hour OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T07:35:18Z",
+      "updated": "2026-08-05T07:36:15Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-30m-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-30m-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 30-minute OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T05:30:08Z",
+      "updated": "2026-08-05T05:32:33Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-15m-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-15m-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 15-minute OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-05T01:44:24Z",
+      "updated": "2026-08-05T01:46:12Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-5m-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-5m-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 5-minute OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-04T23:01:13Z",
+      "updated": "2026-08-04T23:02:44Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "getdata-finance/nas100-3m-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-3m-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 3-minute OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-04T21:33:59Z",
+      "updated": "2026-08-04T21:34:56Z",
+      "symbols": [
+        "3M",
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.6
+    },
+    {
+      "repo": "getdata-finance/nas100-1m-ohlcv-index-historical-data",
+      "url": "https://github.com/getdata-finance/nas100-1m-ohlcv-index-historical-data",
+      "description": "Ultra high-quality 1-minute OHLCV historical data for NAS100 Stock index. Global sessions \u2014 Asia, Europe & US (not US-hours only) from 2008 to now. Free sample on GitHub \u00b7 11 timeframes on getdata.finance. Weekly updates every Saturday, 8am UTC+0. Perfect for backtesting and algorithmic trading.",
+      "stars": 2,
+      "language": "HTML",
+      "created": "2026-08-04T20:45:28Z",
+      "updated": "2026-08-26T13:56:15Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    },
+    {
+      "repo": "aureliusaiauto-collab/aureliusai",
+      "url": "https://github.com/aureliusaiauto-collab/aureliusai",
+      "description": "Aurelius Elite V3 \u2013 Institutional Grade MQL4 Trading Algorithm. Specialized in Gold (XAUUSD) and Indices (NAS100/US30). High-precision execution based on 10+ years of market experience.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-03-29T15:59:53Z",
+      "updated": "2026-03-29T15:59:53Z",
+      "symbols": [
+        "NAS100",
+        "XAUUSD",
+        "US30"
+      ],
+      "patterns": [],
+      "confidence": 0.65
+    },
+    {
+      "repo": "Pace-Runner/NAS100-Trading-Bot",
+      "url": "https://github.com/Pace-Runner/NAS100-Trading-Bot",
+      "description": "This repository documents the performance and logic of my NAS100 (US100) algorithmic trading bot. The strategy is built around moving average\u2013based signals, executed on MetaTrader, and tuned specifically for the NAS100 index\u2019s volatility and structure.",
+      "stars": 0,
+      "language": null,
+      "created": "2025-11-20T19:06:48Z",
+      "updated": "2025-11-20T19:34:05Z",
+      "symbols": [
+        "NAS100"
+      ],
+      "patterns": [
+        "volatility"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "pankajmanchnda/swing-trading-scanner-us",
+      "url": "https://github.com/pankajmanchnda/swing-trading-scanner-us",
+      "description": "Nasdaq / S&P 500 daily scanner",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-05-02T06:02:49Z",
+      "updated": "2026-08-26T23:51:55Z",
+      "symbols": [],
+      "patterns": [
+        "swing"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "sebas1331/centinela-sp500",
+      "url": "https://github.com/sebas1331/centinela-sp500",
+      "description": "Sistema aut\u00f3nomo de paper trading (100% simulado, $0) sobre el S&P 500: rebotes desde drawdown >=30% con ML + 2 carteras (con/sin stop). Corre en GitHub Actions.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-07-18T18:38:10Z",
+      "updated": "2026-08-26T23:18:44Z",
+      "symbols": [],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "bruce-1986/trading-routine",
+      "url": "https://github.com/bruce-1986/trading-routine",
+      "description": "Bull \u2014 24/7 AI Trading Bot powered by Claude Code. Momentum-Quality strategy targeting S&P 500 outperformance.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-05-31T17:25:24Z",
+      "updated": "2026-08-26T20:45:42Z",
+      "symbols": [],
+      "patterns": [
+        "momentum"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "HunterGilroy/quant-research-platform",
+      "url": "https://github.com/HunterGilroy/quant-research-platform",
+      "description": "Automated systematic trading research platform \u2014 S&P 500 scanning, method tournament, vol targeting, daily CI execution",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-07-05T18:41:19Z",
+      "updated": "2026-08-26T20:05:48Z",
+      "symbols": [],
+      "patterns": [
+        "EMA"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "pranay123-stack/es-futures-strategies",
+      "url": "https://github.com/pranay123-stack/es-futures-strategies",
+      "description": "ES futures trading strategies \u2014 E-mini S&P 500 breakout and ICT structure, TradingView Pine into IBKR TWS.",
+      "stars": 0,
+      "language": null,
+      "created": "2026-08-26T11:50:15Z",
+      "updated": "2026-08-26T11:58:41Z",
+      "symbols": [],
+      "patterns": [
+        "breakout"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "IndreasS/cointegration-screening",
+      "url": "https://github.com/IndreasS/cointegration-screening",
+      "description": "Cointegration screening study on 54 S&P 500 stocks. Tests whether formation p value predicts out of sample trading performance, and how that performance relates to VIX.",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-08-25T20:07:56Z",
+      "updated": "2026-08-25T20:37:29Z",
+      "symbols": [],
+      "patterns": [
+        "cointegration"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "LatusRectum/technical-trading-strategy-backtester",
+      "url": "https://github.com/LatusRectum/technical-trading-strategy-backtester",
+      "description": "Backtests a Moving Average Crossover strategy (with an RSI filter) vs. Buy & Hold across NIFTY 50, S&P 500, NASDAQ, AAPL, RELIANCE, and NVIDIA",
+      "stars": 1,
+      "language": "Jupyter Notebook",
+      "created": "2026-08-24T12:18:12Z",
+      "updated": "2026-08-25T07:04:42Z",
+      "symbols": [],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "Adrian-Vanyi/systematic-long-short-equity-backtesting-framework",
+      "url": "https://github.com/Adrian-Vanyi/systematic-long-short-equity-backtesting-framework",
+      "description": "Daily-frequency backtesting framework for long/short equity on the historical S&P 500. Models a realistic brokerage ledger: financing, dividends, margin requirements, FIFO short-proceeds lots, and trading costs. Includes three derived strategies (momentum,  factors model, constrained MVO) and three ",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-06-28T16:20:35Z",
+      "updated": "2026-08-24T16:09:09Z",
+      "symbols": [],
+      "patterns": [
+        "momentum",
+        "EMA"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "hargun-code/snp500-momentum-strategy",
+      "url": "https://github.com/hargun-code/snp500-momentum-strategy",
+      "description": "A Python backtest of a cross-sectional momentum trading strategy on S&P 500 stocks.",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-08-22T06:54:49Z",
+      "updated": "2026-08-24T11:52:52Z",
+      "symbols": [],
+      "patterns": [
+        "momentum"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "Nikoloruda/Dispersion-Analysis-Trade-Tool",
+      "url": "https://github.com/Nikoloruda/Dispersion-Analysis-Trade-Tool",
+      "description": "Implied vs. realized correlation dashboard for equity index dispersion trades - built on live S&P 500 and TSX options data, with auto-generated trade tickets.",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-08-22T19:42:31Z",
+      "updated": "2026-08-22T19:46:30Z",
+      "symbols": [],
+      "patterns": [
+        "RSI",
+        "correlation"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "AbdulRehmanRattu/quantitative-trading-system",
+      "url": "https://github.com/AbdulRehmanRattu/quantitative-trading-system",
+      "description": "Systematic backtesting framework for the Long Trend High Momentum (LTHM) equity strategy across S&P 500 and NASDAQ universes using Python and backtesting.py",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-08-20T23:41:50Z",
+      "updated": "2026-08-20T23:43:39Z",
+      "symbols": [],
+      "patterns": [
+        "momentum",
+        "EMA"
+      ],
+      "confidence": 0.56
+    },
+    {
+      "repo": "acnash/SwingTrading",
+      "url": "https://github.com/acnash/SwingTrading",
+      "description": "S&P 500 and FTSE 100 moving-average crossover screener with evidence-based review workflow",
+      "stars": 0,
+      "language": "Python",
+      "created": "2026-08-14T06:39:36Z",
+      "updated": "2026-08-17T07:26:29Z",
+      "symbols": [],
+      "patterns": [
+        "swing"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "AfonsoCord/LSTM-RL-Hybrid-Trading-System",
+      "url": "https://github.com/AfonsoCord/LSTM-RL-Hybrid-Trading-System",
+      "description": "Hybrid LSTM and reinforcement learning system for statistical arbitrage pair trading on S&P 500 stocks, trained walk forward from 2007 to 2025",
+      "stars": 0,
+      "language": "Jupyter Notebook",
+      "created": "2026-08-16T19:05:51Z",
+      "updated": "2026-08-16T19:20:01Z",
+      "symbols": [],
+      "patterns": [
+        "statistical arbitrage"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "jerryhu214-star/wealthjump",
+      "url": "https://github.com/jerryhu214-star/wealthjump",
+      "description": "player can use virtual funds to simulate 20-years historical in the s&p 500,nasdaq 100 and csi 300, this immersive game deepens their understanding of compound interest, long-term time value and the pitfalls of short-term trading.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-08-06T07:37:52Z",
+      "updated": "2026-08-16T12:22:55Z",
+      "symbols": [],
+      "patterns": [
+        "RSI"
+      ],
+      "confidence": 0.53
+    },
+    {
+      "repo": "pratham-vd/Algorithmic-Trading-Model-US30-Dow-Jones-",
+      "url": "https://github.com/pratham-vd/Algorithmic-Trading-Model-US30-Dow-Jones-",
+      "description": "Event-driven trading model for US30 focusing on precise execution and controlled risk during high-volatility periods.",
+      "stars": 1,
+      "language": "Python",
+      "created": "2026-04-20T13:50:22Z",
+      "updated": "2026-07-29T11:45:33Z",
+      "symbols": [
+        "US30"
+      ],
+      "patterns": [
+        "volatility"
+      ],
+      "confidence": 0.5800000000000001
+    },
+    {
+      "repo": "gonzalomontebelli/us30-trading-journal",
+      "url": "https://github.com/gonzalomontebelli/us30-trading-journal",
+      "description": "A zero-dependency, offline trading visualisation tool for algorithmic US30 (Dow Jones) strategies. Upload your broker CSV, bot log, news calendar and C# strategy code \u2014 get a full analytical dashboard instantly in your browser. Available in English and Spanish.",
+      "stars": 0,
+      "language": "HTML",
+      "created": "2026-03-08T12:41:12Z",
+      "updated": "2026-03-08T12:42:24Z",
+      "symbols": [
+        "US30"
+      ],
+      "patterns": [],
+      "confidence": 0.55
+    }
+  ]
+}

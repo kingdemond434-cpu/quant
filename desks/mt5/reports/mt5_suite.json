@@ -1,16 +1,17 @@
 {
- "checked_at": "2026-08-26T20:30:50+00:00",
- "verdict": "OK",
+ "checked_at": "2026-08-27T01:47:22+00:00",
+ "verdict": "FAIL",
  "counts": {
-  "passed": 536,
-  "failed": 28,
+  "passed": 571,
+  "failed": 2,
   "error": 0,
   "skipped": 0,
-  "total": 564
+  "total": 573
  },
- "new_failing": [],
- "newly_passing": [],
- "known_failing": [
+ "new_failing": [
+  "desks.mt5.tests.test_cost_units::test_every_live_cost_helper_uses_the_sanctioned_constructor"
+ ],
+ "newly_passing": [
   "desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it",
   "desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout",
   "desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip",
@@ -37,9 +38,14 @@
   "desks.mt5.tests.test_state_chain::test_no_terminal_verdict_below_the_evidence_floor",
   "desks.mt5.tests.test_state_chain::test_shadow_carries_state_for_hunt12_and_macro_candidates",
   "desks.mt5.tests.test_trial_matrix_alignment::test_build_matrix_joins_on_the_date_index",
-  "desks.mt5.tests.test_trial_matrix_alignment::test_the_per_survivor_series_is_sorted_by_date",
+  "desks.mt5.tests.test_trial_matrix_alignment::test_the_per_survivor_series_is_sorted_by_date"
+ ],
+ "known_failing": [
   "desks.mt5.tests.test_universe_discovery::test_the_real_universe_on_disk_classifies_cleanly"
  ],
- "reasons": [],
- "pytest_tail": "FAILED desks/mt5/tests/test_trial_matrix_alignment.py::test_the_per_survivor_series_is_sorted_by_date\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n28 failed, 536 passed in 20.33s"
+ "reasons": [
+  "1 NEW failing test(s) on the money path: desks.mt5.tests.test_cost_units::test_every_live_cost_helper_uses_the_sanctioned_constructor",
+  "27 test(s) now pass and are struck from the floor -- a ratchet never gives ground back: desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it; desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout; desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_the_refusal_names_what_is_missing_and_where_to_run_it"
+ ],
+ "pytest_tail": "FAILED desks/mt5/tests/test_cost_units.py::test_every_live_cost_helper_uses_the_sanctioned_constructor\nFAILED desks/mt5/tests/test_universe_discovery.py::test_the_real_universe_on_disk_classifies_cleanly\n2 failed, 571 passed in 20.47s"
 }
