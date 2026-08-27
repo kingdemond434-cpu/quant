@@ -5820,5 +5820,48 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"7720232280e2a673": {
+"t0": "2026-08-27T16:24:50+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Dasymetertrenchfever480/mt5-service-shade",
+"url": "https://github.com/Dasymetertrenchfever480/mt5-service-shade",
+"text": "Run MetaTrader 5 as a silent Windows service to automate trading tasks in a hidden, non-interactive environment.",
+"symbols": [],
+"found_at": "2026-08-27T16:24:46+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-27T15:12:03Z"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"948a8341e6c840bb": {
+"t0": "2026-08-27T16:24:50+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Designated-AICoder/sri-lankan-exchange-rates",
+"url": "https://github.com/Designated-AICoder/sri-lankan-exchange-rates",
+"text": "Unified Foreign Exchange (FX) rate aggregator and scraper for Sri Lankan banks. Real-time transparency for traders and businesses.",
+"symbols": [],
+"found_at": "2026-08-27T16:24:48+00:00",
+"topic": "forex-trading",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-27T15:06:43Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

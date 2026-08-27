@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-27T15:06:37+00:00",
+ "compiled_at": "2026-08-27T16:06:44+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -3845,17 +3845,17 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 28,
+   "rows": 27,
    "candidates": 0,
-   "deepening": 28
+   "deepening": 27
   },
   "central_bank": {
-   "rows": 49,
+   "rows": 1,
    "candidates": 13,
    "deepening": 0
   },
   "forexfactory": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 62,
    "deepening": 0
   },
@@ -3905,14 +3905,14 @@
    "deepening": 1
   },
   "ff_calendar_vintage": {
-   "rows": 69,
+   "rows": 70,
    "candidates": 38,
-   "deepening": 4
+   "deepening": 5
   },
   "forextsd_cdx": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "quant_se": {
    "rows": 30,
@@ -3980,13 +3980,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 9,
    "candidates": 0,
-   "deepening": 10
+   "deepening": 9
   }
  },
- "rows_accounted": 805,
+ "rows_accounted": 876,
  "executable_candidates": 318,
- "deepening_tasks": 411,
+ "deepening_tasks": 533,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
