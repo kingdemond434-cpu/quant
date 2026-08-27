@@ -3909,3 +3909,18 @@ residual; (ii) the same clock oracle applied to the FX legs (ECB 14:15 CET refer
 Tokyo 09:55 nakane vs USDJPY) to confirm R0660's offset symbol-wide and date the DST seams
 exactly; (iii) the 24-symbol lake vs the far larger universe registry — every axis above is
 gated on symbols the lake does not hold (no USDCNH is why item 1 needed an external FX leg).
+
+## SESSION 2026-08-27 (free-data-alternatives miner, standing daily run) — IN PROGRESS
+
+Backlog: `source_backlog_next.py` reports **0 pending verification, 0 pending legitimacy** (39
+resolved, 29 deferred to dates 2026-09-01 → 09-15). Mining authorised; items taken are the
+un-exhausted ground the 08-26 note named.
+
+Items taken this run (bounded per COMPLETION CONTRACT, depth per item unbounded):
+1. **(ii) Clock oracle applied symbol-wide** — confirm R0660's EET/EEST offset across the whole
+   lake, not the 3 symbols it was found on, and date the DST seams exactly from the bars alone.
+2. **(iii) Lake-vs-universe symbol coverage** — the 08-26 note recorded a 24-symbol lake against a
+   197-row registry; re-measure (321 parquets now on disk) and grade the residual honestly.
+3. **(i) IBA per-round LBMA transparency reports** — card 39's named residual.
+
+(updated as each item resolves)
