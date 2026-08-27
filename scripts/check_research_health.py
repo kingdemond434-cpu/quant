@@ -176,6 +176,15 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                                 f"(15-min engine): {', '.join(str(s) for s in stale[:5])}")
         else:
             m["active_clocks"] = "UNMEASURED (desk_state carries no forward rows)"
+        sw = ds.get("stall_watch") or {}
+        sw_age = _age_h(sw.get("checked_at"), now)
+        m["stall_watch_age_h"] = round(sw_age, 2) if sw_age is not None else None
+        m["stall_watch_actions"] = sw.get("actions") or []
+        if sw_age is None:
+            m["stall_watch"] = "UNMEASURED (watchdog has not reported yet)"
+        elif sw_age > 0.5:
+            breaches.append(f"STALL-WATCH: the watchdog itself has been silent "
+                            f"{round(sw_age, 1)}h (10-min cadence) -- the healer needs healing")
 
     return breaches, m
 

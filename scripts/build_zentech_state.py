@@ -392,6 +392,9 @@ def build() -> dict[str, Any]:
     # I won't be here to tell you").
     payload["stall_watch"] = _read(DESK / "data" / "stall_watch.json") or {
         "status": "UNMEASURED", "note": "watchdog has not reported yet"}
+    # The stall watchdog's latest verdict travels with the state so the dashboard can show
+    # healing as it happens -- healing nobody can see is healing nobody can trust.
+    payload["stall_watch"] = _read(DESK / "data" / "stall_watch.json")
     payload["readiness"] = _read(ROOT / "data" / "live_readiness.json") or {
         "status": "UNMEASURED", "blocking": ["readiness has not been assessed"]}
     payload["breadth"] = _read(ROOT / "data" / "miner_conversion.json") or {}

@@ -367,7 +367,9 @@ async function pulse(){
     `gauntlet swept ${f(m.certs_swept_age_h)}: ${m.last_sweep_judged??'—'} judged, canon ${m.certs_n??'—'} · `+
     `moat tape wrote ${f(m.moat_newest_write_age_h)} (${m.moat_symbols??'—'} symbols) · `+
     `stale ${(q.at&&age>75)?'YES — FENCE ITSELF SILENT':'no'}`;
-  $('pulseBreaches').innerHTML=(q.breaches||[]).map(b=>`<li>${b}</li>`).join('');
+  const heal=(m.stall_watch_actions||[]);
+  $('pulseBreaches').innerHTML=(q.breaches||[]).map(b=>`<li>${b}</li>`).join('')
+    +heal.map(a=>`<li style="color:var(--amber,#d9a441)">healed: ${a}</li>`).join('');
  }catch(err){
   $('pulseVerdict').textContent='PULSE UNAVAILABLE';
   $('pulseVerdict').style.color='var(--red)';
