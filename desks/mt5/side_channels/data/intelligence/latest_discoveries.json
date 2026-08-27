@@ -425,8 +425,18 @@
     ]
   },
   "mql5_forum": {
-    "count": 3,
+    "count": 6,
     "discoveries": [
+      {
+        "source": "mql5_forum",
+        "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+        "url": "https://www.mql5.com/en/forum/515220",
+        "symbols": [
+          "XAUUSD",
+          "EURUSD"
+        ],
+        "confidence": 0.2
+      },
       {
         "source": "mql5_forum",
         "title": "GOLD, Gold and XAUUSD",
@@ -438,10 +448,30 @@
       },
       {
         "source": "mql5_forum",
+        "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+        "url": "https://www.mql5.com/en/forum/515220",
+        "symbols": [
+          "XAUUSD",
+          "EURUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
         "title": "GOLD, Gold and XAUUSD",
         "url": "https://www.mql5.com/en/forum/393267",
         "symbols": [
           "XAUUSD"
+        ],
+        "confidence": 0.2
+      },
+      {
+        "source": "mql5_forum",
+        "title": "Single-symbol EA (XAUUSD only) fails Market validation on EURUSD - &quot;no trading operations&quot; - how did others get this approved?",
+        "url": "https://www.mql5.com/en/forum/515220",
+        "symbols": [
+          "XAUUSD",
+          "EURUSD"
         ],
         "confidence": 0.2
       },
@@ -465,23 +495,12 @@
     "discoveries": []
   },
   "reddit": {
-    "count": 20,
+    "count": 36,
     "discoveries": [
       {
         "source": "reddit",
         "subreddit": "Forex",
         "title": "XAUUSD SETUP",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "What are the worst strategies?",
         "url": "",
         "symbols": [
           "XAUUSD"
@@ -606,8 +625,8 @@
         "url": "",
         "symbols": [
           "NAS100",
-          "GBPJPY",
-          "USDJPY"
+          "USDJPY",
+          "GBPJPY"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -670,8 +689,8 @@
         "url": "",
         "symbols": [
           "USDCAD",
-          "EURUSD",
-          "GBPUSD"
+          "GBPUSD",
+          "EURUSD"
         ],
         "patterns": [
           "pullback"
@@ -721,6 +740,199 @@
           "liquidity"
         ],
         "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Went to Costco for some creatine",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "State of the stack (2 years)",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Secured the Kirkland Ounce Bar",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "1oz Kirkland silver today $69.99. I paid tax\u2026 no regrats. With obligatory hot dog and soda to make the trip worthwhile \ud83d\ude09",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "MORE!",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "This is my first purchase of Junk Silver. I think I'm addicted",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Kirkland Silver",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Silver has grown on me since I\u2019ve started my stacking journey. Anyone else?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "A humble reminder",
+        "url": "",
+        "symbols": [
+          "XAGUSD",
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Sterling silver belt buckle, mirror, YOYO",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "FAKE COINS ON FB MARKET PLACE",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Pretty pickups - 1 Monark silver rounds",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Private sellers?",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "I need $800",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "Facebook marketplace find, I probably paid a little high but look at the shiny",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "First Silver Stack",
+        "url": "",
+        "symbols": [
+          "XAGUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "silverbugs",
+        "title": "1934 Peace Dollar\u2026MS??",
+        "url": "",
+        "symbols": [
+          "DXY"
+        ],
+        "patterns": [],
+        "confidence": 0.3
       }
     ]
   },
@@ -740,15 +952,15 @@
         "date": "2026-08-24T13:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Treasury Sec Bessent Speaks"
@@ -762,15 +974,15 @@
         "date": "2026-08-25T10:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: CB Consumer Confidence"
@@ -783,12 +995,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDUSD",
-          "AUDCAD",
-          "GBPAUD",
-          "AUDNZD",
           "AUDJPY",
-          "EURAUD"
+          "AUDUSD",
+          "GBPAUD",
+          "EURAUD",
+          "AUDCAD",
+          "AUDNZD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI m/m"
@@ -801,12 +1013,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDUSD",
-          "AUDCAD",
-          "GBPAUD",
-          "AUDNZD",
           "AUDJPY",
-          "EURAUD"
+          "AUDUSD",
+          "GBPAUD",
+          "EURAUD",
+          "AUDCAD",
+          "AUDNZD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI y/y"
@@ -819,12 +1031,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDUSD",
-          "AUDCAD",
-          "GBPAUD",
-          "AUDNZD",
           "AUDJPY",
-          "EURAUD"
+          "AUDUSD",
+          "GBPAUD",
+          "EURAUD",
+          "AUDCAD",
+          "AUDNZD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: Trimmed Mean CPI m/m"
@@ -838,15 +1050,15 @@
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core PCE Price Index m/m"
@@ -860,15 +1072,15 @@
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim GDP q/q"
@@ -882,15 +1094,15 @@
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim GDP Price Index q/q"
@@ -904,15 +1116,15 @@
         "date": "2026-08-27T08:30:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Unemployment Claims"
@@ -925,14 +1137,14 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T19:30:00-04:00",
         "symbols": [
-          "NZDJPY",
-          "EURJPY",
-          "GBPJPY",
-          "USDJPY",
+          "CHFJPY",
           "CADJPY",
           "AUDJPY",
-          "CHFJPY",
-          "XAUUSD"
+          "XAUUSD",
+          "EURJPY",
+          "USDJPY",
+          "GBPJPY",
+          "NZDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact JPY event: Tokyo Core CPI y/y"
@@ -945,8 +1157,8 @@
         "impact": "HIGH",
         "date": "2026-08-28T08:30:00-04:00",
         "symbols": [
-          "NZDCAD",
           "USDCAD",
+          "NZDCAD",
           "AUDCAD"
         ],
         "confidence": 0.7,
@@ -961,15 +1173,15 @@
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Fed Chairman Warsh Speaks"
@@ -983,15 +1195,15 @@
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim Benchmark Payrolls Revision"
@@ -1005,15 +1217,15 @@
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Consumer Sentiment"
@@ -1027,15 +1239,15 @@
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
           "USDCAD",
-          "AUDUSD",
-          "EURUSD",
+          "NZDUSD",
+          "XAUUSD",
+          "USDCHF",
+          "USDJPY",
           "GBPUSD",
+          "AUDUSD",
           "US500",
           "NAS100",
-          "USDJPY",
-          "NZDUSD",
-          "USDCHF",
-          "XAUUSD"
+          "EURUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Inflation Expectations"
@@ -1356,8 +1568,48 @@
     "discoveries": []
   },
   "academic": {
-    "count": 0,
-    "discoveries": []
+    "count": 3,
+    "discoveries": [
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "From Producing to Validating: How AI Is Deskilling Freelancers",
+        "summary": "Generative AI is promoted as a way to enhance knowledge work, yet its benefits and drawbacks fall unevenly across the workforce. Freelance and gig workers, who commonly lack the upskilling pathways av",
+        "url": "https://arxiv.org/abs/2608.26089v1",
+        "published": "2026-08-26T17:51:34Z",
+        "trading_terms": [
+          "risk"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Planetary Prediction Engine: Autonomous Geospatial Prediction via Intelligent Data Selection and Foundation Model Embeddings",
+        "summary": "Addressing critical global challenges, from food security and disaster risk to disease outbreaks and socio-economic vulnerability, demands high-fidelity geospatial modeling. However, building predicti",
+        "url": "https://arxiv.org/abs/2608.26088v1",
+        "published": "2026-08-26T17:50:52Z",
+        "trading_terms": [
+          "risk"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Planetary Prediction Engine: Autonomous Geospatial Prediction via Intelligent Data Selection and Foundation Model Embeddings",
+        "summary": "Addressing critical global challenges, from food security and disaster risk to disease outbreaks and socio-economic vulnerability, demands high-fidelity geospatial modeling. However, building predicti",
+        "url": "https://arxiv.org/abs/2608.26088v1",
+        "published": "2026-08-26T17:50:52Z",
+        "trading_terms": [
+          "risk"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      }
+    ]
   },
   "correlations": {
     "count": 0,
@@ -1426,7 +1678,7 @@
         "type": "historical_pattern",
         "symbol": "EURGBP",
         "month": 8,
-        "avg_return": -0.0008,
+        "avg_return": -0.0007,
         "overall_avg": -0.0003,
         "direction": "bearish",
         "symbols": [
@@ -1594,14 +1846,14 @@
         "type": "historical_pattern",
         "symbol": "BTCUSD",
         "month": 8,
-        "avg_return": 1.4096,
+        "avg_return": 1.4093,
         "overall_avg": 0.216,
         "direction": "bullish",
         "symbols": [
           "BTCUSD"
         ],
         "confidence": 0.6,
-        "description": "BTCUSD historically bullish in month 8 (avg 1.410%)"
+        "description": "BTCUSD historically bullish in month 8 (avg 1.409%)"
       },
       {
         "source": "seasonality",
