@@ -82,7 +82,8 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     "desks/mt5/research/allocation.py": "from mt5desk.gateway import Q_OPT",
     "desks/mt5/research/portfolio_projection.py": "from_symbol",
     "desks/mt5/mt5desk/config.py": "def desk_root",
-    "desks/mt5/mt5desk/families.py": "d1_session_filtered",
+    "desks/mt5/mt5desk/families.py": ("d1_session_filtered", "except ModuleNotFoundError",
+                                      "FAMILY_REGISTRY"),
     # 2026-08-26 01:19-01:21 UTC, MEASURED: the C:-side hourly pusher overwrote EVERY unmarkered
     # file above-and-below with stale copies and the sweep commit (eb1818f4) laundered them into
     # history within two minutes -- the fence's own docstring scenario, executed end to end.

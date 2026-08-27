@@ -18,7 +18,13 @@ import numpy as np
 import pandas as pd
 from mt5desk.engine import Signal
 
-from libs.research.bar_span import is_out_of_calendar
+try:
+    from libs.research.bar_span import is_out_of_calendar
+except ModuleNotFoundError:  # desk entrypoints put desks/mt5 on sys.path, not the repo root
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[3]))
+    from libs.research.bar_span import is_out_of_calendar
 
 __all__ = [
     "FAMILY_REGISTRY",
