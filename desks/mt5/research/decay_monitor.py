@@ -134,8 +134,34 @@ def verdict(s: dict) -> tuple[str, str]:
     return "HEALTHY", f"trailing t={s['t']}, exp={s['exp_r']}R over n={s['n']}"
 
 
+def source_state() -> tuple[str, str]:
+    """Which of the THREE states the roster is in -- they are not one answer.
+
+    `_read_json` returns `{}` for a file that is absent, a file that is empty, and a file that is
+    corrupt or unreadable, so `live_sleeves: 0` was published with the note "a measured zero, not
+    a silence" in all three cases. Measured 2026-08-27: `data/sleeves.json` does not exist on this
+    box (the promoter, its only writer, has promoted nothing), and the artifact asserted a measured
+    zero anyway. Today that zero is right by luck. The state this collapse is dangerous in is the
+    unreadable one: a live book whose roster went unreadable would be certified HEALTHY forever by
+    an organ whose whole job is to notice harm, and nothing in the artifact would say otherwise.
+    UNMEASURED is a real answer (L1.28a) and absence is never a clean verdict.
+    """
+    if not SLEEVES_FILE.exists():
+        return "NO_ROSTER", (f"{SLEEVES_FILE.name} does not exist -- its only writer is "
+                             f"research/promoter.py, so nothing has ever been promoted to live "
+                             f"risk. Zero live sleeves is CORRECT here and no verdict is owed.")
+    try:
+        json.loads(SLEEVES_FILE.read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        return "UNMEASURED", (f"{SLEEVES_FILE.name} exists but could not be read "
+                              f"({type(exc).__name__}: {exc}) -- the live roster is UNKNOWN, not "
+                              f"empty. Every verdict below is absent, not healthy.")
+    return "READ", f"{SLEEVES_FILE.name} read cleanly"
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    source, source_why = source_state()
     doc = _read_json(SLEEVES_FILE, {})
     sleeves = doc.get("sleeves") if isinstance(doc, dict) else None
     if not isinstance(sleeves, dict):
@@ -184,10 +210,17 @@ def main() -> int:
                 f.write(json.dumps(a) + "\n")
 
     OUT.write_text(json.dumps({
-        "checked_at": now, "live_sleeves": len(live),
+        "checked_at": now,
+        "live_sleeves": None if source == "UNMEASURED" else len(live),
+        "roster_state": source, "roster_why": source_why,
         "verdicts": report, "actions_taken": actions,
-        "note": "0 live sleeves is a measured zero, not a silence (L1.28a)"}, indent=2), "utf-8")
-    print(f"decay monitor: {len(live)} live sleeve(s), "
+        "note": ("a count is published only when the roster was READ or is provably absent; an "
+                 "unreadable roster publishes null, because 0 and unknown are different answers "
+                 "and only one of them is safe to act on (L1.28a)")}, indent=2), "utf-8")
+    if source == "UNMEASURED":
+        print(f"decay monitor: UNMEASURED -- {source_why}")
+        return 1
+    print(f"decay monitor: {len(live)} live sleeve(s) [{source}], "
           f"{sum(1 for r in report.values() if r['verdict'] != 'HEALTHY')} flagged, "
           f"{len(actions)} action(s)")
     return 0
