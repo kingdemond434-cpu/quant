@@ -158,9 +158,10 @@ def wf_oos(h1: pd.DataFrame, sigs: list, costs: Costs) -> list[float]:
 
 def battery(h1: pd.DataFrame, sigs: list, costs: Costs) -> dict:
     r = run_backtest(h1, sigs, costs).stats()
-    r2 = run_backtest(h1, sigs, Costs(costs.spread_per_lot * 2,
-                                      costs.commission_per_lot * 2,
-                                      costs.contract_oz)).stats()
+    # DERIVE, NEVER REBUILD: a positional rebuild drops `quote_per_account` back to 1.0 and
+    # un-does the account-currency conversion, so the 2x stress landed BELOW the baseline on
+    # every JPY cross (measured 2026-08-27). Commission is contractual and does not widen.
+    r2 = run_backtest(h1, sigs, costs.stressed(2.0)).stats()
     wf = wf_oos(h1, sigs, costs)
     defl = r["t_stat"] - E_MAX
     gate = (r["n"] > 60 and defl > 2 and r["profit_factor"] > 1.05

@@ -219,9 +219,9 @@ def gauntlet(cells: list[Cell], hunt: str) -> dict:
 def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
     import multiprocessing as mp
     daily_args = [(c.df, c.sigs, c.costs) for c in cells]
-    x3_args = [(c.df, c.sigs, Costs(c.costs.spread_per_lot * COST_SCENARIO,
-                                    c.costs.commission_per_lot * COST_SCENARIO,
-                                    c.costs.contract_oz)) for c in cells]
+    # DERIVE, NEVER REBUILD -- see Costs.stressed. The rebuilt form dropped quote_per_account,
+    # so this "x3" scenario was weaker than its own baseline on every non-EUR-quoted symbol.
+    x3_args = [(c.df, c.sigs, c.costs.stressed(COST_SCENARIO)) for c in cells]
     if workers <= 1:
         daily = [_ug_daily(a) for a in daily_args]
         daily_x3 = [_ug_daily(a) for a in x3_args]

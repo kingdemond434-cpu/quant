@@ -6,7 +6,7 @@ All times UTC. No lookahead: signals computed on closed bars only, entries at ne
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 import pandas as pd
@@ -63,6 +63,26 @@ class Costs:
         """
         return (self.spread_per_lot
                 + self.commission_per_lot * 2.0 * float(self.quote_per_account))
+
+    def stressed(self, spread_mult: float) -> "Costs":
+        """A cost-stress variant of THIS cost model -- widen the spread, keep everything else.
+
+        THE DEFECT THIS CLOSES, measured live 2026-08-27 on the certificate path. Every stress
+        scenario on this desk rebuilt `Costs(...)` positionally from three fields of an existing
+        one, so the FOURTH field -- `quote_per_account` -- silently reverted to its 1.0 default.
+        That default exists so adding the field moved no existing call site; in a re-derivation it
+        instead un-does the conversion the baseline already applied. `universal_gate`'s x3
+        scenario on CADJPY: baseline round trip 1699.29, "x3" as written 607.00, x3 correct
+        1899.29. The gate built to prove a candidate survives THREE TIMES its costs was testing
+        it at 0.36x -- strictly weaker than the baseline it is supposed to stress, on the JPY
+        crosses where this desk's live family actually sits.
+
+        Deriving with `replace` makes the whole class unreachable: a field added later is carried
+        by construction, and no call site has to remember it. Commission is deliberately NOT
+        scaled -- it is contractual and does not widen with market stress, so multiplying it
+        models nothing that happens (see `from_symbol`).
+        """
+        return replace(self, spread_per_lot=self.spread_per_lot * float(spread_mult))
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,

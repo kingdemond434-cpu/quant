@@ -279,9 +279,14 @@ def _gauntlet_once(cells: list[Cell], hunt: str, workers: int) -> dict:
         if c.series_x3 is not None:
             x3_args.append((c.series_x3, None, None))
         else:
-            x3_args.append((c.df, c.sigs,
-                            Costs(c.costs.spread_per_lot * COST_SCENARIO / 2.0,
-                                  c.costs.commission_per_lot, c.costs.contract_oz)))
+            # DERIVE, NEVER REBUILD. This constructed a fresh `Costs` from three of the four
+            # fields, so `quote_per_account` reverted to its 1.0 default and un-did the account-
+            # currency conversion the baseline had already applied. Measured 2026-08-27 on
+            # CADJPY: baseline round trip 1699.29, this line 607.00, correct 1899.29 -- the x3
+            # cost-stress gate was testing at 0.36x, weaker than the baseline it stresses, on the
+            # JPY crosses that carry this desk's live family. `stressed()` carries every field
+            # by construction, so a field added later cannot be dropped here again.
+            x3_args.append((c.df, c.sigs, c.costs.stressed(COST_SCENARIO / 2.0)))
     if workers <= 1:
         daily = [_ug_daily(a) for a in daily_args]
         daily_x3 = [_ug_daily(a) for a in x3_args]

@@ -53,12 +53,26 @@ COST_SCENARIO = 3.0
 
 
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
-    m = meta.get(sym, {})
-    spread = m.get("median_spread_pts", 1) * m.get("tick_size", 1e-5) * m.get("contract_size", 1e5)
-    spread = 0.48 * mult if sym == "XAUUSD" else max(spread, 0.05) * mult
-    return Costs(spread_per_lot=spread,
-                 commission_per_lot=3.50 * mult,
-                 contract_oz=m.get("contract_size", 1e5))
+    """The gauntlet's cost model. `Costs.from_symbol` is the ONLY correct constructor.
+
+    THE THREE DEFECTS THIS HAD, all live and all in the survivor-manufacturing direction, on the
+    one call site that decides who gets a ten-gate certificate (measured 2026-08-27 against
+    `from_symbol` on the live universe.json):
+
+      * `0.48 if sym == "XAUUSD"` -- dollars per OUNCE written into a per-LOT field. GAP 110/144's
+        original bug, fixed in `shadow_forward.per_symbol_costs` and left standing here. The
+        engine divides by contract_oz=100, so gold was charged 0.0048/oz against a measured
+        0.16 median: 2.43x undercharged after correction.
+      * no `quote_per_account`, so the commission was charged as though every symbol were quoted
+        in the account's own currency. On this EUR account: USDJPY 184.31x undercharged, CADJPY
+        8.21x, EURJPY 6.19x, GBPJPY 4.12x, EURZAR 2.35x -- every symbol in the live family.
+      * `commission_per_lot=3.50 * mult` scaled a CONTRACTUAL fee with market stress, which models
+        nothing that happens; `from_symbol` scales the spread alone and is the reason it exists.
+
+    `mult` keeps its meaning (spread multiplier) so no caller changes. The commission stays 3.50
+    -- Fusion's measured round turn on this account, not the 2.25 class default.
+    """
+    return Costs.from_symbol(meta.get(sym, {}), mult=mult, commission_per_lot=3.50)
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
