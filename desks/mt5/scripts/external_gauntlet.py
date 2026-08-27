@@ -267,8 +267,15 @@ def _cache_key(sym: str, family: str, params: dict, last_day: str) -> str:
 
 
 def _series_trim_partial(ds, last_day):
-    """Drop the current partial day so every column ends on the same COMPLETE day."""
-    if ds is None or len(ds) == 0:
+    """Drop the current partial day so every column ends on the same COMPLETE day.
+
+    `last_day is None` means NO BOUNDARY IS KNOWN, and the honest response is to trim nothing.
+    It used to fall through to `ds.index < None`, which does not raise for a date index -- numpy
+    compares elementwise against None and returns all-False -- so the series came back EMPTY.
+    Every caller that builds cells without a `_last_day` (the recertification audit) therefore
+    saw zero observations on every cell and read it as "too few days to judge" (2026-08-27).
+    """
+    if ds is None or len(ds) == 0 or last_day is None:
         return ds
     try:
         return ds[ds.index < last_day]
