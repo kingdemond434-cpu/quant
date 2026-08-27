@@ -383,13 +383,13 @@ def family_lvc_asia_london(
         return []
     atr = _atr(d, atr_n)
     minute = pd.Series(d.index.hour * 60 + d.index.minute, index=d.index)
-    day = pd.Series(d.index.date, index=d.index)
     signals: list[Signal] = []
+    positions_by_day: dict[object, list[int]] = {}
+    for pos, session_day in enumerate(d.index.date):
+        positions_by_day.setdefault(session_day, []).append(pos)
 
-    for session_day in pd.unique(day):
-        positions = np.flatnonzero(day.to_numpy() == session_day)
-        if positions.size == 0:
-            continue
+    for positions_raw in positions_by_day.values():
+        positions = np.asarray(positions_raw, dtype=int)
         asia = positions[(minute.iloc[positions].to_numpy() >= asia_start_minute)
                          & (minute.iloc[positions].to_numpy() < asia_end_minute)]
         trade = positions[(minute.iloc[positions].to_numpy() >= trade_start_minute)
