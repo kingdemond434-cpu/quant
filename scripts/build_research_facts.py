@@ -96,7 +96,8 @@ def main() -> int:
     # --- forward clocks: where evidence actually stands ----------------------------------------
     live, fwd_obs, hist_obs = 0, 0, 0
     terminal = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED"}
-    for name in ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json"):
+    for name in ("shadow_state.json", "qquant_shadow_state.json", "scalp_shadow_state.json",
+                 "external_shadow_state.json"):
         doc = _read(DESK / "reports" / "shadow" / name) or {}
         rows = list(doc.values()) + list((doc.get("sleeves") or {}).values())
         for row in rows:
