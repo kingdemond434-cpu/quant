@@ -66,6 +66,16 @@ export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 # comparison is against `git hash-object` run on the box itself.
 echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk box"
 REMOTE_MODULES="desks/mt5/mt5desk/families_orthogonal.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
+# NEVER SHIP A TRAMPLED MODULE (2026-08-27): a replayer reverts working-tree code to ancient
+# copies roughly hourly, the moneypath fence heals within 10 minutes -- but this sync fires at
+# :05, INSIDE the trample window, and shipped ancient engines to the desk twice tonight. The
+# fence call below heals any active trample first (it restores from canon and commits); only a
+# tree that passes the marker check is allowed to reach the box that trades.
+$PY scripts/check_moneypath_fence.py >/dev/null 2>&1 || $PY scripts/check_moneypath_fence.py >/dev/null 2>&1
+if ! $PY scripts/check_moneypath_fence.py >/dev/null 2>&1; then
+  echo "code sync SKIPPED: moneypath fence cannot heal the tree; refusing to ship unknown code"
+  REMOTE_MODULES=""
+fi
 for m in $REMOTE_MODULES; do
   scp -q "$m" "contabo-mt5:C:/opt/quant/$m" 2>>"$LOGF" || echo "code sync scp FAILED: $m"
 done
