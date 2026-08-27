@@ -187,6 +187,7 @@ fi
 
 # Stage 4: certificates -> canon copy -> desk box. The canon file is what the authority
 # ratchet floors and what restores the authority file after a bad writer.
+$PY scripts/check_authority_ratchet.py || true
 $PY - <<'PYEOF'
 import json, shutil, sys
 from pathlib import Path
@@ -210,6 +211,10 @@ PYEOF
 scp -q desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json' \
   && echo "canon synced to desk box" || echo "desk-box sync FAILED (will retry next run)"
+scp -q desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json \
+    contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \
+  && echo "canonical authority synced to desk box" \
+  || echo "desk-box authority sync FAILED (will retry next run)"
 
 # The hypothesis corpus lives on THIS box (stage 2 writes it here) but the dashboard state is
 # built on the desk box, which is the only machine that can read the live account. Without this

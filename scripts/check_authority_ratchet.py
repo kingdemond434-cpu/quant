@@ -21,10 +21,14 @@ looks". Floors live in data/authority_ratchet.json and rise on their own.
 from __future__ import annotations
 
 import json
+import os
 import sys
+import tempfile
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.ops.canon_lease import hold
 from libs.ops.repair_invoke import request_repair
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -68,6 +72,46 @@ def read(p: Path):
         return None
 
 
+def _atomic_copy(source: Path, target: Path) -> None:
+    """Copy a JSON authority artifact without exposing readers to a partial file."""
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    try:
+        with os.fdopen(fd, "wb") as out:
+            out.write(source.read_bytes())
+            out.flush()
+            os.fsync(out.fileno())
+        os.replace(name, target)
+    finally:
+        with suppress(FileNotFoundError):
+            os.unlink(name)
+
+
+def restore_authority() -> str | None:
+    """Restore a silently shrunken authority file from its known-good canon copy.
+
+    Detection alone left every production consumer reading the degraded authority file. A
+    smaller authority is an interrupted/bad-writer state unless it carries an explicit
+    revocation record; in that state the canon file is the recovery source by definition.
+    """
+    auth, canon = read(AUTHORITY_FILE), read(CANON_FILE)
+    if not isinstance(auth, dict) or not isinstance(canon, dict):
+        return None
+    a_rows = auth.get("survivors") or {}
+    c_rows = canon.get("survivors") or {}
+    a_par = sum(1 for v in a_rows.values() if (v.get("shadow_spec") or {}).get("params"))
+    c_par = sum(1 for v in c_rows.values() if (v.get("shadow_spec") or {}).get("params"))
+    degraded = len(a_rows) < len(c_rows) or (len(a_rows) == len(c_rows) and a_par < c_par)
+    explicitly_revoked = any(auth.get(key) for key in REVOCATION_KEYS)
+    if not degraded or explicitly_revoked:
+        return None
+    artifact = "desks/mt5/reports/UNIVERSAL_SURVIVORS.json"
+    with hold(artifact, "authority-ratchet"):
+        _atomic_copy(CANON_FILE, AUTHORITY_FILE)
+    return (f"authority restored from canon: {len(a_rows)} certs/{a_par} with params -> "
+            f"{len(c_rows)}/{c_par}; no explicit revocation was present")
+
+
 def heal_canon() -> str | None:
     """Canon may never be WORSE than the authority file. Restore it when it is.
 
@@ -90,7 +134,9 @@ def heal_canon() -> str | None:
     a_par = sum(1 for v in a_rows.values() if (v.get("shadow_spec") or {}).get("params"))
     c_par = sum(1 for v in c_rows.values() if (v.get("shadow_spec") or {}).get("params"))
     if len(a_rows) > len(c_rows) or (len(a_rows) == len(c_rows) and a_par > c_par):
-        CANON_FILE.write_text(json.dumps(auth, indent=2, default=str), "utf-8")
+        artifact = "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json"
+        with hold(artifact, "authority-ratchet"):
+            _atomic_copy(AUTHORITY_FILE, CANON_FILE)
         return (f"canon healed from the authority file: {len(c_rows)} certs/{c_par} with params "
                 f"-> {len(a_rows)}/{a_par}. Canon is the known-good COPY of authority; it being "
                 f"behind is a contradiction, not a state to preserve.")
@@ -102,6 +148,9 @@ def main() -> int:
     healed = heal_canon()
     if healed:
         print(f"authority ratchet: {healed}")
+    restored = restore_authority()
+    if restored:
+        print(f"authority ratchet: {restored}")
     floors = read(FLOORS) or {"note": "earned-evidence floors; rise freely, fall only on an "
                                       "explicit recorded revocation", "counts": {}}
     breaches: list[str] = []
