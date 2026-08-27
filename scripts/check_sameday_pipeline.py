@@ -41,6 +41,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.ops.forward_clock import forward_days, overstated_rows
 from libs.ops.repair_invoke import request_repair
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -162,12 +163,30 @@ def main() -> int:
     for key, val in rows.items():
         if _is_terminal(val.get("status")):
             continue
-        days = val.get("days_active") or 0
+        # DERIVED from the pre-registration stamp, never read back from `days_active`: that
+        # stored field was computed from the first trade ever taken on rows written before
+        # 2026-08-26, so it both invented silence (a fresh clock reading day 9) and hid it.
+        days = forward_days(val, now) or 0
         if days >= SILENT_DAYS and int(val.get("n") or 0) == 0:
             findings.append(
                 f"SILENT-SLEEVE: {key} has been on the forward clock {days} days and has taken "
                 f"0 trades. It will reach the verdict with nothing to judge -- this is a firing "
                 f"defect (signal, data feed, or session filter), not patience.")
+
+    # 4. a stored day count that outruns its own stamp -----------------------------------
+    # The promote lanes gate on `days_active >= 14`. A row carrying the pre-correction number
+    # would satisfy a forward window it never served, which is the one thing the back half of
+    # this pipeline exists to prevent. Report it where the fence already looks.
+    live_rows = {k: v for k, v in rows.items() if not _is_terminal(v.get("status"))}
+    overstated = overstated_rows(live_rows, now)
+    if overstated:
+        worst = max(overstated.values(), key=lambda v: v["overstated_by"])
+        findings.append(
+            f"CLOCK-OVERSTATED: {len(overstated)} live clock(s) store a `days_active` larger "
+            f"than their own `forward_start` allows -- worst by {worst['overstated_by']} day(s) "
+            f"(stored {worst['stored']}, derived {worst['derived']}). A promote lane reading the "
+            f"stored field would clear a 14-day window the sleeve has not served. Rows: "
+            + ", ".join(sorted(overstated)[:6]) + (" ..." if len(overstated) > 6 else ""))
 
     REPORT.write_text(json.dumps(
         {"checked_at": now.isoformat(timespec="seconds"),

@@ -38,6 +38,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from libs.ops.forward_clock import forward_days, overstated_rows, served_window
+
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 OUT = ROOT / "data" / "live_readiness.json"
@@ -80,12 +82,23 @@ def main() -> int:
     contaminated = [k for k, v in live_rows.items()
                     if v.get("first_entry") and v.get("forward_start")
                     and str(v["first_entry"]) < str(v["forward_start"])[:10]]
-    ok = not unstamped and not contaminated
+    # A STORED DAY COUNT IS NOT EVIDENCE OF ELAPSED TIME. `days_active` used to be computed from
+    # the first trade the sleeve ever took; rows written before that was corrected still carry the
+    # old number, and it outran the pre-registration stamp by up to eight days (measured
+    # 2026-08-27: 31 of 47 rows). Every gate below DERIVES the window from `forward_start`, and a
+    # row whose stored count cannot be accounted for by its own stamp is a chronology failure --
+    # not a display quirk, because the promote lanes read that field.
+    overstated = overstated_rows(live_rows, now)
+    ok = not unstamped and not contaminated and not overstated
     checks["chronology"] = {"pass": ok, "clocks": len(live_rows),
-                            "unstamped": len(unstamped), "contaminated": len(contaminated)}
+                            "unstamped": len(unstamped), "contaminated": len(contaminated),
+                            "overstated_day_counts": len(overstated),
+                            "worst_overstatement_days": max(
+                                (v["overstated_by"] for v in overstated.values()), default=0)}
     if not ok:
         reasons.append(f"chronology: {len(unstamped)} clock(s) unstamped, {len(contaminated)} "
-                       f"carrying evidence older than their own start")
+                       f"carrying evidence older than their own start, {len(overstated)} whose "
+                       f"stored day count outruns their own pre-registration stamp")
 
     # --- identity --------------------------------------------------------------------------
     reg = _read(DESK / "data" / "sleeve_registry.json") or {}
@@ -157,15 +170,17 @@ def main() -> int:
                        "demote a sleeve that stops working")
 
     # --- forward evidence, the thing that actually earns a rung -----------------------------
+    # DERIVED, never restated: `served_window` measures from `forward_start` and fails closed on
+    # an unstamped row, so no sleeve can clear a window it did not serve (LAWS L1.58).
     eligible = [k for k, v in live_rows.items()
                 if int(v.get("n") or 0) >= MIN_FORWARD_TRADES
-                and int(v.get("days_active") or 0) >= MIN_FORWARD_DAYS
+                and served_window(v, MIN_FORWARD_DAYS, now)
                 and float(v.get("exp_r") or 0) > 0.05]
     checks["forward_evidence"] = {"pass": bool(eligible), "eligible_sleeves": eligible,
                                   "requires": f"n>={MIN_FORWARD_TRADES} and "
                                               f"days>={MIN_FORWARD_DAYS} and exp>0.05R"}
     if not eligible:
-        soonest = max((int(v.get("days_active") or 0) for v in live_rows.values()), default=0)
+        soonest = max((forward_days(v, now) or 0 for v in live_rows.values()), default=0)
         reasons.append(f"forward evidence: no sleeve has cleared the forward window "
                        f"(best clock is day {soonest}/{MIN_FORWARD_DAYS}); the market has not yet "
                        f"supplied the unseen observations, and nothing can substitute for them")

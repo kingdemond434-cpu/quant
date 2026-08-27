@@ -18,7 +18,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import psutil
@@ -46,9 +46,8 @@ TARGETS = [
     dict(name="fragility", args=["-u", "-W", "ignore", "research/fragility.py"],
          marker="reports/DONE_fragility", match="fragility.py"),
     dict(name="qquant_gates",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/qquant_gates.py", "--workers", "8"],
-         marker="reports/DONE_qquant_gates", match="qquant_gates.py"),
+         marker="reports/DONE_qquant_gates_original10_v2", match="qquant_gates.py"),
     dict(name="regime_oos", args=["-u", "-W", "ignore", "research/regime_discovery.py"],
          marker="reports/DONE_regime_oos", match="regime_discovery.py"),
     dict(name="merge", args=["-u", "-W", "ignore", "research/merge_qquant.py"],
@@ -77,22 +76,19 @@ TARGETS = [
                                    "research/signal_gate.py", "run_hunt18"],
          marker="reports/DONE_signal_gate_never", match="signal_gate.py"),
     dict(name="universal",
-         python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
          args=["-u", "-W", "ignore", "research/universal_gate.py"],
-         marker="reports/DONE_universal_hunt23", match="universal_gate.py"),
+         marker="reports/DONE_universal_curve_compendium", match="universal_gate.py"),
     dict(name="meta_desk",
-python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/meta_desk.py"],
           marker="reports/DONE_meta", match="meta_desk.py"),
     dict(name="allocation",
-          python=r"C:\Users\dell\quant-platform\.venv\Scripts\python.exe",
           args=["-u", "-W", "ignore", "research/allocation.py"],
           marker="reports/DONE_allocation", match="allocation.py"),
 ]
 
 
 def log(msg: str) -> None:
-    line = f"{datetime.now(timezone.utc).isoformat()} {msg}"
+    line = f"{datetime.now(UTC).isoformat()} {msg}"
     print(line, flush=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(line + "\n")
@@ -114,9 +110,15 @@ def is_running(match: str) -> bool:
 
 def already_supervised() -> bool:
     me = psutil.Process().pid
+    parent = psutil.Process(me).ppid()
     for p in psutil.process_iter(["name", "cmdline"]):
         try:
             if p.pid == me:
+                continue
+            # Windows venv launchers may leave a short-lived parent/child Python pair with the
+            # identical command line. They are one invocation, not a second supervisor. Treating
+            # the launcher as a peer made every scheduled start exit immediately.
+            if p.pid == parent or p.ppid() == me:
                 continue
             if not (p.info["name"] or "").lower().startswith("python"):
                 continue
@@ -175,7 +177,7 @@ def main() -> int:
             last = float(st.get("last_spawn", 0) or 0)
             if now - last < 180:
                 log(f"supervisor: {t['name']} keeps dying, quarantined until "
-                    f"{datetime.fromtimestamp(last + 1800, timezone.utc).isoformat()}")
+                    f"{datetime.fromtimestamp(last + 1800, UTC).isoformat()}")
                 continue
             try:
                 CHILD_LOGS.mkdir(parents=True, exist_ok=True)

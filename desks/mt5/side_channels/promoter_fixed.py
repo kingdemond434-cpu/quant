@@ -30,6 +30,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root, for libs.*
+
+from libs.ops.forward_clock import forward_days  # noqa: E402
 
 from mt5desk import provenance  # noqa: E402
 from shadow_admission import authorized_specs  # noqa: E402
@@ -193,7 +196,11 @@ def _check_forward_cure(shadow_st: dict, key: str) -> bool:
     n = int(shadow_st.get("n", 0) or 0)
     exp_r = float(shadow_st.get("exp_r", 0.0) or 0.0)
     max_dd_r = float(shadow_st.get("max_dd_r", 0.0) or 0.0)
-    days_active = int(shadow_st.get("days_active", 0) or 0)
+    # DERIVED from the pre-registration stamp, never restated (LAWS L1.58). The stored
+    # `days_active` was computed from the first trade ever taken on any row written before
+    # 2026-08-26, so this gate could be cleared eight days early on selection-period
+    # evidence. Unstamped derives to 0 and fails the window closed.
+    days_active = forward_days(shadow_st) or 0
     
     if n < FORWARD_CURE_MIN_TRADES:
         return False

@@ -7,6 +7,10 @@ from typing import Any
 
 import yaml
 
+import sys as _sys  # noqa: E402
+_sys.path.insert(0, str(Path(__file__).resolve().parents[3]))  # repo root, for libs.*
+from libs.ops.forward_clock import forward_days  # noqa: E402
+
 BASE = Path(__file__).resolve().parent.parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 REPORTS_DIR = BASE / "reports"
@@ -52,7 +56,11 @@ def run_shadow(hypothesis_ids: list[str]) -> list[ShadowVerdict]:
                         n=st.get("n", 0),
                         exp_r=st.get("exp_r", 0.0),
                         max_dd_r=st.get("max_dd_r", 0.0),
-                        days_active=st.get("days_active", 0),
+                        # DERIVED from `forward_start`, never read back: the stored
+                        # count was computed from the first trade ever taken and
+                        # outran the stamp by up to 8 days. Unstamped -> 0, which
+                        # fails the 14-day promote gate closed.
+                        days_active=forward_days(st) or 0,
                         bar_source=st.get("bar_source", "UNKNOWN"),
                         bar_source_stale=st.get("bar_source_stale", False),
                         promotion_authority=st.get("promotion_authority", False),
