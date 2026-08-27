@@ -115,6 +115,22 @@ def repair(*, check_only: bool) -> int:
               f"worth trading, it is an absent universe (L1.28a)")
         return 1
 
+    # THE CANON RATCHET (2026-08-27). Twice tonight a rogue writer replaced the whole-broker
+    # registry with a 23-row ancient copy, and this organ then faithfully repaired the stump --
+    # laundering the shrink into a clean-looking artifact one sync later. The registry's symbol
+    # SET only ratchets up: rows missing versus the canon superset are restored from it (their
+    # fields then re-repaired below like everything else), and the canon itself grows whenever
+    # the registry does. Shrinking the hunted universe is announced by retirement, never by a
+    # smaller file.
+    canon_path = REGISTRY.parent / "universe.canon.json"
+    canon = _read(canon_path) or {}
+    missing = {s: dict(row) for s, row in canon.items()
+               if s not in registry and isinstance(row, dict)}
+    if missing:
+        registry.update(missing)
+        print(f"RATCHET: {len(missing)} symbol(s) restored from the canon superset "
+              f"(a writer shrank the registry; shrinkage is never repaired into)")
+
     bars, closes = parquet_facts()
     realized = realized_spread_pts(registry)
     before = defects(registry, parquet_bars=bars, realized_spread_pts=realized)
@@ -152,6 +168,8 @@ def repair(*, check_only: bool) -> int:
 
     after = defects(restored, parquet_bars=bars, realized_spread_pts=realized)
     REGISTRY.write_text(json.dumps(restored, indent=1, sort_keys=True) + "\n", "utf-8")
+    if len(restored) >= len(canon):
+        canon_path.write_text(json.dumps(restored, indent=1, sort_keys=True) + "\n", "utf-8")
 
     payload = {
         "repaired_at": now, "account_ccy": ACCOUNT_CCY, "symbols": len(restored),
