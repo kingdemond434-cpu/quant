@@ -75,6 +75,9 @@ JOBS: dict[str, tuple[float, str]] = {
     # chain the desk box executes was outside it and `h1_source.py` had silently
     # diverged. Nothing measured that, which is why it lasted.
     "data/desk_code_parity.json": (1.0, "desk-parity fence (is the box running this code)"),
+    # A register silently rolled back six hours is worse than a missing one: it still reads
+    # as authoritative. Measured 2026-08-27, two heals in 44 seconds.
+    "data/doc_replay_fence.json": (0.5, "doc replay fence (stale-snapshot rollback)"),
 }
 
 
