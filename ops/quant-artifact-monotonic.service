@@ -1,0 +1,9 @@
+[Unit]
+Description=Desk artifact monotonicity: a generation stamp may never go backward (GAP 161)
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_artifact_monotonic.py >> data/cro_ai_logs/artifact_monotonic.log 2>&1'
+SuccessExitStatus=0 1 2

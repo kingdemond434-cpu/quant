@@ -1,0 +1,9 @@
+[Unit]
+Description=Artifact monotonicity every 5 minutes (the pull runs every ~2)
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+
+[Install]
+WantedBy=timers.target

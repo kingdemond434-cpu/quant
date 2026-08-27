@@ -88,6 +88,10 @@ JOBS: dict[str, tuple[float, str]] = {
     # six research seats -- were firing from ~/.config/systemd/user with no committed copy
     # anywhere (measured 2026-08-27). A rebuilt box schedules none of them and nothing says so.
     "data/unit_parity.json": (2.0, "unit parity (live timer with no committed unit)"),
+    # GAP 161: forward_reconcile.json was observed going a full day BACKWARD mid-session while
+    # still reading as authoritative. If this artifact goes stale the rollback detector has
+    # stopped and the desk's record of its own live book can regress unnoticed again.
+    "data/artifact_monotonic.json": (0.5, "artifact rollback fence (stamp went backward)"),
 }
 
 
