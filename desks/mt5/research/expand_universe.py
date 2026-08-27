@@ -64,7 +64,15 @@ def main() -> int:
         try:
             registry = json.loads(REGISTRY.read_text("utf-8"))
         except (OSError, ValueError):
-            registry = {}
+            # A FAILED READ OF A FULL REGISTRY MUST NEVER BECOME A FRESH EMPTY BASE. Measured
+            # 2026-08-27: a read race (the hourly sync mid-copy) yielded {} here, the terminal's
+            # MarketWatch offered 23 selected symbols, and the whole-broker registry of 197 was
+            # overwritten with 23 -- then synced to the repo. Absence of a readable registry is
+            # a reason to STOP, not a blank slate.
+            print(f"REFUSING to run: {REGISTRY} exists but cannot be read -- retry later "
+                  f"rather than rebuilding the registry from whatever this terminal shows")
+            return 1
+    prior_n = len(registry)
 
     start = now - timedelta(days=365 * YEARS)
     added, refreshed, short, failed = [], [], [], []
@@ -119,6 +127,10 @@ def main() -> int:
                 "updated_at": now.isoformat(timespec="seconds"),
             }
 
+    if len(registry) < prior_n:
+        print(f"REFUSING to write: registry would shrink {prior_n} -> {len(registry)}; "
+              f"a smaller broker offering is announced by retirement, never by overwrite")
+        return 1
     REGISTRY.write_text(json.dumps(registry, indent=1, default=str), "utf-8")
     REPORT.write_text(json.dumps({
         "expanded_at": now.isoformat(timespec="seconds"),
