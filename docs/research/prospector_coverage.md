@@ -7806,3 +7806,20 @@ The public MQL5 alpha layer was picked clean again, exactly as expected and exac
 three runs found. **The yield was not alpha — it was a free measurement of the desk's own binding
 constraint, and the confirmation that both the vendor's backtester and the desk's own charge
 slippage of zero.**
+
+---
+
+## SESSION 2026-08-27 (c) — PROSPECTOR standing daily run
+
+**Backlog checked before opening ground: 0 pending verification, 0 pending legitimacy, 26 deferred
+(next returns 2026-09-01). Mining authorised.**
+
+**ITEMS TAKEN THIS RUN (bounded scope, depth unbounded), resuming from 2026-08-27(b)'s named list:**
+1. **Harvest R0673's slippage panel at scale** — the run that converts a verified keyless route
+   into a measured cost input for the desk's own binding constraint (execution).
+2. **Fix the blog body selector and read the top mechanism-essay bucket** (ranked list already on disk).
+3. **Fix the RU reply-count selector, re-rank the 2,140, mine the top threads** (STAT-ARB and
+   MARKET-MAKING-EXECUTION are both THIN families).
+
+_(status updated in place as each item resolves — findings are never held in context to the end)_
+
