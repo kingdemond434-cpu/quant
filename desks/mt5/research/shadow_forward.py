@@ -16,7 +16,7 @@ hunt5-param gold book.
 
 import json
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -27,15 +27,18 @@ BASE = Path(__file__).resolve().parent.parent
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
-LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")
+LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
 
-SHADOW_START = datetime(2026, 8, 16, tzinfo=timezone.utc)
+SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
 
 WINDOWS = {
-    "asia": dict(range_start=7, wait_bars=12, rr=2.0, ttl_bars=12),
-    "london_am": dict(range_start=10, range_end=13, signal_at=13, wait_bars=8, rr=2.0, ttl_bars=12),
-    "ny_open": dict(range_start=13, range_end=14, signal_at=14, wait_bars=12, rr=2.0, ttl_bars=12),
-    "afternoon": dict(range_start=14, range_end=17, signal_at=17, wait_bars=8, rr=2.0, ttl_bars=12),
+    "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
+    "london_am": {"range_start": 10, "range_end": 13, "signal_at": 13, "wait_bars": 8,
+                  "rr": 2.0, "ttl_bars": 12},
+    "ny_open": {"range_start": 13, "range_end": 14, "signal_at": 14, "wait_bars": 12,
+                "rr": 2.0, "ttl_bars": 12},
+    "afternoon": {"range_start": 14, "range_end": 17, "signal_at": 17, "wait_bars": 8,
+                  "rr": 2.0, "ttl_bars": 12},
 }
 
 #: Grandfathered enrolment only -- hunt6 sleeves already on clocks when enrolment became
@@ -80,7 +83,7 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             params = dict(WINDOWS[run["selector"]])
             params.update(run["params"])
             rows.append((run["symbol"], run["selector"], params))
-    except Exception as exc:  # noqa: BLE001 -- enrolment must never kill the running clocks
+    except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
     return rows
@@ -136,7 +139,7 @@ def per_symbol_costs(meta: dict, sym: str):
     The commission stays at 3.50 rather than the class default 2.25: it is the higher number and
     nothing here may lower a cost.
     """
-    from mt5desk.engine import Costs  # noqa: E402
+    from mt5desk.engine import Costs
     return Costs.from_symbol(meta[sym], commission_per_lot=3.50)
 
 
@@ -156,9 +159,9 @@ def fetch_h1(sym: str):
     """
     from datetime import timedelta
 
-    from research.h1_source import fetch_h1 as _fetch  # noqa: PLC0415
+    from research.h1_source import fetch_h1 as _fetch
     start = max(SHADOW_START - timedelta(days=FETCH_DAYS),
-                datetime(2018, 1, 1, tzinfo=timezone.utc))
+                datetime(2018, 1, 1, tzinfo=UTC))
     bars = _fetch(sym, start)
     if bars is None:
         slog(f"{sym}: NO DATA from any source. That is an absence of bars, not "
@@ -175,8 +178,8 @@ def fetch_h1(sym: str):
 
 
 def main() -> None:
-    from mt5desk import families  # noqa: E402
-    from mt5desk.engine import run_backtest  # noqa: E402
+    from mt5desk import families
+    from mt5desk.engine import run_backtest
 
     meta = json.loads((UNI / "universe.json").read_text(encoding="utf-8"))
     state_path = SHADOW_DIR / "shadow_state.json"
@@ -186,7 +189,7 @@ def main() -> None:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except Exception:
             state = {}
-    today = datetime.now(timezone.utc).date().isoformat()
+    today = datetime.now(UTC).date().isoformat()
 
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
@@ -208,7 +211,24 @@ def main() -> None:
             continue
         h1 = bars.df
         sigs = families.family_session_range_breakout(h1, **params)
-        res = run_backtest(h1, sigs, per_symbol_costs(meta, sym))
+        # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
+        # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
+        # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
+        # about a real strategy change. A re-measured cost is a NEW identity at the NEXT window.
+        costs = per_symbol_costs(meta, sym)
+        try:
+            import dataclasses as _dc
+
+            import sleeve_registry as _reg
+            _ff = _reg.frozen_cost_fields(key)
+            if _ff:
+                _known = {f.name for f in _dc.fields(costs)}
+                costs = _dc.replace(costs, **{k: float(v) for k, v in _ff.items()
+                                              if k in _known})
+        except Exception as exc:
+            slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
+                 f"running on live costs this pass")
+        res = run_backtest(h1, sigs, costs)
         # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
         # (2026-08-16); this parameterization's clock was frozen at `forward_start`. Trades before
         # that boundary were available while the cell was being SELECTED, so counting them toward
@@ -223,7 +243,7 @@ def main() -> None:
         _boundary = None
         if _fs:
             try:
-                _boundary = (pd.Timestamp(_fs).to_pydatetime().replace(tzinfo=timezone.utc)
+                _boundary = (pd.Timestamp(_fs).to_pydatetime().replace(tzinfo=UTC)
                              + timedelta(hours=float(st.get("broker_offset_h") or 0.0)))
             except (ValueError, TypeError):
                 _boundary = None
@@ -254,7 +274,7 @@ def main() -> None:
             import MetaTrader5 as _mt5
             from h1_source import broker_utc_offset_hours
             st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
-        except Exception:                                                # noqa: BLE001
+        except Exception:
             st.setdefault("broker_offset_h", 0.0)
         # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
         # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
@@ -266,7 +286,7 @@ def main() -> None:
                 family="session_range_breakout", symbol=sym, direction="LONG", timeframe="H1",
                 selector=win, condition=None, params=params,
                 code=_reg.code_hash(families.family_session_range_breakout),
-                cost=_reg.cost_hash(per_symbol_costs(meta, sym)),
+                cost=_reg.cost_hash(costs),
                 # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
                 # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made
                 # every clock break on every run the Windows box was down -- terminally, and the
@@ -285,9 +305,10 @@ def main() -> None:
                      f"frozen identity and a NEW window.")
                 state[key] = st
                 continue
-            _reg.freeze(key, _ident, forward_start=st.get("forward_start"))
+            _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
+                        cost_fields=vars(costs))
             st["sleeve_id"] = _ident["sleeve_id"]
-        except Exception as exc:                                         # noqa: BLE001
+        except Exception as exc:
             slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
         # EVERY EVALUATION STAMPS ITSELF. The idle-clock fence judges freshness by
         # `last_attempt_at`, and this engine was evaluating rows every 15 minutes without
@@ -295,7 +316,7 @@ def main() -> None:
         # engine and were flagged IDLE while demonstrably accruing (XAUUSD.asia took its first
         # forward trade under the stale stamp). An organ that does the work but does not sign it
         # is indistinguishable from one that stopped.
-        st["last_attempt_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
         st["bar_source"] = bars.source
         st["evidence_venue"] = bars.evidence_venue
         st["bar_source_stale"] = bars.stale
@@ -330,11 +351,11 @@ def main() -> None:
         # the precise leakage the two-stage law exists to stop (LAWS L1.28a; RESEARCH §6a: the
         # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
         # stamped once, the first time a row is seen, and never moved.
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if not st.get("forward_start"):
             st["forward_start"] = now.isoformat()
         days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
-                       .replace(tzinfo=timezone.utc)).days
+                       .replace(tzinfo=UTC)).days
         st["days_active"] = days_active
         # SUFFICIENT EVIDENCE = the flat count OR a significant forward t-stat at a floor of
         # trades. Whichever arrives first; both are honest, one is merely faster when the edge
@@ -371,12 +392,13 @@ def main() -> None:
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    slog(f"shadow state saved ({len(enrolled)} sleeves, {len(enrolled) - len(SLEEVES)} certificate-enrolled)")
+    slog(f"shadow state saved ({len(enrolled)} sleeves, "
+         f"{len(enrolled) - len(SLEEVES)} certificate-enrolled)")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         slog("shadow error:", traceback.format_exc())

@@ -108,11 +108,20 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
     return ident
 
 
-def freeze(key: str, ident: dict, *, forward_start: str | None = None) -> dict:
+def freeze(key: str, ident: dict, *, forward_start: str | None = None,
+           cost_fields: dict | None = None) -> dict:
     """Record the identity for `key` if absent; return the FROZEN identity (never the new one).
 
     Idempotent by construction: a second freeze on a live key returns what was already frozen, so
     a caller cannot re-base a running clock by calling this again.
+
+    `cost_fields` are the NUMERIC cost-model values the clock froze with, stored so the forward
+    engine can keep RUNNING the window on that exact basis. Without them the engine rebuilt costs
+    from live universe metadata every cycle, and the spread re-measure (~2x/day) changed
+    cost_hash and terminally broke every clock mid-window -- identity churn, not identity
+    protection. The doctrine stands: a certificate's cost basis IS part of the strategy, so the
+    window runs on the frozen basis and a re-measured cost enters at the NEXT window as a new
+    identity, never spliced into a running one. Real execution is judged by markouts regardless.
     """
     reg = _read(REGISTRY)
     rows = reg.setdefault("sleeves", {})
@@ -125,10 +134,20 @@ def freeze(key: str, ident: dict, *, forward_start: str | None = None) -> dict:
         "forward_start": forward_start,
         "status": "LIVE",
     }
+    if cost_fields:
+        rows[key]["cost_fields"] = {k: round(float(v), 6) for k, v in cost_fields.items()
+                                    if isinstance(v, (int, float)) and not isinstance(v, bool)}
     reg["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
     REGISTRY.parent.mkdir(parents=True, exist_ok=True)
     REGISTRY.write_text(json.dumps(reg, indent=1, default=str), "utf-8")
     return ident
+
+
+def frozen_cost_fields(key: str) -> dict | None:
+    """The numeric cost basis `key` froze with, or None for rows frozen before it was stored."""
+    row = _read(REGISTRY).get("sleeves", {}).get(key) or {}
+    fields = row.get("cost_fields")
+    return dict(fields) if isinstance(fields, dict) and fields else None
 
 
 def verify(key: str, ident: dict) -> list[str]:

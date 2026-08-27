@@ -689,6 +689,13 @@ def main():
     if len(survivors_all) < n_before:
         print(f"REFUSING to write: merge would shrink {n_before} -> {len(survivors_all)}")
         return
+    # NEVER WRITE EMPTY (2026-08-27): a zeroed input file sails through the shrink check as
+    # 0 -> 0, and this run then re-publishes the wipe with its own signature -- observed on the
+    # desk box, healed only because the moneypath fence restored canon between runs. An empty
+    # survivors file is never a verdict; if nothing has ever certified there is nothing to write.
+    if not survivors_all:
+        print("REFUSING to write an EMPTY canon: 0 survivors is a missing input, not a verdict.")
+        return
 
     doc = dict(old_doc)
     doc.update({
