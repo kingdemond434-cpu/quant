@@ -112,6 +112,19 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         breaches.append("DOCKET: zero candidate rows shipped -- the empty-docket seals held "
                         "upstream, but the flow itself is dry")
 
+    # --- searchers: the docket can look fresh on miners alone while both search legs are
+    # dead (measured 2026-08-27: edge_search OOM-dead 25h, docket green the whole time --
+    # a per-source blind spot). Each producer owes its own freshness.
+    for fname, label in (("edge_search_results.json", "SEARCH"),
+                         ("orthogonal_candidates.json", "SWEEP")):
+        f_age = _mtime_age_h(DESK / "data" / "hypotheses" / fname, now)
+        m[f"{label.lower()}_age_h"] = round(f_age, 2) if f_age is not None else None
+        if f_age is None or f_age > 3.0:
+            breaches.append(f"{label}: {fname} is "
+                            f"{'missing' if f_age is None else str(round(f_age, 1)) + 'h old'} "
+                            f"(hourly leg) -- the {label.lower()} has stopped producing; the "
+                            f"docket is running on miners alone")
+
     # --- gauntlet: last sweep's actual judgment numbers, for the dashboard pulse
     gates = _read(DESK / "reports" / "universal_gates_external.json") or {}
     verd = gates.get("verdicts")
