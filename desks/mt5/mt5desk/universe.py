@@ -47,6 +47,13 @@ _METALS = ("XAU", "XAG", "XPT", "XPD", "GOLD", "SILVER")
 _ENERGY = ("WTI", "BRENT", "OIL", "NGAS", "NATGAS", "CRUDE", "UKOIL", "USOIL")
 _CRYPTO = ("BTC", "ETH", "LTC", "XRP", "BCH", "ADA", "SOL", "DOGE", "DOT", "LINK",
            "AVAX", "MATIC", "XLM", "TRX", "UNI", "ATOM", "AAVE", "SHIB")
+#: SOFT COMMODITIES and BONDS -- whole asset classes the broker lists that had no pattern here,
+#: so they read "unknown" and sat outside every breadth count (2026-08-27, the 251-symbol
+#: collection). They matter for the same reason equities do: cocoa responds to West African
+#: weather and gilts to rate expectations, which is diversification a JPY cross cannot provide.
+_SOFT = ("COTTON", "SOYBEAN", "SUGAR", "COCOA", "COFFEE", "COFARA", "COFROB", "WHEAT",
+         "CORN", "ORANGE", "LUMBER", "CATTLE", "HOGS", "RICE", "OATS", "CANOLA")
+_BOND = ("UST", "UKGILT", "GILT", "BUND", "BOBL", "SCHATZ", "OAT", "BTP", "JGB", "TNOTE")
 _INDEX = ("US500", "US30", "USTEC", "NAS", "SPX", "SP500", "DAX", "GER", "UK100", "FTSE",
           "JP225", "JPN225", "NIK", "HK50", "AUS200", "EU50", "STOXX", "FRA40", "USA",
           "USDX", "EUSTX", "NETH", "CHINAH", "SWI", "ESP", "CA60", "E35")
@@ -70,6 +77,12 @@ def asset_class(symbol: str) -> str:
     for pat in _ENERGY:
         if pat in s:
             return "energy"
+    for pat in _SOFT:
+        if pat in s:
+            return "soft"
+    for pat in _BOND:
+        if s.startswith(pat) or pat in s:
+            return "bond"
     for pat in _INDEX:
         if pat in s:
             return "index"
@@ -92,7 +105,7 @@ def asset_class(symbol: str) -> str:
     raw = str(symbol)
     if re.search(r"[a-z]", raw) or "&" in raw or "-" in raw:
         return "equity"
-    if re.fullmatch(r"\d?[A-Z]{1,5}", s):
+    if re.fullmatch(r"\d?[A-Z]{1,12}", s):
         return "equity"
     return "unknown"
 

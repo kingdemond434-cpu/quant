@@ -127,15 +127,18 @@ def test_the_real_universe_on_disk_classifies_cleanly():
     unknown = [i.symbol for i in inst if i.asset_class == "unknown"]
     assert not unknown, f"unclassified symbols in the live universe: {unknown}"
     usable = [i for i in inst if i.usable]
-    assert len(usable) >= 19, f"usable coverage may only ratchet UP, got {len(usable)}"
+    assert len(usable) >= 240, f"usable coverage may only ratchet UP, got {len(usable)}"
     # Usable breadth for the classes whose cost model is measured today. Index and equity rows
     # arrived from the whole-broker expansion WITHOUT tick_value (the collector never asked MT5
     # for it -- fixed in expand_universe.py the same day), so demanding their usable-breadth
     # here would assert data that is still being collected; they are pinned as PRESENT, and the
     # moment the collection lands these move into the usable loop below and RATCHET (L1.50).
+    # RATCHET (L1.50). The 2026-08-27 collection brought the whole broker offering with
+    # tick_value attached -- 251 symbols, 248 costed -- so equity, index, soft and bond moved
+    # from "present but uncostable" to USABLE and may never silently fall back.
     classes = {i.asset_class for i in usable}
-    for cls in ("fx_major", "fx_cross", "metal", "crypto"):
+    for cls in ("fx_major", "fx_cross", "fx_exotic", "metal", "crypto",
+                "equity", "index", "soft", "bond"):
         assert cls in classes, f"asset class {cls} has zero usable symbols"
-    present = {i.asset_class for i in inst}
-    for cls in ("index", "equity"):
-        assert cls in present, f"asset class {cls} vanished from the universe entirely"
+    unknown_usable = [i.symbol for i in usable if i.asset_class == "unknown"]
+    assert not unknown_usable, f"tradable symbols the classifier cannot name: {unknown_usable}"
