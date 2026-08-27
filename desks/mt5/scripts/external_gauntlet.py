@@ -187,19 +187,90 @@ def partition_at_economic_prior(specs: list[dict]) -> tuple[list[dict], list[dic
     return eligible, rejected
 
 
+
+
+# ------------------------------------------------------------------ hourly-sweep series cache
+#: The sweep is HOURLY but a cell's daily series can only change when a trading DAY completes.
+#: Recomputing 3,000+ signal replays and backtests every hour therefore buys nothing 23 runs out
+#: of 24 -- measured: a full docket sweep took the better part of an hour, all of it recomputing
+#: byte-identical series. Each cell's 1x and 3x-cost daily series are cached keyed by
+#: (cell identity, params, symbol, LAST COMPLETE DAY): a new candidate computes once, everything
+#: else loads. This is pure compute caching -- same series, same matrix, same gates.
+#:
+#: WHY EVERY SERIES ENDS AT THE LAST COMPLETE DAY (fresh and cached alike). The gate matrix
+#: aligns columns BY LENGTH from the end, not by date-join, so mixing a series computed at 01:00
+#: with one computed at 14:00 would silently compare yesterday's row of one cell against today's
+#: partial row of another -- cross-sectional PBO/SPA on misaligned dates. Dropping the partial
+#: day makes every column end on the same complete day regardless of computation hour; a partial
+#: day was never a day's return to begin with.
+CACHE_DIR = REPORTS / "gauntlet_cache"
+
+
+def _cache_key(sym: str, family: str, params: dict, last_day: str) -> str:
+    import hashlib
+    blob = json.dumps({"s": sym, "f": family, "p": params, "d": last_day},
+                      sort_keys=True, default=str)
+    return hashlib.sha1(blob.encode()).hexdigest()
+
+
+def _series_trim_partial(ds, last_day):
+    """Drop the current partial day so every column ends on the same COMPLETE day."""
+    if ds is None or len(ds) == 0:
+        return ds
+    try:
+        return ds[ds.index < last_day]
+    except Exception:
+        return ds
+
+
+def cache_load(key: str):
+    f = CACHE_DIR / f"{key}.npz"
+    if not f.exists():
+        return None
+    try:
+        import numpy as _np
+        z = _np.load(f, allow_pickle=False)
+        idx = pd.to_datetime(z["dates"])
+        return (pd.Series(z["v1"], index=idx), pd.Series(z["v3"], index=idx))
+    except Exception:
+        return None
+
+
+def cache_save(key: str, ds1, ds3) -> None:
+    try:
+        import numpy as _np
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        common = ds1.index.intersection(ds3.index)
+        _np.savez_compressed(CACHE_DIR / f"{key}.npz",
+                             dates=common.astype("int64"),
+                             v1=ds1.reindex(common).to_numpy(float),
+                             v3=ds3.reindex(common).to_numpy(float))
+    except Exception:
+        pass
+
 def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     """Run full 10-gate gauntlet on a list of cells."""
     print(f"\n=== GAUNTLET: {hunt_name} ({len(cells)} cells) ===")
 
     # Build daily series
     daily = []
+    hits = 0
     for c in cells:
         try:
-            ds = daily_series(c["df"], c["sigs"], c["costs"])
+            if c.get("_cached_ds") is not None:
+                daily.append(c["_cached_ds"])
+                hits += 1
+                continue
+            last_day = c.get("_last_day")
+            ds = _series_trim_partial(daily_series(c["df"], c["sigs"], c["costs"]), last_day)
+            c["_fresh_ds"] = ds
             daily.append(ds)
         except Exception as e:
             print(f"  FAIL {c['sym']}.{c['family']}: {e}")
             daily.append(None)
+    if hits:
+        print(f"  series cache: {hits}/{len(cells)} cell(s) loaded (unchanged data-day); "
+              f"{len(cells) - hits} computed fresh")
 
     # Build matrix from valid series
     # WHERE CELLS DIE, BY FAMILY. A cell that builds but yields fewer than 60 trading days has
@@ -260,9 +331,15 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     daily_x3 = []
     for c in cells:
         try:
+            if c.get("_cached_ds3") is not None:
+                daily_x3.append(c["_cached_ds3"])
+                continue
             costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
-            ds = daily_series(c["df"], c["sigs"], costs3)
-            daily_x3.append(ds)
+            ds3 = _series_trim_partial(daily_series(c["df"], c["sigs"], costs3),
+                                       c.get("_last_day"))
+            daily_x3.append(ds3)
+            if c.get("_fresh_ds") is not None and ds3 is not None and c.get("_ckey"):
+                cache_save(c["_ckey"], c["_fresh_ds"], ds3)
         except Exception:
             daily_x3.append(None)
 
@@ -425,17 +502,51 @@ def main():
     eligible_specs, prior_rejections = partition_at_economic_prior(list(cells.values()))
     print(f"Economic prior: {len(eligible_specs)} advance; {len(prior_rejections)} terminal reject")
 
-    # Build cell objects
+    # Build cell objects -- CACHE FIRST. A cell whose (identity, params, last complete data-day)
+    # was already computed loads its 1x and 3x daily series and skips signal generation AND both
+    # backtests entirely; only genuinely new candidates, or a new trading day, pay for compute.
+    # This is what makes an hourly sweep of a 3,000+ docket take minutes instead of the hour.
     cell_objs = []
+    cache_hits = 0
+    # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
+    try:
+        import time as _t
+        for _f in CACHE_DIR.glob("*.npz"):
+            if _t.time() - _f.stat().st_mtime > 3 * 86400:
+                _f.unlink(missing_ok=True)
+    except OSError:
+        pass
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
+        frame = _h1_for(spec["sym"])
+        if frame is None or len(frame) == 0:
+            print(f"  SKIP {key}: parquet missing")
+            continue
+        last_day = frame.index[-1].normalize()
+        ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()))
+        cached = cache_load(ckey)
+        if cached is not None:
+            ds1, ds3 = cached
+            cell_objs.append({
+                "sym": spec["sym"], "family": spec["family"], "params": spec["params"],
+                "df": None, "sigs": None, "costs": None,
+                "_cached_ds": ds1, "_cached_ds3": ds3, "_ckey": ckey, "_last_day": last_day,
+                "mechanism_status": spec.get("mechanism_status"),
+                "mechanism_note": spec.get("mechanism_note"),
+            })
+            cache_hits += 1
+            continue
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
             obj["mechanism_status"] = spec.get("mechanism_status")
             obj["mechanism_note"] = spec.get("mechanism_note")
+            obj["_ckey"], obj["_last_day"] = ckey, last_day
             cell_objs.append(obj)
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
+    if cache_hits:
+        print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
+              f"{len(eligible_specs) - cache_hits} to compute")
 
     # Run the remaining gates, or still emit the complete gate-1 rejection ledger when none can
     # advance. A no-mechanism discovery batch is a valid negative result, not a missing report.
