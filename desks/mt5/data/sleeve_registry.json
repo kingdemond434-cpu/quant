@@ -1,5 +1,30 @@
 {
  "sleeves": {
+  "EURZAR.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURZAR",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "b685302fc4e33153",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "1903a4cc90212b4c29d5"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T03:31:40+00:00",
+   "forward_start": null,
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 912.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 18.56843
+   }
+  },
   "CADJPY.asia": {
    "identity": {
     "family": "session_range_breakout",
@@ -14,13 +39,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "3f42e7c4405da529",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "f7207789b001d44045fe"
+    "sleeve_id": "fc7a4bed7e8868331829"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:27+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -44,13 +69,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "3f42e7c4405da529",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "9bca0c3baecdc06343c4"
+    "sleeve_id": "4527fb8e087e2aed3a3f"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:27+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -74,13 +99,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "3f42e7c4405da529",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "d0b1a5bdbb440073c6d9"
+    "sleeve_id": "4a2a8580cc2a9f3dd4e9"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -104,13 +129,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "d86cf05d24fd6af2774d"
+    "sleeve_id": "826f54c408a3589ac329"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -134,13 +159,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "347b6c1f54b73d9201a5"
+    "sleeve_id": "2f4949fb82c3f2c22661"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -164,13 +189,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "a84d34aa79cf46bb0f7c"
+    "sleeve_id": "8fedfe8fd8df10cb4e20"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -194,13 +219,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "1386ca1901cdd1468234"
+    "sleeve_id": "6f2c0b0fb9ffd437d54d"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:28+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -224,13 +249,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "ce7c5228e330c00ce72e"
+    "sleeve_id": "60de7ebfb77f13afcd87"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -254,13 +279,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "27bfecf2e6271c75b793"
+    "sleeve_id": "a67bb045ad2c3f8fa116"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -284,13 +309,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "cb292bf27d24935e7e21"
+    "sleeve_id": "d82eb3e71353903593f4"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -314,13 +339,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "ef749a3efa6c54d4",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "4081f5842a0354227910"
+    "sleeve_id": "680b98e4fd561ed785cb"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -328,6 +353,31 @@
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
+   }
+  },
+  "USDZAR.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "USDZAR",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "3bccf50534139188",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "4a3b476d9af8687ae2f6"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
+   "forward_start": null,
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 808.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 18.56843
    }
   },
   "XAUUSD.asia#rr=1.5": {
@@ -344,13 +394,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "9c1509653ffd1dab",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "55463f962b1020da210d"
+    "sleeve_id": "2401b5070ed844d64aec"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -374,13 +424,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "9c1509653ffd1dab",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "8363de46ace3fdee68a2"
+    "sleeve_id": "6958a0166ab01e9d4fc5"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:29+00:00",
+   "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -404,13 +454,13 @@
      "ttl_bars": 12,
      "wait_bars": 12
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "9c1509653ffd1dab",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "c514f4bb70ba1e0bb97a"
+    "sleeve_id": "df76751360fc8b087f8b"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:30+00:00",
+   "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -434,13 +484,13 @@
      "ttl_bars": 12,
      "wait_bars": 8
     },
-    "code_hash": "02f3e887f9a439bb",
+    "code_hash": "32b3bc38d228df35",
     "cost_hash": "9c1509653ffd1dab",
     "data_venue": "MT5:FusionMarkets-Live",
-    "sleeve_id": "f00b28794524f60cf977"
+    "sleeve_id": "7b7d3c27bd91c1dbad5b"
    },
    "identity_schema": "venue-2026-08-26",
-   "frozen_at": "2026-08-27T01:13:30+00:00",
+   "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": null,
    "status": "LIVE",
    "cost_fields": {
@@ -451,7 +501,7 @@
    }
   }
  },
- "updated_at": "2026-08-27T01:13:30+00:00",
+ "updated_at": "2026-08-27T03:34:49+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",

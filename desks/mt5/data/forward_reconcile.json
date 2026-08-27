@@ -1,12 +1,19 @@
 {
- "checked_at": "2026-08-26T02:02:32+00:00",
- "enrolled": 19,
- "certified_pairs": 6,
+ "checked_at": "2026-08-27T07:58:08+00:00",
+ "enrolled": 21,
+ "enrolment_readable": true,
+ "certified_clocks": 17,
+ "certified_pairs": 8,
  "actions": [
   {
-   "key": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
-   "action": "RETIREMENT_CLEARED",
-   "why": "row is certified and running; stale retirement metadata removed so the state is unambiguous"
+   "key": "EURZAR.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
+  },
+  {
+   "key": "USDZAR.overnight_gap_decay.asia",
+   "action": "REVIVED_CERTIFIED",
+   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
   }
  ]
 }
