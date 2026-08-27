@@ -108,7 +108,12 @@ def main() -> int:
 
         info = mt5.symbol_info(name)
         if info is not None:
-            registry[name] = {
+            # MERGE THE ROW, NEVER REPLACE IT. A bare assignment drops every field a
+            # different producer wrote (`min_volume`, `first`, `last`, repaired
+            # `tick_value`), which is the row-level twin of the file-level clobber
+            # that once left 0/197 instruments costable. Whatever this run measured
+            # wins; whatever it did not measure survives.
+            registry[name] = {**registry.get(name, {}), **{
                 "symbol": name, "asset_class": asset_class,
                 "tick_size": float(getattr(info, "trade_tick_size", 0) or 0),
                 # WITHOUT tick_value THERE IS NO CURRENCY CONVERSION: Costs.from_symbol and every
@@ -118,14 +123,26 @@ def main() -> int:
                 "tick_value": float(getattr(info, "trade_tick_value", 0) or 0),
                 "contract_size": float(getattr(info, "trade_contract_size", 0) or 0),
                 "digits": int(getattr(info, "digits", 5) or 5),
-                "median_spread_pts": float(getattr(info, "spread", 0) or 0),
+                # ONE FIELD, ONE MEASUREMENT (fixed 2026-08-27). This wrote `info.spread` -- the
+                # spread AT THE INSTANT THE COLLECTOR RAN -- into the same key that
+                # `fetch_universe` fills with the MEDIAN of the H1 spread column, and
+                # `Costs.from_symbol` prices every candidate off it. Two producers writing two
+                # different measurements into one name meant a symbol's cost basis depended on
+                # which collector touched it last, and a run at a thin hour would have re-priced
+                # the desk's whole live book off one tick. The bars are already downloaded here,
+                # so the median is free and identical in meaning to the other producer's.
+                # The point-in-time reading is KEPT, under its own name, because it is real data
+                # about the moment -- it just is not a median.
+                "median_spread_pts": float(df["spread"].median())
+                if "spread" in df.columns else float(getattr(info, "spread", 0) or 0),
+                "spread_pts_at_collection": float(getattr(info, "spread", 0) or 0),
                 "swap_long": float(getattr(info, "swap_long", 0) or 0),
                 "swap_short": float(getattr(info, "swap_short", 0) or 0),
                 "volume_min": float(getattr(info, "volume_min", 0.01) or 0.01),
                 "volume_step": float(getattr(info, "volume_step", 0.01) or 0.01),
                 "bars": len(df),
                 "updated_at": now.isoformat(timespec="seconds"),
-            }
+            }}
 
     if len(registry) < prior_n:
         print(f"REFUSING to write: registry would shrink {prior_n} -> {len(registry)}; "

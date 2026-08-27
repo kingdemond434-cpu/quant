@@ -189,8 +189,12 @@ def run() -> tuple[dict, int]:
                  + int(qquant.get("certified_qquant_sleeves", 0) or 0))
     recorded = len(rows)
     missing = [] if recorded >= certified else [f"{certified - recorded} certified sleeve(s)"]
+    # `BLOCKED_SLEEVE_ERROR` is the per-sleeve isolation status shadow_forward writes when one
+    # row cannot be evaluated (gap-wirer 2026-08-27). It MUST be counted here: the whole point of
+    # isolating a failure is that the other rows keep accruing, and a failure that stops halting
+    # the book while also stopping being VISIBLE is a worse trade than the crash it replaced.
     blocked = sum(row.get("status") in {"NO_DATA", "WAITING_FOR_FORWARD_BARS", "STALE_SOURCE",
-                                         "BLOCKED_UNIVERSAL_GATES"}
+                                         "BLOCKED_UNIVERSAL_GATES", "BLOCKED_SLEEVE_ERROR"}
                   for row in active_rows)
     # LIVE-ARM STATE, SURFACED HERE ON PURPOSE. `armed` lives in data/gateway_state.json,
     # box-local and gitignored -- no other brain (Hetzner, a future session, anyone without

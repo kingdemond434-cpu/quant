@@ -16,6 +16,7 @@ hunt5-param gold book.
 
 import json
 import sys
+import traceback
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -32,6 +33,17 @@ SHADOW_DIR.mkdir(parents=True, exist_ok=True)
 LOG = open(BASE / "logs" / "shadow.log", "a", encoding="utf-8")  # noqa: SIM115
 
 SHADOW_START = datetime(2026, 8, 16, tzinfo=UTC)
+
+#: Verdicts that END a row. A blocked evaluation must never overwrite one of these: a KILL that
+#: turns back into an unevaluated row would re-enter the book, and a PROMOTION CANDIDATE that
+#: loses its verdict to a transient cost-map miss loses a decision the desk already made.
+_TERMINAL_STATUSES = ("KILL", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "QUARANTINED",
+                      "PROMOTION CANDIDATE", "IDENTITY_BROKEN")
+
+
+def _is_terminal(status: object) -> bool:
+    text = str(status or "").upper()
+    return any(text == name or text.startswith(name + "_") for name in _TERMINAL_STATUSES)
 
 WINDOWS = {
     "asia": {"range_start": 7, "wait_bars": 12, "rr": 2.0, "ttl_bars": 12},
@@ -250,207 +262,235 @@ def main() -> None:
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
-        if sym not in h1_cache:
-            h1_cache[sym] = fetch_h1(sym)
-        bars = h1_cache[sym]
-        if bars is None:
-            continue
-        h1 = bars.df
-        fam_fn = _family_fn(fam)
-        if fam_fn is None:
-            slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
-            continue
+        # BLAST RADIUS: ONE SLEEVE, NEVER THE BOOK (gap-wirer 2026-08-27). This loop had no
+        # per-sleeve guard and `state_path.write_text` sits AFTER it, so ANY exception raised for
+        # ANY single sleeve discarded the whole pass -- every row already evaluated in that run
+        # included. Measured live on contabo-mt5: `per_symbol_costs` raised `KeyError: 'EURZAR'`
+        # (a certified symbol absent from that box's 23-row cost map) and the entire forward book
+        # stopped accruing for 5.5h across every 15-minute run, with CADJPY and EURJPY evaluated
+        # and thrown away each time. The desk's readiness blocker is forward evidence, so a pass
+        # that computes evidence and drops it is the most expensive silence available here.
+        # THE FAILURE IS RECORDED, NEVER SWALLOWED: the row takes an explicit blocked status that
+        # shadow_cycle counts into `evidence_blocked_sleeves` and the watchdog reports as a
+        # defect, so an unevaluable sleeve reads as UNMEASURED and never as a clean zero (WS-005).
+        # Counters are left untouched -- a failed evaluation produces no new evidence, so it must
+        # not overwrite the evidence the row already holds.
         try:
-            sigs = fam_fn(h1, **params)
-        except TypeError:
-            sigs = fam_fn(h1, side=1, **params)
-        # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
-        # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
-        # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
-        # about a real strategy change. A re-measured cost is a NEW identity at the NEXT window.
-        costs = per_symbol_costs(meta, sym)
-        try:
-            import dataclasses as _dc
-
-            import sleeve_registry as _reg
-            _ff = _reg.frozen_cost_fields(key)
-            if _ff:
-                _known = {f.name for f in _dc.fields(costs)}
-                costs = _dc.replace(costs, **{k: float(v) for k, v in _ff.items()
-                                              if k in _known})
-        except Exception as exc:
-            slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
-                 f"running on live costs this pass")
-        res = run_backtest(h1, sigs, costs)
-        # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
-        # (2026-08-16); this parameterization's clock was frozen at `forward_start`. Trades before
-        # that boundary were available while the cell was being SELECTED, so counting them toward
-        # a forward threshold is the leakage the two-stage law forbids -- measured 2026-08-26:
-        # XAUUSD.asia had forward_start=Aug 25 23:25 and n=7 whose first entry was Aug 17 17:00.
-        # Both sets are written: `all_trades` to the ledger tagged by phase (deleting history
-        # would destroy the audit trail), `trades` -- the only set feeding n/exp_r/max_dd/verdicts
-        # -- starts at the boundary. The boundary is CONVERTED, not assumed: bar stamps are on the
-        # broker clock (+3h at Fusion) while forward_start is true UTC.
-        all_trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
-        _fs = st.get("forward_start")
-        _boundary = None
-        if _fs:
-            try:
-                _boundary = (pd.Timestamp(_fs).to_pydatetime().replace(tzinfo=UTC)
-                             + timedelta(hours=float(st.get("broker_offset_h") or 0.0)))
-            except (ValueError, TypeError):
-                _boundary = None
-        trades = ([t for t in all_trades if t.entry_time >= _boundary]
-                  if _boundary is not None else [])
-        st["n_historical"] = len(all_trades) - len(trades)
-        st["evidence_note"] = (
-            f"{len(trades)} forward observation(s) since the clock froze; "
-            f"{len(all_trades) - len(trades)} earlier observation(s) retained as HISTORICAL and "
-            f"excluded from every threshold (they predate pre-registration)")
-        ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
-                  else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
-        # A trade replayed on the broker's own feed and one replayed on cached
-        # or free bars are not the same evidence -- OHLC differ at the tick and
-        # spreads differ materially -- so an expectancy averaged across them is
-        # an average over two different games. Stamped per row so the promoter
-        # can split them.
-        _stamp = bars.stamp()
-        ledger.write_text(json.dumps(
-            [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
-              "side": t.side, "entry": t.entry, "exit": t.exit,
-              "r_multiple": t.r_multiple, "reason": t.reason,
-              "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
-                        else "historical"),
-              **_stamp}
-             for t in all_trades],
-            indent=2), encoding="utf-8")
-        try:
-            import MetaTrader5 as _mt5
-            from h1_source import broker_utc_offset_hours
-            st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
-        except Exception:
-            st.setdefault("broker_offset_h", 0.0)
-        # STAMP THE CLOCK BEFORE FREEZING IT. `freeze()` below passes `st["forward_start"]` into
-        # the registry, and this stamp used to be written ~50 lines LATER -- so on a row's first
-        # pass the registry froze `forward_start: null`, and because freeze() is idempotent by
-        # design that null was permanent. The stamp is unconditional-if-absent and uses the same
-        # `now` the later block would, so moving it earlier changes the value by nothing and only
-        # makes it visible to the freeze. The later block remains as the fallback for rows that
-        # never reach the registry branch (import failure), where it is still the only stamper.
-        if not st.get("forward_start"):
-            st["forward_start"] = datetime.now(UTC).isoformat()
-        # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
-        # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
-        # while leaving every name and number intact, and a forward series that splices two of
-        # those together is not a smaller sample but a wrong one.
-        try:
-            import sleeve_registry as _reg
-            _ident = _reg.identity(
-                family=fam, symbol=sym, direction="LONG", timeframe="H1",
-                selector=win, condition=None, params=params,
-                code=_reg.code_hash(fam_fn),
-                cost=_reg.cost_hash(costs),
-                # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
-                # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made
-                # every clock break on every run the Windows box was down -- terminally, and the
-                # 14-day window therefore never survived one day. `evidence_venue` names whose
-                # prints these are, so a real venue change still breaks the clock and an outage
-                # does not. See h1_source.Bars.evidence_venue.
-                data_venue=str(bars.evidence_venue))
-            _drift = _reg.verify(key, _ident)
-            if _drift:
-                _reg.mark(key, "IDENTITY_BROKEN",
-                          f"{', '.join(_drift)} changed after the clock froze")
-                st["status"] = "IDENTITY_BROKEN"
-                st["identity_drift"] = _drift
-                slog(f"{key}: IDENTITY BROKEN -- {', '.join(_drift)} changed after the clock "
-                     f"froze; evidence preserved, clock stopped. Restarting requires a NEW "
-                     f"frozen identity and a NEW window.")
-                state[key] = st
+            if sym not in h1_cache:
+                h1_cache[sym] = fetch_h1(sym)
+            bars = h1_cache[sym]
+            if bars is None:
                 continue
-            _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
-                        cost_fields=vars(costs))
-            st["sleeve_id"] = _ident["sleeve_id"]
-        except Exception as exc:
-            slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
-        # EVERY EVALUATION STAMPS ITSELF. The idle-clock fence judges freshness by
-        # `last_attempt_at`, and this engine was evaluating rows every 15 minutes without
-        # updating it -- so the four pre-params rows kept a 13-hour-old stamp from the previous
-        # engine and were flagged IDLE while demonstrably accruing (XAUUSD.asia took its first
-        # forward trade under the stale stamp). An organ that does the work but does not sign it
-        # is indistinguishable from one that stopped.
-        st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
-        st["bar_source"] = bars.source
-        st["evidence_venue"] = bars.evidence_venue
-        st["bar_source_stale"] = bars.stale
-        st["promotion_authority"] = bars.promotion_authority
-        st["order_authority"] = False
-        st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
-        if trades:
-            rs = [t.r_multiple for t in trades]
-            cum = [sum(rs[:i + 1]) for i in range(len(rs))]
-            max_dd = min(cum[i] - max(cum[:i + 1]) for i in range(len(cum)))
-            st.update({
-                "n": len(trades), "cum_r": float(sum(rs)),
-                "exp_r": float(sum(rs) / len(rs)),
-                "max_dd_r": float(max_dd),
-                "first_entry": str(trades[0].entry_time),
-                "last_entry": str(trades[-1].entry_time),
-            })
-        else:
-            # ZERO FORWARD OBSERVATIONS IS A MEASUREMENT, NOT A REASON TO KEEP THE OLD NUMBER.
-            # This branch used to `setdefault` and leave n/cum_r/exp_r/max_dd untouched, so a
-            # clock whose forward set became empty -- exactly what happens the moment the
-            # boundary is corrected -- kept displaying the CONTAMINATED pre-registration counts
-            # and would have carried them into a promotion decision. Counters are reset to the
-            # honest zero and the historical arm is reported separately (L1.28a: unmeasured is
-            # never a verdict, and neither is inherited).
-            st.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
-                       "first_entry": None, "last_entry": None})
-        # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
-        # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
-        # before its hypothesis was frozen arrived at the gate already 8/14 of the way through
-        # its "forward" window, on evidence gathered while it was still being SELECTED. That is
-        # the precise leakage the two-stage law exists to stop (LAWS L1.28a; RESEARCH §6a: the
-        # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
-        # stamped once, the first time a row is seen, and never moved.
-        now = datetime.now(UTC)
-        if not st.get("forward_start"):
-            st["forward_start"] = now.isoformat()
-        days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
-                       .replace(tzinfo=UTC)).days
-        st["days_active"] = days_active
-        # SUFFICIENT EVIDENCE = the flat count OR a significant forward t-stat at a floor of
-        # trades. Whichever arrives first; both are honest, one is merely faster when the edge
-        # is large. Quality bars (exp_r, maxDD) still apply to every promotion below.
-        t_stat = 0.0
-        if len(trades) >= 2:
-            _rs = [t.r_multiple for t in trades]
-            _mean = sum(_rs) / len(_rs)
-            _var = sum((x - _mean) ** 2 for x in _rs) / (len(_rs) - 1)
-            if _var > 0:
-                t_stat = _mean / ((_var / len(_rs)) ** 0.5)
-        st["forward_t"] = round(t_stat, 3)
-        enough = (st["n"] >= VERDICT_MIN_TRADES
-                  or (st["n"] >= SEQ_MIN_TRADES and t_stat >= SEQ_MIN_T))
-        # AND, never OR: gate_spec.yaml has always said `n >= 50, days >= 14` together, but this
-        # line said `or`, so a sleeve holding ONE trade would take a verdict on day 14 -- and
-        # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
-        # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
-        # a certificate.
-        if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
-            if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
-                st["status"] = "PROMOTION CANDIDATE"
-                slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
-                     f"maxDD={st['max_dd_r']:.1f}R")
+            h1 = bars.df
+            fam_fn = _family_fn(fam)
+            if fam_fn is None:
+                slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
+                continue
+            try:
+                sigs = fam_fn(h1, **params)
+            except TypeError:
+                sigs = fam_fn(h1, side=1, **params)
+            # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
+            # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
+            # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
+            # about a real strategy change. A re-measured cost is a NEW identity at the NEXT window.
+            costs = per_symbol_costs(meta, sym)
+            try:
+                import dataclasses as _dc
+
+                import sleeve_registry as _reg
+                _ff = _reg.frozen_cost_fields(key)
+                if _ff:
+                    _known = {f.name for f in _dc.fields(costs)}
+                    costs = _dc.replace(costs, **{k: float(v) for k, v in _ff.items()
+                                                  if k in _known})
+            except Exception as exc:
+                slog(f"{key}: frozen-cost lookup failed ({type(exc).__name__}: {exc}); "
+                     f"running on live costs this pass")
+            res = run_backtest(h1, sigs, costs)
+            # HISTORY IS KEPT, BUT IT IS NOT FORWARD EVIDENCE. `res.trades` runs from SHADOW_START
+            # (2026-08-16); this parameterization's clock was frozen at `forward_start`.
+            # Trades before that boundary were available while the cell was being SELECTED,
+            # so counting them toward
+            # a forward threshold is the leakage the two-stage law forbids -- measured 2026-08-26:
+            # XAUUSD.asia had forward_start=Aug 25 23:25 and n=7 whose first entry was Aug 17 17:00.
+            # Both sets are written: `all_trades` to the ledger tagged by phase (deleting history
+            # would destroy the audit trail), `trades` -- the only set feeding
+            # n/exp_r/max_dd/verdicts -- starts at the boundary. The boundary is CONVERTED,
+            # not assumed: bar stamps are on the
+            # broker clock (+3h at Fusion) while forward_start is true UTC.
+            all_trades = [t for t in res.trades if t.entry_time >= SHADOW_START]
+            _fs = st.get("forward_start")
+            _boundary = None
+            if _fs:
+                try:
+                    _boundary = (pd.Timestamp(_fs).to_pydatetime().replace(tzinfo=UTC)
+                                 + timedelta(hours=float(st.get("broker_offset_h") or 0.0)))
+                except (ValueError, TypeError):
+                    _boundary = None
+            trades = ([t for t in all_trades if t.entry_time >= _boundary]
+                      if _boundary is not None else [])
+            st["n_historical"] = len(all_trades) - len(trades)
+            st["evidence_note"] = (
+                f"{len(trades)} forward observation(s) since the clock froze; "
+                f"{len(all_trades) - len(trades)} earlier observation(s) retained as "
+                f"HISTORICAL and "
+                f"excluded from every threshold (they predate pre-registration)")
+            ledger = (SHADOW_DIR / f"ledger_{sym}_{win}.json" if fam == "session_range_breakout"
+                      else SHADOW_DIR / f"ledger_{sym}_{fam}_{win}.json")
+            # A trade replayed on the broker's own feed and one replayed on cached
+            # or free bars are not the same evidence -- OHLC differ at the tick and
+            # spreads differ materially -- so an expectancy averaged across them is
+            # an average over two different games. Stamped per row so the promoter
+            # can split them.
+            _stamp = bars.stamp()
+            ledger.write_text(json.dumps(
+                [{"entry_time": str(t.entry_time), "exit_time": str(t.exit_time),
+                  "side": t.side, "entry": t.entry, "exit": t.exit,
+                  "r_multiple": t.r_multiple, "reason": t.reason,
+                  "phase": ("forward" if (_boundary is not None and t.entry_time >= _boundary)
+                            else "historical"),
+                  **_stamp}
+                 for t in all_trades],
+                indent=2), encoding="utf-8")
+            try:
+                import MetaTrader5 as _mt5
+                from h1_source import broker_utc_offset_hours
+                st["broker_offset_h"] = broker_utc_offset_hours(_mt5)
+            except Exception:
+                st.setdefault("broker_offset_h", 0.0)
+            # STAMP THE CLOCK BEFORE FREEZING IT. `freeze()` below passes `st["forward_start"]` into
+            # the registry, and this stamp used to be written ~50 lines LATER -- so on a row's first
+            # pass the registry froze `forward_start: null`, and because freeze() is idempotent by
+            # design that null was permanent. The stamp is unconditional-if-absent and uses the same
+            # `now` the later block would, so moving it earlier changes the value by nothing
+            # and only
+            # makes it visible to the freeze. The later block remains as the fallback for rows that
+            # never reach the registry branch (import failure), where it is still the only stamper.
+            if not st.get("forward_start"):
+                st["forward_start"] = datetime.now(UTC).isoformat()
+            # CANONICAL IDENTITY, frozen at the clock and verified every cycle. Params alone do not
+            # identify a sleeve: the signal function's SOURCE and the COST MODEL change what it does
+            # while leaving every name and number intact, and a forward series that splices two of
+            # those together is not a smaller sample but a wrong one.
+            try:
+                import sleeve_registry as _reg
+                _ident = _reg.identity(
+                    family=fam, symbol=sym, direction="LONG", timeframe="H1",
+                    selector=win, condition=None, params=params,
+                    code=_reg.code_hash(fam_fn),
+                    cost=_reg.cost_hash(costs),
+                    # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
+                    # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made
+                    # every clock break on every run the Windows box was down -- terminally, and the
+                    # 14-day window therefore never survived one day. `evidence_venue` names whose
+                    # prints these are, so a real venue change still breaks the clock and an outage
+                    # does not. See h1_source.Bars.evidence_venue.
+                    data_venue=str(bars.evidence_venue))
+                _drift = _reg.verify(key, _ident)
+                if _drift:
+                    _reg.mark(key, "IDENTITY_BROKEN",
+                              f"{', '.join(_drift)} changed after the clock froze")
+                    st["status"] = "IDENTITY_BROKEN"
+                    st["identity_drift"] = _drift
+                    slog(f"{key}: IDENTITY BROKEN -- {', '.join(_drift)} changed after the clock "
+                         f"froze; evidence preserved, clock stopped. Restarting requires a NEW "
+                         f"frozen identity and a NEW window.")
+                    state[key] = st
+                    continue
+                _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
+                            cost_fields=vars(costs))
+                st["sleeve_id"] = _ident["sleeve_id"]
+            except Exception as exc:
+                slog(f"{key}: registry unavailable ({type(exc).__name__}: {exc})")
+            # EVERY EVALUATION STAMPS ITSELF. The idle-clock fence judges freshness by
+            # `last_attempt_at`, and this engine was evaluating rows every 15 minutes without
+            # updating it -- so the four pre-params rows kept a 13-hour-old stamp from the previous
+            # engine and were flagged IDLE while demonstrably accruing (XAUUSD.asia took its first
+            # forward trade under the stale stamp). An organ that does the work but does not sign it
+            # is indistinguishable from one that stopped.
+            st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            st["bar_source"] = bars.source
+            st["evidence_venue"] = bars.evidence_venue
+            st["bar_source_stale"] = bars.stale
+            st["promotion_authority"] = bars.promotion_authority
+            st["order_authority"] = False
+            st["gate_admission"] = "ORIGINAL_UNIVERSAL_10_PASS"
+            if trades:
+                rs = [t.r_multiple for t in trades]
+                cum = [sum(rs[:i + 1]) for i in range(len(rs))]
+                max_dd = min(cum[i] - max(cum[:i + 1]) for i in range(len(cum)))
+                st.update({
+                    "n": len(trades), "cum_r": float(sum(rs)),
+                    "exp_r": float(sum(rs) / len(rs)),
+                    "max_dd_r": float(max_dd),
+                    "first_entry": str(trades[0].entry_time),
+                    "last_entry": str(trades[-1].entry_time),
+                })
             else:
-                st["status"] = "KILL"
-                slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
-                     f"maxDD={st['max_dd_r']:.1f}R")
-        state[key] = st
-        slog(f"{key}: shadow n={st['n']} cumR={st['cum_r']:+.2f} "
-             f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
-             f"days={days_active} [{st['status']}]")
+                # ZERO FORWARD OBSERVATIONS IS A MEASUREMENT, NOT A REASON TO KEEP THE OLD NUMBER.
+                # This branch used to `setdefault` and leave n/cum_r/exp_r/max_dd untouched, so a
+                # clock whose forward set became empty -- exactly what happens the moment the
+                # boundary is corrected -- kept displaying the CONTAMINATED pre-registration counts
+                # and would have carried them into a promotion decision. Counters are reset to the
+                # honest zero and the historical arm is reported separately (L1.28a: unmeasured is
+                # never a verdict, and neither is inherited).
+                st.update({"n": 0, "cum_r": 0.0, "exp_r": 0.0, "max_dd_r": 0.0,
+                           "first_entry": None, "last_entry": None})
+            # THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN. This read
+            # `first_entry` -- trades[0].entry_time -- so a sleeve that had been trading for 8 days
+            # before its hypothesis was frozen arrived at the gate already 8/14 of the way through
+            # its "forward" window, on evidence gathered while it was still being SELECTED. That is
+            # the precise leakage the two-stage law exists to stop (LAWS L1.28a; RESEARCH §6a: the
+            # gauntlet screens, only pre-registered forward evidence promotes). `forward_start` is
+            # stamped once, the first time a row is seen, and never moved.
+            now = datetime.now(UTC)
+            if not st.get("forward_start"):
+                st["forward_start"] = now.isoformat()
+            days_active = (now - pd.Timestamp(st["forward_start"]).to_pydatetime()
+                           .replace(tzinfo=UTC)).days
+            st["days_active"] = days_active
+            # SUFFICIENT EVIDENCE = the flat count OR a significant forward t-stat at a floor of
+            # trades. Whichever arrives first; both are honest, one is merely faster when the edge
+            # is large. Quality bars (exp_r, maxDD) still apply to every promotion below.
+            t_stat = 0.0
+            if len(trades) >= 2:
+                _rs = [t.r_multiple for t in trades]
+                _mean = sum(_rs) / len(_rs)
+                _var = sum((x - _mean) ** 2 for x in _rs) / (len(_rs) - 1)
+                if _var > 0:
+                    t_stat = _mean / ((_var / len(_rs)) ** 0.5)
+            st["forward_t"] = round(t_stat, 3)
+            enough = (st["n"] >= VERDICT_MIN_TRADES
+                      or (st["n"] >= SEQ_MIN_TRADES and t_stat >= SEQ_MIN_T))
+            # AND, never OR: gate_spec.yaml has always said `n >= 50, days >= 14` together, but this
+            # line said `or`, so a sleeve holding ONE trade would take a verdict on day 14 -- and
+            # `EURJPY.asia.NORMAL_DAY` (n=1) and three MACRO_FAV rows (n=1) were on course to do
+            # exactly that. A one-trade promotion is not a fast promotion, it is a coin flip wearing
+            # a certificate.
+            if st["status"] == "ACTIVE" and enough and days_active >= VERDICT_MIN_DAYS:
+                if st["exp_r"] > PROMOTE_MIN_EXP and st["max_dd_r"] > PROMOTE_MIN_DD:
+                    st["status"] = "PROMOTION CANDIDATE"
+                    slog(f"{key}: VERDICT PROMOTE n={st['n']} exp={st['exp_r']:.3f}R "
+                         f"maxDD={st['max_dd_r']:.1f}R")
+                else:
+                    st["status"] = "KILL"
+                    slog(f"{key}: VERDICT KILL n={st['n']} exp={st['exp_r']:.3f}R "
+                         f"maxDD={st['max_dd_r']:.1f}R")
+            state[key] = st
+            slog(f"{key}: shadow n={st['n']} cumR={st['cum_r']:+.2f} "
+                 f"exp={st['exp_r']:+.3f}R maxDD={st['max_dd_r']:.1f}R "
+                 f"days={days_active} [{st['status']}]")
+        except Exception as exc:  # deliberate: isolate ONE sleeve, never the book
+            detail = f"{type(exc).__name__}: {exc}"
+            st["last_error"] = detail
+            st["last_error_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+            if not _is_terminal(st.get("status")):
+                st["status"] = "BLOCKED_SLEEVE_ERROR"
+            state[key] = st
+            slog(f"{key}: SLEEVE BLOCKED -- {detail}; this row is not evaluated this pass and "
+                 f"every other sleeve continues")
+            slog(traceback.format_exc())
     state["last_run"] = today
     state["configured_sleeves"] = len(enrolled)
     state["gate_blocked_sleeves"] = 0
