@@ -1,5 +1,5 @@
 {
-"cursor": 40,
+"cursor": 41,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -51,7 +51,10 @@
 "copytrading ranking",
 "cuentas gestionadas MT4",
 "cuentas gestionadas MT5",
-"cuentas gestionadas ranking"
+"cuentas gestionadas ranking",
+"se\u00f1ales MT4",
+"se\u00f1ales MT5",
+"se\u00f1ales ranking"
 ],
 "pt": [
 "copy trade MT4",
