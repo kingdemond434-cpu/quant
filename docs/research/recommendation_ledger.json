@@ -8625,6 +8625,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0672",
+   "source": "deep_sweep",
+   "summary": "R0660 EXTENSION (free-data miner 2026-08-27): the MT5 H1 lake is TWO lakes with two clock conventions -- 24 parquets tz-AWARE and falsely stamped UTC over server-local wall time, 173 tz-NAIVE (exactly GAP #148 tracked-vs-gitignored split). R0660 was measured only on XAUUSD/EURUSD/USDJPY, all in the aware 24, i.e. 12% of the lake. Re-confirmed on the naive 88% price-anchored: LBMA Platinum PM 14:00 London vs XPTUSD_H1 n=609, bar-label 15 sd 26.3bps summer / 34.9 winter vs 60-115 adjacent => server = London+2 = EEST/EET. The offset is now universe-wide. CRITICAL for the fix: idx.tz_convert(UTC) on the aware 24 is a SILENT NO-OP that preserves the full 2-3h error and passes mypy; the named fix tz_localize(None).tz_localize(Europe/Athens).tz_convert(UTC) was tested on BOTH halves and is correct for both, so the shared loader must NOT branch on dtype.tz. Also: session boundaries CANNOT date the DST seams (label-constant by construction across both US/EU mismatch windows, verified 2025-2026) -- the 08-26 week-boundary argument is withdrawn; exact seam dates remain UNMEASURED.",
+   "roi_bps": null,
+   "rank": 72.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-27T05:10:54.295128+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
