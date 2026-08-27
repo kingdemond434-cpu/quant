@@ -1,255 +1,485 @@
 {
-  "XAUUSD": {
-    "bars": 49758,
-    "first": "2018-03-19 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100.0,
-    "tick_size": 0.01,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 16.0
+ "AUDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "XAGUSD": {
-    "bars": 49757,
-    "first": "2018-03-19 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 5000.0,
-    "tick_size": 0.001,
-    "tick_value": 4.316149304236733,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 21.0
+  "bars": 53823,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 16.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_step": 0.01
+ },
+ "AUDNZD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "EURUSD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 12.0
+  "bars": 438,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 15.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.5097723356748877,
+  "volume_step": 0.01
+ },
+ "AUDUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "GBPUSD": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53823,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 14.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_step": 0.01
+ },
+ "BTCUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "USDJPY": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 63187,
+  "contract_size": 1.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 1694.0,
+  "min_volume": 0.01,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_step": 0.01
+ },
+ "CADJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "EURJPY": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53823,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 15.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_step": 0.01
+ },
+ "CHFJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "GBPJPY": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.541791052862553,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53824,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 18.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_step": 0.01
+ },
+ "ETHUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "AUDUSD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
+  "bars": 63209,
+  "contract_size": 1.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 258.0,
+  "min_volume": 0.01,
+  "tick_size": 0.01,
+  "tick_value": 0.008632298608473466,
+  "volume_step": 0.01
+ },
+ "EURAUD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "USDCAD": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6223937262712392,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53823,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_step": 0.01
+ },
+ "EURCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "USDCHF": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.0647812939222285,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53859,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 14.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_step": 0.01
+ },
+ "EURGBP": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "NZDUSD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.8632298608473467,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
+  "bars": 53823,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 1.1696316829830289,
+  "volume_step": 0.01
+ },
+ "EURJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "EURGBP": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.1696316829830289,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53859,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_step": 0.01
+ },
+ "EURUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "EURCHF": {
-    "bars": 53685,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 1.0647812939222285,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 14.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 12.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_step": 0.01
+ },
+ "GBPAUD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "AUDJPY": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 16.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 15.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.6136023365976979,
+  "volume_step": 0.01
+ },
+ "GBPJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "CADJPY": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_step": 0.01
+ },
+ "GBPUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "NZDJPY": {
-    "bars": 53683,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
+  "bars": 53859,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_step": 0.01
+ },
+ "NZDCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "CHFJPY": {
-    "bars": 53650,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 0.001,
-    "tick_value": 0.5417851821752675,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 18.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 17.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_step": 0.01
+ },
+ "NZDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "AUDNZD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.5097723356748877,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
+  "bars": 53857,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 15.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.5417851821752675,
+  "volume_step": 0.01
+ },
+ "NZDUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "NZDCAD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6223937262712392,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 17.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 14.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.8632298608473467,
+  "volume_step": 0.01
+ },
+ "USDCAD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "EURAUD": {
-    "bars": 53649,
-    "first": "2018-01-02 01:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6136023365976979,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 13.0
+  "bars": 53859,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 0.6223937262712392,
+  "volume_step": 0.01
+ },
+ "USDCHF": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "GBPAUD": {
-    "bars": 53684,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 100000.0,
-    "tick_size": 1e-05,
-    "tick_value": 0.6136023365976979,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 15.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 1e-05,
+  "tick_value": 1.0647812939222285,
+  "volume_step": 0.01
+ },
+ "USDJPY": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "BTCUSD": {
-    "bars": 62998,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 1.0,
-    "tick_size": 0.01,
-    "tick_value": 0.008632298608473466,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 1694.0
+  "bars": 53858,
+  "contract_size": 100000.0,
+  "first": "2018-01-02 00:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 13.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 0.541791052862553,
+  "volume_step": 0.01
+ },
+ "XAGUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
   },
-  "ETHUSD": {
-    "bars": 63020,
-    "first": "2018-01-02 00:00:00+00:00",
-    "last": "2026-08-17 23:00:00+00:00",
-    "contract_size": 1.0,
-    "tick_size": 0.01,
-    "tick_value": 0.008632298608473466,
-    "min_volume": 0.01,
-    "volume_step": 0.01,
-    "median_spread_pts": 258.0
-  }
+  "bars": 49923,
+  "contract_size": 5000.0,
+  "first": "2018-03-19 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 21.0,
+  "min_volume": 0.01,
+  "tick_size": 0.001,
+  "tick_value": 4.316149304236733,
+  "volume_step": 0.01
+ },
+ "XAUUSD": {
+  "_provenance": {
+   "bars": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "parquet_on_disk"
+   },
+   "tick_value": {
+    "at": "2026-08-27T03:03:00+00:00",
+    "source": "broker_reported"
+   }
+  },
+  "bars": 49924,
+  "contract_size": 100.0,
+  "first": "2018-03-19 01:00:00+00:00",
+  "last": "2026-08-17 23:00:00+00:00",
+  "median_spread_pts": 16.0,
+  "min_volume": 0.01,
+  "tick_size": 0.01,
+  "tick_value": 0.8632298608473467,
+  "volume_step": 0.01
+ }
 }
