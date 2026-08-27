@@ -5640,5 +5640,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"6fb9ec4cb6117357": {
+"t0": "2026-08-27T10:24:38+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "NadirAliOfficial/mt5-cli",
+"url": "https://github.com/NadirAliOfficial/mt5-cli",
+"text": "Compile, backtest and download MetaTrader 5 history from the macOS terminal \u2014 drives the Wine runtime inside MetaTrader5.app, no Windows VM required",
+"symbols": [],
+"found_at": "2026-08-27T10:24:32+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-27T10:13:55Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

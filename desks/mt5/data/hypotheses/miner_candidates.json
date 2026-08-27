@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-27T09:14:05+00:00",
+ "compiled_at": "2026-08-27T10:07:02+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -1490,9 +1490,9 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 41,
+   "rows": 26,
    "candidates": 0,
-   "deepening": 41
+   "deepening": 26
   },
   "central_bank": {
    "rows": 1,
@@ -1585,9 +1585,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 34,
+   "rows": 37,
    "candidates": 0,
-   "deepening": 34
+   "deepening": 37
   },
   "litefinance": {
    "rows": 15,
@@ -1625,18 +1625,13 @@
    "deepening": 3
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 8,
    "candidates": 0,
-   "deepening": 10
-  },
-  "youtube": {
-   "rows": 26,
-   "candidates": 0,
-   "deepening": 26
+   "deepening": 8
   }
  },
- "rows_accounted": 669,
+ "rows_accounted": 629,
  "executable_candidates": 122,
- "deepening_tasks": 518,
+ "deepening_tasks": 476,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

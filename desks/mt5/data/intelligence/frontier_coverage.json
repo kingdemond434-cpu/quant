@@ -22,10 +22,10 @@
   "ru": {
    "region": "CIS",
    "open_frontier": false,
-   "queries_exercised": 6,
+   "queries_exercised": 9,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-26T16:22:01+00:00",
+   "last_swept": "2026-08-27T10:22:00+00:00",
    "native_terms_available": 18
   },
   "ar": {
