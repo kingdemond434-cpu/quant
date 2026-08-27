@@ -2594,8 +2594,24 @@ def check_production(defects) -> None:
         ("cron-cycle", "data/cro_ai_logs/2026*_????.log", 26, 2000),
         ("panel-verdicts", "data/panel_verdicts.jsonl", 96, 100),
         ("dataaxis-product", "docs/research/data_axis_watchlist.md", 30, 100),
-        ("prospector-product", "docs/research/prospector_watchlist.md", 30, 100),
-        ("litminer-product", "docs/research/*iterature*coverage*.md", 30, 50),
+        # THE PRODUCT IS THE RUN, NOT A MUTATED FILE (corrected 2026-08-27). Both rows below were
+        # red against organs that were behaving CORRECTLY, and in the prospector's case the fence
+        # was punishing the exact behaviour the desk most wants.
+        #
+        # PROSPECTOR: its 2026-08-27 06:00 run took 24 minutes, raised R0673/R0674/R0675, and
+        # wrote NO watchlist card -- "the public MQL5 alpha layer was picked clean again... I did
+        # not fabricate survivors to cover it." Gauging `prospector_watchlist.md` by MTIME makes a
+        # run that honestly found nothing indistinguishable from a run that never happened, and
+        # the only way to clear the alarm is to write a card -- a fence that pays for padding, in
+        # a desk whose L1.21 forbids it. So the RUN is gauged (its dated log, whose size separates
+        # a real dig from a 172-byte stub) and the product keeps a weekly bar, which still catches
+        # a genuinely silent organ without demanding output that does not exist.
+        ("prospector-run", "data/cro_ai_logs/prospector_2026*.log", 30, 1000),
+        ("prospector-product", "docs/research/prospector_watchlist.md", 168, 100),
+        # LITMINER: it stands down behind its own MONTHLY gate ("last real dig is younger than
+        # 28 days"), so a 30h bar was red for 28 days out of every 29 by construction -- the fence
+        # asserting a cadence the organ does not have and never claimed. Gauged at its real one.
+        ("litminer-product", "docs/research/*iterature*coverage*.md", 720, 50),
         ("frontier-product", "docs/research/prospector_coverage.md", 30, 100),
         # RETIRED 2026-08-27 BY THE MT5 MANDATE, not by neglect -- and retired rather than left
         # red, because a cadence row nothing may legally satisfy is a permanent alarm, and a
