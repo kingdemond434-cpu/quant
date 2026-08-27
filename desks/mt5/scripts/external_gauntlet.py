@@ -366,20 +366,30 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # less visible. The ten gates run exactly as defined.
     n_trials = max(2, math.ceil(matrix.shape[1] * TRIALS_MULTIPLIER))
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
-    sh_var = float(sharpes.var(ddof=1))
+    sh_var = float(sharpes.var(ddof=1)) if len(sharpes) > 1 else 0.0
 
     print(f"  Matrix: {matrix.shape}, n_trials={n_trials}")
     t0 = time.time()
 
-    pbo = probability_backtest_overfitting(matrix)
-    pbo_val = float(pbo.pbo)
-    pbo_ok = pbo_val <= PBO_THRESHOLD
-    print(f"  PBO: {pbo_val:.4f} ({'PASS' if pbo_ok else 'FAIL'})")
+    if matrix.shape[1] < 2:
+        # PBO and SPA are program-level relative-performance tests. One surviving series is not
+        # evidence that it passes them, but it is also not an exception that should abort the
+        # entire hourly certifier. Record the two gates as conservative measured failures so the
+        # candidate remains visible and the authority file is still published intact.
+        pbo_val, pbo_ok = 1.0, False
+        spa_p, spa_ok = 1.0, False
+        print("  PBO: 1.0000 (FAIL: requires >=2 strategies)")
+        print("  SPA: p=1.0000 (FAIL: requires >=2 strategies)")
+    else:
+        pbo = probability_backtest_overfitting(matrix)
+        pbo_val = float(pbo.pbo)
+        pbo_ok = pbo_val <= PBO_THRESHOLD
+        print(f"  PBO: {pbo_val:.4f} ({'PASS' if pbo_ok else 'FAIL'})")
 
-    spa = hansen_spa(matrix)
-    spa_p = float(spa.p_value)
-    spa_ok = spa_p < SPA_ALPHA
-    print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
+        spa = hansen_spa(matrix)
+        spa_p = float(spa.p_value)
+        spa_ok = spa_p < SPA_ALPHA
+        print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
 
     # 3x cost series
     daily_x3 = []

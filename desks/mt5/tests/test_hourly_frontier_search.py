@@ -162,6 +162,25 @@ def test_gauntlet_stops_terminal_gate_one_rejects_before_signal_construction() -
     assert rejected[0]["stages"]["economic_prior"]["passed"] is False
 
 
+def test_single_valid_series_fails_program_gates_without_aborting(monkeypatch) -> None:
+    daily = pd.Series(
+        np.sin(np.arange(120) / 7.0) * 0.1 + 0.01,
+        index=pd.date_range("2025-01-01", periods=120, freq="d"),
+    )
+    monkeypatch.setattr(external_gauntlet, "daily_series", lambda *_a, **_kw: daily)
+    cell = {
+        "sym": "XAUUSD", "family": "cot_positioning", "params": {},
+        "mechanism_status": "NAMED", "df": None, "sigs": [], "costs": None,
+    }
+
+    result = external_gauntlet.run_gauntlet([cell], "single-cell", {})
+
+    assert len(result["verdicts"]) == 1
+    stages = result["verdicts"][0]["stages"]
+    assert stages["pbo"] == {"passed": False, "pbo": 1.0}
+    assert stages["reality_check_spa"] == {"passed": False, "p_value": 1.0}
+
+
 def test_family_free_cells_keep_exact_parameter_identity() -> None:
     a = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "ret_24"}}
     b = {"sym": "EURUSD", "family": "discovered", "params": {"feature": "spread_z_48"}}
