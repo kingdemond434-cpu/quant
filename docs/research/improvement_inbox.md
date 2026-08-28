@@ -3710,3 +3710,132 @@ series.
 
 **Cheapest detector, for reuse:** the Friday-close hour test. It needs no external data, runs in
 under a second over the whole universe, and is decisive.
+
+---
+
+## PROSPECTOR s11 (2026-08-28) — the 12 silently-empty collectors, graded per source
+
+**WHAT WAS MEASURED.** Every directory under `desks/mt5/data/intelligence/` was counted by rows,
+error rows and last write. **Twelve sources hold 67–98 output files and have written literally
+`[]` on every run**, with **zero error rows** — so from the log a dead route, a robots wall, a
+parse bug and a genuinely empty seam are all byte-identical (`L1.28a`, WS-005). Every one of these
+miners is built the same way: `requests.get(...)` → regex → `except Exception: pass` → write
+whatever list survived. **The swallowed exception is the defect class**; the empty artifact it
+leaves is a *positive assertion of absence* that nothing on this desk can distinguish from a
+verdict.
+
+Each was probed live this session. The grades are NOT the same, and that is the whole point:
+
+| source | HTTP probe | true cause | repairable? |
+|---|---|---|---|
+| `bis_speeches` | — | **§13 BREACH: reads `bis.org/doclist/cbspeeches.rss`; `bis.org/robots.txt` carries `Disallow: /doclist/`** (verified this session) | **YES — replacement already written and unwired** |
+| `global_frontier` | ddg **202** challenge, mojeek **403** | discovery backend dead; **fabricates coverage** (below) | partly — EN only |
+| `fear_greed` | 418 *"I'm a teapot. You're a bot."* | **NOT a wall — missing `Referer`/`Accept` headers.** With them: **200, full JSON** (`score 54.4`, dated history) | **YES, two headers** |
+| `tradingview` | 200, 774KB | parse bug: 43 `/scripts/` hrefs present; regex demands `>bare text</a>` and modern TV nests spans → 0 | YES |
+| `earnings` | 200, 1.1MB | parse bug: page contains `Earnings Date` ×2, the regex crosses tags/newlines without `DOTALL` → 0. (`query1...v7/finance/quote` now **401**, so the API fallback is gone) | YES |
+| `china` | zhihu **403**, eastmoney **200** | half wall, half bug: the miner strips tags then reads **the first 2000 chars**, which on eastmoney is CSS/footer boilerplate — content never reached | partly |
+| `korea` | naver **200**, kr.investing **403** | identical first-2000-chars defect on naver (payload is IE-detection JS) | partly |
+| `weather` | NOAA **404**, open-meteo **200** | dead route + a genuinely conditional arm (fires only >38 °C in NYC) — the one source whose emptiness is partly honest | YES (NOAA URL) |
+| `aaii` | **403** (bot page) | real wall | no route found |
+| `investing` | **403** | real wall | no route found |
+| `google_trends` | **429** | real wall (explore page is not scrapable) | no route found |
+| `frontier` | — | 0 files: writer suppresses output when empty | n/a |
+
+**A. `bis_speeches` — robots-barred route, requested 69 times, and the fix is already on disk.**
+`seed_miners.mine_bis_speeches()` fetches `https://www.bis.org/doclist/cbspeeches.rss`. BIS's
+robots bars `/doclist/` for `*`. So the miner has been hitting a disallowed path every run and
+recording nothing. The replacement is **already implemented in this repo** —
+`desks/mt5/side_channels/bis_speech_tone.py` documents and uses `https://www.bis.org/speeches/speeches.zip`
+(one request, 20,728 dated speeches, `/speeches/` unbarred) — **but `MINERS` still points at the
+barred RSS.** One-line repoint; the seat that wrote the replacement never rewired the seed miner.
+*This is the recurring class: the producer computed a distinction (a legal route) and the consumer
+kept the old one.*
+
+**B. `global_frontier` FABRICATES COVERAGE, and that is worse than returning nothing.**
+`global_survivor_frontier.search()` scrapes DuckDuckGo-HTML and Mojeek. Measured live:
+DDG returns **HTTP 202 with an anti-bot page and zero results**, Mojeek **403**. `search()` therefore
+returns `[]` for *every* query. But `run_and_save()` then does, unconditionally:
+`c["queries_exercised"] += len(queries)`, stamps `last_swept`, and extends
+`state["queries_done"][locale]` — and `queries_done` is the set the next run **skips**. Measured
+state right now: **`queries_exercised: 207` across 13 locales, `populations_found: 0`,
+`graduated: 0`, and all 207 native queries permanently marked DONE** (capped to the last 400, so
+they are also silently evicted rather than retried). The artifact
+`frontier_coverage.json` therefore reads as *"13 locales swept, 207 native queries exercised"* to
+any consumer, while **not one query was ever executed**. That is a coverage claim with no search
+behind it — `L1.51` ("exhausted" requires evidence) inverted into a machine that manufactures the
+claim automatically. **Scope check, stated honestly:** `frontier_coverage.json` has **no code
+consumer** (grep: only its own writer), so nothing downstream has yet acted on the false number —
+the live damage is **self-inflicted ground-burning inside the organ**, because `queries_done` *is*
+consumed, by the next run, as a skip list. The artifact's danger is to the next reader, human or
+organ, who takes "207 queries exercised" at face value. **The one-line severity fix: only credit `queries_exercised` / `queries_done`
+for queries whose `search()` returned a non-error response.** A failed search must burn no ground.
+
+**C. §38 replacement hunt for the dead search backend — found for EN, graded residual for the rest.**
+- **FOUND:** the **Marginalia public JSON API** — `https://api.marginalia.nu/public/search/<urlencoded>?count=20`,
+  **keyless** (the literal path segment `public` is the free key), returns
+  `{"license":"CC-BY-NC-SA 4.0", "results":[…]}`. Verified 200 with 10–20 real result URLs for
+  `copy trading`, `backtest forex`, `forex strategy`, `MT5 EA`. It is a **small-web index that
+  deliberately downranks commercial SEO**, which is *aligned* with the deep-forest mandate rather
+  than a consolation prize. Pacing: ≥6 s between calls and long timeouts — heavy queries took >30 s
+  and 429-shaped non-JSON bodies appear when hurried, so the reader must not `json()` blindly.
+- **§13 note against myself:** the *HTML* Marginalia route is **barred** —
+  `old-search.marginalia.nu/robots.txt` and `marginalia-search.com/robots.txt` both carry
+  `Disallow: /search`. I made one diagnostic request before reading it; the HTML route is **not
+  adoptable** and only the documented API is.
+- **RESIDUAL, graded with the search that failed:** Marginalia returned **n=0 for `стратегия форекс`** —
+  it is English-heavy, so it does **not** restore the frontier organ's actual purpose (native
+  non-English discovery across 13 locales). Probed and failed from this IP the same session:
+  Mojeek 403, DDG-HTML 202, Ecosia 403, Brave 429, Startpage/Bing/searx.be 200-with-zero-links,
+  `searxng.site` 429, `baresearch.org` 2 links, Yandex and Baidu 200 with **only static assets**
+  (JS-rendered). **Verdict: non-English keyless web discovery has NO working route from this box
+  today.** That is a finding, not a default — and it means the frontier organ's non-EN locales
+  should be marked BLOCKED, not swept.
+
+**PRIORITY.** (1) fix B's coverage fabrication — it corrupts the evidence base and costs nothing;
+(2) repoint A — it is a live §13 breach with the replacement already written; (3) fear&greed's two
+headers — 87 empty runs on a source that answers.
+
+---
+
+## PROSPECTOR s11 (2026-08-28) — the desk records `symbol_info` and throws away every field that would show a forced-deleveraging event
+
+**HOW THIS SURFACED.** Chasing the prop-firm operational-notice family (a scrape), the archive
+turned out to contain exactly two symbol-named forcing events — *margin/leverage changes* and
+*delisting/close-only orders* (`FTMO 11 Sep 2025: "MKRUSD has been set to close-only, and all
+positions must be closed by market close on Friday, 12 Sep 2025"`). Then the same question as
+s10's swaps: **does the desk need to scrape an announcement to see this?**
+
+**IT DOES NOT, AND IT ALREADY HAS THE OBJECT.** `desks/mt5/mt5desk/tape.py::contract_terms_row`
+calls `mt5.symbol_info(symbol)` — the object that carries **`margin_initial`,
+`margin_maintenance`, `trade_mode` (3 = CLOSEONLY, 0 = DISABLED), `volume_min/max/limit`,
+`trade_stops_level`, `freeze_level`, `spread`, `expiration_time`** — and writes **eleven fields,
+none of them these** (verified against the parquet: `observed_at, symbol, swap_long, swap_short,
+swap_mode, swap_rollover3days, contract_size, tick_size, tick_value, currency_profit,
+currency_margin`). The call is already paid for; the fields are dropped at zero saving.
+
+**WHAT ACCRUING THEM WOULD BUY, in order of value:**
+1. **`trade_mode` is a forced-liquidation event detector on the desk's OWN broker.** A symbol
+   flipping to CLOSEONLY is a dated, unambiguous, published-by-behaviour instruction that every
+   holder must exit by a deadline — the cleanest "who is forced to trade and cannot stop" the
+   MT5 ground offers. Today the desk would learn of it by an order rejection.
+2. **`margin_initial` changes are announced deleveraging.** A margin increase forces gross
+   reduction in a named symbol inside a dated window; a decrease permits expansion. Direction-
+   agnostic by construction, which is the class this desk's own lessons say to prefer.
+3. **`trade_stops_level` / `freeze_level`** bound where a stop may legally sit — the desk's
+   execution model currently assumes a stop can be placed anywhere.
+4. **It closes the s10 finding's other half:** with margin recorded, the announced-vs-terminal
+   question ("does a notice lead or lag the terminal?") becomes measurable on owned data.
+
+**COST:** four to eight added keys in one dict literal in an already-scheduled hourly recorder.
+**RISK:** none to the money path — `contract_terms_row` is a pure function feeding a parquet.
+**THE RECURRING SHAPE:** this is the third time in two sessions that a scrape was the wrong
+instrument and the connected terminal was the right one. The rule worth keeping: **before
+cataloguing an external source, ask which of its facts `symbol_info` already answers.**
+
+**NOT PROPOSED, AND WHY:** no card. The prop-firm flow mechanism still rests on an unmeasured
+**pool share** (does an FTMO-cohort deleveraging move a Fusion price?), and the event counts are
+thin — measured over the first 80 of 186 archived EN notices: **6 margin/leverage changes and
+6 delist/close-only orders**, i.e. order-10 events per family per firm. That is not an n for the
+ten gates, and pooling across firms does not fix an unmeasured transmission channel. The
+instrumentation above is worth doing **on its own merits** — it is free, it is owned data, and it
+turns an unmeasurable family into a measurable one.

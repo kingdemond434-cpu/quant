@@ -8671,3 +8671,166 @@ the RECURSIVE EXPANSION mandate exists for.**
 4. **Re-run the population sweep authenticated or paced**, and drive the next several sessions
    from `data/brain_repo_population.json` rather than from a single named handoff. The sweep costs
    minutes and it is the difference between choosing a dig and inheriting one.
+
+---
+
+## Session s11 — 2026-08-28 (PROSPECTOR standing daily) — IN PROGRESS (write-first note)
+
+**Backlog state at start:** `source_backlog_next.py --limit 6` → **0 pending verification, 0
+pending legitimacy**, 48/73 resolved, 25 deferred (earliest return 2026-09-01). Backlog genuinely
+clear ⇒ this run goes to the s10 note's NEXT-UN-EXHAUSTED-GROUND list, items 1 and 2.
+
+**ITEMS TAKEN THIS RUN (bounded; depth maxed per item):**
+
+1. **Grade the 27 zero-yield collectors** [CLOSED — 12 truly empty, graded per source] (s10 next-ground #1). Owned data returning nothing;
+   a silently-empty producer and a genuinely empty seam are indistinguishable from the log
+   (L1.28a / WS-005). Must be graded PER SOURCE with evidence, not as a block. Status: `CLOSED`
+2. **FTMO `trading-updates-sitemap.xml` unfiltered pull** [CLOSED — not dead: 1,439 locs, 186 archived] (s10 next-ground #2) — decide empty
+   sitemap vs filter miss; do not grade dead without the pull. Status: `CLOSED`
+
+_(Items resolve in place below as they close.)_
+
+### Resolutions
+
+**Item 1 — the 12 silently-empty collectors: GRADED PER SOURCE, and they are not one thing.**
+Full table + evidence → `improvement_inbox.md` (2026-08-28, "PROSPECTOR s11"). Headline:
+
+- **They are all the same code shape** — `requests.get` → regex → `except Exception: pass` → write
+  the (empty) list. **67–98 files each, `[]` every run, ZERO error rows**, so a robots wall, a dead
+  URL, a parse bug and a genuinely empty seam are byte-identical from the log. The empty artifact
+  is a *positive assertion of absence that was never measured* (L1.28a / WS-005). Lesson **L0212**.
+- **Graded live this session:** 3 real walls (`aaii` 403, `investing` 403, `google_trends` 429 —
+  no replacement route found), 1 robots **breach** (`bis_speeches`), 1 fabricated-coverage organ
+  (`global_frontier`), 4 parse bugs on **HTTP-200 payloads** (`tradingview` — 43 `/scripts/` hrefs
+  present; `earnings`; `china`/`korea` — both read only the first 2000 chars of stripped HTML,
+  which is CSS/JS boilerplate), 1 header bug misread as a wall (`fear_greed`), 1 dead URL +
+  honestly-conditional arm (`weather`, NOAA 404).
+- **`fear_greed` was never walled.** CNN's `418 "I'm a teapot. You're a bot."` is defeated by a
+  `Referer` + `Accept` header. With them: **200 and the full payload**, which is far more than the
+  headline index — **seven component sub-indices** (put/call, junk-bond demand, safe-haven demand,
+  breadth, price strength, VIX, VIX-50), each **250 daily points**. Note the graveyard boundary:
+  `F&G_contrarian` is in `do_not_repeat`, so the *headline index as a contrarian signal is dead* and
+  is not re-logged; the components are different objects and were never separately tested. **They
+  are still not cardable today** — the endpoint serves a ~1-year rolling window (251 points), which
+  cannot support the ten gates. Correct disposition: **repair the miner so the desk ACCRUES it**,
+  and revisit when the accrued history, not the endpoint's window, is the sample.
+- **`bis_speeches` is a live §13 breach with the fix already on disk.** It fetches
+  `bis.org/doclist/cbspeeches.rss`; `bis.org/robots.txt` carries `Disallow: /doclist/` (verified).
+  The legal replacement — `bis.org/speeches/speeches.zip`, 20,728 dated speeches, one request — is
+  **already implemented** in `bis_speech_tone.py`, but `seed_miners.MINERS` still points at the
+  barred RSS. A producer computed the distinction and the consumer kept the old route.
+- **`global_frontier` manufactures coverage.** `search()` returns `[]` for every query (DDG-HTML
+  **202** anti-bot, Mojeek **403**, measured), yet the organ increments `queries_exercised`, stamps
+  `last_swept` and adds the queries to the **skip list** unconditionally. Present state:
+  **`queries_exercised: 207` over 13 locales, `populations_found: 0`, and all 207 native queries
+  permanently marked DONE.** The coverage artifact reads "13 locales swept" and not one query ever
+  ran. `frontier_coverage.json` has no code consumer, so the live damage is **ground burned inside
+  the organ**; the reader-facing damage is a coverage claim with no search behind it (L1.51
+  inverted into a machine). Lesson **L0213**.
+- **§38 replacement for the dead search backend — found for EN, residual graded for the rest.**
+  **Marginalia's public JSON API** (`api.marginalia.nu/public/search/<q>?count=20`, keyless,
+  CC-BY-NC-SA) verified returning 10–20 real results; it is a small-web index that downranks
+  commercial SEO, which *fits* the deep-forest mandate. **§13 against myself: the HTML route is
+  barred** (`Disallow: /search` on both marginalia hosts) — only the API is adoptable. **Residual:
+  n=0 for `стратегия форекс`; Mojeek 403, DDG 202, Ecosia 403, Brave 429, searxng 429,
+  Startpage/Bing/searx.be 200-with-zero-links, Yandex and Baidu 200 with only static assets. Non-
+  English keyless web discovery has NO working route from this box today** — a finding with its
+  failed search shown, not a default.
+
+**Item 2 — FTMO `trading-updates-sitemap.xml`: NOT DEAD. s10's "empty sitemap" was a FILTER MISS.**
+Unfiltered pull: **1,001 + 438 = 1,439 `<loc>` rows** across the two sitemaps, of which **186 are
+dated English `trading-update-*` notices** spanning **Jun 2023 → Aug 2026** (45 / 36 / 51 / 52 per
+year). `ftmo.com/robots.txt` is `User-agent: * / Disallow:` — an **empty** Disallow, i.e. full
+allow, and the sitemaps are named in it. **186 pages fetched at 0.8 s, zero errors**, archived to
+`data/prospector/ftmo_trading_updates.jsonl` (url, date, body text) so no future run re-fetches it.
+
+**What the archive actually contains** (counts over all 186):
+
+| family | pages | note |
+|---|---|---|
+| weekend platform maintenance | 159 | **Saturday**, i.e. the market is shut anyway — *not* a tradable lockout. This killed my working hypothesis before it was written down. |
+| holiday schedule adjustments | 70 | symbol-level (`UK100.Cash closed for the entire day on Monday 25 Aug 2025`) |
+| commission/fee schedule changes | 19 | dated cost changes per instrument class |
+| **delisting / close-only orders** | **15** | the sharpest: `MKRUSD … set to close-only, all positions must be closed by market close on Friday, 12 Sep 2025` |
+| **margin / leverage changes** | **9** | `Leverage Improvement on XAU Pairs … adjustment to the margin requirements for XAUUSD, XAUEUR, XAUAUD` |
+
+**VERDICT: source VERIFIED and archived; NO CARD.** Three reasons, and the first is fatal on its
+own: (1) my maintenance-window hypothesis is refuted by the data — 159/159 maintenance notices are
+**weekend**, so no cohort is locked out while the market trades; (2) the two genuinely forcing
+families are **thin — 15 and 9 events over 3.2 years at one firm** — which is not an n for the ten
+gates, and pooling firms does not repair it; (3) the binding unknown is unchanged and unmeasured:
+**pool share** — whether an FTMO-cohort deleveraging moves a Fusion price at all. Re-scoring this
+family on better provenance while its sensitive term stays unmeasured would be exactly the markup
+s10 refused. **The holiday-closure/reopen variant is additionally a graveyard match**
+(`exotic_fx_halt_reopen_gap_vol`, PROSPECTOR s9, `mechanism_refuted` on the desk's own data after
+the sqrt(sessions) control) and is **discarded, not re-logged.**
+
+**The valuable output was the instrument question, not the source** → `improvement_inbox.md`:
+the desk records `mt5.symbol_info()` hourly and writes **11 fields, none of which are
+`trade_mode`, `margin_initial`, `margin_maintenance`, `volume_limit` or `trade_stops_level`** —
+so the forced-liquidation event class this scrape was hunting is observable **on the desk's own
+broker, first-party and dated**, and is being discarded at zero saving. Third time in two sessions
+that the scrape was the wrong instrument and the connected terminal was the right one.
+
+**Item 3 (unplanned, arose from Item 1's §38 replacement) — the Marginalia route was EXERCISED, not just probed.**
+Five real desk queries through the new API. Honest grade: **LOW yield, and slow.** 4/5 returned
+(20 hits each); `MetaTrader tick data analysis` failed both attempts on timeout, and the five
+queries took **~10 minutes** wall-clock with retries — this route is not a drop-in for a fast
+sweep. Relevance is **keyword-literal**: concrete queries work (`forex swap arbitrage broker` →
+`zorro-project.com/manual/en/account.htm`, a broker asset/cost parameter reference; `quant.stackexchange`
+threads), conceptual phrases collapse (`trading edge decay measurement` returned the 9/11 Commission
+report and Maine statutes). Three genuine leads worth a later dig, logged so they are not lost:
+**`jonathankinlay.com`** (long-running solo-practitioner quant blog — the ex/solo-quant long-form
+hand-priority), **`zorro-project.com` manual** (broker/asset cost modelling reference),
+**`suchow.io/.../yu2024finmem.pdf`** (FINMEM layered-memory LLM trading agent — AI-quant-structure
+class, inbox material, never installed). Grade for source-yield learning: **use for concrete
+noun-phrase queries only; never for conceptual ones; budget ~2 min/query.**
+
+### Coverage bookkeeping
+
+| Source family | Visited | Yield |
+|---|---|---|
+| `desks/mt5/data/intelligence/` — full census, all 60 dirs by rows/errors/mtime | ✅ | **12 silently-empty collectors identified and graded individually** — the run's main deliverable |
+| Live probes of all 12 dead endpoints (bis/ddg/mojeek/cnn/tv/yahoo/zhihu/eastmoney/naver/aaii/investing/gtrends/noaa/open-meteo) | ✅ | 3 real walls · 1 **robots breach** · 1 coverage-fabricating organ · 4 parse bugs on HTTP-200 · 1 header bug · 1 dead URL |
+| Search-backend replacement hunt (10 engines + 4 searx instances + 2 native-locale) | ✅ | **1 adoptable route (Marginalia API, EN only)**, non-EN graded **NO ROUTE** |
+| Marginalia API exercised on 5 desk queries | ✅ | low yield, 3 leads, source-yield grade recorded above |
+| FTMO sitemap → 186-notice archive (2023-06 → 2026-08) | ✅ | source **VERIFIED and archived**; hypothesis **refuted by its own data**; **no card** |
+| FTMO archive → instrument question | ✅ | **`symbol_info` records 11 fields and drops `trade_mode`/`margin_initial`** — inbox |
+
+- **DEPTH:** intelligence census → per-source live probe → **miner source read** → **import-graph
+  walk into `seed_miners.MINERS`** → robots verification at the barred host → replacement hunt
+  across 16 engines → **API adopted, exercised, and graded on real queries**. For FTMO: robots →
+  sitemap index → **both** update sitemaps unfiltered → 186-page archive → **keyword census with a
+  chrome baseline** → snippet reading → the forcing clause → `contract_terms` parquet → **`tape.py`
+  source** → the dropped `symbol_info` fields. Surface said "empty collectors, probably walled";
+  the walk said one is a §13 breach, one manufactures coverage, and four are working endpoints
+  parsed wrongly.
+- **NEGATIVE RESULTS, first-class:** the maintenance-window hypothesis died on its own data
+  (159/159 weekend); the holiday variant is a graveyard match and was discarded, not re-logged;
+  `F&G_contrarian` boundary respected; non-English discovery graded NO ROUTE with the 16 failed
+  probes named. **Zero cards this run, and that is the honest result.**
+- **§38 EXCLUSION → REPLACEMENT:** dead DDG/Mojeek scrape → **Marginalia public API** (EN),
+  residual graded for non-EN. Barred `bis.org/doclist/` → **`speeches.zip`, already on disk**.
+- **§13:** `ftmo.com` full-allow (verified); `bis.org/doclist/` **Disallow confirmed — the desk is
+  in breach and the repair is named**; **Marginalia HTML `Disallow: /search` — I made one
+  diagnostic request before reading it and the route is NOT adopted; only the documented API is.**
+- **Video:** 0 fetched, 0 locked; no route attempted or needed. Nothing added to `video_locked_log.md`.
+- **OPERATOR LESSON, and it is mine:** my first FTMO extractor sliced 6,000 chars after the `<title>`
+  match and harvested pure nav boilerplate — **the identical first-N-chars defect I had just
+  documented in `china_miner`/`korea_miner` an hour earlier**. Anchor on a content marker and verify
+  the extraction against a known string before trusting a keyword count. Also: `pkill -f ftmo_pull.py`
+  **self-matched the launching shell** (standing lesson, paid again) — kill by pid from `pgrep`.
+
+### NEXT UN-EXHAUSTED GROUND (for s12, in order)
+
+1. **The remaining 4 parse-bug collectors** (`tradingview`, `earnings`, `china`, `korea`) — all
+   confirmed HTTP-200 with content present. This is owned ground returning nothing for a regex
+   reason, which is the cheapest yield on the board.
+2. **`bis_speeches` repoint** — one line, closes a live §13 breach and opens 20,728 dated speeches.
+   Ledger it if the MT5 desk owns the file.
+3. **Pool share for H1′** — still the one measurement that decides the prop-firm family, and the
+   `symbol_info` instrumentation above is now its natural companion.
+4. **The 15 delist/close-only + 9 margin/leverage dates** in `data/prospector/ftmo_trading_updates.jsonl`
+   — thin at one firm, but the dates are extracted and free to join against any second firm's
+   archive; the family becomes testable only if pooling reaches n≈40.
+5. **`jonathankinlay.com` fork/citation dig** — solo-quant long-form, one of the two capped hand-priorities.
