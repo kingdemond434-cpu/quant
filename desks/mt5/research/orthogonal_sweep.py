@@ -116,17 +116,79 @@ def _tape_series(symbol: str, index):
     return spread.reindex(index).ffill(), flow.reindex(index).ffill()
 
 
-def _macro_series(index):
+#: FRED series usable WITHOUT vintages: market-observed daily prints whose publication lag is a
+#: day. The monthly economic releases in the same file (UNRATE, CPIAUCSL, PAYEMS, INDPRO, ...) are
+#: deliberately excluded -- their observation DATE precedes publication by weeks, so joining them
+#: on that date conditions a 2019 bar on a number nobody had until 2019+30d. That is the
+#: conditioning-variable look-ahead this desk has already paid for once, and it fails toward a
+#: FALSE POSITIVE, which no gate downstream can catch. They become admissible only through
+#: `data/vintages/` (ALFRED, revision-aware), which currently covers three series.
+DAILY_MACRO_SERIES = ("DTWEXBGS", "DGS10", "DGS2", "T10Y2Y", "VIXCLS", "SOFR", "DFF",
+                      "BAMLH0A0HYM2", "DCOILWTICO")
+#: One day between a print and a bar that may condition on it. Never zero.
+MACRO_PUBLICATION_LAG_D = 1
+#: Observations before a trailing rank means anything. A rank over 20 points is noise wearing a
+#: percentile.
+MACRO_RANK_MIN_OBS = 250
+
+
+def _macro_series(index, name: str | None = None):
+    """A POINT-IN-TIME macro regime series on the bar clock, or None. Never a broadcast scalar.
+
+    WHAT THIS REPLACES (measured 2026-08-28). The old reader took `desks/mt5/data/macro_state.json`
+    and kept its top-level scalars -- but that file is nested (`updated`/`series`/`states`/
+    `differentials`), so there were none, it returned None, and `macro_conditional` ran with
+    `macro=None` and produced zero signals on all 297 symbols. That zero was filed as
+    `no-signals (a macro state series)`, which reads as "the desk has no macro data" while
+    `data/fred_macro.json` held 22 dated series and the FRED collector was appending to it daily.
+
+    AND THE FALLBACK WAS WORSE THAN THE FAILURE. Had a top-level scalar existed, the reader would
+    have broadcast TODAY's value across every bar in history: constant, so `macro > regime_high`
+    puts every bar in one regime and the family degenerates to unconditional -- and it applies a
+    2026 macro reading to a 2019 bar, which is a look-ahead in the conditioning variable.
+
+    The regime is a TRAILING PERCENTILE RANK: each point ranked only against its own past, so the
+    value is in [0,1] around the family's own 0.5 threshold and no future observation touches it.
+    The series is then lagged by a publication day and forward-filled onto the bar clock, so a bar
+    is conditioned only on prints that existed before it.
+    """
     import pandas as pd
-    doc = _read(BASE / "data" / "macro_state.json")
-    if not isinstance(doc, dict):
+    doc = _read(BASE.parent.parent / "data" / "fred_macro.json")
+    series_map = (doc or {}).get("series")
+    if not isinstance(series_map, dict):
         return None
-    pairs = [(k, v) for k, v in doc.items() if isinstance(v, (int, float))]
-    if not pairs:
+    for key in ((name,) if name else DAILY_MACRO_SERIES):
+        rows = series_map.get(key)
+        if not isinstance(rows, list) or len(rows) < MACRO_RANK_MIN_OBS:
+            continue
+        try:
+            stamps = pd.to_datetime([r[0] for r in rows], utc=True, errors="coerce")
+            values = pd.to_numeric([r[1] for r in rows], errors="coerce")
+        except (TypeError, IndexError, ValueError):
+            continue
+        s = pd.Series(values, index=stamps).dropna().sort_index()
+        s = s[~s.index.duplicated(keep="last")]
+        if len(s) < MACRO_RANK_MIN_OBS:
+            continue
+        rank = s.expanding(min_periods=MACRO_RANK_MIN_OBS).rank(pct=True).dropna()
+        if rank.empty:
+            continue
+        rank.index = rank.index + pd.Timedelta(days=MACRO_PUBLICATION_LAG_D)
+        out = rank.reindex(rank.index.union(index)).ffill().reindex(index)
+        return out if out.notna().sum() >= MACRO_RANK_MIN_OBS else None
+    return None
+
+
+def _macro_series_name() -> str | None:
+    """Which series `_macro_series` will pick -- recorded in the candidate's identity so the
+    gauntlet rebuilds the SAME conditioning variable rather than whatever is first today."""
+    doc = _read(BASE.parent.parent / "data" / "fred_macro.json")
+    series_map = (doc or {}).get("series")
+    if not isinstance(series_map, dict):
         return None
-    # A single scalar state is still a conditioning variable; broadcast it so the family can run
-    # and the gauntlet can judge whether conditioning on it helps.
-    return pd.Series(float(pairs[0][1]), index=index)
+    return next((k for k in DAILY_MACRO_SERIES
+                 if isinstance(series_map.get(k), list)
+                 and len(series_map[k]) >= MACRO_RANK_MIN_OBS), None)
 
 
 @lru_cache(maxsize=32)
@@ -378,7 +440,12 @@ def sweep() -> dict:
             "pca_residual": {"factor_symbols": factor_names},
             "liquidity_regime": {"input_source": "fusion_tick_tape"},
             "orderflow_imbalance": {"input_source": "fusion_tick_tape"},
-            "macro_conditional": {"input_source": "macro_state"},
+            # THE SERIES, NOT "macro_state". `input_source: macro_state` named a file the reader
+            # no longer uses and did not say WHICH quantity conditioned the cell, so the gauntlet
+            # could not rebuild the same candidate.
+            "macro_conditional": {"input_source": f"fred:{_macro_series_name()}",
+                                  "transform": "trailing_pct_rank",
+                                  "publication_lag_d": MACRO_PUBLICATION_LAG_D},
             "cot_positioning": {"input_source": "cot_point_in_time"},
             "event_reaction": {"input_source": "ff_calendar_vintage"},
         }

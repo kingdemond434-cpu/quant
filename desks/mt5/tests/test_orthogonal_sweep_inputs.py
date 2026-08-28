@@ -149,6 +149,58 @@ def test_every_family_needing_an_input_is_wired_to_one() -> None:
         f"symbol and it reads as a data gap: {unwired}")
 
 
+def test_the_macro_regime_is_a_series_not_a_broadcast_scalar() -> None:
+    """The old reader broadcast one scalar over all history: constant, and dated in the future.
+
+    Constant means `macro > regime_high` puts every bar in one regime and the family degenerates
+    to unconditional. Dated in the future means a 2019 bar conditioned on a 2026 reading -- the
+    conditioning-variable look-ahead, which fails toward a FALSE POSITIVE that nothing downstream
+    catches. Both are pinned here because the second is invisible in any output.
+    """
+    import pandas as pd
+
+    idx = pd.date_range("2024-06-01", "2026-08-01", freq="1h", tz="UTC")
+    series = osw._macro_series(idx)
+    if series is None:
+        pytest.skip("data/fred_macro.json unavailable in this tree -- UNMEASURED, not a pass")
+
+    valid = series.dropna()
+    assert len(valid) > 250, "a regime series needs history to rank against"
+    assert valid.nunique() > 10, "a broadcast scalar has exactly one value; this must vary"
+    assert 0.0 <= float(valid.min()) and float(valid.max()) <= 1.0, (
+        "the family compares against regime_high=0.5, so the transform must land in [0,1]")
+    assert 0.02 < float((valid > 0.5).mean()) < 0.98, (
+        "a regime variable that is always on one side of the threshold conditions nothing")
+
+
+def test_the_macro_regime_has_no_look_ahead() -> None:
+    """Truncate the bar index early: a past bar's value may not move when later bars exist."""
+    import pandas as pd
+
+    full_idx = pd.date_range("2024-06-01", "2026-08-01", freq="1h", tz="UTC")
+    full = osw._macro_series(full_idx)
+    if full is None:
+        pytest.skip("data/fred_macro.json unavailable in this tree -- UNMEASURED, not a pass")
+    early = osw._macro_series(full_idx[full_idx < "2025-06-01"])
+    assert early is not None
+
+    common = early.dropna().index.intersection(full.dropna().index)
+    assert len(common) > 500, "control needs overlap to be worth anything"
+    assert float((early.reindex(common) - full.reindex(common)).abs().max()) == 0.0, (
+        "a value changed when future observations were added -- the rank is looking ahead")
+
+
+def test_the_macro_series_is_lagged_behind_its_own_print() -> None:
+    """A print dated D is not knowable at D's open; zero lag is a same-bar leak."""
+    assert osw.MACRO_PUBLICATION_LAG_D >= 1
+    # Monthly releases must stay out until vintages cover them: their observation date precedes
+    # publication by weeks, which no lag constant can repair.
+    for monthly in ("UNRATE", "CPIAUCSL", "PAYEMS", "INDPRO", "CPILFESL", "UMCSENT"):
+        assert monthly not in osw.DAILY_MACRO_SERIES, (
+            f"{monthly} is published weeks after its observation date; joining it on that date "
+            f"conditions a bar on a number nobody had")
+
+
 def test_every_declared_exclusion_carries_its_reason() -> None:
     """A silent exclusion is the same defect as a silent zero, one indirection further out."""
     from mt5desk.families_orthogonal import ORTHOGONAL_FAMILIES
