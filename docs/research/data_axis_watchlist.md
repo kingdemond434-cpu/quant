@@ -7292,3 +7292,20 @@ auction panel — I found by accident while probing robots.txt on six hosts, and
 it, which is the correct order but leaves the run's best lead unconverted. Verified small beats
 unverified impressive.
 
+
+## 2026-08-28 — FREE-DATA run (r) — SESSION NOTE (written FIRST; updated as items resolve)
+
+Backlog: clear (0 pending verification; all remaining items deferred to 2026-09-01+). Resuming
+run (q)'s named next-ground, items 1 and 2.
+
+**Items taken this run:**
+1. **SCREEN the Bank of Canada auction panel vs USDCAD** — run (q)'s biggest unscreened lead.
+   Announced size / bid-to-cover / tail around the 10:30 ET deadline, against the desk's own D1
+   USDCAD tape. Dedup by `AVG_YIELD is not null` (the 2022-02-02 row-doubling break). Report
+   EVERY cell, and run the lag-0 contemporaneous control — two consecutive runs have had all
+   their significance in the untradable bar.
+2. **The keyless-central-bank-API class, next two doors: `api.nbp.pl` (PLN) and `www.cbr.ru`
+   (RUB)** — both probed robots-clear last run, both unopened. Verify against a second door.
+3. If 1 and 2 close: SWEA curve SLOPE arm (2Y/5Y/7Y/10Y), untested — run (q) tested level only.
+
+Status: IN PROGRESS.
