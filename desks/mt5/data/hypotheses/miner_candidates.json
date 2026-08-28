@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-28T05:07:48+00:00",
+ "compiled_at": "2026-08-28T06:08:39+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -178,7 +178,7 @@
    "deepening": 28
   },
   "central_bank": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
    "deepening": 13
   },
@@ -268,9 +268,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 34,
+   "rows": 35,
    "candidates": 0,
-   "deepening": 34
+   "deepening": 35
   },
   "litefinance": {
    "rows": 15,
@@ -297,24 +297,19 @@
    "candidates": 0,
    "deepening": 18
   },
-  "arxiv": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
   "scheduled_chatgpt": {
    "rows": 3,
    "candidates": 3,
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 7,
    "candidates": 0,
-   "deepening": 10
+   "deepening": 7
   }
  },
- "rows_accounted": 880,
+ "rows_accounted": 876,
  "executable_candidates": 12,
- "deepening_tasks": 832,
+ "deepening_tasks": 831,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

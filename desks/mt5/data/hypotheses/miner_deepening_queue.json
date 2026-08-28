@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T05:07:48+00:00",
+ "built_at": "2026-08-28T06:08:39+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3618,7 +3618,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion AUDCHF swap long=3.67 short=-9.05 diff=+12.7200",
+   "source_title": "fusion AUDCHF swap long=4.04 short=-9.86 diff=+13.9000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -3631,7 +3631,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion AUDHUF swap long=-1267.61 short=313.57 diff=-1581.1800",
+   "source_title": "fusion AUDHUF swap long=-1222.83 short=276.96 diff=-1499.7900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -3644,7 +3644,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion AUDJPY swap long=5.52 short=-13.0 diff=+18.5200",
+   "source_title": "fusion AUDJPY swap long=5.54 short=-13.02 diff=+18.5600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4016,7 +4016,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion CADCHF swap long=1.52 short=-5.49 diff=+7.0100",
+   "source_title": "fusion CADCHF swap long=1.88 short=-6.14 diff=+8.0200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4029,7 +4029,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion CADJPY swap long=1.55 short=-6.01 diff=+7.5600",
+   "source_title": "fusion CADJPY swap long=1.44 short=-5.78 diff=+7.2200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4081,7 +4081,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion CHFNOK swap long=-191.48 short=82.77 diff=-274.2500",
+   "source_title": "fusion CHFNOK swap long=-198.72 short=86.19 diff=-284.9100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4165,7 +4165,7 @@
   {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion COTTON swap long=-25.2 short=7.3 diff=-32.5000",
+   "title": "fusion COTTON swap long=-25.48 short=7.13 diff=-32.6100",
    "url": "mt5://symbol_info",
    "symbols": [],
    "mechanism_tags": []
@@ -4503,7 +4503,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURHKD swap long=-54.09 short=-11.88 diff=-42.2100",
+   "source_title": "fusion EURHKD swap long=-67.38 short=0.23 diff=-67.6100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4516,7 +4516,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURHUF swap long=-4784.0 short=1572.59 diff=-6356.5900",
+   "source_title": "fusion EURHUF swap long=-4671.77 short=1519.04 diff=-6190.8100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4555,7 +4555,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURMXN swap long=-405.93 short=99.81 diff=-505.7400",
+   "source_title": "fusion EURMXN swap long=-398.99 short=96.44 diff=-495.4300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4581,7 +4581,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURNZD swap long=-5.11 short=-0.92 diff=-4.1900",
+   "source_title": "fusion EURNZD swap long=-5.88 short=-0.08 diff=-5.8000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4594,7 +4594,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURPLN swap long=-42.73 short=1.21 diff=-43.9400",
+   "source_title": "fusion EURPLN swap long=-68.07 short=-20.23 diff=-47.8400",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4659,7 +4659,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURUSD swap long=-6.45 short=2.69 diff=-9.1400",
+   "source_title": "fusion EURUSD swap long=-7.16 short=3.04 diff=-10.2000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4672,7 +4672,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion EURZAR swap long=-418.88 short=65.62 diff=-484.5000",
+   "source_title": "fusion EURZAR swap long=-401.07 short=58.36 diff=-459.4300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4849,7 +4849,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion GBPNZD swap long=1.56 short=-12.96 diff=+14.5200",
+   "source_title": "fusion GBPNZD swap long=1.19 short=-12.12 diff=+13.3100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5102,7 +5102,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion JPN225 swap long=-3.12 short=-1.08 diff=-2.0400",
+   "source_title": "fusion JPN225 swap long=-3.13 short=-1.07 diff=-2.0600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5374,7 +5374,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion NZDHUF swap long=-2234.7 short=637.25 diff=-2871.9500",
+   "source_title": "fusion NZDHUF swap long=-2109.03 short=599.56 diff=-2708.5900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5413,7 +5413,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion NZDUSD swap long=-2.94 short=0.67 diff=-3.6100",
+   "source_title": "fusion NZDUSD swap long=-3.02 short=0.58 diff=-3.6000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5613,7 +5613,7 @@
   {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion SUGARRAW swap long=-7.92 short=3.01 diff=-10.9300",
+   "title": "fusion SUGARRAW swap long=-8.0 short=2.98 diff=-10.9800",
    "url": "mt5://symbol_info",
    "symbols": [],
    "mechanism_tags": []
@@ -5769,7 +5769,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion UK100 swap long=-6.02 short=1.65 diff=-7.6700",
+   "source_title": "fusion UK100 swap long=-6.02 short=1.6400000000000001 diff=-7.6600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5827,7 +5827,7 @@
   {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion USCOCOA swap long=-183.58 short=3.59 diff=-187.1700",
+   "title": "fusion USCOCOA swap long=-186.19 short=3.5 diff=-189.6900",
    "url": "mt5://symbol_info",
    "symbols": [],
    "mechanism_tags": []
@@ -5866,7 +5866,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDCHF swap long=4.52 short=-11.17 diff=+15.6900",
+   "source_title": "fusion USDCHF swap long=5.03 short=-12.36 diff=+17.3900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5918,7 +5918,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDHKD swap long=-9.57 short=-46.36 diff=+36.7900",
+   "source_title": "fusion USDHKD swap long=-16.58 short=-39.58 diff=+23.0000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5970,7 +5970,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDINR swap long=-272.58 short=-42.46 diff=-230.1200",
+   "source_title": "fusion USDINR swap long=-480.08 short=-42.45 diff=-437.6300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5983,7 +5983,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDJPY swap long=6.35 short=-16.4 diff=+22.7500",
+   "source_title": "fusion USDJPY swap long=7.13 short=-18.12 diff=+25.2500",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6009,7 +6009,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDMXN swap long=-257.71 short=45.1 diff=-302.8100",
+   "source_title": "fusion USDMXN swap long=-242.15 short=37.98 diff=-280.1300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6022,7 +6022,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDNOK swap long=-38.97 short=-7.99 diff=-30.9800",
+   "source_title": "fusion USDNOK swap long=-34.4 short=-12.55 diff=-21.8500",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6087,7 +6087,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDTHB swap long=38.0 short=-1406.45 diff=+1444.4500",
+   "source_title": "fusion USDTHB swap long=7.68 short=-505.62 diff=+513.3000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6126,7 +6126,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion USDZAR swap long=-273.99 short=17.82 diff=-291.8100",
+   "source_title": "fusion USDZAR swap long=-249.93 short=7.76 diff=-257.6900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6213,7 +6213,7 @@
   {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion WHEAT swap long=-20.82 short=5.93 diff=-26.7500",
+   "title": "fusion WHEAT swap long=-20.88 short=5.9 diff=-26.7800",
    "url": "mt5://symbol_info",
    "symbols": [],
    "mechanism_tags": []
@@ -6273,7 +6273,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XAGUSD swap long=-11.19 short=0.1 diff=-11.2900",
+   "source_title": "fusion XAGUSD swap long=-10.99 short=0.09 diff=-11.0800",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6299,7 +6299,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XAUAUD swap long=-93.09 short=51.17 diff=-144.2600",
+   "source_title": "fusion XAUAUD swap long=-95.1 short=52.52 diff=-147.6200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6312,7 +6312,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XAUEUR swap long=-34.5 short=17.67 diff=-52.1700",
+   "source_title": "fusion XAUEUR swap long=-35.46 short=17.3 diff=-52.7600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6325,7 +6325,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XAUUSD swap long=-66.16 short=32.21 diff=-98.3700",
+   "source_title": "fusion XAUUSD swap long=-67.06 short=32.75 diff=-99.8100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6338,7 +6338,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XBRUSD swap long=24.82 short=-54.89 diff=+79.7100",
+   "source_title": "fusion XBRUSD swap long=31.86 short=-66.7 diff=+98.5600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6351,7 +6351,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XCUUSD swap long=0.0 short=-2186.4 diff=+2186.4000",
+   "source_title": "fusion XCUUSD swap long=0.0 short=-2651.64 diff=+2651.6400",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6455,7 +6455,7 @@
    },
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
-   "source_title": "fusion XZNUSD swap long=0.0 short=-764.04 diff=+764.0400",
+   "source_title": "fusion XZNUSD swap long=0.0 short=-1269.48 diff=+1269.4800",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6485,6 +6485,86 @@
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "bipbopcompany-droid/Risk-Nexus-Command",
+   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "motional-tammy18/systematic-trading-framework",
+   "url": "https://github.com/motional-tammy18/systematic-trading-framework",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Aljawa831/MT5-MT4-Close-Orders-Script",
+   "url": "https://github.com/Aljawa831/MT5-MT4-Close-Orders-Script",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "mdarcshuvo/programming-advisor",
+   "url": "https://github.com/mdarcshuvo/programming-advisor",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
   },
   {
    "source": "github_topics",
@@ -6529,80 +6609,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "7skooooo/mql5-systems-mirror",
-   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Confluence-Signal-Matrix",
-   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "title": "Dasymetertrenchfever480/mt5-service-shade",
+   "url": "https://github.com/Dasymetertrenchfever480/mt5-service-shade",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6617,16 +6633,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "DEVfancybear/MarketLens",
-   "url": "https://github.com/DEVfancybear/MarketLens",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
+   "title": "Infini8y/Apex-Trading",
+   "url": "https://github.com/Infini8y/Apex-Trading",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6635,6 +6643,22 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "jingling-gingerbeer626/decentralized-forex-broker",
+   "url": "https://github.com/jingling-gingerbeer626/decentralized-forex-broker",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6989,6 +7013,14 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@TrustTrade",
+   "url": "https://my.litefinance.org/traders/TrustTrade",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Fire_Phoenix",
    "url": "https://my.litefinance.org/traders/Fire_Phoenix",
    "symbols": [],
@@ -7023,14 +7055,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@PRIME500",
    "url": "https://my.litefinance.org/traders/PRIME500",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Eshaghtrader",
-   "url": "https://my.litefinance.org/traders/Eshaghtrader",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -8646,14 +8670,6 @@
    "mechanism_tags": []
   },
   {
-   "source": "arxiv",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
-   "url": "https://arxiv.org/abs/2608.27423v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Second Setup XAUUSD",
@@ -8931,40 +8947,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Two Sigma has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Millennium has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Baupost has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Soros has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",

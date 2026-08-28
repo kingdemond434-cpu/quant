@@ -6143,5 +6143,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"e12b45e1a4d3e7ef": {
+"t0": "2026-08-28T06:24:37+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Blue_Dragon",
+"url": "https://my.litefinance.org/traders/Blue_Dragon",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T06:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 130.04
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
