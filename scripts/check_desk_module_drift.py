@@ -125,6 +125,13 @@ MODULES = [
     # engines RESEARCH 6d already carries as a standing defect.
     "desks/mt5/research/sleeve_registry.py",
     "desks/mt5/research/scalp_shadow.py",
+    # THE MOAT PAIR. Both run on the box (they read C:\moat\bronze and write the tape summary
+    # this box then pulls), so a fix committed here is INERT until it ships -- which is the
+    # failure this whole list exists to stop. moat_miner just had its alphabetical-prefix
+    # selection replaced with a rotation cursor: 40 of 245 tick symbols were being re-mined
+    # every run and 205 had never been mined at all.
+    "desks/mt5/moat/moat_miner.py",
+    "desks/mt5/moat/moat_silver.py",
 ]
 
 

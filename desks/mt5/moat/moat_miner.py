@@ -43,7 +43,28 @@ STATE = DESK / "data" / "moat_miner_state.json"
 
 LOOKBACK_DAYS = int(os.environ.get("MOAT_LOOKBACK_DAYS", "3"))
 MIN_TICKS = 500              # per (symbol, hour) cell before a stat is allowed to speak
-MAX_SYMBOLS = int(os.environ.get("MOAT_MAX_SYMBOLS", "40"))
+#: PER-RUN COMPUTE BUDGET, NOT A LIMIT ON WHAT IS MINED. Every run takes the next SLICE_SYMBOLS
+#: symbols from a persisted rotation cursor and the cursor wraps, so the whole tape is covered in
+#: ceil(n/SLICE) runs and then covered AGAIN on newer ticks, forever (RESEARCH 6c-bis: "coverage
+#: is a CYCLE, not a sweep"). Raising this makes each pass wider, never the ground larger.
+SLICE_SYMBOLS = int(os.environ.get("MOAT_MAX_SYMBOLS", "40"))
+
+
+def _next_slice(symbols: list, cursor: int) -> tuple[list, int]:
+    """Take SLICE_SYMBOLS symbols starting at `cursor`, wrapping, and return the next cursor.
+
+    Wrapping matters as much as advancing: a cursor that stops at the end turns the miner into a
+    one-shot sweep that declares the tape finished, which is absence-read-as-verdict wearing a
+    new costume. Coverage is a CYCLE -- the tape a symbol carries next week is not the tape it
+    carries today, so "already mined" is never a reason to skip it (L1.51).
+    """
+    n = len(symbols)
+    if n == 0:
+        return [], 0
+    start = cursor % n
+    take = min(SLICE_SYMBOLS, n)
+    picked = [symbols[(start + i) % n] for i in range(take)]
+    return picked, (start + take) % n
 
 
 def _read(p: Path, default):
@@ -159,7 +180,20 @@ def main() -> int:
         print(f"moat miner: no tape at {tick_root} -- nothing to mine (recorder not running?)")
         return 0
     profiles = []
-    syms = sorted([d for d in tick_root.iterdir() if d.is_dir()])[:MAX_SYMBOLS]
+    # THE ROTATION CURSOR. This was `sorted(...)[:MAX_SYMBOLS]` -- a fixed ALPHABETICAL PREFIX
+    # with no cursor, so of 245 recorded symbols the same first 40 were re-mined every run and
+    # 205 (83.7%) were never mined at all and never would be: on alphabetical order that is
+    # every metal, every index, energy, softs and all but a handful of FX crosses. Measured
+    # 2026-08-28 from the box's own state: symbols_profiled 40, tick dirs 245.
+    #
+    # Two laws, one line. The sealed core: "a count is a quota in disguise and a quota acts as a
+    # CEILING -- rank-and-truncate is the same defect wearing an ordering", and under-exploration
+    # of owned data is a BREACH, not a backlog. RESEARCH 6c-bis: the searcher carries a cursor,
+    # each run covers a budgeted slice, and every symbol is re-searched on newer ticks forever.
+    # This is also the SECOND sighting of this exact class -- `orthogonal_sweep` was pairing
+    # XAUUSD with 3M off `sorted()[:12]` -- so it is fenced by a test, not just corrected.
+    all_syms = sorted(d for d in tick_root.iterdir() if d.is_dir())
+    syms, cursor = _next_slice(all_syms, _read(STATE, {}).get("cursor", 0))
     for d in syms:
         prof = mine_symbol(d.name, load_ticks(d, LOOKBACK_DAYS))
         if prof:
@@ -177,10 +211,18 @@ def main() -> int:
     if added:
         queue.extend(added)
         QUEUE.write_text(json.dumps(queue, indent=1), "utf-8")
+    # The cursor is persisted even when a slice profiles nothing: a symbol whose ticks were too
+    # thin to speak must not pin the cursor and starve every symbol behind it.
     STATE.write_text(json.dumps({"last_mined": now.isoformat(timespec="seconds"),
                                  "symbols_profiled": len(profiles),
-                                 "hypotheses_added": len(added)}, indent=1), "utf-8")
-    print(f"moat miner: {len(profiles)} symbols profiled from own tape, "
+                                 "hypotheses_added": len(added),
+                                 "cursor": cursor,
+                                 "symbols_available": len(all_syms),
+                                 "slice": len(syms),
+                                 "runs_per_full_pass": -(-len(all_syms) // max(1, SLICE_SYMBOLS)),
+                                 }, indent=1), "utf-8")
+    print(f"moat miner: {len(profiles)} symbols profiled from own tape "
+          f"(slice {len(syms)}/{len(all_syms)}, cursor -> {cursor}), "
           f"{len(added)} hypotheses queued for the gauntlet")
     return 0
 
