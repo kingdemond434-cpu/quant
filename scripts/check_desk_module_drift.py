@@ -61,6 +61,28 @@ MODULES = [
     "libs/validation/reality_check.py",
     "libs/validation/pbo.py",
     "libs/validation/bootstrap.py",
+    # THE REST OF THE GAUNTLET'S IMPORT CLOSURE. The list above was hand-typed from whatever was
+    # being fixed the day the deploy path was built (2026-08-27), which is why reality_check --
+    # central to certification -- sat six weeks stale on the box, at the 2026-07-16 baseline,
+    # invisible to every sync because no list named it. A watchlist that does not follow the
+    # import graph will always be missing exactly the module nobody thought about.
+    # Derived by walking `external_gauntlet`'s imports; re-derive it when the graph changes.
+    "libs/validation/dsr.py",
+    "libs/validation/cpcv.py",
+    "libs/validation/walk_forward.py",
+    "libs/validation/revalidation.py",
+    "libs/validation/errors.py",
+    "libs/core/errors.py",
+    "libs/core/time.py",
+    "libs/self_improvement/models.py",
+    "desks/mt5/mt5desk/canonical.py",
+    "desks/mt5/research/frontier_identity.py",
+    # The gate POLICY and the spec it reads. The box was running the pre-YAML loader while the
+    # spec beside it was already the current one; both must move together or the loader reads a
+    # file it does not expect. Safe to heal automatically only because this ships nothing that
+    # differs from HEAD -- an unreviewed local edit can never reach certification this way.
+    "desks/mt5/research/gate_policy.py",
+    "desks/mt5/policy/gate_spec.yaml",
 ]
 
 
