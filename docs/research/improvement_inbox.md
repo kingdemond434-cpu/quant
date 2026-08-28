@@ -3861,3 +3861,27 @@ turns an unmeasurable family into a measurable one.
    every stat-search page is Shift_JIS; my first extraction returned zero series codes from a page
    holding seventeen, with exit 0. Standing rule, now paid for a second time: read non-UTF-8 corpora
    with python and an explicit codec, never with bare `grep`.
+
+## 2026-08-28 (l) — free-data-alternatives miner, method findings
+
+1. **A malformed SDMX key returns HTTP 200 with an XML error body.** `stats.bis.org/api/v2/.../D..`
+   (two dots on a two-dimension key) → 200 + `<message:Error code="100">No results for query`.
+   Any collector that checks `status_code == 200` and then CSV-parses records this as a clean empty
+   result — the exact silently-empty-collector class the prospector seat carded on 2026-08-28 (s11).
+   **Rule: assert the expected HEADER ROW, never the status code, on every SDMX/CSV endpoint.**
+2. **DBnomics `/v22/datasets/<provider>` defaults to `limit=50`.** RBA has 167. Read `num_found` from
+   the response `_meta`-adjacent block on every paginated catalogue call. (My own error this run —
+   I reported "50 datasets" and the F-series I actually wanted was in the tail.)
+3. **HuggingFace `datasets-server.huggingface.co/filter` answers SQL-ish `where` clauses keyless.**
+   A 68 MB dataset was verified against ground truth without downloading a byte. This should be the
+   DEFAULT verification route for every HF dataset this desk cards; downloading first is the
+   expensive path and we have been taking it.
+4. **A community dataset's timestamps inherit the UPLOADER's timezone, including its DST history.**
+   `Ehsanrs2/Forex_Factory_Calendar` is stamped Tehran (+03:30) and still applies Iranian DST
+   (+04:30) three years after Iran abolished it, plus defaults missing times to local midnight.
+   **Any imported event calendar needs a clock cross-check against an official release schedule
+   before it keys an event study** — 15% of the rows tested were wrong by 1h or 8h50m.
+5. **Liveness on a wide panel is the last period where the MAJORITY of series report** (run-(j) rule,
+   applied twice more this run and it worked both times). Corollary added: 294 of 8,783 BoJ FoF
+   series stop at 2007Q3 — **a per-series last-observation histogram also surfaces DEAD series that
+   a last-value loader reads as live.**

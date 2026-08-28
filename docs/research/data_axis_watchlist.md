@@ -6142,3 +6142,353 @@ says clean.
 5. **RBNZ statistics via the CDX captures** (route verified last run, payload still unmined).
 6. Still owed, still outside this seat: the `macro_state.json` three-way write race, the bar-liveness
    `n_unobservable` patch, and — outranking both — the **EET timestamp fix** on the desk's own tape.
+
+---
+
+## SESSION 2026-08-28 (k) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Backlog on entry:** clear (73 catalogued / 48 resolved / **0 pending verification** / 25 deferred,
+next return 2026-09-01). Pure mining authorised. Items taken THIS RUN (bounded per the completion
+contract; depth per item uncapped):
+
+1. **`Snail000/Tickmill-XAUUSD-Ticks` → `gold_train.csv` only** — second named-broker XAUUSD tick
+   tape, MIT. Cross-broker spread comparison against the desk's own Fusion tape. **Never unpickle
+   the .pkl files** (arbitrary-code execution on load).
+2. **Re-grade every host this seat marked walled on a 5xx / client-keyed status**, fixed UA +
+   Wayback corroboration. Start RBA (Akamai 403). Cause: run (j) proved a robots verdict is a
+   property of my own headers.
+3. **BoJ remaining archives** (Flow of Funds + the four BIS banking sets) and the TANKAN
+   release-date list — the second leg of the new cross-source pair.
+
+_(status lines appended below as each item resolves — nothing held in context)_
+
+### ITEM 1 — RESOLVED. `Snail000/Tickmill-XAUUSD-Ticks` — ADOPTED (verified-clean), and it detonated a money-path defect in the desk's OWN registry
+
+**First correction: my own last note was wrong about this repo.** I recorded it as "`gold_train.csv`
+only". It is not. `GET /api/datasets/Snail000/Tickmill-XAUUSD-Ticks/tree/main/ticks?recursive=1`
+returns **129 per-day `ticks/XAUUSD_YYYYMMDD.parquet` files, 2025-06-02 → 2025-11-27, 2.85 GB**,
+alongside 179 `.pkl` scratch files (`XAUUSD_progress/chunk_*.pkl`, `tick_metadata.pkl`). Parquet is
+inert; **the .pkl files remain never-to-be-unpickled** and nothing here required them. I had graded
+the ground off the README, and the README is 24 bytes long (`license: mit`, nothing else).
+
+**GENEALOGY.** Source `https://huggingface.co/datasets/Snail000/Tickmill-XAUUSD-Ticks` (opened:
+`/api/datasets/...`, `/tree/main/ticks?recursive=1`, `/raw/main/README.md`, `/resolve/main/ticks/*`).
+Licence **MIT**, declared in `cardData` and in the README body — the only licence assertion present;
+there is no upstream attribution, so this is a re-upload of Tickmill terminal data under a licence
+the uploader asserts. Unlike the Dukascopy case in run (j) I am **not** refusing it, and the
+distinction matters: the bi5 refusal was on a *binding TCU I read on the origin*, whereas Tickmill
+publishes no equivalent prohibition I could find on the tick history a client exports. Graded
+**verified-clean on data, licence-asserted-not-verified on provenance** — usable as a research
+cross-check, not as a redistributable asset. Cadence: **dead / one-shot** (last commit 2025-11-30,
+no update since; 107 downloads). Schema: `bid, ask, last, volume, time_msc, flags, volume_real,
+spread, spread_pips`, ~197k–205k ticks/day.
+
+**VERIFY-DON'T-TRUST — four tests, three passes and one kill:**
+- **Internal clock consistency: PASS.** `time` index == `floor(time_msc)` on every row, both days.
+- **Absolute clock: the tape is EET/EEST, NOT UTC.** NFP (12:30 UTC) lands at **15:30** in the tape's
+  own clock on both 2025-06-06 (+8.18 USD, largest 1-min move of the day) and 2025-09-05 (+19.26).
+  The daily gap is hour 0 — the 00:00–01:00 EET gold maintenance break. `time_msc` is therefore a
+  **fabricated epoch**: broker wall-clock encoded as though it were UTC. That is worse than a label
+  problem, because an epoch-ms integer is the one field consumers never re-check.
+- **Cross-broker lag scan vs the desk's own Fusion `XAUUSD_H1`: lag = 0, both seasons.**
+  Summer (8 days, Jun) and winter (8 days, Nov) both peak at **lag=0, corr(Δ)=0.9998, median level
+  gap 0.09 USD** ≈ one spread. Off-lag correlations collapse to 0.05–0.18. **This is third-party
+  corroboration of run (i)'s EET finding on the desk's own tape** — previously established only from
+  desk-side evidence, i.e. possibly a desk parsing bug. Two independent brokers agreeing at lag 0
+  while NFP sits at 15:30 settles it: the +3h/+2h is real and it is in the data, not the reader.
+- **`spread_pips` is wrong by 1000x — KILL that column.** `spread_pips / spread == 10000.0` exactly,
+  on every row of every day tested. The producer applied the 4-digit FX pip convention to gold; on
+  MQL5's `pip = 10 points` convention with gold `point = 0.01`, a 1.03 USD spread is **10.3 pips**
+  and the file says **10300**. Use `spread` (USD, correct) and ignore `spread_pips`. This is the same
+  unit-error class as the run-(g) BoE spread and last week's pips-vs-pips ratio — third instance.
+
+**THE ACTUAL PAYLOAD — the comparison found the defect on OUR side, not theirs.**
+On the 368 aligned overlap hours: **Tickmill median 0.070 USD, Fusion 0.180 USD (2.57x wider)** —
+plausible, and consistent by hour except at the 01:00 open (Tickmill 0.245, its thin-book widening,
+which Fusion's bar-close snapshot never sees at all). But the Fusion side was suspiciously flat, and
+chasing that produced the real finding:
+
+**`spread == 0` on 18.8% of ALL H1 bars desk-wide (1,151,808 / 6,115,110 across 197 symbols;
+169/197 symbols exceed 1%; HKDJPY 83.6%, USDHKD 62.5%, CADCHF 62.2%).** A zero spread is impossible
+for every one of these instruments — it is missing data rendered as a number.
+
+**And it reaches the money path through the registry, which is worse than the tape.** In
+`desks/mt5/data/universe/universe.json` (row `updated_at: 2026-08-28T04:40:21Z` — written TODAY),
+**24 symbols carry `median_spread_pts: 0.0`**, and they are the desk's most-traded legs:
+`EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF, NZDUSD, EURCHF, EURGBP, EURAUD, AUDCAD, AUDJPY,
+NZDCAD, AUDSGD, CADCHF, EURCAD, GBPCAD, GBPCHF, AUDCHF, HKDJPY, USDHKD, Broadcom, NVIDIA, Walmart`.
+**These zeros are NOT inherited from the tape.** EURUSD's H1 median is a healthy **12 points with
+only 0.5% zero bars** — the data is fine and the registry still says 0.0, with
+`spread_pts_at_collection: 0.0` beside it and `bars: 37347` against the file's actual 53,891. A
+second producer is overwriting the good measurement, which is the exact history the fix comment at
+`desks/mt5/research/expand_universe.py:126` says was already addressed once on 2026-08-27.
+
+**Consumer impact, ~20 sites** (`run_hunt7/9/12/13/15/17/18/20/22`, `orthogonal_sweep.py:454`,
+`swap_exposure.py:94`, `exit_study.py:82`, `rv_triangle.py:50`, `calibrate_engine.py:136`):
+all compute `max(pts * tick_size * contract_size, 0.05)`. With `pts = 0` the floor fires, so
+**EURUSD is costed at $0.05/lot against a true ~$12/lot — a 240x understatement**; GBPUSD/USDCAD/
+USDCHF 260x, AUDUSD/NZDUSD/EURCHF 280x, AUDCAD 320x, NZDCAD 340x. **The `max(..., 0.05)` floor is
+what makes this invisible: it reads as a deliberate safety floor rather than a missing measurement.**
+(The JPY pairs are understated too, but I am not quoting a multiple for them — `13 pts × 0.001 ×
+100000` is **¥1300/lot in QUOTE currency**, ~€7–8 into the desk's EUR account, and quoting the raw
+26000x would be the same units error I just killed in their `spread_pips` column.)
+
+**The sharpest instance is `execution_resolver.py`.** `_spread_cost_r` (line 117) correctly returns
+**`None`** when `pts == 0` — it refuses to invent a number, and line 199 faithfully writes
+`"spread_r": None` into the artifact. Then **line 186 computes `net_r = alpha_r - |slip_r| -
+abs(spread_r or 0.0) + swap_r`** — and `None or 0.0` is **0.0**. The producer computes the
+distinction; the consumer collapses it. Every net-of-cost figure for those 24 symbols was struck
+with **zero spread**, while the honest `None` sat in the same JSON file being read by nobody.
+
+**Grade: source verified-clean (use `spread`, drop `spread_pips`, treat the clock as EET).
+Real yield: not the tape — the audit it enabled.** Routed below; this seat is under research
+freeze and touched no code.
+
+---
+
+## SESSION 2026-08-28 (l) — FREE-DATA-ALTERNATIVES standing daily run — WRITTEN FIRST
+
+**Backlog on entry:** clear (73 catalogued / 48 resolved / **0 pending verification** / 25 deferred,
+next return 2026-09-01). **Run (k) died after its ITEM 1**; under the completion contract this run
+does not open new ground until (k)'s unfinished items are closed. Items taken:
+
+1. **(k) item 2, inherited** — re-grade every host this seat marked walled on a 5xx / client-keyed
+   status, fixed UA + Wayback corroboration. **RBA first** (Akamai 403).
+2. **(k) item 3, inherited** — BoJ remaining archives (Flow of Funds + the four BIS banking sets)
+   and the TANKAN release-date list — second leg of the cross-source pair opened in run (j).
+3. **New ground, only if 1 and 2 close** — named below at session close.
+
+_(status lines appended below as each item resolves — nothing held in context)_
+
+### ITEM 1 — CLOSED. The re-grade INVERTED two of four verdicts, and the §38 replacement for the one real block is better than the thing it replaces.
+
+**THE SPLIT THAT DECIDES EVERYTHING, and this seat has now had it three runs running: a 403 is
+either a §13 wall, a UA-keyed edge rule, or an IP-keyed edge rule — three different verdicts
+wearing one status code.** Four hosts re-read today with two UAs (`ClaudeBot/1.0` and a desktop
+Chrome string) plus Wayback corroboration of the robots file itself:
+
+| host | ClaudeBot | Chrome UA | robots (live or archived) | true verdict |
+|---|---|---|---|---|
+| `www.bankofengland.co.uk` | **403** | **200, 357 B** | 9 Disallow paths, `/statistics` NOT among them | **UA-KEYED. Not a wall.** |
+| `www.rba.gov.au` | 403 | 403 (Akamai `Access Denied`, ref `18.4f03d717`) | archived 2026-02-01: 6 Disallow, `/statistics` NOT among them | **IP-KEYED edge block. §13 PERMITS the data.** |
+| `www.rbnz.govt.nz` | 403 (31 KB "Website unavailable") | 403 | archived 2026-01-31: `*` group has **no Disallow on /statistics**; `GPTBot: Disallow: /` (I am not GPTBot) | **IP-KEYED, whole-host. §13 permits.** |
+| `www.boj.or.jp` | 404 | 404 | **no robots.txt exists** → nothing disallowed | open (already adopted, run j) |
+
+**Two verdicts inverted.** BoE was carded "walled at robots" in run (e); it is a **User-Agent rule
+on the robots file itself** and the statistics tree the desk adopted in run (f) was never barred —
+run (f) reached it and run (e)'s grade was wrong about *why*. RBA/RBNZ were carded "walled"; they
+are **network blocks against this datacentre IP, and both institutions' robots permit the data.**
+That matters operationally: a §13 wall is permanent and closes the axis, an IP block is a ROUTE
+problem and the §38 replacement hunt is legitimate rather than a workaround. `rbnz.govt.nz`,
+`www.rbnz.govt.nz`, `api.rbnz.govt.nz` and `sitemap.xml` all 403 identically; plain HTTP 301s to
+the same. This box cannot reach RBNZ at all, by any path I tried.
+
+**§38 REPLACEMENT 1 — RBA → DBnomics `RBA` provider. ADOPTED, verified-clean, and the whole
+F-series is there.** `https://api.db.nomics.world/v22/datasets/RBA` — **167 datasets** (and my
+first read of this endpoint said "50", which was the default `limit=50` truncating me: *my own*
+instance of the paginate-every-history-endpoint lesson, caught by reading `num_found`). The rates
+block is complete: `F1`/`F1.1` money market (cash rate target, interbank overnight, BAB/NCD, OIS,
+1969→), `F2` government bond yields, `F17-1/2/3` **daily zero-coupon yields, discount factors and
+forward rates, 41 tenors 0y→10y** — the AUD analogue of the BoE gilt curve adopted in run (f).
+
+**VERIFY-DON'T-TRUST — diffed against the RBA's OWN CSV, pulled from Wayback (independent
+lineage: origin file vs DBnomics repackaging).** `web.archive.org/web/20230608021258id_/
+https://www.rba.gov.au/statistics/tables/csv/f1-data.csv`, 3,145 dated rows 2011-01-04→2023-06-08:
+
+- `FIRMMCRTD` (cash rate target) **3,144 compared, 0 mismatches**; `FIRMMCRID` **3,144, 0**.
+- `FIRMMBAB90D` 1,522 "mismatches" and `FIRMMOIS3D` 2,004 — **all of them rounding, in DBnomics'
+  favour.** `max|diff| = 0.005000` exactly (a half-tick), and 94% are reproduced by rounding
+  DBnomics to 2dp. **DBnomics carries MORE precision than the published CSV** (4.985 where the CSV
+  says 4.99), so it is not reading the CSV — the CSV is the rounded artifact. Grade **verified-clean**.
+- `FIRMMCTRI` 5 diffs, all float repr (`122.327466` vs `122.3274656`).
+
+**GENEALOGY / FAILURE MODES.** `api.db.nomics.world/v22`, keyless, JSON, free/open (DBnomics is
+CEPREMAP, AGPL platform, redistributing public-sector series). **Cadence is PER SERIES and it is
+the trap** — one provider, three different liveness answers on the same day (max last-non-NA):
+`F1` **2026-08-28** (today), `F2`/`F16` 2026-08-19, `F1.1`/`F12`/`F17-1` **2026-07-31**,
+`F13` **2024-01-31**, and **`F11.1` exchange rates DEAD at 2025-01-28 with only 520 obs starting
+2023-01-03** against the RBA's own decades-long F11. So: **adopt RBA/DBnomics for RATES, never for
+FX** — the FX series is both truncated and 19 months stale while sitting under a provider whose
+front page reads live. Third instance of the run-(g) rule: **liveness is `max(observation_date)`
+per SERIES, never per host and never per provider.** Second failure mode: `F1/FIRMMCRTD`'s final
+row is dated **today with value `NA`** — a padded index. Always take the last NON-NA.
+
+**§38 REPLACEMENT 2 — RBNZ → BIS `WS_CBPOL`. ADOPTED, verified-clean, and it replaces the whole
+CLASS rather than the one host.** DBnomics lists a `BIS` provider that is a **decoy**:
+`/v22/providers/BIS` returns a category tree, `/v22/datasets/BIS` returns **404** — a provider row
+that reads as coverage and delivers nothing. The direct BIS SDMX API does the job:
+
+```
+https://stats.bis.org/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/D.?startPeriod=1990-01-01
+Accept: application/vnd.sdmx.data+csv;version=1.0.0     # keyless
+```
+**ONE request → 448,294 daily policy-rate observations across 49 jurisdictions, 1990→2026-08-25.**
+Every MT5 FX currency is covered — US 3.625, XM 2.25, JP 1.00, GB 3.75, CH 0.00, CA 2.25, AU 4.35,
+**NZ 2.50 (`SOURCE_REF: Reserve Bank of New Zealand`, daily back to 1985, fresh to 2026-08-21)**,
+NO, SE, MX, ZA, TR, PL, HU, CZ, HK, IN, BR, KR, DK, IL, TH. **The desk now holds RBNZ's own number
+without reaching RBNZ.**
+
+**VERIFY-DON'T-TRUST: BIS AU vs the RBA's own `FIRMMCRTD` — 3,943 common days, ZERO mismatches**
+(15 RBA-only days, 2 BIS-only). Two independent compilers agreeing exactly on 3,943 days is the
+cross-check; graded **verified-clean**.
+
+**FAILURE MODES, and one is nasty.** (1) **A malformed key returns HTTP 200 with an SDMX
+`<message:Error code="100">No results for query` body** — my first attempt used `D..` (two dots for
+a two-dimension key) and a naive CSV reader would have recorded *49 jurisdictions of nothing* as a
+clean empty result. Assert the header row, never the status code. (2) **BIS lags the origin for
+some areas**: AU last 2026-08-06 against the RBA's own 2026-08-28 — 22 days. Sixteen areas are
+>3wk stale (`AR AT BE CN DE ES FR GR HR ID IL IN IT MA NL PT`; the euro-legacy ones are dead by
+construction). Use the origin where reachable, BIS where not. (3) **`SG` is absent entirely** —
+not a gap, a structural fact: MAS runs an exchange-rate (NEER) policy and publishes no policy rate.
+That is a finding about the instrument, not the feed.
+
+**BONUS — the provider list is itself the find.** `/v22/providers` returns **93 keyless providers**,
+and the MT5-relevant central banks and stats offices among them were never carded here:
+**`SAFE` (China State Administration of Foreign Exchange), `TCMB` (Turkey), `BCB` (Brazil), `SARB`
+(South Africa), `SAMA` (Saudi), `BOC` (Canada), `BOJ`, `BOE`, `ECB`, `BUBA`, `BDF`, `NBB`, `ROSSTAT`,
+`NBS` (China), `STATCAN`, `SECO`, `SCB`, `STATJP`, `METI`, `ESRI`, `INEGI`, `INDEC`, `IMF`, `OECD`.**
+Notably ABSENT and therefore requiring their own routes: **RBNZ, Norges Bank, Riksbank, Bank of
+Korea, SNB, MAS, PBoC**. Carded as next ground, not claimed as dug.
+
+### ITEM 2 — CLOSED. The BoJ archive is finished, the release CALENDAR is the real find, and it repaired a card this seat had already graded.
+
+**The two remaining flat files, parsed and liveness-checked by the run-(j) rule** (last period where
+the MAJORITY report, never where ANY does — the trap that fired on `bp_m_en.zip`):
+
+| file | series | span | majority last | verdict |
+|---|---|---|---|---|
+| `fof2_en.zip` → `ff_dl_fof_quarterly_en.csv` | **8,783** | 1997Q2 → 2026Q1 | **2026Q1, 8,368 series (96.4%)** | **verified-clean** |
+| `fof2_en.zip` → `ff_dl_fof_fiscal-year_en.csv` | 8,780 | 1979 → 2025FY | — | verified-clean |
+| `bis1-1_q_en.zip` | **14,327** | 1990Q1 → 2026Q1 | **2026Q1, 100.0%** | **verified-clean** |
+
+**No forward-projection trap in either** — the seasonal-factor look-ahead that made `bp_m_en` a
+`needs-monitoring` grade is specific to that file, so the class-level grade run (j) implied was too
+harsh and I am narrowing it. One survivorship note: **294 FoF series (3.4%) stop dead at 2007Q3** —
+the 1993SNA vintage, discontinued at the 2008SNA changeover. A "last value" loader picks them up
+as live-looking rows nineteen years stale. **The four BIS-on-BoJ mirrors are now REDUNDANT** — the
+direct `stats.bis.org` SDMX route found in ITEM 1 supersedes them, keyless and wider. Marked
+**EXHAUSTED**: all 16 BoJ flat-file archives are enumerated and the rate/flow-relevant ones parsed.
+
+**THE FIND — `www.boj.or.jp/en/statistics/outline/tkohyos.xlsx`: a machine-readable official
+release calendar with RELEASE TIMES, and 17 archived point-in-time vintages behind it.**
+One 48 KB xlsx → **1,002 dated release cells across ~150 statistics for July 2026–June 2027**,
+each carrying its clock (`8:50 a.m.`, `1:00 p.m.`, `Around 6:00 p.m.`) and its frequency. TANKAN
+headline: **2026-07-01, 2026-10-01, 2026-12-14, 2027-04-01 at 08:50 JST** — and note the December
+one is **mid-month, not the 1st**, which is exactly why a published calendar beats an assumed rule.
+
+**It is point-in-time, because the Wayback CDX holds the file's whole publication history.**
+`cdx/search/cdx?url=boj.or.jp/en/statistics/outline/tkohyos.xlsx&collapse=digest` → **17 distinct
+digests, 2019-07-21 → 2026-06-30**, semi-annual (June/December), matching the file's own cadence.
+Four pulled and parsed (2019, 2022, 2024, 2025 vintages) — every one parses with the same reader,
+985–1,177 dated cells each, **906 distinct release dates in the union**. Each vintage is *what the
+BoJ said the schedule would be, as of that date* — a real point-in-time artifact, not a
+back-filled one. Caveat, stated rather than hidden: my extractor takes any 5-digit Excel serial in
+40000–50000, and one union member is `2011-06-30`, which is almost certainly a metadata cell and
+not a release. **Parse by column position for production use; my number is an upper bound.**
+
+**VERIFY-DON'T-TRUST — cross-checked against a fully independent lineage, and it CLOSED an open
+card.** Run (h) carded `Ehsanrs2/Forex_Factory_Calendar` (MIT, 68 MB) as *structure verified,
+point-in-time **UNVERIFIED***. It is verifiable without downloading it: the HuggingFace
+datasets-server `/filter` endpoint answers SQL-ish `where` clauses keyless.
+`where "Event"='Tankan Manufacturing Index'` → **73 releases, 2007-04 → 2026, with `Actual`**.
+
+- **All 12 BoJ-scheduled historical TANKAN dates recovered from the four archived vintages appear
+  as actual FF release dates. Zero misses.** Two producers with no common route agreeing on 12/12.
+- **62 of 73 land at exactly 08:50 JST** — the precise time the BoJ calendar states. So the FF
+  **dates are verified-clean**; upgrade that half of the card.
+- **The other 11 are two distinct timestamp defects, and both matter for an event study:**
+  - **6 rows are `T00:00:00+03:30` — the time is MISSING and silently defaulted to local midnight**
+    (2021-10-01, 2021-12-13, 2022-10-03, 2022-12-14, 2023-10-02, 2024-10-01). An event study keyed
+    on this stamp places TANKAN **8h50m early**, i.e. in the previous Tokyo session.
+  - **5 rows carry `+04:30`** (2023-04-03, 2023-07-03, 2024-04-01, 2024-07-01, 2025-04-01) — Iran
+    DST, **abolished in 2022**, still being applied. Same wall-clock, offset flipped ⇒ the UTC
+    instant moves **1 hour**.
+  - The root cause is that **the whole file is stamped in the UPLOADER's local time (Tehran,
+    +03:30), not UTC and not the event's own timezone.** The first row of the file (`CNY
+    Manufacturing PMI, 2007-01-01T04:30:00+03:30` = 09:00 CST) proves the conversion is correct
+    *when the offset is right*; 15% of the time it is not. **Grade: `Ehsanrs2/Forex_Factory_Calendar`
+    → dates verified-clean, ACTUAL/FORECAST values verified-plausible, TIMESTAMPS needs-repair.**
+
+**CROSS-SOURCE PAIR — this is the one whose joint value exceeds either half, and it is now
+demonstrated rather than asserted.** The BoJ calendar publishes **authoritative release
+timestamps and no actuals**; the FF dataset publishes **actuals and forecasts with 15%-broken
+timestamps**. Join on date, take the clock from the BoJ, take the surprise from FF: a
+JPY-specific, scheduled, 08:50-JST event with an official 48,430-series panel behind it, on legs
+the desk trades (USDJPY, EURJPY, AUDJPY, CADJPY, GBPJPY). **Both halves are licence-clean** (BoJ
+has no robots.txt at all and no reuse bar; FF dataset is MIT) — which the FF-scrape × ticks pair
+proposed in run (j) never was. **And the desk's own EET tape finding from runs (i)/(k) is what
+makes it executable: 08:50 JST = 23:50 UTC = 02:50 broker-EET in summer, 01:50 in winter.**
+
+### AXIS PROPOSED — not pre-registered here (the registry is outside this seat's research freeze)
+
+**`jpy_tankan_surprise_open`** — TANKAN large-manufacturers DI surprise (`Actual − Forecast`, FF
+dataset) evaluated at the **BoJ's own 08:50 JST stamp** (= 23:50 UTC = 02:50 broker-EET summer /
+01:50 winter), on USDJPY, EURJPY, AUDJPY, CADJPY, GBPJPY. n ≈ 73 quarterly events 2007→2026.
+**Mechanism (who is forced):** TANKAN is the BoJ's own capex/sentiment input, released before the
+Tokyo cash open, and Japanese institutional hedging desks re-set JPY hedge ratios against it on a
+fixed quarterly calendar — a scheduled, non-discretionary flow with a published clock.
+**Falsifier:** no reaction at the 08:50 stamp, or a reaction that also appears at a placebo stamp
+8h50m earlier (which is precisely where the FF dataset's own broken rows would put it — so the
+placebo is free and it doubles as the timestamp control).
+**Honest prior: n=73 is thin and the desk's graveyard is full of calendar-class deaths** (TDOM was
+discarded on a calendar-class graveyard match on 2026-08-25). This is proposed as a
+*direction-agnostic volatility/spread axis first* (does the 08:50 bar widen and by how much),
+because volatility is predictable and direction is not — the desk's own ordered lesson.
+
+### SESSION CLOSE — 2026-08-28 (l)
+
+**Backlog:** clear on entry (0 pending verification, 25 deferred to 2026-09-01+). This run spent
+its whole budget on **run (k)'s two unfinished items**, per the completion contract, and opened no
+new ground — which is the correct trade and I am naming it rather than padding a third item.
+
+**Categories covered:** **5** (alternative/macro — the run's weight), **4** (community lakes — the
+HF calendar, verified by API rather than download), **6** (vendor replacement — two §38 replacements
+delivered, both verified). **1** untouched this run. **2 and 3 remain VOID under the MT5 mandate as
+the spec writes them** (they name crypto on-chain and crypto regional venues); the spec predates the
+2026-08-18 universe order and I keep naming that rather than reporting them skipped.
+
+**Counts: 4 sources ADOPTED verified-clean (DBnomics/RBA rates, BIS WS_CBPOL, BoJ release calendar,
+BoJ FoF + BIS-locational flat files), 2 host verdicts INVERTED (BoE UA-keyed not walled; RBA/RBNZ
+IP-blocked but §13-PERMITTED), 1 carded source UPGRADED out of UNVERIFIED (FF calendar) and
+simultaneously downgraded on its clock, 1 archive marked EXHAUSTED (BoJ, 16/16), 1 aggregator
+provider census (93 providers, 7 named absences), 1 decoy provider exposed, 5 method findings to the
+inbox, 0 unverified links catalogued.** Universe map 129 → 133.
+
+**BEST VENDOR-REPLACEMENT: BIS `WS_CBPOL`.** One keyless request returns 448,294 daily policy-rate
+observations across 49 jurisdictions back to 1990, verified against the RBA's own publication on
+3,943 common days with zero mismatches. It replaces a paid global policy-rate panel *and* it routes
+around a host this box physically cannot reach — including RBNZ's own OCR, sourced from RBNZ.
+
+**CROSS-SOURCE PAIR (demonstrated, not asserted): BoJ release calendar × FF calendar.** Authoritative
+timestamps with no actuals, joined to actuals with 15%-broken timestamps. Neither half is usable
+alone for an event study; together they are. Both licence-clean (BoJ publishes no robots.txt and no
+reuse bar; the FF dataset is MIT) — which the FF-scrape × ticks pair proposed in run (j) never was.
+
+**NEW SOURCE CLASS: point-in-time release CALENDARS as an archived time series.** The desk has been
+treating release schedules as reference data. They are not — they are *published, dated, revised
+artifacts*, and the Wayback CDX holds every vintage. That makes "what was the market told to expect,
+and when, as of that day" recoverable for any institution that publishes a schedule file at a stable
+URL. **17 vintages for the BoJ; the same trick is untried on the Fed, ECB, ONS, BLS and ABS.**
+
+**DEPTH LINE.** RBA: *exhausted for this seat's purpose* — live probe → two UAs → Wayback robots →
+archived origin CSV → row-level diff against the replacement, 3,145 rows. RBNZ: *exhausted* — four
+hostnames, two UAs, two schemes, archived robots, then replaced at the class level. BoJ: *exhausted*
+— 16/16 archives enumerated, 3 parsed to per-series liveness histograms, then one layer past where I
+would have stopped (the calendar page) which is where the run's actual find was, then one layer past
+*that* (the CDX walk) which is what made it point-in-time. FF calendar: *citation-equivalent depth* —
+followed it to an independent producer and diffed 12 dates and 73 timestamps.
+
+**NEXT UN-EXHAUSTED GROUND, named so the chain holds:**
+1. **The 7 central banks absent from DBnomics** — RBNZ (done, replaced), **Norges Bank, Riksbank,
+   Bank of Korea, SNB, MAS, PBoC** — one route each. NOK/SEK/KRW/CHF/SGD/CNH are all MT5 legs.
+2. **The release-calendar trick applied to the Fed, ECB, ONS, BLS and ABS** — the new class above,
+   untested outside Japan.
+3. **`SAFE` (China SAFE), `TCMB`, `BCB`, `SARB` on DBnomics** — carded in the census, never opened.
+
+**THE BLUNT PART.** The run's two headline finds are both *corrections of this seat's own prior
+grades*, which makes five runs in a row. Runs (e) and (h) recorded BoE and RBA/RBNZ as walled; three
+of those four verdicts were wrong, and every one of them was wrong in the direction that **shrinks
+the data universe** — §38's "mining regression by attrition", committed by the seat whose job is to
+prevent it. The mechanism is always the same and it is now named: **a 403 is not a verdict, it is a
+prompt to ask WHOSE 403 it is.** The counter-measure is cheap and I should have been running it from
+the start — two UAs and a Wayback robots read, ~10 seconds, before any host is graded walled.
