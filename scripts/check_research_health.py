@@ -217,6 +217,35 @@ def collect(now: datetime) -> tuple[list[str], dict]:
     except Exception as exc:
         m["classes_hunted"] = f"UNMEASURED ({type(exc).__name__})"
 
+    # --- SEAT YIELD: the daily Claude cycles are the desk's discovery brains, and their own
+    # meter (data/seat_launch_yield.json) measured 107 launches -> 21 produced over 7 days,
+    # 23.9%, with five regional seats that have NEVER produced. Nothing consumed that finding,
+    # so it sat in a file: a measurement organ whose output no fence reads is a log line.
+    # AUTH_UNAVAILABLE is EXPECTED inside a quota window (the memo records the wall and
+    # organ_catchup re-fires when it lifts) -- so a wall is never the breach. A seat that
+    # produces NOTHING across the whole window is, because that is capacity the desk pays for
+    # and never receives.
+    sy = _read(ROOT / "data" / "seat_launch_yield.json")
+    if sy:
+        sy_age = _age_h(sy.get("measured_at"), now)
+        m["seat_yield_pct"] = sy.get("yield_pct")
+        m["seat_dead"] = len(sy.get("dead_seats") or [])
+        m["seat_yield_age_h"] = round(sy_age, 2) if sy_age is not None else None
+        if sy_age is None or sy_age > 26:
+            breaches.append(f"SEATS: launch-yield meter is "
+                            f"{'missing' if sy_age is None else str(round(sy_age, 1)) + 'h old'} "
+                            f"-- the brains' own scorecard has stopped being measured")
+        dead = sy.get("dead_seats") or []
+        if dead:
+            breaches.append(f"SEATS: {len(dead)} seat(s) produced NOTHING in "
+                            f"{sy.get('window_days')}d -- launches spent, capacity never "
+                            f"received: {', '.join(str(x) for x in dead[:6])}")
+        outcomes = sy.get("outcomes") or {}
+        died = int(outcomes.get("DIED_AT_ATTEMPT") or 0) + int(outcomes.get("DIED_AFTER_START") or 0)
+        if died >= 8:
+            breaches.append(f"SEATS: {died} launch(es) DIED at or after start (not quota "
+                            f"walls) -- a crashing seat is a defect, not a closed window")
+
     # --- certificates in the pipeline: the same-day fence is the authority on
     # CERTIFIED-NOT-ENROLLED / UNSTAMPED / IDLE-CLOCK; its verdict rides every pulse so the
     # dashboard shows certificate wiring at the same cadence as everything else.

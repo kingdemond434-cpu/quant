@@ -193,7 +193,23 @@ def fix_families() -> tuple[bool, str]:
     return rc == 0, out[-160:]
 
 
+def fix_seats() -> tuple[bool, str]:
+    """Re-measure seat yield, then re-fire any owed organ work.
+
+    Never launches a seat blindly: `organ_catchup` is the resume path that knows WHICH organ
+    owes WHAT and picks up from the same spot after a quota wall lifts, so the fixer refreshes
+    the scorecard and asks catchup to act on it. A seat that is dead for a structural reason
+    (no auth of its own, a missing regional key) stays a paged breach -- retrying it forever
+    would burn launches and hide the cause.
+    """
+    rc1, o1 = _run([sys.executable, str(ROOT / "scripts" / "check_seat_launch_yield.py")],
+                   timeout=180)
+    rc2, o2 = _run(["systemctl", "--user", "start", "quant-organ-catchup.service"], timeout=90)
+    return rc1 == 0 or rc2 == 0, f"yield_rc={rc1} catchup_rc={rc2} {(o1 or o2)[-100:]}"
+
+
 FIXERS = {
+    "SEATS": fix_seats,
     "FAMILIES": fix_families,
     "BREADTH": fix_breadth,
     "BACKLOG": fix_gauntlet,
