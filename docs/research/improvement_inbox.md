@@ -3925,3 +3925,23 @@ Also for the parser layer: Statistics Denmark CSV is **semicolon-delimited, deci
 on the first header key** (mangles the first column name in a naive `DictReader`), and its
 missing-value marker is the two-character string `'..'`, which on DNVALI is a **third producer state**
 distinct from both a number and an absent row.
+
+### 2026-08-28 (free-data run o) — three collector-design defects, all "wrong reads as empty"
+
+1. **A `robots.txt` fetch that follows a redirect grades the wrong document.** `https://data.ssb.no/robots.txt`
+   301s to `https://www.ssb.no/api` — an HTML page, HTTP 200, no `Disallow` anywhere in it. Any
+   robots check that reads status+body without comparing `url_effective` to the requested URL will
+   grade an API host "open" off a marketing page. **Fix: every robots read asserts
+   `url_effective == requested`; a redirected robots is UNRESOLVED, and the governing document is
+   the one at the redirect target's host per RFC 9309.**
+2. **A pandas time-column fallback silently converted prices into 1970 timestamps.** The desk's MT5
+   parquets carry `time` as the INDEX, not a column; `tcol = 'time' if 'time' in px.columns else
+   px.columns[0]` therefore picked `open` and produced a datetime index of 1970-01-01+6ns. The join
+   returned **overlap n=0**, which reads as "the source has no data" rather than "you used the wrong
+   column". Same class as the desk's standing lesson that unmeasured must never render as clean.
+   **Fix: never fall back to a positional column for a time axis — check the index first and raise
+   if neither is datetime-like.**
+3. **`curl` exit code cannot distinguish unreachable from blocked.** api.scb.se returns rc=56 under
+   every UA and both HTTP versions; robots was never retrieved, so there is no verdict to issue.
+   **Fix: collectors must emit UNREACHABLE as a distinct status from WALLED** — this seat has been
+   issuing WALLED verdicts and run (n) already flagged that it over-issues them.

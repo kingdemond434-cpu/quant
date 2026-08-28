@@ -2175,7 +2175,7 @@
    "url": "https://data.norges-bank.no/robots.txt",
    "verification": "robots.txt read 2026-08-28. The '*' group is 'Content-Signal: search=yes,ai-train=no,use=reference' + 'Allow: /'. But a SEPARATE, MORE SPECIFIC group names this agent: 'User-agent: ClaudeBot / Disallow: /'. Under RFC 9309 the most specific matching group governs. This host is barred to this seat BY NAME.",
    "notes": "NOT UA-shopped around. Run (j)'s lesson is that a robots verdict is a property of your User-Agent — but that cuts both ways: a rule that names you is a verdict, not an obstacle. Same Cloudflare-managed block also bars GPTBot, CCBot, Bytespider, Google-Extended, Amazonbot, Applebot-Extended, meta-externalagent.",
-   "replacement_hunt": "CLOSED SAME RUN (§38). The facts behind the API are published on www.norges-bank.no, which carries no ClaudeBot group and no Disallow — see norgesbank_gov_fx_transactions. Policy rates additionally available from BIS WS_CBPOL (NO: 13,349 obs, last 2026-08-24).",
+   "replacement_hunt": "CLOSED SAME RUN (§38). The facts behind the API are published on www.norges-bank.no, which carries no ClaudeBot group and no Disallow — see norgesbank_gov_fx_transactions. Policy rates additionally available from BIS WS_CBPOL (NO: 13,349 obs, last 2026-08-24). | 2026-08-28 run (o): SECOND DOOR FOUND. Statistics Norway (SSB) publishes the Norges Bank series this API carries -- central-bank accounts (09468), the full IMF SDDS reserve template (06833), the bank balance sheet (08428), NIBOR + policy rate (10701) -- keyless, and www.ssb.no/robots.txt carries no ClaudeBot group. The UA-named wall costs this desk nothing for reserve/balance-sheet data. See ssb_pxwebapi_keyless.",
    "first_seen": "2026-08-28",
    "last_verified": "2026-08-28"
   },
@@ -2285,6 +2285,115 @@
     "PRE-2019 PER-EVENT PAGES ARE NOT ARCHIVED AT ALL: the full-domain CDX over all four slug families returns 287 rows total, of which only 5 pre-date 2019 (one 2007, four 2010). A per-event walk cannot recover 259 dates because 259 pages do not exist."
    ],
    "discovered": "2026-08-28 (free-data run n)"
+  },
+  "ssb_pxwebapi_keyless": {
+   "name": "Statistics Norway (SSB) PxWeb API v2-beta — keyless, and the DELIVERY DOOR for Norges Bank data",
+   "category": "5-alternative-macro / 6-vendor-replacement",
+   "grade": "verified-clean",
+   "replaces": "data.norges-bank.no SDMX API for reserve/balance-sheet series (that host bars ClaudeBot BY NAME)",
+   "url": "https://data.ssb.no/api/pxwebapi/v2-beta/tables?query=... ; /tables/{id}/metadata?lang=en ; /tables/{id}/data",
+   "method": "keyless GET, json-stat2. MANDATORY: valuecodes[ContentsCode] must be supplied or the API 400s 'Missing selection for mandantory variable'.",
+   "auth": "none",
+   "cost": "free",
+   "update_cadence": "monthly per table",
+   "robots": "GOVERNED BY www.ssb.no/robots.txt (39 bytes, single 'Disallow: /a/kostra/stt'). NOT barred.",
+   "verification": "Confirms run (n)'s statistics-agency-as-delivery-door generalisation on a SECOND country: Norges Bank series (09468 central-bank accounts, 06833 reserve template, 08428 balance sheet, 10701 NIBOR+policy rate) ship through SSB keyless while the bank's own API bars this agent.",
+   "failure_modes": [
+    "ROBOTS REDIRECT TRAP: https://data.ssb.no/robots.txt 301-redirects to https://www.ssb.no/api, an HTML page returning 200 with no Disallow. A naive robots fetch grades the API host 'open' from a document that is not robots.txt at all. Always compare url_effective to the requested URL.",
+    "CATALOGUE SEARCH IS LABEL-LEXICAL AND BI-STANDARD: query 'exchange rate' returns 0 on the /en/ endpoint (labels are Norwegian). Worse, labels mix BOKMAAL and NYNORSK -- table 06833 is titled 'Internasjonale reservar ... marknadsverdiar', so a Bokmaal query ('valutakurs' n=0) misses it. Query BOTH written standards.",
+    "ADVERTISED-BUT-EMPTY COLUMN: 06833 code 'A' (Official reserve assets, mill. USD) is fully documented in the metadata with label and unit and has ZERO observations at all 316 timestamps."
+   ],
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "ssb_06833_norges_reserve_template": {
+   "name": "SSB 06833 — Norway official reserve assets, full IMF SDDS reserve template, monthly market value",
+   "category": "5-alternative-macro",
+   "grade": "verified-clean",
+   "replaces": "a paid central-bank-reserves / official-sector-flow feed for NOK",
+   "url": "https://data.ssb.no/api/pxwebapi/v2-beta/tables/06833/data",
+   "coverage": "2000M04 -> 2026M07, 316 obs, 27 line items incl. securities, currency+deposits by counterparty, IMF position, SDRs, gold (value AND volume), financial derivatives (in and out of reserves), other FX assets.",
+   "verification": "VERIFIED-CLEAN 2013M08 -> 2026M07 by cross-table diff against SSB 09468 'Foreign assets, total' (independently compiled, balance-sheet basis): median ratio 0.988, residual ~1.2% consistent with market-value vs book valuation. Pre-2013M08 the two disagree by construction (see ssb_09468 break) and 06833 is UNVERIFIED there, though internally continuous.",
+   "failure_modes": [
+    "GOLD IS STRUCTURALLY USELESS HERE: Norway sold its gold in 2004, so item 13 is 0 from 2004 on; item 14 'volume in millions of fine troy ounces' is rounded to INTEGER millions (1.18M oz publishes as '1'), destroying the series even in the pre-2004 window.",
+    "0 vs null are distinct states (gold: 286 zeros, 30 nulls)."
+   ],
+   "mechanism": "official-sector FX/reserve flow; the derivatives lines (16, 23) are the off-balance-sheet leg that the headline reserve number omits.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "ssb_09468_cb_accounts_DEFINITION_BREAK": {
+   "name": "SSB 09468 — Analytical Accounts of the Central Bank (Norges Bank), monthly",
+   "category": "5-alternative-macro",
+   "grade": "needs-monitoring",
+   "url": "https://data.ssb.no/api/pxwebapi/v2-beta/tables/09468/data",
+   "coverage": "1997M05 -> 2026M07, 351 obs, 4 items (base money M0, foreign assets total, claims on other Norwegian sectors, foreign liabilities).",
+   "verification": "Used as the independent arm for 06833 and verified against it post-2013M08 (median ratio 0.988).",
+   "failure_modes": [
+    "UNFLAGGED DEFINITIONAL CLIFF AT 2013M08. 'Foreign assets, total' goes 4,796,246 -> 357,637 NOK mn in ONE month (-92.5%) with NO null, NO unit change, NO code change and NO note in the codelist: the Government Pension Fund Global was reclassified off the line. Pre-break the series is reserves + GPFG (ratio to true reserves decays smoothly 0.38 in 2000 to 0.073 in 2013 as the oil fund compounds), post-break it is reserves only.",
+    "CONSEQUENCE: any feature using month-over-month change in Norwegian central-bank foreign assets registers a fabricated -4.4 TRILLION NOK outflow in 2013M08 -- the largest apparent capital-flight event in the whole series and entirely an accounting reclassification. A z-scored or vol-scaled version is permanently poisoned by it. USE POST-2013M08 ONLY, or split the series."
+   ],
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "dn_dnvald_daily_fx_fixings": {
+   "name": "Danmarks Nationalbank DNVALD — daily official FX fixings, 55 currencies, 1977-01-03 ->",
+   "category": "5-alternative-macro",
+   "grade": "verified-clean",
+   "replaces": "a paid long-history daily FX fixing tape (49 years, 55 currencies, incl. dead currencies LTL/legacy EMU)",
+   "url": "https://api.statbank.dk/v1/data (POST, table DNVALD, format BULK) ; tableinfo at /v1/tableinfo/DNVALD?lang=en",
+   "auth": "none",
+   "cost": "free",
+   "update_cadence": "daily, 08:00 stamp",
+   "coverage": "12,530 dates 1977M01D03 -> 2026M08D27; KURTYP KBH = DKK per 100 units of foreign currency; INX = nominal effective krone rate index (1980=100).",
+   "verification": "VERIFIED-CLEAN against the desk's OWN MT5 USDDKK_H1 tape, n=2,224 overlapping days 2017-07-03 -> 2026-08-26, corr 0.99769. Aligned to the MT5 14:00 broker-EET bar the median absolute error is 3.2 bp (n=1,651).",
+   "failure_modes": [
+    "IT IS AN INTRADAY FIXING, NOT A CLOSE. Joined naively to the MT5 DAILY CLOSE the median error is 17.8 bp (p99 109 bp) -- 5.6x the true 3.2 bp error. The whole excess is timestamp misalignment, and it would read as a data-quality problem in a source that is in fact clean. Join it to the 14:00 EET bar.",
+    "16 null dates inside the spot series.",
+    "Quoted per 100 units -- divide by 100 before comparing to a market rate."
+   ],
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "dn_dnvald_tt3_forward_premium_DEAD": {
+   "name": "DNVALD KURTYP=TT3/TT6 — daily 3M and 6M FX FORWARD PREMIUM",
+   "category": "5-alternative-macro / 6-vendor-replacement",
+   "grade": "verified-clean but DISCONTINUED",
+   "url": "https://api.statbank.dk/v1/data (table DNVALD, KURTYP TT3/TT6)",
+   "verification": "Internally sane: implied annualised USD-DKK rate differential median -0.21%, range -2.96% to +2.26% -- plausible magnitudes for the period. Not diffed against an external forward curve.",
+   "coverage": "USD TT3: 3,776 obs, 1998-12-01 -> 2013-12-30 ONLY. The variable label and the currency list both imply the 1977-> span of the spot series; they are wrong for this KURTYP.",
+   "failure_modes": [
+    "THE HEADLINE SPAN DOES NOT APPLY TO EVERY KURTYP. The table advertises 1977-> and 12,530 dates; the forward legs cover 15 years and stop dead at 2013-12-30 (8,639 nulls). A consumer trusting the table-level coverage string builds a 49-year carry feature that is empty for 68% of its history.",
+    "Discontinued: it is regime history for a carry study, never a live signal."
+   ],
+   "mechanism": "CARRY -- the desk's only repeat-survivor family. A free daily forward-premium tape covering the 1998-2013 regimes (incl. 2008) that the desk's own tape does not reach.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "dn_dnprnd_daily_cb_balance_sheet": {
+   "name": "DNPRND — DAILY banks'/mortgage institutes' net position with Danmarks Nationalbank",
+   "category": "5-alternative-macro",
+   "grade": "UNVERIFIED",
+   "url": "https://api.statbank.dk/v1/tableinfo/DNPRND?lang=en",
+   "coverage": "5,413 business days 2005M01D03 -> 2026M08D26, DKK bn; 9 instruments (certificates of deposit, monetary-policy deposits/net current accounts, net position, MP lending 7d/6m/3y, the two March-2020 extraordinary facilities) x 3 balance sides.",
+   "verification": "STRUCTURE READ ONLY -- tableinfo fetched and enumerated, NO data pull and NO ground-truth diff this run. Stamped UNVERIFIED and it stays there until diffed.",
+   "mechanism": "The DKK analogue of SNB sight deposits: a daily, free, primary-source liquidity/intervention proxy for a euro-pegged currency -- and free of the Credit-Suisse contamination that run (g) documented in the Swiss series. Daily rather than the Swiss weekly.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "scb_api_ipv6_only_ROUTE_BUG": {
+   "name": "Statistics Sweden (SCB) PxWeb API — UNREACHABLE FROM THIS BOX (route, not wall)",
+   "category": "5-alternative-macro",
+   "grade": "UNVERIFIED (unreachable)",
+   "url": "https://api.scb.se/OV0104/v1/doris/en/ssd/",
+   "verification": "curl fails rc=56 (recv failure) on api.scb.se and www.scb.se, IDENTICALLY under the ClaudeBot UA and a browser UA, and identically forced to HTTP/1.1. NOT a robots wall and NOT a UA block -- robots.txt was never retrieved at all.",
+   "failure_modes": [
+    "The system resolver returns ONLY AAAA for api.scb.se/www.scb.se (2a01:9080:300:48::48) while 1.1.1.1 returns an A record (193.180.124.111); forced -4 also fails rc=56, forced -6 times out rc=28. The box has working IPv6 egress (ipv6.google.com 200), so this is host-side or path-side, not a local IPv6 gap.",
+    "CLASS: an unreachable host is INDISTINGUISHABLE from a blocked one at the curl exit code. Grade it UNREACHABLE, never WALLED and never 'dead' -- run (n)'s WALLED verdicts are exactly what this seat is trying to stop over-issuing."
+   ],
+   "replacement_hunt": "OPEN (section 38). The SCB/Riksbank leg of the delivery-door generalisation is NOT closed -- it is untested. Next run: retry from a different egress, and try the Riksbank SWEA API and DBnomics' SCB/Riksbank mirrors as alternate doors to the same facts.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
   }
  },
  "residual_gaps_unpurchasable": [

@@ -5012,7 +5012,7 @@ verification**, 25 deferred (earliest returns 2026-09-01). Backlog is clear; min
 3. **The 12 regional Reserve Bank speech sites** — §38 replacement residual left open behind the Fed
    speech index.
 
-Status: OPEN. Updated in place as each item resolves.
+Status: **CLOSED** — both items resolved to depth. See session close below.
 
 ### SESSION (d) — RESOLUTION (all 3 items closed)
 
@@ -5140,7 +5140,7 @@ to future dates — none workable today). So this run resumes the chain from ses
    54–55h stale in session (d); liveness has never been measured by anything. UNMEASURED = zero.
 3. **SEARCH-SPACE EXPANSION (>=25% of effort)** — a source class this seat has never entered.
 
-Status: OPEN. Updated in place as each item resolves.
+Status: **CLOSED** — both items resolved to depth. See session close below.
 
 ### SESSION (e) — RESOLUTION (all 3 items closed)
 
@@ -6946,4 +6946,97 @@ in two runs that this seat's own forward plan was the least reliable artifact it
    FX fixings (1977→) and the DAILY Nationalbank balance sheet (2005→2026-08), the DKK analogue of
    SNB sight deposits without the Credit-Suisse contamination.
 
-Status: OPEN. Updated in place as each item resolves.
+Status: **CLOSED** — both items resolved to depth. See session close below.
+
+### SESSION CLOSE — 2026-08-28 (o)
+
+**Backlog:** clear on entry and exit (0 pending verification, 0 pending legitimacy, 25 deferred to
+2026-09-01+). Both items taken were closed; nothing carried half-done.
+
+**Categories covered: 5** (alternative/macro — the run's weight) and **6** (vendor replacement).
+**1 and 4 untouched. 2 and 3 remain VOID under the MT5 mandate as the spec writes them** (they name
+crypto on-chain and crypto regional venues; the spec predates the 2026-08-18 universe order — I keep
+naming this rather than reporting them skipped).
+
+**Counts: 7 sources carded — 4 verified-clean against independent arms I built, 1 needs-monitoring
+with a quantified break, 1 UNVERIFIED (honestly: structure read, no diff), 1 UNREACHABLE (explicitly
+NOT graded walled); 0 unverified links catalogued; 0 §13 walls hit.** Universe map **142 → 149**.
+**1 previously-WALLED verdict re-opened.**
+
+**ITEM 1 — THE GENERALISATION HELD, ON A SECOND COUNTRY.** Run (n) found Danmarks Nationalbank ships
+all 107 of its tables through *Statistics Denmark*. The same is true of Norges Bank: SSB carries the
+central-bank accounts, the full IMF SDDS reserve template, the bank balance sheet and NIBOR+policy
+rate — **keyless, and `www.ssb.no/robots.txt` is 39 bytes with one unrelated `Disallow`** — while
+`data.norges-bank.no` bars ClaudeBot **by name**. The UA-named wall costs this desk nothing for that
+data. `norgesbank_data_api_WALLED` updated with the second door. **This is the shape of find worth
+more than a new source: it retires a closed verdict.**
+
+**BEST FIND: `DNVALD`, 49 years of daily official FX fixings across 55 currencies (1977-01-03 →,
+12,530 dates) — VERIFIED-CLEAN against the desk's OWN MT5 USDDKK tape at median 3.2 bp**, n=1,651,
+corr 0.99769. And the verification is the finding: joined naively to the MT5 **daily close** the
+error is **17.8 bp, 5.6× larger** — the excess is *entirely* timestamp misalignment (it is a 14:00
+EET intraday fixing, not a close). A clean source would have been graded dirty by the obvious join.
+
+**BEST VENDOR-REPLACEMENT: SSB 06833, the full 27-line IMF reserve template for Norway** — including
+the financial-derivatives lines that the headline reserve number omits, which is exactly the
+off-balance-sheet leg run (m) found the Norges stats table dropping. Verified-clean 2013M08→2026M07.
+
+**CROSS-SOURCE PAIR (demonstrated, and it produced both this run's verifications):
+`SSB 06833` × `SSB 09468`.** Two Norges Bank tables, market-value vs balance-sheet basis, neither
+checkable alone. Post-2013M08 they agree to 1.2% — that residual IS the valuation basis, and it is
+what licenses 06833 as clean. **Third consecutive run in which the verification came from a second
+door of the same institution rather than from a second institution.**
+
+**THE FAILURE MODE OF THE RUN — and it is the most valuable thing here.** SSB 09468's "Foreign
+assets, total" drops **4,796,246 → 357,637 NOK mn in one month (2013M08, −92.5%)** with no null, no
+unit change, no code change and nothing in the codelist: the oil fund (GPFG) was reclassified off the
+line. The pre-break series is reserves+GPFG — its ratio to true reserves decays *smoothly* 0.38→0.073
+from 2000 to 2013 as the fund compounds, which is why it does not look like a break until you diff
+it. **Anyone computing month-over-month change in Norwegian central-bank foreign assets books a
+fabricated −4.4 trillion NOK outflow in 2013M08: the largest apparent capital-flight event in the
+series, and pure accounting.** A z-scored version is poisoned for good.
+
+**NEW SOURCE CLASS: free daily FX FORWARD PREMIUM.** `DNVALD KURTYP=TT3/TT6` — 3M and 6M forward
+premia, daily. Carry is this desk's only repeat-survivor family. **But I checked it and the honest
+half is that it covers 1998-12-01 → 2013-12-30 only** (3,776 obs; 8,639 nulls) while the table
+advertises 1977→ across all types. It is regime history for a carry study — spanning 2008 — never a
+live signal, and the table-level coverage string would have sold me a 49-year feature that is empty
+for 68% of its history.
+
+**DEPTH LINE.** *SSB:* exhausted for this run's purpose — robots on 4 hosts (finding the redirect
+trap) → catalogue root → `bf` subtree → v2-beta search across 6 query terms in **two written
+standards** (the Nynorsk finding) → metadata on 2 tables → full data pulls on 3 → **independent
+verification arm built from a second table** → break localised to the exact month → mechanism of the
+break identified and confirmed numerically against the GPFG's known size. *Danmarks Nationalbank:*
+two carried tables opened, DNVALD pulled in full (24,873 rows) and diffed against the desk's own
+tape, **then the residual decomposed by scanning all 24 broker hours** to separate real error from
+alignment error — that hour scan is one layer past where I would have stopped and it is what turned
+an 18 bp "needs-monitoring" into a 3.2 bp "verified-clean". No reply chains or forks: institutional
+publishers again, where the depth axis is metadata-vs-data disagreement, and I mined it three times
+(empty column, coverage-string overclaim, definitional cliff).
+
+**NEXT UN-EXHAUSTED GROUND** (each checked against what this run adopted — none is answered by it):
+1. **The SCB/Riksbank leg is UNTESTED, not closed.** api.scb.se is unreachable from this box (rc=56,
+   identical under every UA — not a wall). Retry from another egress; try the Riksbank SWEA API and
+   the DBnomics SCB/Riksbank mirrors as alternate doors. §38 hunt left OPEN deliberately.
+2. **`DNPRND`** — pull and diff the daily Danish CB balance sheet I carded UNVERIFIED this run. It is
+   the one item I did not close, and I am naming it rather than letting it read as adopted.
+3. **`DNIFVALE` / `DNFPVALE`** — currency exposure AND hedging of the Danish investment-fund and
+   pension sectors (structural recurring FX hedging flow). Still the most interesting unopened row.
+4. **SSB 08428 (Norges Bank balance sheet) and 10701 (NIBOR + policy rate 2013→)** — now known
+   reachable, not yet pulled.
+5. Re-test every host this seat ever graded WALLED against its national statistics agency (Stats NZ,
+   CBS, Stat-Nz, and the Danish/Norwegian result generalised to SNB via BFS).
+6. The Norwegian public-holiday calendar (run (n)'s one unconditional gap); Riksbank weekly reserves;
+   `SAFE`/`TCMB`/`BCB`/`SARB` on DBnomics (carried from run (l), still unopened).
+
+**THE BLUNT PART.** Run (n) closed by saying a next-ground item is a hypothesis that gets falsified
+like one. This run that happened **twice, to my own verification plans, not to my ground**: I opened
+06833 intending to verify it via gold value ÷ gold volume, and Norway sold its gold in 2004 with the
+volume column rounded to integer millions anyway; I then switched to the documented USD reserve
+column, which has **zero observations at all 316 timestamps** despite a full label and unit. Two
+verification arms destroyed before one worked. The transferable part is that **both failures were
+invisible in the metadata** — the codelist advertises what the data does not contain — so a
+collector that trusts a codelist is building features that will silently never populate. That is the
+same class as this desk's standing lesson about empty artifacts asserting absence, and it is now
+recorded against three separate tables in one run.
