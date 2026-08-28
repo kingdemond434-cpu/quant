@@ -8983,3 +8983,52 @@ to clear first. Resuming from s12's own NEXT-GROUND list, items 1–3.
 3. **The 2 confirmed-permitted parse bugs** (`so.eastmoney.com`, `kr.investing.com`). Status: OPEN
 
 (updated in place as each resolves)
+
+### ITEM 1 — R0702 "God's Equity Curve" — **BUILT, TESTED, HALF-REFUTED. Do not use as s12 specified.**
+Measured first-party on the desk's own tape (`desks/mt5/data/universe/*_H1.parquet`, 197 files).
+**80 symbols carry genuine H1** (median bars/day ≥ 12); **116 are the known D1/H1 splice** and were
+excluded by that guard, not by hand — the splice defect is now costed: it removes **59%** of the
+universe from any bar-shape instrument.
+
+**CLAIM 1 — "the perfect-foresight curve is not a straight line" — CONFIRMED, and the sign is
+instrument-specific (Kinlay only showed one instrument, and only concave).**
+Normalised cumulative Σ|r_daily| vs the diagonal, signed area `A`:
+median |A| = 0.020, median max-deviation from the diagonal = **6.7%**; 41/80 exceed |z| = 3 against
+a permutation null. Most concave: JPN225 +0.100, BNBUSD +0.077, BTCUSD +0.073.
+Most **convex**: XAGUSD −0.072, XAUUSD −0.064, XPTUSD −0.059, EURHUF −0.053, USDJPY −0.043.
+The metals' opportunity set *expands* late; the indices' contracts. **A "which way it bends" test
+that assumes concave would flag the entire metals complex — the desk's core ground — as fake.**
+*Honest reading of the z-statistic:* the permutation null destroys volatility clustering, which is
+universal, so `|z|>3` is guaranteed by GARCH and is **not** the discriminator. The discriminator can
+only ever be the magnitude, and the magnitude is 6.7%.
+
+**CLAIM 2 — "a real record should share its instrument's inflections" — REFUTED. This was the half
+that made it a fake-detector, and it is the half s12 carried untested.**
+Two shape metrics × two trading rules on the same 80 symbols, with a random-sign trader as control:
+
+| metric | mom12 | mr5 | random control |
+|---|---|---|---|
+| signed area, PnL-normalised | corr −0.149 (n=37) | −0.135 (n=39) | +0.003 (n=80) |
+| max-dev-from-chord, range-scaled | +0.217, t=+1.96 (n=80) | −0.122, t=−1.09 | −0.029, t=−0.25 |
+
+Best of **4 trials** is t = 1.96 — nothing after multiplicity. And the structural objection is
+independent of my rule choice: mean |shape| is **0.57–0.61 for the strategies against 0.076 for the
+god curves** — a real equity curve's shape is dominated by its own regime dependence by roughly
+**8×**, so the god-curve inflection is buried an order of magnitude below the noise it would have to
+discriminate against. The PnL-normalised variant is additionally ill-conditioned: near-breakeven
+records (which dominate any public leaderboard) divide by ~0 and print |A| ≈ 1.
+
+**WHAT SURVIVES, and it is stronger than what was proposed — the CEILING, not the shape.**
+The same curve's *endpoint* is a hard, leverage-free, first-party bound nobody has to model:
+- Perfect-foresight daily-bar ceiling on this tape: **median 128 %/yr** unlevered (Σ|r| annualised).
+- Crude rules capture **−0.1% to +8%** of it; a **random** trader's p95 capture is already **+4.6%
+  to +6.6%** — i.e. the rules are inside luck, which is itself the calibration.
+- So: capture ratio > 1 is **impossible**; the band above the random-p95 is where a claim starts
+  owing evidence. A claimed 100 %/yr unlevered daily record is claiming ~78% of perfect foresight.
+- **Deployable form: pips.** MQL5/FX Blue publish pip totals, and Σ|daily range| in pips on the same
+  symbol is the ceiling in the same unit — so the screen is exact and needs no leverage assumption.
+  (Cross-symbol comparison would need money conversion — the pips-vs-pips error this seat made on
+  2026-08-27 applies and is avoided by keeping the ratio within one symbol.)
+Still a mining-stage SCREEN, never a gate (L1.60). **R0702 is re-scoped from shape to ceiling; the
+shape half goes to the graveyard** — and it mattered that this ran now, because the five
+track-record grounds it was meant to grade return 2026-09-03→09-05.
