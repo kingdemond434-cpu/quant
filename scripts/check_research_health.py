@@ -240,10 +240,13 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             breaches.append(f"SEATS: {len(dead)} seat(s) produced NOTHING in "
                             f"{sy.get('window_days')}d -- launches spent, capacity never "
                             f"received: {', '.join(str(x) for x in dead[:6])}")
-        outcomes = sy.get("outcomes") or {}
-        died = int(outcomes.get("DIED_AT_ATTEMPT") or 0) + int(outcomes.get("DIED_AFTER_START") or 0)
-        if died >= 8:
-            breaches.append(f"SEATS: {died} launch(es) DIED at or after start (not quota "
+        # RECENT crashes only. The 7-day window includes deaths whose cause is already fixed
+        # (six gap-wirer OOM kills, bounded 2026-08-27) and paging on history trains the reader
+        # to ignore the row -- while a crash TODAY is a live defect.
+        died_recent = int(sy.get("died_recent_24h") or 0)
+        m["seat_deaths_24h"] = died_recent
+        if died_recent >= 3:
+            breaches.append(f"SEATS: {died_recent} launch(es) died in the last 24h (not quota "
                             f"walls) -- a crashing seat is a defect, not a closed window")
 
     # --- LOCAL MINER CONTRIBUTION. Every producer that feeds the docket owes a measurable

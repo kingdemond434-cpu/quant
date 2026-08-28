@@ -79,6 +79,13 @@ def classify(text: str, size: int) -> str:
         return "MUTEX_DEFERRED"        # correct behaviour: organ_catchup re-fires the loser
     if " start " in text:
         return "DIED_AFTER_START"      # launched and was killed -- usually the OOM killer
+    # A log holding ONLY its attempt header (~60 bytes) is a SILENT death: the wrapper wrote
+    # the header, the process died, and nothing explained why. Measured 2026-08-28: six of
+    # these were gap-wirer, whose cause was the kernel OOM killer under box-wide memory
+    # pressure from retired crypto services -- bounded and freed the same night. Naming the
+    # shape separately is what let the cause be found at all.
+    if size <= 200:
+        return "DIED_SILENT_NO_OUTPUT"
     return "DIED_AT_ATTEMPT"           # never got past the launcher
 
 
@@ -98,6 +105,7 @@ def scan(days: float) -> dict[str, object]:
             continue
         stamp = _STAMP_RE.search(path.name)
         launches.append({
+            "age_h": (now - stat.st_mtime) / 3600.0,
             "seat": m.group(1),
             "hour": int(stamp.group(2)) if stamp else None,
             "outcome": classify(text, stat.st_size),
@@ -168,6 +176,9 @@ def scan(days: float) -> dict[str, object]:
         "by_hour": {str(h): by_hour[h] for h in sorted(by_hour)},
         "dead_hours_utc": dead_hours,
         "starved_hours_utc": starved_hours,
+        "died_recent_24h": sum(1 for x in launches
+                               if str(x["outcome"]).startswith("DIED")
+                               and float(x.get("age_h") or 999) <= 24),
         "dead_seats": dead_seats,
         "not_expected_to_launch": not_expected,
         "not_expected_note": ("regional grounds merged into the unified dig (principal "
