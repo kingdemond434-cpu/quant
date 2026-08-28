@@ -51,6 +51,16 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
                                           "mechanism_for_feature"),
     "desks/mt5/research/orthogonal_sweep.py": ("MIN_TRADE_DAYS", "untestable_by_family"),
     "desks/mt5/research/merge_hypotheses.py": ("mechanism_for_feature", "banked"),
+    # THE JOB LOCK, which is SHIPPED TO THE DESK BOX by run_external_pipeline's REMOTE_MODULES
+    # and was the one file in that list nothing protected. Measured 2026-08-28: its memory
+    # admission and its liveness veto were deployed to the box and hash-VERIFIED twice, and were
+    # gone within the hour -- the working-tree replayer reverted the local copy and the sync
+    # dutifully shipped the reverted file onward. Verifying a deployment proves it landed, never
+    # that it stays.
+    # This file decides whether two heavy writers may run at once. Reverted, the desk goes back
+    # to a 45-minute stale timer on 90-minute sweeps, which does not risk a duplicate gauntlet --
+    # it guarantees one, on a box that also runs the live terminal.
+    "desks/mt5/research/job_lock.py": ("need_mb", "_owner_state", "free_mb"),
     "desks/mt5/research/qquant_shadow.py": "PROMOTION_CANDIDATE",
     # the scalp lane's certificate gate: uncertified cells must QUARANTINE, never accrue.
     # 2026-08-27: a desk-side revert re-admitted four uncertified sleeves within one pass of
