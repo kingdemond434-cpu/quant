@@ -3908,3 +3908,20 @@ turns an unmeasurable family into a measurable one.
 6. **Verify your own next-ground list before writing it.** Run (l) named six digs as next ground;
    five were already covered by run (l)'s own headline adoption, discoverable with one CSV count.
    A next-ground list is a claim and deserves verify-don't-trust like any source.
+
+## 2026-08-28 (free-data run n) — three COLLECTOR-DESIGN defects, each found live this run
+1. **Central-bank sitemaps index publications, not data — 2/2 instances.** Norges Bank (run m) and
+   Danmarks Nationalbank (this run: 8,968 URLs, 8,563 of them `/news-and-knowledge`, **zero
+   statistics**). Any sitemap-driven central-bank collector reports full coverage while missing the
+   entire data layer. Discovery must use the section index's own hrefs, or the statistics API host.
+2. **A Wayback capture's `statuscode 200` is about the archiving fetch, not the content.** Two 2019
+   norges-bank.no calendar captures indexed at 200 render `<title>Page not found</title>` in 47 kB.
+   Any CDX-driven collector must content-check, not status-check.
+3. **Path rot + one-character enumeration loss.** One Norges Bank publication used three different
+   URL paths in seven years, and one real event's slug is missing a hyphen
+   (`19-06-28foreign-exchange-transactions`). A path-pinned or strictly-anchored collector reads a
+   live source as dead and drops real events without erroring.
+Also for the parser layer: Statistics Denmark CSV is **semicolon-delimited, decimal-comma, UTF-8-BOM
+on the first header key** (mangles the first column name in a naive `DictReader`), and its
+missing-value marker is the two-character string `'..'`, which on DNVALI is a **third producer state**
+distinct from both a number and an absent row.
