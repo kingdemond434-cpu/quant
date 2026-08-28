@@ -1,0 +1,9 @@
+[Unit]
+Description=COT z-score cache refresh (migrated from crontab 2026-08-28: cron.service has been OOM-dead since 2026-08-20)
+
+[Service]
+Type=oneshot
+MemoryMax=600M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/refresh_cot_zcache.py >> data/cro_ai_logs/cot_zcache.log 2>&1'
+SuccessExitStatus=0 1 2

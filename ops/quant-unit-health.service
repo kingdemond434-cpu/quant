@@ -1,0 +1,9 @@
+[Unit]
+Description=Unit/dashboard/git-lock healer (migrated from crontab 2026-08-28: cron.service has been OOM-dead since 2026-08-20)
+
+[Service]
+Type=oneshot
+MemoryMax=400M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_unit_health.py >> data/cro_ai_logs/unit_health.log 2>&1'
+SuccessExitStatus=0 1 2

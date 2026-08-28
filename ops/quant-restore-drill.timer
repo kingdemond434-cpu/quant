@@ -1,0 +1,9 @@
+[Unit]
+Description=Weekly restore drill schedule
+
+[Timer]
+OnCalendar=Sun 06:25
+Persistent=true
+
+[Install]
+WantedBy=timers.target

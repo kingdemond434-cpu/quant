@@ -1,0 +1,9 @@
+[Unit]
+Description=Auto-push guard (local commits reach origin) schedule
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+
+[Install]
+WantedBy=timers.target
