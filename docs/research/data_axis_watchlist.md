@@ -7615,3 +7615,45 @@ retired is four fewer places the desk will spend a forward slot.
 **SWEA is graded verified-clean and RETAINED as reference data** (36 years of a 9-country daily
 benchmark-yield panel, keyless, no robots restriction on the API host) — the *panel* is sound; the
 *axis* built on it is dead. Those are separate verdicts and this run is issuing both.
+
+### SEARCH-SPACE EXPANSION — A NEW SOURCE CLASS: **the international organisation's own keyless API** (BIS Data Portal v2) -> VERIFIED-CLEAN, GRADED AS REFERENCE, WITH ONE AXIS PRE-EMPTIVELY KILLED
+
+The keyless-central-bank-API class is now six doors deep (Riksbank, BoC, NBP, CBR, + this run's MNB
+dead / TCMB live) and every door is a **national** institution. The expansion this run is a
+*different class*: the supranational statistical body that already collects every national series
+and republishes it on one schema. **`stats.bis.org/api/v2` is keyless, SDMX, and serves CSV
+directly.**
+
+*§13.* `data.bis.org/robots.txt` (496 B) is `Allow: /` with disallows only on **UI query parameters**
+— `*filter=`, `*sort=`, `*q=`, `*rows=`, `*cols=`, `*page_size=`, `*selectedDate=`, `*selected_ts=`.
+The API path uses `format=` and `lastNObservations=`, **neither of which is disallowed**; the rules
+target the browsable front-end, not the data service. Separately, **`stats.bis.org/robots.txt`
+returns HTTP 200 of 194,912 bytes of HTML** — a soft-404 robots. Under RFC 9309 unparseable content
+carries no rules, but note the shape: *the host serving the API has no valid robots file at all*,
+and a naive checker that string-matches `Disallow` in 195 KB of Next.js markup could return
+anything. I graded from `data.bis.org`'s real file.
+
+*Operations probed, not descriptors* (this run's own lesson, applied):
+
+| dataflow | probe | result |
+|---|---|---|
+| `WS_CBPOL` (policy rates, daily) | `.../WS_CBPOL/1.0/D.TR?format=csv` | **8,949 obs, 2002-02-20 → 2026-08-21** |
+| `WS_EER` (effective exchange rates, daily) | `.../WS_EER/1.0/D.N.B.HU?format=csv` | **11,094 obs, 1996-04-11 → 2026-08-25** |
+
+Both return full history in one keyless request, on a per-country code that covers the whole MT5
+currency book — this is the single widest macro door this seat has opened, and it replaces the
+country-by-country scraping the last five runs have been doing.
+
+**AND THE HONEST PART, which kills an axis before it costs a forward slot: the BIS *EER* is not new
+information about FX — it is a trade-weighted RE-WEIGHTING OF FX ITSELF.** A nominal effective
+exchange rate is constructed *from* the bilateral rates it would be used to predict, so an EER→FX
+screen is close to circular and would produce exactly the enormous contemporaneous t-stat that
+items 2 and the four prior runs have taught this seat to distrust. **It is graded reference/control
+data — useful as a normaliser and for regime labelling, never as a predictor of its own inputs —
+and I am recording that before anyone spends a screen on it.** `WS_CBPOL` is the genuinely
+exogenous half (an administered policy decision is not a re-weighting of the market), but note run
+(q) already refuted the SEK **rate-differential level** arm, so its prior is poor too.
+
+**Grade: verified-clean** (both dataflows returned full, dated, plausible history under a documented
+robots boundary). **Class result: the supranational door is real and it is broader than the
+national one** — one schema, one auth story (none), every MT5 currency.
