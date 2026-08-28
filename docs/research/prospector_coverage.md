@@ -8216,3 +8216,124 @@ with no data purchase.
 3. `zl3311/alpha-mining` failure archive — still graded RICH by s5 on a README-only pass, and now
    the *only* remaining item from the s6 next-ground list that has not been graded away.
 4. `aircrushin`'s other repos + the star-graph neighbours (the recursive hop, still untaken).
+
+---
+
+## Session s8 — 2026-08-28 (PROSPECTOR standing daily)
+
+**Backlog:** clear (73 catalogued / 48 resolved / 0 pending / 25 deferred, next returns 2026-09-01).
+No verification owed, so this run is pure next-ground from the s7 list.
+
+**ITEMS TAKEN THIS RUN (bounded; depth unbounded per item):**
+1. **Prop-firm rulebooks #2/#3** — close the s7 card's stated residual: is the 00:00-server-time
+   daily-loss reset a firm-specific convention (FTMO only) or a sector-wide clock?
+2. **`zl3311/alpha-mining` failure archive** — graded RICH by s5 on a README-only pass; still
+   ungraded at depth. Either mine it or grade it away.
+3. **Search-space expansion (>=25%)** — a source class this desk has never entered.
+
+_(status updated in place as each item resolves)_
+
+### ITEM 1 RESOLVED — the sector does NOT share one clock; the s7 falsifier inverts (and improves)
+
+Two more rulebooks read primary-source. **The s7 residual claim ("00:00-server-time convention
+appears near-universal") is REFUTED.** FTMO resets **00:00 CE(S)T**; **FundedNext** resets 00:00
+server time where server time is **GMT+3/+2 = EET/EEST**; **Alpha Capital Group** resets at *"the
+start of the daily candle (00:00 GMT+3)"*. Two of three sit **exactly on** the MT5 broker midnight
+— coincident with swap rollover and the daily-candle open, hence **structurally unidentifiable by
+any clock**. Consequence, written into the card as a revised falsifier: the **CE(S)T hour is now a
+clean instrument** (nothing else lands there, and the CET/EET gap is exactly one hour year-round
+since EU DST transitions are aligned), while the **EET hour is dead ground** for this question.
+The frontier corpus's *"00:00 spike that GREW"* is on the **EET** boundary — **s7 cited it as
+corroboration and that citation is withdrawn.** Second, unasked-for finding: the three firms use
+**three different bases** (FTMO equity; FundedNext initial-balance with intraday profit accrual and
+a midnight snap-back; Alpha One/Three/Pro-6% "higher of starting balance or equity", a one-sided
+ratchet), so the forced pool is **three participants with different trigger dynamics**, not one —
+any screen must condition on the prior day's return sign, not just the hour.
+
+### ITEM 2 RESOLVED — `zl3311/alpha-mining`: RICH in method, NULL in transferable mechanism
+
+s5 graded it RICH on a README-only pass. At depth the grade **splits**, and the honest answer is
+that the half s5 was pointing at is the half that does not transfer.
+- **The `POSTMORTEM.md` is genuinely rich** — a 10-week, 63-session, 64-submitted-alpha
+  practitioner archive published on exit (exodus genre) with the scoreboard attached. Four findings
+  routed to `improvement_inbox.md`, the sharpest being a **measured ~1.5x understatement of
+  self-correlation when candidates share input fields** (bias direction = optimistic orthogonality
+  = overstated EV, which is a falsifiable claim about a quantity this desk computes), and
+  **negation as an independence-expander** (a factor and its negation are anti-correlated with each
+  other but load oppositely against a held book — a free doubling of generator search space).
+- **The 28 `dead_zones/` are a NULL for this desk.** Every one is keyed to BRAIN
+  `fundamental6`/`fundamental2` fields on a rank-neutralised US equity cross-section. The desk has
+  no fundamental data. **Not transferable — graded away, so no future run re-mines them.** The one
+  bridging residual the author explicitly left open (`ts_delta(F,5)/ts_std_dev(F,20)` *"may work
+  for daily/dense fields (price, volume, IV) — untested"*) is vol-normalised momentum, which is
+  **price-only with no forced participant** and dies on the mechanism test, not on a graveyard
+  match (the graveyard itself is out-of-universe — R0690).
+- **§13:** code MIT; `data/` is a research record under an explicit `DATA-NOTICE.md` — submitted
+  expressions remain WorldQuant's property, so **no alpha expression was carded or reused**; only
+  the author's own prose findings were taken. **Nothing installed or run** (supply-chain rule).
+
+### ITEM 3 RESOLVED — new source class entered, and it produced the run's largest finding
+
+**New class: broker operational-notice archives** (distinct from deferred seed S22, which is
+*swap/spread tables*). Entered at the desk's **own broker**, which is the highest-relevance
+possible instance and had never been mined. `fusionmarkets.com` §13 clean (`Allow: /`), 113 posts
+enumerated from its sitemap.
+
+The find is **`/posts/weekly-index-dividends`**, and it is not an alpha — it is a **suspected FALSE
+NULL in the desk's own accounting**, ledgered as **R0691**. Verbatim from the broker: index CFD
+dividends are a **discrete cash adjustment**, *"traders shorting an index will pay the dividend,
+whereas traders who are long the index will be paid"*. The desk's `positions_to_returns`
+(`libs/research/transcript_candidates.py:50`) is `np.diff(c)/c[:-1]` — **close-to-close, no
+cash-flow term** — and "dividend" appears in **zero** cost/PnL paths repo-wide. **122 of 251
+universe symbols (48.6%)** are affected, the largest class being the **106 US share CFDs**, not the
+16 indices. And the desk **has already killed an axis over exactly this**: `libs/factory/registry.py:81`
+records *"price-only CFD (dividend drag) corrupts bond ETF trend (-1.2) ... Tested, mostly
+rejected"* — the mechanism correctly diagnosed, then filed as a property of the instrument rather
+than of the desk's own return construction. Full chain, with the one inference labelled as an
+inference, in `improvement_inbox.md`. **This is L1.47 and an L1.16a named-enabling-change reopen
+candidate.**
+
+### Coverage bookkeeping
+
+| Source family | Visited | Yield |
+|---|---|---|
+| Prop-firm rulebooks (FundedNext, Alpha Capital Group) | ✅ | s7 residual **closed by refutation**; falsifier revised + a second basis-heterogeneity finding |
+| The5%ers rulebook | ⛔ | **WALLED** — see §38 below |
+| `zl3311/alpha-mining` (POSTMORTEM full, DATA-NOTICE, 2,231-path tree, 4 dead_zones) | ✅ | **EXHAUSTED 2026-08-28** for mechanism transfer (null, graded); 4 method findings → inbox |
+| **Broker operational-notice archives (NEW CLASS)** — fusionmarkets.com, 113 posts | ✅ | **R0691** — the run's largest finding |
+
+- **DEPTH:** rulebooks → **primary source, quoted verbatim, three firms, cross-tabulated on two
+  axes (clock AND basis)** — the depth is what turned "confirm a convention" into "refute it and
+  discover the pool is three pools". `alpha-mining` → **full postmortem + full tree + four
+  dead-zone files read**, and the depth is what split s5's single RICH grade into rich-method /
+  null-mechanism. Fusion → **sitemap-enumerated, then traced the finding *into the desk's own
+  code* until every link was a path+value** rather than stopping at the broker page.
+- **§38 EXCLUSION → REPLACEMENT (same run, as required):** **The5%ers WALLED.** `the5ers.com/robots.txt`
+  is `Allow: /`, but its sitemap serves every content URL from **`wp.the5ers.com`, whose robots is
+  `Disallow: /`**. An allowed apex delegating content to a disallowed host — **the apex's grant does
+  not extend, robots being host-scoped.** Content fetched before that robots read was **discarded
+  unparsed**. Replacement found in-run: **Alpha Capital Group** (open), which is the third row of
+  the table. Rulebook count unreduced by the exclusion.
+- **Video:** 0 fetched, 0 locked — no video route attempted or needed. Nothing added to
+  `video_locked_log.md`; a platform is only logged when actually tried and failed.
+- **Honest null:** item 2's headline artifact (the dead-zone archive) produced **no transferable
+  mechanism** and is recorded as a null rather than padded into cards.
+- **NEW OPERATOR LESSON (host-scoped robots):** a sitemap on an allowed host is not a grant for the
+  hosts it points at. Read robots **per host, before the fetch**, not per domain. This is the
+  host-level twin of the KR s5 group-scoping trap.
+
+### NEXT UN-EXHAUSTED GROUND (for s9, in order)
+
+1. **The rest of the broker operational-notice class** — this run entered it and it paid
+   immediately. `/posts/upcoming-holidays` (session/schedule changes = dated liquidity-regime
+   changes) is unread, and the same class exists at every MT5 broker: margin-requirement change
+   notices ahead of elections/referendums are **announced, dated, forced deleveraging in a known
+   pool**. Nothing in this class has been mined beyond the one page.
+2. **US share CFD dividend exposure specifically** — R0691 covers the mechanism, but the 106
+   Equities are the larger half and their dividend calendars are separately public.
+3. `aircrushin`'s other repos + star-graph neighbours — the recursive hop, still untaken after two
+   sessions of being listed. Take it or grade it away in s9.
+4. **Second prop-firm axis:** the basis-heterogeneity finding (equity vs balance vs one-sided
+   ratchet) suggests reading rulebooks for *which products a firm bans* — news-trading and
+   overnight-hold bans are forced-flow constraints on the same pool. Alpha Capital publishes exactly
+   such a page (`/posts/alpha-capital-news-trading-and-overnight-rules-explained-2026`), unread.

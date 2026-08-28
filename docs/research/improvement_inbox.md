@@ -3167,3 +3167,171 @@ is load-bearing, because the rung-0 independence check gates promotion.
 `continue`s on unequal series length, so a short-history candidate correlates against nothing and
 reads as perfectly diversifying. The desk's `pairwise_corr` already returns `None` for exactly
 this case with the WS-005 reasoning written into its docstring. Desk wins; nothing to take.
+
+## [prospector s8, 2026-08-28] `zl3311/alpha-mining` POSTMORTEM — an independent 10-week practitioner archive whose findings collide with three desk quantities
+
+**Source, §13-clean:** `github.com/zl3311/alpha-mining` — code **MIT**; `data/` published as a
+research record under an explicit `DATA-NOTICE.md` (submitted alpha expressions remain
+WorldQuant's property; the author states plainly he cannot grant rights he does not hold).
+**Nothing was installed or run** (supply-chain rule) — mined as TEXT only. Read: `POSTMORTEM.md`
+(179 lines, full), `DATA-NOTICE.md`, the full 2,231-path repo tree, and four
+`data/knowledge/dead_zones/template-*.md` files. Repo created and pushed **2026-07-25**, 0 stars,
+1 fork — a publish-on-exit dump, which is exactly the **practitioner-exodus genre** and why it is
+worth more than its star count.
+
+**Scoreboard attached (his own numbers, reproducible from the repo):** 10 weeks, 63 mining
+sessions, 64 live submitted alphas across 60 mechanism families, 22 SPECTACULAR / 37 EXCELLENT,
+~53,000 simulations, 1,669 factor profiles, 28 dead zones. Ended by an unexplained platform
+account lock. **All performance figures are in-sample BRAIN backtests on US equities** — he says
+so himself, and no number below is treated as validated.
+
+### Four findings that touch quantities this desk actually holds
+
+**1. The binding constraint was CORRELATION BUDGET, not signal quality — and he says designing
+around signal quality was his central architectural mistake.** *"By roughly 50 alphas I was
+spending most of my budget not on finding signal but on finding signal orthogonal to signal I
+already had. I designed the system around signal quality when I should have designed it around
+correlation budget from the start."* This is independent, scoreboard-backed corroboration of
+**L1.61** ("selection optimises MARGINAL INDEPENDENCE directly, so a second copy of a held edge
+scores ~0"). The desk already holds the right law. **The transferable part is the *rate*: the wall
+bound at ~50 held alphas under a 0.7 self-correlation cap.** The desk's forward book is capped at
+`MAX_FORWARD_SLOTS=12` and its measured crypto breadth was `N_eff 1.54` raw / 29 neutral, so the
+desk is nowhere near that wall — which is itself the finding: **the desk's binding constraint is
+still generation, not orthogonality**, and it should not import his correlation-first architecture
+until its own funnel reaches that regime. Filed as calibration, not as a build.
+
+**2. MEASURED: a local PnL-correlation estimate understated the authoritative one by ~1.5x when
+two candidates SHARED DATA FIELDS.** *"My local PnL correlation estimate systematically understated
+BRAIN's self-correlation figure — by roughly 1.5x when two alphas shared data fields."* This is a
+falsifiable claim about a **failure mode of a correlation estimator**, and the desk runs one
+(`pairwise_corr` / `effective_bets` / the `orthogonality` input to `alpha_economics`). The bias
+direction is the dangerous one: understated correlation → overstated orthogonality → **overstated
+EV**, on exactly the candidates most likely to be near-duplicates (shared inputs). Note the desk
+has already been bitten by an adjacent arithmetic error in the same family — `effective_bets`
+reported 64.4 independent bets from 29 perps because removing a common factor manufactures negative
+residual correlation (`demeaning_floor`).
+> **PROPOSED MEASUREMENT (not a fix — the desk has no evidence its own estimator has this bias):**
+> take pairs of desk candidates that share input series, and compare `pairwise_corr` on the signal
+> series against realised-PnL correlation on the same pairs. If the signal-space number is
+> systematically lower, the EV gate's orthogonality input is optimistic and every `ev` this desk
+> has published on a shared-input candidate is too high. If it is not, this is refuted and the row
+> closes. **UNMEASURED until then — this is not a defect claim, it is an instrument request (L1.46).**
+
+**3. NEGATION AS AN INDEPENDENCE-EXPANDER — the one concrete, cheap, in-universe idea.** *"Negating
+a building block — `rank(-1 * x)` instead of `rank(x)` — opens a substantially larger set of
+independent directions than the positive direction alone, because a factor and its negation load
+differently against an existing book. I found this after the positive direction was near
+saturation."* The asymmetry is real and non-obvious: a factor and its negation are perfectly
+anti-correlated *with each other* (so they look like one bet in isolation) but have **opposite**
+correlations to every held sleeve, so against a non-empty book they occupy genuinely different
+slots. Cost to the desk is near-zero — it is a sign flip in the generator's search space, not new
+data, not new code paths. Worth checking whether the desk's own candidate generator already
+enumerates both signs; **if it enumerates only the positive direction, it is searching half its
+space for free.** Routed here as a generator question, not a card.
+
+**4. SATISFICING TRIPLED THROUGHPUT.** *"Changing the goal to 'stop at the first candidate that
+clears every gate' roughly tripled throughput of submitted alphas per unit of compute."* Consistent
+with the desk's own doctrine (throughput comes from screening MORE, never from passing more) and
+with the fixed-for-life canonical gate policy — the desk already satisfices by construction, since
+its ten gates are a **fixed bar** rather than a ranking. Recorded as corroboration; **no change
+proposed, because the desk's version of this is already the stricter one.**
+
+### And the finding he names as the one he'd most like back
+
+*"I did not snapshot platform state... 'I can always look it up later' is exactly the assumption
+that fails when access disappears."* 63 session files, zero record of points/rank/standing, then
+the account closed. This desk's exposure to the identical failure is its **external track-record
+corpora** (MQL5, FX Blue, Darwinex, prop-firm pages) — all read live from hosts that can wall or
+delete at any time, several of which **already have** (the5ers walled this very run; FPA, myfxbook,
+Wilmott ×4). The desk's habit of archiving fetched corpora under `data/intelligence/` is the right
+one and this is evidence for keeping it, not a new build.
+
+## [prospector s8, 2026-08-28] STRUCTURAL — the desk's return construction is price-only, 48.6% of its universe pays a discrete dividend cash flow, and one axis has ALREADY been graveyarded for the resulting drag
+
+**This is a suspected FALSE NULL on an axis the desk has already killed, which is the one failure
+direction the desk's own memory says no gate here catches** (*"a killed axis produces no alert"*).
+Every link below is verified against a path + value read this run; the one inference is labelled.
+
+### The chain
+
+**1. VERIFIED — the desk's own broker pays a discrete dividend cash flow on index CFDs, and the
+sign is direction-dependent.** Primary source, `fusionmarkets.com/posts/weekly-index-dividends`
+(§13: `fusionmarkets.com/robots.txt` is `User-agent: * / Allow: /`, whole file read):
+> *"Due to the corresponding price movement of the stock index when the ex-dividend date is
+> reached, Fusion must provide a 'dividend' adjustment to ensure that no trader is positively or
+> negatively impacted by the ex-dividend event."*
+> *"Traders shorting an index will pay the dividend, whereas traders who are long the index will
+> be paid the dividend."*
+> *"The dividend will appear as a **cash adjustment** on your account."*
+Figures are published **weekly, in index points**. So the ex-date price drop IS in the price
+series, and the compensating credit **is not** — it is a separate balance entry.
+
+**2. VERIFIED — the desk's return construction contains no cash-flow term.**
+`libs/research/transcript_candidates.py:50` `positions_to_returns`:
+```
+r[1:] = np.diff(c) / c[:-1]
+...
+return np.asarray(gross - turn * cost_per_turn)
+```
+Close-to-close price return, minus turn costs. The docstring is scrupulous about costs (*"COSTS ARE
+ALWAYS ON"*, 6 bps/turn) — the omission is not sloppiness about costs, it is that a **discrete
+scheduled cash flow was never in the model at all.** This is **L1.47 verbatim**: *"discrete
+payments booked as continuous accruals are expectation errors"* — except here they are not accrued
+either, they are simply dropped.
+
+**3. VERIFIED — "dividend" appears in exactly 2 python files repo-wide, neither in a return, cost
+or PnL path.** `grep -ril dividend desks/mt5 libs scripts --include=*.py` → `libs/factory/registry.py`
+(a prose comment) and `libs/research/evidence_tier.py:213` (a vocabulary tuple, `"dividend capture"`).
+There is no dividend handling anywhere in the engine.
+
+**4. VERIFIED — 122 of 251 universe symbols (48.6%) are dividend-paying instrument classes.**
+From `desks/mt5/data/universe/universe.json`: **Equities 106**, **Indices 16**, Bonds 3 — against
+Forex 29, Forex Exotics 57, Crypto 14, Commodities 12, Soft Commodity 11, Energy 3. The exposure is
+**not** the 16 indices; the largest affected class is the **106 US share CFDs**, which pay ordinary
+dividends on the same mechanism.
+
+**5. VERIFIED, AND THIS IS THE POINT — the desk has already killed an axis and blamed the
+instrument.** `libs/factory/registry.py:81`, the MT5 ETF-CFD dataset row:
+> *"ingested; sleeves DON'T clear — **price-only CFD (dividend drag) corrupts bond ETF trend
+> (-1.2)**; sector/curve/credit ~0. Tested, mostly rejected."*
+The desk **correctly diagnosed the mechanism**, wrote it down, measured a sleeve at **Sharpe −1.2**
+— and then recorded the verdict as a property of the *instrument* ("Tested, mostly rejected")
+rather than as a defect in its own return construction. TLT/LQD/EMB yield roughly 4–5.5%/yr; a
+price-only long-side series on those carries a systematic negative drift of that size. That is
+comfortably enough to drag a modestly positive trend sleeve to −1.2.
+
+### Why this matters more than one dead sleeve
+
+The bias is **systematic and directional**, not noise: price-only returns **understate every long**
+and **overstate every short** on 122 symbols by the instrument's dividend yield. Consequences:
+- Any long/short screen over indices or share CFDs is **silently tilted toward the short side**.
+- A short-index sleeve that passes the ten gates may be passing on **phantom return it would pay
+  out in cash** in live trading — the dangerous direction, because it survives to capital.
+- Conversely, long-side edges on nearly half the universe are being **rejected at a handicap**,
+  and rejections leave no alert.
+
+### What this is NOT (stated so nobody over-reads it)
+
+- **Not measured on any desk sleeve other than the bond-ETF row the desk itself recorded.** The
+  −1.2 figure is the desk's own; I did not reproduce it.
+- **INFERENCE, labelled:** that the MT5 backtest path for indices/equities uses this same
+  price-only construction. It is strongly supported (no dividend code exists anywhere) but I traced
+  `positions_to_returns` specifically, not every return path in `desks/mt5`. **Confirming which
+  return builders feed the index/equity screens is the first step, not the fix.**
+- **Not a live-accounting claim.** `gateway.py:1063` sums `profit + commission + swap` for live
+  deals; whether MT5 surfaces dividend adjustments as a separate balance deal type that this misses
+  is **UNMEASURED** and should be checked separately — if it is missed there too, live PnL
+  attribution on 122 symbols is also short a term.
+
+### Proposed disposition (research-only run — nothing was changed)
+
+1. **Instrument first (L1.46).** Confirm the return builders used by the index/equity screens. One
+   grep-and-read; no new capability.
+2. **The data is free and already published weekly by the desk's own broker**, in index points, on
+   a page the desk can read without a purchase — so a dividend-adjustment series for the 16 indices
+   is buildable from the primary source. US share CFD dividends are equally public.
+3. **L1.16a REOPEN CANDIDATE.** The bond-ETF/ETF-CFD axis was killed with its mechanism of death
+   *named in the kill record itself*. A dividend-aware return construction is precisely a **"NAMED
+   enabling change addressing the original mechanism of death"** — the standard L1.16a requires for
+   re-opening a graveyarded axis. It should be re-opened **only after** the construction is fixed
+   and verified, never before.

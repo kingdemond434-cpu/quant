@@ -8891,6 +8891,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0691",
+   "source": "deep_sweep",
+   "summary": "Return construction is price-only while 122 of 251 universe symbols (106 Equities + 16 Indices) pay a discrete dividend cash flow: positions_to_returns in libs/research/transcript_candidates.py builds close-to-close returns with no cash-flow term, and dividend appears in zero cost/PnL paths repo-wide. Fusion pays LONG and charges SHORT index CFDs as a separate balance adjustment, so price-only returns systematically understate every long and overstate every short on 48.6 pct of the universe. The desk already killed the ETF-CFD axis citing this exact drag (registry.py:81, bond ETF trend -1.2) and attributed it to the instrument rather than to its own accounting - a suspected FALSE NULL. STEP 1 is instrumentation not repair: confirm which return builders feed the index/equity screens. L1.47, and an L1.16a named-enabling-change reopen candidate. Evidence: docs/research/improvement_inbox.md prospector s8 2026-08-28.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T13:41:15.526107+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

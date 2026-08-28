@@ -899,3 +899,70 @@ affected pool is unmeasured, and the card claims no return. The next step is the
 decomposition above, which is a screen against the desk's own MT5 tape and needs nothing bought.
 This is ONE firm's rulebook; the 00:00-server-time convention appears near-universal in the
 sector but that is a CLAIM until a second and third rulebook are read.
+
+### AMENDMENT — [prospector s8, 2026-08-28] the "near-universal 00:00 CE(S)T" claim is REFUTED; the pool sits on TWO clocks, and only one of them is identifiable
+
+The s7 card closed on a stated residual: *"the 00:00-server-time convention appears near-universal
+in the sector but that is a CLAIM until a second and third rulebook are read."* Two more rulebooks
+read, primary-source and verbatim. **The claim was wrong, and the way it is wrong changes the
+falsifier rather than killing the card.**
+
+| Firm | Reset instant | Basis of the daily limit | Provenance |
+|---|---|---|---|
+| **FTMO** | **00:00 CE(S)T** (UTC+1/+2); "Trading Day" defined 00:00:00–23:59:59 CE(S)T | **equity** at the 00:00 balance snapshot | s7, verbatim from FTMO T&C |
+| **FundedNext** | **00:00 server time**, and server time is **GMT+3 summer / GMT+2 winter** = **EET/EEST** | **initial balance × fixed %**; intraday profit ADDS to the day's buffer, and the buffer resets to the fixed figure at 00:00 | VERIFIED — `help.fundednext.com/en/articles/8019672-what-is-fundednext-s-server-time` (dateModified 2026-03-09) + `.../8019811-how-can-i-calculate-the-daily-loss-limit` (April 8, 2026) |
+| **Alpha Capital Group** (UK) | **"the start of the daily candle (00:00 GMT+3)"** — stated as the MT5 daily candle boundary itself | **mixed by product**: Alpha One / Three / Pro 6% use *the higher of the day's starting balance or equity*; Pro 8%, Pro 10%, Swing are balance-based. Breach judged on live equity either way | VERIFIED — `alphacapitalgroup.uk/posts/alpha-capital-rules-explained-drawdown-profit-targets-daily-loss-and-evaluation-rules-2026` |
+
+**What this does to the mechanism.** Two of the three firms reset on **EET**, which is exactly the
+MT5 broker server midnight — the same instant as swap/rollover AND as the daily-candle open. The
+s7 falsifier assumed the prop clock (CE(S)T) and the swap clock (EET) were *always one hour apart*,
+so an hourly grid would decompose them. That is true **only for the FTMO-class pool**. For the
+EET-class pool the prop reset, the swap charge and the daily-candle boundary are **perfectly
+coincident and cannot be separated by any clock**, at any time of year, with any amount of data.
+
+**So the falsifier inverts, and it gets CLEANER, not dirtier:**
+
+> **REVISED FALSIFIER.** The **00:00 CE(S)T** hour is now the *clean instrument*, not one of two
+> arms: any effect there is attributable to the CE(S)T-reset pool alone, because no swap charge,
+> no candle boundary and no EET-firm reset lands on that hour. The **00:00 EET** hour is
+> **structurally unidentifiable** and must NOT be read as evidence for this mechanism in either
+> direction — a null there refutes nothing and a spike there confirms nothing. The desk's already-
+> measured *"00:00 spike that GREW"* (frontier 2026-08-28, FX Blue corpus) is on the **EET**
+> boundary and is therefore **not admissible as support for this card**; s7 cited it as
+> corroboration and that citation is withdrawn.
+> Test = CE(S)T arm vs. a same-hour control on days when CE(S)T and EET coincide... which never
+> happens (CET is UTC+1/+2, EET is UTC+2/+3 — DST transitions are aligned in the EU, so the gap is
+> exactly one hour year-round). The one-hour separation that makes the CE(S)T arm clean is
+> therefore *structural*, not seasonal. Good.
+
+**Second finding, unasked for and arguably larger than the clock.** The three firms do not share a
+**basis**, and the basis determines *when in the day* the forced-exit threshold moves:
+- **Equity-basis re-basing at the boundary (FTMO)** → the threshold is a step function: fixed all
+  day, jumps at 00:00.
+- **Balance-basis with intraday profit accrual (FundedNext)** → the threshold **drifts intraday
+  with the trader's own P&L** and *snaps back* to a fixed figure at 00:00. A profitable morning
+  mechanically widens that pool's tolerance for an afternoon reversal, and the snap-back at
+  midnight is therefore **larger after a profitable day** — a P&L-conditional forced-flow term the
+  s7 card did not contain.
+- **"Higher of starting balance or equity" (Alpha One/Three/Pro 6%)** → a one-sided ratchet:
+  tightens on losses, does not loosen on gains.
+
+That heterogeneity means the pool is **not one forced participant, it is three**, with different
+trigger dynamics. A single indicator built on "midnight reset" would average them and is the wrong
+construction. Any screen must condition on the previous day's return sign, not just the hour.
+
+**Status:** card stays **QUEUE** at the same EV (nothing here changes the est_sharpe input; it
+changes the *test design*, which is upstream of the number). The residual is now narrower and
+named: the CE(S)T arm is testable today on the desk's own tape; the EET arm is dead ground for
+this question and should not be spent on.
+
+**§13:** FTMO robots `Disallow:` (empty, open). `fundednext.com` + `help.fundednext.com` robots read
+in full, single `*` group, target paths unlisted; FundedNext publishes an `/llms.txt` that *names*
+the two articles used. `alphacapitalgroup.uk` robots `Allow: /`. All public marketing/help pages,
+no authenticated surface.
+**§38 EXCLUSION → REPLACEMENT (executed in-run):** **The5%ers is WALLED.** `the5ers.com/robots.txt`
+is `Allow: /`, but its own sitemap serves every content URL from **`wp.the5ers.com`, whose robots is
+`User-agent: * / Disallow: /`**. The allowed apex delegates its content to a disallowed host — the
+apex's grant does **not** extend, robots being host-scoped. Content fetched before that robots read
+was **discarded unparsed and unused**. Replacement found in the same run: **Alpha Capital Group**,
+which is what the third row above is; the count of rulebooks read is unreduced by the exclusion.
