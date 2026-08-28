@@ -6700,3 +6700,95 @@ Mining authorised. Resuming run (m)'s own named next ground — not opening fres
 query the artifacts this desk already owns to see whether they cover the question. Recorded per item.
 
 *(Status updated in-place as each item resolves; findings are never held in context to the end.)*
+
+### ITEM 1 — RESOLVED, ADOPTED verified-clean: **the mandated-sovereign-flow class has a DAILY member — Danmarks Nationalbank's FX intervention tape**
+
+**Counter-measure first (run (m)'s own lesson, applied):** before opening a host I queried the 137
+sources already in `data_universe_map.json` for Denmark/Danmark/Danish/DKK/nationalbank — **zero
+hits**. The ground was genuinely unowned, so the dig was justified. (Run (m) skipped this step and
+paid for it with six redundant queued digs.)
+
+**§13:** `www.nationalbanken.dk/robots.txt` is 98 bytes: `#Allow all crawlers / User-Agent: * /
+Allow: /`, **zero Disallow**. `nationalbanken.statistikbank.dk/robots.txt` returns a **302 into an
+HTML search page** — i.e. no robots file — which under RFC 9309 is "unavailable" and therefore
+ALLOW. Both green, no UA-shopping needed.
+
+**THE DOOR IS NOT THE BANK'S OWN SITE.** All of Danmarks Nationalbank's statistics ship through
+**Statistics Denmark's keyless API, `api.statbank.dk/v1`** — no registration, no key, no rate wall
+observed. `/v1/tables?format=JSON` returns **2,310 tables, of which 107 carry the `DN` prefix**.
+One request enumerates a G10 central bank's entire statistical output.
+
+**SECOND INDEPENDENT INSTANCE OF RUN (m)'s SITEMAP FINDING — this is now a pattern, not a
+coincidence.** I pulled the full 4.8 MB `sitemap_content.xml`: **8,968 URLs, of which 8,563 are
+`/news-and-knowledge` publications and ZERO are statistics.** Norges Bank's sitemap did the same
+thing to run (m). **CENTRAL-BANK SITEMAPS INDEX PUBLICATIONS, NOT DATA.** A sitemap-driven crawler
+— which is the standard "polite" discovery route — misses the entire data layer of a central bank
+while reporting full coverage. Worth carrying to every future central-bank dig as a default.
+
+#### THE HEADLINE: `DNVALI` — *Intervention, net purchase of foreign currency, DAILY observations*
+
+**673 valued DAILY observations, 1999-01-04 → 2022-12-30, DKK bn, signed** (372 positive, 296
+negative, 5 zero). Peak **35.4 bn on 2015-01-19**; Jan-2015 **+130.5 bn**, Feb-2015 **+144.4 bn** —
+the post-SNB-floor defence of the peg, visible day by day.
+
+**MECHANISM — who is forced and why they cannot stop:** the central bank, by the ERM-II peg. It
+must trade whatever size holds the band, cannot time it, cannot decline it. Same structural family
+as run (m)'s Norges Bank find and as funding/carry, the desk's only repeat survivor.
+
+**VERIFIED — and against an arm I built rather than a second wording of the same number.** DNINTVAL
+ships a producer-supplied **value-adjustment column**, so I could compute
+`monthly Δ(official reserve assets) − value adjustment = reserve transaction flow`
+and diff it against the monthly sum of the daily intervention tape:
+**corr = 0.915 over n = 141 overlapping months, mean |diff| = 7.3 DKK bn.** The residual is
+expected and named: reserve flows also carry government FX borrowing/redemption and DN-government
+transactions that intervention does not. Two independently-compiled series, one mechanism.
+
+**FAILURE MODES — the important one is again a collapsed distinction, and it is a THREE-state one:**
+- **SPARSE BY DESIGN.** The producer's footnote: a date appears *only* if an intervention occurred.
+  So **absence genuinely IS zero here** — stated by the producer, not assumed. A parser that
+  reindexes to a business-day calendar must fill **0, not NaN**, or it deletes the informative
+  majority of a 24-year sample.
+- **THREE DATES CARRY `'..'` INSTEAD OF A NUMBER: 2024-06-30, 2024-12-30, 2025-06-30.** Under the
+  producer's own rule these dates appear *because an intervention occurred* — so `'..'` is a
+  **third state: intervention happened, value not published**, distinct from both "no intervention"
+  (absent) and a number. Dropping `'..'` collapses it into "no intervention" and **silently
+  fabricates three quiet half-year-ends**. The desk's recurring class, found again.
+- **LIVENESS: three fields, three different answers, one of them the data.** `updated` =
+  2026-07-02; tableinfo `latestPeriod` = 2025-06-30; **last VALUED observation = 2022-12-30.** Only
+  the third is a fact about the data. Run (g)'s "liveness is max(observation_date)" lesson, second
+  instance, and it costs 2.5 years of imagined recency if you read the metadata.
+- Unit is DKK bn to one decimal ⇒ interventions under 50 m DKK round to 0.0 (5 such rows).
+- CSV is **semicolon-delimited, decimal-comma, UTF-8-BOM on the first header key** — a naive
+  `DictReader` gets a mangled first column name. I hit this live this run.
+
+**TRADABILITY — BLUNT, because the mechanism is better than the instrument.** DKK is ERM-II pegged
+and DN holds EURDKK inside roughly ±0.5%. The **4 MT5 DKK legs** (EURDKK, USDDKK, GBPDKK, CHFDKK)
+are therefore near-perfect EUR crosses, so a **DKK-directional edge here is close to non-existent
+by construction** and I am not going to dress it up as one. The defensible use is as a **clean,
+forced, DAILY measure of safe-haven flow into a euro-periphery peg**, tested as a conditioning
+variable on **EURSEK / EURNOK / EURCHF / EURUSD** — cross-instrument, not a DKK trade. And the
+series ends in 2022, so it is **history for regime conditioning, not a live signal**: that is the
+honest grade and it is why I am not proposing it as an event axis.
+
+#### SECOND FIND: `DNFX` — bank FX order flow by **counterparty sector** (a CLS-class replacement)
+
+Monthly DKK turnover on **trade date**, split buy-DKK vs sell-DKK across currency (EUR/USD/other),
+**counterparty sector (domestic banks / other domestic financial / other domestic / FOREIGN)** and
+maturity buckets from ≤1 banking day. 40 months, 2023M04 → 2026M07, ~3-week lag, still live.
+`DNFXSWAP` is the FX-swap twin; `DNIRS`, `DNSEMM`, `DNUNMM` are the rates/money-market twins.
+**This is the free primary-source version of the flow-by-counterparty-segment product CLS and Kaiko
+sell.** Structure confirmed non-degenerate this run (foreign-counterparty net: n=40, sd 10.7 DKK bn,
+latest +13.2 bn) but **graded UNVERIFIED — I ran no ground-truth diff on it, and I am not going to
+call structure confirmation a verification.**
+
+#### CARDED, UNOPENED (next run — depth over breadth, named rather than padded)
+
+`DNVALD` **daily official FX fixings back to 1977-01-03** (49 years, free, daily); `DNPRND` **daily**
+Nationalbank balance-sheet specification 2005→2026-08-26 — the DKK analogue of SNB sight deposits,
+**daily rather than weekly and with no Credit-Suisse-rescue contamination** (run (g) graded the SNB
+version contaminated; this is its clean substitute); `DNRENTD` daily rates + equity index from 1983;
+**`DNIFVALE` / `DNFPVALE` — currency exposure AND HEDGING of the Danish investment-fund and pension
+sectors**, which is a published panel of a structural recurring FX hedging flow and is the most
+interesting unopened row in the 107.
+
+Universe map 137 → 141.
