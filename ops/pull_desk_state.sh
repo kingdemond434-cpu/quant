@@ -36,6 +36,30 @@ for f in shadow_state.json qquant_shadow_state.json scalp_shadow_state.json \
       "desks/mt5/reports/shadow/$f.tmp" 2>/dev/null \
     && mv "desks/mt5/reports/shadow/$f.tmp" "desks/mt5/reports/shadow/$f"
 done
+
+# THE LEDGERS THEMSELVES, which this script's own header has claimed travel since it was written
+# and which never did. MEASURED 2026-08-28: the box held 43 ledgers with 7 `phase: "forward"` rows
+# -- one per live clock -- while the VPS copies were frozen at 2026-08-26T11:00 because nothing
+# ever fetched them. `portfolio_evidence.daily_series()` reads ONLY `ledger_*.json` and counts
+# only forward rows, so it reported "0 sleeve(s) with forward observations" and
+# `check_live_readiness` blocked rung 0 on `independence: UNMEASURED`. That verdict reads as "the
+# market has not supplied observations yet"; the observations existed, on the other machine. The
+# state files crossed and the evidence they summarise did not.
+# Staged into a temp directory and moved as a batch: a half-copied ledger read mid-pull is a
+# truncated JSON array, and a reader that swallows the parse error counts the sleeve as empty --
+# which is the same silent zero this fixes.
+_LDIR="desks/mt5/reports/shadow/.ledgers.tmp"
+rm -rf "$_LDIR" && mkdir -p "$_LDIR"
+if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/shadow/ledger_*.json" "$_LDIR/" 2>/dev/null \
+   && [ -n "$(ls -A "$_LDIR" 2>/dev/null)" ]; then
+  for _l in "$_LDIR"/ledger_*.json; do
+    # A ledger that does not parse is not an update. Never overwrite a good local copy with one.
+    if .venv/bin/python -c "import json,sys; json.load(open(sys.argv[1]))" "$_l" 2>/dev/null; then
+      mv "$_l" "desks/mt5/reports/shadow/$(basename "$_l")"
+    fi
+  done
+fi
+rm -rf "$_LDIR"
 scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
     desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp 2>/dev/null \
   && mv desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp desks/mt5/reports/UNIVERSAL_SURVIVORS.json
