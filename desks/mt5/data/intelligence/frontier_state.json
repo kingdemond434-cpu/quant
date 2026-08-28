@@ -1,5 +1,5 @@
 {
-"cursor": 59,
+"cursor": 60,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -78,6 +78,9 @@
 "rentabilidade MT4",
 "rentabilidade MT5",
 "rentabilidade ranking",
+"retorno MT4",
+"retorno MT5",
+"retorno ranking",
 "sinais MT4",
 "sinais MT5",
 "sinais ranking"
