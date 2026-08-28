@@ -19,8 +19,8 @@
   "XAUUSD.asia#rr=2.5": "2026-08-27T03:34:49.090008+00:00",
   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00"
  },
- "max_clock_age_days": 4.05,
- "measured_at": "2026-08-27T15:03:39+00:00",
+ "max_clock_age_days": 4.589,
+ "measured_at": "2026-08-28T04:00:00+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

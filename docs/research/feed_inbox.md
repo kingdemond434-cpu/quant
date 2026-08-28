@@ -200,3 +200,11 @@ cleared by litminer run 10. Both DISCARD, class GENERIC TOOLING/THEORY, NO EDGE:
     continuous-time control theory (OL-BPTT adjoint + HJB); no mechanism, no data edge, no
     counterparty. Not carded.
 No mechanism cards from this batch; zero-card honesty per spec. -->
+
+## Tabular Deep Learning for Algorithmic Trading: Cross-Regime Bayesian Optimisation for Equity Signal Generation
+- 2026-08-27 · http://arxiv.org/abs/2608.27076v1
+- Algorithmic trading now represents a market exceeding $20 billion, where even marginal gains in signal robustness can translate into economically significant returns. Existing evaluations of equity prediction models do not explicitly target regime robustness during hyperparameter selection. Five model classes are trained on daily observations from approximately 300 large-cap US equities over eleven years, with Bayesian optimisation configured to target trading performance across three statistically different market regimes. Regime-robust hyperparameter selection is associated with out-of-sampl
+
+## Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation
+- 2026-08-26 · http://arxiv.org/abs/2608.25844v1
+- Coupled feedback networks are often monitored channel by channel even though cross-channel paths alter both stability margins and transmitted disturbances. We study identification of a structured feedback matrix L_t = Phi diag(gamma_t) in an output-only setting: no commanded, probing, or reference input exists -- only temporally separated outputs and the scheduling gains gamma_t are observed, while the coupling response Phi and the clearing-window inputs are not. Identification rests jointly on the persistent excitation of the observed pre-window output and on two structural features separatin
