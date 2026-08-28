@@ -101,7 +101,15 @@ def _interaction_pool_size(n_rows: int, n_features: int) -> int:
     return max(2, min(n_features, affordable_features))
 
 
-@lru_cache(maxsize=64)
+#: Big enough for the WHOLE offering, because that is what one search actually touches.
+#: `resolve_inputs` walks every peer symbol for each symbol searched, so a cache smaller than the
+#: universe does not bound memory -- it thrashes, evicting entries it is about to need again and
+#: turning an O(N) pass into O(N^2) parquet reads. Measured 2026-08-28: a 64-entry cap made a
+#: three-symbol backfill take most of an hour. 320 close series is roughly 140MB, nowhere near
+#: the 4.3GB peak this was meant to address -- that peak came from build_primitives, not here.
+#: The point was never "small", it was "bounded": memory must not scale without limit, and a
+#: constant ceiling the working set fits inside is exactly that.
+@lru_cache(maxsize=320)
 def _close(symbol: str):
     """Load a close series once per run; all-peer discovery otherwise rereads N² parquet files.
 
