@@ -42,6 +42,15 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     # that decides what may reach live capital belongs in this registry more than most.
     "desks/mt5/research/shadow_admission.py": ("authorized_runs", "authorized_specs",
                                                "all_ten_pass", "is_exact_policy"),
+    # THE DISCOVERY ENGINE. Not money-path in the order sense, but it decides what the desk
+    # ever gets to test: its testability route (MIN_TRADE_DAYS), its class-balanced rotation
+    # and its mechanism-naming queue were each written and then lost to a trample before
+    # reaching a commit (2026-08-28). Unprotected, a discovery capability lasts until the next
+    # sync; three markers make a partial revert visible.
+    "desks/mt5/research/edge_search.py": ("MIN_TRADE_DAYS", "naming_queue",
+                                          "mechanism_for_feature"),
+    "desks/mt5/research/orthogonal_sweep.py": ("MIN_TRADE_DAYS", "untestable_by_family"),
+    "desks/mt5/research/merge_hypotheses.py": ("mechanism_for_feature", "banked"),
     "desks/mt5/research/qquant_shadow.py": "PROMOTION_CANDIDATE",
     # the scalp lane's certificate gate: uncertified cells must QUARANTINE, never accrue.
     # 2026-08-27: a desk-side revert re-admitted four uncertified sleeves within one pass of
