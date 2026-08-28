@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T04:12:16+00:00",
+ "built_at": "2026-08-28T05:07:48+00:00",
  "tasks": [
   {
    "source": "github",
@@ -6489,6 +6489,38 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "url": "https://github.com/Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZovraT/MT5-MT4-Close-Orders-Script",
    "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
    "symbols": [],
@@ -6577,32 +6609,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
-   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "shazzadu1/Trade-Halting-Safeguard",
-   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6617,14 +6625,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "youcefito/mt5-quiet-automata",
    "url": "https://github.com/youcefito/mt5-quiet-automata",
    "symbols": [],
@@ -6633,24 +6633,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "TheHolderCollective/MetatraderSharpCookbook",
-   "url": "https://github.com/TheHolderCollective/MetatraderSharpCookbook",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6989,6 +6973,14 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@H_Trading",
+   "url": "https://my.litefinance.org/traders/H_Trading",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@UnicornFxCapital",
    "url": "https://my.litefinance.org/traders/UnicornFxCapital",
    "symbols": [],
@@ -7095,14 +7087,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Horizon_Finance",
    "url": "https://my.litefinance.org/traders/Horizon_Finance",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@EA_SuperTN",
-   "url": "https://my.litefinance.org/traders/EA_SuperTN",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -8634,16 +8618,6 @@
    "source": "mql5_survivors",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2308095",
-   "symbols": [
-    "AUDCAD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "mql5_survivors",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "",
    "url": "https://www.mql5.com/en/signals/2367701",
    "symbols": [
     "AUDCAD",
@@ -8658,6 +8632,16 @@
     "EURAUD",
     "EURCAD",
     "EURCHF"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2308095",
+   "symbols": [
+    "AUDCAD"
    ],
    "mechanism_tags": []
   },
