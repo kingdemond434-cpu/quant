@@ -3645,3 +3645,25 @@ US500 / NAS100 / BTCUSD: mode 5 — an annual %, so no fixed per-night constant 
    equal on this feed, but that equality is an assumption nothing asserts.
 4. Positive control: assert `USDJPY` long swap comes back a **credit**. Any implementation that
    returns a cost there has the sign or the currency wrong.
+
+## 2026-08-28 (free-data seat g) — liveness must be measured on the LAST OBSERVATION
+
+**Class:** a green endpoint over a frozen series. SNB cube `rendoblid` returns HTTP 200, well-formed
+CSV, 7,534 rows, and a `PublishingDate` of `2025-09-01` — while its last observation is
+**2025-07-31**. The API *host* is live and current (sibling cube `zimoma` published 2026-08-03), so
+every host-level or endpoint-level liveness probe reports GREEN on a discontinued dataset.
+**This is the desk's `heartbeat != data liveness` lesson on a data source rather than a socket, and
+the same lesson on the source side that the 2026-08-28 (e) `count is not recency` finding made on
+the lake side.**
+**Patch:** any source-liveness instrument must key on `max(observation_date)` vs today, never on
+HTTP status, byte count, endpoint reachability, or a vendor-supplied publishing stamp. A publishing
+stamp NEWER than the last observation is affirmative evidence of discontinuation, not of freshness.
+**No owner — this seat is research-frozen and cannot write `scripts/`.** `data/data_universe_map.json`
+now carries `verified_*` dates per source but has **no last-observation field**, so the map cannot
+currently answer "is this source still alive?" for any of its 113 entries.
+
+## 2026-08-28 (free-data seat g) — two-header-row unit trap in BoE era files
+A first-all-numeric-row header heuristic on the BoE OIS 2009–2015 workbook reads the `months:`
+header instead of `years:`, silently converting a 10-year tenor request into 10 months and
+fabricating a smooth, monotone, plausible-looking spread series. Any parser of BoE/central-bank
+era workbooks must key on the literal `years:` label. Detail in `data_axis_watchlist.md` 2026-08-28 (g).

@@ -5590,3 +5590,111 @@ hiding it.
    Real-vs-nominal is a daily breakeven-inflation series for free, and it is one parse away.
 4. Still owed, outside this seat's freeze: the **`macro_state.json` three-way write race** (patch in
    `improvement_inbox.md`, still no owner) and now the **bar-liveness `n_unobservable` patch**.
+
+---
+
+## SESSION 2026-08-28 (g) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Items taken this run (written before searching, per the completion contract):**
+1. **BoE GLC real / inflation / OIS curves — PARSE.** Downloaded and confirmed present last run,
+   never parsed. Real-vs-nominal is a daily breakeven-inflation series for free. Highest-certainty
+   item: the bytes are already on disk.
+2. **Re-probe the "walled" institutions at PATH granularity for the bulk-file class** (RBA, RBNZ,
+   SNB, BoJ, the Fed districts). Last run proved a path-scoped Disallow was read as a host ban.
+3. **Categories 3/4 (non-English regional + community lakes)** — owed, untouched for two runs.
+
+Status updated in place as each resolves.
+
+**RESOLUTION:** items 1 and 2 CLOSED to depth. Item 3 (categories 3/4) NOT dug — bounded per the
+completion contract and carried to next run as named ground, not implied coverage.
+
+### CARD — UK 10y gilt–OIS spread (DERIVED) · verified-clean · ADOPTED
+`data/boe_glc_curves_10y.jsonl`, 12,415 rows. 2,672 spread obs 2016-01-04 → 2026-07-31, range
+−18.8bp to +62.8bp. Both legs are the **same BoE fitted-curve methodology on the same daily grid**,
+so the spread is methodology-clean in a way gilt-yield-minus-a-vendor-swap-rate is not. The BoE does
+not publish it as a series and neither leg contains it. Replaces a Bloomberg/Refinitiv sterling
+asset-swap-spread subscription.
+**Verified with no vendor at all, by event alignment:** the four largest 1-day moves are
+2020-03-18/19/20 (COVID dash-for-cash and the BoE's £200bn QE announcement) and 2022-09-29 (the day
+after the emergency LDI gilt intervention); the five most negative observations are all Sept/Oct
+2022. A construction error would not land its extremes on the two known sterling dislocations.
+
+### CARD — SNB `rendoblid` CHF curve · verified-clean but DISCONTINUED-AT-SOURCE · historical only
+`data/snb_chf_curve_daily.jsonl`, 7,685 rows / 22 series. CHF 10y 1988-01-04 → **2025-07-31**;
+CHF credit curves by borrower category and by rating (AAA/AA/A) from 2000-12-29; a Bund 10y leg from
+1997. 37 years of CHF term structure for £0, and CHF is a live MT5 leg (USDCHF/EURCHF/CHFJPY) for
+which the desk held **no** term structure at all.
+**Event-aligned:** the first negative CHF 10y observation is 2015-01-16 — the trading day
+immediately after the SNB abandoned the EURCHF floor.
+**The trap, and it is this seat's own recurring class:** the cube's `PublishingDate` reads
+`2025-09-01` while the last observation is `2025-07-31`, and the API *host* is live and current
+(cube `zimoma` published 2026-08-03). **A host-liveness probe reports GREEN on a frozen cube.**
+Liveness is a property of the LAST OBSERVATION — never of the endpoint, never of the publishing
+stamp. Graded historical-only; must not feed a live conditioning variable.
+
+### CORRECTION — the BoE ships THREE independent curves, not four
+Measured, not assumed: nominal(10y) − real(10y) − inflation(10y) = **0.000000 for all 19
+overlapping observations, max|resid| 0.000000**. The published Inflation curve is an exact
+arithmetic identity, not a third dataset. The 2026-08-28 (f) card implied four products; there are
+three (nominal, real, OIS) plus one derivation. Do not spend a separate trial on it.
+
+### FAILURE-MODE INTELLIGENCE — the unit trap that fabricated a publishable series
+I generated, and then killed, a smooth monotone gilt–OIS spread of +140 to +320bp for 2009–2015.
+It was **entirely fake**. The BoE's OIS 2009–2015 era file carries **two** header rows — `months:`
+then `years:` — and a first-all-numeric-row header heuristic grabs *months*, so the column headed
+`10` is 10 **months**. The same file's grid is 1–60 *months* (0.083y–5y) and contains **no 10y point
+at all**; the honest series starts 2016-01-04. What caught it was not a gate — it was that
++316bp is not a number a 10y gilt–OIS spread has ever printed. **A unit error inside a plausible
+range would have shipped.** Related sheet drift: `4. spot curve` / `4. nominal spot curve` /
+`4.  real spot curve` (two spaces), and the OIS 2009–2015 file has only two sheets where index-2 is
+the *forward* curve — a hardcoded sheet index reads forwards as spot for seven years.
+
+### RE-GRADE SWEEP — five institutions this seat had called "walled", re-read at PATH granularity
+| Host | Prior | Measured 2026-08-28g |
+|---|---|---|
+| `www.snb.ch` | walled | **FULLY OPEN** — robots.txt is 64 bytes, `User-agent: *` + Sitemap, **zero** `Disallow` |
+| `www.rba.gov.au` | walled | **PERMITTED** — `*` bars exactly 6 paths (/assets/, /search/, /s/, an image library, one PDF, one bio page); **no statistical path** |
+| `www.bundesbank.de` | presumed walled | **PERMITTED, crawl-delay 10** — the `Disallow: /` belongs to a ~45-UA blocklist group; `*` gets only `Crawl-delay: 10`; ClaudeBot/Anthropic not named (grep −c = 0) |
+| `www.boj.or.jp` | walled | **NO ROBOTS FILE** — /robots.txt serves the site's Japanese 404 page; no restriction expressed |
+| `www.rbnz.govt.nz` | walled | **UNMEASURABLE** — Cloudflare "Website unavailable" interstitial. An availability failure is **not** a block and **not** a permit; carried forward as neither |
+
+**SESSION CLOSE — 2026-08-28 (g).**
+**Categories covered:** 5 (alternative/macro) and 6 (vendor-replacement) — primary ground, 2 sources
+adopted. 1 (exchange-native) — backlog clear, not re-dug. **2, 3, 4 — NOT dug this run, and I am
+naming that rather than implying coverage.**
+**Counts: 2 sources ADOPTED (both verified-clean by event-aligned ground truth), 1 graded
+DISCONTINUED-AT-SOURCE, 1 prior card CORRECTED, 5 hosts RE-GRADED (4 false exclusions reversed,
+1 honestly unmeasurable), 0 UNVERIFIED links catalogued.** Universe map 105 → 113. `last_data_axis_dig` set.
+**BEST VENDOR-REPLACEMENT:** the UK gilt–OIS spread — a sterling funding-stress axis the BoE does
+not publish, methodology-clean, for £0.
+**CROSS-SOURCE PAIR:** **BoE OIS × ECB YC × SNB rendoblid.** The desk now holds GBP, EUR and CHF
+term structure on a common daily grid. Any single leg is a level series; together they are
+*cross-currency slope differentials*, which is the actual conditioning variable for a G10 carry
+mechanism — and GBP/EUR/CHF are all live MT5 legs.
+**NEW SOURCE CLASS:** *national-central-bank open-data cube APIs* (SNB `data.snb.ch/api/cube/...`)
+— keyless, machine-readable, decades deep, with a separate `/dimensions/` endpoint that is
+**mandatory** to read because the flat CSV mixes branches of the hierarchy into one code column.
+Distinct from last run's bulk-file class. Every re-graded host above is now a candidate for it.
+
+**THE BLUNT PART.** The honest headline is not either adopted source — it is that **four of five
+"walled" gradings were wrong, and one of them was a host whose robots.txt has zero `Disallow`
+lines and takes one command to read.** That is the *third consecutive run* in which this seat's
+largest finding was a correction of its own prior confident claim, and the shape has not changed:
+a true local observation promoted to a global claim. Last run it was a partial file sync read as
+the desk's lake; this run it is a statistics-DB path read as an institution. The access grading was
+the bottleneck, not the ground — the ground was open the whole time.
+Against that, I also **fabricated a series this run** and caught it only because +316bp is
+economically absurd. Had the unit error been a factor of 1.1 instead of a different tenor, it
+would have shipped clean. That is the one finding here I would call load-bearing.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **Mine the four re-graded hosts** — SNB (fully open), RBA, Bundesbank (10s delay), BoJ — for the
+   open-data-cube and bulk-file classes. SNB first: the cube API is proven and `zimoma` is live.
+2. **Categories 2, 3, 4 — now owed for THREE runs.** Take them first next run regardless of what
+   else surfaces; non-English regional and community lakes have the longest yield history here.
+3. **Re-probe `www.rbnz.govt.nz`** — unmeasurable, not excluded.
+4. **A last-observation liveness check for every adopted source.** The SNB cube proves the desk's
+   freshness posture is checkable-but-unchecked: a green endpoint over a frozen series. This seat
+   has no instrument for it and should say so plainly (L1.46) rather than imply the map is fresh.
+5. Still owed, outside this seat's freeze: the `macro_state.json` three-way write race and the
+   bar-liveness `n_unobservable` patch — both still without an owner.
