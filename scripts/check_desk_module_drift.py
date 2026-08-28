@@ -50,6 +50,12 @@ MODULES = [
     "desks/mt5/research/orthogonal_sweep.py",
     "desks/mt5/research/merge_hypotheses.py",
     "desks/mt5/research/hourly_cycle.py",
+    # The admission door and the promoter: they decide what may gather forward evidence
+    # and what may be promoted. Neither was watched, and both were just changed to open
+    # the cure lane beyond one family -- a revert here silently re-closes it.
+    "desks/mt5/research/shadow_admission.py",
+    "desks/mt5/research/promoter.py",
+    "desks/mt5/side_channels/promoter_fixed.py",
     "desks/mt5/research/backfill_coverage.py",
     "desks/mt5/scripts/external_gauntlet.py",
     "desks/mt5/scripts/warm_gauntlet_cache.py",

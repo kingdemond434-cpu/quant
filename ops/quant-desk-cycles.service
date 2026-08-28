@@ -1,0 +1,9 @@
+[Unit]
+Description=Gate integrity + local cycle watchdog, with immediate correction
+
+[Service]
+Type=oneshot
+MemoryMax=400M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_desk_cycles.py >> data/cro_ai_logs/desk_cycles.log 2>&1'
+SuccessExitStatus=0 1
