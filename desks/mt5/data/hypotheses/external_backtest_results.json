@@ -1700,11 +1700,11 @@
       "wait_bars": 12
     },
     "n": 2173,
-    "exp_r": 0.124,
+    "exp_r": 0.1239,
     "max_dd_r": -14.77,
     "t_stat": 5.87,
     "profit_factor": 1.331,
-    "win_rate": 0.509,
+    "win_rate": 0.5085,
     "source": "ext_forexfactory_GBPJPY_session_range_breakout",
     "url": ""
   },
@@ -1736,7 +1736,7 @@
     "max_dd_r": -18.75,
     "t_stat": 5.75,
     "profit_factor": 1.341,
-    "win_rate": 0.4952,
+    "win_rate": 0.4947,
     "source": "ext_forexfactory_GBPJPY_session_range_breakout",
     "url": ""
   },
@@ -1768,7 +1768,7 @@
     "max_dd_r": -15.93,
     "t_stat": 5.75,
     "profit_factor": 1.354,
-    "win_rate": 0.491,
+    "win_rate": 0.4906,
     "source": "ext_forexfactory_GBPJPY_session_range_breakout",
     "url": ""
   },

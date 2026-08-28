@@ -6047,5 +6047,101 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"b33676f24708b96e": {
+"t0": "2026-08-28T03:24:51+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@HungTranVan",
+"url": "https://my.litefinance.org/traders/HungTranVan",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T03:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.43
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d808506317d50383": {
+"t0": "2026-08-28T03:24:51+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Ballantine40",
+"url": "https://my.litefinance.org/traders/Ballantine40",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T03:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.0
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e064ebb23625f384": {
+"t0": "2026-08-28T03:24:51+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Horizon_Finance",
+"url": "https://my.litefinance.org/traders/Horizon_Finance",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T03:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.0
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c41b77d767e4fcb3": {
+"t0": "2026-08-28T03:24:51+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@EA_SuperTN",
+"url": "https://my.litefinance.org/traders/EA_SuperTN",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T03:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.08
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

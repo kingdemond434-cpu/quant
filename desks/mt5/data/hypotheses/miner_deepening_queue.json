@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T02:09:57+00:00",
+ "built_at": "2026-08-28T03:09:11+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3335,6 +3335,14 @@
   {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Tabular Deep Learning for Algorithmic Trading: Cross-Regime Bayesian Optimisation for Equity Signal Generation",
+   "url": "http://arxiv.org/abs/2608.27076v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation",
    "url": "http://arxiv.org/abs/2608.25844v1",
    "symbols": [],
@@ -3488,7 +3496,7 @@
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice",
-   "url": "http://arxiv.org/abs/2608.17808v1",
+   "url": "http://arxiv.org/abs/2608.17808v2",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3496,7 +3504,7 @@
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Scalable Pontryagin-Guided Adjoint-to-Control Recovery for Constrained Dynamic Portfolio Choice",
-   "url": "http://arxiv.org/abs/2608.15667v1",
+   "url": "http://arxiv.org/abs/2608.15667v2",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3521,14 +3529,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Dependence-Informed Sparse Neural Architecture for Stock Return Prediction",
    "url": "http://arxiv.org/abs/2608.14323v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Photonic Quantum Computing vs. Classical Solvers in Constrained Factor Portfolio Optimization",
-   "url": "http://arxiv.org/abs/2608.14134v1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6489,6 +6489,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-MT4-Close-Orders-Script",
+   "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "7skooooo/mql5-systems-mirror",
    "url": "https://github.com/7skooooo/mql5-systems-mirror",
    "symbols": [],
@@ -6601,8 +6609,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6617,24 +6625,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "TheHolderCollective/MetatraderSharpCookbook",
    "url": "https://github.com/TheHolderCollective/MetatraderSharpCookbook",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "TheHolderCollective/MetatraderSharp",
-   "url": "https://github.com/TheHolderCollective/MetatraderSharp",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7061,6 +7053,14 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Amir28604320",
+   "url": "https://my.litefinance.org/traders/Amir28604320",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Golden_Eye",
    "url": "https://my.litefinance.org/traders/Golden_Eye",
    "symbols": [],
@@ -7077,6 +7077,14 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Gold_LiveTop",
+   "url": "https://my.litefinance.org/traders/Gold_LiveTop",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@PRIME500",
    "url": "https://my.litefinance.org/traders/PRIME500",
    "symbols": [],
@@ -7085,24 +7093,8 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Earth_Taurus",
-   "url": "https://my.litefinance.org/traders/Earth_Taurus",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Atlas_Capital",
-   "url": "https://my.litefinance.org/traders/Atlas_Capital",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Aliakhavan72",
-   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "title": "@Eshaghtrader",
+   "url": "https://my.litefinance.org/traders/Eshaghtrader",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7429,8 +7421,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7440,8 +7432,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1171379/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -8904,6 +8896,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Renaissance has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Citadel has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
