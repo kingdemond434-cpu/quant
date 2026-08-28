@@ -208,7 +208,14 @@ def fix_seats() -> tuple[bool, str]:
     return rc1 == 0 or rc2 == 0, f"yield_rc={rc1} catchup_rc={rc2} {(o1 or o2)[-100:]}"
 
 
+def fix_roi() -> tuple[bool, str]:
+    """Falling ROI is a hunting problem: re-measure, then widen (mined ground + searcher)."""
+    _run([sys.executable, str(ROOT / "scripts" / "check_dig_roi.py")], timeout=120)
+    return fix_breadth()
+
+
 FIXERS = {
+    "ROI": fix_roi,
     "SEATS": fix_seats,
     "FAMILIES": fix_families,
     "BREADTH": fix_breadth,

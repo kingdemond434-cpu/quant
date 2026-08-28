@@ -139,6 +139,27 @@ def main() -> int:
     except Exception as exc:
         m["families_reachable"] = f"UNMEASURED ({type(exc).__name__})"
 
+    # --- DIG ROI, RATCHETED (principal 2026-08-28: "big doesn't mean token wastage -- max ROI
+    # testable candidates mined is success, and certificates"). The seat scorecard counts a log
+    # over 1,500 bytes as PRODUCED, which rewards writing rather than mining. These floors are
+    # the real objective: judgeable candidates, the CLASSES and FAMILIES they span (orthogonality
+    # is the binding constraint at n_eff ~5.5), and runnable certificates. All ratchet UP.
+    roi = _read(ROOT / "data" / "dig_roi.json") or {}
+    for key, label, floor_min in (("docket_named_testable", "testable candidates", 200),
+                                  ("classes_touched", "asset classes", 4),
+                                  ("families_touched", "families", 5),
+                                  ("certificates_runnable", "runnable certificates", 1)):
+        val = roi.get(key)
+        if not isinstance(val, int):
+            continue
+        m[key] = val
+        prev = int(floors.get(key) or 0)
+        if val > prev:
+            floors[key] = val
+        elif prev and val < max(floor_min, prev // 2):
+            breaches.append(f"ROI: {label} fell {prev} -> {val} -- the cycle is producing less "
+                            f"of the only thing that counts; widen the hunt, never the bar")
+
     # --- survivors must MOVE: a claim sitting un-actioned is a violation, not a wait
     ledger = _read(DESK / "reports" / "SURVIVORS_LEDGER.json") or {}
     rows = ledger.get("claims") if isinstance(ledger, dict) else None
