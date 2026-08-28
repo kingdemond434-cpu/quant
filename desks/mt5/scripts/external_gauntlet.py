@@ -9,6 +9,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 from __future__ import annotations
 
 import json
+import os
 from collections import OrderedDict
 import math
 import sys
@@ -51,6 +52,26 @@ SPA_ALPHA = 0.05
 WF_SPLITS = 4
 WF_MIN_STABILITY = 0.5
 COST_SCENARIO = 3.0
+
+#: SECONDS THIS SWEEP MAY SPEND BUILDING *FRESH* CELLS. Cached cells are free and are ALWAYS all
+#: loaded; only first-time computation is bounded.
+#:
+#: WHY A BUDGET AT ALL. A sweep that never finishes publishes nothing, and nothing is exactly
+#: what this desk got: measured 2026-08-28, the last report was written at 01:13 and the sweeps
+#: after it ran 5-7 hours each and died with their entire buffered log lost. At ~22 seconds per
+#: uncached cell and ~3,700 uncached cells, a full cold sweep is roughly 22 hours -- longer than
+#: the day after which the cache key rolls over and every cell goes cold again. That race cannot
+#: be won by running longer; the sweep was structurally unable to ever complete.
+#:
+#: A bounded sweep always reaches its gates and always publishes. The cells it did not reach are
+#: recorded as UNMEASURED with the reason, exactly as dropped cells already are (L1.28a) -- they
+#: are not failures and not verdicts, they are work not yet done. Because the cache is cumulative
+#: and content-addressed, every run starts where the last one stopped, so the docket converges
+#: over a handful of runs and then every sweep is a pure cache hit: "Cell cache: N/N loaded, 0 to
+#: compute", which is the regime that took twelve minutes.
+#:
+#: Twenty minutes leaves the hourly cadence intact with room for the gates themselves.
+FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "1200"))
 
 
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
@@ -675,6 +696,9 @@ def main():
     # This is what makes an hourly sweep of a 3,000+ docket take minutes instead of the hour.
     cell_objs = []
     cache_hits = 0
+    built_fresh = 0
+    deferred: list[dict] = []
+    _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
     try:
         import time as _t
@@ -703,17 +727,28 @@ def main():
             })
             cache_hits += 1
             continue
+        if time.time() - _build_t0 > FRESH_BUILD_BUDGET_SEC:
+            # Out of build budget: defer, never drop. The next sweep finds everything this run
+            # cached and starts from here, so the docket converges instead of restarting.
+            deferred.append(spec)
+            continue
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
             obj["mechanism_status"] = spec.get("mechanism_status")
             obj["mechanism_note"] = spec.get("mechanism_note")
             obj["_ckey"], obj["_last_day"] = ckey, last_day
             cell_objs.append(obj)
+            built_fresh += 1
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
     if cache_hits:
         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
               f"{len(eligible_specs) - cache_hits} to compute")
+    if deferred:
+        print(f"BUILD BUDGET reached after {built_fresh} fresh cell(s) in "
+              f"{time.time() - _build_t0:.0f}s: {len(deferred)} cell(s) DEFERRED to the next "
+              f"sweep and recorded UNMEASURED. They are not failures -- the cache is cumulative, "
+              f"so the next run resumes from here and the docket converges.")
 
     # Run the remaining gates, or still emit the complete gate-1 rejection ledger when none can
     # advance. A no-mechanism discovery batch is a valid negative result, not a missing report.
@@ -734,7 +769,23 @@ def main():
     result["n_cells_discovered"] = len(cells)
     result["n_cells_advanced_beyond_economic_prior"] = len(cell_objs)
     result["n_cells_rejected_at_economic_prior"] = len(prior_rejections)
-    result["verdicts"] = prior_rejections + list(result.get("verdicts", []))
+    # DEFERRED CELLS ARE IN THE RECORD, NOT MISSING FROM IT. A cell the build budget did not
+    # reach is UNMEASURED -- not a pass, not a fail, and emphatically not absent. Leaving it out
+    # would make the report describe a smaller docket than the desk actually holds, which is the
+    # silent-shrinkage failure this desk has been burned by before. It carries its own reason so
+    # nobody has to guess why a cell has no verdict (L1.28a).
+    deferred_verdicts = [{
+        "cell": cell_id({"sym": s["sym"], "family": s["family"], "params": s.get("params") or {}}),
+        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
+        "stages": {},
+        "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+        "why": ("the sweep's fresh-build budget was exhausted before this cell was computed. "
+                "The per-cell cache is cumulative and content-addressed, so the next sweep "
+                "resumes here rather than restarting; this is work not yet done, never a "
+                "verdict."),
+    } for s in deferred]
+    result["n_cells_deferred_build_budget"] = len(deferred)
+    result["verdicts"] = prior_rejections + deferred_verdicts + list(result.get("verdicts", []))
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
