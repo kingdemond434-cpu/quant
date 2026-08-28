@@ -1,16 +1,29 @@
 """Converts external discoveries into testable hypotheses.
 
-v3: Handles all 25 miner types — sentiment, calendar, positioning, macro, academic.
-Reads latest_discoveries.json, maps to families, outputs test grid.
+v6: ZERO-HARDCODE registry sweep. Every external discovery's symbols are tested
+against EVERY family the FAMILY_REGISTRY knows how to build, with each family's
+registered defaults. No keyword->family guessing, no curated `testable` set --
+the 25-family auto-registry IS the source of truth (auto-built from decorated
+`family_*` functions by `register_family`). A discovery simply widens the grid;
+coverage comes from the registry, not from this file.
+
+Reads latest_discoveries.json, writes the same shape the pipeline consumes
+(id/source/symbol/family/description/url/confidence/patterns/created), one
+hypothesis per (symbol x family). Downstream (full_pipeline.step_backtest)
+dedups to one cell per (symbol, family) and runs each with the family's
+registered defaults.
 """
 
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent.parent
 DATA = BASE / "data" / "intelligence"
 OUT = BASE / "data" / "hypotheses"
+
+EARLY = {p: False for p in sys.path}
 
 SYMBOL_MAP = {
     "XAUUSD": "XAUUSD", "EURUSD": "EURUSD", "GBPUSD": "GBPUSD",
@@ -23,53 +36,23 @@ SYMBOL_MAP = {
     "US500": "US500", "NAS100": "NAS100", "JPYUSD": "USDJPY",
 }
 
-PATTERN_TO_FAMILY = {
-    "breakout": "session_range_breakout", "session range": "session_range_breakout",
-    "asia range": "session_range_breakout", "london open": "session_range_breakout",
-    "order block": "order_block_reversion", "fair value gap": "order_block_reversion",
-    "liquidity": "liquidity_grab", "smart money": "order_block_reversion",
-    "mean reversion": "mean_reversion_basic", "momentum": "momentum_basic",
-    "trend following": "trend_following_basic", "trend": "trend_following_basic",
-    "RSI": "rsi_extreme_fade", "MACD": "macd_crossover",
-    "EMA": "ema_crossover", "SMA": "sma_crossover",
-    "fibonacci": "fib_retracement", "scalping": "scalping_basic",
-    "swing": "swing_basic", "grid": "grid_trading",
-    "volatility": "volatility_breakout", "carry trade": "carry_trade",
-    "pairs trading": "pairs_trading", "statistical arbitrage": "pairs_trading",
-    "cointegration": "pairs_trading",
-    "price stability": "central_bank_reaction", "hawkish": "central_bank_reaction",
-    "dovish": "central_bank_reaction", "rate hike": "central_bank_reaction",
-    "rate cut": "central_bank_reaction",
-}
-
-# Source → default family mapping (for discoveries without explicit patterns)
-SOURCE_FAMILY_MAP = {
-    "cot": "momentum_basic",           # Positioning = momentum signal
-    "aaii": "session_range_breakout",  # Sentiment extremes = breakout
-    "fear_greed": "session_range_breakout",
-    "investing": "session_range_breakout",
-    "google_trends": "session_range_breakout",
-    "correlations": "session_range_breakout",
-    "seasonality": "session_range_breakout",
-    "forexfactory": "session_range_breakout",
-    "earnings": "session_range_breakout",
-    "shipping": "momentum_basic",
-    "mql5_signals": "session_range_breakout",
-}
-
-# Sources to skip (no tradeable signal)
+# Sources with no tradeable signal -- never widen the grid.
 SKIP_SOURCES = {"mql5_forum", "academic", "sec_edgar", "earnings"}
 
 
+def _load_families():
+    """Import the auto registry (zero hardcode). Uses the same import the
+    full pipeline relies on, so symbols resolve identically."""
+    d = BASE / "mt5desk"
+    for p in (str(d), str(BASE), str(BASE / "side_channels")):
+        if p not in sys.path:
+            sys.path.insert(0, p)
+    from mt5desk import families as F
+    return F
+
+
 def _normalize_symbol(sym: str) -> str | None:
-    return SYMBOL_MAP.get(sym.upper())
-
-
-def _map_family(patterns: list[str], source: str = "") -> str:
-    for p in patterns:
-        if p in PATTERN_TO_FAMILY:
-            return PATTERN_TO_FAMILY[p]
-    return SOURCE_FAMILY_MAP.get(source, "unknown")
+    return SYMBOL_MAP.get(str(sym).upper())
 
 
 def convert_discoveries() -> list[dict]:
@@ -77,9 +60,12 @@ def convert_discoveries() -> list[dict]:
     if not disc_file.exists():
         return []
 
+    F = _load_families()
+    family_names = F.get_all_family_names()
+
     raw = json.loads(disc_file.read_text(encoding="utf-8"))
-    hypotheses = []
-    seen = set()
+    hypotheses: list[dict] = []
+    seen: set[tuple[str, str, str]] = set()
 
     for source_name, source_data in raw.items():
         if source_name == "summary":
@@ -91,50 +77,29 @@ def convert_discoveries() -> list[dict]:
 
         discoveries = source_data.get("discoveries", [])
         for disc in discoveries:
-            patterns = disc.get("patterns", disc.get("policy_signals", []))
             symbols = disc.get("symbols", [])
-
-            # Skip if no symbols
             if not symbols:
                 continue
-
-            # Map to family
-            family = _map_family(patterns, source_name)
-            if family == "unknown":
-                continue
-
-            # Only use testable families
-            testable = {
-                "session_range_breakout", "momentum_basic", "momentum_volgate",
-                "level_breakout", "failed_breakout", "dow_effect",
-                "monday_gap", "london_close_momentum",
-            }
-            if family not in testable:
-                family = "session_range_breakout"  # Default to most common
-
             for sym in symbols:
                 norm_sym = _normalize_symbol(sym)
                 if not norm_sym:
                     continue
-
-                key = f"{norm_sym}_{family}_{source_name}"
-                if key in seen:
-                    continue
-                seen.add(key)
-
-                h = {
-                    "id": f"ext_{source_name}_{norm_sym}_{family}",
-                    "source": f"external_{source_name}",
-                    "symbol": norm_sym,
-                    "family": family,
-                    "description": disc.get("description", disc.get("title", ""))[:200],
-                    "url": disc.get("url", ""),
-                    "confidence": disc.get("confidence", 0.3),
-                    "patterns": patterns,
-                    "created": datetime.now(timezone.utc).isoformat(),
-                }
-                hypotheses.append(h)
-
+                for family_name in family_names:
+                    key = (norm_sym, family_name, source_name)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    hypotheses.append({
+                        "id": f"ext_{source_name}_{norm_sym}_{family_name}",
+                        "source": f"external_{source_name}",
+                        "symbol": norm_sym,
+                        "family": family_name,
+                        "description": disc.get("description", disc.get("title", ""))[:200],
+                        "url": disc.get("url", ""),
+                        "confidence": disc.get("confidence", 0.3),
+                        "patterns": disc.get("patterns", disc.get("policy_signals", [])),
+                        "created": datetime.now(timezone.utc).isoformat(),
+                    })
     return hypotheses
 
 
