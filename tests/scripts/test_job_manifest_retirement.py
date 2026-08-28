@@ -82,3 +82,59 @@ def test_a_retirement_is_announced_so_an_accidental_one_is_findable(mod) -> None
 
     assert mod.ALARM.exists()
     assert "RETIRED gone.json" in mod.ALARM.read_text(encoding="utf-8")
+
+
+def test_a_declared_idle_artifact_is_not_frozen(mod, tmp_path: Path) -> None:
+    """An organ whose input population is empty writes identical bytes CORRECTLY, forever.
+
+    `decay_live.json` with an empty roster was FROZEN across 55 consecutive checks and blocked
+    rung 0 of live readiness -- a red that could only clear by deploying capital, which is the
+    always-red detector this desk retires on sight (L1.37).
+    """
+    (tmp_path / "idle.json").write_text(
+        json.dumps({"live_sleeves": 0,
+                    "unchanged_because": "the roster is empty, nothing to decay"}),
+        encoding="utf-8")
+    mod.JOBS = {"idle.json": (26.0, "a consumer")}
+    mod.STATE.write_text(json.dumps({"jobs": {
+        "idle.json": {"status": "FROZEN", "hash": mod._hash(tmp_path / "idle.json"),
+                      "hash_runs": 99},
+    }}), encoding="utf-8")
+
+    rc = mod.main()
+
+    st = _state(mod)
+    assert st["jobs"]["idle.json"]["status"] == "IDLE"
+    assert st["summary"] == {"IDLE": 1}, "IDLE must still be COUNTED -- this hides nothing"
+    assert rc == 0 and not mod.ALARM.exists(), "a correct organ with nothing to do is not a breach"
+
+
+def test_an_undeclared_repeat_is_still_frozen(mod, tmp_path: Path) -> None:
+    """The declaration is the whole difference; without it nothing changes."""
+    (tmp_path / "stuck.json").write_text(json.dumps({"live_sleeves": 0}), encoding="utf-8")
+    mod.JOBS = {"stuck.json": (26.0, "a consumer")}
+    mod.STATE.write_text(json.dumps({"jobs": {
+        "stuck.json": {"status": "FROZEN", "hash": mod._hash(tmp_path / "stuck.json"),
+                       "hash_runs": 99},
+    }}), encoding="utf-8")
+
+    mod.main()
+
+    assert _state(mod)["jobs"]["stuck.json"]["status"] == "FROZEN"
+
+
+def test_a_declared_artifact_still_goes_stale_when_its_producer_dies(mod, tmp_path: Path) -> None:
+    """The declaration must not become a permanent excuse -- age is the independent instrument."""
+    import os
+    import time
+    p = tmp_path / "old.json"
+    p.write_text(json.dumps({"unchanged_because": "nothing to do"}), encoding="utf-8")
+    old = time.time() - 40 * 3600
+    os.utime(p, (old, old))
+    mod.JOBS = {"old.json": (26.0, "a consumer")}
+    mod.STATE.write_text(json.dumps({"jobs": {}}), encoding="utf-8")
+
+    rc = mod.main()
+
+    assert _state(mod)["jobs"]["old.json"]["status"] == "STALE"
+    assert rc != 0, "a dead producer must still breach, declaration or not"

@@ -214,6 +214,17 @@ def main() -> int:
         "live_sleeves": None if source == "UNMEASURED" else len(live),
         "roster_state": source, "roster_why": source_why,
         "verdicts": report, "actions_taken": actions,
+        # DECLARE WHY THE BYTES CANNOT MOVE, or a correct organ reads as a stuck one. With an
+        # empty roster this file's content is a function of nothing, so `check_job_manifest`
+        # flagged it FROZEN ("a loop turning without cutting") on 55 consecutive checks and
+        # `check_live_readiness` blocked rung 0 on it -- a detector that is structurally red until
+        # capital deploys, which is the always-red kind this desk retires on sight (L1.37). The
+        # age check stays armed: a monitor that actually dies still goes STALE. Re-asserted on
+        # every write, so the declaration goes stale exactly when the file does.
+        "unchanged_because": (
+            "the roster is empty (0 live sleeves), so there is nothing to decay and identical "
+            "bytes are the correct output -- not a stalled loop"
+        ) if (source != "UNMEASURED" and not live) else None,
         "note": ("a count is published only when the roster was READ or is provably absent; an "
                  "unreadable roster publishes null, because 0 and unknown are different answers "
                  "and only one of them is safe to act on (L1.28a)")}, indent=2), "utf-8")

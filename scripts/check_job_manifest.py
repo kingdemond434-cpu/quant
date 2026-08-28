@@ -24,6 +24,13 @@ WHAT IS ALERTED, and why each is a distinct failure rather than one:
   FROZEN     -- the artifact is fresh but its CONTENT HASH has not changed across runs. The job
                 runs, writes, and produces the same bytes: a loop that is turning without
                 cutting. Distinct from STALE because the timestamp looks healthy.
+  IDLE       -- fresh, byte-identical, AND the producer declared `unchanged_because` on this
+                write: its input population is empty, so identical bytes are the correct output.
+                Counted and printed, never alarmed. Without this, `decay_live.json` with an empty
+                roster was FROZEN on 55 consecutive checks and blocked rung 0 of live readiness --
+                a red that could clear only by deploying capital, which is the always-red detector
+                this desk retires on sight (L1.37). The AGE check stays armed, so a producer that
+                actually dies still goes STALE while carrying its declaration.
   MISSING    -- declared but never produced. An owed build, not a passing check (L1.28a).
   NO-CONSUMER-- produced, but nothing reads it. Either the consumer is unwired (a gap) or the
                 artifact is dead weight; both are defects, and neither is visible from the job.
@@ -109,11 +116,28 @@ def _hash(path: Path) -> str | None:
         return None
 
 
+def _unchanged_because(path: Path) -> str | None:
+    """A producer's own declaration that its output cannot move, or None.
+
+    The contract is one optional top-level string field, `unchanged_because`, re-asserted on every
+    write -- so the declaration goes stale exactly when the artifact does, and a producer cannot
+    leave a permanent excuse behind. Only JSON objects can declare; anything else is judged as
+    before.
+    """
+    doc = _read(path)
+    why = (doc or {}).get("unchanged_because") if isinstance(doc, dict) else None
+    return str(why) if isinstance(why, str) and why.strip() else None
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     state = _read(STATE) or {"jobs": {}}
     jobs = state.setdefault("jobs", {})
     findings: list[str] = []
+    # IDLE is reported but is NOT a breach: it never reaches ALARM and never makes
+    # this fence exit non-zero, because a correct organ with nothing to do is not a
+    # failure. It is still printed and still counted in the summary.
+    findings_idle: list[str] = []
     rows: dict[str, dict] = {}
 
     for rel, (max_age_h, consumer) in JOBS.items():
@@ -149,6 +173,18 @@ def main() -> int:
         # was reported FROZEN for it, which is a false alarm that trains the reader to ignore the
         # real ones. The honest test is whether the content has stood still for longer than the
         # job's own update interval allows.
+        elif (digest and digest == prior.get("hash")
+                and prior.get("hash_runs", 0) >= checks_per_window
+                and (_idle := _unchanged_because(path))):
+            # THE PRODUCER MAY DECLARE WHY ITS BYTES CANNOT MOVE. An organ whose input population
+            # is empty writes the same output correctly and forever: `decay_live.json` with an
+            # empty roster was FROZEN across 55 consecutive checks and blocked rung 0 of live
+            # readiness, a red that could only clear by deploying capital. That is the always-red
+            # detector this desk retires on sight (L1.37). IDLE is still COUNTED and still
+            # printed, so this hides nothing -- and the age check above is untouched, so an organ
+            # that genuinely dies still goes STALE while carrying its declaration.
+            status = "IDLE"
+            findings_idle.append(f"IDLE {rel}: {_idle} Consumer: {consumer}")
         elif (digest and digest == prior.get("hash")
                 and prior.get("hash_runs", 0) >= checks_per_window):
             status = "FROZEN"
@@ -207,6 +243,8 @@ def main() -> int:
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=1, default=str), "utf-8")
 
+    for line in findings_idle:
+        print(f"  {line}")
     if not findings:
         if ALARM.exists():
             ALARM.unlink()
