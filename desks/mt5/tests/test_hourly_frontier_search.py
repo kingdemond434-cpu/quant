@@ -236,12 +236,32 @@ def test_lvc_candidate_uses_native_m5_clock(monkeypatch, tmp_path) -> None:
 
 
 def test_orthogonal_candidates_persist_runtime_provenance() -> None:
+    """Every family persists the exact inputs needed to rebuild its candidate downstream.
+
+    UPDATED 2026-08-28 (gap-fixer). This test asserted `"peer_symbol": peers[0]` and
+    `"factor_symbols": peers[:2]` -- the ALPHABETICAL selection that commit 26064450 removed
+    because it paired XAUUSD with 3M and handed `pca_residual` nothing at all. So from that
+    commit until now the money-path suite demanded the presence of a known defect: it failed
+    76 times in 24h, every run correctly reporting a NEW money-path failure that was in fact
+    the fix landing. A test pinned to a buggy expression does not guard the contract, it
+    guards the bug -- and it burns the one signal that says the money path broke.
+
+    The contract is that each family persists rebuildable provenance; the assertions below
+    name the CURRENT expressions, and the negative arm makes the alphabetical regression
+    unable to return silently.
+    """
     source = (DESK / "research" / "orthogonal_sweep.py").read_text("utf-8")
-    assert '"peer_symbol": peers[0]' in source
-    assert '"factor_symbols": peers[:2]' in source
+    assert '"peer_symbol": peer_sym} if peer_sym else {}' in source
+    assert '"factor_symbols": factor_names' in source
     assert '"input_source": "fusion_tick_tape"' in source
     assert '"input_source": "ff_calendar_vintage"' in source
     assert 'dict((kw and {}) or {})' not in source
+    # The regression this file previously demanded: peers chosen by list position over an
+    # alphabetically sorted universe. Structural selection lives in _peer_symbol/_factor_symbols.
+    assert 'peers[0]' not in source
+    assert 'peers[:2]' not in source
+    assert 'def _peer_symbol(' in source
+    assert 'def _factor_symbols(' in source
 
 
 def test_orthogonal_sweep_caches_are_memory_bounded() -> None:
