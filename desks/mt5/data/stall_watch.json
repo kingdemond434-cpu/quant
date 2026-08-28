@@ -1,18 +1,25 @@
 {
-    "free_gb":  39.5,
-    "checked_at":  "2026-08-27T23:50:07.0791716Z",
+    "free_gb":  39.4,
+    "checked_at":  "2026-08-28T00:30:03.7628057Z",
     "actions":  [
-                    "STACKED external_gauntlet: killed duplicate pid 1728 (kept oldest 3544)",
-                    "STACKED external_gauntlet: killed duplicate pid 1000 (kept oldest 3544)"
+
                 ],
     "procs":  {
+                  "fail.MT5-Gauntlet":  {
+                                            "cpu":  1,
+                                            "at":  "2026-08-28T02:30:03.7628057+02:00"
+                                        },
                   "external_gauntlet.3544":  {
-                                                 "cpu":  4209.4375,
-                                                 "at":  "2026-08-28T01:50:07.0791716+02:00"
+                                                 "cpu":  6394.21875,
+                                                 "at":  "2026-08-28T02:30:03.7628057+02:00"
                                              },
-                  "orthogonal_sweep.5080":  {
-                                                "cpu":  2533.640625,
-                                                "at":  "2026-08-28T01:50:07.0791716+02:00"
+                  "shadow_cycle.6728":  {
+                                            "cpu":  0.859375,
+                                            "at":  "2026-08-28T02:30:03.7628057+02:00"
+                                        },
+                  "orthogonal_sweep.1640":  {
+                                                "cpu":  1315.40625,
+                                                "at":  "2026-08-28T02:30:03.7628057+02:00"
                                             }
               }
 }
