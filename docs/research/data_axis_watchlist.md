@@ -185,7 +185,7 @@ _Superseded original grading below (kept for the record):_
   automated scraping needs the direct file paths, not the HTML shell.
 - **Grade: needs-monitoring.**
 
-### 2. OKX official historical-data portal — grade: verified-clean
+### 2. OKX official historical-data portal — grade: verified-clean [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 - **Provides / replaces:** tick trades (since 2021-09), OHLC candles (since 2023-07), funding
   (since 2022-03), L2 order book (since 2023-03), borrow rates (since 2021-12). Replaces/corroborates
   the previously-logged "OKX public dumps / third-party mirrors" entry with an **official first-party
@@ -365,7 +365,7 @@ _Superseded original grading below (kept for the record):_
 - **Grade: needs-monitoring** (mechanism), but logged as a destroyed-at-source residual for anything
   before a recorder start date.
 
-### 4. Bithumb (spot + futures) — grade: **spot VERIFIED-CLEAN-MECHANISM, DEEPEST free Korean-venue minute archive known to the desk (re-graded 2026-07-25); futures lead DEAD**
+### 4. Bithumb (spot + futures) — grade: **spot VERIFIED-CLEAN-MECHANISM, DEEPEST free Korean-venue minute archive known to the desk (re-graded 2026-07-25); futures lead DEAD** [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 > **⚠️ DATA FENCE ADDED 2026-08-04 (KR frontier miner, primary-source event record): Bithumb
 > mis-credit incident 2026-02-06 — an event reward was paid in BTC UNITS instead of KRW units
 > (~620,000 BTC ≈ 60조원 phantom-credited at 19:00 KST; trading+withdrawals frozen 19:35–19:40;
@@ -443,7 +443,7 @@ _Superseded original grading below (kept for the record):_
 - **Verify-don't-trust:** not verified this session. Do not adopt.
 - **Grade: UNVERIFIED.** Honest gap: unlike Upbit, no confirmed free bulk archive for Bithumb spot.
 
-### 5. Coincheck — grade: destroyed-at-source (for this session)
+### 5. Coincheck — grade: destroyed-at-source (for this session) [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 - **Provides / replaces:** would be the second Japanese-venue leg.
 - **Provenance:** search returned no Coincheck-specific public historical archive — only generic
   cross-exchange aggregators (CoinGecko/CoinAPI/Bitquery), none of which are Coincheck-native.
@@ -451,7 +451,7 @@ _Superseded original grading below (kept for the record):_
 - **Grade: destroyed-at-source for this session's search depth** (not a permanent claim — retry with
   narrower Japanese-language queries next cycle per Temporal Rediscovery).
 
-### 6. Tardis vendor-replacement — grade: **VERIFIED-CLEAN (re-graded 2026-07-25)** — backfill claim REFUTED
+### 6. Tardis vendor-replacement — grade: **VERIFIED-CLEAN (re-graded 2026-07-25)** — backfill claim REFUTED [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The prior grade was written from
 > search summaries and was WRONG in the desk's DISFAVOUR. Files were actually downloaded this time.**
 > - **OP-008's dependency is SOUND** — the free first-of-month tier is real and primary-confirmed.
@@ -773,7 +773,7 @@ _Superseded original grading below (kept for the record):_
 - **Grade: needs-monitoring** for raw consolidated ticks (self-collectable); **destroyed-at-source**
   for the exact index methodology.
 
-### 9. Stablecoin mint/burn self-computation — grade: **verified-clean (mechanism; integer-exact on-chain reconciliation, 2026-07-25)** — but the registry's RPC chain is DEAD for logs
+### 9. Stablecoin mint/burn self-computation — grade: **verified-clean (mechanism; integer-exact on-chain reconciliation, 2026-07-25)** — but the registry's RPC chain is DEAD for logs [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The query was actually RUN
 > (ad-hoc research, no code shipped — freeze respected).**
 > - **MECHANISM VERIFIED END-TO-END, EXACTLY:** over a 24h window (blocks 25,602,972→25,610,172),
@@ -817,7 +817,7 @@ _Superseded original grading below (kept for the record):_
   approach also misses off-chain book-entry adjustments before an issuer broadcasts on-chain.
 - **Grade: needs-monitoring.**
 
-### 10. AWS Public Blockchain Data (registry.opendata.aws) — grade: verified-clean — **NEW SOURCE CLASS**
+### 10. AWS Public Blockchain Data (registry.opendata.aws) — grade: verified-clean — **NEW SOURCE CLASS** [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 - **Provides / replaces:** full Bitcoin + Ethereum chain data as partitioned Parquet, plus 9 more
   chains (Arbitrum/Base/Optimism/Aptos/BNB Chain/Cronos/Provenance/Stellar/TON/XRP Ledger) from other
   maintainers in the same bucket. Replaces the need to run/rent a full node for raw chain access.
@@ -834,7 +834,7 @@ _Superseded original grading below (kept for the record):_
 - **Grade: verified-clean.** See SEARCH-SPACE EXPANSION below — this is a materially new access
   pattern for the desk's on-chain data posture.
 
-### 11. eth-labels (dawsbot/eth-labels) — grade: **verified-clean (verification complete 2026-07-25) — dataset DOWNGRADED to supplementary-only: systematic label corruption found**
+### 11. eth-labels (dawsbot/eth-labels) — grade: **verified-clean (verification complete 2026-07-25) — dataset DOWNGRADED to supplementary-only: systematic label corruption found** [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, backlog burn-down). The CSV was actually
 > downloaded and cross-diffed — the old card's gentle "labels can mislabel/lag" caveat
 > understates what's wrong.**
@@ -876,7 +876,7 @@ _Superseded original grading below (kept for the record):_
   curation is the ultimate root.
 - **Grade: needs-monitoring.**
 
-### 12. cex-list (tradezon/cex-list) — grade: **verified-clean (content cross-checked 2026-07-25) — STALE-frozen snapshot (last commit 2023-07-27), no licence file: use as REFERENCE, not adopted dependency**
+### 12. cex-list (tradezon/cex-list) — grade: **verified-clean (content cross-checked 2026-07-25) — STALE-frozen snapshot (last commit 2023-07-27), no licence file: use as REFERENCE, not adopted dependency** [§33: killed tier:3 -> docs/graveyard.md `crypto_exchange_universe_banned_2026_08_18`]
 > **RE-VERIFIED 2026-07-25 (EN frontier miner, in the eth-labels cross-diff):**
 > `data/ethereum-mainnet.json` downloaded (200, 22,482 B) → **373 addresses / 23 exchanges**
 > (incl. the KR venues). Content quality CONFIRMED against eth-labels + spot on-chain checks:
@@ -3785,7 +3785,7 @@ mechanism folklore + refutations at zero marginal cost.
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
 pre-built month instead of browsing.
 
-### 61. [seed S21] BIS central-banker speeches full-text — grade: **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: screened tier:2 -> desks/mt5/reports/cb_tone_screen.json]
+### 61. [seed S21] BIS central-banker speeches full-text — grade: **needs-monitoring** (source route VERIFIED 2026-08-28 by the free-data-alternatives miner; PENDING because the licence is noncommercial-only and the wired consumer carries a measured 2.5% venue-attribution defect with an exact patch owed — see ITEM 1 below) — **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: screened tier:2 -> desks/mt5/reports/cb_tone_screen.json]
 - **The residual below is discharged, by a route nobody had looked for.** The owed item was "the
   speech BODIES behind each `link`", assumed to be a 215-request crawl of per-bank landing pages.
   BIS publishes a **pre-compiled full-text extract of every speech it has collected since 1996**
@@ -4181,7 +4181,7 @@ the clock probe **backwards to 2018** and forwards — a handful of cheap probes
 *rule* into a verified per-year seam table covering the whole tape. (iii) The §38 IBA replacement:
 LBMA's own site and the auction operator's publications for per-round data on a permitted route.
 
-### 65. [dig 2026-08-28] FX Blue track-record corpus — grade: **CONVERTED — the ground's only consumer had been silently empty, and it now carries two preregistered hypotheses** [§33: wired tier:1 -> data/intelligence/hypotheses/H-20260828-006.yaml]
+### 65. [dig 2026-08-28] FX Blue track-record corpus — grade: **verified-clean** (3/3 accounts re-fetched live 2026-08-28, all 24 hourly cells identical; see ITEM 2 below, which also REFUTED H-20260828-006) — **CONVERTED — the ground's only consumer had been silently empty, and it now carries two preregistered hypotheses** [§33: wired tier:1 -> data/intelligence/hypotheses/H-20260828-006.yaml]
 The 08-27 debt was "the corpus is a hypothesis SOURCE and has produced none yet". The reason was
 not the corpus. `fxblue_mechanism_summary.py` read ONE file and filtered `status == "has_data"`;
 the first-generation harvest labels the same records `live`, so the summariser printed
@@ -4248,3 +4248,589 @@ out-of-sample read on both cards' premises.
   kernel freed ~500 harvested records that no longer exist anywhere. The re-run cost ~40 minutes
   of wall clock. The rule that follows: while a writer is known to be orphaned, re-recover on a
   timer, or restart it on the fixed path immediately — a single rescue is a snapshot, not a save.
+
+---
+
+## SESSION 2026-08-28 (free-data-alternatives miner, standing daily) — COMPLETE (3 items taken, 3 closed)
+
+Items taken this run (bounded per completion contract; depth per item unbounded):
+1. **BACKLOG VERIFY — [seed S21] BIS central-banker speeches full-text.** Carded 2026-08-28 by
+   the frontier seat as "20,728 dated speeches in ONE request"; PENDING TECHNICAL VERIFICATION.
+   Close it: open the exact URL, count rows, check date coverage + CB coverage (the card claims
+   it closes the AUD and CHF gaps), read the licence, name the failure modes.
+2. **BACKLOG VERIFY — FX Blue track-record corpus.** Carded by cards 65/65b/66 above; the corpus
+   exists on disk but has never been verified as a SOURCE (licence, cadence, survivorship,
+   schema drift, re-harvest reproducibility).
+3. **SEARCH-SPACE EXPANSION (>=25% of run)** — one new source CLASS for the MT5 universe, chosen
+   after items 1-2 resolve. Recorded below as it happens.
+
+Status: note written before any searching. Findings appended in place as each item resolves.
+
+### ITEM 1 RESOLVED — [seed S21] BIS central-bankers' speech corpus: **verified-clean as a ROUTE, restricted on LICENCE, and the wired consumer has a measured 2.5% attribution defect**
+
+**Provenance (every URL opened this run, nothing claimed unread):**
+`https://www.bis.org/robots.txt` (200, 24 lines) · `https://www.bis.org/cbspeeches/download.htm`
+(200, the offer page) · `https://www.bis.org/terms_conditions.htm` (200, the licence) ·
+`https://www.bis.org/speeches/speeches.zip` (200, **129,497,217 bytes**, `application/zip`,
+one member `speeches.csv` at 389,624,169 bytes).
+
+**COUNTS — independently reproduced, not taken from the carding seat.** 20,728 rows, fields
+`url,title,description,date,text,author`. **Every row is dated and every row has a body** —
+0 rows under 200 characters, median text length **15,955 chars**. Dates span
+**1996-09-10 → 2026-06-xx**. The frontier seat's "20,728 dated speeches in ONE request" is
+**CONFIRMED exactly**. `csv.field_size_limit` must be raised or the reader dies at row 1 —
+the default 131,072 is smaller than a speech.
+
+**AUD and CHF gaps: CONFIRMED CLOSED.** RBA 590 rows (latest 2026-06-04), SNB 445 rows
+(latest 2026-06-18). Every one of the desk's eight majors is present: EUR 2,750 / USD 1,078 /
+GBP 861 / JPY 826 / CAD 623 / AUD 590 / NZD 210 / CHF 445 by institution mention.
+
+**FAILURE MODES — measured, not listed:**
+1. **RIGHT-EDGE TRUNCATION, ~2 months, and it is stated at the source.** The download page reads
+   *"Last updated on 1 Jul 2026"* and the corpus carries nothing after June 2026. Monthly 2026
+   counts are 15 / 52 / 84 / 58 / 96 / 55 against a historical ~750-800/yr, so even the tail
+   months are still back-filling. **A live consumer of this file has a two-month blind edge and
+   a ragged one-month partial edge.** Cadence is periodic republication, NOT a feed.
+2. **THE `date` FIELD IS DELIVERY DATE, NOT AVAILABILITY DATE — and the gap is now quantified.**
+   The BIS review URL encodes its own publication date (`/review/r<YYMMDD><letter>.htm`), which
+   parses for **10,222 of the 20,728 rows** and gives a free independent clock. Publication lag
+   (pub − delivery): **median 4 days, p90 28 days, p99 87 days.** A backtest stamping tone at the
+   speech date grants itself up to a month of hindsight at the 90th percentile. The builder's
+   docstring warns a consumer to lag it; **nothing measures the lag, so nothing can size it** —
+   this run does: **lag the series by 28 days for a p90-safe read, 4 days is the median and is
+   NOT safe.**
+3. **28 rows have dates that are provably wrong**, caught by the same URL cross-check: they are
+   off-by-a-year typos (e.g. `r230407a.htm` dated 2024-05-07) plus **2 future-dated rows**
+   (`r250710i.htm` dated 2027-07-09; `r260603d.htm` dated 2027-05-28). Small, but a future-dated
+   row in a state series is a phantom that no downstream check would question.
+4. **No duplicate URLs, no blank URLs** across all 20,728 rows.
+
+**§13 LICENCE — the finding that matters, and it applies to a source the desk has ALREADY WIRED.**
+The download page: *"Use of the content is allowed for noncommercial purposes."* The terms page,
+verbatim: *"Users may download, display, print out, photocopy or redistribute any BIS Material for
+non-commercial purposes."* **This desk is a commercial trading operation, so the grant does not
+cover it.** The honest split, and it is not a dodge: copyright attaches to the speech TEXT, never
+to the FACTS about it, and the desk's derived artifact is `(date, currency, hawk_count,
+dove_count)` — facts, reconstructable from the central banks' own publications. So:
+- **Corpus:** `desks/mt5/data/intelligence/central_banks/bis_speeches/speeches.zip` (129MB) is
+  **already gitignored** (`.gitignore:229`) — verified — so the desk is not redistributing it.
+  It is a local working copy, and that is the least-bad standing, not a clean one.
+- **Grade: `restricted-licence`.** Derived facts retainable; the corpus is not a desk asset to
+  redistribute, publish or rely on permanently.
+- **§38 REPLACEMENT HUNT OPENED (an exclusion is half a deliverable):** the primary source is each
+  central bank's own speech archive — the BIS is an aggregator, and the aggregation is the only
+  thing that is BIS's. Fed material is US-Government public domain outright; ECB/BoE/BoJ/BoC/RBA/
+  SNB/RBNZ each publish their own speeches under their own reuse terms. That route is per-bank
+  crawling (which is what RBA's 403 killed on 2026-08-26) — **so the corpus is the cheap route and
+  the CB sites are the licensed one, and the desk currently has the cheap one.** Carried to the
+  universe map as an open replacement_hunt; not closed this run.
+
+**A CONFIRMED DEFECT IN THE WIRED CONSUMER — venue contamination, 2.5% overall and 6.8% on GBP.**
+`bis_speech_tone.py` attributes a speech to a currency by matching institution phrases against
+`title + description`. But the BIS description format is
+*"Speech by the <role> of the <SPEAKER'S BANK>, Mr X, **at the** <VENUE>"* — **and the venue is
+usually also a central bank.** Measured over all 8,770 tone rows by splitting the description at
+the venue marker: **8,555 attributed from the speaker segment (correct), 215 attributed ONLY from
+the venue segment (wrong)** — 2.5%, and per-currency **GBP 55/812 = 6.8%**, USD 81/2,567 = 3.2%,
+EUR 59/2,742 = 2.2%. The first row in the file is the archetype: *"Speech by the Deputy Governor
+of the People's Bank of China, Mr. Chen Yuan, at the Bank of England Seminar"* → filed as **GBP**.
+Also **154 rows match more than one bank** and are silently assigned to whichever key iterated
+first. Only **700 of 8,770** rows were attributed from the title at all; 8,070 came from the
+description, so the description parser is doing essentially all the work and it is unanchored.
+- **THE EXACT PATCH (not applied — this seat is under the research-only freeze; routed to the
+  inbox):** cut the description at the first of `" at the "` / `" at a "` / `" to the "` /
+  `" before the "` and match institution phrases **only in the prefix**, falling back to the title.
+  That is the same computation used to measure the defect, so its positive control already ran:
+  it reproduces 8,555 correct attributions and rejects the 215.
+- **A second, unrelated coverage gap in the same map:** `BANKS` holds the ECB alone for EUR, so
+  **Bundesbank / Banque de France / other Eurosystem NCB governors — who vote — enter the EUR
+  series only by venue accident.** Adding them is adding rows to a dict the module itself calls a
+  seed, not a boundary.
+
+**And the honest denominator:** 20,728 speeches in, **8,770 tone rows out — 58% of the corpus is
+dropped** by the 9-institution map. That is by design (the desk trades eight currencies), but it
+is the number to quote before anyone calls this corpus "fully mined".
+
+**Grade: `needs-monitoring`** (route verified-clean; licence restricted; consumer defective).
+**Backlog item S21: VERIFICATION CLOSED.**
+
+### ITEM 2 RESOLVED — FX Blue track-record corpus: **verified-clean as a source (3/3 exact re-fetch), and the verification KILLED one of the two hypotheses it produced**
+
+**Provenance:** `https://www.fxblue.com/robots.txt` (200, **68 bytes**, `User-Agent: *` /
+`Allow: /` — fully open, no exclusions at all; the earlier "blocked" grading in the desk's notes
+does not survive a direct read) · `https://api.fxblue.com/wl/charts/ch_hourtrades.aspx?id=<u>`
+(200, keyless, ~2.85KB per chart).
+
+**REPRODUCIBILITY — the verify-don't-trust test, and it PASSES cleanly.** Re-fetched three stored
+accounts live (`0-lisa`, `1000pipsmonth`, `105901`) and diffed all 24 hourly cells against the
+archived rows: **0 cells differing on 3/3 accounts**, totals 1,687 / 346 / 10,655 matching exactly.
+The harvester is faithful to its source and the `addRows([...])` parse is correct. Corpus on disk:
+**771 unique accounts carrying an hour chart**, 471 of them with ≥20 trades.
+
+**AND THE VERIFICATION EARNED ITS COST — `H-20260828-006` (swap-boundary imbalance) is REFUTED at
+its premise.** The card rested on "00:00 = 6.59% of trades, 1.58x baseline, and it GREW with
+sample". Both halves fail a robustness test the original never ran (471 accounts, ≥20 trades,
+per-account normalised, uniform baseline 4.17%/hr):
+
+| hour | mean share | drop top-10 | drop top-25 | 10%-trimmed | median |
+|---|---|---|---|---|---|
+| **00:00** | 6.11% | **4.14%** | **2.80%** | 2.29% | **1.90%** |
+| 15:00 | 7.38% | 6.87% | 6.49% | 6.82% | 6.85% |
+| 16:00 | 7.12% | 6.68% | 6.29% | 6.65% | 6.70% |
+| 01:00 | 2.83% | — | — | 2.08% | 1.96% |
+
+**Dropping ten accounts sends 00:00 to the uniform baseline; dropping twenty-five sends it BELOW
+it. The median 00:00 share (1.90%) is lower than 01:00 (1.96%) and 02:00 (1.94%).** The
+overlap-hour peak survives the identical treatment untouched.
+
+**The cause is a data defect, and it is nameable: 00:00 is this corpus's missing-timestamp dumping
+bucket.** Of the accounts booking ≥99% of their trades into a SINGLE hour, **7 of 10 book it at
+00:00** (one each at 09:00 / 22:00 / 23:00), and five sit at exactly **100.0%** —
+`3962256`, `algotrader_v9-2`, `forex-kore-ea`, `frzfxblue`, `algotraderv9_1`. No account trades
+every position in one hour; that is an unknown hour rendered as zero.
+
+**THE LESSON, and it is the reusable half: "the effect GREW with the sample" is not evidence
+against an artifact.** The prior run read 5.84% (n=107) → 6.59% (n=525) as out-of-sample
+confirmation. But the contaminating class scales with n too, so a mean-of-shares statistic rises
+with sample *because* of the artifact. Growth-with-sample only argues against an artifact once the
+artifact class has been shown not to scale — and a mean over per-account shares gives a
+20-trade account with a broken clock the same weight as a 10,655-trade account with a good one.
+**Every per-account-normalised statistic on this desk needs a trimmed or median twin before it is
+believed.**
+- **Routed:** `H-20260828-006` marked `status: refuted_at_premise` in its own preregistration with
+  the numbers (its stated kill condition — "the 00:00 concentration disappears" — fired).
+  `H-20260828-005` is untouched and is now the **stronger** of the pair, having passed a
+  robustness test its sibling failed.
+
+**GENEALOGY / FAILURE MODES:**
+- **Licence/§13:** robots fully open; the endpoint is keyless and public. The charts are numeric
+  facts about public accounts. Grade **clean**; no ToS page exists at `/termsandconditions` (404).
+- **Cadence:** live on request — accounts update continuously, so a harvest is a SNAPSHOT and
+  `harvested_utc` is the only honest as-of stamp. There is no archive; re-harvesting later gives a
+  different, longer record for the same account.
+- **Survivorship (unchanged and still binding):** the population is accounts that chose to publish
+  and still exist. Fine for ACTIVITY (when they trade), never for PERFORMANCE.
+- **NEW failure mode, this run:** **hour-bucket contamination at 00:00** — unknown/zero timestamps
+  render as midnight. Any hour-of-day statistic on this corpus must exclude single-hour accounts
+  or use a trimmed statistic. **This is now a documented property of the source, not a surprise.**
+- **Schema drift:** the chart payload is keyless `addRows([...])` positional data — a column
+  reorder upstream would be silent. The stored `columns` header is the only guard and it should be
+  asserted on every read, not just captured.
+
+**Grade: `verified-clean` (source) / `needs-monitoring` (the 00:00 bucket).**
+**Backlog item: VERIFICATION CLOSED.**
+
+### ITEM 3 — SEARCH-SPACE EXPANSION, a NEW SOURCE CLASS for MT5 ground: **official-sector FX intervention operations** — and the official CSV under-reports by ~50%
+
+**Why this is a new CLASS and not another site.** `data/data_universe_map.json` is ~90% the banned
+crypto-exchange universe; its MT5-ground half holds price/venue sources and essentially no
+**forced-participant, dated, sovereign flow**. This class is the purest forced counterparty the
+desk can name: **a finance ministry selling USDJPY for policy reasons, in trillions, on a
+published date, unable to stop and not trying to hide.** It is the mechanism test's ideal answer.
+
+**Provenance — every URL opened:** `https://www.mof.go.jp/robots.txt` (**404 — no robots file**;
+pages carry `meta robots index,follow`) · `.../international_policy/index.html` (200) ·
+`.../reference/feio/index.html` (200) ·
+`.../feio/foreign_exchange_intervention_operations.csv` (200, **43,477 bytes**, cp932) ·
+`.../feio/quarter/index.html` (200, 18 quarterly releases linked) · 18 quarterly pages fetched ·
+`.../feio/monthly/20260828e.html` (200, released **today**).
+
+**VERIFIED CONTENT.** The headline CSV is a clean panel: **40 dated events, 1991-05-13 →
+2026-04-30**, amount in ¥100m, with the operation **signed in words** (`the US dollar (sold) the
+Japanese yen (bought)`) — direction is given, not inferred. Latest: **2026-04-30, ¥6,278.7bn,
+USD sold / JPY bought.**
+
+**THE FIND — THE OFFICIAL "HISTORICAL DATA" CSV SILENTLY DROPS HALF THE DAILY EVENTS.** Diffed the
+CSV against the quarterly releases, which are the authoritative daily tables:
+
+| year | quarterly releases | headline CSV | missing |
+|---|---|---|---|
+| 2024 | Apr 29, **May 1**, Jul 11, **Jul 12** | Apr 29, Jul 11 | **2 of 4** |
+| 2026 | Apr 30, **May 4**, **May 6** | Apr 30 | **2 of 3** |
+
+Amounts on the rows that ARE in both match to the yen (CSV `62,787`×¥100m = ¥6,278.7bn ✓), so this
+is not a units or parse problem — **the obvious, well-formed, official, machine-readable file is
+simply incomplete, and nothing on the page says so.** Anyone building this axis from the CSV (the
+route any reasonable person takes) gets an event list missing the follow-up days — and the
+follow-up day is precisely where a "does the sovereign come back tomorrow" study lives.
+**The quarterly HTML releases are the source of truth; the CSV is a summary wearing a data
+format.**
+
+**Point-in-time structure, and it is a two-speed clock — this is the part that decides how the
+axis may ever be used:**
+- **Monthly release: the AGGREGATE only**, published ~2 days after a 27th-to-26th window (today's
+  covers Jul 30 – Aug 26 and was released 2026-08-28). So *"did the MoF intervene at all last
+  month, and for how much"* is knowable with a **~2-day lag** — this is what converts stealth
+  intervention from rumour into fact.
+- **Quarterly release: the DAILY breakdown**, ~40 days after quarter end (Q1-2023 released
+  2023-05-10). So **which day** is not knowable for up to ~4 months.
+- **A backtest that stamps a daily intervention at its trade date has granted itself up to four
+  months of hindsight.** Same class as the BIS delivery-vs-availability gap in Item 1, and it is
+  the failure this source will cause if anyone is careless with it.
+
+**Absence is a MEASURED ZERO here, which is rare and worth saying.** Quarters with no event do not
+omit a table — they state *"Total amount of foreign exchange intervention operations for the period
+… : ¥ 0"*. Verified on 2023-Q1. The control periods are explicit, so this axis does not have the
+WS-005 problem.
+
+**FAILURE MODES:** (1) the CSV under-reporting above — **use the quarterly pages**; (2) cp932
+encoding, bilingual header rows, Japanese-era years (`令和8年`) alongside Gregorian — the Gregorian
+columns are present, use those; (3) **the four 2022 quarterly pages are linked from the official
+index and return 404** — a broken official link, so 2022's events (incl. the 2022-10-24 stealth
+operation) are reachable only via the CSV or the Japanese-side pages, un-cross-checkable; (4)
+rounding is disclosed by the source ("figures … are rounded off, they do not necessarily add up").
+
+**HONEST GRADING, and it is the part that stops this being a link dump: `n` KILLS IT AS A SLEEVE.**
+Seven daily events on the cross-checkable panel; forty in thirty-five years. That is not a
+tradable signal at any bar and I am not preregistering it as one — a candidate with n=7 cannot
+reach the ten gates' sufficiency requirement and pretending otherwise would be padding. **What it
+IS:** a **conditioning/state variable** — "the sovereign is active in USDJPY this month", known at
+~2-day lag — and a clean **event-study control set** with explicit zeros. USDJPY is the desk's #3
+instrument by retail exposure (28.2% of FX Blue accounts). Carded as a covariate axis, not a
+sleeve.
+
+**THE CLASS IS BIGGER THAN THIS MEMBER — the next ground, named as required.** SNB
+(`https://www.snb.ch/robots.txt`, 200, **64 bytes, `User-agent: *` with NO Disallow — fully open**)
+publishes **weekly sight-deposit balances**, the standard CHF intervention proxy, at weekly cadence
+rather than quarterly — a materially higher-n member of the same class and the obvious next item.
+Then Banxico, CNB, RBI, and BoJ's own daily operations. **Not opened this run; recorded as the
+next un-exhausted ground so the chain holds.**
+
+**Artifact written:** `data/mof_fx_intervention_daily.json` — the 7 cross-checked daily events with
+units, lags, the CSV-under-reporting defect and the §13 grade recorded on the object itself.
+**Grade: `verified-clean` (the quarterly route) / `needs-monitoring` (the headline CSV is known-
+incomplete).**
+
+### 67. [dig 2026-08-28] Japan MoF Foreign Exchange Intervention Operations — grade: **verified-clean** (quarterly route opened and cross-checked this run; the headline CSV is known-incomplete and is NOT the route) [§33: wired tier:2 -> data/mof_fx_intervention_daily.json]
+Full detail in ITEM 3 above. NEW SOURCE CLASS on MT5 ground: official-sector forced-participant
+flow. n=7 cross-checkable daily events kills it as a sleeve; carded as a conditioning/state axis.
+
+### 68. [dig 2026-08-28] SNB weekly sight deposits (CHF intervention proxy) — grade: **verified-clean AS A SERIES / needs-monitoring AS A SIGNAL** (data opened, cadence and completeness verified, and diffed against three known intervention episodes this run — 2026-08-28 (b), see ITEM 1 below) [§33: screened tier:2 -> data/snb_sight_deposits_weekly.json]
+Same class as card 67 and a materially higher-n member: WEEKLY cadence (n=784) against MoF's
+quarterly daily-breakdown. **OPENED AND VERIFIED 2026-08-28 (b).** Route is keyless and open:
+`https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en`, §13 clean on BOTH hosts (`snb.ch` and
+`data.snb.ch` each serve a single `User-agent: *` group with ZERO `Disallow` — group-scoped read,
+the KR-s5 discipline). Series `TG` = total CHF sight deposits at the SNB, `GI` = domestic banks,
+`UEB` = other. **The signal is contaminated by domestic emergency liquidity and the contamination
+is not separable from the D0 split — that is the finding, and it is why the grade is split.**
+
+---
+
+## SESSION 2026-08-28 CLOSE — free-data-alternatives miner
+
+**Items taken: 3. Items closed: 3.** No padding, no fourth item opened.
+
+**Verified vs UNVERIFIED this run: 3 sources opened first-party and diffed against ground truth
+(BIS corpus, FX Blue, MoF); 1 recorded UNVERIFIED and honestly labelled (SNB, robots read only).**
+
+**BEST VENDOR-REPLACEMENT of the run:** the MoF quarterly releases replacing the MoF's own
+headline CSV — a vendor-replacement where the "vendor" is the source's own convenience file.
+Runner-up and the one with money behind it: **the BIS speech corpus is itself a replacement for
+per-central-bank crawling, but its licence is noncommercial-only, so the replacement hunt runs the
+other way — back to the individual central banks, who own the speeches BIS aggregates.**
+
+**CROSS-SOURCE PAIR whose joint value exceeds either alone:** *MoF intervention dates × FX Blue
+retail hour-of-day activity on USDJPY.* An intervention is a dated, signed, enormous forced order
+in the desk's #3 instrument, and the FX Blue corpus says what retail was doing around it. Neither
+alone is a sleeve — n=7 on one side, survivorship on the other — but the pair is a clean natural
+experiment on who is on the other side of a sovereign. Recorded; not worked this run.
+
+**NEW SOURCE CLASSES DISCOVERED: 1** — official-sector FX intervention and reserve operations
+(members: MoF Japan verified; SNB sight deposits named; Banxico / CNB / RBI / BoJ daily operations
+unopened). The desk's data universe map held ~90% banned crypto ground and no forced-participant
+sovereign flow at all.
+
+**DEPTH LINE (mandated):**
+- *BIS corpus* — **EXHAUSTED for this item.** Not a surface touch: 20,728 rows parsed end to end;
+  an independent clock built from the review-URL date stamp and used to measure a publication lag
+  the source never states; the licence read to its verbatim clause; and the wired consumer's
+  attribution measured row-by-row against the raw description text. **What depth surfaced that the
+  surface did not:** the surface says "20,728 speeches, one request, gaps closed" — all true. Depth
+  says the licence does not cover a commercial desk, 2.5% of the tone rows name the wrong currency,
+  and the date field grants up to 87 days of hindsight.
+- *FX Blue* — **reply-chain equivalent: re-fetched the live source and re-ran the desk's own
+  statistic three ways.** Depth killed a preregistered hypothesis the surface had just promoted.
+- *MoF* — **followed the chain past the CSV** to the quarterly index, then to all 18 quarterly
+  releases, then into the zero-quarters to prove absence was a measured zero. **The CSV is the
+  surface and it is wrong; the depth is two clicks further and nobody goes there.**
+- **Honest self-assessment:** this run is NOT breadth-theater — 3 items, 3 exhausted, one
+  preregistered hypothesis killed, one licence defect and one under-reporting defect found. It is
+  also NOT full category coverage: the mandate's six categories are largely written for the banned
+  crypto universe and I did not pretend to sweep them.
+
+**THE BLUNT PART.** The desk's `data_universe_map.json` is a **crypto-exchange artifact** — of 93
+prior source families, the overwhelming majority are Binance/Bybit/OKX/on-chain ground that the
+2026-08-18 mandate permanently bars from being hunted. My own mission brief still orders six
+categories that are almost entirely that banned universe (exchange dumps, on-chain reconstruction,
+vendor-replacement for Glassnode/CryptoQuant/Coinglass). **I did not dig them, and I am not going
+to pretend a run that swept them would have been worth anything.** The honest statement is that
+**this seat's mandate has not been rewritten for the MT5 universe**, and until it is, "all 6
+categories to exhaustion" is a coverage metric measured against a dead map. That is a defect in the
+brief, not a licence for me to do less — so I spent the run on MT5 ground and opened a new class
+there. **Recorded as owed: the free-data mission brief and the universe map both need an MT5
+rewrite; three of my six categories currently point at ground no seat may legally hunt.**
+
+**NEXT UN-EXHAUSTED GROUND (the chain holds):**
+1. **SNB weekly sight deposits** (card 68) — open the data, verify the weekly series, grade it.
+2. The rest of the official-sector-flow class: Banxico, CNB, RBI, BoJ daily operations.
+3. **The BIS §38 replacement hunt** — per-central-bank speech archives under their own licences,
+   starting with the Fed (US-Gov public domain, unambiguous) and SNB.
+4. The audit card 66 left owed: every other long-running writer under `desks/mt5/data/` shares the
+   orphaned-inode failure mode, and its scope is UNMEASURED.
+
+---
+
+## SESSION 2026-08-28 (b) — free-data-alternatives miner, standing daily run
+
+**WRITE-FIRST NOTE (completion contract §1).** Items taken THIS RUN, resuming the chain the
+08-28 (a) note left — no restart, no re-surface-scan of BIS/FX Blue/MoF:
+
+1. **Card 68 — SNB weekly sight deposits (CHF intervention proxy).** Owed §33 disposition AND the
+   backlog's pending-verification item. Open the data, verify the weekly series against ground
+   truth, grade it, dispose the card *legally*.
+2. **The §38 replacement hunt the BIS licence opened.** BIS speeches are noncommercial-only, so
+   the corpus this desk wired cannot be used commercially. Hunt the PRIMARY sources BIS
+   aggregates — individual central banks under their own licences, Fed first (US-Gov public
+   domain).
+3. **Official-sector-flow class expansion** (the new class opened in 08-28 (a)): Banxico / CNB /
+   RBI / BoJ daily operations — the un-opened members named as next ground.
+
+**DEFECT FOUND BEFORE ANY SEARCHING (recorded now so it survives a mid-run kill):** card 68's
+disposition tag was written `[§33: deferred until 2026-08-30 -> ...]`. `_DISP_RE` in
+`libs/research/mine_conversion.py` requires the date in PARENTHESES — `deferred(2026-08-30)` —
+so the tag parsed as verb=`deferred`, until=`None`, i.e. **"deferred with NO date", an ILLEGAL
+disposition**, and the card sat in the backlog owing a decision while reading to a human as
+cleanly deferred. Third instance of the same class in this desk's memory ("§33 tags fail silently
+in two grammar shapes"). Being fixed by DISPOSING the card properly this run, not by editing the
+grammar to defer it again.
+
+*(items resolve below as they close)*
+
+### ITEM 1 RESOLVED — card 68, SNB weekly sight deposits: **the series is verified-clean; the SIGNAL is contaminated, and the contamination is not separable**
+
+**Route (first-party, opened this run).** `https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en` —
+keyless, no auth, CSV. §13 read on BOTH hosts and group-scoped: `snb.ch/robots.txt` and
+`data.snb.ch/robots.txt` each serve a single `User-agent: *` group with a `Sitemap:` line and
+**zero `Disallow`**. Dimensions from `.../dimensions/en`: `GI` = sight deposits of domestic banks,
+`UEB` = other CHF sight deposits, `TG` = total.
+
+**POPULATION ENUMERATOR (the reusable find, worth more than the one cube).** `data.snb.ch/sitemap`
+is a **1.9MB XML enumerating the entire portal — 416 distinct cube ids**. The SNB portal is
+therefore fully enumerable keylessly and no future SNB question needs to guess a cube id again
+(my first three guesses all 404'd; the sitemap answered it in one request). Same class as OP-098,
+the Wayback CDX population enumerator — *the index is the find, not the series.*
+
+**VERIFIED, not asserted:**
+- **784 `TG` observations, 2011-08-19 → 2026-08-21. Every single one is a Friday; every spacing is
+  exactly 7 days; ZERO missing weeks in 15 years.** This is the cleanest cadence the seat has
+  measured.
+- **Ground-truth diff against three known episodes — it reproduces all three with the correct sign
+  and timing, without being told about them:**
+  - 2011 EURCHF floor: **+52.4bn** in the week to 2011-08-26 — and note it **LEADS the 2011-09-06
+    announcement by 11 days**. The balance sheet moved before the press release.
+  - 2015 floor removal: **+26.2bn** week to 2015-01-23.
+  - 2022–23 SNB FX *selling*: **−77.5bn** week to 2022-09-30, the largest move in the whole
+    series, with the **correct negative sign**.
+
+**THE FINDING, and it is why the grade is split.** The **second-largest positive move in the entire
+series — +51.9bn in the week to 2023-03-24 — is NOT an FX intervention. It is Credit Suisse
+emergency liquidity** (the UBS takeover was announced 2023-03-19; −31.3bn follows on 2023-04-07 as
+it is repaid). A desk reading `TG` as a clean CHF-intervention proxy would have read the CS rescue
+as a colossal CHF-selling intervention and taken the wrong side. **I checked whether the D0 split
+rescues it: it does not — `GI` +40.5bn and `UEB` +11.3bn BOTH jump, so neither sub-series isolates
+FX operations.** Domestic emergency liquidity and FX intervention enter the same number, and this
+source cannot separate them.
+
+**Genealogy / failure modes** (all in `data/snb_sight_deposits_weekly.json`): 87.8% of CSV rows are
+**empty daily calendar scaffold** — a naive read-and-forward-fill manufactures a daily series that
+does not exist; `PublishingDate` is a **portal-wide release stamp shared across cubes** (identical
+value on `snbgwdmigirow` and `snbgwdzid`), not a per-observation stamp; **publication lag measured
+ONCE (n=1)** at 3 calendar days (Friday data, Monday 10:00 CET release) — **stamped n=1, not
+asserted as stable**, and the consumption rule is to take the Friday observation no earlier than
+Monday 10:00 CET, because indexing it on its own Friday stamp grants hindsight (the exact defect
+the BIS item found at up to 87 days); and `TG`/`UEB` start 2011 while `GI` starts 2009, so a joined
+frame silently truncates 2.5 years.
+
+**Grade: verified-clean AS A SERIES / needs-monitoring AS A SIGNAL.** Artifact:
+`data/snb_sight_deposits_weekly.json`. Not pre-registered as a hypothesis — the contamination has
+to be controlled for first, and 13 CHF instruments are in the live universe so the ground is real.
+
+### ITEM 2 RESOLVED — the §38 replacement hunt the BIS licence forced: **the Fed's own index replaces the Board subset outright; the residual is 12 named sources, not a dead end**
+
+**Why this was owed.** Session 08-28 (a) wired a 20,728-speech BIS corpus and then read the licence:
+**noncommercial-only**, which does not cover this desk. §38 says an exclusion is half a deliverable —
+so the replacement hunt goes to **the primary sources BIS aggregates**, since facts are not
+copyrightable and the central banks own their own speeches.
+
+**Found, first-party:** `https://www.federalreserve.gov/json/ne-speeches.json` — **the Fed serves
+its ENTIRE speech index as one keyless 440KB JSON**: date, title, speaker, location, link.
+**1,330 speeches, 2006-06 → 2026-08, 42 speaker strings.** Bodies extractable — probed
+`cook20260805a.htm` and pulled **23,618 chars of clean prose**. The corpus is buildable end to end.
+
+**Licence, stated as measured rather than as a certificate:** federalreserve.gov serves **NO
+robots.txt** (404 HTML) and I found **no copyright notice** on the speech page, the About page, or
+`/publications/copyright.htm` (404). That is an **absence of restriction** plus the 17 USC §105
+US-Government posture — **it is not an explicit reuse grant, and I will not write one down as
+though it were.** It is nonetheless materially freer than BIS's verbatim noncommercial-only clause,
+which is the whole point of the hunt.
+
+**COVERAGE DIFF (the actual §38 test, run rather than assumed).** BIS holds **2,567 "Fed" rows
+(1996→2026)**; the Board's own index holds **1,330 (2006→)**. I chased where the gap lives:
+- **1,976** BIS Fed rows are post-2006 vs the Board's 1,330 → **~646 unmatched**.
+- Title-matching for regional banks found only 5 mentions, so titles do **not** explain it. The
+  decisive test was the **speaker list: all 42 strings carry a Board title (Chairman / Chair /
+  Vice Chair / Governor) and NOT ONE regional Reserve Bank president appears** — no Bullard, no
+  Kashkari, no Williams, no Bostic, no Daly. **The route is Board-only, proven, not assumed.**
+- **Residual, enumerable: ~646 post-2006 regional Reserve Bank speeches (12 banks, each with its
+  own public site) + 591 pre-2006 rows predating this index.** The replacement is **PARTIAL and the
+  residual is 12 named successor sources**, which is a finding, never a default.
+
+**Failure modes worth the run on their own** (in `data/fed_board_speeches_index.json`):
+- The JSON array's **last element is a metadata row** `{"updateDate": ...}` with no `d` key — a
+  naive comprehension raises `KeyError`. **It did, on me, in this run.** Filter on key presence.
+- **SPEAKER STRINGS ARE NOT NORMALISED and fragment one person across title changes.** **Jerome H.
+  Powell appears under 4 distinct strings** (Governor / Chair / Chairman / Chair Pro Tempore),
+  **Randal K. Quarles under 5**, and Bernanke / Yellen / Brainard / Kohn / Bowman / Barr / Clarida /
+  Jefferson under 2 each — **10 speakers fragmented in total**. A speaker-fixed-effects or
+  per-speaker tone panel grouping on the raw string **silently splits one speaker into several
+  entities**, which is exactly how a hawkishness-drift study dies without an error. `"Chairman  Ben
+  S. Bernanke"` additionally carries a **double space** as its own 2nd string.
+- File is served with a **UTF-8 BOM** (`encoding='utf-8-sig'` required); dates are US `M/D/YYYY`.
+
+**Grade: verified-clean.** Artifact: `data/fed_board_speeches_index.json` (index + fragmentation map
++ coverage diff). This does **not** retire the BIS corpus — it gives the desk a licence-clean route
+for the largest single bank in it.
+
+### 69. [dig 2026-08-28] Czech National Bank open API — official-sector-flow class member #3, and a free official CARRY series — grade: **verified-clean (forward points) / UNVERIFIED (open market operations)** [§33: screened tier:2 -> data/cnb_forward_points.json]
+
+**Why the CNB and not the next country on a list.** Chosen from the **live universe registry, not
+from my assumptions** (anti-hardcode): the 251-symbol universe was decomposed into its constituent
+currencies and **CZK is in it**. The CNB then ranks first in the class on mechanism strength — it
+ran an **explicit EURCZK 27.00 floor from 2013-11 to 2017-04**, the same forced-participant
+mechanism as the SNB's EURCHF floor, and it publishes its open market operations daily.
+
+**Route.** `https://api.cnb.cz/cnbapi/` — **keyless and SELF-DESCRIBING**: `.../api-docs` returns a
+Swagger 2.0 spec enumerating **22 endpoints across 7 tags** (czeonia, exrates, forward, fxrates,
+**omo**, pribor, skd). §13: `cnb.cz/robots.txt` is a single `*` group disallowing only
+`/export/sites/nc/` and `/export/sites/pnu/` — the API and all data paths are permitted.
+**The spec is the population enumerator here, exactly as the sitemap was for the SNB.**
+
+**VERIFIED — FX forward points: 26,523 observations over 6,908 distinct dates, 1998-12-31 →
+2026-08-28**, for `EUR_TO_CZK` and `USD_TO_CZK` at 3M and 6M. **27 years of free, official forward
+points for an in-universe pair.** This lands on `carry` — **one of the 8 families the desk's own
+book-breadth report lists as REACHABLE but ABSENT**, against a book that is 87% one family.
+
+**THE FINDING — A SILENT SERVER-SIDE ROW CAP AT 10,000, and it is the desk's ranked lesson #4
+reproduced on a brand-new source.** A single request for `dateFrom=2000-01-01&dateTo=2026-08-28`
+returns **HTTP 200, no error, no truncation flag, and exactly 10,000 rows ending 2010-08-04**.
+Every value in that truncated response is plausible and the series simply *stops* 16 years early.
+The chunked pull (4-year windows, deduped on date×pair×maturity) returns 26,523 — so **the naive
+single read silently loses 62% of the series.** Any derived carry statistic computed from the
+one-shot call would be a confident number about 1998–2010 wearing a 2026 label.
+
+**Other failure modes** (all in the artifact): **query params are NOT the response field names** —
+the response says `ccyPair`/`validFor` but the query wants `currencyPair`/`dateFrom`/`dateTo`, and
+guessing from the response schema returns HTTP 400 (it did, on me); **`lang=EN` does not localise
+enum VALUES** on `/omo`, which returns `"Depozitní facilita"` and `"Stažení"` in Czech even under
+`lang=EN`, so **a consumer filtering on English strings gets zero rows and reads it as "no
+operations"** — the WS-005 shape, absence read as a clean verdict; `EUR_TO_CZK` has 6,369 dates vs
+`USD_TO_CZK`'s 6,893, so a joined frame silently truncates; and these are forward **points**, not
+outright rates.
+
+**HONEST RESIDUAL, stamped UNVERIFIED rather than implied:** `/omo` was opened and confirmed rich —
+full bid/allotment detail, marginal and average rates, 242KB for 2015 alone — but was **not pulled
+in full and not diffed against the 2013–2017 floor episode this run.** That is the named next unit.
+Adopting it today on the strength of one 200 would be exactly the "impressive and unverified" the
+brief forbids.
+
+### SESSION 2026-08-28 (b) — CLOSE
+
+**Items taken: 3. Items closed: 3.** Plus one owed §33 disposition cleared and eight stale ones.
+No fourth item opened, no padding.
+
+**Categories covered / not covered — stated honestly rather than claimed.** The brief orders six
+categories; **five of them (exchange-native dumps, on-chain reconstruction, non-English exchange
+data, and vendor-replacement for Glassnode/CryptoQuant/Coinglass/Kaiko) are written for the
+crypto-exchange universe the 2026-08-18 mandate permanently bars.** Session (a) recorded this as a
+defect in the brief. **This run acted on it instead of recording it again:** the eight verified
+crypto cards still sitting untagged in the §33 backlog were **disposed as `killed`** with the
+mandate as the mechanism (`docs/graveyard.md` →
+`crypto_exchange_universe_banned_2026_08_18`), which is the honest verb the backlog was missing —
+they were never defective, they became out of scope. **The §33 backlog for this document is now 0
+(was 9).** Category 4 (community/institutional data lakes) is the one category that transfers
+intact, and all three items this run sit in it.
+
+**Verified vs UNVERIFIED: 3 sources opened first-party and verified against ground truth (SNB,
+Fed, CNB forward points); 1 residual explicitly stamped UNVERIFIED (CNB `/omo`) rather than
+adopted on a 200.**
+
+**BEST VENDOR-REPLACEMENT of the run:** the **Fed Board speech index** — a genuine §38 replacement
+that removes a *licence* obstruction rather than a price one. The BIS corpus this desk wired last
+session is noncommercial-only; the Fed's own index covers the largest bank in it, under a
+materially freer posture, in a single keyless request. **The residual was measured, not waved at:
+~646 post-2006 regional Reserve Bank speeches across 12 individually-public sites, plus 591
+pre-2006 rows.**
+
+**CROSS-SOURCE PAIRS whose joint value exceeds either alone:**
+1. **SNB sight deposits × CNB open market operations.** Two central banks that ran *explicit
+   currency floors* (EURCHF 1.20, EURCZK 27.00) and both publish the balance-sheet trace. Two
+   independent realisations of one mechanism — a floor defence — is what turns an n=1 anecdote into
+   something with a control. Neither alone survives a multiplicity correction; together they are a
+   family.
+2. **CNB forward points × CNB `/omo`.** Carry leg and intervention leg from the same institution on
+   the same clock, which is exactly the join a vendor charges for.
+3. Carried forward unworked from (a): MoF intervention dates × FX Blue retail hour-of-day.
+
+**NEW SOURCE CLASSES: 0 new, 1 materially extended.** The official-sector-flow class opened in (a)
+with one member now has **three verified members** (MoF / SNB / CNB) and a named unopened frontier
+(Banxico, RBI, CBRT, MNB, NBP — all with in-universe currencies: MXN 4 pairs, TRY 3, HUF 6, PLN 4,
+INR 1). A class with one member is an anecdote; with three it is a family worth a generator.
+
+**DEPTH LINE (mandated, per lead):**
+- **SNB — EXHAUSTED for this item.** Not a surface touch: robots read and **group-scoped on both
+  hosts**; the portal's **entire 416-cube id space enumerated** from a 1.9MB sitemap after three
+  guessed ids 404'd; cadence verified point-by-point (784/784 Fridays, zero missing weeks); and a
+  ground-truth diff run against three known episodes. **What depth surfaced that the surface did
+  not:** the surface is "weekly CHF intervention proxy, clean series, verified." Depth says **the
+  second-largest positive move in the whole series is the Credit Suisse rescue, not an
+  intervention — and the D0 split does not separate them.** A desk trading the surface reading
+  takes the wrong side of the biggest CHF event of 2023.
+- **Fed — EXHAUSTED as a route, residual enumerated.** Followed the chain past the index: probed
+  the licence on three separate pages, extracted a full body to prove the corpus is buildable, and
+  then **diffed coverage against the BIS corpus the desk already holds** — first by title
+  (inconclusive, 5 hits) and then by **speaker list, which was decisive**. **What depth surfaced:**
+  the index is **Board-only, proven not assumed**, and the speaker field **fragments Powell into 4
+  entities and Quarles into 5** — a defect that would silently destroy any speaker-fixed-effects
+  tone panel without ever raising an error.
+- **CNB — forward points EXHAUSTED, `/omo` opened and honestly left UNVERIFIED.** Went past the
+  first 200: pulled the **OpenAPI spec as the population enumerator** (22 endpoints), corrected my
+  own parameter names off the spec after an HTTP 400, and then **chunk-pulled and deduped the full
+  history**. **What depth surfaced that the surface did not — the single most valuable finding of
+  the run:** the endpoint has a **silent 10,000-row server-side cap**. One request returns HTTP
+  200, no flag, and a perfectly plausible series that **stops 16 years early and omits 62% of the
+  data.** A one-shot read would have produced a confident carry statistic about 1998–2010 wearing
+  a 2026 label. This is the desk's own ranked lesson #4 reproduced on brand-new ground.
+- **Honest self-assessment: this is not breadth-theater** — 3 items, 3 closed, 3 first-party
+  verifications, 3 distinct silent-failure modes found, 9 §33 dispositions cleared. It is also
+  **not** six-category exhaustion, and I have said plainly why that metric is measured against a
+  dead map.
+
+**THE BLUNT PART.** Two of my three finds are **failure modes, not data** — the SNB contamination
+and the CNB 10,000-row cap. That is the right ratio and I am not going to dress it up as three new
+alphas. The CNB cap in particular is worth more than the forward series it hid: **the desk now has
+a fourth independent instance of "HTTP 200 + plausible values + silent truncation"**, and every
+history endpoint the desk reads in one shot should be assumed guilty until chunk-diffed. The
+official-sector-flow class is genuinely promising — forced participants who publish — but **not one
+of these three is a sleeve yet, and none was pre-registered**, because the SNB signal needs the
+liquidity contamination controlled first and the CNB carry leg needs `/omo` verified to be worth
+anything.
+
+**NEXT UN-EXHAUSTED GROUND (the chain holds):**
+1. **CNB `/omo` in full** — pull it chunked (the cap applies), and diff against the 2013-11 →
+   2017-04 EURCZK floor. This is the owed half of card 69.
+2. **The 12 regional Reserve Bank speech sites** — the enumerated §38 residual behind the Fed
+   index, and the half of the BIS Fed subset that is still licence-blocked.
+3. **Banxico / CBRT / RBI / MNB / NBP** — the remaining official-sector-flow frontier, ordered by
+   in-universe pair count (HUF 6, MXN 4, PLN 4, TRY 3, INR 1).
+4. Still owed from (a): the orphaned-inode failure mode's scope across every long-running writer
+   under `desks/mt5/data/` is UNMEASURED.

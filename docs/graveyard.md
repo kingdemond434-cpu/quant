@@ -1763,3 +1763,36 @@ A human reading the site in a browser is NOT a re-open trigger and does not beco
 ground the desk already holds — the Forex-TSD CDX attachment corpus (OP-096b), MQL5's own surface
 (card 41), and the FX Blue track-record layer opened the same day (card 53). Nothing about this
 kill withdraws the search space; it withdraws one route into it.
+
+---
+
+## `crypto_exchange_universe_banned_2026_08_18` — eight verified free-data sources retired by the universe mandate, not by any defect of their own
+
+**Date:** 2026-08-28 (free-data-alternatives miner). **Verdict: KILLED as huntable ground. Tier 3.**
+
+**Cards retired:** 2 (OKX official historical-data portal), 4 (Bithumb spot+futures), 5 (Coincheck),
+6 (Tardis vendor-replacement), 9 (stablecoin mint/burn self-computation), 10 (AWS Public Blockchain
+Data), 11 (eth-labels), 12 (cex-list) in `docs/research/data_axis_watchlist.md`.
+
+**Mechanism of death — and it is important that it is not a data-quality verdict.** Every one of
+these was graded **verified-clean** on its own merits, several after full first-party
+reconstruction. None of them broke. They are retired because the **principal's standing order of
+2026-08-18 (LAWS §1)** makes the crypto-exchange-native universe permanently un-huntable: *"No
+crypto-exchange-native universe (Binance/Bybit/OKX/Hyperliquid/Deribit or any successor) may ever
+be hunted again."* A source that may not be hunted cannot carry an axis, however clean it is. They
+sat untagged in the §33 backlog for weeks precisely because nothing was *wrong* with them — the
+backlog had no verb for "correct, and now out of scope."
+
+**§16a re-open condition (a NAMED enabling change, per L1.16a):** only a principal order restoring
+crypto-exchange ground. No data improvement, no new route and no regime shift re-opens these — the
+death is jurisdictional, so only the jurisdiction can reverse it. **Crypto reference data remains
+admissible where it measurably informs an MT5 instrument** (LAWS §1), which is a different use and
+is not killed here.
+
+**§38 — what replaces them.** The capability these eight carried was *forced-participant flow and
+venue microstructure observable for free*. Its MT5-universe successor is the **official-sector-flow
+class**, opened 2026-08-28 and now at three verified members: **Japan MoF intervention operations**
+(card 67), **SNB weekly sight deposits** (card 68), **CNB open API — forward points + open market
+operations** (card 69). The mechanism transfers exactly: a participant who is forced to transact,
+publishes the fact, and cannot stop. The replacement hunt is open, not closed — Banxico, RBI, CBRT,
+MNB and NBP are named and unopened.
