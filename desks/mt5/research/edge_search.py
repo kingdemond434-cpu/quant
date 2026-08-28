@@ -750,6 +750,11 @@ def main(symbols: list[str] | None = None) -> int:
             print(f"  covering {len(symbols)} symbol(s) this run (registry fits inside the "
                   f"{PER_RUN}-symbol budget)")
     results, hypotheses = [], []
+    #: Strong effects whose cause the mechanism map cannot name. They are QUESTIONS for the
+    #: research brains, never candidates: gate 1 would terminal-reject them, so shipping them
+    #: to the docket spends the hour on something no gate can rule on. Naming one (with
+    #: evidence) re-opens gate 1 for its whole feature class via the map.
+    naming_queue: list[dict] = []
     total_trials = 0
     unsearched: list[dict[str, str]] = []
     for sym in symbols:
@@ -768,6 +773,16 @@ def main(symbols: list[str] | None = None) -> int:
         total_trials += int(res.get("trials") or 0)
         for row in res.get("selected", []):
             mechanism_status, mechanism_note = mechanism_for_feature(str(row["feature"]))
+            if mechanism_status != "NAMED":
+                naming_queue.append({
+                    "symbol": sym, "feature": row["feature"], "band": row.get("band"),
+                    "horizon": row.get("horizon"), "side": row.get("side"),
+                    "t_stat": row.get("t_stat"), "n_oos": row.get("n_oos"),
+                    "asked_at": datetime.now(UTC).isoformat(timespec="seconds"),
+                    "question": ("measured out-of-sample effect with no named cause; name it "
+                                 "with evidence or refute it -- never trade it unnamed"),
+                })
+                continue
             hypotheses.append({
                 "symbol": sym,
                 "family": "discovered",
@@ -789,12 +804,39 @@ def main(symbols: list[str] | None = None) -> int:
     # discovery -> backtest -> ten gates -> certificate -> forward -> live. The trial count is
     # carried to the gauntlet, where deflation is the canonical policy's job and nobody else's.
 
+    # THE QUESTIONS GO SOMEWHERE A BRAIN WILL MEET THEM. Appended (never truncated) so a run
+    # that finds nothing new does not erase what earlier runs asked, and deduped on
+    # (symbol, feature, band, horizon, side) so a recurring effect asks once.
+    if naming_queue:
+        nq_path = OUT.parent / "mechanism_naming_queue.json"
+        try:
+            existing = json.loads(nq_path.read_text("utf-8"))
+            existing = existing if isinstance(existing, list) else []
+        except (OSError, ValueError):
+            existing = []
+        seen = {json.dumps({k: r.get(k) for k in
+                            ("symbol", "feature", "band", "horizon", "side")},
+                           sort_keys=True, default=str) for r in existing}
+        added = 0
+        for r in naming_queue:
+            key = json.dumps({k: r.get(k) for k in
+                              ("symbol", "feature", "band", "horizon", "side")},
+                             sort_keys=True, default=str)
+            if key not in seen:
+                existing.append(r)
+                seen.add(key)
+                added += 1
+        nq_path.write_text(json.dumps(existing[-4000:], indent=1, default=str), "utf-8")
+        print(f"  mechanism-naming queue: +{added} question(s) "
+              f"({len(naming_queue)} unnamed effects this run, {len(existing)} banked)")
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "searched_at": now.isoformat(timespec="seconds"),
         "symbols": len(results), "symbols_offered": len(symbols),
         "unsearched": unsearched, "total_trials": total_trials,
         "hypotheses": hypotheses, "per_symbol": results,
+        "naming_queue_written": len(naming_queue),
         "arbiter": ("the canonical ten-gate policy, and nothing else. This searcher discovers "
                     "and reports; it sets no threshold of its own. Pipeline: discovery -> "
                     "backtest -> ten gates -> certificate -> forward window -> live."),
