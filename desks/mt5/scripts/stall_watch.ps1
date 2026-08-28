@@ -102,6 +102,56 @@ foreach ($tn in $researchTasks) {
   }
 }
 
+# TASK EXISTENCE (gap 3). Disabled and failing tasks heal above -- a task DELETED outright
+# vanishes with nothing to heal. The required set is declared here and any missing task is
+# reported by name; re-registration needs its exact action, which lives in ops/, so this
+# reports rather than guesses (a wrong re-registration is worse than a missing task).
+$requiredTasks = @('MT5-Gauntlet','MT5-Shadow','MT5-Hourly','MT5-DeskState','MT5-MoatRecorder',
+                   'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync')
+$present = (schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
+foreach ($rt in $requiredTasks) {
+  if ($present -notcontains $rt) {
+    $actions += "TASK MISSING: $rt is not registered at all -- re-register from ops/ (deletion, not failure)"
+  }
+}
+
+# PER-SYMBOL FEED LAG (gap 2). A single symbol's bars can fall hours behind while the terminal
+# looks healthy overall -- USDZAR sat 21h stale and only a log line knew. Any traded symbol
+# whose newest H1 bar is >6h old during the trading week is named; the fixer is re-selecting it
+# in MarketWatch, which is what makes the terminal stream it again.
+try {
+  $uniDir = 'C:\opt\quant\desks\mt5\data\universe'
+  $now = (Get-Date).ToUniversalTime()
+  if ($now.DayOfWeek -ne 'Saturday' -and $now.DayOfWeek -ne 'Sunday') {
+    # ONLY SYMBOLS THAT CARRY A LIVE CLOCK. The 251-symbol registry is refreshed DAILY by
+    # design (equity/index CFDs), so a blanket 6h rule pages on ~200 files that are working
+    # exactly as intended -- a watchdog that cries every pass gets ignored, which is worse than
+    # no watchdog. What actually starves a forward clock is ITS OWN symbol going stale, so the
+    # check is scoped to symbols under evaluation right now.
+    $watched = @()
+    try {
+      $ss = Get-Content 'C:\opt\quant\desks\mt5\reports\shadow\shadow_state.json' -Raw |
+            ConvertFrom-Json
+      foreach ($p in $ss.PSObject.Properties) {
+        if ($p.Value.status -eq 'ACTIVE') { $watched += ($p.Name -split '\.')[0] }
+      }
+    } catch { }
+    $watched = $watched | Sort-Object -Unique
+    $laggy = @()
+    foreach ($sym in $watched) {
+      $f = Get-Item ($uniDir + '\' + $sym + '_H1.parquet') -ErrorAction SilentlyContinue
+      if ($f -and $f.LastWriteTimeUtc -lt $now.AddHours(-6)) { $laggy += $sym }
+    }
+    if ($laggy.Count -gt 0) {
+      $actions += "FEED LAG: " + $laggy.Count + " CLOCKED symbol(s) >6h stale: " + ($laggy -join ',')
+      foreach ($sym in $laggy) {
+        try { py -3 -c "import MetaTrader5 as m; m.initialize(); m.symbol_select('$sym', True); m.shutdown()" 2>$null } catch { }
+      }
+      $actions += "FEED LAG fixer: re-selected " + $laggy.Count + " symbol(s) in MarketWatch"
+    }
+  }
+} catch { }
+
 # UNIVERSE REGISTRY RATCHET (desk side). A rogue writer keeps rebuilding universe.json from
 # the terminal's 23 MarketWatch rows (three strikes on 2026-08-27; the last one blocked both
 # gap-decay forward clocks with KeyError: EURZAR while every fence read green). The VPS repair

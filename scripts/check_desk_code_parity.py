@@ -122,6 +122,30 @@ def heal(diverged: list[dict[str, str]], missing: list[str], timeout: int) -> li
             print(f"  HEALED {rel} -> {REMOTE}")
         else:
             print(f"  HEAL FAILED {rel}: {(res.stderr or '').strip()[:120]}")
+    # GAP 5 -- HEALING BYTES IS NOT HEALING BEHAVIOUR. Tonight's class was modules that were
+    # byte-correct on the desk and still unimportable (stale bytecode, a path assumption, a
+    # missing package). After shipping, purge bytecode and prove the desk can actually IMPORT
+    # the money-path modules; a failure is reported loudly because the box is now running code
+    # nobody has proven loads.
+    if shipped:
+        probe = ("import importlib,sys; sys.path[:0]=['C:/opt/quant','C:/opt/quant/desks/mt5',"
+                 "'C:/opt/quant/desks/mt5/research'];"
+                 "[importlib.import_module(m) for m in "
+                 "['mt5desk.families','mt5desk.engine','mt5desk.families_orthogonal',"
+                 "'shadow_admission','sleeve_registry']]; print('DESK IMPORT OK')")
+        subprocess.run(["ssh", "-o", "ConnectTimeout=20", REMOTE,
+                        "powershell -Command \"Get-ChildItem C:\\opt\\quant\\desks\\mt5 "
+                        "-Recurse -Directory -Filter '__pycache__' | ForEach-Object "
+                        "{ Remove-Item -Recurse -Force $_.FullName }\""],
+                       capture_output=True, text=True, timeout=timeout, check=False)
+        r = subprocess.run(["ssh", "-o", "ConnectTimeout=20", REMOTE,
+                            f'cmd /c py -3 -c "{probe}"'],
+                           capture_output=True, text=True, timeout=timeout, check=False)
+        if "DESK IMPORT OK" in (r.stdout or ""):
+            print("  post-heal import smoke: OK")
+        else:
+            print(f"  POST-HEAL IMPORT FAILED -- the desk has the right bytes but cannot load "
+                  f"them: {((r.stdout or '') + (r.stderr or '')).strip()[-200:]}")
     return shipped
 
 

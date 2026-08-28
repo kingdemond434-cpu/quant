@@ -165,6 +165,8 @@ def fix_clocks() -> tuple[bool, str]:
 
 
 FIXERS = {
+    "BACKLOG": fix_gauntlet,
+    "QUEUES": None,          # bound below once the converter is defined
     "CLOCKS": fix_clocks,
     "DATA-MACRO": fix_data_macro,
     "DATA-COT": fix_data_cot,
@@ -181,6 +183,16 @@ FIXERS = {
     "MINERS": fix_miners,
     "STALL-WATCH": fix_stall_watch,
 }
+
+
+def fix_queues() -> tuple[bool, str]:
+    """Unconsumed question queues -> research-queue cards, so the brains actually meet them."""
+    rc, out = _run([sys.executable, str(ROOT / "scripts" / "convert_question_queues.py")],
+                   timeout=120)
+    return rc == 0, out[-160:]
+
+
+FIXERS["QUEUES"] = fix_queues
 
 
 def apply(breaches: list[str]) -> list[dict]:

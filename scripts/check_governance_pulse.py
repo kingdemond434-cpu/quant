@@ -62,6 +62,25 @@ def main() -> int:
         breaches.append(f"DOCKET: {n_docket} candidates against a demonstrated {floor_d} -- "
                         f"the search is under-feeding the gates")
 
+    # --- CONVERSION MUST KEEP PACE WITH DISCOVERY (principal 2026-08-27: "test as many
+    # candidates as possible every hour to avoid candidates growing bigger than conversion").
+    # The docket outgrowing judgment is the waiting-room defect one stage later: candidates
+    # exist, the gate exists, and the queue between them quietly becomes the product. Cold
+    # cells cost real compute, so the floor is a RATIO with hysteresis, and the fixer is more
+    # gauntlet runs (per-cell cache makes every attempt cumulative), never fewer candidates.
+    hist = ratchet.setdefault("backlog_history", [])
+    ratio = (judged / n_docket) if n_docket else 1.0
+    hist.append({"at": m["at"], "docket": n_docket, "judged": judged,
+                 "ratio": round(ratio, 4)})
+    ratchet["backlog_history"] = hist[-24:]
+    m["conversion_ratio"] = round(ratio, 4)
+    lagging = [h for h in hist[-6:] if h["docket"] > 500 and h["ratio"] < 0.33]
+    if len(lagging) >= 6:
+        breaches.append(f"BACKLOG: docket {n_docket} vs {judged} judged "
+                        f"(ratio {ratio:.0%}) for 6+ consecutive checks -- conversion is "
+                        f"falling behind discovery; run the gauntlet harder, never the "
+                        f"miners softer")
+
     # --- survivors must MOVE: a claim sitting un-actioned is a violation, not a wait
     ledger = _read(DESK / "reports" / "SURVIVORS_LEDGER.json") or {}
     rows = ledger.get("claims") if isinstance(ledger, dict) else None

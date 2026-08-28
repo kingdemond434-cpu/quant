@@ -44,6 +44,16 @@ DBNOMICS_MIRROR: dict[str, tuple[str, str, str]] = {
     "INDPRO": ("FED", "G17_IP_MAJOR_INDUSTRY_GROUPS", "IP.B50001.S"),  # IP total index, SA
     "CPIAUCSL": ("BLS", "cu", "CUSR0000SA0"),        # CPI-U all items, SA
     "FEDFUNDS": ("FED", "H15", "RIFSPFF_N.M"),       # effective federal funds rate, monthly
+    # Rates + labour + core inflation axes (2026-08-27: 19 of 22 macro series were failing
+    # through the blocked primary, so Growth was the ONLY axis the desk could see -- macro
+    # states, differentials and every macro_conditional cell were reading one dimension).
+    # Each id below was probed live against DBnomics before being mapped; a wrong mapping
+    # would splice a different series under a familiar name, which is worse than a gap.
+    "DGS10": ("FED", "H15", "RIFLGFCY10_N.B"),       # 10y treasury constant maturity, daily
+    "DGS2": ("FED", "H15", "RIFLGFCY02_N.B"),        # 2y treasury constant maturity, daily
+    "DFF": ("FED", "H15", "RIFSPFF_N.D"),            # effective fed funds, daily
+    "PAYEMS": ("BLS", "ce", "CES0000000001"),        # total nonfarm payrolls, SA
+    "CPILFESL": ("BLS", "cu", "CUSR0000SA0L1E"),     # CPI core (less food & energy), SA
 }
 
 
@@ -110,8 +120,13 @@ def fetch_macro_series(series_id: str) -> tuple[dict[str, float], str]:
             _record(f"macro:{series_id}", name, ok=True)
             return data, name
         except Exception as exc:
-            errors.append(f"{name}: {type(exc).__name__}: {exc}")
-            _record(f"macro:{series_id}", name, ok=False, why=str(exc)[:120])
+            import urllib.error as _ue
+            kind = ("AUTH_FAILED" if isinstance(exc, _ue.HTTPError)
+                    and exc.code in (401, 403) else "BLOCKED")
+            errors.append(f"{name}: {kind}: {type(exc).__name__}: {exc}")
+            # AUTH_FAILED is a KEY problem, not a network problem: rerouting around it forever
+            # hides a rotten credential; the health fence reads this marker and pages rotation.
+            _record(f"macro:{series_id}", name, ok=False, why=f"{kind}: {str(exc)[:100]}")
     raise RuntimeError(f"ALL routes failed for {series_id} -- " + " | ".join(errors))
 
 

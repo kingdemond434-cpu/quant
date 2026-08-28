@@ -172,6 +172,33 @@ def track_tunnel_url() -> str | None:
     return f"TUNNEL URL rotated -> {url} (committed + pushed so the repo carries the live link)"
 
 
+def check_unit_files() -> list[str]:
+    """The ORGAN DEFINITIONS themselves: ops/*.service|*.timer are the repo's copy, and
+    ~/.config/systemd/user/ is what systemd actually runs. Nothing compared them, so a drifted
+    or truncated unit would run silently forever. Repo wins (it is reviewed and fenced);
+    restored units are reloaded. A live unit with NO repo copy is reported, never deleted."""
+    actions: list[str] = []
+    live = Path.home() / ".config" / "systemd" / "user"
+    repo = ROOT / "ops"
+    if not live.is_dir():
+        return actions
+    changed = False
+    for src in sorted(repo.glob("quant-*.*")):
+        if src.suffix not in (".service", ".timer"):
+            continue
+        dst = live / src.name
+        try:
+            if not dst.exists() or dst.read_text("utf-8") != src.read_text("utf-8"):
+                dst.write_text(src.read_text("utf-8"), "utf-8")
+                actions.append(f"UNIT-FILE restored {src.name} from ops/")
+                changed = True
+        except OSError as exc:
+            actions.append(f"UNIT-FILE {src.name}: {type(exc).__name__}")
+    if changed:
+        _run(["systemctl", "--user", "daemon-reload"], timeout=60)
+    return actions
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     actions: list[str] = []
@@ -210,6 +237,10 @@ def main() -> int:
     if url_note:
         actions.append(url_note)
         print(f"  {url_note}")
+
+    for a in check_unit_files():
+        actions.append(a)
+        print(f"  {a}")
 
     lock_note = clear_stale_git_lock()
     if lock_note:
