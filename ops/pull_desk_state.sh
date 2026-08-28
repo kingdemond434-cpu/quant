@@ -55,6 +55,18 @@ for f in universal_gates_external.json recertification_audit.json; do
     && mv "desks/mt5/reports/$f.tmp" "desks/mt5/reports/$f"
 done
 
+# THE DOCKET ITSELF. Every breadth, ROI and backlog judgement made on this box reads
+# external_survivors.json, and it was never on the pull list -- it arrived only when a fixer
+# happened to scp it as a side effect. So the coverage checks were grading a docket that could be
+# hours behind the one the gauntlet actually judges, and tonight a bond backfill that DID land on
+# the desk box (6,270 rows, 214 bond candidates) left this box still reporting the class as
+# starved from a 6,024-row copy.
+for f in external_survivors.json coverage_search_results.json; do
+  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/hypotheses/$f" \
+      "desks/mt5/data/hypotheses/$f.tmp" 2>/dev/null \
+    && mv "desks/mt5/data/hypotheses/$f.tmp" "desks/mt5/data/hypotheses/$f"
+done
+
 # THE TRADING HALT MARKER. The desk auto-pauses itself when placement passes are rejected, and
 # it writes a file saying exactly why. Nothing pulled that file and nothing read it, so the desk
 # stopped trading on 2026-08-25 and reported it to no one for three days -- while every research
