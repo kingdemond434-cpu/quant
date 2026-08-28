@@ -8032,3 +8032,76 @@ or citations chased, 0 blog bodies read.** **No new alpha was found and none was
 yield was measurement: two of my own hypotheses died to their own controls, and the single most
 useful output is the correction — the 8.2x number was already in the desk's record and would have
 been converted at ~3x its true size.
+
+## BRAIN HUNTER — session 6 (2026-08-28, dedicated daily organ)
+
+**Ground entered from s5's own named next-ground handoff** ("`github.com/aircrushin/wq-alpha-agent`
+— RICH, UNMINED beyond README/licence"). The chain is doing what it was built to do: s5 named it,
+s6 mined it, and this note names s7's.
+
+**§33 FIRST, per the standing order.** Three T1/T2 items owed. All three were *already converted
+with their evidence on disk* — they owed because their tags used verbs the parser does not accept
+(`converted`, `repaired`; LEGAL is wired/screened/killed/deferred), and because the natural
+`-> path tier:N` order swallows the tier into the artifact string and fails backing as
+anchor-absent. Re-tagged cards 61/65/65b/66 in `data_axis_watchlist.md` to the legal grammar with
+EXACT artifact paths; `mine_gate` now reads **BACKLOG-CLEAR, 28/28 disposed**. The parser defect is
+**R0682** (not patched — research-only freeze): an illegal verb IS diagnosed per-item and the
+verdict never prints it, and a correctly-cited card fails backing — the launder-detector firing on
+honest work.
+
+### Sources worked
+
+| Source | What lives there | How found | Verdict |
+|---|---|---|---|
+| `github.com/aircrushin/wq-alpha-agent` (MIT, 12★) | BRAIN alpha agent: generate/simulate/**diversity**/submit/evolve | s5 handoff | **RICH — `diversity.py` read in full → OP-099** |
+| ↳ `wq_alpha_agent/evolve.py`, `batch.py`, `SKILL.md` | mutation/evolution loop, batch orchestration, the agent's own skill file | same repo tree | **UNMINED — s7's first item** |
+| `github.com/zl3311/alpha-mining` | public BRAIN lab notebook with failures + process memory | s5 | **RICH, still UNMINED beyond s5's README pass** |
+
+### What came back
+
+- **OP-099 — the pre-compute duplicate gate** (`search_operator_library.md`). Structural
+  fingerprints (numeric literals → `#`, operands → `FIELD`, multi-set operator overlap) reject a
+  re-parameterisation BEFORE simulation. The desk's argument for it, stated in its own terms: a
+  returns-correlation duplicate is an ESTIMATE bought after the compute is spent; a skeleton match
+  is a FACT available before the first bar. **CONVERGENT, NOT NOVEL** — `variation_blocker.py`
+  makes the same multiplicity argument almost word for word and is live on a 6-hourly cron. The one
+  importable delta is the `field_skeleton` layer, which separates *same shape different field* from
+  *same shape same field different parameter*; the desk's semantic tuples cannot. Their four
+  thresholds are recorded as **facts about their process, never gates for ours** (L1.6).
+- **R0685 — and this is the session's real find, and it is about the desk, not the platform.**
+  Reading the desk's convergent implementation meant re-running its reader, which showed that
+  `run_generation_diversity.py` — the desk's ONLY generation-collapse detector, 6-hourly, feeding
+  `panel_scorecard` — has been measuring **200 candidates created 2026-08-19/20 whose 11 symbols
+  are all crypto USDT perps**, i.e. the banned universe, and printing `[OK]` with zero flags for
+  eight days. The candidate store's last write of any kind is 2026-08-20; the MT5 lane generates
+  into `desks/mt5/data/hypotheses/` and never reaches it. A stale-but-NONEMPTY roster is worse than
+  GAP #183's empty one, because an emptiness check cannot catch it.
+- **R0683 / R0684 — the anti-hardcode law cited a dead 23-symbol file as "the registry."**
+  `docs/LAWS.md:51`, `docs/RESEARCH.md:37` and `CLAUDE.md:41` all named
+  `desks/mt5/universe/universe.json` (23 symbols, last written 2026-08-20, **zero code readers**)
+  while every writer and repair script uses `desks/mt5/data/universe/universe.json` (**251**). The
+  23 are a strict subset, so repointing loses nothing — done in all three docs, seal re-verified.
+  R0684 exists because R0692's open residual prescribes that dead path as an EXACT PATCH into a
+  live decision organ's prompt.
+
+### Coverage bookkeeping
+
+- **EXHAUSTED (dated):** `aircrushin/wq-alpha-agent` → `wq_alpha_agent/diversity.py` +
+  `tests/test_diversity.py`, 2026-08-28. Nothing further to take from that file.
+- **Video:** 0 fetched, 0 locked — no video route attempted this session; the s5 finding that the
+  BRAIN lecture corpus is **SOURCE-walled at 93.75%** is unchanged and was not re-probed.
+- **§13:** all reads were public GitHub over the API and raw.githubusercontent, MIT-licensed. No
+  `api.worldquantbrain.com` call, no authenticated surface, no login. The data-field catalogue
+  (OP-084) remains behind the wall and is named, not entered.
+
+### NEXT UN-EXHAUSTED GROUND (for s7, in order)
+
+1. `wq_alpha_agent/evolve.py` (16.6KB, the largest file in the repo) — the **mutation/evolution
+   operator set**. The desk's breeder (HYPOTHESIS_MAX #4) is the still-unbuilt half of the same
+   spec that produced `variation_blocker`, so this is the one place on this ground with a named,
+   currently-empty desk consumer waiting for it.
+2. `wq_alpha_agent/SKILL.md` (13.7KB) + `CLAUDE.md` — the agent's own *process* memory, which is
+   PROCESS-MANDATE material: how the author decided what to try next and what they stopped trying.
+3. `zl3311/alpha-mining` failure archive — s5 graded it RICH and only read its README.
+4. The recursive hop nobody has taken on this ground: `aircrushin`'s other repos and the
+   star-graph neighbours of both repos above, per the RECURSIVE EXPANSION mandate.

@@ -38,7 +38,7 @@ vocabulary. Do not decide something the desk already decided.
 - **Tier-3 deadman rail** (`scripts/run_deadman_switch.py`): never modified autonomously.
   STANDING DEFECT: it watches retired crypto-testnet endpoints and protects no live MT5 risk —
   repointing is queued principal-gated work (LAWS §4).
-- The MT5 desk lives in `desks/mt5/`; universe registry `desks/mt5/universe/universe.json`.
+- The MT5 desk lives in `desks/mt5/`; universe registry `desks/mt5/data/universe/universe.json`.
   Branch pointers rot — trust `git branch --show-current` and recent `git log`, not this file.
 
 ## Laws a fresh session most often violates (full set: LAWS §6)

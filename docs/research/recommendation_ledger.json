@@ -8779,6 +8779,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0683",
+   "source": "max_audit",
+   "summary": "THE ANTI-HARDCODE LAW CITED A DEAD 23-SYMBOL FILE AS 'THE REGISTRY' -- 9.2% of the universe, wearing the authority of LAWS §1. docs/LAWS.md:51, docs/RESEARCH.md:37 and CLAUDE.md:41 all named desks/mt5/universe/universe.json as the registry that defines scope. That path holds 23 symbols, was last written 2026-08-20 (79ab4705), and has ZERO code readers repo-wide. The LIVE registry every writer and repair script uses is desks/mt5/data/universe/universe.json -- 251 symbols, and the 23 are a STRICT SUBSET of the 251, so nothing is lost by repointing. The defect is the citation, and it is the exact failure the law it appears in exists to prevent: a law whose whole point is 'registries define scope, never a literal list' pointed every reader at a stale literal list, so any organ or seat obeying the law's own citation scopes itself to 9.2% of the hunted ground and reads that as compliance (WS-005: a stale twin read as the authority). REPAIRED HERE: all three citations repointed; constitution seal re-verified intact after the LAWS.md edit. RESIDUAL, deliberately not done and owed: (1) the orphan file itself is not deleted -- deletion is a tracked-artifact act outside this research-only seat, and until it is gone the wrong path stays greppable and re-citable; (2) NOTHING FENCES THIS -- there is no check that a path a governing doc calls a registry actually has readers and is not stale, which is what let an 8-day-dead file hold the citation.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T07:52:42.607406+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0684",
+   "source": "max_audit",
+   "summary": "R0692 RESIDUAL PRESCRIBES THE DEAD PATH -- correct it before it is implemented. The open row at recommendation_ledger.json:8394 gives an EXACT PATCH for prompts/external_panel_prompt.txt: 'point at desks/mt5/universe/universe.json (anti-hardcode: registry reference, not a symbol list)'. That path is the stale 23-symbol orphan with no readers (see the registry-citation row raised alongside this one); the live registry is desks/mt5/data/universe/universe.json (251). Implementing R0692's residual as written would hand run_external_panel.py -- a LIVE decision organ -- a universe 9.2% of the real one while the commit message truthfully reports an anti-hardcode repair. Whoever picks up R0692 must substitute the data/ path. Raised as its own row rather than edited into R0692 because a ledger row's text is its evidence and is not rewritten.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T07:52:44.666969+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0685",
+   "source": "max_audit",
+   "summary": "THE GENERATION-COLLAPSE INSTRUMENT HAS BEEN GREEN ABOUT A BANNED UNIVERSE FOR EIGHT DAYS. scripts/run_generation_diversity.py runs every 6h (ops/crontab.manifest:1122) and is the desk's ONLY detector for 'is generation collapsing onto one idea'; its verdict is appended to panel_scorecard.gen_diversity and feeds the weekly panel. MEASURED TODAY by re-running its own reader: _batch() reads CandidateStore(data/sor_research.sqlite) and takes the 200 most recent rows. Those 200 rows were created 2026-08-19T06:27 -> 2026-08-20T05:44, and their 11 distinct symbols are EDENUSDT GUNUSDT HFTUSDT HYPERUSDT JCTUSDT LSKUSDT MAVUSDT MITOUSDT ONUSDT RVNUSDT VELODROMEUSDT -- every one a crypto-exchange USDT perp, i.e. the universe the principal's 2026-08-18 mandate (reaffirmed 08-25) forbids the desk to hunt. The store's last write of ANY candidate is 2026-08-20 (23,192 rows total, daily counts 08-17:8541, 08-19:9870, 08-20:99, then nothing). The MT5 lane generates into desks/mt5/data/hypotheses/*.json and never touches this store, so the detector is structurally incapable of ever seeing MT5 generation. NET EFFECT: for eight days the artifact has printed 'generation diversity [OK] over 200 candidates', market_breadth 11, zero flags -- an OK about a frozen batch from a banned universe, laundered into the panel scorecard as a live green. Same class as GAP #183 (a monitor with an empty roster read as 'the loop is turning') except worse, because a STALE-BUT-NONEMPTY roster cannot even be caught by an emptiness check. TWO SEPARATE FIXES, both owed: (1) repoint _batch() at the MT5 candidate source; (2) the detector must publish the batch's DATE RANGE and refuse a verdict on a batch older than a declared staleness bound -- a freshness field is what makes fix (1) self-checking instead of another thing that can silently rot. Found by BRAIN hunter s6 while reading the desk's own convergent implementation of OP-099.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T07:54:21.251511+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

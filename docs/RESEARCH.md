@@ -34,7 +34,7 @@ measurably informs an MT5 instrument. Session structure (Asia/London/NY), rollov
 mechanics, contract specs and broker microstructure are first-class search dimensions — the MT5
 analogue of the funding/liquidation mechanics the old universe hunted.
 
-**Anti-hardcode (LAWS §1):** universes come from registries (`desks/mt5/universe/universe.json`,
+**Anti-hardcode (LAWS §1):** universes come from registries (`desks/mt5/data/universe/universe.json`,
 the source registry); every literal list in a miner is a bootstrap seed and must say so. A
 hardcoded channel/symbol/account list that caps exploration is a defect of the WS-005 class.
 

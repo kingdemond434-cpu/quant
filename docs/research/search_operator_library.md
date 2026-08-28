@@ -3462,3 +3462,63 @@ the origin still has to happen and is unchanged by the enumeration route.
 **COROLLARY — "no population route" is a claim requiring the CDX probe.** Under L1.51 ("exhausted"
 requires evidence), a track-record ground may not be graded population-blocked until this command
 has been run against it and returned nothing. It costs one request.
+
+## OP-099 — THE PRE-COMPUTE DUPLICATE GATE: STRUCTURAL FINGERPRINTS BEAT RETURNS CORRELATION BECAUSE A SKELETON IS A FACT AND A CORRELATION IS AN ESTIMATE (BRAIN hunter s6, 2026-08-28)   [active]
+
+**SOURCE:** `github.com/aircrushin/wq-alpha-agent` (MIT, 12★, pushed 2026-08-03), file
+`wq_alpha_agent/diversity.py`, read in full. Reached from the s5 session note's own named next
+ground ("RICH, UNMINED beyond README/licence"). **DERIVES-FROM:** BRAIN → alternative agent
+implementations → this repo. Its FAMILY_RULES/field vocabulary is BRAIN-platform-specific and is
+NOT imported; the mechanism is.
+
+**WHAT IT COMPUTES.** Before any simulation, each candidate expression is reduced to four
+comparable objects and checked against the already-held ("protected") set:
+  1. `skeleton` — whitespace collapsed, lowercased, **every numeric literal replaced by `#`**.
+     Two candidates differing only in lookbacks/weights collapse to the SAME string.
+  2. `field_skeleton` — the skeleton with every *operand* replaced by `FIELD` and every local
+     assignment by `VAR`. This is the layer the desk does not have: it separates *same shape,
+     different data* from *same shape, same data, different parameter*.
+  3. field-set **Jaccard**, and a **multi-set** operator overlap (Counter `&` / `|`, so using
+     `ts_mean` three times is not the same usage as once).
+  4. a family label from distinctive (non-common) fields.
+Rejection fires on: exact skeleton match; OR same `field_skeleton` with field-Jaccard ≥ 0.7; OR
+same family with key-field ≥ 0.67, field ≥ 0.5 and operator ≥ 0.6 overlap.
+
+**THE MECHANISM WORTH TAKING, stated as the desk's own argument.** A duplicate detected by
+*returns correlation* is detected by an ESTIMATE over a finite sample, after the compute is
+already spent. A duplicate detected by *skeleton identity* is a FACT, costs nothing, and is
+available before the first bar is read. Under L1.60/L1.61 the desk pays a multiplicity charge per
+trial and selects on marginal independence: a re-parameterisation therefore costs twice — the
+compute AND the budget a genuinely new question needed — and the statistical cost is the larger
+one. The `#`-collapse is the precise instrument for "is this a new question or the same question
+with a knob turned".
+
+**CONVERGENT, NOT NOVEL — and the provenance matters.** The desk built this argument
+independently: `libs/research/variation_blocker.py` (HYPOTHESIS_MAX #3) blocks on mechanism
+fingerprint and states the same multiplicity reasoning almost word for word, is wired through
+`scripts/run_generation_diversity.py`, and is **live on a 6-hourly cron** (`ops/crontab.manifest`
+:1122) writing `data/gen_diversity.json`. So this is a genuine cross-ecosystem CONVERGENCE on the
+same mechanism, not an echo — which raises confidence in the mechanism and lowers the value of
+the import. **What the desk does NOT have is layer 2**, the `field_skeleton`: the desk's
+fingerprints are semantic tuples (`liquidity/reversal/unspecified`), which cannot distinguish
+"same structure over a different instrument/field" from "same structure, same field". That is the
+one importable delta and it is a small one.
+
+**MT5 ANALOGUE.** Direct, on the desk's candidate expressions; `translate_to_mt5` is not needed
+because this operates on *candidate syntax*, not on market data — it is universe-agnostic and
+therefore survives the MT5 mandate unchanged, which is rare on this ground.
+
+**WHAT IS DELIBERATELY NOT IMPORTED (L1.6, and the standing refusal on this ground).** The four
+thresholds (0.7 / 0.67 / 0.5 / 0.6) and `self_correlation_max=0.7` are **facts about their
+process, never gates for ours**: they are tuned for a submission funnel whose expensive
+out-of-sample stage is paid by the platform, not by the tuner. The desk's own variation_blocker
+states the opposite bias explicitly and correctly — "the timid error here is the more expensive
+one" (L1.21a), so it blocks only on EXACT fingerprint match. Importing these thresholds would
+narrow the desk's search space to fit a stranger's cost structure.
+
+**THE ONE NUMBER THIS DIG ACTUALLY SURFACED, and it is not about diversity code.** The live
+6-hourly artifact reports `market_breadth: 11` over a 200-candidate batch, against a canonical
+registry of **251 symbols** — 4.4% — and `feature_breadth 0.060`, with verdict `OK` and zero
+flags. Instrumentation that reports a 4.4% breadth as OK is not measuring against the universe
+(L1.61: the hunted ground is every tradable Fusion symbol). Routed as a separate item, not fixed
+here: this seat is research-only.

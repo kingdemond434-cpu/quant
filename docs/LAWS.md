@@ -48,7 +48,7 @@ crypto universe (e.g. old DIGGING_CHARTER §10 "the desk is crypto-only") is voi
 *discipline* of such clauses (source families, verification habits) transfers to MT5 ground.
 
 **Anti-hardcode law (2026-08-25):** no universe, symbol list, account list or channel list may be
-hardcoded as a boundary. Registries (`desks/mt5/universe/universe.json`, the source registry,
+hardcoded as a boundary. Registries (`desks/mt5/data/universe/universe.json`, the source registry,
 data-driven screens) define scope; any literal list in code is a SEED for bootstrap, never a
 limit, and must say so where it is declared. A hardcoded list that silently caps exploration is
 the WS-005 class: absence read as a clean verdict.
