@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-28T22:23:21+00:00",
+ "updated_at": "2026-08-28T23:23:31+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -34,7 +34,7 @@
     {
      "sid": "2231030",
      "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
-     "growth": "1389%",
+     "growth": "1402%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
@@ -84,7 +84,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -136,7 +136,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -208,7 +208,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -223,7 +223,7 @@
    "trades": 5857.0,
    "win_pct": 3745.0,
    "algo_pct": 14.0,
-   "subscribers": 68.0,
+   "subscribers": 67.0,
    "author": "/en/users/tec_daniel",
    "author_other_signals": [
     {
@@ -281,7 +281,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -311,7 +311,7 @@
     {
      "sid": "2361746",
      "title": "'GridWise 8015' by Ihor Hut",
-     "growth": "231%",
+     "growth": "233%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
@@ -355,7 +355,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -371,7 +371,7 @@
    "trades": 4037.0,
    "win_pct": 3327.0,
    "algo_pct": 100.0,
-   "subscribers": 64.0,
+   "subscribers": 66.0,
    "author": "/en/users/mo2002",
    "author_other_signals": [
     {
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -483,7 +483,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -534,7 +534,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -545,13 +545,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 21.366,
-   "growth_pct": 1389.22,
+   "ev_score": 21.562,
+   "growth_pct": 1401.98,
    "weeks": 123.0,
-   "pf": 3.22,
+   "pf": 3.24,
    "max_dd_pct": null,
-   "trades": 1079.0,
-   "win_pct": 891.0,
+   "trades": 1085.0,
+   "win_pct": 897.0,
    "algo_pct": 96.0,
    "subscribers": 29.0,
    "author": "/en/users/datbh",
@@ -613,7 +613,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -675,7 +675,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -704,7 +704,7 @@
     {
      "sid": "2231030",
      "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
-     "growth": "1389%",
+     "growth": "1402%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
@@ -758,7 +758,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -808,7 +808,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -871,7 +871,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -914,7 +914,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -960,7 +960,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -976,7 +976,7 @@
    "trades": 850.0,
    "win_pct": 613.0,
    "algo_pct": 99.0,
-   "subscribers": 36.0,
+   "subscribers": 37.0,
    "author": "/en/users/strueli",
    "author_other_signals": [
     {
@@ -1039,7 +1039,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1085,7 +1085,7 @@
    "symbols": [
     "AUDCAD"
    ],
-   "found_at": "2026-08-28T22:23:21+00:00",
+   "found_at": "2026-08-28T23:23:31+00:00",
    "platform": "mt5",
    "phenotypes": [
     "high_pf",

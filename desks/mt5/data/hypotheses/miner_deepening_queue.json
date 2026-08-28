@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T22:15:23+00:00",
+ "built_at": "2026-08-28T23:17:47+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3967,6 +3967,22 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-volume-profile-indicator",
+   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "shazzadu1/Trade-Halting-Safeguard",
    "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
    "symbols": [],
@@ -4071,16 +4087,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "title": "PNX89/QUOTEZ",
+   "url": "https://github.com/PNX89/QUOTEZ",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4089,14 +4097,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "nodalytics/till_infinity",
    "url": "https://github.com/nodalytics/till_infinity",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "PNX89/QUOTEZ",
-   "url": "https://github.com/PNX89/QUOTEZ",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4143,6 +4143,22 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Kaltorim/MT5-Trend-Direction-Predictor",
    "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
    "symbols": [],
@@ -4161,22 +4177,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
    "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Vandoriz/MT5-Economic-News-Filter",
-   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
-   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4454,7 +4454,6 @@
    "url": "https://trading-latam.com/calculadora-de-trading/",
    "symbols": [],
    "mechanism_tags": [
-    "ea_robot",
     "gold"
    ]
   },
@@ -4485,6 +4484,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Blog",
    "url": "https://trading-latam.com/blog-trading-latam/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "trading_latam",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Pulso semanal",
+   "url": "https://trading-latam.com/pulso-ranking-traders/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -6228,20 +6238,20 @@
   },
   {
    "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What was your favorite trade of the week?",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Need help understanding NASDAQ",
    "url": "",
    "symbols": [
     "NAS100"
    ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "What was your favorite trade of the week?",
-   "url": "",
-   "symbols": [],
    "mechanism_tags": []
   },
   {
@@ -6545,6 +6555,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Baupost has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Soros has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
