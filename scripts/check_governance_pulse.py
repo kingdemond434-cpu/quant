@@ -81,6 +81,64 @@ def main() -> int:
                         f"falling behind discovery; run the gauntlet harder, never the "
                         f"miners softer")
 
+    # --- EVERY ASSET CLASS MUST BE HUNTED (principal 2026-08-28: "all miners always hunt all
+    # MT5 universe classes"). Classes fail in different regimes by construction, so a class the
+    # search never touches is diversification the desk structurally cannot earn. Measured the
+    # same day: BOND at zero docket coverage and 16 of 99 equities, because a flat rotation
+    # spends its budget wherever the alphabet clusters. Coverage per class only ratchets UP.
+    try:
+        import sys as _s
+        _s.path.insert(0, str(DESK))
+        from mt5desk.universe import classify_all
+        inst = classify_all(json.loads((DESK / "data" / "universe" / "universe.json")
+                                       .read_text("utf-8")))
+        usable = {i.symbol: i.asset_class for i in inst if i.usable}
+        hunted = {r.get("symbol") or r.get("sym") for r in (docket or [])}
+        per_class: dict[str, int] = {}
+        for sym in hunted:
+            cls = usable.get(str(sym))
+            if cls:
+                per_class[cls] = per_class.get(cls, 0) + 1
+        m["classes_hunted"] = per_class
+        missing = sorted(c for c in set(usable.values()) if c not in per_class)
+        m["classes_unhunted"] = missing
+        if missing:
+            breaches.append(f"BREADTH: asset class(es) with ZERO docket coverage: "
+                            f"{', '.join(missing)} -- ground the desk owns and never hunts is "
+                            f"diversification it cannot earn any other way")
+        thin = sorted(c for c, n in per_class.items()
+                      if n < max(3, sum(1 for v in usable.values() if v == c) // 10))
+        if thin:
+            breaches.append(f"BREADTH: {', '.join(thin)} hunted below a tenth of their usable "
+                            f"symbols -- the rotation is not reaching them")
+    except Exception as exc:
+        m["classes_hunted"] = f"UNMEASURED ({type(exc).__name__})"
+
+    # --- NO FAMILY MAY BE UNREACHABLE (principal 2026-08-28: "no hardcoded exclusion stuck to
+    # certain families or trading types"). Every door a candidate passes through must be able
+    # to EXECUTE every registered family; a frozen whitelist silently voids whole mechanism
+    # classes while the stage still reports cells tested. Measured the same day: stage-A knew 8
+    # families while the registry held 43 -- carry, cot, residual, gap decay all unreachable.
+    try:
+        import sys as _s2
+        _s2.path.insert(0, str(DESK))
+        _s2.path.insert(0, str(DESK / "side_channels"))
+        from mt5desk import families as _fam
+        from mt5desk import families_orthogonal as _fo
+        registered = {n[len("family_"):] for n in dir(_fam) if n.startswith("family_")}
+        registered |= set(_fo.ORTHOGONAL_FAMILIES)
+        import run_external_backtest as _stage_a
+        reachable = set(_stage_a.FAMILY_FUNCS)
+        m["families_registered"] = len(registered)
+        m["families_reachable"] = len(reachable)
+        unreachable = sorted(registered - reachable)
+        if unreachable:
+            breaches.append(f"FAMILIES: {len(unreachable)} registered family(ies) UNREACHABLE "
+                            f"from the backtest door -- a hardcoded whitelist is voiding "
+                            f"mechanism classes: {', '.join(unreachable[:6])}")
+    except Exception as exc:
+        m["families_reachable"] = f"UNMEASURED ({type(exc).__name__})"
+
     # --- survivors must MOVE: a claim sitting un-actioned is a violation, not a wait
     ledger = _read(DESK / "reports" / "SURVIVORS_LEDGER.json") or {}
     rows = ledger.get("claims") if isinstance(ledger, dict) else None

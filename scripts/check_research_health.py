@@ -181,6 +181,42 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                             f"(ceiling {max_h:.0f}h) -- the families reading it are starving "
                             f"while the staleness reads as quiet ground")
 
+    # --- BREADTH + FAMILY REACHABILITY on the FAST fence (principal 2026-08-28: "as frequent
+    # as possible"). Governance re-checks these against ratchets every 15 minutes; a class that
+    # drops out of the docket or a family that becomes unreachable is discovery capacity lost by
+    # the hour, so the 5-minute pass carries them too.
+    try:
+        import sys as _sb
+        _sb.path.insert(0, str(DESK))
+        _sb.path.insert(0, str(DESK / "side_channels"))
+        from mt5desk.universe import classify_all
+        _inst = classify_all(json.loads((DESK / "data" / "universe" / "universe.json")
+                                        .read_text("utf-8")))
+        _usable = {i.symbol: i.asset_class for i in _inst if i.usable}
+        _hunted = {r.get("symbol") or r.get("sym") for r in (rows or [])}
+        _per: dict[str, int] = {}
+        for _sym in _hunted:
+            _c = _usable.get(str(_sym))
+            if _c:
+                _per[_c] = _per.get(_c, 0) + 1
+        m["classes_hunted"] = _per
+        _missing = sorted(c for c in set(_usable.values()) if c not in _per)
+        if _missing:
+            breaches.append(f"BREADTH: zero docket coverage for {', '.join(_missing)} -- "
+                            f"ground the desk owns and never hunts")
+        import run_external_backtest as _sa
+        from mt5desk import families as _fam
+        from mt5desk import families_orthogonal as _fo
+        _reg = ({n[7:] for n in dir(_fam) if n.startswith("family_")}
+                | set(_fo.ORTHOGONAL_FAMILIES))
+        _unreach = sorted(_reg - set(_sa.FAMILY_FUNCS))
+        m["families_reachable"] = len(set(_sa.FAMILY_FUNCS))
+        if _unreach:
+            breaches.append(f"FAMILIES: {len(_unreach)} registered family(ies) unreachable "
+                            f"from the backtest door: {', '.join(_unreach[:5])}")
+    except Exception as exc:
+        m["classes_hunted"] = f"UNMEASURED ({type(exc).__name__})"
+
     # --- certificates in the pipeline: the same-day fence is the authority on
     # CERTIFIED-NOT-ENROLLED / UNSTAMPED / IDLE-CLOCK; its verdict rides every pulse so the
     # dashboard shows certificate wiring at the same cadence as everything else.

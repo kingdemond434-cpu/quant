@@ -95,6 +95,7 @@ def main() -> int:
     now = datetime.now(tz=UTC)
     started_at = _pipeline_started_at()
     merged: dict[str, dict] = {}
+    unrouted = 0
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
 
@@ -126,7 +127,14 @@ def main() -> int:
             if ident in merged:
                 continue
             enriched = dict(row)
-            enriched.setdefault("family", "session_range_breakout")
+            # A ROW WITH NO FAMILY IS UNROUTABLE, NOT A BREAKOUT. Defaulting to the desk's
+            # dominant family silently relabelled every family-less row as the one mechanism
+            # the book is already 95% concentrated in -- the docket's own diversity destroyed
+            # by a setdefault. Such a row is dropped and counted; a producer that stops naming
+            # its family is a defect to see, not a breakout to test.
+            if not enriched.get("family"):
+                unrouted += 1
+                continue
             enriched["producer"] = name
             merged[ident] = enriched
             kept += 1
@@ -194,6 +202,10 @@ def main() -> int:
     if readmitted:
         print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
               f"(idempotent re-judging; freshness still governs provenance)")
+
+    if unrouted:
+        print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
+              f"relabelled as the dominant family")
 
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)

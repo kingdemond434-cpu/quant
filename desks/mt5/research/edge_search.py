@@ -662,7 +662,39 @@ def main(symbols: list[str] | None = None) -> int:
             cursor = int((_read(cursor_file) or {}).get("cursor", 0))
         except (TypeError, ValueError):
             cursor = 0
+        # CLASS-BALANCED ROTATION (principal 2026-08-28: "all miners always hunt all MT5
+        # universe classes"). A flat cursor over 247 symbols spends its budget wherever the
+        # alphabet happens to cluster -- measured the same day: 99 usable equities but 16 in the
+        # docket, and BOND at ZERO coverage while four bond instruments sat tradable and
+        # uncostable-by-nobody. Classes fail in different regimes by construction (a gilt
+        # answers rate expectations, cocoa answers weather, a JPY cross answers carry), so
+        # breadth across classes IS the diversification the desk cannot manufacture by adding
+        # another parameterisation. The tail is interleaved round-robin BY CLASS so every class
+        # is represented in every run's budget; within a class the cursor still rotates, so
+        # nothing is ever declared exhausted.
         tail = symbols[len(ranked):]
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(BASE))
+            from mt5desk.universe import asset_class as _aclass
+            by_class: dict[str, list[str]] = {}
+            for s in tail:
+                by_class.setdefault(_aclass(s), []).append(s)
+            if len(by_class) > 1:
+                order = sorted(by_class)
+                woven: list[str] = []
+                i = 0
+                while len(woven) < len(tail):
+                    for cls in order:
+                        bucket = by_class[cls]
+                        if i < len(bucket):
+                            woven.append(bucket[i])
+                    i += 1
+                tail = woven
+                print(f"  class-balanced rotation over {len(order)} asset class(es): "
+                      f"{', '.join(order)}")
+        except Exception as _exc:
+            print(f"  class balancing unavailable ({type(_exc).__name__}); flat rotation")
         if tail:
             off = cursor % len(tail)
             symbols = ranked + tail[off:] + tail[:off]

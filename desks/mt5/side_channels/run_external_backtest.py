@@ -3,38 +3,53 @@ Reads test_grid.json, runs each cell, saves results + survivors.
 """
 from __future__ import annotations
 
-import json
 import inspect
+import json
 import sys
 import time
 import warnings
 
 warnings.filterwarnings("ignore")
 
-from pathlib import Path
+from pathlib import Path  # noqa: E402
 
-import pandas as pd
+import pandas as pd  # noqa: E402
 
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 
-from mt5desk import families
-from mt5desk.engine import Costs, run_backtest
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
 
 _h1_cache: dict = {}
 _uni = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
 
-FAMILY_FUNCS = {
-    "session_range_breakout": families.family_session_range_breakout,
-    "asia_momentum": families.family_asia_momentum,
-    "momentum_volgate": families.family_momentum_volgate,
-    "level_breakout": families.family_level_breakout,
-    "failed_breakout": families.family_failed_breakout,
-    "dow_effect": families.family_dow_effect,
-    "monday_gap": families.family_monday_gap,
-    "london_close_momentum": families.family_london_close_momentum,
-}
+def _family_funcs() -> dict:
+    """EVERY registered family, discovered -- never a hand-typed whitelist.
+
+    This was a frozen list of EIGHT names while FAMILY_REGISTRY auto-registers every family_*
+    function and families_orthogonal adds fifteen more. A hypothesis naming carry, cot
+    positioning, cross-asset residual, gap decay or anything else simply returned None here and
+    vanished: the stage reported "cells tested" while whole mechanism classes were unreachable
+    from this door (principal 2026-08-28: "no hardcoded exclusion stuck to certain families or
+    trading types"). Discovery costs nothing and a family added tomorrow is testable today.
+    """
+    funcs: dict = {}
+    for name in dir(families):
+        if name.startswith("family_"):
+            fn = getattr(families, name, None)
+            if callable(fn):
+                funcs[name[len("family_"):]] = fn
+    try:
+        from mt5desk import families_orthogonal as _fo
+        funcs.update(dict(_fo.ORTHOGONAL_FAMILIES))
+    except ImportError:
+        pass
+    return funcs
+
+
+FAMILY_FUNCS = _family_funcs()
 
 
 def normalize_grid(grid: list[dict]) -> tuple[list[dict], int]:
@@ -122,7 +137,9 @@ def run_all() -> list[dict]:
         if r:
             results.append(r)
             if r["exp_r"] > 0.05:
-                print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R PF={r['profit_factor']:.2f}")
+                print(f"  PASS {r['symbol']:8s}.{r['family']:25s} n={r['n']:4d} "
+                      f"exp={r['exp_r']:+.4f}R maxDD={r['max_dd_r']:+.1f}R "
+                      f"PF={r['profit_factor']:.2f}")
         if (i + 1) % 10 == 0:
             print(f"  [{i+1}/{len(grid)}] {time.time()-t0:.0f}s elapsed")
 

@@ -177,7 +177,25 @@ def fix_clocks() -> tuple[bool, str]:
     return ok1 or ok2, f"stallwatch={o1[-50:]} shadow={o2[-50:]}"
 
 
+def fix_breadth() -> tuple[bool, str]:
+    """A class the docket never covers: re-run mined ground and the class-balanced searcher so
+    the next rotation reaches it. Never narrows the hunt -- it widens the pass."""
+    rc1, _o1 = _run([sys.executable, str(DESK / "research" / "mined_ground.py")], timeout=180)
+    ok2, o2 = fix_search()
+    return rc1 == 0 or ok2, f"mined_ground_rc={rc1} search={o2[-80:]}"
+
+
+def fix_families() -> tuple[bool, str]:
+    """A family unreachable from a door is a wiring defect: re-run the stage so its
+    auto-discovery re-reads the registry, and page if it is still short."""
+    rc, out = _run([sys.executable, str(DESK / "side_channels" / "run_external_backtest.py")],
+                   timeout=600)
+    return rc == 0, out[-160:]
+
+
 FIXERS = {
+    "FAMILIES": fix_families,
+    "BREADTH": fix_breadth,
     "BACKLOG": fix_gauntlet,
     "QUEUES": None,          # bound below once the converter is defined
     "CLOCKS": fix_clocks,

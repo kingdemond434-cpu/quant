@@ -188,6 +188,16 @@ def main() -> int:
     total.update(miner_w)
     total.update(moat_w)
 
+    # THE UNIVERSE IS THE FLOOR, ATTENTION IS THE ORDER (principal 2026-08-28: "all miners
+    # always hunt all MT5 universe classes ... no hardcoded exclusion"). Miner attention and
+    # moat coverage decide WHAT GOES FIRST; they may never decide what is reachable at all. A
+    # symbol no source happens to mention scored zero and never appeared in the target list, so
+    # whole classes the desk owns went unhunted -- BOND at zero coverage while three gilt/UST
+    # instruments sat tradable (measured 2026-08-28). Every usable symbol now enters at score
+    # 0.0 behind the ranked ground, so the rotation cursor reaches all of them in finite time.
+    for sym in sorted(universe):
+        total.setdefault(sym, 0.0)
+
     targets = [{"symbol": s, "score": round(w, 2),
                 "from_miners": round(miner_w.get(s, 0.0), 2),
                 "from_moat": round(moat_w.get(s, 0.0), 2)}

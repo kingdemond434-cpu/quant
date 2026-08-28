@@ -80,8 +80,12 @@ def asset_class(symbol: str) -> str:
     for pat in _SOFT:
         if pat in s:
             return "soft"
+    # PREFIX-ONLY for bonds. A substring test made EUSTX50 -- the Euro Stoxx 50 INDEX -- a
+    # bond, because "UST" sits inside "E-UST-X50" (2026-08-28). Ticker roots identify an
+    # instrument at the START of the symbol; a loose contains-test silently reassigns whole
+    # instruments to the wrong class, and every breadth count downstream inherits the error.
     for pat in _BOND:
-        if s.startswith(pat) or pat in s:
+        if s.startswith(pat):
             return "bond"
     for pat in _INDEX:
         if pat in s:
