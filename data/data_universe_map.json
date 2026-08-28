@@ -2394,6 +2394,71 @@
    "replacement_hunt": "OPEN (section 38). The SCB/Riksbank leg of the delivery-door generalisation is NOT closed -- it is untested. Next run: retry from a different egress, and try the Riksbank SWEA API and DBnomics' SCB/Riksbank mirrors as alternate doors to the same facts.",
    "first_seen": "2026-08-28",
    "last_verified": "2026-08-28"
+  },
+  "riksbank_swea_api": {
+   "grade": "verified-clean (spot ref) / needs-monitoring (forward premium: 1 corrupt date)",
+   "opened": "2026-08-28",
+   "provides": "Riksbank SWEA REST API -- 117 keyless DAILY series: SEK vs 40 currencies (incl. dead pre-euro DEM/FRF/ITL/ESP/NLG/FIM/GRD/IEP/PTE/ATS/BEF and EEK/LTL/LVL/SIT/SKK/CYP), SEK/USD FORWARD PREMIUM 3M and 6M (1980-01-02 ->), sovereign benchmark yields 5Y/10Y for SE/US/DE/FR/GB/JP/NL/DK/NO/FI (1982/1987 ->), 3M+6M money-market rates for USD/EUR/GBP/JPY/DKK/NOK, STIBOR curve, Swedish T-bills, KIX and TCW trade-weighted indices, policy/deposit/lending/discount rates (discount rate back to 1907-11-11).",
+   "replaces": "the Scandi + G10 leg of a paid macro terminal feed (daily FX fixings, cross-country benchmark yields, FX forward points); the §38 replacement for api.scb.se, which is UNREACHABLE from this box (rc=56 under every UA -- a route fact, not a wall).",
+   "urls": [
+    "https://api.riksbank.se/swea/v1/Series",
+    "https://api.riksbank.se/swea/v1/Observations/{seriesId}/{from}/{to}",
+    "https://www.riksbank.se/robots.txt"
+   ],
+   "license_and_access": "keyless, no registration. api.riksbank.se has NO robots.txt (404) => full allow under RFC 9309. www.riksbank.se robots.txt is 109 bytes and Disallows only *.doc/*.xls/?query=/?year= -- and it is a DIFFERENT HOST, so it does not govern the API either way.",
+   "cadence": "daily; catalogue observationMaxDate was 2026-08-28 (same day) for policy rates and FX, 2026-08-27 for yields/forwards.",
+   "verification_run_2026_08_28": {
+    "spot": "SEKUSDPMI (n=8451, 1993-01-04 -> 2026-08-28, ZERO nulls) diffed against the desk's own USDSEK_H1 parquet across ALL 24 broker hours. Best hour 12:00 EET: n=1665, median bias +0.3 bp, sd 25.0 bp, p95|.| 49.4 bp. NO hour achieves a tight fit -- median is ~0 at 12:00/13:00/15:00/21:00 but dispersion never drops below 25 bp, versus 3.2 bp for the Danish DNVALD point fixing measured last run. INFERENCE FROM THE DATA: this is a daily AVERAGE, not a point fixing. Use it as a level/carry reference; NEVER bar-align it.",
+    "forward_premium_CIP": "SEKUSDFO3MFIX reconciled against covered interest parity built from two OTHER series in the same API (SETB3MBENCH minus EUDP3MUSD): beta 0.978 on n=8399. Median implied basis by decade: 1990s +8.3 bp/yr, 2000s +15.9, 2010s +11.7 -- i.e. the residual IS the real SEK cross-currency basis, and that is what licenses the series. Units confirmed: SEK per USD (absolute forward points), NOT percent."
+   },
+   "known_failure_modes": [
+    "CORRUPT DATE 2020-07-16: SEKUSDFO3MFIX = -106.04 and SEKUSDFO6MFIX = -231.2 against a spot of 9.094 -- a scale error of ~4,700x. The two tenors are corrupted CONSISTENTLY (231.2/106.04 = 2.18 ~ the 6M/3M ratio), so it is one units break, not noise. It is the ONLY absurd row in either 8,400-row series (next largest |F-S|/S is 6.5%). It inflates the implied-basis sd from ~20 bp to 11,423 bp: any z-score, vol estimate or mean built on the raw series is destroyed by ONE observation.",
+    "SEKUSDFO3MFIX starts 1980-01-02 but SEKUSDPMI starts 1993-01-04 -- 13 years of forward POINTS with no spot in the same API, so the forward RATE is uncomputable pre-1993 without an outside spot. 8 leading zeros in Jan 1980 are placeholders, not data.",
+    "HTTP 429 rate limiting observed on the 3rd sequential Observations call; a single 20s backoff cleared it. A collector that treats 429 as an empty result writes '[]' -- the desk's standing empty-artifact class.",
+    "Dead currencies terminate silently at their euro-entry date (DEM/FRF/... 2002-02-28); RUB stops 2022-03-25; TCW-index frozen at 2021-06-30 while KIX continues -- a stale index that still appears in a live catalogue.",
+    "STIBOR series (SEDP*DELAYC) all stop 2020-07-03 (transfer to the SFBF administrator); SECP*/STFIX/TB12M discontinued 2005/2010/2019. The catalogue lists them without a discontinuation flag."
+   ],
+   "no_silent_cap": "SEKUSDFO3MFIX returned 11,611 rows in ONE request -- the CNB 10,000-row silent-cap class does NOT apply here. Chunk-diff (1993-2009 alone = 4,267 rows) matched the full pull's prefix.",
+   "next": "pull the 9-country 5Y/10Y benchmark panel (1987-> daily, keyless) as a free cross-country rate-differential axis for the 15 Scandi MT5 crosses; verify the KIX basket weights."
+  },
+  "dn_dnprnd_daily_mp_balance": {
+   "grade": "verified-clean",
+   "opened": "2026-08-28 (carded UNVERIFIED 2026-08-27; this run closes it)",
+   "provides": "Danmarks Nationalbank daily monetary-policy balance sheet via keyless api.statbank.dk table DNPRND: banks' and mortgage banks' NET POSITION vs the Nationalbank, certificates of deposit, current-account (folio) deposits, and MP lending by tenor. 5,400 business days 2005-01-03 -> 2026-08-26, updated 08:00 daily (2-business-day lag), bn DKK.",
+   "replaces": "the Danish krone-liquidity leg of a paid rates/FX terminal; it is the observable behind DKK peg-defence pressure, and 15 Scandi crosses incl. EURDKK/USDDKK are in the MT5 universe.",
+   "urls": [
+    "https://api.statbank.dk/v1/tableinfo",
+    "https://api.statbank.dk/v1/data"
+   ],
+   "license_and_access": "keyless POST JSON; Statistics Denmark open data. NOTE the API REFUSES a Tid-only wildcard extract (400 EXTRACT-NOTALLOWED) -- every non-time variable must be named explicitly.",
+   "verification_run_2026_08_28": "INTERNAL IDENTITY, verified independently of any outside source: net position == certificates of deposit + folio deposits - total MP lending. n=5,400 days, mean |error| 0.0013 bn DKK, p99 0.0010 (pure rounding), and only 12 days (0.22%) exceed 0.01 bn. Worst 2021-04-29 at 2.04 bn. FOURTH consecutive run in which the verification arm came from a second door of the SAME institution rather than a second institution.",
+   "known_failure_modes": [
+    "PHANTOM CELLS: the BALANC x INSTRUMENT cross materialises 27 series but only 9 carry data. The other 18 are 100% NULL and exist ONLY from 2024-10-22 onward (458 rows each, ~8,200 of the 50,114 returned rows). A collector counting rows or columns reads 27 healthy series.",
+    "INSTRUMENT labels carry their own validity window in the TEXT ('Apr. 2012 - 25. september 2015') and the data honours it -- 7-day MP lending is non-null only from 2012-03-30 (3,581 of 5,413), the 3Y facility only 2012-03-30..2015-09-29 (865). Parse the label or you will read a discontinued facility as zero.",
+    "The extraordinary-COVID lending rows begin at 2017-03-01 with nulls and only turn non-null 2020-03-19..2021-07-02 (318 obs)."
+   ]
+  },
+  "dn_fx_hedging_pension_and_funds": {
+   "grade": "verified-clean (data) / REFUTED as a predictive axis (this run's screen)",
+   "opened": "2026-08-28",
+   "provides": "DNFPVALE (insurance+pension sector) and DNIFVALE (UCITS investment funds) -- currency EXPOSURE and HEDGING, split by hedged/unhedged, by hedge destination currency (DKK/EUR/USD/other) and by exposure currency, monthly, bn DKK. DNFPVALE 2015M01->2026M06 (138 periods, 3,450 rows); DNIFVALE 2020M01->2026M06 (78 periods, 7,799 rows, x4 fund categories).",
+   "replaces": "a paid FX-flow/positioning product's Scandinavian real-money leg. Danish pension FX hedging is one of the largest single sources of structural, non-discretionary G10 FX flow.",
+   "urls": [
+    "https://api.statbank.dk/v1/data (tables DNFPVALE, DNIFVALE)"
+   ],
+   "license_and_access": "keyless; publication lag ~30 days (2026M06 published 2026-07-30).",
+   "screen_run_2026_08_28": {
+    "setup": "USD hedge ratio = hedged USD exposure / total USD exposure, pension sector. Range 0.606-0.821, mean 0.723, sd of monthly change 0.023. Total USD exposure 1,923 bn DKK (~USD 300bn) -- the flow is economically large. Target USDDKK monthly log return from the desk's own H1 parquet. Publication lag forces the tradable horizon to m+2.",
+    "tradable_arms_ALL_NULL": "d(hedge ratio) -> m+2: n=105, corr +0.133, t=+1.36. d(hedge ratio) -> m+3: corr -0.068 (SIGN FLIPS). d log hedged-USD-notional -> m+2: +0.121, t=+1.24; m+3: -0.042. d log total-USD-notional -> m+2: +0.036; m+3: +0.014. Six arms, max |t| = 1.36, sign unstable. REFUTED at monthly frequency.",
+    "leak_controls_are_the_finding": "Contemporaneous d log(HEDGED USD notional, USD-deflated) vs same-month USDDKK return: corr -0.688, t=-9.71 on n=107. Lag-1 (unpublishable): -0.118. So the sector's hedging is STRONGLY and reliably FX-REACTIVE and carries no lead whatsoever -- the significance sits entirely in the arm you cannot trade. A researcher who skipped the leak control would have published a t=-9.7 'result'.",
+    "valuation_check": "I first assumed the -0.56 raw hedge-ratio correlation was a mechanical denominator-valuation artifact. It is NOT: regressing d log(USD exposure in DKK) on the contemporaneous USDDKK return gives beta = 0.356, not 1.0, so the exposure is majority FLOW, not revaluation. The reactivity is real behaviour, not arithmetic. Correcting my own prior here is the reason the arm is graded refuted-but-mechanistically-interesting rather than discarded as an artifact.",
+    "mechanism_retained_for_the_graveyard": "Dollar UP -> pension sector CUTS hedged USD notional (they must buy USD to close forwards) -> the flow AMPLIFIES the move. Coincident collateral-drain behaviour, a real mechanism with no lead. Any future attempt needs a HIGHER-FREQUENCY observable of the same flow."
+   },
+   "known_failure_modes": [
+    "STRUCTURALLY EMPTY CROSS-CELLS: in DNIFVALE the hedge-destination x exposure-currency cross is populated ONLY on the 'Alle valutaer' margin for the sub-fund categories. e.g. ('Aktiefonde','hedged to EUR','USD') is 78 rows and 0 non-null; same for hedged-to-dollar x EUR and hedged-to-other x EUR/USD. Same class as last run's SSB empty column: the codelist advertises what the data does not contain.",
+    "The self-pair cells (hedged-to-EUR x EUR) are omitted from the response entirely rather than returned null -- a naive full-cross reshape silently mis-aligns.",
+    "DNIFVALE requires HOVEDKAT to be named or the extract 400s."
+   ]
   }
  },
  "residual_gaps_unpurchasable": [

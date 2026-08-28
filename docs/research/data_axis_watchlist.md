@@ -7054,4 +7054,109 @@ next-ground. **Items taken this run:**
 3. **The SCB/Riksbank leg** — §38 replacement hunt left OPEN: api.scb.se rc=56 from this box.
    Alternate doors: Riksbank SWEA API, DBnomics mirrors.
 
-Status: IN PROGRESS.
+Status: **ALL 3 CLOSED.** 2 verified-clean, 1 predictive axis REFUTED with its leak control, 1 new
+source class (a central bank's own keyless REST API with 46 years of FX forward points), 1 corrupt
+observation found that destroys any statistic built on a 46-year series.
+
+**ITEM 1 — `DNPRND` (carried UNVERIFIED from run (o)) -> VERIFIED-CLEAN.** Danmarks Nationalbank's
+daily monetary-policy balance sheet, keyless via api.statbank.dk, 5,400 business days 2005-01-03 ->
+2026-08-26, updated 08:00 daily at a 2-business-day lag. Verified by an **internal identity**
+(net position = certificates of deposit + folio deposits − MP lending): mean |error| **0.0013 bn
+DKK** over 5,400 days, p99 0.0010 (rounding), only 12 days above 0.01 bn. *Failure mode:* the
+BALANC × INSTRUMENT cross materialises **27 series of which 18 are 100% NULL**, and those 18 exist
+only from 2024-10-22 — ~8,200 of the 50,114 returned rows are phantom. Row counts and column counts
+both read "27 healthy series".
+
+**ITEM 2 — `DNFPVALE` / `DNIFVALE` -> data verified-clean, AXIS REFUTED, and the leak control is
+the finding.** Danish pension + UCITS FX exposure AND hedging, monthly, ~30-day publication lag.
+The USD hedge ratio (0.606–0.821, sd of monthly change 0.023, on 1,923 bn DKK ≈ USD 300bn of
+exposure) is economically enormous and non-discretionary — exactly the flow this desk hunts.
+**Six tradable arms, all null: max |t| = 1.36 on n=105, and every arm flips sign at m+3.**
+Meanwhile the **contemporaneous** arm — d log(hedged USD notional, FX-deflated) vs same-month
+USDDKK — is **corr −0.688, t = −9.71**. All of the significance lives in the month you cannot
+trade. Publishing that number without the control would have been the desk's flagship-signal
+failure repeated.
+*And I was wrong about why.* I assumed −0.69 was a denominator-valuation identity. Regressing
+d log(USD exposure in DKK) on the contemporaneous return gives **beta 0.356, not 1.0** — the
+exposure is majority FLOW, so the reactivity is real behaviour. Mechanism kept for the graveyard:
+dollar up → the sector cuts hedged USD notional (buying USD to close forwards) → the flow
+**amplifies** the move, coincidentally, with no lead. A future attempt needs a higher-frequency
+observable of the same flow, not this table.
+
+**ITEM 3 — the SCB/Riksbank door -> §38 hunt CLOSED with a better source than the one that was
+blocked.** `api.scb.se` is still rc=56 from this box under every UA (a route fact, not a wall).
+**`api.riksbank.se/swea/v1` is keyless, has NO robots.txt (404 ⇒ full allow under RFC 9309), and
+its 109-byte www-host robots governs a different host in either direction.** 117 daily series:
+SEK against 40 currencies including the whole dead pre-euro set (DEM/FRF/ITL/ESP/NLG/FIM/GRD/IEP/
+PTE/ATS/BEF, plus EEK/LTL/LVL/SIT/SKK/CYP), benchmark 5Y/10Y yields for **nine countries** back to
+1982/1987, 3M+6M money rates for USD/EUR/GBP/JPY/DKK/NOK, KIX/TCW, and the discount rate back to
+**1907-11-11**.
+
+**THE HEADLINE ROW: `SEKUSDFO3MFIX` / `SEKUSDFO6MFIX` — daily SEK/USD forward premium, 1980-01-02
+→ yesterday, 11,611 observations, keyless.** Carry is this desk's only repeat-survivor family, and
+run (o)'s Danish equivalent (DNVALD TT3/TT6) turned out to be **empty after 2013**. This one is not.
+Verified against **covered interest parity built from two other series in the same API**
+(SETB3MBENCH − EUDP3MUSD): **beta 0.978 on n=8,399**, median implied basis **+8.3 bp/yr in the
+1990s, +15.9 in the 2000s, +11.7 in the 2010s** — the residual *is* the real SEK cross-currency
+basis, and that is what licenses the series. Units confirmed as SEK-per-USD forward points, not
+percent.
+
+**THE CORRUPTION — one row, 46 years, and it destroys the series' every moment.** `2020-07-16`
+carries **−106.04** in the 3M and **−231.2** in the 6M against a spot of 9.094: a scale error of
+~4,700×. It is the ONLY absurd row in either 8,400-row series (next-largest |F−S|/S is 6.5%), and
+the two tenors are corrupted **consistently** — 231.2/106.04 = 2.18 ≈ the true 6M/3M ratio — so it
+is one units break, not noise. Its effect: the implied-basis standard deviation goes from ~20 bp to
+**11,423 bp**. Every z-score, every vol estimate, every mean built on the raw 46-year series is
+decided by that single observation, and a decade-median view (which is how I found it) shows
+nothing wrong.
+
+**NEW SOURCE CLASS: the central bank's OWN keyless REST API, sitting beside the statistics-agency
+door.** Run (n) established that a central bank ships its data through the national statistics
+agency. Denmark does. **Sweden does the opposite** — the statistics agency is unreachable and the
+central bank runs its own open API. So the generalisation is not "check the statistics agency", it
+is **"a national institution has at least two doors and they fail independently"**, which is now
+confirmed in both directions on the same week.
+
+**CROSS-SOURCE PAIR (demonstrated, and it produced the verification):
+`SEKUSDFO3MFIX` × `{SETB3MBENCH, EUDP3MUSD}`.** A forward-points series is uncheckable alone; the
+same API's own money-market legs turn it into a CIP identity with a decade-stable residual. Fifth
+consecutive run in which verification came from a second door of the same institution.
+
+**DEPTH LINE.** *Riksbank:* robots on 2 hosts (establishing the API host has none) → full 117-series
+catalogue → 5 full history pulls → chunk-diff against the full pull to test for a silent row cap
+(**11,611 rows in one request — the CNB 10,000-cap class does not apply**) → 24-hour offset scan of
+the spot fixing against the desk's own tape → **CIP identity arm built from two further series** →
+decade decomposition of the residual → outlier localised to a single date → **confirmed as a units
+break by checking the 6M/3M ratio of the two corrupt values against each other**. That last step is
+one layer past where I would have stopped and it is what turned "2020 was weird" into "one row,
+scale error, both tenors, same event". *Danmarks Nationalbank:* both carried tables pulled in full,
+DNPRND closed by an internal identity on 5,400 days, DNFPVALE screened on six arms **plus three
+leak controls plus a valuation-beta test that refuted my own explanation**. No reply chains or forks
+again — institutional publishers, where the depth axis is metadata-vs-data disagreement, mined here
+three more times (phantom cells, structurally empty cross-cells, undated discontinuations).
+
+**NEXT UN-EXHAUSTED GROUND** (each checked against what this run closed — none is answered by it):
+1. **The SWEA 9-country benchmark yield panel** (SE/US/DE/FR/GB/JP/NL/DK/NO/FI, 5Y+10Y, daily from
+   1982/1987, keyless). A free cross-country rate-differential axis for the 15 Scandi MT5 crosses,
+   pulled by nobody. This is the biggest unopened thing I now know exists.
+2. **The dead pre-euro currency block** (DEM/FRF/ITL/ESP/NLG/FIM/GRD/IEP/PTE/ATS/BEF vs SEK, daily
+   1993→2002-02-28). One-time-exhaustible dead-data archaeology: pre-EMU regime history for a
+   held-out OOS window the desk is starved for.
+3. **SSB 08428 (Norges Bank balance sheet) and 10701 (NIBOR + policy rate)** — carried from run (o),
+   known reachable, still not pulled.
+4. **`api.scb.se` from a different egress** — still UNTESTED, not closed. rc=56 is a route fact.
+   Also try the DBnomics SCB mirror (api.db.nomics.world/v22/datasets/SCB returns 200, 131KB —
+   confirmed reachable this run, not yet opened).
+5. Apply the two-doors generalisation to every host this seat graded WALLED: for each, test BOTH
+   the national statistics agency AND an institution-run API (the SNB/BFS pair is the next test).
+6. Carried and still unopened: the Norwegian public-holiday calendar; Riksbank weekly reserves;
+   `SAFE`/`TCMB`/`BCB`/`SARB` on DBnomics.
+
+**THE BLUNT PART.** The best thing in this run is not the 46-year forward-premium series — it is
+that **the two strongest numbers I produced were both traps**. The −9.71 was untradable and I only
+know that because I ran the lag-0 control; the CIP fit looked broken in the 2020s and it was one
+corrupt row, not a regime. Both were found by controls I ran on my own results rather than by
+finding anything new. The refuted item is worth as much as the adopted one: the pension hedging
+axis is now closed with a documented six-arm null instead of sitting on the carried list forever
+looking promising. And the honest ledger for the run is **one genuinely new adopted axis** (SEK/USD
+forward premium, 1980→, CIP-verified) — verified small beats unverified impressive.

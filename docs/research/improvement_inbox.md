@@ -3945,3 +3945,21 @@ distinct from both a number and an absent row.
    every UA and both HTTP versions; robots was never retrieved, so there is no verdict to issue.
    **Fix: collectors must emit UNREACHABLE as a distinct status from WALLED** — this seat has been
    issuing WALLED verdicts and run (n) already flagged that it over-issues them.
+
+## 2026-08-28 — free-data run (p): three collector-design defects, all of the same class
+
+1. **HTTP 429 must never render as an empty artifact.** api.riksbank.se returned 429 on the third
+   sequential history call; one 20s backoff cleared it. A collector that treats a non-200 as "no
+   data" writes `[]` and the desk reads absence as a clean verdict (the standing empty-artifact
+   class). Rule: classify rate-limit separately from empty, retry with backoff, and emit an
+   evidence row on give-up.
+2. **Count non-nulls per CELL, never rows per table.** api.statbank.dk table DNPRND materialises a
+   27-cell BALANC×INSTRUMENT cross of which **18 are 100% NULL** (~8,200 of 50,114 rows), and they
+   appear only from 2024-10-22. DNIFVALE's hedge-destination × exposure-currency cross is populated
+   only on the "all currencies" margin — 8 cells are n=78, non-null=0. Both pass every row-count,
+   column-count and freshness check. Third table family in two runs.
+3. **A single-row scale error survives every aggregate check.** SEKUSDFO3MFIX/6M carry a ~4,700×
+   units break on 2020-07-16 (one row in 8,400) that moves the series' sd from ~20 bp to 11,423 bp.
+   Detection that worked: a *physical-plausibility* bound (|F−S|/S > 10% is impossible at 3M) and a
+   *decade-median* view; detection that failed: mean, sd, correlation. Rule: every adopted price or
+   points series gets a physical bound at ingest, not a z-score.

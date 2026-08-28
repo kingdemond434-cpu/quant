@@ -8947,6 +8947,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0695",
+   "source": "free-data-alternatives-20260828k",
+   "summary": "universe.json median_spread_pts=0.0 on 24 traded symbols incl EURUSD/GBPUSD/USDJPY (NOT inherited from the tape: EURUSD H1 median is 12pts, 0.5pct zero bars; registry row written 2026-08-28T04:40Z). ~20 cost sites use max(pts*tick_size*contract_size,0.05) so the floor fires and looks deliberate: EURUSD costed 0.05/lot vs true 12/lot = 240x understated, NZDCAD 340x. Sharpest: execution_resolver.py:117 correctly returns None and line 199 writes spread_r:None, but line 186 'abs(spread_r or 0.0)' makes net_r charge ZERO spread. Underlying: spread==0 on 18.8pct of ALL H1 bars desk-wide (1151808/6115110, 169/197 symbols >1pct). Fix: registry writer to use median of NONZERO and record n_zero separately; line 186 must treat None as UNKNOWN, never 0.0 (WS-005/L1.28a).",
+   "roi_bps": null,
+   "rank": 1.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T17:09:32.886279+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0696",
+   "source": "free-data-miner run (p) 2026-08-28",
+   "summary": "Collector ingest guard: classify HTTP 429 separately from empty, count non-nulls PER CELL not rows per table, and apply a physical-plausibility bound at ingest. Evidence: DNPRND materialises 18/27 all-null phantom cells (8200 of 50114 rows) passing every row/column/freshness check; SEKUSDFO3MFIX carries one 4700x units break on 2020-07-16 that moves the implied-basis sd from 20bp to 11423bp and is invisible to mean/sd/corr.",
+   "roi_bps": null,
+   "rank": 40.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T18:26:19.723533+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
