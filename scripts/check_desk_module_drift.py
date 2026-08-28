@@ -89,6 +89,42 @@ MODULES = [
     # differs from HEAD -- an unreviewed local edit can never reach certification this way.
     "desks/mt5/research/gate_policy.py",
     "desks/mt5/policy/gate_spec.yaml",
+    # THE DAILY MONEY-PATH CHAIN, added 2026-08-28 after it decayed exactly as the comment at the
+    # head of this list predicted. `hourly_cycle` was watched; `daily_cycle` -- the module it
+    # calls, which IS the chain -- was not, so the caller was pinned to HEAD while the callee
+    # silently sat on the box's own stale branch. MEASURED that day: the box's STEPS tuple began
+    # at `futures_curves` and held SIX steps against HEAD's fourteen, and the string "decay" did
+    # not appear in the file at all (findstr, positive-controlled against "markout"). So
+    # refresh_bars, cost_fields, reconcile, qquant_shadow, execution, portfolio, decay and zentech
+    # had never run on the machine that trades -- including decay_monitor, which LAWS L1.59 has
+    # required since 2026-08-25 and whose absence means seven live sleeves carry no decay clock:
+    # nothing on that box would fade a sleeve at t<=0 or retire one at maxDD<=-25R.
+    # This fence reported "all 32 match HEAD on both boxes" throughout. A watchlist that does not
+    # follow the import graph will always be missing exactly the module nobody thought about --
+    # and here it was missing the one that decides what the book keeps holding.
+    "desks/mt5/research/daily_cycle.py",
+    "desks/mt5/research/decay_monitor.py",
+    "desks/mt5/research/forward_reconcile.py",
+    "desks/mt5/research/portfolio_evidence.py",
+    "desks/mt5/research/shadow_forward.py",
+    "desks/mt5/research/qquant_shadow.py",
+    "desks/mt5/research/curve_strategy_screen.py",
+    "desks/mt5/research/fetch_futures_curves.py",
+    "desks/mt5/mt5desk/markout.py",
+    "desks/mt5/mt5desk/shadow_execution.py",
+    "desks/mt5/scripts/refresh_tail.py",
+    "desks/mt5/scripts/refresh_cost_fields.py",
+    "scripts/build_zentech_state.py",
+    # DETECTED BUT NEVER HEALED. `check_desk_code_parity.py` had been reporting these two DIVERGED
+    # while this fence -- the only one that ships -- did not carry them, so the desk held the
+    # finding and no organ closed it. Verified before adding: both box blobs are objects that
+    # EXIST IN THIS HISTORY (git cat-file -e) and both files are clean against HEAD here, so the
+    # box is simply behind and healing destroys no operator hotfix. sleeve_registry.py is the
+    # money path's own registry and the box was missing 4fb548e4 ("six clocks died against a
+    # families.py that no longer exists"); scalp_shadow.py is one of the two bespoke shadow
+    # engines RESEARCH 6d already carries as a standing defect.
+    "desks/mt5/research/sleeve_registry.py",
+    "desks/mt5/research/scalp_shadow.py",
 ]
 
 
