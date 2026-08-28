@@ -125,7 +125,8 @@ def test_build_uses_canonical_gauntlet_when_legacy_research_loop_is_stale(tmp_pa
     _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "PENDING"}])
     _write(desk / "reports" / "UNIVERSAL_SURVIVORS.json", {"survivors": {}})
     _write(desk / "reports" / "universal_gates_external.json", {"n_judged": 1})
-    _write(desk / "reports" / "shadow" / "shadow_state.json", {"last_run": "2026-08-22", "s": {"n": 1}})
+    _write(desk / "reports" / "shadow" / "shadow_state.json",
+           {"last_run": "2026-08-22", "s": {"n": 1}})
     _write(desk / "reports" / "markout.json", {"at": now.isoformat(), "usable": False})
     _write(tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json", {
         "generated_at": now.isoformat(), "counts": {},

@@ -239,12 +239,35 @@ def main(argv: list[str] | None = None) -> int:
     today = datetime.now(UTC).date().isoformat()
     stamp = _load_stamp()
 
+    # THE DAY'S STAMP MAY NOT OUTRANK THE CHAIN (gap-fixer 2026-08-28). The stamp recorded THAT
+    # the day ran, never WHAT ran, so a step added to STEPS after today's tick was suppressed
+    # until midnight by a stamp the previous version of this file had written. MEASURED that day:
+    # the box's stamp named six steps -- futures_curves, curve_strategies, shadow, promoter,
+    # markout, export_aurum -- while HEAD's STEPS held fourteen. The eight newer ones had shipped
+    # to the box (the drift fence read "all 50 match HEAD on both boxes") and still could not run,
+    # so execution_quality.json sat 43.1h stale against a 36h limit with the PROMOTION GATE as its
+    # consumer, decay_live.json 43.1h against 26h, and forward_reconcile.json 39.1h -- three reds
+    # on the freshness fence and a readiness gate held at rung 0, all from a skip that was correct
+    # about the date and wrong about the work.
+    #
+    # So the skip is now step-aware: a day already stamped runs exactly the steps the stamp does
+    # not name, in their declared order, and merges the outcomes. This weakens nothing -- a step
+    # that ALREADY ran today is still not re-run -- and it means any future extension of the chain
+    # self-heals on the next hourly tick instead of waiting for a midnight that a stale stamp
+    # would have poisoned again anyway.
+    prior: dict[str, dict] = {}
+    todo = STEPS
     if stamp.get("last_run") == today and not force:
-        dlog(f"daily cycle already ran {today}; skip (--force to re-run)")
-        return 0
-
-    dlog(f"daily cycle {today} starting")
-    results = {name: run_step(name, fn) for name, fn in STEPS}
+        prior = dict(stamp.get("steps") or {})
+        todo = tuple((n, f) for n, f in STEPS if n not in prior)
+        if not todo:
+            dlog(f"daily cycle already ran {today}; skip (--force to re-run)")
+            return 0
+        dlog(f"daily cycle already ran {today}, but {len(todo)} step(s) of {len(STEPS)} never "
+             f"did: {', '.join(n for n, _ in todo)} -- running those now")
+    else:
+        dlog(f"daily cycle {today} starting")
+    results = {name: run_step(name, fn) for name, fn in todo}
 
     # THE STAMP RECORDS THE ATTEMPT, NOT A SUCCESS. Marking the day done only on a clean run would
     # make a broken step retry every hour, and a step that fails at 09:00 because the terminal is
@@ -252,7 +275,9 @@ def main(argv: list[str] | None = None) -> int:
     # per-step outcome is kept alongside so the failure stays visible and `--force` is the explicit
     # way to try again.
     stamp["last_run"] = today
-    stamp["steps"] = results
+    # Merge, never replace: a catch-up pass must not erase the outcomes of the steps that ran
+    # earlier today, or the next tick would read them as never-run and loop on them forever.
+    stamp["steps"] = {**prior, **results}
     STAMP.parent.mkdir(parents=True, exist_ok=True)
     STAMP.write_text(json.dumps(stamp, indent=2), encoding="utf-8")
 
