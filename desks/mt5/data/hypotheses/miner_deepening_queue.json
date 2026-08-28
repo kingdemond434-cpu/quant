@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T09:07:27+00:00",
+ "built_at": "2026-08-28T10:15:07+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3637,6 +3637,32 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "AUDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion AUDJPY swap long=5.54 short=-13.02 diff=+18.5600",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDNZD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion AUDNZD swap long=2.8 short=-7.35 diff=+10.1500",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "AUDSGD",
    "family": "carry",
    "params": {
@@ -3645,6 +3671,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion AUDSGD swap long=3.22 short=-10.61 diff=+13.8300",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion AUDUSD swap long=-0.21 short=-2.14 diff=+1.9300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -3858,6 +3897,19 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "BTCUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "BTCUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion BTCUSD swap long=-15.0 short=-10.0 diff=-5.0000",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "fusion Baidu swap long=-7.31 short=2.81 diff=-10.1200",
@@ -3970,6 +4022,19 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "CADJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CADJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion CADJPY swap long=1.44 short=-5.78 diff=+7.2200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "CHFDKK",
    "family": "carry",
    "params": {
@@ -3991,6 +4056,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion CHFHUF swap long=-7371.5 short=3829.25 diff=-11200.7500",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion CHFJPY swap long=-9.67 short=2.56 diff=-12.2300",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4327,6 +4405,32 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "ETHUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "ETHUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion ETHUSD swap long=-15.0 short=-10.0 diff=-5.0000",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURAUD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion EURAUD swap long=-11.56 short=5.32 diff=-16.8800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "EURCAD",
    "family": "carry",
    "params": {
@@ -4335,6 +4439,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion EURCAD swap long=-2.22 short=-2.88 diff=+0.6600",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURCHF"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion EURCHF swap long=2.33 short=-10.19 diff=+12.5200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4361,6 +4478,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion EURDKK swap long=-3.85 short=-24.07 diff=+20.2200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURGBP"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion EURGBP swap long=-6.12 short=1.07 diff=-7.1900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4400,6 +4530,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion EURILS swap long=-22.02 short=1.58 diff=-23.6000",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion EURJPY swap long=2.87 short=-9.89 diff=+12.7600",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4509,6 +4652,19 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "EURUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion EURUSD swap long=-7.16 short=3.04 diff=-10.2000",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "EURZAR",
    "family": "carry",
    "params": {
@@ -4582,6 +4738,19 @@
    "mechanism_tags": []
   },
   {
+   "symbol": "GBPAUD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPAUD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion GBPAUD swap long=-7.08 short=-2.63 diff=-4.4500",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "GBPCAD",
    "family": "carry",
    "params": {
@@ -4629,6 +4798,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion GBPHUF swap long=-3770.0 short=594.41 diff=-4364.4100",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion GBPJPY swap long=8.23 short=-23.35 diff=+31.5800",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -4720,6 +4902,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion GBPTRY swap long=-8690.46 short=1763.78 diff=-10454.2400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion GBPUSD swap long=-2.0 short=-2.07 diff=+0.0700",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5146,6 +5341,19 @@
    "mechanism_tags": []
   },
   {
+   "symbol": "NZDCAD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NZDCAD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion NZDCAD swap long=-0.45 short=-2.69 diff=+2.2400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "NZDCHF",
    "family": "carry",
    "params": {
@@ -5172,6 +5380,19 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "NZDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NZDJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion NZDJPY swap long=1.8199999999999998 short=-6.46 diff=+8.2800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "NZDSGD",
    "family": "carry",
    "params": {
@@ -5180,6 +5401,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion NZDSGD swap long=0.22 short=-5.52 diff=+5.7400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NZDUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion NZDUSD swap long=-3.02 short=0.58 diff=-3.6000",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5612,6 +5846,32 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "USDCAD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDCAD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion USDCAD swap long=3.16 short=-8.2 diff=+11.3600",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDCHF"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion USDCHF swap long=5.03 short=-12.36 diff=+17.3900",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "USDCNH",
    "family": "carry",
    "params": {
@@ -5711,6 +5971,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion USDINR swap long=-480.08 short=-42.45 diff=-437.6300",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDJPY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion USDJPY swap long=7.13 short=-18.12 diff=+25.2500",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -5993,6 +6266,19 @@
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
+   "symbol": "XAGUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "XAGUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion XAGUSD swap long=-10.99 short=0.09 diff=-11.0800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "symbol": "XALUSD",
    "family": "carry",
    "params": {
@@ -6027,6 +6313,19 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion XAUEUR swap long=-35.46 short=17.3 diff=-52.7600",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium",
+   "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "XAUUSD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion XAUUSD swap long=-67.06 short=32.75 diff=-99.8100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium",
    "deepening_reason": "last sweep built 194 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
@@ -6190,6 +6489,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
@@ -6302,8 +6609,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "motional-tammy18/systematic-trading-framework",
-   "url": "https://github.com/motional-tammy18/systematic-trading-framework",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DEVfancybear/MarketLens",
+   "url": "https://github.com/DEVfancybear/MarketLens",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ajayprabhuraj/institutional-orderflow-mt5",
+   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6312,14 +6635,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6344,14 +6659,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "RPNATION1/Tradingalgos",
    "url": "https://github.com/RPNATION1/Tradingalgos",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Prop-Matrix-Engine",
-   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7108,6 +7415,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "symbols": [],
@@ -7275,17 +7593,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1369457/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7570,8 +7877,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7581,8 +7888,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -8374,11 +8681,13 @@
    "mechanism_tags": []
   },
   {
-   "source": "arxiv",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
-   "url": "https://arxiv.org/abs/2608.27423v1",
-   "symbols": [],
+   "source": "github",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
+   "url": "https://github.com/goodie1972/algoforge",
+   "symbols": [
+    "XAUUSD"
+   ],
    "mechanism_tags": []
   },
   {
@@ -8458,6 +8767,98 @@
    "url": "",
    "symbols": [
     "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "SPY Day Trade Review \u2014 +0.5R, but the biggest win was sticking to the plan",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "I created an amazing Oil strategy!",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "RTH and ETH EMA9/21\uff0c which to use?",
+   "url": "",
+   "symbols": [
+    "ETHUSD"
+   ],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Week 17 - Day 3 - One and done option trade. Growing a small account $300 to $60,000 in 6 months",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": [
+    "SMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd2e $SPY & $SPX \u2014 Levels and Scenarios for Friday, August 28, 2026",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": [
+    "trend"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Question about my friends trade",
+   "url": "",
+   "symbols": [
+    "NAS100"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "I spent 7 months coding an algorithmic system for NAS100 + Gold. Here are the 9+ year backtest results (Spoiler: It's bonkers).",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Sold my first put - RDDT $115 11/20 for $4.15 per share",
+   "url": "",
+   "symbols": [
+    "US500"
    ],
    "mechanism_tags": []
   },
@@ -8604,28 +9005,6 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Bridgewater has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Renaissance has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Citadel has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -8708,257 +9087,6 @@
    "symbols": [
     "NAS100",
     "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "LIVESTREAM TRADING Th\u1ef1c chi\u1ebfn l\u01b0\u1edbt s\u00f3ng v\u00e0ng ng\u00e0y 28/08/2026. #xauusd                #forextrading",
-   "url": "https://youtube.com/watch?v=_4pxxvjvwSs",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Fibonacci Retracement Strategy for Gold on TradingView (FREE Setup)",
-   "url": "https://youtube.com/watch?v=1P9GcjB2198",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "fibonacci",
-    "fib"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Gold  - XAUUSD Weekly Analysis &amp; Prediction",
-   "url": "https://youtube.com/watch?v=9IR9wQyZ6aI",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "ICT"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "today gold live trade",
-   "url": "https://youtube.com/watch?v=tRec95RwP_M",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Today\u2019s Gold Big Move | What\u2019s Next for XAU/USD? #xauusd #gold #todaysupdate #shorts",
-   "url": "https://youtube.com/watch?v=bEkwdJOYKDw",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "liquidity"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Xauusd Analysis Today || Xauusd Live || Gold Analysis Today #xauusdlive #xauusdanalysis",
-   "url": "https://youtube.com/watch?v=Bolcy0QBS5s",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udea8 LIVE GOLD TRADING ROOM 0595 BIG MOVES ON XAUUSD  | REAL-TIME SIGNALS  | Ms Forex Learning Hub",
-   "url": "https://youtube.com/watch?v=rJzFSz5tiG0",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udea8 Gold FOMO Trap: Why Chasing XAU/USD Can Destroy Your Entry #xauusd",
-   "url": "https://youtube.com/watch?v=bYHqa-YJf88",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udfe2 LIVE: Bitcoin (BTC) &amp; Gold (XAUUSD) Trading Strategy | Live Market Analysis \ud83d\ude80",
-   "url": "https://youtube.com/watch?v=L7T6N4ah2wc",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "The future of the Yen. #trading #jpy #usd #forex #usdjpy #yen #japan",
-   "url": "https://youtube.com/watch?v=QvieRnePc1g",
-   "symbols": [
-    "USDJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 27/08/2026  #gold #liveforextrading,",
-   "url": "https://youtube.com/watch?v=N0iYfd0QrEY",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 26/08/2026  #gold #liveforextrading,",
-   "url": "https://youtube.com/watch?v=wkRVSPIzQhk",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34\ud83d\udd25 GOLD BREAKOUT LIVE | Huge Move Coming in XAUUSD l XAUUSD 24/08/2026  #gold #liveforextrading,",
-   "url": "https://youtube.com/watch?v=k-1UyB_BLBk",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "21 AUG  l Ravvi Soni I Live Trading Session I   #forex, #xauusd, #trading #bitcoin",
-   "url": "https://youtube.com/watch?v=oASNEkaEsNs",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=ffKWF777FZo",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=uYwumkNXAl4",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=67MuG55UnaA",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD \ud83d\udd34Live 27.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=q0bZeNLA6xk",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD M15 SCALP__FREE SIGNALS LINK IN BIO__gold_xauusd_fullmargin_xauusdtrader_forextrading",
-   "url": "https://youtube.com/watch?v=LQq7FVBF4DQ",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD \ud83d\udd34Live 27.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=zuqRADiNbak",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD \ud83d\udd34Live 27.08.2026 \u202a@Sarathi-Manikandan\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=cWjutwDQDsU",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd34 BTC Live trading 364 / 27.08.2026 #bitcoin  #nfp  #forex #gold #gbpjpytrading  #crypto",
-   "url": "https://youtube.com/watch?v=5ub1XTqXn78",
-   "symbols": [
-    "GBPJPY"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "XAUUSD Live EA BOT \ud83d\udd34Live 26.08.2026 \u202a\u202c #xauusd #goldtrading #livetrading #nfp #forex #cpi",
-   "url": "https://youtube.com/watch?v=2sFd4ML3jr0",
-   "symbols": [
-    "BTCUSD",
-    "NAS100",
-    "XAUUSD"
    ],
    "mechanism_tags": []
   }

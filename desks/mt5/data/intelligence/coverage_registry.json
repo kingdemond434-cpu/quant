@@ -10,126 +10,126 @@
    "lang": "en+ar",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "js_app_needs_api",
-   "last_attempt": "2026-08-28T09:22:28+00:00"
+   "last_attempt": "2026-08-28T10:22:28+00:00"
   },
   "trading_latam": {
    "region": "LATAM",
    "lang": "es",
    "evidence_grade": "B",
    "best_rows": 38,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "ok",
-   "last_attempt": "2026-08-28T09:22:30+00:00"
+   "last_attempt": "2026-08-28T10:22:31+00:00"
   },
   "litefinance": {
    "region": "CIS/SEA",
    "lang": "en+ru+vi",
    "evidence_grade": "A",
    "best_rows": 15,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "ok",
-   "last_attempt": "2026-08-28T09:22:31+00:00"
+   "last_attempt": "2026-08-28T10:22:32+00:00"
   },
   "duplitrade": {
    "region": "EU/global",
    "lang": "en",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "js_app_needs_api",
-   "last_attempt": "2026-08-28T09:22:42+00:00"
+   "last_attempt": "2026-08-28T10:22:43+00:00"
   },
   "octa_masters": {
    "region": "SEA",
    "lang": "en+id+vi",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "unknown_shape",
-   "last_attempt": "2026-08-28T09:22:55+00:00"
+   "last_attempt": "2026-08-28T10:22:56+00:00"
   },
   "share4you": {
    "region": "CIS/Asia",
    "lang": "en+ru",
    "evidence_grade": "B",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "error:HTTPError",
-   "last_attempt": "2026-08-28T09:22:57+00:00"
+   "last_attempt": "2026-08-28T10:22:57+00:00"
   },
   "instaforex_copy": {
    "region": "CIS",
    "lang": "en+ru",
    "evidence_grade": "A",
    "best_rows": 4,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "ok",
-   "last_attempt": "2026-08-28T09:22:59+00:00"
+   "last_attempt": "2026-08-28T10:22:59+00:00"
   },
   "roboforex_copyfx": {
    "region": "CIS/global",
    "lang": "en+ru",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "unknown_shape",
-   "last_attempt": "2026-08-28T09:23:13+00:00"
+   "last_attempt": "2026-08-28T10:23:11+00:00"
   },
   "hfm_pamm": {
    "region": "MENA/Africa",
    "lang": "en+ar",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "error:HTTPError",
-   "last_attempt": "2026-08-28T09:23:15+00:00"
+   "last_attempt": "2026-08-28T10:23:13+00:00"
   },
   "amarkets": {
    "region": "CIS",
    "lang": "en+ru",
    "evidence_grade": "A",
    "best_rows": 114,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "ok",
-   "last_attempt": "2026-08-28T09:23:24+00:00"
+   "last_attempt": "2026-08-28T10:23:17+00:00"
   },
   "followme_cn": {
    "region": "China",
    "lang": "zh",
    "evidence_grade": "B",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "error:HTTPError",
-   "last_attempt": "2026-08-28T09:23:25+00:00"
+   "last_attempt": "2026-08-28T10:23:18+00:00"
   },
   "minfx_jp": {
    "region": "Japan",
    "lang": "ja",
    "evidence_grade": "A",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "error:HTTPError",
-   "last_attempt": "2026-08-28T09:23:26+00:00"
+   "last_attempt": "2026-08-28T10:23:19+00:00"
   },
   "mylivefx_br": {
    "region": "Brazil",
    "lang": "pt",
    "evidence_grade": "C",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "server_rendered_wrong_selector",
-   "last_attempt": "2026-08-28T09:23:36+00:00"
+   "last_attempt": "2026-08-28T10:23:28+00:00"
   },
   "readitrades_africa": {
    "region": "Africa",
    "lang": "en",
    "evidence_grade": "C",
    "best_rows": 0,
-   "attempts": 65,
+   "attempts": 66,
    "last_state": "error:SSLError",
-   "last_attempt": "2026-08-28T09:23:39+00:00"
+   "last_attempt": "2026-08-28T10:23:31+00:00"
   }
  }
 }

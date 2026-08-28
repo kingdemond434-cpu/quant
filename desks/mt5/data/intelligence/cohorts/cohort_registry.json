@@ -6196,5 +6196,30 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"dbe4b91e20daf80b": {
+"t0": "2026-08-28T10:24:58+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "karidasd/forex-institutional-scalper",
+"url": "https://github.com/karidasd/forex-institutional-scalper",
+"text": "\ud83c\udfdb\ufe0f Institutional-grade quantitative Forex intelligence engine & sub-second Live Scalper. Features Smart Money Concepts (SMC), Liquidity Sweeps, Session VWAP, Currency Strength Matrix (CSM), Triple HTF Alignment (D1/H4/H1) & interactive TradingView Pro charts.",
+"symbols": [],
+"found_at": "2026-08-28T10:24:53+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-28T09:46:01Z"
+},
+"mechanism_tags": [
+"grid",
+"scalping",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
