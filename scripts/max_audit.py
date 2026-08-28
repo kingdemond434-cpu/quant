@@ -663,19 +663,44 @@ def check_unit_deaths(defects) -> None:
     log = LOGS / "unit_deaths.jsonl"
     if not log.exists():
         return  # fence installed, no deaths ever logged -- genuinely clean
+    # WINDOW BY TIME, NOT BY ROW COUNT (gap-fixer 2026-08-28). This read `[-200:]` and then
+    # filtered to 24h -- a row cap standing in for a time window. Measured the day it was fixed:
+    # 241 abnormal stops in 24h, so the cap silently dropped 41 of them and, worse, the count it
+    # printed would have STOPPED RISING at 200 exactly as the fleet got sicker. A cap that
+    # saturates during the incident it exists to size is the "no silent caps" defect (LAWS): the
+    # number reads like a measurement and is really the cap. 5000 lines is a memory bound, not a
+    # window, and if it ever binds the check says so instead of quietly under-reporting.
+    _SCAN_LINES = 5000
+    lines = log.read_text("utf-8", errors="ignore").splitlines()
+    scanned = lines[-_SCAN_LINES:]
     recent: list[str] = []
-    for line in log.read_text("utf-8", errors="ignore").splitlines()[-200:]:
+    counts: dict[str, int] = {}
+    oldest_in_window = False
+    for line in scanned:
         try:
             row = json.loads(line)
             ts = time.mktime(time.strptime(row["ts"], "%Y-%m-%dT%H:%M:%SZ"))
         except (ValueError, KeyError):
             continue
         if NOW - ts <= 24 * 3600 and "test-death-visibility" not in row.get("unit", ""):
-            recent.append(f"{row.get('unit')}({row.get('result')}/{row.get('exit_status')})")
+            label = f"{row.get('unit')}({row.get('result')}/{row.get('exit_status')})"
+            recent.append(label)
+            counts[label] = counts.get(label, 0) + 1
+            if line is scanned[0]:
+                oldest_in_window = True
     if recent:
+        # Rank by frequency so the report names the CAUSE, not the first eight rows
+        # chronologically: on the day this was fixed one crash-looping unit produced 106 of the
+        # 241 stops, and a chronological head buried it among the units it was killing. The
+        # label keeps result/exit_status -- an oom-kill and an exit-1 need different repairs.
+        top = ", ".join(f"{lab}x{n}" if n > 1 else lab
+                        for lab, n in sorted(counts.items(), key=lambda kv: -kv[1])[:8])
+        truncated = (" SCAN WINDOW BOUND HIT: the oldest scanned line is still inside 24h, so "
+                     f"this count is a FLOOR -- raise _SCAN_LINES above {_SCAN_LINES}."
+                     if oldest_in_window and len(scanned) == _SCAN_LINES else "")
         defects.append(("unit-deaths",
-                        f"{len(recent)} abnormal user-unit stop(s) in 24h: "
-                        f"{', '.join(recent[:8])}. An oom-kill here is the 4GB/no-swap box "
+                        f"{len(recent)} abnormal user-unit stop(s) in 24h, by unit: {top}."
+                        f"{truncated} An oom-kill here is the 4GB/no-swap box "
                         "eating a seat mid-cycle (console item: swapfile); a timeout/crash is "
                         "that unit's own defect. Read the unit journal, fix the cause -- the "
                         "retry loop hides the death but pays for it in quota."))
