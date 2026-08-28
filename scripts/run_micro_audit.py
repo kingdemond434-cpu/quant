@@ -108,11 +108,15 @@ def main() -> None:
     if not _KEYS.exists():
         print("micro-audit: no llm_panel.json -- skipped (panel manual mode)")
         return
-    from scripts.generate_external_review_doc import sanitize
+    from scripts.generate_external_review_doc import sanitize, sanitize_findings
     from scripts.run_external_panel import _ask
     brief = build_brief()
     if sanitize(brief) != brief:                     # anything secret-shaped -> hard refuse
-        raise SystemExit("micro-audit brief failed sanitization -- refusing to send")
+        # NAME THE CONTROL THAT FIRED. This refused every day from at least 2026-08-23 to
+        # 2026-08-28 on the identical unactionable line, and the cause was the desk's own word
+        # "moat" matching an unanchored token pattern. Positions only -- never the matched text.
+        raise SystemExit("micro-audit brief failed sanitization -- refusing to send. "
+                         + "; ".join(sanitize_findings(brief)))
     # Constitution first, mission second: the objective has to be in scope BEFORE the model
     # reads what it is being asked to optimise, or the mission sets the frame and the
     # objective arrives as a footnote.
