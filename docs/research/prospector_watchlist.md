@@ -1086,3 +1086,85 @@ not bear on the binding unknown. Stays **QUEUE at ev ≈ 0.0036**, below the car
 **Status:** H1/H2 **RETIRED (design refuted, logged so no run re-derives it)**. H1′/H2′ carried
 forward at the same weight. Next check remains **pool share of gold/index volume** — the one
 measurement that decides this family, and still the cheapest thing that could kill it.
+
+---
+
+## CARD — `mt5_broker_swap_markup_asymmetry` (prospector s13, 2026-08-28)
+
+**Family:** CARRY-FUNDING, on **MT5 ground** — where it has **never been tested** (see the coverage-map
+finding below; the family's 6/6 "tested" candidates and all 3 `do_not_repeat` carry tokens
+(`funding_carry`, `basis_carry`, `single_venue_carry`) are crypto-perp-funding, none applicable here).
+
+**MECHANISM (who is forced, and why they cannot stop).** An MT5 broker's swap is an *administered*
+financing rate: it is set per symbol, per side, and re-published on a slow (observed: daily) clock,
+while the true interbank rate differential it proxies moves continuously. A leveraged retail holder
+accrues that administered rate every night and cannot opt out while the position is open, and the
+broker prices the popular side to its own book. **The claim is NOT the classic carry/UIP premium —
+it is the RESIDUAL between the administered swap and the fair rate differential**, which is a
+broker-specific, staleness-and-markup quantity that only a desk holding this broker's own table can
+observe.
+
+**FIRST-PARTY EVIDENCE ALREADY ON DISK (measured this run, nothing new fetched).**
+- `universe.json`: **248/251 symbols carry `swap_long`/`swap_short`**; all 248 non-zero; **200 have a
+  payable side**; **44/248 are negative on BOTH sides** — that both-negative block is the broker's
+  markup made visible and is the cleanest first look at the residual.
+- `desks/mt5/data/intelligence/broker_swaps/` — an **hourly terminal-native panel** (`mt5://symbol_info`,
+  `broker: fusionmarkets`), **73 snapshots since 2026-08-25**, ~248 symbols each. Nobody outside this
+  desk holds it. **Nothing reads it** — idle proprietary data, L1.8/L1.11.
+- Measured on that panel: **81/248 symbols changed `(long, short)` within 3 days, max 3 distinct
+  states** — i.e. the table updates on roughly a **daily** clock and 167 symbols were static.
+  Confirms the staleness premise *and* prices the panel: this needs **months**, not hours, so the
+  hourly cadence is ~24× oversampled for the signal (harmless, but say so rather than assume).
+- Carry spread `(swap_long − swap_short)/2` is dominated by high-rate crosses — USDTRY −5682,
+  CHFHUF −5600, GBPTRY −5227, EURTRY −4414 — i.e. the panel's variance lives exactly where the
+  administered/true gap should be widest.
+
+**EV GATE — RUN HONESTLY, AND IT SPLITS. This is reported, not resolved by tag-picking.**
+`est_sharpe 0.4, breadth 15, capacity $150k, orthogonality 0.8, effort 30h, maintenance 1.2`:
+
+| tags | p_survive | EV | verdict |
+|---|---|---|---|
+| `funding_family` + `new_orthogonal_data` | 0.48 | **0.0037** | QUEUE |
+| `funding_family` | 0.30 | 0.0023 | QUEUE |
+| + `crowded_known` | 0.168 | 0.0013 | **REJECT** |
+| `crowded_known` alone | 0.053 | 0.0004 | REJECT |
+
+The verdict turns **entirely** on whether `crowded_known` applies — and that is an empirical
+question, not a matter of judgement, so it becomes the card's **first pre-committed test**.
+
+**PRE-REGISTRATION (in this order; the gate decides, never the screen — L1.60).**
+1. **THE CROWDEDNESS DECOMPOSITION, RUN FIRST AND ALLOWED TO KILL THE CARD.** Regress observed
+   `swap_diff` on the true policy-rate differential (buildable today for USD-legs from the lake's
+   `fred_DFF` / `fred_ECBDFR` / `fred_DGS*`; the BoK ECOS door opened by this run's item 2 is the
+   class of free source that extends it to the rest). **If the residual is small or transient, the
+   card is the published FX carry premium wearing a broker's clothes → `crowded_known` applies, EV
+   0.0013, KILL.** Only a large, persistent, symbol-specific residual keeps it alive.
+2. **UNITS BEFORE RETURNS — hard precondition.** `swap_long = -10264.91` on USDTRY is points, not
+   account currency, and the desk has already been bitten twice here (`tick_value` deleted →
+   0/197 costable; a 184× JPY commission undercharge). No return may be computed until each swap is
+   converted to account-currency-per-lot-per-night against `broker_tick_values.json`, and the
+   conversion is verified on **one symbol against an actual account statement line**.
+   `swap_rollover3days` (the Wednesday triple) must be honoured or the accrual is understated ~40%.
+3. Net of the full cost stack (spread at the hold's own session, commission, and the swap itself on
+   the paying leg) and beating T-bills net (L1.5). A carry sleeve that loses the spread it earns is
+   the desk's oldest failure shape.
+4. Panel needs ≥ 3 months of the swap recorder before any forward clock; **do not start a clock on
+   73 hourly snapshots** — that is 3 days wearing an n of 73 (the count-is-not-a-frequency error
+   this desk ledgered on 2026-08-28).
+
+**GRAVEYARD CROSS-CHECK — PASSED, explicitly.** `docs/graveyard.md` + `research_agenda.json
+do_not_repeat` (50 entries) read: every carry/funding kill is **crypto perp funding or spot-futures
+basis on a crypto venue** (`funding_carry`, `basis_carry`, `single_venue_carry`,
+`carry_entry_shorts_widening_basis`, `dollar_strength_funding_dislocation`,
+`basis_momentum_carry_timing`, `macro_carry_regime_gate`, `bill_yield_carry_hurdle_passthrough`,
+`cme_roll_window_spread_pressure`). **None is an MT5 broker swap table, and none of the killed
+overlays is this object.** It is *not* an overlay on an existing carry book — the desk has no carry
+book on this universe.
+
+**PROVENANCE: VERIFIED (first-party).** All figures measured this run from
+`desks/mt5/data/universe/universe.json` and `desks/mt5/data/intelligence/broker_swaps/*.json`.
+No external fetch, no claim taken on trust.
+
+**KNOWN DEFECT IN THE FEEDING RECORDER (report, do not patch — research freeze):** 37 rows across
+the 73 snapshots carry an **empty `symbols` list** and are therefore unattributable to any
+instrument. Small (~0.5/run) but silent.
