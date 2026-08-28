@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-28T03:09:11+00:00",
+ "compiled_at": "2026-08-28T04:12:16+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -268,9 +268,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 35,
+   "rows": 34,
    "candidates": 0,
-   "deepening": 35
+   "deepening": 34
   },
   "litefinance": {
    "rows": 15,
@@ -313,8 +313,8 @@
    "deepening": 10
   }
  },
- "rows_accounted": 880,
+ "rows_accounted": 879,
  "executable_candidates": 12,
- "deepening_tasks": 833,
+ "deepening_tasks": 834,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

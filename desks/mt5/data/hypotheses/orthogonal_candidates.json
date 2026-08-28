@@ -1,5 +1,5 @@
 {
- "swept_at": "2026-08-28T02:05:54+00:00",
+ "swept_at": "2026-08-28T03:03:15+00:00",
  "symbols": 299,
  "families_ran": {
   "correlation_regime": 297,
@@ -2878,6 +2878,19 @@
   },
   {
    "symbol": "AUDUSD",
+   "family": "cot_positioning",
+   "params": {
+    "input_source": "cot_point_in_time"
+   },
+   "n": 109,
+   "exp_r": 0.0001,
+   "max_dd_r": -13.33,
+   "source": "orthogonal_sweep:cot_positioning",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "COT net positioning"
+  },
+  {
+   "symbol": "AUDUSD",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -3886,8 +3899,8 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 76,
-   "exp_r": 0.0047,
+   "n": 83,
+   "exp_r": 0.0251,
    "max_dd_r": -9.17,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
@@ -4352,8 +4365,8 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 102,
-   "exp_r": 0.1542,
+   "n": 107,
+   "exp_r": 0.1969,
    "max_dd_r": -11.21,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
@@ -4796,8 +4809,8 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 108,
-   "exp_r": 0.3191,
+   "n": 116,
+   "exp_r": 0.3045,
    "max_dd_r": -7.64,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
@@ -5409,8 +5422,8 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 116,
-   "exp_r": 0.1116,
+   "n": 124,
+   "exp_r": 0.0638,
    "max_dd_r": -14.09,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",

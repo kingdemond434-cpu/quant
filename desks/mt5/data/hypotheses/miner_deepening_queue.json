@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T03:09:11+00:00",
+ "built_at": "2026-08-28T04:12:16+00:00",
  "tasks": [
   {
    "source": "github",
@@ -6609,6 +6609,14 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DEVfancybear/MarketLens",
+   "url": "https://github.com/DEVfancybear/MarketLens",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
    "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
@@ -6981,30 +6989,6 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@TradingSCapital",
-   "url": "https://my.litefinance.org/traders/TradingSCapital",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@H_Trading",
-   "url": "https://my.litefinance.org/traders/H_Trading",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@SaiGon_Trading",
-   "url": "https://my.litefinance.org/traders/SaiGon_Trading",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@UnicornFxCapital",
    "url": "https://my.litefinance.org/traders/UnicornFxCapital",
    "symbols": [],
@@ -7013,48 +6997,8 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@OngHoang_EU",
-   "url": "https://my.litefinance.org/traders/OngHoang_EU",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@TrustTrade",
-   "url": "https://my.litefinance.org/traders/TrustTrade",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@mikenguyen",
-   "url": "https://my.litefinance.org/traders/mikenguyen",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Fire_Phoenix",
    "url": "https://my.litefinance.org/traders/Fire_Phoenix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Quantum 9000",
-   "url": "https://my.litefinance.org/traders/Quantum 9000",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Amir28604320",
-   "url": "https://my.litefinance.org/traders/Amir28604320",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7095,6 +7039,70 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Eshaghtrader",
    "url": "https://my.litefinance.org/traders/Eshaghtrader",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Earth_Taurus",
+   "url": "https://my.litefinance.org/traders/Earth_Taurus",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Atlas_Capital",
+   "url": "https://my.litefinance.org/traders/Atlas_Capital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Aliakhavan72",
+   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@AlphaTrader2020",
+   "url": "https://my.litefinance.org/traders/AlphaTrader2020",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@HungTranVan",
+   "url": "https://my.litefinance.org/traders/HungTranVan",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Ballantine40",
+   "url": "https://my.litefinance.org/traders/Ballantine40",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Horizon_Finance",
+   "url": "https://my.litefinance.org/traders/Horizon_Finance",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@EA_SuperTN",
+   "url": "https://my.litefinance.org/traders/EA_SuperTN",
    "symbols": [],
    "mechanism_tags": []
   },

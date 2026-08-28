@@ -1,0 +1,4502 @@
+{
+ "generated_at": "2026-08-28T04:14:17+00:00",
+ "starved_classes": [
+  "bond"
+ ],
+ "hypotheses": [
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Dow_12_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 311,
+   "t_stat": 4.217960754830151,
+   "exp_r": 0.23917861136137716,
+   "source": "backfill_coverage:bond:ext_lead_Dow_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Target_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 242,
+   "t_stat": 3.519491439448987,
+   "exp_r": 0.22624147846930745,
+   "source": "backfill_coverage:bond:ext_lead_Target_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDMXN_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 271,
+   "t_stat": 3.419383620397511,
+   "exp_r": 0.2077127624225835,
+   "source": "backfill_coverage:bond:ext_lead_USDMXN_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_JPMorganChase_24_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 377,
+   "t_stat": 3.221450123241659,
+   "exp_r": 0.2873699576249421,
+   "source": "backfill_coverage:bond:ext_lead_JPMorganChase_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Broadcom_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 259,
+   "t_stat": 3.221058040815749,
+   "exp_r": 0.2001468081097966,
+   "source": "backfill_coverage:bond:ext_lead_Broadcom_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_ADS__ext_resid_AENA",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 368,
+   "t_stat": 3.187647504350678,
+   "exp_r": 0.16616761289754456,
+   "source": "backfill_coverage:bond:x_ext_resid_ADS__ext_resid_AENA",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Lyft_6_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 396,
+   "t_stat": 3.1318191861397118,
+   "exp_r": 0.157379835631237,
+   "source": "backfill_coverage:bond:ext_lead_Lyft_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_SUGARRAW_12_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 359,
+   "t_stat": 3.128766461632833,
+   "exp_r": 0.1651299781073835,
+   "source": "backfill_coverage:bond:ext_lead_SUGARRAW_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_COTTON_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 290,
+   "t_stat": 3.127680195660621,
+   "exp_r": 0.18366370510676203,
+   "source": "backfill_coverage:bond:ext_lead_COTTON_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Target_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 423,
+   "t_stat": 3.0344515280506816,
+   "exp_r": 0.14754008211329528,
+   "source": "backfill_coverage:bond:ext_lead_Target_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFPLN_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 381,
+   "t_stat": 3.0151785508478994,
+   "exp_r": 0.1544722765899771,
+   "source": "backfill_coverage:bond:ext_lead_CHFPLN_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CADCHF_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 413,
+   "t_stat": 2.9995774175230925,
+   "exp_r": 0.1475995554672409,
+   "source": "backfill_coverage:bond:ext_lead_CADCHF_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_ADS__ext_resid_AENA",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 368,
+   "t_stat": 2.9720375508031416,
+   "exp_r": 0.3794949562172115,
+   "source": "backfill_coverage:bond:x_ext_resid_ADS__ext_resid_AENA",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AlibabaGroup_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 350,
+   "t_stat": 2.9585354313025753,
+   "exp_r": 0.15814037072236728,
+   "source": "backfill_coverage:bond:ext_residz_AlibabaGroup_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_AALB__ext_resid_AGN",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 416,
+   "t_stat": 2.954237516741058,
+   "exp_r": 0.14484341101587062,
+   "source": "backfill_coverage:bond:x_ext_resid_AALB__ext_resid_AGN",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AUDCHF_6_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 442,
+   "t_stat": 2.892346987785564,
+   "exp_r": 0.13757491663534538,
+   "source": "backfill_coverage:bond:ext_lead_AUDCHF_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 298,
+   "t_stat": 2.8729087750409663,
+   "exp_r": 0.2882533287008518,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CORN_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 349,
+   "t_stat": 2.8709779821292924,
+   "exp_r": 0.1536799279963778,
+   "source": "backfill_coverage:bond:ext_lead_CORN_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_BNBUSD_1",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 183,
+   "t_stat": 2.864361865949619,
+   "exp_r": 0.2117397219021089,
+   "source": "backfill_coverage:bond:ext_lead_BNBUSD_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_IBM_1",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 353,
+   "t_stat": 2.8325622507975567,
+   "exp_r": 0.15076207645118658,
+   "source": "backfill_coverage:bond:ext_lead_IBM_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Adobe_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 334,
+   "t_stat": 2.8308172539187804,
+   "exp_r": 0.15489542855642138,
+   "source": "backfill_coverage:bond:ext_lead_Adobe_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AlibabaGroup_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 480,
+   "t_stat": 2.8301263856749608,
+   "exp_r": 0.12917700516872846,
+   "source": "backfill_coverage:bond:ext_lead_AlibabaGroup_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USCOCOA_1",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 236,
+   "t_stat": 2.8129161484563263,
+   "exp_r": 0.1831052450239513,
+   "source": "backfill_coverage:bond:ext_lead_USCOCOA_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_AIR__ext_resid_AUDUSD",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 345,
+   "t_stat": 2.809137142906554,
+   "exp_r": 0.15123885981402713,
+   "source": "backfill_coverage:bond:x_ext_resid_AIR__ext_resid_AUDUSD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Coca-Cola_3_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 367,
+   "t_stat": 2.803827281047971,
+   "exp_r": 0.14635859271660817,
+   "source": "backfill_coverage:bond:ext_lead_Coca-Cola_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Pfizer_1",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 400,
+   "t_stat": 2.7746105362360285,
+   "exp_r": 0.13873052681180142,
+   "source": "backfill_coverage:bond:ext_lead_Pfizer_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_McDonalds_1_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 201,
+   "t_stat": 2.765080362953723,
+   "exp_r": 0.19503373115061098,
+   "source": "backfill_coverage:bond:ext_lead_McDonalds_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURCHF_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 394,
+   "t_stat": 2.739173571927432,
+   "exp_r": 0.13799757094479664,
+   "source": "backfill_coverage:bond:ext_lead_EURCHF_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AMD_6",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 380,
+   "t_stat": 2.726151854197093,
+   "exp_r": 0.13984863934515104,
+   "source": "backfill_coverage:bond:ext_lead_AMD_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_AAL__ext_resid_AUDNZD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 410,
+   "t_stat": 2.7254362720530865,
+   "exp_r": 0.13459970348445782,
+   "source": "backfill_coverage:bond:x_ext_resid_AAL__ext_resid_AUDNZD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURNOK_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 242,
+   "t_stat": 2.725324127569568,
+   "exp_r": 0.17519047013961392,
+   "source": "backfill_coverage:bond:ext_lead_EURNOK_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_COTTON_6",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 570,
+   "t_stat": 2.72487315069223,
+   "exp_r": 0.11413237687665463,
+   "source": "backfill_coverage:bond:ext_lead_COTTON_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UST10Y_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 258,
+   "t_stat": 2.7184272917927816,
+   "exp_r": 0.2931355536259283,
+   "source": "backfill_coverage:bond:ext_lead_UST10Y_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Travelers_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 448,
+   "t_stat": 2.716821149599355,
+   "exp_r": 0.1283577342585804,
+   "source": "backfill_coverage:bond:ext_lead_Travelers_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UKCOCOA_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 248,
+   "t_stat": 2.7118559687293633,
+   "exp_r": 0.17220302621742686,
+   "source": "backfill_coverage:bond:ext_lead_UKCOCOA_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_xsection_breadth",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 418,
+   "t_stat": 2.7118253990902796,
+   "exp_r": 0.13263971594802626,
+   "source": "backfill_coverage:bond:ext_xsection_breadth",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-sectional dispersion/breadth identifies common-flow versus idiosyncratic states"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_AUDNZD__ext_resid_AVAXUSD",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 539,
+   "t_stat": 2.711394468158501,
+   "exp_r": 0.2860710751874955,
+   "source": "backfill_coverage:bond:x_ext_resid_AUDNZD__ext_resid_AVAXUSD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_WaltDisney_6_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 465,
+   "t_stat": 2.7090532440551485,
+   "exp_r": 0.12562933599536363,
+   "source": "backfill_coverage:bond:ext_lead_WaltDisney_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Ford_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 468,
+   "t_stat": 2.7082604533939816,
+   "exp_r": 0.1251893837438891,
+   "source": "backfill_coverage:bond:ext_lead_Ford_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_ALGN",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 656,
+   "t_stat": 2.694540125585457,
+   "exp_r": 0.10520411699311945,
+   "source": "backfill_coverage:bond:ext_residz_ALGN",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AMD_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 398,
+   "t_stat": 2.6797455701129635,
+   "exp_r": 0.1343235080895281,
+   "source": "backfill_coverage:bond:ext_lead_AMD_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AALB_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 362,
+   "t_stat": 2.6659302333886075,
+   "exp_r": 0.14011818225360223,
+   "source": "backfill_coverage:bond:ext_lead_AALB_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_EURNOK",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 352,
+   "t_stat": 2.661189215254588,
+   "exp_r": 0.14184186176252572,
+   "source": "backfill_coverage:bond:ext_residz_EURNOK",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDX_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 278,
+   "t_stat": 2.656717235051003,
+   "exp_r": 0.15933931112066052,
+   "source": "backfill_coverage:bond:ext_lead_USDX_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AGNC_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 412,
+   "t_stat": 2.640384814665715,
+   "exp_r": 0.13008242317552648,
+   "source": "backfill_coverage:bond:ext_residz_AGNC_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Medtronic_1",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 423,
+   "t_stat": 2.639650834973854,
+   "exp_r": 0.12834421553362382,
+   "source": "backfill_coverage:bond:ext_lead_Medtronic_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Target_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 378,
+   "t_stat": 2.6370137870770876,
+   "exp_r": 0.1356333537474057,
+   "source": "backfill_coverage:bond:ext_lead_Target_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_Lyft_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 466,
+   "t_stat": 2.63178015967048,
+   "exp_r": 0.2111627346054776,
+   "source": "backfill_coverage:bond:ext_residz_Lyft_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDDKK_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 376,
+   "t_stat": 2.6293283247631742,
+   "exp_r": 0.13559725487753893,
+   "source": "backfill_coverage:bond:ext_lead_USDDKK_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_EURNOK",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 620,
+   "t_stat": 2.6267246999558376,
+   "exp_r": 0.3654343235470438,
+   "source": "backfill_coverage:bond:ext_resid_EURNOK",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_COFROB_6",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 209,
+   "t_stat": 2.620624323694395,
+   "exp_r": 0.18127237490586628,
+   "source": "backfill_coverage:bond:ext_lead_COFROB_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_USDNOK",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 583,
+   "t_stat": 2.618823508529635,
+   "exp_r": 0.26567309712010234,
+   "source": "backfill_coverage:bond:ext_resid_USDNOK",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AAPL.24H_3_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 391,
+   "t_stat": 2.608657047642847,
+   "exp_r": 0.1319254574477756,
+   "source": "backfill_coverage:bond:ext_lead_AAPL.24H_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_EURJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 474,
+   "t_stat": 2.602037599888486,
+   "exp_r": 0.1195155452279133,
+   "source": "backfill_coverage:bond:ext_residz_EURJPY",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Cisco_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 427,
+   "t_stat": 2.598287598178718,
+   "exp_r": 0.12573994987657386,
+   "source": "backfill_coverage:bond:ext_lead_Cisco_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_BlackRock_24",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 245,
+   "t_stat": 2.5972734582432007,
+   "exp_r": 0.287405624266356,
+   "source": "backfill_coverage:bond:ext_lead_BlackRock_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Honeywell_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 451,
+   "t_stat": 2.596695467384827,
+   "exp_r": 0.1222736140668853,
+   "source": "backfill_coverage:bond:ext_lead_Honeywell_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_OJ_6",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 437,
+   "t_stat": 2.5928224301319487,
+   "exp_r": 0.12403151731107782,
+   "source": "backfill_coverage:bond:ext_lead_OJ_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Salesforce_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 285,
+   "t_stat": 2.585652663193431,
+   "exp_r": 0.1531608453317437,
+   "source": "backfill_coverage:bond:ext_lead_Salesforce_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_USCOCOA_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 629,
+   "t_stat": 2.5796001017523507,
+   "exp_r": 0.1781507643565703,
+   "source": "backfill_coverage:bond:ext_resid_USCOCOA_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GoldmanSachs_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 271,
+   "t_stat": 2.578631962893233,
+   "exp_r": 0.2713097139547594,
+   "source": "backfill_coverage:bond:ext_lead_GoldmanSachs_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_USDZAR",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 48,
+    "side": -1
+   },
+   "n": 897,
+   "t_stat": 2.5784961222283433,
+   "exp_r": 0.5964731238006795,
+   "source": "backfill_coverage:bond:ext_resid_USDZAR",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Booking_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 541,
+   "t_stat": 2.5778469112329816,
+   "exp_r": 0.11083029522497503,
+   "source": "backfill_coverage:bond:ext_lead_Booking_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 767,
+   "t_stat": 3.4865517814804,
+   "exp_r": 0.30837137896686445,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_IBM_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 326,
+   "t_stat": 3.3308186586985724,
+   "exp_r": 0.1844769835938155,
+   "source": "backfill_coverage:bond:ext_lead_IBM_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_COTTON_24_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 694,
+   "t_stat": 3.211851019501072,
+   "exp_r": 0.12192019742857688,
+   "source": "backfill_coverage:bond:ext_lead_COTTON_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURCZK_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 481,
+   "t_stat": 3.193324562179319,
+   "exp_r": 0.1456030670627601,
+   "source": "backfill_coverage:bond:ext_lead_EURCZK_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_USDZAR",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 911,
+   "t_stat": 3.1853457198746886,
+   "exp_r": 0.10553521194662517,
+   "source": "backfill_coverage:bond:ext_residz_USDZAR",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EUSTX50_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 425,
+   "t_stat": 3.166414212537853,
+   "exp_r": 0.15359365003235925,
+   "source": "backfill_coverage:bond:ext_lead_EUSTX50_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NOKSEK_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 679,
+   "t_stat": 3.1524599468557177,
+   "exp_r": 0.12098030923735385,
+   "source": "backfill_coverage:bond:ext_lead_NOKSEK_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPHUF_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 782,
+   "t_stat": 3.1483486646748866,
+   "exp_r": 0.1125847183960475,
+   "source": "backfill_coverage:bond:ext_lead_GBPHUF_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_PayPal_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 865,
+   "t_stat": 3.0969913010627357,
+   "exp_r": 0.10530086330941911,
+   "source": "backfill_coverage:bond:ext_lead_PayPal_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Atlassian_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 737,
+   "t_stat": 3.069438341925127,
+   "exp_r": 0.11306421450186067,
+   "source": "backfill_coverage:bond:ext_lead_Atlassian_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_NAS100",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 729,
+   "t_stat": 3.066021482683651,
+   "exp_r": 0.1135563512105056,
+   "source": "backfill_coverage:bond:ext_residz_NAS100",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_SGDJPY",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1023,
+   "t_stat": 3.0233322617532856,
+   "exp_r": 0.0945252993849297,
+   "source": "backfill_coverage:bond:ext_residz_SGDJPY",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ABBV.24H_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1159,
+   "t_stat": 3.0126419589391165,
+   "exp_r": 0.08849236510726939,
+   "source": "backfill_coverage:bond:ext_lead_ABBV.24H_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "path_efficiency_24",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 367,
+   "t_stat": 3.0066463598844466,
+   "exp_r": 0.15694566245347527,
+   "source": "backfill_coverage:bond:path_efficiency_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a measurable market-state transition changes continuation versus absorption odds"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_BNBUSD_3_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 654,
+   "t_stat": 2.9250713316741503,
+   "exp_r": 0.11437934026377905,
+   "source": "backfill_coverage:bond:ext_lead_BNBUSD_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ETHUSD_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 618,
+   "t_stat": 2.8733181850813927,
+   "exp_r": 0.11558180807182063,
+   "source": "backfill_coverage:bond:ext_lead_ETHUSD_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Visa_1",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 363,
+   "t_stat": 2.872029929036781,
+   "exp_r": 0.15074247751364067,
+   "source": "backfill_coverage:bond:ext_lead_Visa_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPNOK_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 607,
+   "t_stat": 2.859197333729222,
+   "exp_r": 0.11605123984202122,
+   "source": "backfill_coverage:bond:ext_lead_GBPNOK_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Procter&Gamble_1",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 592,
+   "t_stat": 2.8519761798962526,
+   "exp_r": 0.4060463992266293,
+   "source": "backfill_coverage:bond:ext_lead_Procter&Gamble_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURHUF_24_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 723,
+   "t_stat": 2.847514383190308,
+   "exp_r": 0.10590019938723826,
+   "source": "backfill_coverage:bond:ext_lead_EURHUF_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AFG_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 556,
+   "t_stat": 2.8353737780227566,
+   "exp_r": 0.4165465538622444,
+   "source": "backfill_coverage:bond:ext_residz_AFG_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NZDJPY_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 341,
+   "t_stat": 2.8308951272803906,
+   "exp_r": 0.15330156604384443,
+   "source": "backfill_coverage:bond:ext_lead_NZDJPY_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPMXN_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 191,
+   "t_stat": 2.8306342355529064,
+   "exp_r": 0.20481750497174095,
+   "source": "backfill_coverage:bond:ext_lead_GBPMXN_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_EURCZK_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 570,
+   "t_stat": 2.82125147576876,
+   "exp_r": 0.11816922068994587,
+   "source": "backfill_coverage:bond:ext_residz_EURCZK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_12",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1036,
+   "t_stat": 2.8197733442241684,
+   "exp_r": 0.08760609515384964,
+   "source": "backfill_coverage:bond:dd_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Twilio_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 596,
+   "t_stat": 2.8056332949203333,
+   "exp_r": 0.3981057037863504,
+   "source": "backfill_coverage:bond:ext_lead_Twilio_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Citigroup_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 769,
+   "t_stat": 2.7792406133997756,
+   "exp_r": 0.34717912212965324,
+   "source": "backfill_coverage:bond:ext_lead_Citigroup_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURTRY_24",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 441,
+   "t_stat": 2.778403632226074,
+   "exp_r": 0.13230493486790829,
+   "source": "backfill_coverage:bond:ext_lead_EURTRY_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDCZK_3_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 494,
+   "t_stat": 2.7683230929730316,
+   "exp_r": 0.12455274436040355,
+   "source": "backfill_coverage:bond:ext_lead_USDCZK_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_TexasInstruments_3_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 854,
+   "t_stat": 2.7401795727926204,
+   "exp_r": 0.3248184668543357,
+   "source": "backfill_coverage:bond:ext_lead_TexasInstruments_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_xsection_dispersion",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 514,
+   "t_stat": 2.7401224925009235,
+   "exp_r": 0.12086162195379672,
+   "source": "backfill_coverage:bond:ext_xsection_dispersion",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-sectional dispersion/breadth identifies common-flow versus idiosyncratic states"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Pfizer_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 638,
+   "t_stat": 2.7359042530854745,
+   "exp_r": 0.1083154866245518,
+   "source": "backfill_coverage:bond:ext_lead_Pfizer_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 772,
+   "t_stat": 2.7304552792452697,
+   "exp_r": 0.09827123583578351,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURPLN_6",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 943,
+   "t_stat": 2.729173781154367,
+   "exp_r": 0.08887412624457951,
+   "source": "backfill_coverage:bond:ext_lead_EURPLN_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AUDCHF_24_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 654,
+   "t_stat": 2.7138016745534768,
+   "exp_r": 0.10611804292803623,
+   "source": "backfill_coverage:bond:ext_lead_AUDCHF_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_XBRUSD_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 803,
+   "t_stat": 2.7088382319411393,
+   "exp_r": 0.09559282531960912,
+   "source": "backfill_coverage:bond:ext_lead_XBRUSD_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UnitedParcelService_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 599,
+   "t_stat": 2.7086149198880256,
+   "exp_r": 0.11067100535420382,
+   "source": "backfill_coverage:bond:ext_lead_UnitedParcelService_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_TexasInstruments_3_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 865,
+   "t_stat": 2.6906078424385447,
+   "exp_r": 0.09148341118641488,
+   "source": "backfill_coverage:bond:ext_lead_TexasInstruments_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Netflix_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 512,
+   "t_stat": 2.6834391815230925,
+   "exp_r": 0.11859237763479108,
+   "source": "backfill_coverage:bond:ext_lead_Netflix_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NIO_1",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 938,
+   "t_stat": 2.6822525378757613,
+   "exp_r": 0.30338134243458514,
+   "source": "backfill_coverage:bond:ext_lead_NIO_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ALIBABA_24_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 508,
+   "t_stat": 2.6645573582097604,
+   "exp_r": 0.11822061582600173,
+   "source": "backfill_coverage:bond:ext_lead_ALIBABA_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_XCUUSD_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 404,
+   "t_stat": 2.6645223569347385,
+   "exp_r": 0.132564941964802,
+   "source": "backfill_coverage:bond:ext_lead_XCUUSD_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_IBM_1",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 931,
+   "t_stat": 2.6424677739779483,
+   "exp_r": 0.08660338337092295,
+   "source": "backfill_coverage:bond:ext_lead_IBM_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDTHB_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 450,
+   "t_stat": 2.637426233246177,
+   "exp_r": 0.12432946496051098,
+   "source": "backfill_coverage:bond:ext_lead_USDTHB_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_XCUUSD_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1067,
+   "t_stat": 2.635078777123454,
+   "exp_r": 0.08066987676621042,
+   "source": "backfill_coverage:bond:ext_resid_XCUUSD_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_RobinhoodMarkets_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1110,
+   "t_stat": 2.61775298225617,
+   "exp_r": 0.07857188523670293,
+   "source": "backfill_coverage:bond:ext_resid_RobinhoodMarkets_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_COFROB_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 771,
+   "t_stat": 2.617629699294654,
+   "exp_r": 0.09427163089983892,
+   "source": "backfill_coverage:bond:ext_residz_COFROB_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURHUF_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 432,
+   "t_stat": 2.60454614874305,
+   "exp_r": 0.12531128500780025,
+   "source": "backfill_coverage:bond:ext_lead_EURHUF_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_eBay_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 623,
+   "t_stat": 2.600880309824723,
+   "exp_r": 0.36096655655016624,
+   "source": "backfill_coverage:bond:ext_lead_eBay_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CA60_12_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 460,
+   "t_stat": 2.597542550821829,
+   "exp_r": 0.12111104591250825,
+   "source": "backfill_coverage:bond:ext_lead_CA60_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPNZD_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 487,
+   "t_stat": 2.591778117113371,
+   "exp_r": 0.11744467707477689,
+   "source": "backfill_coverage:bond:ext_lead_GBPNZD_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 24,
+    "side": 1
+   },
+   "n": 760,
+   "t_stat": 2.587217088276286,
+   "exp_r": 0.45976054162788144,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_WHEAT_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 438,
+   "t_stat": 2.5844102457230824,
+   "exp_r": 0.12348789819432944,
+   "source": "backfill_coverage:bond:ext_lead_WHEAT_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_MXNJPY_12_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 423,
+   "t_stat": 2.5842584305790814,
+   "exp_r": 0.12565094466826002,
+   "source": "backfill_coverage:bond:ext_lead_MXNJPY_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURNZD_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 395,
+   "t_stat": 2.5784528643710933,
+   "exp_r": 0.12973604335837952,
+   "source": "backfill_coverage:bond:ext_lead_EURNZD_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_LTCUSD_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 568,
+   "t_stat": 2.57457050095208,
+   "exp_r": 0.10802657850097769,
+   "source": "backfill_coverage:bond:ext_residz_LTCUSD_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURDKK_1_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 869,
+   "t_stat": 2.574416693120817,
+   "exp_r": 0.0873311048568096,
+   "source": "backfill_coverage:bond:ext_lead_EURDKK_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Citigroup_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 769,
+   "t_stat": 2.5716865973845584,
+   "exp_r": 0.1606258722198907,
+   "source": "backfill_coverage:bond:ext_lead_Citigroup_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_XTIUSD_1",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 646,
+   "t_stat": 2.569757351973457,
+   "exp_r": 0.1011057507254402,
+   "source": "backfill_coverage:bond:ext_lead_XTIUSD_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFHUF_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 464,
+   "t_stat": 2.5668106897521152,
+   "exp_r": 0.11916119476749772,
+   "source": "backfill_coverage:bond:ext_lead_CHFHUF_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_BlackRock_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 489,
+   "t_stat": 2.56613556139064,
+   "exp_r": 0.11604466137838763,
+   "source": "backfill_coverage:bond:ext_lead_BlackRock_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Pinterest_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 514,
+   "t_stat": 2.5645048580536587,
+   "exp_r": 0.11311546016684214,
+   "source": "backfill_coverage:bond:ext_lead_Pinterest_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFPLN_1_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 457,
+   "t_stat": 2.5600257204283348,
+   "exp_r": 0.11975295220048732,
+   "source": "backfill_coverage:bond:ext_lead_CHFPLN_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPSEK_6",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 503,
+   "t_stat": 2.5590593478466985,
+   "exp_r": 0.11410281668282085,
+   "source": "backfill_coverage:bond:ext_lead_GBPSEK_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_AGNC_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 953,
+   "t_stat": 2.5531941248606422,
+   "exp_r": 0.20258767080024906,
+   "source": "backfill_coverage:bond:ext_resid_AGNC_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_PhilipMorrisInternational_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 493,
+   "t_stat": 2.5522780034597807,
+   "exp_r": 0.11494882013926466,
+   "source": "backfill_coverage:bond:ext_lead_PhilipMorrisInternational_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CA60_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 630,
+   "t_stat": 2.5492071952804056,
+   "exp_r": 0.10156284569734099,
+   "source": "backfill_coverage:bond:ext_lead_CA60_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NIO_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 785,
+   "t_stat": 2.540530438896044,
+   "exp_r": 0.3141088677583669,
+   "source": "backfill_coverage:bond:ext_lead_NIO_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AAPL.24H_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 481,
+   "t_stat": 2.538915031021083,
+   "exp_r": 0.11576456083002239,
+   "source": "backfill_coverage:bond:ext_lead_AAPL.24H_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_GBPDKK_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 491,
+   "t_stat": 2.5367863137617523,
+   "exp_r": 0.11448356370160136,
+   "source": "backfill_coverage:bond:ext_resid_GBPDKK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPMXN_3",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 601,
+   "t_stat": 2.536394202958311,
+   "exp_r": 0.10346167755967316,
+   "source": "backfill_coverage:bond:ext_lead_GBPMXN_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_XCUUSD_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 460,
+   "t_stat": 2.532767986420914,
+   "exp_r": 0.20453946690019822,
+   "source": "backfill_coverage:bond:ext_resid_XCUUSD_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AKZA_24_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 427,
+   "t_stat": 2.5292534159862177,
+   "exp_r": 0.1223991516467167,
+   "source": "backfill_coverage:bond:ext_lead_AKZA_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_USDCAD_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 595,
+   "t_stat": 2.5247310903101834,
+   "exp_r": 0.25353170113311385,
+   "source": "backfill_coverage:bond:ext_resid_USDCAD_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Twilio_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 596,
+   "t_stat": 2.523684131475408,
+   "exp_r": 0.10337412989060127,
+   "source": "backfill_coverage:bond:ext_lead_Twilio_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UnitedParcelService_24",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 476,
+   "t_stat": 2.520968819237234,
+   "exp_r": 0.11554841638248785,
+   "source": "backfill_coverage:bond:ext_lead_UnitedParcelService_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ADP_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 458,
+   "t_stat": 2.5177082052722652,
+   "exp_r": 0.11764477847111662,
+   "source": "backfill_coverage:bond:ext_lead_ADP_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_GBPDKK_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 395,
+   "t_stat": 2.5157029567930373,
+   "exp_r": 0.2192408311114971,
+   "source": "backfill_coverage:bond:ext_residz_GBPDKK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ALB_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 671,
+   "t_stat": 2.5153480332381433,
+   "exp_r": 0.09710393381177357,
+   "source": "backfill_coverage:bond:ext_lead_ALB_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST05Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Comcast_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 612,
+   "t_stat": 2.5136883788096824,
+   "exp_r": 0.35198677742998535,
+   "source": "backfill_coverage:bond:ext_lead_Comcast_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NOKSEK_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 680,
+   "t_stat": 3.657810856547262,
+   "exp_r": 0.14027064313987805,
+   "source": "backfill_coverage:bond:ext_lead_NOKSEK_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_GBPZAR",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 564,
+   "t_stat": 3.5349796175078287,
+   "exp_r": 0.14884949379076032,
+   "source": "backfill_coverage:bond:ext_residz_GBPZAR",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_USDZAR",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1036,
+   "t_stat": 3.407055658570333,
+   "exp_r": 0.10585206886594563,
+   "source": "backfill_coverage:bond:ext_residz_USDZAR",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_CHFDKK_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 711,
+   "t_stat": 3.347063093397476,
+   "exp_r": 0.12552467300058434,
+   "source": "backfill_coverage:bond:ext_residz_CHFDKK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 767,
+   "t_stat": 3.302603063142098,
+   "exp_r": 0.29210186011604045,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_XCUUSD_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1155,
+   "t_stat": 3.265344515524291,
+   "exp_r": 0.1664173661413209,
+   "source": "backfill_coverage:bond:ext_resid_XCUUSD_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURCZK_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 481,
+   "t_stat": 3.254228770821059,
+   "exp_r": 0.14838005994356385,
+   "source": "backfill_coverage:bond:ext_lead_EURCZK_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_ADAUSD__ext_resid_AUDNZD",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 487,
+   "t_stat": 3.239415992866203,
+   "exp_r": 0.1467919505458179,
+   "source": "backfill_coverage:bond:x_ext_resid_ADAUSD__ext_resid_AUDNZD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_GBPDKK_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 355,
+   "t_stat": 3.1633290152486886,
+   "exp_r": 0.1678920717932387,
+   "source": "backfill_coverage:bond:ext_residz_GBPDKK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_GBPNOK_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 418,
+   "t_stat": 3.1494249143094017,
+   "exp_r": 0.15404340787344661,
+   "source": "backfill_coverage:bond:ext_resid_GBPNOK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Netflix_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 512,
+   "t_stat": 3.1157305752743345,
+   "exp_r": 0.13769713863292152,
+   "source": "backfill_coverage:bond:ext_lead_Netflix_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_RobinhoodMarkets_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1097,
+   "t_stat": 3.088408340575709,
+   "exp_r": 0.09324625593690737,
+   "source": "backfill_coverage:bond:ext_resid_RobinhoodMarkets_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_eBay_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 624,
+   "t_stat": 3.087745276090668,
+   "exp_r": 0.42819322763525447,
+   "source": "backfill_coverage:bond:ext_lead_eBay_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPHUF_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 784,
+   "t_stat": 3.080622465131557,
+   "exp_r": 0.11002223089755561,
+   "source": "backfill_coverage:bond:ext_lead_GBPHUF_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ABBV.24H_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1160,
+   "t_stat": 3.056112096087844,
+   "exp_r": 0.08973054079631221,
+   "source": "backfill_coverage:bond:ext_lead_ABBV.24H_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_GBPDKK_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 466,
+   "t_stat": 3.050223586307538,
+   "exp_r": 0.14129887909237432,
+   "source": "backfill_coverage:bond:ext_resid_GBPDKK_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_IBM_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 325,
+   "t_stat": 3.0293797222986822,
+   "exp_r": 0.16803975263998092,
+   "source": "backfill_coverage:bond:ext_lead_IBM_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UnitedParcelService_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 595,
+   "t_stat": 2.9789932390391276,
+   "exp_r": 0.12212681601647007,
+   "source": "backfill_coverage:bond:ext_lead_UnitedParcelService_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURHUF_24_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 724,
+   "t_stat": 2.9504514959686126,
+   "exp_r": 0.10965266628698322,
+   "source": "backfill_coverage:bond:ext_lead_EURHUF_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Citigroup_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 769,
+   "t_stat": 2.949999882746652,
+   "exp_r": 0.3685101479291175,
+   "source": "backfill_coverage:bond:ext_lead_Citigroup_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_BNBUSD_3_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 658,
+   "t_stat": 2.94510630607151,
+   "exp_r": 0.11481219734709792,
+   "source": "backfill_coverage:bond:ext_lead_BNBUSD_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ETHUSD_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 619,
+   "t_stat": 2.9229114081387713,
+   "exp_r": 0.11748172854760332,
+   "source": "backfill_coverage:bond:ext_lead_ETHUSD_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Twilio_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 596,
+   "t_stat": 2.9206129541192287,
+   "exp_r": 0.4144207575852079,
+   "source": "backfill_coverage:bond:ext_lead_Twilio_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURPLN_6",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 943,
+   "t_stat": 2.9205436317657707,
+   "exp_r": 0.09510598600378123,
+   "source": "backfill_coverage:bond:ext_lead_EURPLN_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NZDJPY_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 339,
+   "t_stat": 2.892525954440844,
+   "exp_r": 0.15710044507891713,
+   "source": "backfill_coverage:bond:ext_lead_NZDJPY_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_XTIUSD_1",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 644,
+   "t_stat": 2.878758513546453,
+   "exp_r": 0.11343897707876822,
+   "source": "backfill_coverage:bond:ext_lead_XTIUSD_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EUSTX50_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 425,
+   "t_stat": 2.86767030502222,
+   "exp_r": 0.13910244196533914,
+   "source": "backfill_coverage:bond:ext_lead_EUSTX50_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_NAS100_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 706,
+   "t_stat": 2.8580459699623457,
+   "exp_r": 0.10756397902718866,
+   "source": "backfill_coverage:bond:ext_resid_NAS100_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURAUD_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 619,
+   "t_stat": 2.8359417507472924,
+   "exp_r": 0.11398612288090612,
+   "source": "backfill_coverage:bond:ext_lead_EURAUD_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURTRY_24",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 440,
+   "t_stat": 2.83200525185638,
+   "exp_r": 0.135010553009605,
+   "source": "backfill_coverage:bond:ext_lead_EURTRY_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_Broadcom",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 858,
+   "t_stat": 2.8162499116670947,
+   "exp_r": 0.09614518671708709,
+   "source": "backfill_coverage:bond:ext_residz_Broadcom",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPMXN_3",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 601,
+   "t_stat": 2.8120476669006296,
+   "exp_r": 0.11470581688602213,
+   "source": "backfill_coverage:bond:ext_lead_GBPMXN_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_PayPal_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 864,
+   "t_stat": 2.8038774692804744,
+   "exp_r": 0.0953898486253247,
+   "source": "backfill_coverage:bond:ext_lead_PayPal_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NZDHUF_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 649,
+   "t_stat": 2.763802419158607,
+   "exp_r": 0.10848873474104036,
+   "source": "backfill_coverage:bond:ext_lead_NZDHUF_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ADPR_3_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 279,
+   "t_stat": 2.7478853257420717,
+   "exp_r": 0.16451159128828247,
+   "source": "backfill_coverage:bond:ext_lead_ADPR_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ALAB_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 897,
+   "t_stat": 2.7406431588527664,
+   "exp_r": 0.09150741162035177,
+   "source": "backfill_coverage:bond:ext_lead_ALAB_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EOSUSD_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 382,
+   "t_stat": 2.7392764264731344,
+   "exp_r": 0.14015357452421512,
+   "source": "backfill_coverage:bond:ext_lead_EOSUSD_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CORN_6",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 393,
+   "t_stat": 2.7330209569478012,
+   "exp_r": 0.13786267045921918,
+   "source": "backfill_coverage:bond:ext_lead_CORN_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_COTTON_24_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 697,
+   "t_stat": 2.7319239577643586,
+   "exp_r": 0.10347899870107119,
+   "source": "backfill_coverage:bond:ext_lead_COTTON_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_TexasInstruments_3_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 853,
+   "t_stat": 2.7299637873600653,
+   "exp_r": 0.3237971289728014,
+   "source": "backfill_coverage:bond:ext_lead_TexasInstruments_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_GBPPLN",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 520,
+   "t_stat": 2.712989211557632,
+   "exp_r": 0.2060663232763269,
+   "source": "backfill_coverage:bond:ext_residz_GBPPLN",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFDKK_24_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 729,
+   "t_stat": 2.709689728179726,
+   "exp_r": 0.10035887882147133,
+   "source": "backfill_coverage:bond:ext_lead_CHFDKK_24_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURHUF_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 432,
+   "t_stat": 2.693813736188625,
+   "exp_r": 0.12960617381126785,
+   "source": "backfill_coverage:bond:ext_lead_EURHUF_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Atlassian_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 737,
+   "t_stat": 2.692697124989974,
+   "exp_r": 0.09918677341388221,
+   "source": "backfill_coverage:bond:ext_lead_Atlassian_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDZAR_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 812,
+   "t_stat": 2.691597420807709,
+   "exp_r": 0.09445655213381583,
+   "source": "backfill_coverage:bond:ext_lead_USDZAR_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_USDCAD",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 24,
+    "side": -1
+   },
+   "n": 753,
+   "t_stat": 2.691076416491769,
+   "exp_r": 0.480434473997776,
+   "source": "backfill_coverage:bond:ext_residz_USDCAD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPNOK_6_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 612,
+   "t_stat": 2.682749736303147,
+   "exp_r": 0.10844373068505687,
+   "source": "backfill_coverage:bond:ext_lead_GBPNOK_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_LTCUSD_6",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 352,
+   "t_stat": 2.6802788481173887,
+   "exp_r": 0.1428593426128544,
+   "source": "backfill_coverage:bond:ext_lead_LTCUSD_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Citigroup_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 769,
+   "t_stat": 2.6760762966042795,
+   "exp_r": 0.16714598493696622,
+   "source": "backfill_coverage:bond:ext_lead_Citigroup_24",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CA60_12_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 456,
+   "t_stat": 2.6707469559437085,
+   "exp_r": 0.12506918526309382,
+   "source": "backfill_coverage:bond:ext_lead_CA60_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Comcast_3",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 698,
+   "t_stat": 2.6625658219633057,
+   "exp_r": 0.10077960261946013,
+   "source": "backfill_coverage:bond:ext_lead_Comcast_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPNZD_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 487,
+   "t_stat": 2.661369468887351,
+   "exp_r": 0.12059816223707744,
+   "source": "backfill_coverage:bond:ext_lead_GBPNZD_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDCZK_3_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 493,
+   "t_stat": 2.6524033448808586,
+   "exp_r": 0.11945823872407099,
+   "source": "backfill_coverage:bond:ext_lead_USDCZK_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AUS200_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 671,
+   "t_stat": 2.648054425612246,
+   "exp_r": 0.10222700726769804,
+   "source": "backfill_coverage:bond:ext_residz_AUS200_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NIO_1",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 938,
+   "t_stat": 2.6319963480383155,
+   "exp_r": 0.29769701923114567,
+   "source": "backfill_coverage:bond:ext_lead_NIO_1",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_XCUUSD_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 404,
+   "t_stat": 2.6208651669154324,
+   "exp_r": 0.1303929155803383,
+   "source": "backfill_coverage:bond:ext_lead_XCUUSD_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CharlesSchwab_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 897,
+   "t_stat": 2.619093395334318,
+   "exp_r": 0.08744898314282058,
+   "source": "backfill_coverage:bond:ext_lead_CharlesSchwab_3",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_SOYBEAN_3_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 678,
+   "t_stat": 2.615381168615823,
+   "exp_r": 0.10044310866551635,
+   "source": "backfill_coverage:bond:ext_lead_SOYBEAN_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFDKK_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 679,
+   "t_stat": 2.613352758923011,
+   "exp_r": 0.10029127419561405,
+   "source": "backfill_coverage:bond:ext_lead_CHFDKK_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Comcast_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 615,
+   "t_stat": 2.604702445551122,
+   "exp_r": 0.36384061988760275,
+   "source": "backfill_coverage:bond:ext_lead_Comcast_1_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AFG_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 556,
+   "t_stat": 2.5971852209090187,
+   "exp_r": 0.38155412238665376,
+   "source": "backfill_coverage:bond:ext_residz_AFG_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDINR_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 398,
+   "t_stat": 2.596119808500523,
+   "exp_r": 0.13013172742507936,
+   "source": "backfill_coverage:bond:ext_lead_USDINR_6_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_USDTRY",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 817,
+   "t_stat": 2.5945082771203123,
+   "exp_r": 0.3144377321403615,
+   "source": "backfill_coverage:bond:ext_residz_USDTRY",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_IBM_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 325,
+   "t_stat": 2.5911938979122606,
+   "exp_r": 0.3520739209946003,
+   "source": "backfill_coverage:bond:ext_lead_IBM_3_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_NAS100",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 594,
+   "t_stat": 2.586339185532628,
+   "exp_r": 0.10611878217516142,
+   "source": "backfill_coverage:bond:ext_residz_NAS100",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HomeDepot_6",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 772,
+   "t_stat": 2.5834629039942802,
+   "exp_r": 0.09298086448850228,
+   "source": "backfill_coverage:bond:ext_lead_HomeDepot_6",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Pfizer_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 633,
+   "t_stat": 2.579479908161487,
+   "exp_r": 0.10252512192898955,
+   "source": "backfill_coverage:bond:ext_lead_Pfizer_12_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Twilio_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 596,
+   "t_stat": 2.578140250336159,
+   "exp_r": 0.10560473943251655,
+   "source": "backfill_coverage:bond:ext_lead_Twilio_12",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_AUDJPY__ext_resid_AUDNZD",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 576,
+   "t_stat": 2.5742681181131433,
+   "exp_r": 0.10726117158804765,
+   "source": "backfill_coverage:bond:x_ext_resid_AUDJPY__ext_resid_AUDNZD",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_AGNC_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1020,
+   "t_stat": 2.568922970241275,
+   "exp_r": 0.08043609829458495,
+   "source": "backfill_coverage:bond:ext_resid_AGNC_z",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "discovered",
+   "params": {
+    "feature": "x_ext_resid_ALGUSD__ext_resid_CHFNOK",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 465,
+   "t_stat": 2.562378921272347,
+   "exp_r": 0.20581522775382838,
+   "source": "backfill_coverage:bond:x_ext_resid_ALGUSD__ext_resid_CHFNOK",
+   "producer": "backfill_coverage",
+   "coverage_class": "bond",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "conditional interaction: cross-instrument pricing residuals can converge when common risk is re-arbitraged; jointly with cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  }
+ ]
+}
