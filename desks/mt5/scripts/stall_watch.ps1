@@ -107,7 +107,8 @@ foreach ($tn in $researchTasks) {
 # reported by name; re-registration needs its exact action, which lives in ops/, so this
 # reports rather than guesses (a wrong re-registration is worse than a missing task).
 $requiredTasks = @('MT5-Gauntlet','MT5-Shadow','MT5-Hourly','MT5-DeskState','MT5-MoatRecorder',
-                   'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync')
+                   'MT5-MoatSilver','MT5-StallWatch','MT5-Universe','MT5-ShadowSync',
+                   'MT5-TerminalBoot')
 $present = (schtasks /Query /FO CSV 2>$null | ConvertFrom-Csv | ForEach-Object { $_.TaskName -replace '^\\','' })
 foreach ($rt in $requiredTasks) {
   if ($present -notcontains $rt) {
