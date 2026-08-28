@@ -37,6 +37,22 @@ def _older_than(stamp: str | None, now: datetime, hours: float) -> bool:
     return age < -timedelta(minutes=5) or age > timedelta(hours=hours)
 
 
+def _newest_stamp(*stamps: str | None) -> str | None:
+    """Return the newest valid UTC stamp without letting malformed evidence look fresh."""
+    parsed: list[tuple[datetime, str]] = []
+    for stamp in stamps:
+        if not stamp:
+            continue
+        try:
+            value = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        parsed.append((value.astimezone(UTC), stamp))
+    return max(parsed, default=(None, None), key=lambda pair: pair[0])[1]
+
+
 def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
     now = (now or datetime.now(tz=UTC)).astimezone(UTC)
     desk = root / "desks" / "mt5"
@@ -71,8 +87,15 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
     survivor_count = len(survivor_rows) if isinstance(survivor_rows, (dict, list)) else 0
     h1 = sorted(universe_dir.glob("*_H1.parquet"))
     newest_h1 = max((_mtime(path) for path in h1), default=None)
+    # `research_loop.py` only consumes the legacy literal QUEUED state.  The active
+    # same-day path publishes a canonical survivor ledger instead, so treating the
+    # old loop's demo file as the sole liveness source made a healthy gauntlet look
+    # dead whenever no legacy rows existed.  Retain its timestamp for diagnosis, but
+    # score the actual producer-to-certificate path.
     research_loop = _mtime(reports / "hypothesis_demo.jsonl")
     universal_gate = _mtime(reports / "UNIVERSAL_SURVIVORS.json")
+    external_gauntlet = _mtime(reports / "universal_gates_external.json")
+    research_pipeline = _newest_stamp(research_loop, external_gauntlet, universal_gate)
     allocation = _mtime(reports / "allocation.json")
     markout_path = reports / "markout.json"
     markout_row = _read(markout_path, {})
@@ -112,8 +135,8 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
             shadow_day = date.min
         if shadow_day < now.date() - timedelta(days=1):
             defects.append("forward shadow daily clock stale")
-    if _older_than(research_loop, now, 2):
-        defects.append("hourly research loop stale or unmeasured")
+    if _older_than(research_pipeline, now, 2):
+        defects.append("canonical research pipeline stale or unmeasured")
     if not markout_row or markout is None:
         defects.append("execution markout missing; costs remain unmeasured")
     elif _older_than(markout, now, 30):
@@ -145,6 +168,8 @@ def build(root: Path, *, now: datetime | None = None) -> dict[str, Any]:
         },
         "freshness": {
             "research_loop": research_loop,
+            "research_pipeline": research_pipeline,
+            "external_gauntlet": external_gauntlet,
             "universal_gate": universal_gate,
             "allocation": allocation,
             "markout": markout,

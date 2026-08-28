@@ -40,6 +40,7 @@ def test_build_reports_mt5_conversion_state_without_execution_authority(tmp_path
         desk / "data" / "universe" / "XAUUSD_H1.parquet",
         desk / "reports" / "hypothesis_demo.jsonl",
         desk / "reports" / "markout.json",
+        desk / "reports" / "UNIVERSAL_SURVIVORS.json",
     ):
         os.utime(path, (now.timestamp(), now.timestamp()))
 
@@ -112,3 +113,29 @@ def test_build_counts_qquant_forward_shadow_when_legacy_book_is_empty(tmp_path: 
     assert result["conversion"]["shadow_sleeves"] == 1
     assert result["conversion"]["shadow_observations"] == 3
     assert "forward shadow state missing or empty" not in result["defects"]
+
+
+def test_build_uses_canonical_gauntlet_when_legacy_research_loop_is_stale(tmp_path: Path) -> None:
+    now = datetime(2026, 8, 22, 12, tzinfo=UTC)
+    desk = tmp_path / "desks" / "mt5"
+    _write(desk / "data" / "universe" / "universe.json", {"XAUUSD": {}})
+    bars = desk / "data" / "universe" / "XAUUSD_H1.parquet"
+    bars.parent.mkdir(parents=True, exist_ok=True)
+    bars.write_bytes(b"bars")
+    _write(desk / "data" / "research_queue.json", [{"id": "a", "status": "PENDING"}])
+    _write(desk / "reports" / "UNIVERSAL_SURVIVORS.json", {"survivors": {}})
+    _write(desk / "reports" / "universal_gates_external.json", {"n_judged": 1})
+    _write(desk / "reports" / "shadow" / "shadow_state.json", {"last_run": "2026-08-22", "s": {"n": 1}})
+    _write(desk / "reports" / "markout.json", {"at": now.isoformat(), "usable": False})
+    _write(tmp_path / "data" / "intelligence" / "mt5_capability_reuse.json", {
+        "generated_at": now.isoformat(), "counts": {},
+    })
+    for path in (bars, desk / "reports" / "UNIVERSAL_SURVIVORS.json",
+                 desk / "reports" / "universal_gates_external.json"):
+        os.utime(path, (now.timestamp(), now.timestamp()))
+
+    result = build(tmp_path, now=now)
+
+    assert result["freshness"]["research_loop"] is None
+    assert result["freshness"]["research_pipeline"] is not None
+    assert "canonical research pipeline stale or unmeasured" not in result["defects"]
