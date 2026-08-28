@@ -1,28 +1,29 @@
 {
-    "free_gb":  38.6,
-    "checked_at":  "2026-08-28T08:20:52.3376869Z",
+    "free_gb":  38.5,
+    "checked_at":  "2026-08-28T08:50:50.9924369Z",
     "actions":  [
+                    "STACKED external_gauntlet: killed duplicate pid 5604 (kept oldest 3656)",
+                    "STACKED external_gauntlet: killed duplicate pid 10492 (kept oldest 3656)",
                     "FAILING MT5-Gauntlet: last result 1 twice in a row -- re-run",
-                    "RAM-LOW: 266MB free (strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box",
-                    "NO-PROGRESS check on external_gauntlet: silent for 20m but working at 0.69 core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
+                    "NO-PROGRESS check on external_gauntlet: silent for 20m but working at 0.32 core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
                 ],
-    "low_mem_strikes":  1,
+    "low_mem_strikes":  0,
     "procs":  {
                   "fail.MT5-Gauntlet":  {
                                             "cpu":  1,
-                                            "at":  "2026-08-28T10:20:19.2687361+02:00"
+                                            "at":  "2026-08-28T10:50:36.2412688+02:00"
                                         },
                   "external_gauntlet.3656":  {
-                                                 "cpu":  10062.90625,
-                                                 "at":  "2026-08-28T10:20:19.2687361+02:00"
+                                                 "cpu":  11003.90625,
+                                                 "at":  "2026-08-28T10:50:36.2412688+02:00"
                                              },
                   "edge_search.9636":  {
-                                           "cpu":  6313.109375,
-                                           "at":  "2026-08-28T10:20:19.2687361+02:00"
+                                           "cpu":  8100.796875,
+                                           "at":  "2026-08-28T10:50:36.2412688+02:00"
                                        },
                   "orthogonal_sweep.5872":  {
-                                                "cpu":  681.90625,
-                                                "at":  "2026-08-28T10:20:19.2687361+02:00"
+                                                "cpu":  2465.40625,
+                                                "at":  "2026-08-28T10:50:36.2412688+02:00"
                                             }
               }
 }
