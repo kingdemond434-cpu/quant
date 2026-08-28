@@ -1,0 +1,15 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
+    "summary": "We present a finite element framework to simulate rotating mixing devices using the Mortar Element Method as a domain decomposition strategy. The model is implemented within a matrix-free Navier-Stoke",
+    "url": "https://arxiv.org/abs/2608.27423v1",
+    "published": "2026-08-27T17:48:45Z",
+    "trading_terms": [
+      "strategy"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

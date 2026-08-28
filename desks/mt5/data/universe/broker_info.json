@@ -102,26 +102,6 @@
       "server": "FusionMarkets-Demo",
       "is_fusion": true,
       "account": 441575
-    },
-    "USDCHF": {
-      "server": "FusionMarkets-Demo",
-      "is_fusion": true,
-      "account": 441575
-    },
-    "USDJPY": {
-      "server": "FusionMarkets-Demo",
-      "is_fusion": true,
-      "account": 441575
-    },
-    "XAGUSD": {
-      "server": "FusionMarkets-Demo",
-      "is_fusion": true,
-      "account": 441575
-    },
-    "XAUUSD": {
-      "server": "FusionMarkets-Demo",
-      "is_fusion": true,
-      "account": 441575
     }
   }
 }

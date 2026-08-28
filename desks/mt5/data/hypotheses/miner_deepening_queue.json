@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T01:07:44+00:00",
+ "built_at": "2026-08-28T02:09:57+00:00",
  "tasks": [
   {
    "source": "github",
@@ -6489,6 +6489,70 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "7skooooo/mql5-systems-mirror",
+   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Confluence-Signal-Matrix",
+   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/Mt5-Forex-position-size-calculator",
+   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-volume-profile-indicator",
+   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZrakD/MT5-Risk-Management-EA",
    "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
@@ -6545,64 +6609,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aloni-zin/Equity-Ray-Tracer",
-   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
+   "title": "youcefito/mt5-quiet-automata",
+   "url": "https://github.com/youcefito/mt5-quiet-automata",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tharindu2028/Trade-Terminator-Closer",
-   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
-   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "motional-tammy18/systematic-trading-framework",
-   "url": "https://github.com/motional-tammy18/systematic-trading-framework",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aljawa831/MT5-MT4-Close-Orders-Script",
-   "url": "https://github.com/Aljawa831/MT5-MT4-Close-Orders-Script",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6625,30 +6641,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ajayprabhuraj/institutional-orderflow-mt5",
-   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
@@ -6657,24 +6649,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "jingling-gingerbeer626/decentralized-forex-broker",
-   "url": "https://github.com/jingling-gingerbeer626/decentralized-forex-broker",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
-   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Vandoriz/MT5-Economic-News-Filter",
-   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7009,6 +6985,126 @@
    "mechanism_tags": [
     "gold"
    ]
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@TradingSCapital",
+   "url": "https://my.litefinance.org/traders/TradingSCapital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@H_Trading",
+   "url": "https://my.litefinance.org/traders/H_Trading",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@SaiGon_Trading",
+   "url": "https://my.litefinance.org/traders/SaiGon_Trading",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@UnicornFxCapital",
+   "url": "https://my.litefinance.org/traders/UnicornFxCapital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@OngHoang_EU",
+   "url": "https://my.litefinance.org/traders/OngHoang_EU",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@TrustTrade",
+   "url": "https://my.litefinance.org/traders/TrustTrade",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@mikenguyen",
+   "url": "https://my.litefinance.org/traders/mikenguyen",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Fire_Phoenix",
+   "url": "https://my.litefinance.org/traders/Fire_Phoenix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Quantum 9000",
+   "url": "https://my.litefinance.org/traders/Quantum 9000",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Golden_Eye",
+   "url": "https://my.litefinance.org/traders/Golden_Eye",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Bigold",
+   "url": "https://my.litefinance.org/traders/Bigold",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@PRIME500",
+   "url": "https://my.litefinance.org/traders/PRIME500",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Earth_Taurus",
+   "url": "https://my.litefinance.org/traders/Earth_Taurus",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Atlas_Capital",
+   "url": "https://my.litefinance.org/traders/Atlas_Capital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Aliakhavan72",
+   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "symbols": [],
+   "mechanism_tags": []
   },
   {
    "source": "instaforex_copy",
@@ -8566,6 +8662,14 @@
    "mechanism_tags": []
   },
   {
+   "source": "arxiv",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
+   "url": "https://arxiv.org/abs/2608.27423v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Second Setup XAUUSD",
@@ -8810,7 +8914,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Citadel has recent 13F filing - check for position changes",
+   "title": "Point72 has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -8821,7 +8925,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Point72 has recent 13F filing - check for position changes",
+   "title": "D.E. Shaw has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -8855,6 +8959,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Baupost has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Soros has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
