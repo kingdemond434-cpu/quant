@@ -8933,6 +8933,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0694",
+   "source": "free-data-alternatives dig 2026-08-28h",
+   "summary": "Offset-scan every community-sourced price tape against desk truth before adoption: HF CarlosSilva1/xauusd-ticks ships timestamps 2h behind UTC (undocumented), a silent look-ahead that fails toward a FALSE POSITIVE; only a -4h..+2h scan vs XAUUSD_H1.parquet caught it (+2h: mean -0.111 sd 0.138; all others sd>6). Also: measure liveness PER SERIES not per file (BBMMU bank-only ON died 2023-10-31 inside a file live to 2026-07-28; its FREQ=D/P1D metadata is false, n=76 ~6-weekly).",
+   "roi_bps": null,
+   "rank": 1.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T15:57:43.932385+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
