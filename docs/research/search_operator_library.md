@@ -3522,3 +3522,139 @@ registry of **251 symbols** — 4.4% — and `feature_breadth 0.060`, with verdi
 flags. Instrumentation that reports a 4.4% breadth as OK is not measuring against the universe
 (L1.61: the hunted ground is every tradable Fusion symbol). Routed as a separate item, not fixed
 here: this seat is research-only.
+
+---
+
+## OP-100 — the BRAIN post-processing pipeline, in its exact order, and why the order is the semantics
+
+**Source:** `github.com/efJerryYang/worldquant-brain-simulator` (GPL-3.0, 32★, public), an
+independent offline reimplementation of the BRAIN simulator. **Read for MECHANISM ONLY — GPL-3.0,
+so no line of it is copied into this desk and none is proposed for copying.** Found by the
+RECURSIVE EXPANSION mandate: BRAIN → alternative implementations → the people who had to
+*understand* the semantics in order to rebuild them. The brief predicted this node would be the
+highest-yield one on this ground and it was.
+
+**What the official documentation elides and this implementation states, from `simulate.py`:**
+
+The daily loop is `(prev_day, today)` and the whole pipeline is:
+
+1. **Universe selection on `prev_day`** — `nlargest(top, "cumulative_liq")` over the *previous*
+   day's liquidity. Point-in-time by construction.
+2. **Alpha computed on a window ending at `prev_day`** (`start_day <= date <= prev_day_dt`).
+   **This is what `delay: 1` actually IS** — not a `shift()` applied to the finished signal, but a
+   truncation of the input data window, with the return realised on `today`. That is a materially
+   stronger formulation than shifting: a shifted signal can still have been *built* from a
+   full-sample statistic, which is the desk's own R0289 causal-guard blind spot (a `z(funding)`
+   over the whole sample passes `check_causal` today). Windowing the input cannot express that leak.
+3. **Neutralization** — `alpha = alpha - alpha.mean()`, cross-sectional over the universe.
+4. **Truncation** — `alpha.clip(-boundary, +boundary)`.
+5. **Normalization** — `alpha = alpha / alpha.abs().sum()`, i.e. **unit gross book**.
+6. **PnL** — `(weights · today's returns) * booksize`.
+
+**THE ORDER IS LOAD-BEARING AND IT IS NOT THE INTUITIVE ONE.** Truncation runs *before*
+normalization, so the `truncation` setting is **not a cap on final portfolio weight** — it clips
+the un-normalised, mean-subtracted alpha, and the subsequent divide rescales everything. Measured
+on random draws, with `truncation = 0.01`:
+
+| universe N | `sum(|clipped|)` | final `max(|w|)` | exceeds the bound? |
+|---|---|---|---|
+| 20 | 0.191 | 0.0523 | **YES — 5.2x the bound** |
+| 50 | 0.500 | 0.0200 | **YES — 2x** |
+| 100 | 1.000 | 0.0100 | at the bound exactly |
+| 251 | 2.506 | 0.0040 | no |
+| 3000 | 29.90 | 0.0003 | no |
+
+The crossover is exactly **N = 1/boundary**: below it the normalisation *inflates* past the
+truncation bound, above it the bound never binds on the final weight at all. On a Top3000 equity
+universe the setting is nearly inert; the same code on a small book silently levers the largest
+name. **The desk's canonical MT5 registry is 251 symbols — above the crossover — but any
+asset-class or currency-bucket sub-book is comfortably under 100, which is precisely where the
+bound inverts.** Recorded as a fact about their construction, never as a gate for ours (L1.6).
+
+The reason the order is nonetheless *correct* is the one thing the settings file never says:
+clip-before-normalize yields gross exposure of exactly 1.0 always, whereas normalize-before-clip
+measured **0.956** on the same draw — clipping after normalisation breaks the unit-gross book,
+which is the invariant the whole PnL line depends on. Anyone reimplementing this who "fixes" the
+order to make truncation behave like a weight cap silently un-normalises their book.
+
+**MT5 analogue:** steps 3–5 are a complete, grouping-map-free portfolio-construction spec that the
+desk can run on 251 Fusion symbols today. See OP-101, which is the actionable half.
+
+**What it needs that the desk lacks:** nothing for the market arm. The `Sector`/`Industry`/
+`Subindustry` arms need the grouping map that is still this ground's blocking input.
+
+---
+
+## OP-101 — market neutralization needs NO grouping map, and the desk never noticed it was unblocked
+
+**This is the session's real find, and like s6's it is about the desk rather than the platform.**
+
+The desk adopted four BRAIN operators on 2026-08-07 (`group_rank`, `group_zscore`, `ts_backfill`,
+`trade_when`). Two of them refuse to compute without a grouping map the desk does not have, and
+that dependency has been carried ever since as *the* blocking input on this ground.
+
+**Verified state, read this session, not inherited:**
+- `libs/alpha_factory/wq_operators.py` defines `_require_groups`, `group_rank`, `group_zscore`,
+  `ts_backfill`, `trade_when`, `fitness` — **and no neutralization function of any kind.**
+- `grep -rn "neutraliz" libs/ desks/mt5/ --include=*.py` returns exactly three live hits:
+  `libs/risk/overlays.py:36 beta_neutralize` (a regression-based *risk overlay*, not a
+  portfolio-construction step), a data-cleaning docstring, and
+  `libs/research/evidence_tier.py:235-236`, which maps *"sector neutral" / "industry neutral"* →
+  *"neutralize by MT5 asset class and currency-risk bucket"*.
+
+So the entire neutralization axis was translated into the desk's own mapping table **as a
+group-conditional operation**, and therefore inherited the grouping-map block wholesale.
+
+**But the platform's own neutralization ladder is `None / Market / Sector / Industry /
+Subindustry`, and the `Market` rung is `alpha - alpha.mean()` over the point-in-time universe.
+It takes no taxonomy at all.** It is one line, it runs on the 251-symbol registry today, and it
+has been sitting unbuilt behind a dependency it does not have.
+
+Why this matters beyond one missing line:
+
+1. **It is the control arm the desk's own regime law already requires.** Any future
+   asset-class/currency-bucket neutralization must prove itself *against* an unconditional
+   control. Market-neutral IS that control, and it is cheaper than the thing it controls for.
+2. **It converts the grouping map from a blocker into a measurable increment.** Today "we have no
+   grouping map" is an unfalsifiable reason to build nothing. With the market arm running, the
+   question becomes "what does bucketing add over demeaning?" — a number, gate-able, and a
+   perfectly good null if it adds nothing.
+3. **`_require_groups` refusing is the correct behaviour and is not the defect.** The defect is
+   that the ladder's bottom rung was never separated from its top rungs when the axis was
+   translated, so a map-free operation was filed under a map-dependent heading and disappeared.
+
+**Routed, not built — this seat is research-only (freeze).** The exact prescription: add a
+`market_neutralize(x)` = cross-sectional demean over the point-in-time universe to
+`wq_operators.py`, and extend the `evidence_tier` mapping rows at lines 235–236 so the ladder's
+rungs are distinguishable rather than collapsed onto the group-conditional translation.
+
+**CAVEAT, stated because it cuts against the find.** Market-neutralizing is not free on an MT5
+book the way it is on a Top3000 equity cross-section. Demeaning across 251 heterogeneous
+instruments (FX crosses, gold, indices, energy, share CFDs) subtracts a mean that has no single
+economic meaning — and the desk has already measured the shape of this failure: removing a common
+factor *manufactures* negative residual correlation, and residual correlation must be compared to
+−1/(N−1), never to zero (`demeaning_floor()` in `libs/research/cohort_independence.py`; the
+64.4-independent-bets error). The honest form of this item is therefore *within-asset-class*
+demeaning, which needs only the asset-class label the registry already carries — still no
+taxonomy purchase, still unblocked, and it is the version that should be built.
+
+**Verified this session (not inherited): the label exists and the buckets are measured.**
+`desks/mt5/data/universe/universe.json` carries `asset_class` on **248 of 251** symbols:
+Equities 103 · Forex Exotics 57 · Forex 29 · Indices 16 · Crypto 14 · Commodities 12 ·
+Soft Commodity 11 · Bonds 3 · Energy 3 · **unlabelled 3**. So within-asset-class demeaning is
+buildable today with zero new data.
+
+Two consequences worth carrying forward:
+
+- **Only ONE bucket clears OP-100's `N = 1/boundary` crossover.** With `truncation = 0.01` the
+  crossover is 100 names, and Equities (103) is the sole bucket above it. Every other bucket —
+  including all of FX — sits in the zone where clip-before-normalize *inflates* the largest
+  weight past its own stated bound, by 2x at N=50 and 5.2x at N=20. **A truncation setting
+  imported from an equity venue is not just inert on this desk's books, it is inverted on eight
+  of nine of them.** If a bounded per-instrument weight is wanted here, the bound must be applied
+  after normalisation and the gross re-scaled explicitly — which is a different construction, not
+  a parameter change.
+- **The 3 unlabelled symbols are a real gap, not a rounding error**, because an unlabelled
+  instrument cannot be demeaned within its class and would silently fall into whatever the
+  grouping code's default bucket is. That is the WS-005 shape (absence read as a clean verdict);
+  it should fail loud, not default. Named here, routed, not patched — research-only freeze.

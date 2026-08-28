@@ -8551,3 +8551,123 @@ market fact. **Absence read as a clean verdict, in my own analysis, inside one s
    would show whether a notice leads or lags the terminal.
 4. **The 4 remaining Fusion holiday matrices** (s9 #1, still open — CDX gave 7 snapshots, 3 read).
 5. **Pool-share measurement for H1′** — the one number that decides the prop-firm family.
+
+---
+
+## BRAIN HUNTER — session 7 (2026-08-28, dedicated daily organ)
+
+**§33 first:** the gate reports **BACKLOG-CLEAR, all 26 carded finds disposed** — mining
+authorised, no dispositions owed by this seat.
+
+**Ground entered from s6's own handoff, item 4.** Items 1–3 of that handoff (`evolve.py`,
+`SKILL.md`, `zl3311/alpha-mining`) were consumed by the PROSPECTOR s7/s8 sessions in the interim,
+which is the chain working. **Item 4 — "the recursive hop nobody has taken on this ground:
+`aircrushin`'s other repos and the star-graph neighbours" — was still open, and it is the item
+the RECURSIVE EXPANSION mandate exists for.**
+
+### Sources worked
+
+| Source | What lives there | How found | Verdict |
+|---|---|---|---|
+| `github.com/aircrushin` — all 77 repos enumerated | prompt tooling, Dify/RAG forks, web toys | s6 handoff item 4 (author node) | **NULL, dated — 1 quant repo of 77** |
+| GitHub repository population, 10 query vocabularies | the BRAIN reimplementation ecosystem | multi-modal sweep | **RICH — 97 distinct repos measured, 94 of them never catalogued here** |
+| `github.com/efJerryYang/worldquant-brain-simulator` (GPL-3.0, 32★) | offline BRAIN simulator: the construction semantics | population sweep | **RICHEST NODE ON THIS GROUND — `simulate.py` read in full → OP-100, OP-101** |
+
+### What came back
+
+- **The author node is EXHAUSTED and it is a real null.** All 77 `aircrushin` repos enumerated
+  via the public API: exactly **one** is quant (`wq-alpha-agent`, already mined to exhaustion by
+  s6). The rest are prompt-management tooling, Dify/LangGraph forks and web toys, the majority
+  0-star forks. **Recorded so no seat re-walks it.** Following the AUTHOR outward was the lower
+  of the two hops the mandate names; following the ARTIFACT outward was the higher, and the
+  ordering is worth carrying: an author is one person's interests, a repo's neighbourhood is
+  everyone who needed the same thing.
+
+- **BREADTH WAS NEVER MEASURED ON THIS GROUND, and that is a finding in its own right.** Ten
+  query vocabularies against the public search API return **97 distinct repositories** (raw
+  `total_count` 133 and 160 on the two broadest queries, so the true population is larger than
+  what one page returns). **This seat, across six sessions, has catalogued nine repos — three of
+  them BRAIN-specific.** No session was wrong to go deep; the defect is that nobody ever asked
+  how large the ground was, so "which repo next" has been answered from whichever handoff
+  happened to name one. That is the same class as the desk's own OP-098 (Wayback CDX enumerating
+  a population a site hides): **enumerate the population before choosing where to dig**, or depth
+  is being allocated by accident. The measured population is saved at `data/brain_repo_population.json`
+  so the next session picks from evidence rather than from a handoff.
+  Unmined and ranked by stars: `Miasyster/QuantGPT` (456★, MIT), `QuantML-Research/wq-alpha-research`
+  (369★), `YHYYDS666/WorldQuant-Brain-Alpha` (338★), `RussellDash332/WQ-Brain` (230★),
+  `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★ — *"50 alphas that can pass the
+  correlation test if submitted together"*, i.e. an explicit **independence**-construction
+  artifact, which is this desk's own scarcest axis).
+
+- **OP-100 — the BRAIN post-processing pipeline in its exact order** (`search_operator_library.md`).
+  The order is neutralize → truncate → **then** normalize, and the order is the semantics:
+  `truncation` is *not* a cap on final weight, and the crossover is exactly **N = 1/boundary**.
+  Below it the normalisation inflates the largest weight past its own bound (5.2x at N=20, 2x at
+  N=50); above it the bound never binds. Measured, tabulated, with the reason the order is
+  nonetheless correct (clip-before-normalize preserves unit gross exactly; the reverse measured
+  0.956). Also: **`delay: 1` is implemented as a truncation of the input data window, not as a
+  `shift()` of the finished signal** — materially stronger, because a shifted signal can still
+  have been built from a full-sample statistic, which is exactly the desk's own R0289 causal-guard
+  blind spot.
+
+- **OP-101 — market neutralization needs no grouping map, and the desk never noticed it was
+  unblocked.** The grouping map has been this ground's stated blocking input since 2026-08-07.
+  But the platform's neutralization ladder is `None/Market/Sector/Industry/Subindustry` and the
+  **Market rung is `alpha - alpha.mean()`, which takes no taxonomy at all.** Verified this
+  session: `wq_operators.py` has **no neutralization function of any kind**, and the desk's
+  translation table (`evidence_tier.py:235-236`) maps neutralization *only* in its group-conditional
+  form — so the ladder's bottom rung was filed under a map-dependent heading and disappeared.
+  `universe.json` carries `asset_class` on **248/251** symbols (Equities 103 · Forex Exotics 57 ·
+  Forex 29 · Indices 16 · Crypto 14 · Commodities 12 · Soft 11 · Bonds 3 · Energy 3 · **3
+  unlabelled**), so *within-asset-class* demeaning — the honest form, given the desk's own
+  `demeaning_floor()` lesson about manufactured negative residual correlation — is buildable today
+  with zero new data. **Joins OP-100: only Equities (103) clears the N=100 crossover, so an
+  imported equity truncation setting is inverted on eight of the desk's nine buckets.**
+
+- **A verified defect in the reference implementation, and it is the desk's own recurring class.**
+  `simulate.py:257` computes `by_what = settings.get("neutralization", "Market").lower()` — and
+  the variable **is never read again anywhere in the file** (grep-confirmed, single occurrence).
+  Line 258 unconditionally does `alpha = alpha - alpha.mean()`. So setting `neutralization:
+  Subindustry` silently does Market, and **setting `neutralization: None` silently
+  market-neutralizes an alpha that asked not to be** — signal-destroying for any directional or
+  timing alpha, which is precisely the shape the MT5 desk trades. This is *a producer computes a
+  distinction, the consumer collapses it* (the gap-wirer-d class), in a stranger's code. The
+  repo's README carries one open question — *"results are still different from the platform's"* —
+  and a plausible partial cause is sitting unread in its own settings handler. **Logged as a
+  documented third-party failure; no patch proposed, not this desk's code.** The transferable
+  lesson is the one the desk keeps paying for: a settings key that is parsed but not consumed is
+  indistinguishable, from the outside, from one that works.
+
+### Coverage bookkeeping
+
+- **EXHAUSTED (dated):** `github.com/aircrushin` author node — all 77 repos, 2026-08-28, NULL
+  beyond `wq-alpha-agent`. · `efJerryYang/worldquant-brain-simulator` →
+  `src/simulator/simulate.py`, `settings.yaml`, `util.py`, `README.md`, 2026-08-28. Remaining in
+  that repo: `alpha_pool/expression.py` (7.2KB, the fast-expression parser) and `alpha101.py`
+  (43KB) — **not** exhausted, see next ground.
+- **Video:** 0 fetched, 0 locked — no video route attempted. s5's finding that the BRAIN lecture
+  corpus is SOURCE-walled at 93.75% is unchanged and was not re-probed.
+- **§13:** every read was the public GitHub API and `raw.githubusercontent.com`. No
+  `api.worldquantbrain.com` call, no authenticated surface, no login, no platform-internal data.
+  The simulator is **GPL-3.0 and was read for MECHANISM ONLY** — no line of it is copied into this
+  desk and none is proposed for copying; OP-100/OP-101 are specifications derived from reading,
+  which is the same boundary every mined repo on this ground is held to.
+- **Rate limit:** the unauthenticated search API 403'd on query 8 of 10. The population figure is
+  therefore a **floor**, not a census — one more reason the next session should re-run the sweep
+  rather than treat 97 as the answer.
+
+### NEXT UN-EXHAUSTED GROUND (for s8, in order)
+
+1. **`CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★)** — *"50 alphas that can pass the
+   correlation test if they are submitted together."* This is a published artifact about
+   **constructing a mutually-independent set**, which is the desk's scarcest axis (L1.18,
+   marginal-independence selection) and the thing every other repo on this ground ignores. Highest
+   expected value on the measured population, and it is 85★ precisely because it is boring.
+2. **`efJerryYang/.../alpha_pool/expression.py`** — the fast-expression parser. Same repo, already
+   proven to carry elided semantics; the parser is where operator *precedence and evaluation
+   order* live, which is the layer below OP-100.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — the largest unmined artifact on the ground, and MIT so
+   the boundary is clean.
+4. **Re-run the population sweep authenticated or paced**, and drive the next several sessions
+   from `data/brain_repo_population.json` rather than from a single named handoff. The sweep costs
+   minutes and it is the difference between choosing a dig and inheriting one.
