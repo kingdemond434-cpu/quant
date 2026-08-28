@@ -2265,6 +2265,26 @@
    "url": "https://api.statbank.dk/v1/tables?format=JSON",
    "provides": "DNVALD daily official FX fixings 1977-01-03 -> present (49 years, DAILY -- a free long-history fixing tape); DNPRND daily specification of the Nationalbank balance sheet 2005-01-03 -> 2026-08-26 (the DKK analogue of SNB sight deposits, DAILY not weekly, and NOT contaminated by a CS-rescue-style event); DNRENTD daily rates + equity index from 1983-05-10; DNINTVAL reserve assets WITH a producer value-adjustment column; DNIFVALE / DNFPVALE currency exposure AND HEDGING of the Danish investment-fund and pension sectors (a published, structural, recurring hedging flow -- the pension-hedging rebalance is a named FX mechanism and this is the only free panel of it this seat has found).",
    "discovered": "2026-08-28 (free-data run n)"
+  },
+  "norgesbank_fx_announcement_calendar": {
+   "name": "Norges Bank FX-transaction ANNOUNCEMENT CALENDAR (the clock leg; amounts live elsewhere)",
+   "url": "https://www.norges-bank.no/aktuelt/kalender/YY-MM-DD-valutatransaksjoner/ (EN twin /en/news-events/calendar/YY-MM-DD-foreign-exchange-transactions/); enumerated via web.archive.org CDX url=norges-bank.no*",
+   "cost": "free",
+   "auth": "none",
+   "provides": "78 distinct announcement dates 2019-05-31 -> 2026-12-30, INCLUDING 5 FUTURE dates -- Norges Bank publishes its announcement schedule up to a year ahead. Extends run (m)'s press-release clock (61 events, from 2020-11) both backward by 12 and forward by 5.",
+   "replaces": "nothing sold; it is the forward event clock for the mandated-NOK-flow axis",
+   "verification": "THE RULE: 72 of 78 dates are exactly the last weekday of their month; all 6 deviations are Decembers and every one is 30 Dec not 31 Dec. => announcement = last Norwegian banking day of the month, 31 Dec never a banking day, 10:00 Oslo = 11:00 broker-EET year-round. This DERIVES the clock for all 320 monthly amounts back to 2000-01 with no further fetching. UNCLOSED: Norwegian public holidays at a month-end (Ascension/Whit Monday in late May) are not yet covered by the rule.",
+   "grade": "verified-clean as a SCHEDULE (carries dates, never amounts)",
+   "license": "www.norges-bank.no robots: 'User-agent: * / Crawl-delay: 5', zero Disallow (data.norges-bank.no separately bars ClaudeBot BY NAME -- see norgesbank_data_api_WALLED)",
+   "cadence": "forward-published, ~12 months ahead",
+   "failure_modes": [
+    "SOFT-404 ARCHIVED AT HTTP 200: the CDX rows for the 2019 calendar URLs carry statuscode 200 and both captures render '<title>Page not found</title>' in 47 kB of chrome. A Wayback 200 describes the archiving fetch, not the content. Of the 78 slug dates, 1 was content-verified (2025-04-30) and 2 were content-REFUTED (2019); the 12 pre-2020-11 dates are SLUG-LEVEL EVIDENCE ONLY.",
+    "PATH ROT, three paths in seven years: /en/news-events/news-publications/calendar/ (2019) -> /en/news-events/news/Press-releases/YYYY/ (2020-21) -> /en/news-events/calendar/ (2024+). A collector pinned to one path reads a live source as dead.",
+    "ONE-CHARACTER ENUMERATION LOSS: the slug '19-06-28foreign-exchange-transactions' is missing its hyphen; a regex requiring '-foreign-exchange' silently drops a real event.",
+    "The calendar entries are ADVANCE SCHEDULE STUBS: they carry no amount and no published_time meta tag. Amounts must come from the statistics table + press-release archive (norgesbank_gov_fx_transactions).",
+    "PRE-2019 PER-EVENT PAGES ARE NOT ARCHIVED AT ALL: the full-domain CDX over all four slug families returns 287 rows total, of which only 5 pre-date 2019 (one 2007, four 2010). A per-event walk cannot recover 259 dates because 259 pages do not exist."
+   ],
+   "discovered": "2026-08-28 (free-data run n)"
   }
  },
  "residual_gaps_unpurchasable": [

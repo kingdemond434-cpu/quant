@@ -6792,3 +6792,62 @@ sectors**, which is a published panel of a structural recurring FX hedging flow 
 interesting unopened row in the 107.
 
 Universe map 137 → 141.
+
+### ITEM 2 — RESOLVED, and the item's own premise was wrong: **the Norges Bank clock is a RULE, not 259 lookups**
+
+Run (m) carried this as *"259 extra events for one CDX walk"* — the amounts (320 months, 2000-01 →
+2026-08) are already held; only the announcement timestamps were missing before 2020-11. I ran the
+walk. **The walk is not the answer, and finding that out is the finding.**
+
+**WHAT THE CDX ACTUALLY RETURNED.** `web.archive.org/cdx/search/cdx?url=norges-bank.no*` filtered
+on the four slug families (`foreign-exchange-purchase|transaction`, `valutakj*`, `valutatransaksjon`)
+returns **287 rows total for the entire domain across all time** — and only **five** pre-2019
+announcement pages exist in it (`Press-release-31102007-foreign-exchange-purchases`, plus four 2010
+`Norges-Banks-foreign-exchange-purchases-in-{February,March,April,May}-2010`). **The pre-2019
+per-event announcement pages are simply not archived.** A per-event walk cannot recover 259 dates
+because 259 archived pages do not exist. Documented search that failed — not a default.
+
+**THE ROUTE RUN (m) MISSED — the Norwegian-side CALENDAR, and it publishes FORWARD.**
+`/aktuelt/kalender/YY-MM-DD-valutatransaksjoner/` (English twin `/en/news-events/calendar/
+YY-MM-DD-foreign-exchange-transactions/`) yields **78 distinct announcement dates, 2019-05-31 →
+2026-12-30**. Run (m) worked the English *press-release* archive and got 61 events starting
+2020-11; the calendar adds **12 earlier dates** and — the part that matters — **5 dates in the
+FUTURE**: 2026-08-31, 09-30, 10-30, 11-30, 12-30. **Norges Bank publishes its announcement schedule
+up to a year ahead.** For an event axis that is strictly better than an archive: the event clock for
+the next 12 months is knowable today, so a forward test can be pre-registered against dated stamps
+rather than waited for.
+
+**THE RULE, and it is clean.** Of the 78 dates, **72 are exactly the last weekday of their month**.
+**All 6 deviations are Decembers, and every one is 30 Dec instead of 31 Dec** (2019, 2020, 2021,
+2024, 2025, 2026). So:
+
+> **announcement date = last Norwegian banking day of the month, where 31 December is never a
+> banking day** — at 10:00 Oslo = **11:00 broker-EET year-round** (run (m)'s DST-stable stamp).
+
+That rule **derives the clock for all 320 monthly amounts back to 2000-01** from a calendar, with
+zero further fetching. The residual risk is Norwegian public holidays landing on a month-end
+(Ascension/Whit Monday can fall in late May); those need the Norwegian holiday calendar, and I am
+naming that as the one unclosed piece rather than pretending the rule is unconditional.
+
+**THE FAILURE MODE I WALKED INTO — a soft-404 archived at HTTP 200.** The CDX rows for the 2019
+calendar URLs carry `statuscode 200`, and both the Norwegian and English 2019 captures render
+**`<title>Page not found</title>`** in 47 kB of chrome. **A Wayback capture's 200 is a statement
+about the archiving fetch, not about the content.** The desk has now hit "a 200 plus a byte count is
+not content" on a live host (run e), on a proxy fleet (GPT video seat) and now inside the Wayback
+index itself. Consequence, stated honestly: of the 78 slug dates I **content-verified 1** (2025-04-30,
+title *"Offentliggjøring av valutatransaksjoner for mai"* — a genuine advance-schedule stub) and
+**content-refuted 2** (both 2019). **The 12 pre-2020-11 dates are therefore slug-level evidence
+only, and I am not upgrading them.** The last-banking-day rule holds on all 78 regardless, because
+the rule is a property of the dates themselves.
+
+**PATH ROT — three different paths for one publication, in seven years.** 2019:
+`/en/news-events/news-publications/calendar/…`; 2020–21: `/en/news-events/news/Press-releases/
+YYYY/…`; 2024→: `/en/news-events/calendar/…`. **A collector pinned to any one of them reads the
+source as dead** while it is publishing normally. Add to that a **one-character enumeration loss**:
+`19-06-28foreign-exchange-transactions` is missing its hyphen, so a regex requiring
+`-foreign-exchange` drops a real event. Both belong in the collector-design notes, not just here.
+
+**GRADE: the calendar route is verified-clean as a SCHEDULE (it carries dates, never amounts) —
+the amounts stay with the statistics table plus the press-release archive that run (m) adopted.**
+This is the same cross-source pair run (m) named, with the clock leg now extended forward rather
+than backward, which is the more useful direction.
