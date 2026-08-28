@@ -21,6 +21,19 @@ def _read(path: Path) -> dict:
         return {}
 
 
+#: The qquant report writes its family as the shorthand "breakout"; the executable family on
+#: this desk is "session_range_breakout". That translation is why the old literal was there, and
+#: it must survive -- emitting the raw token produces a spec no family function matches, so the
+#: sleeve is silently unrunnable. What must NOT survive is the EXCLUSION that sat beside it:
+#: every other family was dropped entirely. Normalise known aliases, pass everything else
+#: through, exclude nothing.
+_FAMILY_ALIASES = {"breakout": "session_range_breakout"}
+
+
+def _exec_family(name: str) -> str:
+    return _FAMILY_ALIASES.get(str(name).casefold(), str(name) or "session_range_breakout")
+
+
 def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, bool]]:
     """Return exact executable specs certified under the original policy only.
 
@@ -42,12 +55,18 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
             if len(parts) != 5:
                 continue
             symbol, family, side, selector, condition = parts
-            if family.casefold() not in {"breakout", "session_range_breakout"}:
-                continue
+            # NO FAMILY WHITELIST, and the family is CARRIED rather than asserted. This dropped
+            # every certified row whose family was not "breakout", and then wrote the literal
+            # "session_range_breakout" into the spec regardless -- so a certificate for any other
+            # mechanism was either discarded or relabelled as something it is not. Both are the
+            # same defect: a door that only one family can walk through cannot diversify a book,
+            # and diversification is the binding constraint here.
+            # The guards that matter are unchanged and do the real work: is_exact_policy on the
+            # report, and all_ten_pass on the row. Only genuinely certified rows reach this line.
             if side.upper() != "LONG":
                 continue
             state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
-            out.add((symbol, selector, state, "session_range_breakout", False))
+            out.add((symbol, selector, state, _exec_family(family), False))
 
     # Compatibility rows are accepted only when they carry the same complete
     # policy attestation; they cannot bypass or strengthen the QQUANT authority.
