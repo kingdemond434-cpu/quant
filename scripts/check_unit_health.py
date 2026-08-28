@@ -109,6 +109,25 @@ def check_crontab() -> list[str]:
     Required lines live in ops/crontab.required; missing ones are MERGED back (never a wholesale
     replace -- additions others made survive)."""
     actions: list[str] = []
+
+    # IS ANYTHING READING THIS FILE? Checked FIRST, because every line below is worthless if the
+    # answer is no. cron.service on this box failed on 2026-08-20 with Result: oom-kill and has
+    # been dead for a week, so every crontab line has been inert -- while this guard went on
+    # dutifully merging lines back into it and reporting success. A guard that restores a fence
+    # nobody enforces is worse than no guard: it produces evidence of protection that does not
+    # exist, and two hours were spent tonight repairing crontab entries whose real defect was
+    # that nothing reads that crontab.
+    # The desk's actual scheduler is ~70 systemd USER timers, which is where a fence belongs.
+    # This is reported, never "fixed": restarting a system unit needs root, which this box does
+    # not have by design.
+    _rc_active, _active = _run(["systemctl", "is-active", "cron"], timeout=15)
+    if _active.strip() != "active":
+        actions.append(
+            f"CRON IS NOT RUNNING (systemctl is-active cron -> '{_active.strip() or 'unknown'}') "
+            f"-- EVERY crontab line on this box is inert, including the ones this guard restores. "
+            f"Move the fence to a systemd user timer (see ops/quant-research-health.timer); "
+            f"restarting the system unit needs root, which this box does not have.")
+
     req_file = ROOT / "ops" / "crontab.required"
     try:
         required = [ln.strip() for ln in req_file.read_text("utf-8").splitlines()
