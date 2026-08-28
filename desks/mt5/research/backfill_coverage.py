@@ -69,7 +69,7 @@ def starved_classes() -> tuple[list[str], dict[str, int]]:
 
 
 def main() -> int:
-    from research.edge_search import search_symbol
+    from research.edge_search import mechanism_for_feature, search_symbol
 
     starved, covered = starved_classes()
     print(f"docket coverage: {covered}")
@@ -100,13 +100,37 @@ def main() -> int:
             except Exception as exc:
                 print(f"  {sym} ({cls}): RAISED {type(exc).__name__}: {str(exc)[:120]}")
                 continue
-            rows = res.get("selected") or []
-            for r in rows:
-                r.setdefault("producer", "backfill_coverage")
-                r.setdefault("coverage_class", cls)
-            hypotheses.extend(rows)
+            # THE SAME SHAPE AND THE SAME GATE the main searcher emits. A raw `selected` row is
+            # not a hypothesis: the merge reads a specific schema, and the first run of this
+            # script wrote 229 bond rows that merged as 0 new because of it.
+            # The mechanism gate is not optional decoration. An unnamed feature is a statistical
+            # artefact until someone names its cause, and the standing order is testable
+            # candidates rather than statistical ones -- so unnamed rows go to the naming queue
+            # exactly as they do in edge_search, and never into the docket by a side door.
+            named = 0
+            unnamed = 0
+            for row in res.get("selected") or []:
+                status, note = mechanism_for_feature(str(row["feature"]))
+                if status != "NAMED":
+                    unnamed += 1
+                    continue
+                named += 1
+                hypotheses.append({
+                    "symbol": sym,
+                    "family": "discovered",
+                    "params": {"feature": row["feature"], "band": row["band"],
+                               "horizon": row["horizon"], "side": row["side"]},
+                    "n": row["n_oos"], "t_stat": row["t_stat"],
+                    "exp_r": row["sharpe_like"],
+                    "source": f"backfill_coverage:{cls}:{row['feature']}",
+                    "producer": "backfill_coverage",
+                    "coverage_class": cls,
+                    "mechanism_status": status,
+                    "mechanism_note": note,
+                })
             print(f"  {sym} ({cls}): status={res.get('status', 'ok')} "
-                  f"selected={len(rows)} untestable_dropped={res.get('untestable_dropped')}")
+                  f"named={named} unnamed_skipped={unnamed} "
+                  f"untestable_dropped={res.get('untestable_dropped')}")
 
     OUT.write_text(json.dumps({
         "generated_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
