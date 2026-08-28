@@ -1,0 +1,9 @@
+[Unit]
+Description=Certificate yield fence -- names WHICH KIND of zero the gauntlet produced
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_cert_yield.py >> data/cro_ai_logs/cert_yield.log 2>&1'
+SuccessExitStatus=0 1 2

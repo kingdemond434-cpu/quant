@@ -1,0 +1,9 @@
+[Unit]
+Description=Dig ROI scorecard -- testable candidates and certificates, never bytes written
+
+[Service]
+Type=oneshot
+MemoryMax=300M
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_dig_roi.py >> data/cro_ai_logs/dig_roi.log 2>&1'
+SuccessExitStatus=0 1 2
