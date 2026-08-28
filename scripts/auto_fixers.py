@@ -178,11 +178,27 @@ def fix_clocks() -> tuple[bool, str]:
 
 
 def fix_breadth() -> tuple[bool, str]:
-    """A class the docket never covers: re-run mined ground and the class-balanced searcher so
-    the next rotation reaches it. Never narrows the hunt -- it widens the pass."""
+    """A class the docket never covers: hunt THAT CLASS directly, then widen the general pass.
+
+    Re-running the searcher was not enough and could not have been. The rotation is exactly what
+    failed: bonds are 3 symbols out of 299, mined ground fills the head of every run's budget,
+    and the cursor can leave a thin class unvisited for days -- so asking the same rotation to go
+    again is asking the mechanism that produced the gap to close it. Measured 2026-08-28: the
+    docket held 6,024 candidates and zero bonds, while probing those bonds directly returned 67,
+    84 and 74 hypotheses. The candidates were always there; nothing had gone to fetch them.
+
+    backfill_coverage runs ON THE DESK BOX because that is where the bars are -- 299 H1 files
+    against 203 here -- and it asks which classes are starved rather than being told, so it
+    behaves the same way the day equities or softs fall out of the rotation.
+
+    The general widening still runs afterwards: this targets the gap, it does not narrow the hunt.
+    """
+    rc0, o0 = _ssh("cmd /c \"cd /d C:\\opt\\quant\\desks\\mt5 && "
+                   "py -3 -W ignore research\\backfill_coverage.py\"")
     rc1, _o1 = _run([sys.executable, str(DESK / "research" / "mined_ground.py")], timeout=180)
     ok2, o2 = fix_search()
-    return rc1 == 0 or ok2, f"mined_ground_rc={rc1} search={o2[-80:]}"
+    return (rc0 == 0 or rc1 == 0 or ok2,
+            f"backfill_rc={rc0} {o0.strip()[-90:]} | mined_ground_rc={rc1} search={o2[-60:]}")
 
 
 def fix_families() -> tuple[bool, str]:
