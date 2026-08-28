@@ -102,6 +102,34 @@ foreach ($tn in $researchTasks) {
   }
 }
 
+# PROGRESS, NOT JUST PULSE (2026-08-28). A CPU-delta test asks "is it breathing"; it cannot ask
+# "is it getting anywhere". The 6,024-cell sweep sat 87 minutes alive with a trickle of CPU
+# (~10s per 4 min -- comfortably above the liveness floor) having written ZERO cache files and
+# not one log line since the previous sweep ended. Breathing and stuck is still stuck, and a
+# watchdog that only checks the pulse guards against the wrong death.
+# The gauntlet's honest progress signals are its own artifacts: the series cache it fills and
+# the log it appends. Alive >45 minutes with neither touched in 20 is a stall, whatever the CPU
+# says.
+try {
+  $gp = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
+          Where-Object { $_.CommandLine -match 'external_gauntlet' })
+  if ($gp.Count -gt 0) {
+    $oldest = ($gp | Sort-Object CreationDate)[0]
+    $ageMin = ((Get-Date) - $oldest.CreationDate).TotalMinutes
+    if ($ageMin -gt 45) {
+      $cutoff = (Get-Date).AddMinutes(-20)
+      $freshCache = @(Get-ChildItem 'C:\opt\quant\desks\mt5\reports\gauntlet_cache' -ErrorAction SilentlyContinue |
+                      Where-Object { $_.LastWriteTime -gt $cutoff })
+      $logItem = Get-Item 'C:\opt\quant\desks\mt5\logs\MT5-Gauntlet.log' -ErrorAction SilentlyContinue
+      $logFresh = ($logItem -and $logItem.LastWriteTime -gt $cutoff)
+      if ($freshCache.Count -eq 0 -and -not $logFresh) {
+        Stop-Process -Id $oldest.ProcessId -Force -ErrorAction SilentlyContinue
+        $actions += "NO-PROGRESS external_gauntlet: alive $([math]::Round($ageMin))m, 0 cache writes and no log line in 20m -- killed; the hourly trigger re-runs it and the cache makes the rerun cumulative"
+      }
+    }
+  }
+} catch { }
+
 # TASK EXISTENCE (gap 3). Disabled and failing tasks heal above -- a task DELETED outright
 # vanishes with nothing to heal. The required set is declared here and any missing task is
 # reported by name; re-registration needs its exact action, which lives in ops/, so this
