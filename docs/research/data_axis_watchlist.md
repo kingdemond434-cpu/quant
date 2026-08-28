@@ -5299,3 +5299,294 @@ beat unverified impressive — the number worth keeping is **54**.
    the source registry as a route flag, not in a session note.
 4. Still owed from (d), outside this seat's freeze: the **`macro_state.json` three-way write race**
    (patch named in `improvement_inbox.md`, still needs an owner).
+
+---
+
+## SESSION 2026-08-28 (f) — FREE-DATA-ALTERNATIVES standing daily run
+
+Backlog re-checked first (RESUME order): `source_backlog_next.py --limit 6` → **73 catalogued, 48
+resolved, 0 pending verification, 0 pending legitimacy decision, 25 deferred** (next returns
+2026-09-01). Nothing workable owed; mining authorised. Picking up at the next un-exhausted ground
+named by session (e), items 1 and 2, deliberately NOT re-entering the central-bank region.
+
+**ITEMS TAKEN THIS RUN (bounded, depth uncapped):**
+1. **The 54 bar-less MT5 symbols** — softs + rates complexes have never had a bar. Is free daily
+   history actually obtainable for them, per-symbol, from a licensed keyless route? (largest
+   measured coverage hole on the desk; squarely this seat's mandate)
+2. **DBnomics provider sweep** — 47,062 datasets / 100+ providers entered the map last run on one
+   keyless route. Which providers carry MT5-universe-relevant series, and what does each
+   `terms_of_use` actually permit?
+3. **SEARCH-SPACE EXPANSION** — new source class, ≥25% of effort.
+
+*(status: OPEN — updated in place as each item resolves)*
+
+### ITEM 1 — CLOSED, AND IT RETRACTS SESSION (e)'s HEADLINE. The 54 "bar-less" symbols have between 6,305 and 26,168 bars each. This box cannot see them.
+
+I took this item to go buy free softs/rates history. There is nothing to buy: the data exists.
+**Session (e) measured the desk's lake from a host that holds a partial copy of it, and reported
+the gap as a property of the desk.** That verdict is now the top commit message on this branch
+("the desk has 251 symbols, current data for 24, and no instrument that could tell").
+
+**THE EVIDENCE, five independent strands, all cheap:**
+
+1. **The registry contradicts the walker, on the same day, about the same fact.**
+   `desks/mt5/data/universe/universe.json` records `bars` for all 54 — `CORN` **24,041**,
+   `COTTON` 22,521, `WHEAT`/`SOYBEAN`/`UST10Y`/`UKGILT` likewise, min 6,305, max 26,168, **zero
+   zeros** — each with `_provenance.bars = {source: "parquet_on_disk", at: "2026-08-28T04:43:24+00:00"}`.
+2. **That stamp can only be written for a file that was opened.** `universe_registry.merge()`
+   (`desks/mt5/mt5desk/universe_registry.py:246`) stamps `_provenance` **only for symbols present
+   in `incoming`**, and `repair_universe_registry.py:152` builds `incoming` as
+   `{s: {"bars": n} for s, n in bars.items() if s in restored}` where `bars` comes from
+   `parquet_facts()` globbing `UNIVERSE/*_H1.parquet` on disk. A symbol with no file is never in
+   `incoming` and can never receive a fresh stamp. **248 symbols carry the 04:43:24 stamp; this
+   box holds 197 parquet files.** The writing process globbed a directory with 251 files in it.
+3. **The ghost set is EXACTLY the 54.** `stamped_today − files_on_this_box` = the identical
+   54-symbol list, not a superset, not a subset. One boundary, not 54 failures.
+4. **The mtime census is the mechanism, and it is unambiguous.** Of 197 local parquets:
+   **173 share a single mtime `2026-08-26T11:06`** (one bulk copy, two days ago) and
+   **24 carry today's `2026-08-28T12:01`.** That 24 is *precisely* session (e)'s "only 24 are
+   fresh". The "166 frozen at 2026-08-25 22:00" is not three missed sessions and not a fetch
+   failure — **it is the last bar in a two-day-old bulk drop.** Verified directly: `3M` last bar
+   2026-08-25 22:00 (mtime 08-26); `EURUSD` and `XAUUSD` last bar **2026-08-28 14:00** (mtime today).
+5. **Independent corroboration from a different producer.** `desks/mt5/reports/universal_gates_external.json`
+   carries **UKGILT with 531 days of signal and UST05Y with 467** — bar history for two of the
+   allegedly bar-less rates symbols, measured by a process that is not the registry repairer.
+
+**GRADE: the previous finding is `host-scoped-artifact`. The correct status of the 54 is
+`UNOBSERVABLE-FROM-THIS-HOST`, which is its own status and was folded into a real one.** This is
+the desk lesson verbatim — *"A verdict about the HOST is not a verdict about the DESK. Before
+reporting any run-state, prove this box can SEE the evidence; unobservable must be its own status,
+never folded into a real one"* — and it is the **second** recurrence of this exact number: the
+2026-08-27 gap-wirer note records a swallowing caller that hid 88% of the MT5 universe as a
+"market fact", **24/197 → 197/197.** The same 24 came back wearing a different costume.
+
+**WHAT IS STILL A REAL DEFECT (the half that survives).** `data/mt5_universe_bar_liveness.json`
+is committed and asserts a desk-wide verdict it has no standing to make; it walks a directory
+without ever asking whether that directory is complete. The repair is not more fetching — it is
+that the instrument must **read `bars`/`_provenance` from the registry and diff it against the
+files it can see**, reporting `n_unobservable` as a distinct count from `n_dead`. Presence of a
+file and presence of the data are different questions, and this box can only answer the first.
+Routed to `improvement_inbox.md`; not patched here (research freeze — `scripts/` out of scope).
+
+**And the acquisition target dies with it.** Session (e) named "the 54 bar-less symbols … the
+largest measured coverage hole on the desk" as this seat's next ground. It is not a coverage hole
+and there is no free-data purchase to make. That is worth more than a source card: I did not spend
+this run reconstructing continuous-futures history the desk already holds.
+
+**DEPTH: EXHAUSTED.** Not a re-walk — I went to the *disagreeing producer*, read `merge()` and
+`parquet_facts()` to establish that the provenance stamp is unforgeable for an absent file,
+differenced the two symbol sets, ran the mtime census that names the sync boundary, opened
+individual parquets to date the "freeze", and cross-checked against a third producer's report.
+*What depth surfaced that the surface did not:* the surface number (54, and 24-of-197) reproduces
+perfectly on a re-run — it is stable, repeatable and wrong. Only the provenance stamp and the
+mtime histogram distinguish "absent" from "not synced here", and neither is visible to a walker.
+
+### ITEM 2 — CLOSED. DBnomics sweep: one daily rates axis ADOPTED (verified against source-of-truth), and two corrections to last run's own card.
+
+**ADOPTED — ECB euro-area government bond yield curve, daily, 22 years, keyless.**
+`ECB/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y` — **5,617 observations, 2004-09-06 → 2026-08-26**,
+weekday-only (weekdays {0,1,2,3,4} over the trailing 30, no weekend stubs), AAA-rated euro-area
+government nominal 10Y spot rate. Dataset `ECB/YC` holds **2,165 series** (whole curve + Svensson
+BETA parameters), so the tenor structure is available, not just one point.
+
+**VERIFIED-CLEAN, by diff against source-of-truth, not by assertion.** Pulled the same series
+direct from `data-api.ecb.europa.eu/service/data/YC/...?format=csvdata` and compared every
+overlapping date:
+
+| date | ECB direct | DBnomics |
+|---|---|---|
+| 2026-08-20 | 3.279171221 | 3.279 |
+| 2026-08-21 | 3.2710153758 | 3.271 |
+| 2026-08-24 | 3.2803958027 | 3.280 |
+| 2026-08-25 | 3.2448308736 | 3.245 |
+| 2026-08-26 | 3.2485054634 | 3.249 |
+| **2026-08-27** | **3.2772699104** | **absent** |
+
+Exact to 3 d.p. on all five. **Two failure modes fall straight out of that table and neither is
+visible without running it:** DBnomics (a) **rounds to 3 d.p.**, and (b) **lags the source by a
+full publication day.** For a same-day conditioning variable both matter. **So the routing is:
+`data-api.ecb.europa.eu` is PRIMARY (keyless, no UA games, one day fresher, full precision);
+DBnomics is the FAILOVER, and its value is breadth-of-provider, never latency.** Adopting the
+aggregator as primary because it was found first would have cost a day of freshness silently.
+
+**CORRECTION 1 to session (e)'s card — the licence is NOT laundered by the aggregator.**
+(e) recorded "every provider ships its own `terms_of_use` URL in the payload." Censused: **73 of
+93 providers carry `terms_of_use`; 20 carry none** — and the empty set is
+`BCB, BI, BIS, BLS, BOE, CEPREMAP, CSO, CWD, FED, Franc-zone, ICE, INE-SPAIN, IPP, MOSPI, RBA,
+SAFE, SCB, STATPOL, WB, openfisca-tunisia`. **That set is almost exactly this seat's ground:**
+BOE, FED, BIS, RBA, WB, ICE. **The licence gap and the access wall land on the SAME hosts** — for
+precisely the providers whose own sites robots-bar (BoE `/boeapps/iadb`) or UA-403 (RBA, 11 Fed
+districts), DBnomics gives you the data but *not* the permission, and the permission is only
+obtainable from the host that will not serve you. Under §13 that is a **licence-undetermined**
+grade, not an adoption. **Reaching data through an aggregator does not inherit a licence the
+aggregator never asserted.**
+
+**CORRECTION 2 — the provider count.** (e) recorded "100+ providers". The endpoint returns
+`num_found: 93`. Dataset/series counts confirmed unchanged (47,062 / 1,725,529,719).
+
+**NEGATIVE RESULT, and it reconfirms last run's residual independently.** `q=gilt yield` over the
+whole aggregate returns **`num_found: 0`**. The UK daily gilt curve is **still UNREPLACED**, now
+refused by two different routes (BoE host robots-barred; DBnomics does not carry it).
+
+**NEGATIVE RESULT — DBnomics is not a commodity price source.** `q=cocoa price` (141 hits) and
+`q=wheat price` (126 hits) return *only* OECD transport-and-insurance trade indices, FAO producer
+prices, and Eurostat agricultural economic accounts — **annual/monthly statistical aggregates, no
+tradable daily price anywhere.** DBnomics is a **macro-statistics** aggregator; it does not
+replace a market-price feed, and it must not be catalogued as if it might.
+
+**A FALSE-NULL TRAP worth the card on its own (verify-don't-trust, generalises).** The DBnomics
+series endpoint returns every series with **`period: [], value: []` — `n_obs 0` — unless you pass
+`observations=true`.** The series *names* still read "Daily …", so a collector that lists a
+dataset and counts observations concludes **"catalogued but empty"** for a 5,617-point series. This
+is the desk's recurring silent-truncation class (CNB's 10,000-row cap, the Binance-WS zero-data
+class) in a new costume: **HTTP 200, well-formed JSON, plausible metadata, zero rows, no error.**
+
+**DEPTH: EXHAUSTED for this route.** Providers enumerated in full (93/93, not sampled), licence
+field censused across all of them, four targeted searches run to establish what the aggregate does
+*not* hold, one series pulled to full history, and that series diffed row-by-row against the
+issuing institution's own API. *What depth surfaced that the surface did not:* the surface verdict
+was "DBnomics adopted, 1.7bn series, great." Depth produced the **routing rule** (source-of-truth
+primary, aggregator failover — the diff is the only thing that could have shown the day of lag and
+the rounding), the **licence hole on exactly the 20 providers that matter here**, and the
+**`observations=true` false-null** that would have made any future collector report this source dead.
+
+### ITEM 3 — CLOSED. The §38 hunt for a UK daily gilt curve is REPLACED, not unreplaced: **47 years of daily curve, keyless, and the BoE never barred it.**
+
+Session (e) read `bankofengland.co.uk/robots.txt`, found `Disallow: /boeapps/iadb`, graded the
+source `excluded-robots-barred` and opened a replacement hunt that then failed through DBnomics
+(26 BOE datasets, no gilt yields) and FRED (monthly only). **The exclusion was correct about the
+path and wrong about the host.**
+
+**The full robots file bars exactly nine paths** — `/boeapps/database/ShowChart.asp`,
+`/boeapps/database/_iadb-FromShowColumns.asp`, `/boeapps/iadb`, `/boeapps/titan`, `/error`,
+`/forms`, `/mfsd`, `/search`, `/test-folder` — and **nothing else. `/statistics/yield-curves` and
+`/-/media/boe/files/...` are permitted**, and the file publishes a sitemap. The Interactive
+Statistical Database is barred; the **yield-curve research dataset is a different product on a
+permitted path**, and it is the better one.
+
+**ADOPTED — BoE Government Liability Curve (GLC), nominal, daily. VERIFIED-CLEAN.**
+`/-/media/boe/files/statistics/yield-curves/glcnominalddata.zip` (39.0 MB, HTTP 200, no key, no
+UA games) — eight XLSX archives, and I parsed rather than trusted the filenames:
+
+| file | spot-curve obs | range (measured) |
+|---|---|---|
+| 1979 to 1984 | 1,566 | 1979-01-01 → 1984-12-31 |
+| 2016 to 2024 | 2,348 | 2016-01-01 → 2024-12-31 |
+| 2025 to present | 413 | 2025-01-01 → **2026-07-31** |
+| `latest-yield-curve-data.zip` (current month) | 19 | 2026-08-03 → **2026-08-27** |
+
+**1979 → 2026-08-27, daily, business-day dense** (2,348 obs / 9 years ≈ 261 per year — the correct
+business-day count, so no silent gaps). Tenors from 0.5y in 0.5y steps; four curve products per
+release (**nominal, real, inflation, OIS**) and four sheets each (fwds short end, fwd curve, spot
+short end, spot curve). **This is strictly more than the IADB series that was being chased**: a
+full fitted curve rather than a single benchmark yield, and it is **fresher than the ECB series
+adopted in item 2** (08-27 vs DBnomics' 08-26).
+
+**KNOWN FAILURE MODES, both found by parsing rather than assuming:**
+1. **SCHEMA DRIFT across the archive.** The 1979–1984 workbook names its sheets
+   `"4. nominal spot curve"`; every file from 2005 on uses `"4. spot curve"`. A collector keyed on
+   one string silently returns **zero rows for the early era** — and the early era is exactly what
+   held-out OOS is starved for.
+2. **A SEAM between the archive and the current month.** The history file stops at **2026-07-31**;
+   August lives only in `latest-yield-curve-data.zip`. Fetching the archive alone yields a series
+   that looks complete and is **28 days stale**. Both files are required, every run.
+3. Dates are Excel serials (epoch 1899-12-30) and the header block carries a literal `#VALUE!` row
+   — anything reading row-4-onward positionally will ingest it.
+
+**LICENCE.** BoE statistical publications are Crown copyright under the Open Government Licence;
+the yield-curve page is public, keyless and on a robots-permitted path. **Graded
+`licence-open-verify-at-adoption`** — I read robots and the publication route, not a signed
+licence page, and I am not upgrading that to "verified" on inference.
+
+**THE GENERAL LESSON, and it is the mirror image of one already on the books.** The desk's
+2026-08-28 (s8) note records *"robots is HOST-scoped so an allowed sitemap pointed at a walled
+host."* This is the same error inverted: **a barred path caused an entire institution to be
+written off, and a §38 replacement hunt to be opened for data that was free, permitted and
+one directory away.** `Disallow` is PATH-scoped. Reading the nine lines took one request; the
+replacement hunt they triggered consumed most of a session. **Both directions of this mistake have
+now cost this desk a session — the rule is to grade the PATH, never the HOST, in both directions.**
+
+**DEPTH: EXHAUSTED.** Read robots in full (not just the matching line), enumerated all 11 dataset
+links on the permitted page, downloaded both the 39 MB archive and the current-month zip, opened
+the XLSX as the zip-of-XML it is (**no `openpyxl` on the box and I did not install one under the
+freeze**), walked the workbook rels to resolve sheet name → `sheet5.xml`, and measured first/last
+dates on three separate era files plus the current month. *What depth surfaced that the surface
+did not:* the surface answer was last run's — "BoE is robots-barred, residual UNREPLACED." Depth
+produced a **47-year daily curve**, and the two failure modes (sheet-name drift, month seam) that
+would each have made a collector of it quietly wrong rather than loudly broken.
+
+### AXIS PROPOSED (not pre-registered here — the registry is outside this seat's freeze)
+
+**`rates_curve_slope_vs_fx_carry`** — the two adopted curves (BoE GLC 1979→, ECB YC 2004→) give
+daily, point-in-time, full-tenor **GBP and EUR** curves. **Mechanism:** the slope and its change are
+the market's price of term risk in each currency; FX carry positioning is a leveraged claim on the
+*short* end while the *long* end prices the term premium, so a **steepening divergence between two
+legs of a cross is a change in the compensation demanded to hold that carry** — and the forced
+counterparty is the leveraged carry holder who must reduce when term premium repricing raises the
+cost of the funding leg. Directly relevant to GBPUSD, EURUSD, EURGBP and the JPY crosses.
+**Falsifier:** conditional expectancy on curve-slope change is indistinguishable from zero once the
+unconditional arm and the level (not slope) arm are run as controls. **Why it is worth a trial:**
+`new_orthogonal_data` carries a 1.6 prior multiplier in `libs/research/alpha_economics.py` and this
+is genuinely new ground for the desk — 47 years of daily curve is *history*, so it front-loads
+out-of-sample rather than waiting from zero.
+**NOT pre-registered by me:** `data/moat_preregistered.json` is a live clock registry, and writing
+a trial into it is a promotion-firewall act, not a research act. **Recorded here as owed work with
+its falsifier named, per L1.39 — it must not sit idle.** Trial-counting is the gate's job, not
+mine, and this proposal is ONE counted trial when it runs.
+
+### SESSION CLOSE — 2026-08-28 (f)
+
+**Categories covered:** 1 (exchange-native) — not re-dug, no new ground and backlog clear;
+2/3 (on-chain, non-English regional) — **not dug this run, and I am naming that rather than
+implying coverage**; 4 (community lakes) — not dug; 5 (alternative/macro) — **primary ground this
+run**, 2 sources adopted; 6 (vendor-replacement) — the BoE GLC card replaces paid UK rates curve
+history and the ECB card replaces paid EUR curve history.
+
+**Counts: 2 sources ADOPTED, both verified-clean by ground-truth diff or by direct parse
+(`boe_glc_yield_curve_daily`, `ecb_yield_curve_daily`). 0 UNVERIFIED links catalogued. 1 open §38
+hunt CLOSED as REPLACED. 3 prior-session claims CORRECTED. 1 axis proposed with a falsifier.**
+Universe map: 103 → 105 sources, valid JSON, merged not clobbered. `last_data_axis_dig` set.
+
+**BEST VENDOR-REPLACEMENT:** BoE GLC — 47 years of daily fitted UK curve (nominal, real, inflation,
+OIS), keyless, for £0, against a Bloomberg/Refinitiv curve subscription.
+
+**CROSS-SOURCE PAIR (joint value exceeds either alone):** **BoE GLC × ECB YC.** Each alone is one
+currency's term structure — a level series. **Together they are a *cross-currency* slope
+differential on a common daily grid, which is the actual conditioning variable for a GBP/EUR carry
+mechanism**, and neither leg can express it. Both are keyless, both are business-day dense, both
+run from at least 2004, and the overlap is 22 years.
+
+**NEW SOURCE CLASS:** *central-bank research datasets published as bulk file downloads on
+robots-permitted `/-/media/` paths, structurally separate from the institution's barred interactive
+statistical database.* This is a different class from "the aggregator route" adopted last run, and
+it is **better** on freshness, precision and depth. Every institution this seat has graded "walled"
+on its statistics DB should be re-probed for it.
+
+**THE BLUNT PART.** The most valuable output of this run is not either source card — it is that
+**two of the three items I took were corrections of my own seat's previous run, and both prior
+findings were confidently stated, cheaply checkable, and wrong.** Session (e) reported a 54-symbol
+desk-wide data hole that does not exist, and graded an entire central bank excluded when nine
+robots lines bar nine paths. Both errors have the same shape: **a true local observation promoted
+to a global claim without asking what the observation could not see** — a partial file sync read as
+the desk's lake, a path-scoped Disallow read as a host-scoped ban. The desk lesson *"when a claim
+is checkable in one command, checking is cheaper than being wrong"* cost two sessions here. I hold
+my own item-1 and item-3 conclusions to the same standard: each is backed by an artifact I opened
+this run and quoted, not by inference.
+
+Against that, the honest read on yield: this seat's last four runs produced failure modes and
+exclusions. **This one produced 69 years of daily curve data across two currencies for £0.** The
+central-bank ground is not thin — the *access grading* was wrong, and one over-broad exclusion was
+hiding it.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **Re-probe the "walled" institutions for the bulk-file class.** RBA, RBNZ, the 11 Fed districts,
+   BoJ and SNB were graded on their *statistics-DB* path. Every one gets a robots re-read at PATH
+   granularity plus a media/research-dataset sweep. **The 2026-08-28 (e) UA-403 census must be
+   re-read the same way** — a 403 on one path is not a verdict on the host.
+2. **Categories 2, 3 and 4 are owed** — untouched this run, and the run bounded at 3 items by the
+   completion contract. Non-English regional and community lakes first; they have the longer
+   history of yield for this seat.
+3. **BoE GLC real / inflation / OIS curves** — downloaded and confirmed present, **not yet parsed.**
+   Real-vs-nominal is a daily breakeven-inflation series for free, and it is one parse away.
+4. Still owed, outside this seat's freeze: the **`macro_state.json` three-way write race** (patch in
+   `improvement_inbox.md`, still no owner) and now the **bar-liveness `n_unobservable` patch**.

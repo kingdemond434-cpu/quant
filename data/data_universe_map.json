@@ -1633,33 +1633,39 @@
   ],
   "dbnomics_national_stats_aggregator": {
    "name": "db.nomics.world (DBnomics API v22)",
-   "type": "aggregator that legitimately redistributes national statistical databases (47,062 datasets / 1,725,529,719 series, 100+ providers incl. BOE, ONS, NBB, IMF, OECD, Eurostat)",
+   "type": "aggregator that legitimately redistributes national statistical databases (47,062 datasets / 1,725,529,719 series, 93 providers -- CORRECTED 2026-08-28f from '100+': /v22/providers returns num_found 93)",
    "cost": "free",
    "auth": "none (keyless REST)",
    "status": "verified",
    "grade": "verified-clean",
    "url": "https://api.db.nomics.world/v22/providers",
    "method": "keyless JSON REST: /v22/providers ; /v22/datasets/<PROVIDER> ; /v22/series/<PROVIDER>/<DATASET>?observations=1",
-   "license": "robots.txt = `User-agent: * / Disallow:` (empty = allow ALL); only SemrushBot barred. Each provider ships its own terms_of_use URL in the API payload -- check PER PROVIDER before adopting a series.",
+   "license": "robots.txt = `User-agent: * / Disallow:` (empty = allow ALL); only SemrushBot barred. CORRECTED 2026-08-28f: it is NOT true that every provider ships terms_of_use -- 73 of 93 do, 20 do NOT (BCB, BI, BIS, BLS, BOE, CEPREMAP, CSO, CWD, FED, Franc-zone, ICE, INE-SPAIN, IPP, MOSPI, RBA, SAFE, SCB, STATPOL, WB, openfisca-tunisia). That empty set is almost exactly this seat's ground. Reaching data through an aggregator does NOT inherit a licence the aggregator never asserted -> those 20 are licence-undetermined, not adopted.",
    "replaces": "paid access to national statistical DBs; and it is the §38 replacement LAYER for any national source that is robots-barred or Akamai edge-403 at its own host",
    "verified_2026_08_28": "providers endpoint 200 (nb_datasets=47062, nb_series=1725529719); /datasets/BOE returns 26 datasets with full dimension schemas; robots.txt read under ClaudeBot UA -> 200 allow-all",
    "failure_modes": [
     "provider coverage is NOT the provider's full database -- the BOE mirror is 26 banking/external-business datasets and carries NO IADB gilt-yield series (MEASURED, see replacement_hunts)",
     "allow-all robots is NOT a redistribution grant for every provider",
-    "per-provider indexed_at can be years stale (ACOSS: 2024-02-21)"
+    "per-provider indexed_at can be years stale (ACOSS: 2024-02-21)",
+    "FALSE NULL: /v22/series/... returns n_obs 0 with period:[] value:[] unless observations=true; series names still read 'Daily ...'. A collector that lists and counts concludes 'catalogued but empty' for a 5,617-point series. Same class as the CNB 10,000-row cap and the Binance-WS zero-data class: HTTP 200, valid JSON, plausible metadata, zero rows, no error."
    ],
-   "note": "NEW SOURCE CLASS for this seat 2026-08-28: aggregator-as-replacement-route for edge-blocked/robots-barred national sources. macro_desk already uses it ad hoc as a DFF failover; catalogued as first-class here."
+   "note": "NEW SOURCE CLASS for this seat 2026-08-28: aggregator-as-replacement-route for edge-blocked/robots-barred national sources. macro_desk already uses it ad hoc as a DFF failover; catalogued as first-class here.",
+   "negative_results_2026_08_28f": [
+    "q='gilt yield' -> num_found 0. DBnomics does not carry the UK gilt curve (independently reconfirms the residual; closed instead by the BoE GLC card).",
+    "NOT a commodity price source: q='cocoa price' (141 hits) and q='wheat price' (126) return ONLY OECD transport/insurance trade indices, FAO producer prices and Eurostat agricultural accounts -- annual/monthly statistical aggregates, no tradable daily price. It is a MACRO-STATISTICS aggregator and must not be catalogued as a market-price feed."
+   ]
   },
   "boe_iadb_statistical_database": {
    "name": "bankofengland.co.uk /boeapps/iadb (Interactive Statistical Database)",
    "type": "UK daily gilt yield curve, Bank Rate, sterling money-market series",
    "cost": "free",
    "status": "excluded",
-   "grade": "excluded-robots-barred",
+   "grade": "excluded-robots-barred (PATH) -- SUPERSEDED IN SCOPE 2026-08-28f",
    "url": "https://www.bankofengland.co.uk/robots.txt",
    "verified_2026_08_28": "robots read under the honest DEFAULT UA (ClaudeBot UA -> Akamai edge 403; default UA -> 200). `User-agent: *` explicitly carries Disallow: /boeapps/iadb, /boeapps/database/ShowChart.asp, /boeapps/database/_iadb-FromShowColumns.asp, /boeapps/titan, /mfsd, /search",
    "license": "HARD STOP under DIGGING_CHARTER §13 -- the statistical database is precisely the path the BoE bars. NOT adopted, NOT fetched.",
-   "note": "This seat was one step from adopting it as the run's new source class. The robots read is what stopped it. Spawns replacement_hunt uk-daily-gilt-yield."
+   "note": "This seat was one step from adopting it as the run's new source class. The robots read is what stopped it. Spawns replacement_hunt uk-daily-gilt-yield.",
+   "correction_2026_08_28f": "The exclusion is correct about /boeapps/iadb and WAS OVER-BROAD about the host. robots bars exactly 9 paths; /statistics/yield-curves and /-/media/boe/files/ are permitted, and the GLC yield-curve research dataset there is a SUPERSET of the series being chased (full fitted curve, 1979->present, 4 curve products). See source card boe_glc_yield_curve_daily. GRADE THE PATH, NEVER THE HOST -- in both directions: the 2026-08-28 (s8) note records the inverse error (an allowed sitemap pointing at a walled host)."
   },
   "fred_keyless_fredgraph_csv": {
    "name": "fredgraph.csv (FRED keyless CSV endpoint)",
@@ -1691,6 +1697,51 @@
     "the desk's own producer (desks/mt5/side_channels/bis_speech_tone.py build()) DISCARDS the `author` column, so the speaker field looked like a title-regex problem when the source ships it free",
     "bank attribution is phrase-matched on title+description, so a speech merely HELD AT a named bank is attributed to it (853 'district' rows are venue mentions as much as speakers)"
    ]
+  },
+  "boe_glc_yield_curve_daily": {
+   "name": "Bank of England Government Liability Curve (GLC) -- daily yield-curve research dataset",
+   "type": "UK daily fitted government yield curve: nominal / real / inflation / OIS, spot + forward, 0.5y tenor steps, 1979 -> present",
+   "cost": "free",
+   "auth": "none (keyless, no UA negotiation)",
+   "status": "verified",
+   "grade": "verified-clean",
+   "url": "https://www.bankofengland.co.uk/statistics/yield-curves",
+   "files": {
+    "history": "/-/media/boe/files/statistics/yield-curves/glcnominalddata.zip (39,035,542 bytes, HTTP 200, 8 XLSX era files)",
+    "current_month": "/-/media/boe/files/statistics/yield-curves/latest-yield-curve-data.zip (424,474 bytes; GLC Nominal/Real/Inflation + OIS)",
+    "siblings": "glcrealddata.zip, glcinflationddata.zip, oisddata.zip and *monthedata.zip variants -- 11 links on the permitted page"
+   },
+   "verified_2026_08_28": "PARSED, not trusted: '4. spot curve' sheet measured on three era files -- 1979-1984 = 1,566 obs 1979-01-01->1984-12-31; 2016-2024 = 2,348 obs 2016-01-01->2024-12-31 (~261/yr = correct business-day density, no silent gaps); 2025-to-present = 413 obs 2025-01-01->2026-07-31; current-month zip = 19 obs 2026-08-03->2026-08-27",
+   "license": "Crown copyright / Open Government Licence; public keyless download on a robots-PERMITTED path. Graded licence-open-verify-at-adoption -- robots + publication route read, signed licence page NOT read.",
+   "robots": "bankofengland.co.uk/robots.txt bars exactly 9 paths (/boeapps/database/ShowChart.asp, /boeapps/database/_iadb-FromShowColumns.asp, /boeapps/iadb, /boeapps/titan, /error, /forms, /mfsd, /search, /test-folder). /statistics/yield-curves and /-/media/boe/files/ are NOT barred.",
+   "replaces": "paid UK rates curve history (Bloomberg/Refinitiv gilt curve); strictly MORE than the single benchmark yield that the barred IADB path was being chased for",
+   "failure_modes": [
+    "SCHEMA DRIFT: the 1979-1984 workbook names sheets '4. nominal spot curve'; 2005+ files use '4. spot curve'. A collector keyed on one string returns ZERO rows for the early era -- exactly the era held-out OOS is starved for.",
+    "MONTH SEAM: the history archive stops at 2026-07-31; the current month lives ONLY in latest-yield-curve-data.zip. Fetching the archive alone yields a series that looks complete and is 28 days stale. BOTH files required every run.",
+    "Excel serial dates (epoch 1899-12-30); a literal '#VALUE!' row sits in the header block above the data.",
+    "xlsx parsing needs openpyxl, which is NOT on this box; parsed here as zip-of-XML via stdlib (workbook rels -> sheet name -> sheetN.xml)."
+   ],
+   "cadence": "daily (business days), published same/next day -- 2026-08-27 present on 2026-08-28",
+   "yield": "HIGH -- 47 years of daily curve, closes the uk-daily-gilt-yield replacement hunt"
+  },
+  "ecb_yield_curve_daily": {
+   "name": "ECB euro-area government bond yield curve (dataset ECB/YC)",
+   "type": "daily AAA-rated euro-area government nominal spot/forward curve + Svensson BETA parameters; 2,165 series",
+   "cost": "free",
+   "auth": "none (keyless)",
+   "status": "verified",
+   "grade": "verified-clean",
+   "url": "https://data-api.ecb.europa.eu/service/data/YC/B.U2.EUR.4F.G_N_A.SV_C_YM.SR_10Y?format=csvdata",
+   "failover": "https://api.db.nomics.world/v22/series/ECB/YC/<code>?observations=true",
+   "verified_2026_08_28": "10Y spot rate: 5,617 obs 2004-09-06 -> 2026-08-26 via DBnomics; weekday-only (weekdays {0,1,2,3,4} over trailing 30). DIFFED against ECB's own API on 5 overlapping dates -- exact to 3 d.p. (2026-08-20 3.279171221 vs 3.279 ... 2026-08-26 3.2485054634 vs 3.249).",
+   "routing": "data-api.ecb.europa.eu is PRIMARY; DBnomics is FAILOVER ONLY. The diff showed the aggregator ROUNDS to 3 d.p. and LAGS the source by one publication day (ECB direct carried 2026-08-27; DBnomics did not).",
+   "license": "ECB disclaimer https://www.ecb.europa.eu/home/disclaimer/html/index.en.html (provider ships terms_of_use in the DBnomics payload)",
+   "failure_modes": [
+    "aggregator route rounds to 3 d.p. and lags 1 business day -- never adopt it as primary for a same-day conditioning variable",
+    "DBnomics series endpoint returns period:[] value:[] (n_obs 0) unless observations=true is passed, while series NAMES still read 'Daily ...' -- HTTP 200, well-formed JSON, zero rows, no error"
+   ],
+   "cadence": "daily (TARGET business days)",
+   "yield": "HIGH -- 22 years of daily EUR rates, front-loads OOS"
   }
  },
  "residual_gaps_unpurchasable": [
@@ -1761,7 +1812,11 @@
   },
   "uk-daily-gilt-yield": {
    "opened": "2026-08-28",
-   "grade": "no-daily-replacement-found"
+   "closed": "2026-08-28 (session f)",
+   "grade": "REPLACED-verified-clean",
+   "replacement_adopted": "Bank of England GLC daily yield curve, 1979 -> 2026-08-27, keyless, robots-permitted path (source card boe_glc_yield_curve_daily)",
+   "why_the_hunt_was_opened_at_all": "a path-scoped Disallow was read as a host-scoped exclusion; the data was free, permitted and one directory away from the barred path",
+   "residual": "none for the nominal gilt curve. Real/inflation/OIS curves also available and NOT yet parsed."
   }
  }
 }

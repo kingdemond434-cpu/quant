@@ -3525,3 +3525,31 @@ clock printed on top of 2.7-day-old data — WS-005 class.
 3. The 54 bar-less symbols are a separate ownership question: the canon ratchet restores rows from
    `universe.canon.json` but nothing fetches bars for what it restores, so the ratchet grows the
    registry and the coverage hole together.
+
+## 2026-08-28 (free-data session f) — the bar-liveness instrument makes a desk-wide claim from a host-local view
+
+`data/mt5_universe_bar_liveness.json` (written 2026-08-28 session e, committed) reports "54 of 251
+registry symbols have NO H1 parquet — zero bars" and "only 24 of 197 are fresh". **Both numbers are
+artifacts of this box holding a partial copy of the lake.** Evidence in
+`docs/research/data_axis_watchlist.md` session (f) item 1: the registry records 6,305–26,168 bars
+for every one of the 54 with `_provenance.bars.source = parquet_on_disk` stamped the same second as
+the 197 present here, and `universe_registry.merge()` cannot stamp a symbol absent from `incoming`,
+which `parquet_facts()` builds by globbing real files. `stamped_today − files_here` = exactly the 54.
+mtime census: 173 local parquets share one mtime (2026-08-26T11:06), 24 carry today's — and 24 is
+precisely the "fresh" count.
+
+**PATCH (not applied here — research freeze, `scripts/` out of scope):** the liveness instrument
+must read `bars` and `_provenance.bars.at` from `universe.json` and diff them against the files it
+can see, then report **three** counts, never two: `n_current`, `n_stale`, and **`n_unobservable`
+(registry says the file exists, this host does not have it)**. Presence of a file and presence of
+the data are different questions and this box can only answer the first. Until then the artifact
+asserts a desk-wide verdict it has no standing to make. This is the WS-005/host-vs-desk class and
+the **second** appearance of the number 24 (cf. 2026-08-27 gap-wirer: a swallowing caller hid 88%
+of the universe as a "market fact", 24/197 → 197/197).
+
+**SECOND ITEM — a collector rule, general.** Any collector reading BoE GLC XLSX must key sheets by
+*suffix* (`endswith("spot curve")`), not exact name: the 1979–1984 workbook uses
+`"4. nominal spot curve"` while 2005+ use `"4. spot curve"`, so an exact-match collector silently
+returns zero rows for the pre-2005 era. And it must fetch **both** `glcnominalddata.zip` (history,
+ends 2026-07-31) **and** `latest-yield-curve-data.zip` (current month) — the archive alone looks
+complete and is 28 days stale.
