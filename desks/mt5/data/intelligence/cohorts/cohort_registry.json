@@ -6319,5 +6319,52 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"1dc0bb458864ee9a": {
+"t0": "2026-08-28T18:24:43+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "vatsasr8846/PriceAction-EngulfingZone-EA",
+"url": "https://github.com/vatsasr8846/PriceAction-EngulfingZone-EA",
+"text": "Automate XAUUSD trades on MetaTrader 5 using a price-action engulfing zone retest strategy without indicators or complex grid methods.",
+"symbols": [],
+"found_at": "2026-08-28T18:24:37+00:00",
+"topic": "mql5",
+"stars": 5,
+"star_delta": 0,
+"pushed": "2026-08-28T17:38:03Z"
+},
+"mechanism_tags": [
+"grid",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"affd4a2ad691a572": {
+"t0": "2026-08-28T18:24:43+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "lenardclimatical374/MT5-volume-profile-indicator",
+"url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
+"text": "Display TradingView-style Volume Profile on MetaTrader 5 and 4 with POC, Value Area, and session statistics in a desktop manager.",
+"symbols": [],
+"found_at": "2026-08-28T18:24:37+00:00",
+"topic": "mql5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-28T17:30:03Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

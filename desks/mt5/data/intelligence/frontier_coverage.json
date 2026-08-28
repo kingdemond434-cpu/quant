@@ -94,10 +94,10 @@
   "de": {
    "region": "DACH",
    "open_frontier": true,
-   "queries_exercised": 21,
+   "queries_exercised": 24,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-28T12:22:04+00:00",
+   "last_swept": "2026-08-28T18:22:01+00:00",
    "native_terms_available": 10
   },
   "fr": {

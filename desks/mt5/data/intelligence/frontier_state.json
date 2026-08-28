@@ -1,5 +1,5 @@
 {
-"cursor": 70,
+"cursor": 71,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -184,6 +184,9 @@
 "drawdown MT4",
 "drawdown MT5",
 "drawdown ranking",
+"expert advisor MT4",
+"expert advisor MT5",
+"expert advisor ranking",
 "gewinn MT4",
 "gewinn MT5",
 "gewinn ranking",
