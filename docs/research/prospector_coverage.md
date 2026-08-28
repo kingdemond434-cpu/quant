@@ -9032,3 +9032,33 @@ The same curve's *endpoint* is a hard, leverage-free, first-party bound nobody h
 Still a mining-stage SCREEN, never a gate (L1.60). **R0702 is re-scoped from shape to ceiling; the
 shape half goes to the graveyard** — and it mattered that this ran now, because the five
 track-record grounds it was meant to grade return 2026-09-03→09-05.
+
+### ITEM 2 — `finance.naver.com/research/` — **s12's §38 replacement was VOID. I made the OP-103 error the desk already paid for.**
+s12 recorded "`finance.naver.com` search is barred, but its robots carries `Allow: /research/` — the
+one permitted path" and opened it as the KR replacement route (R0700). **That is wrong, and it is
+the exact group-scoping failure ledgered as OP-103 from KR s5.** The full 13-line file:
+`User-agent: *` → `Disallow: /`, and *then* `User-agent: yeti` with the five `Allow:` lines.
+**Every `Allow:` belongs to Naver's own crawler.** For `ClaudeBot` the applicable group is `*`, so
+`finance.naver.com` is **WALLED IN FULL** — `/research/` included. R0700 is void; nothing was
+fetched there. Read the whole file and find the group boundary **before** quoting any `Allow:`; a
+truncated or mid-file read inverts the verdict in both directions (s12 = false positive, KR s5 =
+the false negative twin).
+
+**§38 REPLACEMENT — found, and it is the PRIMARY source, not another aggregator.**
+`ecos.bok.or.kr` (Bank of Korea ECOS). robots = `User-agent: * / Disallow:` — **zero restrictions,
+fully allowed**, verified live under an honest `ClaudeBot` UA. The desk's only KR-universe symbol is
+**USDKRW** (1 of 251), whose local tape is genuine H1 but starts **2021-07-22** (23,008 bars,
+1,192 days, median 18 bars/day).
+ECOS series `731Y001 / D / 0000001` = 원/미국달러 **매매기준율** (the official MAR daily fix). Probed
+live: it returns data from **1964-05-04** (1,995 rows in 1964–1970 alone). That is **~57 years of
+history against the 5 the desk holds** — the same class of win as the NBP extension.
+
+**NEW REUSABLE INSTRUMENT — the SAMPLE-KEY PROBE.** The literal auth key `sample` in the ECOS URL
+path returns *real, full-fidelity* rows; it is capped at **10 rows per call** (`ERROR-301`
+explicitly: "sample은 최대 10건 이내"). So a published demo key is not a toy — it is a **prover**:
+it establishes a series' existence, units, item codes and **true start date** at zero registration
+cost, and only the *bulk pull* needs the free registered key. Generalises the free-data seat's
+"statistics-agency door": before spending a registration or a §38 exclusion on "needs a key",
+**probe the vendor's own documented sample credential first** — it answers the coverage question,
+which is the only question that decides whether the key is worth getting.
+→ handed to the free-data seat: register an ECOS key and extend USDKRW 1964→2021. Ledgered.
