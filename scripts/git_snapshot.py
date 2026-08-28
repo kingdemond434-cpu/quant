@@ -10,6 +10,7 @@ deployment -- rollback_guard remains the revert mechanism for autonomous changes
 
 from __future__ import annotations
 
+import re
 import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
@@ -56,11 +57,53 @@ def main() -> None:
     r = _git("commit", "-m", msg)
     if r.returncode == 0:
         print(f"git-snapshot: committed -- {msg}")
-        pr = _git("push", "origin", "HEAD")
-        print("git-snapshot: pushed to GitHub" if pr.returncode == 0
-              else f"git-snapshot: push failed (offsite deferred): {(pr.stderr or '')[:80]}")
+        _report_push(_git("push", "origin", "HEAD"))
     else:
         print(f"git-snapshot: commit failed: {(r.stderr or r.stdout)[:140]}")
+
+
+def _head_is_on_remote() -> bool:
+    """Ask the REMOTE what it holds, rather than a local tracking ref.
+
+    `@{u}` is wrong here twice over: this pushes `origin HEAD`, so the branch need not have an
+    upstream configured at all (on a box where it does not, an ancestor test against `@{u}` fails
+    and reports a perfectly good push as lost), and a tracking ref is a local cache that a failed
+    fetch leaves stale. `ls-remote` is the only answer that came from the server.
+    """
+    branch = _git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if not branch or branch == "HEAD":
+        return False  # detached: nothing to compare, so never claim it landed
+    ls = _git("ls-remote", "origin", f"refs/heads/{branch}")
+    if ls.returncode != 0 or not ls.stdout.strip():
+        return False
+    remote_sha = ls.stdout.split()[0]
+    return _git("merge-base", "--is-ancestor", "HEAD", remote_sha).returncode == 0
+
+
+def _report_push(pr) -> None:
+    """Judge the push from the REMOTE, never from git's exit code.
+
+    `git push` EXITS 0 ON A REMOTE REJECT: the pre-receive hook declines, the transport
+    succeeded, and the exit code reports the transport. This desk has paid for that three
+    times, and it was still live here -- daily_research_cycle logged
+    `[git_snapshot] {'ok': True, 'rc': 0, 'tail': ' ! [remote rejected]   HEAD -> desk-sy'}`,
+    i.e. the offsite snapshot announcing success for a push that landed nothing. An offsite
+    backup that reports green while shipping nothing is worse than no backup, because it is
+    the one failure nobody goes looking for.
+
+    Two independent arms, because either alone has been fooled before: grep the OUTPUT for a
+    refusal, and confirm from the remote-tracking ref that HEAD is actually contained in it.
+    """
+    out = f"{pr.stdout or ''}\n{pr.stderr or ''}"
+    refused = re.search(r"rejected|denied|error:|failed to push", out, re.I)
+    landed = _head_is_on_remote()
+    if pr.returncode == 0 and landed and not refused:
+        print("git-snapshot: pushed to GitHub")
+        return
+    why = "REJECTED by the remote" if refused else (
+        "exit 0 but HEAD is not on the upstream ref" if pr.returncode == 0 else "transport failed")
+    print(f"git-snapshot: PUSH DID NOT LAND ({why}) -- this snapshot exists only on this box: "
+          f"{out.strip()[:200].replace(chr(10), ' ')}")
 
 
 if __name__ == "__main__":
