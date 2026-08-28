@@ -3553,3 +3553,95 @@ of the universe as a "market fact", 24/197 → 197/197).
 returns zero rows for the pre-2005 era. And it must fetch **both** `glcnominalddata.zip` (history,
 ends 2026-07-31) **and** `latest-yield-curve-data.zip` (current month) — the archive alone looks
 complete and is 28 days stale.
+
+---
+
+## 2026-08-28 — PROSPECTOR s10: overnight financing is uncharged, and the fix path is a units minefield
+
+**Class:** cost/execution (BOTTLENECK LAW — a cost fix counts as much as an alpha fix).
+**Provenance: VERIFIED** — measured against the desk's own tape,
+`desks/mt5/data/tape/contract_terms/2026-08-27.parquet` (248 symbols, 9 intraday snapshots),
+plus a full import-graph walk. No external source involved.
+
+### Finding A — financing is charged NOWHERE on the live path (L1.5 direction: FALSE POSITIVES)
+
+The only live cost provider is `_mt5_cost_provider` in `scripts/run_autodiscovery.py:44`, which
+calls `libs.costs.mt5_calibration.per_side_cost_fraction` → `round_turn_cost_fraction`. That
+function sums **spread + 2×slippage + commission and nothing else** (`mt5_calibration.py:97`).
+`calibrate()` faithfully computes `swap_long/short_per_lot_per_night` — and no live consumer ever
+reads them.
+
+The single reader of those fields is `libs/costs/model.py:80` (`estimate_trade_cost`), and the
+import-graph walk finds it **exported in `libs/costs/__init__.py` and called by nothing else in
+`libs/`, `desks/` or `scripts/`**. Same for `get_cost_params` / `DEFAULT_COST_PARAMS`.
+
+⇒ **Every multi-night hold the gauntlet has ever screened was costed at ZERO financing.** This
+undercharges, so it fails toward FALSE POSITIVES on exactly the hold-overnight families
+(carry/swing) — and carry is this desk's *only repeat survivor*, which is where the desk can least
+afford a cost blind spot. This is the `benchmark_returns` class again: a gate that exists, is
+tested, and is called by nothing (III.16).
+
+### Finding B — the conversion is wrong for 246 of 248 symbols, and correct on the majors
+
+Wiring Finding A without fixing this makes things worse. `_swap_to_money`
+(`mt5_calibration.py:85`) does:
+
+```python
+if int(info.swap_mode) == _SWAP_MODE_POINTS:      # mode 1
+    scale = float(info.point) * contract_size
+    return (-swap_long * scale, -swap_short * scale)
+return (-swap_long, -swap_short)                  # everything else: raw passthrough
+```
+
+Measured against the tape (account currency is **EUR**, confirmed from `tick_value` arithmetic):
+
+| defect | symbols | what happens |
+|---|---|---|
+| **B1** non-POINTS modes hit the raw passthrough | **138 / 248** | all are `swap_mode=5` = `INTEREST_CURRENT`, an **annual % of notional**. It is returned as if it were EUR-per-lot-per-night — dimensionally not a currency amount at all. Covers every US share CFD, all indices (`AUS200`), and crypto CFDs. |
+| **B2** POINTS mode never converts `currency_profit` → account EUR | **108 / 110** | `point × contract_size` yields **profit-currency** units. Median overstatement **4.33×**, max **20,695×**. |
+
+Worst B2 cases (EUR/lot/night, code vs true):
+
+```
+USDIDR  20694.9x   2,426,600.00  vs  117.26
+USDKRW   1609.9x     100,320.00  vs   62.32
+EURHUF    365.0x       4,784.00  vs   13.11
+AUDJPY    185.5x        -552.00  vs   -2.98
+```
+
+The 185.5× on JPY crosses is the **same class as the already-paid 184× JPY commission
+undercharge**, in a different field.
+
+**Only 2 of 248 symbols are correct — and they are the USD-quoted majors a spot-check tries
+first.** `libs/research/perishability.py:145` predicted this in writing ("the error hides on
+exactly the majors a spot-check would try first"); this is that prediction confirmed with numbers.
+
+Correct conversion, both modes, from fields the tape already records:
+- mode 1: `money_EUR = swap_points × tick_value × (point / tick_size)`  (`tick_value` is already
+  account-ccy per tick)
+- mode 5: `money_EUR ≈ rate_pct/100 × notional_EUR / 365` — **price-dependent**, so it cannot be
+  precomputed into a frozen constant at all.
+
+### Finding C — `libs/costs/params.py` hardcodes 8 instruments; all 8 are wrong
+
+Latent (no callers), so **not** a live defect — recorded so a future wiring does not adopt it.
+Every one undercharges, and `USDJPY`'s **sign is inverted** (params charges 0.60 cost; the real
+long swap is a **credit** of 3.42 EUR/night):
+
+```
+EURUSD 0.70 vs 5.54 (7.9x)   XAUUSD 5.00 vs 56.81 (11.4x)   XAGUSD 4.00 vs 48.04 (12.0x)
+USDJPY 0.60 cost vs 3.42 CREDIT (sign flip)
+US500 / NAS100 / BTCUSD: mode 5 — an annual %, so no fixed per-night constant is even well-formed
+```
+
+### Recommended disposition (RESEARCH-FREEZE: I did not touch `libs/`)
+
+1. Fix `_swap_to_money` first (B) — wiring A before B would charge USDIDR 20,695× its true carry
+   and hard-kill every exotic overnight edge. A false null produces no alert, which is the one
+   direction no gate here catches.
+2. Then wire financing into the live cost path (A), keyed on realised holding nights.
+3. Record `point` in `contract_terms` — the perishability register lists it as an interpretive
+   field and it is **the one of the four that is absent**. `tick_size` is standing in and they are
+   equal on this feed, but that equality is an assumption nothing asserts.
+4. Positive control: assert `USDJPY` long swap comes back a **credit**. Any implementation that
+   returns a cost there has the sign or the currency wrong.

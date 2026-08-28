@@ -1033,3 +1033,56 @@ control group, not a seasonal dummy.
 asymmetry is **unverified** and is the cheapest next check (s7/s8 already hold open routes into
 FundedNext and The5%ers-replacement ground). Pool size is unmeasured. Provenance of the *mechanism*
 is VERIFIED; provenance of the *market impact* is **CLAIM** until H1 runs.
+
+---
+
+### AMENDMENT — PROSPECTOR s10, 2026-08-28: H1's control group is REFUTED; the mechanism SURVIVES
+
+The s9 card named the cross-firm replication as "the cheapest next check". It was run. **Two
+independent firms, and the metals-vs-index asymmetry does not replicate at either.**
+
+| Firm | News rule structure | Metals vs indices? | Provenance |
+|---|---|---|---|
+| **Alpha Capital** (s9) | separate restriction tables per product class | **ASYMMETRIC** — metals blacked out on all-currency rate/CPI/GDP/PMI/employment; indices on 3 US events only | VERIFIED (s9) |
+| **FTMO** | ONE unified table, grouped by *related currency* | **SYMMETRIC** — `USD pairs, Gold (XAUUSD), US Indices, DXY` sit in the **same bucket**, restricted on the same US announcements | VERIFIED — `ftmo.com/en/faq/can-i-trade-news/` |
+| **The5ers** | single relatedness clause | **SYMMETRIC** — "high-impact news in the **related currency or index**" | VERIFIED — `help.the5ers.com/can-i-trade-during-news/` |
+
+**⇒ H1 as pre-registered is dead.** Its difference-in-differences rests on the funded pool being
+blacked out in gold and *not* in indices on the same clock. At 2 of 3 firms gold and US indices are
+in the **same** bucket, so on a US release both are restricted and the "control" is restricted too;
+on a non-US release neither is. The asymmetry is **one firm's legal drafting**, not a property of
+the trapped-capital pool. Do not run H1.
+
+**What survived, and it is the more valuable half.** The *forcing clause* replicates verbatim
+across firms — FTMO: "if a Stop Loss or Take Profit is triggered within the restricted time window,
+this will also be considered a breach"; The5ers: "any pending order that triggers inside a
+restricted news window will be treated as a news trading violation." A trader who cannot control
+whether their SL fills inside the window **must flatten before it**. That is a genuine forced flow
+with a contractual mechanism, and it is now VERIFIED at **3 of 3** firms rather than 1.
+
+Two firm-independent facts also converged: the window is **2 minutes either side** at both FTMO and
+The5ers (Alpha Capital's differs), and the restriction binds the **relatedness relation**, not an
+instrument list.
+
+**REBUILT TEST DESIGN (supersedes H1/H2) — better, because it is now universal rather than
+firm-specific.** The correct control is the *relatedness rule both firms state explicitly*: at a
+given release, related instruments are restricted and **unrelated ones are not, on the same clock,
+in the same session**.
+
+- **H1′:** in (T−10min, T−5min) before a high-impact release, instruments **related** to the event
+  currency show elevated flattening flow (volume, |return|, quoted spread — direction-agnostic)
+  relative to **unrelated** instruments, versus a matched non-event control. Example cell: an AUD
+  print restricts AUD pairs and leaves EURUSD/US500 unrestricted.
+- **H2′:** the (T+2min, T+10min) re-entry mirror. The 2-minute boundary is now a **sharp, shared
+  discontinuity** at two firms — a regression-discontinuity cell H1 never had.
+- **Falsifier (unchanged in spirit, stronger now):** no related-vs-unrelated differential ⇒ the
+  pool is too small to move the tape and the family dies. **This remains the expected outcome.**
+
+**EV: unchanged, and deliberately not re-scored upward.** The mechanism's provenance improved
+(1 firm → 3) but pool share is still **unmeasured**, which is the term the EV is actually sensitive
+to. Re-scoring on better provenance alone would be marking up the estimate for evidence that does
+not bear on the binding unknown. Stays **QUEUE at ev ≈ 0.0036**, below the carry-class reference.
+
+**Status:** H1/H2 **RETIRED (design refuted, logged so no run re-derives it)**. H1′/H2′ carried
+forward at the same weight. Next check remains **pool share of gold/index volume** — the one
+measurement that decides this family, and still the cheapest thing that could kill it.

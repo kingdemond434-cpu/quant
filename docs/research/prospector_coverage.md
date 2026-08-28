@@ -8434,3 +8434,120 @@ law the desk already holds — **not** a new idea, and it elevates nothing.
    than the holiday calendar because it names the direction.
 4. **Does the metals-vs-index blackout asymmetry replicate at a second prop firm?** — the cheapest
    check on this run's one card, and the one that decides whether it is a firm quirk or a pool fact.
+
+---
+
+## Session s10 — 2026-08-28 (STANDING DAILY RUN)
+
+**Backlog state at start:** `source_backlog_next.py --limit 6` → **0 pending verification, 0
+pending legitimacy, 48/73 resolved, 25 deferred** (earliest return 2026-09-01). Backlog is
+genuinely clear, so this run goes to the s9 note's NEXT-UN-EXHAUSTED-GROUND list rather than to
+handed work.
+
+**ITEMS TAKEN THIS RUN (bounded; depth maxed per item):**
+
+1. **Margin-requirement change notices** (s9 next-ground #3, named in s8 and s9 and *still*
+   unread — the oldest un-closed item on my own list). Announced, dated, forced deleveraging in a
+   named pool, and unlike the holiday calendar it names the DIRECTION. Status: `IN PROGRESS`
+2. **Does the metals-vs-index news-blackout asymmetry replicate at a second prop firm?**
+   (s9 next-ground #4) — the cheapest possible check on s9's one carded survivor; decides whether
+   that card is a firm quirk or a pool fact. Status: `IN PROGRESS`
+3. **Pre-fetched MT5 corpora** under `desks/mt5/data/intelligence/` (CORPORA-FIRST order) —
+   consume today's collector output before any live browsing. Status: `IN PROGRESS`
+
+_(Items resolve in place below as they close. Written before searching so a mid-run kill leaves
+durable progress.)_
+
+### Resolutions
+
+**Item 1 — margin/cost change notices: REROUTED, then CLOSED with a live cost defect.**
+The scraped-notice route was the wrong instrument. The desk already owns the better one:
+`broker_swaps` writes **248 symbols hourly** from `mt5://symbol_info`, and the canonical recorder
+`record_contract_terms` writes `desks/mt5/data/tape/contract_terms/` **with** the interpretive
+fields. Measured: **81/244 symbols changed swap inside 3 days** — broker cost terms are a live,
+fast-moving, proprietary series, and the desk is now accruing it. That is strictly better than
+scraping announcements because it also captures the **unannounced** changes.
+
+Consuming it produced the run's main deliverable → `improvement_inbox.md` (2026-08-28):
+- **A:** overnight financing is charged **nowhere** on the live path. The live provider
+  (`run_autodiscovery.py:44` → `round_turn_cost_fraction`) sums spread+slippage+commission only;
+  the sole reader of the swap fields (`libs/costs/model.py:80`) has **no production caller**. Every
+  multi-night hold ever screened was costed at **zero** financing — undercharging, so it fails
+  toward FALSE POSITIVES on carry/swing, the desk's only repeat-survivor family.
+- **B:** the conversion is wrong for **246 / 248** symbols — 138 are `swap_mode=5`
+  (`INTEREST_CURRENT`, an annual %) hitting a raw passthrough that reads a percentage as EUR/night;
+  108 POINTS-mode symbols never convert `currency_profit`→account EUR (median **4.33x**, max
+  **20,695x** on USDIDR; **185.5x** on JPY crosses — the same class as the already-paid 184x JPY
+  commission bug). **The 2 correct symbols are the USD-quoted majors a spot-check tries first**,
+  exactly as `perishability.py:145` predicted in writing.
+- **C:** `libs/costs/params.py` hardcodes 8 instruments, all wrong (XAUUSD 11.4x, XAGUSD 12.0x,
+  EURUSD 7.9x, **USDJPY sign-inverted**). Latent — no callers — logged so a future wiring of A
+  does not adopt it.
+- Ordering matters and is stated in the inbox: **fix B before wiring A**, or exotics get charged
+  20,695x their true carry and every overnight edge is hard-killed by a false null, which is the
+  one direction no gate here alerts on.
+
+**Item 2 — prop-firm blackout asymmetry: RESOLVED, and it refuted my own s9 card.**
+FTMO and The5ers both group gold **with** US indices under one relatedness rule. The
+metals-vs-index asymmetry is **Alpha Capital's drafting, not a pool fact** ⇒ s9's H1/H2
+difference-in-differences is **RETIRED**. The *forcing clause* (SL/TP filling inside the window
+counts as a breach) replicated at **3/3** firms, so the mechanism strengthened while its test
+design died. Rebuilt as H1′/H2′ on the **related-vs-unrelated** control both firms state
+explicitly — universal instead of firm-specific, and it gains a sharp 2-minute RD boundary.
+**EV deliberately NOT re-scored upward**: provenance improved, but the binding unknown (pool share)
+is untouched.
+
+**Item 3 — pre-fetched corpora: CONSUMED.** 53 sources / ~16k rows aggregated by script, not
+through context. Also caught a self-inflicted near-miss worth recording: my first pass reported
+"0 symbols present on all 4 days", which was an artifact of 2026-08-25 being the producer's first
+day (its files hold a single `fetch_error` row — the `fusionmarkets.com/pricing/swap-rates` scrape
+404s; the terminal route is what works). Intersecting against an empty set returned 0 and read as a
+market fact. **Absence read as a clean verdict, in my own analysis, inside one session** (WS-005).
+
+### Coverage bookkeeping
+
+| Source family | Visited | Yield |
+|---|---|---|
+| `broker_swaps` + `contract_terms` desk tape (248 symbols, 4 days) | ✅ | **3 verified cost defects**, one live on the money path — the run's main deliverable |
+| Cost-model import graph (`libs/costs/*` → autodiscovery) | ✅ | financing path proven **unwired end-to-end** |
+| FTMO rulebook (robots: `Disallow:` empty = full allow; sitemap-enumerated) | ✅ | **REFUTED** s9's control group; forcing clause replicated |
+| The5ers rulebook (robots allows `/`) | ✅ | second independent refutation + 2-min window confirmed |
+| Today's 53-source intelligence corpus | ✅ | consumed by script; 27 sources produced **0 rows across all runs** — logged below, not yet graded |
+
+- **DEPTH:** swaps → corpus read → **panel reconstruction across 4 days** → stability test →
+  units question → **canonical tape parquet** → `swap_mode` resolution → **full import-graph walk
+  to the live caller** → confirmed the consumer never reads the field. The depth is the entire
+  result: the surface said "a nice proprietary carry panel", and the walk said "financing is
+  uncharged and the conversion is broken 246 ways". Prop firms → **primary rulebooks only**
+  (secondary review sites were explicitly rejected as marketing-grade) → cross-firm table →
+  refutation of my own prior card.
+- **NEGATIVE RESULTS, first-class:** s9's H1 is retired with its replication evidence shown, not
+  quietly dropped. Two of this run's three headline outputs are refutations — one of a desk-wide
+  cost assumption, one of my own last session's card.
+- **§38 EXCLUSION → REPLACEMENT:** the `fusionmarkets.com/pricing/swap-rates` scrape route is dead
+  (404). Replacement was found **in the same run and is strictly better**: the terminal
+  `mt5://symbol_info` route, which is first-party, hourly, and includes the interpretive fields the
+  scrape never had. No residual gap.
+- **Video:** 0 fetched, 0 locked. No route attempted or needed; nothing added to
+  `video_locked_log.md`.
+- **NEW OPERATOR LESSON:** when a value's UNIT lives in a sibling column (`swap_mode`), any
+  cross-sectional ranking computed before reading that column is fiction. I ranked USDTRY as the
+  "worst round-trip" at −10,264 before discovering the number was in POINTS. Same class as the
+  s-prospector pips-vs-pips error: **convert to money before ranking anything.**
+
+### NEXT UN-EXHAUSTED GROUND (for s11, in order)
+
+1. **The 27 zero-yield collectors** (`earnings`, `tradingview`, `hfm_pamm`, `google_trends`,
+   `weather`, `china`, `korea`, `bis_speeches`, `aaii`, …) — **0 rows across all 15–20 runs today**.
+   Some are genuinely walled, but that must be *graded per source*, because a silently-empty
+   producer and a genuinely empty seam are indistinguishable from the log (L1.28a). Highest-value
+   remaining item: it is owned data returning nothing.
+2. **FTMO `trading-updates-sitemap.xml`** — enumerated this run and it is the **operational-notice
+   archive** (my Item-1 family: margin changes, holiday schedules) at a second firm. Both update
+   sitemaps returned no `<loc>` rows to my grep filter; needs an unfiltered pull to tell an empty
+   sitemap from a filter miss. **Do not grade it dead without that pull.**
+3. **Margin-requirement change notices** — still unread as a *cross-firm* family. Now better
+   shaped: pair announced margin changes against the desk's own hourly `contract_terms` tape, which
+   would show whether a notice leads or lags the terminal.
+4. **The 4 remaining Fusion holiday matrices** (s9 #1, still open — CDX gave 7 snapshots, 3 read).
+5. **Pool-share measurement for H1′** — the one number that decides the prop-firm family.
