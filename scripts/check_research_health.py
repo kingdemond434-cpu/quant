@@ -143,6 +143,34 @@ def collect(now: datetime) -> tuple[list[str], dict]:
         breaches.append("DOCKET: zero candidate rows shipped -- the empty-docket seals held "
                         "upstream, but the flow itself is dry")
 
+    # --- TRADING ITSELF. Checked FIRST because it outranks every research question here: a desk
+    # that is not trading has no upside to protect, and a research pipeline in perfect health is
+    # worth nothing while the book is inert. The desk auto-paused on 2026-08-25 with a message
+    # naming the exact cause -- the terminal's AutoTrading button was off -- and sat that way for
+    # three days because no fence read the marker it had written.
+    # REPORT ONLY, NEVER CURED HERE. Re-arming means placing live orders, and nothing on this box
+    # gets to make that decision on its own; the money path takes no autonomous fixer by standing
+    # rule. Naming it loudly every five minutes is the entire job.
+    paused = DESK / "data" / "GATEWAY_PAUSED"
+    if paused.exists():
+        try:
+            why = paused.read_text("utf-8").strip().splitlines()
+            first = next((ln.strip() for ln in why if ln.strip()), "no reason recorded")
+            cause = next((ln.strip() for ln in why[1:] if ln.strip()), "")
+        except OSError:
+            first, cause = "unreadable marker", ""
+        halt_age = _mtime_age_h(paused, now)
+        m["trading_halted"] = True
+        m["trading_halted_hours"] = round(halt_age, 1) if halt_age is not None else None
+        days = f"{halt_age / 24:.1f} day(s)" if halt_age is not None else "an unknown period"
+        breaches.append(
+            f"TRADING HALTED for {days} -- THE DESK IS NOT TRADING. {first}"
+            + (f" || {cause}" if cause else "")
+            + " || This is never auto-cleared: re-arming places live orders. Delete "
+              "desks/mt5/data/GATEWAY_PAUSED on the desk box once the cause is fixed.")
+    else:
+        m["trading_halted"] = False
+
     # --- searchers: the docket can look fresh on miners alone while both search legs are
     # dead (measured 2026-08-27: edge_search OOM-dead 25h, docket green the whole time --
     # a per-source blind spot). Each producer owes its own freshness.

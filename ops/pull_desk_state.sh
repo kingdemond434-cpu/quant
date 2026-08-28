@@ -55,6 +55,21 @@ for f in universal_gates_external.json recertification_audit.json; do
     && mv "desks/mt5/reports/$f.tmp" "desks/mt5/reports/$f"
 done
 
+# THE TRADING HALT MARKER. The desk auto-pauses itself when placement passes are rejected, and
+# it writes a file saying exactly why. Nothing pulled that file and nothing read it, so the desk
+# stopped trading on 2026-08-25 and reported it to no one for three days -- while every research
+# organ went on being green, because research WAS healthy. The one number that matters was not
+# among the numbers being checked.
+# Absence is meaningful here and must be propagated, not merely skipped: a stale local copy would
+# announce a halt that has since been cleared, which is the same lie in the other direction. So a
+# failed pull DELETES the local marker rather than leaving yesterday's answer in place.
+if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/GATEWAY_PAUSED" \
+        desks/mt5/data/GATEWAY_PAUSED.tmp 2>/dev/null; then
+  mv desks/mt5/data/GATEWAY_PAUSED.tmp desks/mt5/data/GATEWAY_PAUSED
+else
+  rm -f desks/mt5/data/GATEWAY_PAUSED.tmp desks/mt5/data/GATEWAY_PAUSED
+fi
+
 # The job manifest judges FRESHNESS, so it has to see the trading box's own artifacts rather than
 # this box's stale copies -- otherwise it would report a dead organ as healthy, which is the exact
 # failure mode it exists to catch.
