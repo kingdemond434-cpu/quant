@@ -170,8 +170,43 @@ try {
       $logItem = Get-Item 'C:\opt\quant\desks\mt5\logs\MT5-Gauntlet.log' -ErrorAction SilentlyContinue
       $logFresh = ($logItem -and $logItem.LastWriteTime -gt $cutoff)
       if ($freshCache.Count -eq 0 -and -not $logFresh) {
-        Stop-Process -Id $oldest.ProcessId -Force -ErrorAction SilentlyContinue
-        $actions += "NO-PROGRESS external_gauntlet: alive $([math]::Round($ageMin))m, 0 cache writes and no log line in 20m -- killed; the hourly trigger re-runs it and the cache makes the rerun cumulative"
+        # ARTIFACT SILENCE IS NOT ENOUGH ON ITS OWN. A sweep whose cells are ALL cache hits
+        # legitimately writes no cache file and, until the task was unbuffered, no log line
+        # either -- it just computes gates on series it already has. Measured 2026-08-28:
+        # "Cell cache: 460/460 loaded, 0 to compute", zero cache writes for 20 minutes, and the
+        # sweep perfectly healthy. This rule would have killed it.
+        # CPU RATE is what actually separates the two, and it separates them cleanly: a sweep
+        # computing gates runs near a full core, while the thrashing process this rule was
+        # written for managed 10 seconds in 4 minutes -- 0.04 of a core. Anything under ~0.15
+        # of a core is not computing, whatever it is doing.
+        # Both conditions must hold: silent AND not working. Either alone is a false positive
+        # waiting to happen, and this is the second watchdog tonight to learn that a single
+        # signal is a single point of failure.
+        $cpuRate = $null
+        try {
+          $treeCpu = 0.0
+          $gpNow = Get-Process -Id $oldest.ProcessId -ErrorAction SilentlyContinue
+          if ($gpNow) { $treeCpu = $gpNow.TotalProcessorTime.TotalSeconds }
+          foreach ($kid in ($allProcs | Where-Object { $_.ParentProcessId -eq $oldest.ProcessId })) {
+            $kp = Get-Process -Id $kid.ProcessId -ErrorAction SilentlyContinue
+            if ($kp) { $treeCpu += $kp.TotalProcessorTime.TotalSeconds }
+          }
+          $pk = "external_gauntlet.$($oldest.ProcessId)"
+          if ($prev.ContainsKey($pk)) {
+            $elapsed = ($now - [datetime]$prev[$pk].at).TotalSeconds
+            if ($elapsed -gt 60) {
+              $cpuRate = ($treeCpu - [double]$prev[$pk].cpu) / $elapsed
+            }
+          }
+        } catch { $cpuRate = $null }
+
+        if ($cpuRate -ne $null -and $cpuRate -ge 0.15) {
+          $actions += "NO-PROGRESS check on external_gauntlet: silent for 20m but working at $([math]::Round($cpuRate,2)) core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
+        } else {
+          Stop-Process -Id $oldest.ProcessId -Force -ErrorAction SilentlyContinue
+          $rateTxt = if ($cpuRate -eq $null) { "cpu rate unknown" } else { "$([math]::Round($cpuRate,2)) core(s)" }
+          $actions += "NO-PROGRESS external_gauntlet: alive $([math]::Round($ageMin))m, 0 cache writes, no log line in 20m, $rateTxt -- killed; the hourly trigger re-runs it and the cache makes it cumulative"
+        }
       }
     }
   }
