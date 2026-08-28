@@ -47,13 +47,59 @@ from mt5desk.families import Signal, _atr, _h1
 
 BASE = Path(__file__).resolve().parent.parent
 TERMS = BASE / "data" / "tape" / "contract_terms"
+_TERMS_CACHE: dict[str, dict] | None = None
 COT = BASE / "data"
+
+
+def _load_terms() -> dict[str, dict]:
+    """Latest recorded terms per symbol, read ONCE per process.
+
+    THE FORMAT MISMATCH THAT MADE CARRY DEAD CODE (fixed 2026-08-28). The tape recorder writes
+    one PARQUET vintage per day -- `2026-08-27.parquet`, 1,908 rows carrying observed_at, symbol,
+    swap_long and swap_short for the whole offering. The reader below globbed `*.json` and
+    `*.jsonl` and nothing else, so it matched no file the producer has ever written, returned
+    None for every symbol, and `family_carry` returned [] for every symbol as its docstring
+    promises it will without terms.
+
+    Nothing reported this. The sweep counted the cells as run, the gate report recorded 194 carry
+    cells with `days: 0`, and "0 daily observations" reads like a mechanism that fires rarely
+    rather than a reader that has never once opened a file. Carry is the desk's one genuinely
+    non-directional mechanism -- the diversifier against a book of breakout and momentum sleeves
+    -- so the whole orthogonal wing was silently absent from every hunt.
+
+    Loaded once and cached: this is called per CELL, and the old code re-scanned the entire
+    directory on every call.
+    """
+    global _TERMS_CACHE
+    if _TERMS_CACHE is not None:
+        return _TERMS_CACHE
+    latest: dict[str, dict] = {}
+    if TERMS.exists():
+        # Chronological: later files win, so the newest observation is the one carry uses.
+        for f in sorted(TERMS.glob("*.parquet")):
+            try:
+                frame = pd.read_parquet(f)
+            except (OSError, ValueError, ImportError):
+                continue
+            if "symbol" not in frame.columns:
+                continue
+            if "observed_at" in frame.columns:
+                frame = frame.sort_values("observed_at")
+            for row in frame.to_dict("records"):
+                sym = str(row.get("symbol", "")).upper()
+                if sym:
+                    latest[sym] = row
+    _TERMS_CACHE = latest
+    return latest
 
 
 def _swap_terms(symbol: str) -> dict | None:
     """Point-in-time swap/contract terms the tape recorder already stores. None if unrecorded."""
     if not TERMS.exists():
         return None
+    parquet_row = _load_terms().get(str(symbol).upper())
+    if parquet_row is not None:
+        return parquet_row
     rows: list[dict] = []
     for f in sorted(TERMS.glob("*.json")) + sorted(TERMS.glob("*.jsonl")):
         try:
