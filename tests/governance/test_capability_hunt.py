@@ -7,6 +7,13 @@ from pathlib import Path
 
 from scripts.check_replacement_rate import build_report
 
+# 2026-08-28: read the INJECTED PAYLOAD, not one file. The 08-25 consolidation moved the
+# law text from ops/principal_doctrine.txt into docs/LAWS.md and changed brain_env.sh to
+# cat BOTH into every organ's prompt in the same breath -- no organ lost a line, and five
+# fences went red about text one file away. libs.doctrine.corpus derives the file list
+# from brain_env.sh itself, so a future relocation moves the fences with it.
+from libs.doctrine.corpus import doctrine_text
+
 
 def _seed(root: Path, *, deaths: int = 0, births=None, occupied: int = 2) -> None:
     (root / "docs").mkdir(parents=True, exist_ok=True)
@@ -52,7 +59,7 @@ def test_laws_and_wiring_present():
     const = " ".join(Path("docs/CONSTITUTION.md").read_text("utf-8").replace("**", "").split())
     assert "L1.30 REPLACEMENT RATE" in const
     assert "L1.31 THE DESK HUNTS ITS OWN MISSING CAPABILITIES" in const
-    doc = Path("ops/principal_doctrine.txt").read_text("utf-8")
+    doc = doctrine_text()
     assert "L1.30" in doc and "L1.31" in doc
     mx = Path("scripts/build_enforcement_matrix.py").read_text("utf-8")
     assert '"L1.30"' in mx and '"L1.31"' in mx

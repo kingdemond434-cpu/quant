@@ -49,6 +49,31 @@ class _Margin:
         return {"orderId": 2, "status": "NEW"}
 
 
+@pytest.fixture(autouse=True)
+def _clear_rail(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A TEST MAY NOT READ THE DESK'S LIVE RAIL STATE (found 2026-08-28).
+
+    `data/CASHCARRY_KILL` has been latched on this box since 2026-08-01, and the rail is consulted
+    FIRST by design -- so every test in this file was refused before its subject ever ran, and all
+    16 reported the rail's message instead of the property they pin. They were red for as long as
+    the desk was correctly frozen: a suite whose verdict flips with an operational latch is
+    measuring the box, not the code.
+
+    PATCHED ON THE MODULE THAT READS IT, WHICH IS NOT WHERE THE SIBLING PATCHES. `short_order_path`
+    does `from ...ruin_rail import frozen` at module scope (line 57), so the name is bound at
+    import and `monkeypatch.setattr("libs.execution.ruin_rail.frozen", ...)` -- exactly what
+    tests/execution/test_spot_order_path.py does, correctly, because `spot_order_path` imports it
+    INSIDE the function -- would be a silent no-op here. Two sibling order paths, two import
+    styles, one fixture text that works on one and quietly does nothing on the other.
+
+    So the patch is asserted rather than assumed: a fixture that can no-op silently is the exact
+    class this suite exists to catch, and TestTheRailsStillBind is the positive control proving
+    the rail still refuses when it is genuinely latched.
+    """
+    monkeypatch.setattr(S, "frozen", lambda *_a, **_k: (False, "clear"))
+    assert S.frozen()[0] is False, "the rail patch did not take -- check how S imports frozen"
+
+
 def _short(v: Any, **kw: Any) -> S.ShortOutcome:
     args: dict[str, Any] = {"cycle": "c1", "quote": "USDC", "equity_usd": 1000.0,
                             "entry_price": 100.0, "stop_price": 105.0,

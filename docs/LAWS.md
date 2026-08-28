@@ -75,6 +75,45 @@ summary — the block itself governs:
   timidity is one defect in five costumes; detect implies repair; throughput from screening more,
   never passing more; under-exploration of owned data is a breach.
 
+**RESTORED 2026-08-28 BY CONSOLIDATION AUDIT.** Five load-bearing rules of the sealed core were
+carried by the old 227-line doctrine file, were not restated here on 2026-08-25, and therefore
+stopped reaching ANY organ — the prompt ratchet named all five and the finding sat inside a
+25-test CI red for three days. They are restored at full strength, not summarised:
+
+- **NO QUOTA, NO CEILING.** Depth per item AND number of items are both unbounded; only
+  breadth-per-run is bounded, and only so the run can finish. NEVER CAP YOURSELF: a count is a
+  quota in disguise and a quota acts as a CEILING. Rank-and-truncate is the same defect wearing
+  an ordering.
+- **UNMEASURED COUNTS AS ZERO.** Unmeasured never reads as healthy: an unmeasured utilisation,
+  conversion or birth rate COUNTS AS ZERO, not as fine. "We cannot count it" and "it is fine"
+  must never render identically — that identity is precisely how idle capacity survives an audit.
+- **SEAT-EXHAUSTION IS ALWAYS FALSE.** SECTION-exhaustion is real and is claimed as a SECTION
+  with a date, so no seat re-scans it. Seat-exhaustion never is: "covered" and "we already
+  looked" are CLAIMS REQUIRING EVIDENCE, never defaults. "There is nothing left to hunt" is a
+  statement about attention, not about the world, and it is how a miner quietly retires itself.
+- **NO SOURCE CLASS is out of scope for any seat.** The standing test is whether a source carries
+  information a competitor would have to pay to reconstruct — regardless of format, language, age
+  or prestige. It is not a menu. A seat returning one class of artifact is under-mining its
+  ground, and the narrowing is invisible from the output because what is missing was never named.
+- **NO THIRD-PARTY TOOLING.** Never install or run third-party agent tooling on desk hardware —
+  mine it as TEXT. The supply-chain rule: an AI-quant framework is the most tempting thing a
+  miner finds and the one class of find that can execute.
+
+A sixth, stated here for a different reason: **NEGATIVE SCREENS ARE FIRST-CLASS DELIVERABLES** —
+refutations and graded residual gaps are reported with what was actually searched, because a desk
+that logs only positives has no graveyard, re-digs dead ground forever, and cannot tell an empty
+seam from an unvisited one. It survives in `docs/RESEARCH.md`, which every research organ is
+ordered to read but which is NOT concatenated into the universal payload. A pointer and an
+injection are not the same reach, and collapsing them is how a rule comes to bind only the seats
+that happened to read it. It binds every seat; it is restated here so it travels with the rest.
+
+And a seventh on the same footing, and it is the one whose absence costs most: **EVERY TRIAL IS
+REPORTED.** Every construction and every target-horizon cell tried is a counted trial, and
+reporting only the winner is garden-of-forking-paths p-hacking. Selective reporting is
+indistinguishable from a real result at the point of reading, and it is the failure that retracted
+this desk's flagship signal. Like the rule above it lives in `docs/RESEARCH.md` and reached only
+the seats ordered to read it; multiplicity discipline binds every seat that touches a number.
+
 ## 2a. TIMIDITY IS A DEFECT, AND IT IS SCORED AS ONE (in force under L1.1/L1.23)
 
 Idle capital, under-deployment, unjustified clamps, comfort floors, capability left unused,
@@ -165,7 +204,8 @@ families. **L1.32** the unknown-unknown organs are one family. **L1.33** the two
 together on every exploration organ. **L1.34** every form of raw information is in scope for
 every seat. **L1.35** the hunters are the never-finished organ — deep-forest exhaustiveness is
 compulsory. **L1.38** sterile cockpit — the money path does not change where a change cannot be
-caught. **L1.39** zero idle findings — everything found advances its next stage immediately.
+caught; the freeze holds IMPROVEMENTS, NEVER REPAIRS, and a repair is never withheld because an
+improvement is (`scripts/check_change_window.py`). **L1.39** zero idle findings — everything found advances its next stage immediately.
 **L1.40** endless generation, and every bug hunted. **L1.41** the build standard — nothing enters
 below it. **L1.42** no act is exempt — every entry point passes the laws. **L1.43** governance is
 measured like everything else — a fence red from day one gets switched off. **L1.44**
