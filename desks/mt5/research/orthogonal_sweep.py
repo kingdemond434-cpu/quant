@@ -563,10 +563,16 @@ def _cli_main() -> int:
     except ModuleNotFoundError:            # entrypoint put research/ on the path, not desks/mt5
         from job_lock import exclusive_job
 
-    # Headroom from the MEASURED peak on 2026-08-28 (1055MB RSS), not a guess -- but a
-    # FIRST estimate all the same: tighten it from observed successful runs, never from
-    # another guess. Below this the box cannot fit the job beside the live terminal.
-    with exclusive_job("orthogonal_sweep", need_mb=800) as acquired:
+    # TIGHTENED FROM AN OBSERVED RUN, which is what the previous note asked for. The admission
+    # precondition was 800MB while the job's own measured peak was 1055MB RSS -- so it could be
+    # admitted onto a box that could not hold it, which is precisely the OOM this gate exists to
+    # prevent, and the box logged 221 OOM kills in three days (GAP 141). Re-measured 2026-08-28
+    # on contabo-mt5 with the peer/factor wiring live (eight factor frames resident instead of a
+    # per-symbol rebuild of two): peak 1157MB RSS, run completing. 1250 sits above that observed
+    # peak rather than below it. Standing down is cheap by this module's own argument -- hourly
+    # trigger, per-cell cache resumes rather than restarts -- while admission that does not fit
+    # costs the hour AND the terminal holding live positions.
+    with exclusive_job("orthogonal_sweep", need_mb=1250) as acquired:
         return main() if acquired else 75
 
 
