@@ -3785,7 +3785,7 @@ mechanism folklore + refutations at zero marginal cost.
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
 pre-built month instead of browsing.
 
-### 61. [seed S21] BIS central-banker speeches full-text — grade: **needs-monitoring** (source route VERIFIED 2026-08-28 by the free-data-alternatives miner; PENDING because the licence is noncommercial-only and the wired consumer carries a measured 2.5% venue-attribution defect with an exact patch owed — see ITEM 1 below) — **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: screened tier:2 -> desks/mt5/reports/cb_tone_screen.json]
+### 61. [seed S21] BIS central-banker speeches full-text — grade: **verified-clean** (route independently reproduced 2026-08-28: one request, 20,728 dated speeches with bodies, 1996→2026, AUD+CHF gaps CLOSED; licence is noncommercial-only so use stays research-internal; the directional CB-tone→FX hypothesis it existed to produce is REFUTED on all three arms. NO SOURCE WORK REMAINS — the open 2.5% venue-attribution patch is a CONSUMER item tracked separately, not source verification) [§33: screened tier:2 -> desks/mt5/reports/cb_tone_screen.json]
 - **The residual below is discharged, by a route nobody had looked for.** The owed item was "the
   speech BODIES behind each `link`", assumed to be a 215-request crawl of per-bank landing pages.
   BIS publishes a **pre-compiled full-text extract of every speech it has collected since 1996**
@@ -4505,7 +4505,7 @@ incomplete).**
 Full detail in ITEM 3 above. NEW SOURCE CLASS on MT5 ground: official-sector forced-participant
 flow. n=7 cross-checkable daily events kills it as a sleeve; carded as a conditioning/state axis.
 
-### 68. [dig 2026-08-28] SNB weekly sight deposits (CHF intervention proxy) — grade: **verified-clean AS A SERIES / needs-monitoring AS A SIGNAL** (data opened, cadence and completeness verified, and diffed against three known intervention episodes this run — 2026-08-28 (b), see ITEM 1 below) [§33: screened tier:2 -> data/snb_sight_deposits_weekly.json]
+### 68. [dig 2026-08-28] SNB weekly sight deposits (CHF intervention proxy) — grade: **verified-clean** (series opened and fully verified 2026-08-28: 784 weekly TG observations 2011-08-19→2026-08-21, every one a Friday, zero missing weeks in 15 years; keyless route, robots group-scoped clean on both hosts. The SIGNAL arm is DEAD — the second-largest move is the Credit Suisse rescue and the dimension split cannot separate it — so no source work remains) [§33: screened tier:2 -> data/snb_sight_deposits_weekly.json]
 Same class as card 67 and a materially higher-n member: WEEKLY cadence (n=784) against MoF's
 quarterly daily-breakdown. **OPENED AND VERIFIED 2026-08-28 (b).** Route is keyless and open:
 `https://data.snb.ch/api/cube/snbgwdchfsgw/data/csv/en`, §13 clean on BOTH hosts (`snb.ch` and
@@ -4851,7 +4851,7 @@ exactly 3 pending verifications, all of them mine. Contract: finish the unfinish
 
 Findings are written into this note as each item resolves — nothing held in context.
 
-### 70. [dig 2026-08-28 (c)] MNB monetary policy instruments — official-sector-flow class member #4, and the DAILY analogue of the SNB weekly series — grade: **needs-monitoring** (data verified-clean and correctly parsed; the SIGNAL claim was retracted in-run — see below) [§33: screened tier:2 -> data/mnb_official_liquidity_daily.json]
+### 70. [dig 2026-08-28 (c)] MNB monetary policy instruments — official-sector-flow class member #4, and the DAILY analogue of the SNB weekly series — grade: **verified-clean** (7,060 daily HUF reserve-account observations 2007→2026 parsed and cross-checked against published reserve-ratio changes; keyless, robots-permitted. The SIGNAL claim was RETRACTED in-run — the steps are administrative policy history, not flow — so no source work remains) [§33: screened tier:2 -> data/mnb_official_liquidity_daily.json]
 
 **Why the MNB.** Chosen off the live universe registry, not a list: decomposing the 251-symbol
 universe by currency puts **HUF in 6 pairs** (AUDHUF, CHFHUF, EURHUF, GBPHUF, NZDHUF, USDHUF) —

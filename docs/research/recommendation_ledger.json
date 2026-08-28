@@ -8877,6 +8877,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0690",
+   "source": "deep_sweep",
+   "summary": "THE STRATEGY-FAMILY COVERAGE MAP IS 100% CRYPTO EVIDENCE AND IT WAS REGENERATED TODAY, so freshness is perfect and provenance is void. scripts/run_strategy_coverage.py builds data/strategy_coverage.json from docs/graveyard.md alone; all 45 distinct tested names and all 57 buried candidates are crypto-exchange-universe (funding, dex_cex, stablecoin_mint_burn, hyperliquid/hl_*, bithumb/coinone/coinbase/bitbank premium, oi_divergence, ls_contrarian, exchange_netflow, era_* crypto-era rows) -- the universe the principal banned from hunting on 2026-08-18. The file therefore publishes n_unhunted=0, n_hunted=8/14, and never_narrow=\"every family has been touched; depth in the THIN ones is now the higher-value direction\". On the MT5/Fusion universe the honest value of every one of those fields is UNMEASURED, and the honest n_unhunted is up to 14. FIVE LIVE CONSUMERS steer off it: libs/research/capability_ratchet.py:640 (_BREADTH), libs/research/cro_role.py:291, scripts/kimi_hunter.py:199 and scripts/run_capability_hunt.py:228 (both INJECT it into a hunter prompt as \"prefer an unhunted family\"), scripts/check_strategy_breadth.py:81. So the desk instructs its own hunters to stop widening, on the authority of a dead universe. This is the L1.51 ceiling defect in its most expensive form -- a CEILING CLAIM (\"every family has been touched\") that no emptiness or staleness check can catch, because the file is neither empty nor stale. EXACT PATCH: run_strategy_coverage.py must partition its corpus by universe, count ONLY MT5-universe candidates toward hunted/thin/unhunted, and emit crypto-era rows as a separate archived block that never feeds next_family/never_narrow; where the MT5 count is zero the family is NEVER-HUNTED, never HUNTED. Positive control required: a family whose only evidence is crypto must classify NEVER-HUNTED after the patch. Found by prospector s7 2026-08-28 while doing the mandated search-space expansion -- the map that exists to direct expansion was the thing blocking it.",
+   "roi_bps": null,
+   "rank": 88.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T13:22:57.467881+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

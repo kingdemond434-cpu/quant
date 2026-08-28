@@ -3093,3 +3093,77 @@ it makes the class of bug impossible rather than one-off-fixed. Add a regression
 text is `**verified-clean** (the UNVERIFIED half is now closed)` and asserts `resolved`.
 
 Scope note: this is `libs/`, which the free-data miner's freeze forbids touching — routed, not fixed.
+
+## 2026-08-28 (prospector s7) — the source backlog has ONE terminal §33 verb, and it is the rarest one
+
+`libs/research/source_backlog.py::_classify` treats exactly one §33 verb as terminal: `killed`.
+Every other disposition the miners actually write — `screened`, `wired`, `deferred(past date)` —
+falls through to the PROSE grade, so a card that was worked to exhaustion and carries
+`[§33: screened tier:2 -> <artifact>]` stays in the verification queue forever if the word
+`needs-monitoring` survives anywhere on its grade line.
+
+**Measured this run:** all 3 cards the backlog offered as PENDING VERIFICATION (61 BIS speeches,
+68 SNB sight deposits, 70 MNB instruments) were already fully verified, with their artifacts on
+disk and today's timestamps (`cb_tone_screen.json` 1.7KB, `snb_sight_deposits_weekly.json` 68KB,
+`mnb_official_liquidity_daily.json` 626KB). Zero of the three had source work left. Regrading the
+three lines honestly took the queue from `3 pending` to `backlog clear`.
+
+**Why this is worse than a cosmetic mislabel.** The docstring names verification as *the desk's
+bottleneck* — "it already catalogues faster than anything gets verified". A classifier that
+re-offers finished work inflates that bottleneck with phantom load, and the phantom load is
+indistinguishable at the point of reading from real load. Two runs in a row could spend their
+whole bounded item budget re-verifying resolved cards and report a cleared backlog each time.
+
+**The deeper shape, and it is the one to fix:** the module's own docstring says *"THE DISPOSITION
+IS READ FROM THE §33 MARKER, NEVER FROM PROSE"* — and then reads prose for every verb but one.
+The stated rule and the implemented rule disagree, which is why nobody caught it: the docstring
+reads correct.
+
+**EXACT PATCH (research freeze — not applied by this seat, owed to a code seat):** in `_classify`,
+treat `screened` and `wired` as terminal alongside `killed` — both assert an artifact path in the
+marker, so both are checkable — and demote the prose branch to the fallback it claims to be. Add
+the positive-control test that a card graded `needs-monitoring` *with* `[§33: screened -> path]`
+classifies `resolved`, and one graded `needs-monitoring` with NO marker still classifies
+`verification`. Without that second case the fix would resolve everything.
+
+## 2026-08-28 (prospector s7) — `REDUNDANT_ABOVE = 0.7` is a round number, never a measured one
+
+**External evidence (`aircrushin/wq-alpha-agent` SKILL.md §7.3, 625 simulations, MIT, read in
+full).** Daily-return correlations measured across a live alpha book:
+
+| Pair type | Measured daily-return corr |
+|---|---|
+| Same cluster, different weights (open-close reversal + OI/equity blends) | **0.84** |
+| Same cluster, different variant (two analyst-EPS forms) | **0.74** |
+| Same cluster, opposite-sign leverage/quality factors | **0.84** |
+| **Cross**-cluster (sentiment vs analyst) | **0.59 – 0.67** |
+
+Their conclusion, and it is the one that matters: *"changing windows, weights, or neutralization
+cannot create truly low correlation. True low correlation comes from completely different data
+sources or economic logic."* And: in one data pool, realistic "low correlation" is **0.3–0.6, not 0**.
+
+**Why this is desk-relevant rather than trivia.** `libs/alpha_factory/independence.py:41` sets
+`REDUNDANT_ABOVE = 0.7`. Against their measured bands, 0.7 sits **at the very top of the
+within-cluster band and entirely above the cross-cluster band** — so a candidate correlating 0.65
+with an incumbent passes the desk's independence gate while being, on this external evidence,
+the same data pool wearing a different expression. The gate would be admitting exactly the
+re-parameterisation that L1.61 says must score ~0 and that `variation_blocker` exists to reject.
+
+**But do NOT import their number, and this is the point.** Their bands are USA TOP3000 equity
+cross-section; the desk trades MT5 FX/metals/indices, where the correlation structure is a
+different animal (the desk's own crypto measurement was raw mean pairwise 0.638 → N_eff 1.54).
+Importing 0.7→0.5 off a foreign universe would be a private bar set outside the policy (L1.60),
+and tightening a gate on unmeasured grounds is the conservatism the ratchet forbids.
+
+**THE OWED WORK (a measurement, not a threshold change).** Measure the desk's OWN duplicate band:
+take the live/forward MT5 sleeve return series, compute daily-return pairwise correlation
+*within* declared family and *across* families, and publish the two distributions. Then
+`REDUNDANT_ABOVE` becomes the separating value between those bands with a stated overlap cost,
+instead of a round number nobody has ever tested. Until that runs, the honest status of the
+independence gate's threshold is **UNMEASURED, which is not the same as fine (L1.28a)** — and it
+is load-bearing, because the rung-0 independence check gates promotion.
+
+**Convergent-and-already-better (no import owed):** their `correlation_with_existing` silently
+`continue`s on unequal series length, so a short-history candidate correlates against nothing and
+reads as perfectly diversifying. The desk's `pairwise_corr` already returns `None` for exactly
+this case with the WS-005 reasoning written into its docstring. Desk wins; nothing to take.

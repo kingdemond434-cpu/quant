@@ -844,3 +844,58 @@ forex (mechanism unpublished?), Stefan Seibert 2020+2022. Return NUMBERS are mar
 (mirrors disagree, measured this run) — only mechanism text counts.
 **WATCHLIST after this session: POC retest (held, MT5 re-shape trigger), listing_comparables_
 repricing (held, MT5 data trigger), wctc_repeat_winner_mechanism_watch (NEW). 3/5 slots.**
+
+---
+
+## [prospector s7, 2026-08-28] Prop-firm daily-loss-limit reset at 00:00 CE(S)T — forced flattening on a fixed wall clock
+
+**Family:** EVENT-AND-CALENDAR × ORDER-FLOW (both graded THIN). **Direction-agnostic.**
+**Provenance: VERIFIED (first-party, primary source, quoted verbatim).**
+- `https://ftmo.com/robots.txt` — single `User-agent: *` group, `Disallow:` **empty** = allow all. §13 clean.
+- `https://ftmo.com/en/trading-objectives/` (200, 279,326 B) — the rulebook itself.
+- `https://ftmo.com/en/how-it-works/` (200, 337,524 B) — the objective figures.
+
+**The rule, in the firm's own words:** *"The Maximum Daily Loss Limit is recalculated daily at
+00:00 CE(S)T as the difference between: the account balance recorded at 00:00 CE(S)T of the
+current day and the Maximum Daily Loss Amount... This calculated limit remains in effect until
+the next recalculation at 00:00 CE(S)T of the following day."* The limit is on **equity**, so
+floating PnL counts; a "Trading Day" is defined as **00:00:00–23:59:59 CE(S)T**. The Maximum
+*Loss* Limit re-bases on the same clock off the highest 00:00 CE(S)T balance.
+
+**THE MECHANISM — who is forced, and why they cannot stop.** A large and growing pool of retail
+leverage sits behind a **hard equity floor that steps discontinuously at a fixed wall clock**.
+Two forced behaviours follow, neither of which is a choice:
+1. **Intraday, approaching the floor:** the firm auto-flattens the account (or the trader closes
+   to avoid a breach that destroys the account outright). This is price-insensitive liquidation,
+   concentrated in whatever the cohort crowds — which for this cohort is **XAUUSD and the
+   majors**, squarely in the desk's universe.
+2. **Immediately after 00:00 CE(S)T:** the limit re-bases to the new balance, so risk capacity is
+   restored **discontinuously**. That is a re-entry impulse on the same fixed clock.
+The participant is forced by a *contract*, not by a view, and cannot opt out without forfeiting
+the account. That is the strongest form of the "who is forced" test.
+
+**THE CONFOUND, NAMED UP FRONT — and it is also the falsifier that makes this testable.**
+00:00 is *also* the swap/rollover boundary and a session boundary, and the desk has already
+measured a **00:00 spike that GREW** in the FX Blue performance corpus (frontier 2026-08-28). A
+naive "midnight effect" would be unattributable. **But the two clocks are not the same clock:**
+prop-firm resets are **CE(S)T** (UTC+1/+2) while MT5 broker server time — which is what sets swap
+rollover — is conventionally **EET** (UTC+2/+3). They are **one hour apart, all year**, because
+both observe DST on the EU calendar. So the pre-registration writes itself:
+
+> **Falsifier:** measure the effect at the CE(S)T boundary and at the EET boundary separately.
+> If the anomaly sits on the **EET** hour it is swap/rollover and this card is REFUTED. If it
+> sits on the **CE(S)T** hour it cannot be swap. If it sits on both, decompose or kill.
+> A single hourly bar grid resolves it; no new data purchase is required.
+
+**Why it survives the graveyard.** Nothing in `docs/graveyard.md` or `research_agenda.json`'s
+`do_not_repeat` touches prop-firm constraints, midnight resets or session-boundary forced flow —
+both lists are **entirely crypto-universe** (which is itself the subject of R0690).
+
+**EV gate** (`libs/research/alpha_economics`, est_sharpe 0.45 honest / breadth 250 symbols /
+capacity $400k / orthogonality 0.85): **ev 0.0199, p_survive 0.15, verdict QUEUE (top-EV → research)**.
+
+**Residual, stated not hidden:** this run verified the RULE, not the FLOW. The size of the
+affected pool is unmeasured, and the card claims no return. The next step is the two-clock
+decomposition above, which is a screen against the desk's own MT5 tape and needs nothing bought.
+This is ONE firm's rulebook; the 00:00-server-time convention appears near-universal in the
+sector but that is a CLAIM until a second and third rulebook are read.

@@ -8105,3 +8105,114 @@ honest work.
 3. `zl3311/alpha-mining` failure archive — s5 graded it RICH and only read its README.
 4. The recursive hop nobody has taken on this ground: `aircrushin`'s other repos and the
    star-graph neighbours of both repos above, per the RECURSIVE EXPANSION mandate.
+
+---
+
+## Session s7 — 2026-08-28 (prospector standing daily)
+
+**ITEMS TAKEN THIS RUN (write-first, per the completion contract):**
+1. Clear the 3 PENDING VERIFICATION backlog items: BIS central-banker speeches (seed S21),
+   SNB weekly sight deposits, MNB monetary policy instruments.
+2. `aircrushin/wq-alpha-agent` → `wq_alpha_agent/evolve.py` (the mutation/evolution operator set;
+   the desk's breeder is the empty consumer waiting for it) + `SKILL.md` process memory.
+3. Search-space expansion (≥25%): a source class the desk has never entered.
+
+_status: CLOSED — all three items resolved to depth._
+
+### ITEM 1 RESOLVED — the backlog was re-handing finished work, and the cause is in the classifier
+
+All 3 cards offered as PENDING VERIFICATION were **already fully verified**, with their artifacts
+on disk carrying today's timestamps: `desks/mt5/reports/cb_tone_screen.json` (1,677 B, 06:26),
+`data/snb_sight_deposits_weekly.json` (68,669 B, 12:39), `data/mnb_official_liquidity_daily.json`
+(626,200 B, 13:10). Zero of the three had source work left; each carried a correct
+`[§33: screened tier:2 -> <path>]` marker.
+
+**Cause (read from the code, not inferred):** `libs/research/source_backlog.py::_classify` treats
+exactly ONE §33 verb as terminal — `killed`. `screened` and `wired` fall through to the prose
+grade, so any card retaining the words `needs-monitoring` stays queued forever. The module's own
+docstring says *"THE DISPOSITION IS READ FROM THE §33 MARKER, NEVER FROM PROSE"*; it reads prose
+for every verb but one, which is why the docstring reads correct and nobody caught it.
+
+Regraded the three grade lines to state their actual verdicts (residuals preserved verbatim, not
+hidden — card 61's owed consumer patch is named as a CONSUMER item, cards 68/70 keep their dead
+signal arms). Queue went **3 pending → `backlog clear: all 48 resolved`**. Exact patch routed to
+`improvement_inbox.md` with the required positive control (a marker-less `needs-monitoring` card
+must STILL classify `verification`, or the fix resolves everything).
+
+### ITEM 2 RESOLVED — the named next ground was mis-graded on a FILENAME, and it holds no breeder material
+
+**`wq_alpha_agent/evolve.py` (16,635 B, read in full) is not an evolution operator set.** It is a
+bookkeeping loop: fetch submitted alphas → snapshot to `alpha_db.json` → correlate daily returns →
+emit one-line prose lessons. **There is no mutation operator anywhere in it.** Enumerating the
+repo tree via the GitHub API confirms there is **no `generate.py` module at all** — s5's
+"generate/simulate/diversity/submit/evolve" reading came from the README, not the tree. The desk's
+breeder (HYPOTHESIS_MAX #4) gets **nothing** from this ground.
+
+**What it DID yield — a calibration finding, routed to `improvement_inbox.md`.** `SKILL.md` §7.3
+publishes measured daily-return correlations over 625 simulations: same-cluster re-parameterisations
+**0.74–0.84**, cross-cluster **0.59–0.67**, and the conclusion that *changing windows, weights or
+neutralization cannot create truly low correlation*. Against that, the desk's
+`libs/alpha_factory/independence.py:41` `REDUNDANT_ABOVE = 0.7` sits at the top of their
+within-cluster band and **above their entire cross-cluster band** — i.e. it is a round number that
+has never been tested against the desk's own duplicate distribution. **Deliberately NOT imported**
+(their universe is USA TOP3000 equity; borrowing the number would be a private bar set outside the
+policy, L1.60). The owed work is a MEASUREMENT of the desk's own within- vs cross-family bands.
+
+**Convergent-and-already-better, nothing to take:** their `correlation_with_existing` silently
+`continue`s on unequal series length, so a short-history candidate correlates against nothing and
+reads as perfectly diversifying. The desk's `pairwise_corr` already returns `None` for that case
+with the WS-005 reasoning in its docstring. Also confirmed the desk correlates on **returns**, not
+cumulative PnL — the one thing their SKILL.md flags hardest.
+
+### ITEM 3 RESOLVED — the expansion, and the map that was blocking it
+
+**R0690 (ledgered, open):** `data/strategy_coverage.json` — the file five live consumers read to
+decide where to hunt — publishes `n_unhunted: 0` and *"every family has been touched"* on evidence
+that is **100% crypto-exchange universe**. All 45 distinct tested names and all 57 buried
+candidates come from `docs/graveyard.md`, which is entirely pre-mandate. It was **regenerated
+today at 05:51**, so freshness is perfect and provenance is void — no emptiness check and no
+staleness check can catch it. Consumers: `capability_ratchet.py:640`, `cro_role.py:291`,
+`kimi_hunter.py:199` and `run_capability_hunt.py:228` (both **inject it into a hunter prompt**),
+`check_strategy_breadth.py:81`. The desk is instructing its own hunters to stop widening on the
+authority of a banned universe. `research_agenda.json`'s `do_not_repeat` is the same defect.
+
+**And then the actual new ground, because a meta-finding is not an expansion.** New source class,
+never entered by this desk: **prop-firm RULEBOOKS** (distinct from deferred seed S24, which is
+*leaderboards*). Carded to `prospector_watchlist.md`: the FTMO Maximum Daily Loss Limit
+**recalculates at 00:00 CE(S)T** on an equity basis, creating a hard contractual liquidation floor
+that steps on a fixed wall clock for a large retail-leverage pool crowded into XAUUSD and the
+majors. Direction-agnostic, forced participants, in-universe. **EV-gated: ev 0.0199, QUEUE.**
+The 00:00 swap-boundary confound is named up front *and separated by construction* — prop resets
+are CE(S)T, broker swap rollover is EET, one hour apart all year, so an hourly grid decomposes it
+with no data purchase.
+
+### Coverage bookkeeping
+
+| Source family | Visited | Yield |
+|---|---|---|
+| `aircrushin/wq-alpha-agent` (`evolve.py` full, `SKILL.md` §4.3/§7.3/§9, full tree enumerated) | ✅ | **EXHAUSTED 2026-08-28** for the breeder question — no mutation code exists in the repo. One calibration finding. |
+| Desk's own backlog + classifier (`source_backlog.py`) | ✅ | 3 phantom items cleared; 1 exact patch |
+| Desk's own coverage map (`strategy_coverage.json` + `research_agenda.json`) | ✅ | **R0690** |
+| **Prop-firm rulebooks (NEW CLASS)** | ✅ | 1 EV-gated watchlist card; §13 clean |
+
+- **DEPTH:** `wq-alpha-agent` → **exhausted** (full file + full tree enumeration + process memory,
+  then cross-checked both of its claims against the desk's own implementations — the depth is what
+  turned "import their gate" into "our gate is better, but our threshold is unmeasured").
+  Prop-firm rulebook → **primary source, quoted verbatim** (not the marketing page). Backlog →
+  **root cause in the classifier**, not the three symptoms.
+- **Video:** 0 fetched, 0 locked — no video route attempted or needed this session.
+- **§13:** all reads public and permissive. `ftmo.com/robots.txt` group-scoped and read in full
+  (single `*` group, empty `Disallow`). GitHub over the API + raw, MIT. No authenticated surface.
+- **Honest null:** item 2 produced **no new mechanism**, and the ground it was chosen for turned
+  out not to exist. Recorded as a null rather than padded.
+
+### NEXT UN-EXHAUSTED GROUND (for s8, in order)
+
+1. **Second and third prop-firm rulebooks** (MyForexFunds successors, FundedNext, The5%ers) — the
+   card's stated residual is that the 00:00-server-time convention is a CLAIM off one firm. If
+   three independent rulebooks share the clock, the forced pool is sector-wide, not firm-specific.
+2. **The two-clock decomposition itself** — CE(S)T vs EET hourly bars on the desk's own MT5 tape.
+   This needs no new source and is the card's own falsifier; it belongs to a screening seat.
+3. `zl3311/alpha-mining` failure archive — still graded RICH by s5 on a README-only pass, and now
+   the *only* remaining item from the s6 next-ground list that has not been graded away.
+4. `aircrushin`'s other repos + the star-graph neighbours (the recursive hop, still untaken).
