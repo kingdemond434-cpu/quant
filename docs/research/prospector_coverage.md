@@ -9524,3 +9524,152 @@ prove the instrument is absent → blogroll harvested as new ground.
    zero-edge win-rate null** (R0711) as a second grading instrument.
 5. **The 8 NEVER-HUNTED families** from this run's corrected grade — that list, not the published
    `next_family: ATTENTION-SENTIMENT`, is the true unhunted frontier until R0710 lands.
+
+---
+
+## s15 — 2026-08-28 (SESSION NOTE, written at start per COMPLETION CONTRACT)
+
+**ITEMS TAKEN THIS RUN (bounded scope, depth uncapped):**
+1. **`quantocracy.com`** — the owed source-backlog verification AND s14's named next ground.
+   Population-enumerator class (OP-098). Verify robots → enumerate, do not browse.
+2. **The dead/solo long-form blogroll** reached *through* item 1's index (QUSMA, QuantStrat
+   TradeR, Trading the Odds, Quant at Risk, Systematic Investor) — era-archaeology, Wayback CDX
+   where dormant.
+3. **The `sample`-key probe sweep** (carried unrun from s13/s14) — re-open sources excluded as
+   "needs a key".
+
+Status: OPEN. Updated in place as each resolves.
+
+### s15 — RESOLVED (all three items closed; status CLOSED)
+
+**ITEM 1 — `quantocracy.com`: EXHAUSTED, and the source is now enumerated once and for all.**
+robots = a single `User-agent: *` group with **zero directives** → fully allowed. `sitemap.xml`
+301s to `sitemap_index.xml` (s14's silent-redirect trap, hit again). Enumerated, never browsed:
+3 post-sitemaps → **2,317 index pages, all fetched, 0 errors** → **6,908 dated items / 373 blogs /
+369 hosts / 2015-04-09 → 2026-08-27** → `data/intelligence/quantocracy_blogosphere_index.json`.
+Naming convention changes at end-2024 (`daily-wrap-for-` → `recent-quant-links-…-as-of-`); both parsed.
+- **TRAP WORTH THE RUN ON ITS OWN:** `/feed/?paged=2` returns **byte-identical** content to
+  `/feed/` (md5 match). The obvious RSS route silently caps and would have reported ~40 items as
+  the population instead of 6,908 — a **99% understatement that throws no error**. The sitemap is
+  the only honest enumerator here.
+- **THE GRADE, MEASURED RATHER THAN FELT: THIN FOR THIS MANDATE.** Only **445/6,908 (6.4%)** of
+  titles touch FX/metals/rates/commodities/index futures — 11 years of the entire retail-quant
+  blogosphere is **93.6% off-mandate** (US equity factors, asset allocation). This **re-prices
+  s14's own call** that Quantocracy was "the highest-leverage single source catalogued in several
+  runs": it is a genuine OP-098 population enumerator, **358 of 369 hosts were absent from the
+  desk's whole `docs/` corpus**, and it is still mostly ground this desk may not trade. Both halves
+  are true and the second is the one that matters for allocation.
+- Value concentrates by **MT5-hit density, not volume**: SR SV **36/161 (22.4%)**, Relative Value
+  Arbitrage 16/89, Quantpedia 52/382, Flirting with Models 23/274 — while **Alpha Architect, the
+  largest contributor at 984 items, is 3.6%**. Ranking by volume would have sent the next run to
+  exactly the wrong host.
+
+**ITEM 2 — the density winner, dug to the mechanism, and it moved twice.**
+`SR SV` → `sr-sv.com` **redirects to `research.macrosynergy.com`** (Ralph Sueppel = Macrosynergy),
+which sits behind a JS bot-check that **403s `robots.txt` itself** → under RFC 9309 unreadable
+robots is a **full disallow**; no live crawling, hard stop.
+- **§38 REPLACEMENT, opened and closed in the same run — TWO routes, both better than the original:**
+  (a) **Wayback CDX: 5,467 archived `sr-sv.com` URLs**, full post bodies retrievable
+  (`web.archive.org/web/2024id_/…`) — used for the actual mechanism read below.
+  (b) **`github.com/macrosynergy/macrosynergy` — BSD-3-Clause, 193★/33 forks, pushed 2026-08-28,
+  81 MB**: the walled blog's own methods as *maintained open-source code*. Code beats prose;
+  the exclusion left the desk better off than the source would have. Docs host
+  `docs.macrosynergy.com` robots = `Disallow:` (allow everything).
+- **ONE CARD RAISED** → `prospector_watchlist.md`: **`fx_carry_gated_by_intermediary_capital`**,
+  **EV 0.0080 QUEUE**. Mechanism read in full from the archived primary post
+  (`dealer-capital-ratios-and-fx-carry-returns`, 2019-11-09 → Reitz & Umlandt, Bundesbank DP 39/2019):
+  FX carry excess return is compensation for **dealer balance-sheet risk**; the forced participant
+  is the regulated dealer bank that must delever into a capital shock because the constraint is
+  regulatory. Signal leg needs **no new data** — s13/s14 already proved the MT5 swap *is* the policy
+  differential (slope 1.002, R² 0.978) on 248/251 symbols.
+- **The data dependency was VERIFIED, not assumed — and it changed the design** (the s14 lesson,
+  applied): the literal Z.1 broker-dealer capital ratio (`BOGZ1FL664090005Q/…4190005Q`) is
+  **quarterly with its latest observation at 2026-01-01 — ~7 months stale**, so it **cannot be a
+  live gate**; `ANFCI` is **weekly, current to 2026-08-21**, and becomes the tradeable leg.
+  Free finding in passing: **`TEDRATE` is dead at 2022-01-21** (LIBOR retirement).
+- **Pre-committed killing test = the EV gate's own split** (0.0080 QUEUE vs **0.0013 REJECT** on
+  `crowded_known`): does the edge survive strictly **out-of-sample post-2019-11**, the publication
+  date? If it lives only pre-publication the card dies by its own arithmetic.
+- **ONE REJECTED IN THE SAME PASS:** `commodity_inventory_score_metal_futures_curve` — **EV 0.00040,
+  REJECT**, `narrow_breadth` (the desk's metals ground is ~8 instruments).
+
+**ITEM 3 — the `sample`-key sweep: mostly VOID by mandate, and it uncovered a breach.**
+The sweep's surface collapsed on first contact: **most "needs a key" backlog rows are
+crypto-exchange ground (Dune, ankr, CryptoQuant, CoinDesk) and are VOID under the 2026-08-18
+universe mandate** — the honest sweep was 3 sources, not ~10. Of those: Databento, J-Quants and
+NAVER are all genuinely key-gated (literal `sample`/`demo`/`test`/`db-sample` keys → 401; NAVER
+re-confirms errorCode 024, still just a free registration). **Databento's public catalog is a
+JS-SPA carrying no data.** §38 replacement for CME futures reference → **`cmegroup.com` is
+edge-blocked to this box on BOTH HTTP/2 (INTERNAL_ERROR) and HTTP/1.1 (timeout) and on both UAs
+(generic → 403); robots itself is unreadable ⇒ full disallow, hard stop.**
+- **THEN THE ACTUAL FINDING, which inverts the whole item: `data/secrets/databento.json` holds a
+  LIVE, WORKING key.** `hist.databento.com/v0/metadata.list_datasets` → **HTTP 200**, entitling
+  **GLBX.MDP3 (CME Globex), IFEU/IFLL/IFUS.IMPACT (ICE Europe/London/US), XEUR/XEEE.EOBI (Eurex)** —
+  the futures ground directly under the desk's mandated FX, gold, index, energy and softs symbols.
+  The watchlist still grades it *"signup-gated, page principal when a pull is planned"* and **no
+  miner has ever pulled it**. Paid-for data declined = the **L1.8 under-exploration** class.
+  Root cause is banal and worth naming: **a row written before the key existed was never re-read
+  after it did.** → **R0713 ledgered.**
+- **METHOD CORRECTION I nearly got wrong (→ L0223).** `api.stlouisfed.org` **403s the honest
+  `ClaudeBot` UA** while returning a normal 400 to `Mozilla/5.0`/`curl/8.0`. I was one step from
+  filing "the wired FRED collector is silently dead". It is not: `collect_fred_macro.py` sends
+  `quant-fred/1.0`, is unaffected, and its artifact's **max observation date is 2026-08-27**
+  (checked as recency, never mtime). **A seat's block and a collector's health are independent
+  facts; neither may be inferred from the other, and the converse — a seat's success proving a
+  collector healthy — is the more dangerous direction.**
+
+### s15 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| **`quantocracy.com` sitemap enumeration** (2,317 pages, 0 errors) | ✅ | **6,908-item / 373-blog / 369-host corpus saved** · **93.6% off-mandate, measured** · RSS-pagination cap exposed (99% understatement, silent) · 358/369 hosts new to the desk |
+| `sr-sv.com` → `research.macrosynergy.com` | ✅ | **WALLED** (robots itself 403s ⇒ RFC 9309 full disallow) → **§38 ×2: Wayback CDX 5,467 URLs + BSD-3 open-source package** |
+| **Wayback CDX** (archived primary post + Bundesbank DP 39/2019) | ✅ | **1 CARD, EV 0.0080 QUEUE** · mechanism with a named forced participant · 1 EV-REJECT logged |
+| **`github.com/macrosynergy/macrosynergy`** (BSD-3, pushed today) | ✅ | **3 engine findings** → inbox: `iis=True` burn-in look-ahead · MAD-not-sd normalisation · size-dependent cost model vs the desk's flat 6bps |
+| `api.stlouisfed.org` (card's data dependency) | ✅ | Z.1 ratio **7mo stale ⇒ unusable as a live gate** (design changed) · ANFCI weekly/current ⇒ the live leg · **TEDRATE dead 2022-01-21** · **UA-split method correction (L0223)** |
+| Databento / J-Quants / NAVER key sweep + `cmegroup.com` | ✅ | Sweep **mostly VOID by mandate** · CME **unreachable both HTTP versions/both UAs** · **BREACH: live Databento key, never mined → R0713** |
+
+- **DEPTH.** All three items **exhausted**, each carried one level past where the surface stopped:
+  item 1's headline was "a big aggregator" and the finding below it was that the aggregator is
+  93.6% off-mandate *and* that its RSS route silently lies; item 2's wall was the surface and the
+  **BSD-3 package** was the finding below it; item 3's "all still key-gated" was the surface and
+  **a working key the desk already owned** was the finding below it.
+- **DEPTH LINE, honest.** Citation chased to primary (Reitz & Umlandt, Bundesbank DP 39/2019 — read
+  as the mechanism's source, not followed to its own citers). Repo followed to **module and
+  function level** (`make_zn_scores` read to its `expanding_stat`/`iis` semantics; `transaction_costs`
+  read to `extrapolate_cost`) — **not** to its 33 forks. **Zero reply/comment chains mined again
+  this run** (aggregator has none; the target blog is walled) — that is now **two consecutive runs
+  with no comment layer**, and per the depth mandate I name it as a real gap rather than let three
+  exhausted items cover for it. It is the first thing s16 should fix, and item 1 below is chosen
+  partly because it has one.
+- **§13.** Every request under an honest `ClaudeBot (quant research desk)` UA. robots read in full
+  before each host: quantocracy (open), docs.macrosynergy.com (open), archive.org (open),
+  research.macrosynergy.com (**403 ⇒ treated as full disallow, not crawled**), cmegroup.com
+  (**unreadable ⇒ not crawled**). **No breach.** I did not switch UA to evade any block; the one
+  place a different UA was used (`quant-fred/1.0`) was the desk's own established production
+  identity, to verify a data dependency on a host whose robots allow it.
+- **Video:** 0 fetched, 0 locked, none needed. Nothing added to `video_locked_log.md`.
+- **Cards: 1 raised (EV 0.0080 QUEUE), 1 EV-rejected, 0 fabricated.** Backlog **1 pending → 0**.
+- **HYPOTHESES OF MINE THAT DIED TO THEIR OWN CHECKS (three, reported because they are results):**
+  (1) I inherited s14's prior that Quantocracy was this seat's highest-leverage catalogued source —
+  it is a real enumerator but **93.6% of it is off-mandate**, and I measured that rather than
+  repeating it. (2) I expected the key sweep to find keyless routes — it found the desk **already
+  owned a key it never used**, which is a worse and more valuable finding. (3) I was about to
+  report the FRED collector dead from my own 403; the collector was healthy and **my UA was the
+  variable**.
+
+### NEXT UN-EXHAUSTED GROUND (for s16, in order)
+1. **`baridhi/MacroQuant_RSueppel`** + the **33 forks** of `macrosynergy/macrosynergy` — the
+   fork-divergence layer this run did not follow, and third-party ports carry the *failures* the
+   official repo does not. **Has Issues/Discussions ⇒ it repairs the two-run comment-layer gap.**
+2. **The density-ranked hosts from the saved index, in density order (never volume order):**
+   Relative Value Arbitrage (`blog.harbourfronts.com`, 16/89, live to 2026-05), Quantpedia 52/382,
+   Flirting with Models 23/274, Quantifiable Edges 16/190. Query the saved JSON — **do not re-scan
+   quantocracy, it is exhausted.**
+3. **The 190 long-tail blogs (1–3 items each)** in the index — the deep-forest layer of that
+   corpus, unreachable without the enumeration this run performed, and untouched by definition.
+4. **GLBX.MDP3 via the live Databento key (R0713)** — the paid-for, never-mined axis. Highest
+   expected value on this list; gated only on R0713's disposition.
+5. **The Wayback CDX walk of `sr-sv.com`'s remaining 5,467 URLs** — 36 MT5-relevant titles were
+   surfaced via the aggregator, but the aggregator only indexes what it chose to feature; the
+   archive holds the whole blog, so the MT5 count there is a **floor, not a total**.

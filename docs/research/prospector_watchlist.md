@@ -1182,3 +1182,72 @@ No external fetch, no claim taken on trust.
 **KNOWN DEFECT IN THE FEEDING RECORDER (report, do not patch — research freeze):** 37 rows across
 the 73 snapshots carry an **empty `symbols` list** and are therefore unattributable to any
 instrument. Small (~0.5/run) but silent.
+
+---
+
+## CARD — `fx_carry_gated_by_intermediary_capital` (prospector s15, 2026-08-28)
+
+**Grade: SEMI-VERIFIED** (mechanism read in full from an archived primary post + its named
+academic source; the desk's own tape not yet touched). **EV-gate: QUEUE, ev 0.0080, p 0.480**
+(`funding_family` + `new_orthogonal_data`, est_sharpe 0.6, breadth 25, orth 0.6, 20h, maint 1.2).
+
+**MECHANISM (who is forced, and why they cannot stop).** FX carry excess return is, in part,
+*compensation for dealer balance-sheet risk*. Excess FX positions of the whole market end up
+warehoused on the balance sheets of a small group of international dealer banks. Those banks are
+capital-constrained by **regulation**, not by choice — so when their capital ratios fall they must
+shed warehoused risk regardless of their view. High-forward-discount (carry) currencies therefore
+pay off poorly exactly when intermediary capital contracts. The forced participant is the
+regulated dealer; the thing it cannot stop doing is delevering into a capital shock.
+Source read in full: `sr-sv.com/dealer-capital-ratios-and-fx-carry-returns/` (2019-11-09) via
+`https://web.archive.org/web/2024id_/https://www.sr-sv.com/dealer-capital-ratios-and-fx-carry-returns/`,
+summarising **Reitz & Umlandt (2019), "Foreign exchange dealer asset pricing", Bundesbank
+Discussion Paper 39/2019.**
+
+**WHY IT IS TESTABLE HERE, SPECIFICALLY.** Carry is the desk's *only* repeat-survivor family, and
+s13/s14 established that the MT5 administered swap **is** the policy-rate differential
+(slope 1.002, R² 0.978 vs BIS `WS_CBPOL` on 29 majors) on 248/251 symbols. So the desk already
+holds a clean, proprietary, hourly carry panel over the mandated universe — the signal leg needs
+no new data at all. Only the *conditioning* leg is new.
+
+**DATA DEPENDENCY — VERIFIED LIVE THIS RUN, and it changed the design (do not skip this).**
+- `BOGZ1FL664090005Q` / `BOGZ1FL664190005Q` (Z.1 broker-dealer assets/liabilities, the literal
+  He-Kelly-Manela-style capital ratio): **QUARTERLY, n=322, latest observation 2026-01-01** —
+  i.e. ~7 months stale when read in August. **This series CANNOT be a live gate**; used that way
+  it is a look-ahead wearing a release lag. It is admissible ONLY as in-sample mechanism
+  validation, and only with a point-in-time vintage.
+- `ANFCI` / `NFCI` (Chicago Fed adjusted National Financial Conditions Index): **WEEKLY, n=2903,
+  latest 2026-08-21** — current, and its leverage sub-index is the tradeable proxy for the same
+  constraint. **This is the live gate leg.**
+- `TEDRATE`: **DEAD at 2022-01-21** (LIBOR retirement). Recorded so no future run builds on it.
+- All three confirmed against `api.stlouisfed.org` with the desk's existing key.
+
+**THE PRE-COMMITTED FIRST AND KILLING TEST — it is the EV gate's own split.** The card scores
+**0.0080 QUEUE** without `crowded_known` and **0.0013 REJECT** with it. The mechanism was
+published in 2019 on a sample ending ~2018. So the single test that decides this card is:
+**does the ANFCI-gated carry sleeve retain its edge strictly out-of-sample post-2019-11 (the
+publication date) on the desk's own MT5 tape?** If the effect lives only pre-publication, the
+card is `crowded_known`, scores below threshold, and **dies by its own pre-registered arithmetic**
+— no discretion, no re-argument.
+
+**MANDATORY CONTROLS (each one is a way this dies, named in advance).**
+1. **Unconditional carry control.** The gated arm must beat the ungated carry arm. If the gate
+   adds nothing, the finding is "carry works", which the desk already knows.
+2. **Lag-0 / tradability control.** ANFCI is published with a ~1-week lag; the signal must use
+   only the vintage available at decision time. Per the 2026-08-28q lesson, run the contemporaneous
+   arm *as a control* — if all the significance sits in the untradable lag-0 bar, the card is dead.
+3. **Sign-of-next-day-return leak control** (2026-08-28d) — mandatory, non-negotiable.
+4. **Multiplicity.** Every (gate threshold × horizon) cell tried is a counted trial reported in
+   full, judged inside `deflated_sharpe` on the sealed policy constants. No private bar (L1.60).
+
+**GRAVEYARD CROSS-CHECK — done, and the adjacency is declared rather than hidden.** `docs/graveyard.md`
+holds no FX-carry, no terms-of-trade and no intermediary-capital entry (it is entirely crypto-era
+ground). `research_agenda.json:do_not_repeat` contains **`macro_carry_regime_gate`** (REJECTED
+2026-07-17, ev 0.0039) — adjacent, and I flag it rather than let it pass: that row gated *crypto*
+funding carry on **FRED T10Y2Y/DTWEXBGS**, both of which are *price-derived* series on a now-banned
+universe. This card gates *MT5 FX* carry on a **balance-sheet/financial-conditions** quantity.
+Different universe, different conditioning class. It is the gauntlet's call, not mine.
+
+**REJECTED IN THE SAME PASS (logged so it is not re-mined):** `commodity_inventory_score_metal_futures_curve`
+(SR SV, "Inventory scores and metal futures returns", 2024-05-05) — **EV 0.00040, REJECT**,
+killed by `narrow_breadth`: the desk's metals ground is ~8 instruments and breadth starves the IR
+before the mechanism gets a chance.

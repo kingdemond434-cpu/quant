@@ -4294,3 +4294,72 @@ disallows only on query-param patterns (`*filter=`, `*sort=`, `*q=`, `*rows=`, `
 `*page_size=`, `*selectedDate=`) that the SDMX path does not use. Clean.
 **Residual gap, graded:** **SGD only** — Singapore has no policy rate (MAS runs an FX band), so
 `D.SG` is empty *correctly*. The quantity does not exist; no replacement is owed.
+
+---
+
+## prospector s15 — 2026-08-28 — findings from `macrosynergy` (BSD-3) + the key sweep
+
+### 1. ENGINE (highest value) — `make_zn_scores(iis=True)` is a burn-in look-ahead, and it is the exact class the desk's causal guard passes silently
+`macrosynergy/panel/make_zn_scores.py` (BSD-3-Clause, pushed 2026-08-28, 193★) is a
+point-in-time panel normaliser: `sequential=True` by default, `min_obs=261`, parameters
+"estimated sequentially with concurrently available information only". Two properties are
+directly relevant to defects this desk has *already paid for*:
+- **It normalises on MEAN ABSOLUTE DEVIATION, not standard deviation**, and offers
+  `upfront_thresh` winsorisation of the *raw* data in native units. That is precisely the defence
+  against the 2026-08-28p finding (ONE row — a 4700× units break — set the sd of a 46-year series,
+  invisible to mean/sd/corr). MAD + a raw-scale physical bound is the fix, and here it is, wired.
+- **BUT `iis=True` is the DEFAULT**, and its own docstring says the initial `min_obs` interval is
+  "estimated in-sample, based on the full initial sample". That is a genuine look-ahead over the
+  first 261 observations, adopted by default by anyone who does not read the parameter.
+**ACTION: if any of this is ported, port it with `iis=False`.** Note the compounding hazard —
+R0289 established that `causal_guard.check_causal` returns `ok=True n_leaked=0` for full-sample
+`z(funding)`, i.e. the desk's own guard **cannot see this leak**, and funding/carry is the desk's
+only repeat-survivor family. A leaky burn-in would be adopted silently and pass every gate.
+
+### 2. ENGINE — a size-dependent transaction-cost model, against the desk's flat 6bps/turn
+`macrosynergy/pnl/transaction_costs.py` + `proxy_pnl_calc.py`. `extrapolate_cost()` is a
+two-point linear model: flat at `median_cost` below median trade size, then interpolating to
+`pct90_cost` at `pct90_size`, with **roll cost carried as a separate term from bid-offer**.
+The desk currently charges a flat 6bps/turn in `positions_to_returns`, and s14 found
+`execution_resolver` unit-wrong on 181/251 symbols (`swap_long` is POINTS, not currency).
+The constitution names execution and cost as the usual binding constraint. **The calibration data
+is JPMaQS/DataQuery (paid) — but the STRUCTURE is free, and the desk can calibrate both points on
+its own MT5 tape, and already measures the roll-cost leg (the swap panel).** Adopt structure,
+self-calibrate. Also worth reading: `pnl/sharpe_stability_ratio.py` and
+`learning/{splitters,sequential,cv_tools}` (walk-forward CV, directly relevant to the two-stage law).
+
+### 3. BREACH-CLASS — the desk holds a LIVE, WORKING Databento key and has never mined it
+`data/secrets/databento.json` holds a 32-char key. Probed this run: `hist.databento.com/v0/metadata.list_datasets`
+returns **HTTP 200** and entitles **GLBX.MDP3 (CME Globex), IFEU/IFLL/IFUS.IMPACT (ICE Europe /
+London / US), XEUR/XEEE.EOBI (Eurex)** among others — i.e. the futures ground underlying the
+desk's mandated FX, gold, index, energy and softs symbols. Meanwhile
+`docs/research/data_axis_watchlist.md` still grades Databento *"signup-gated (page principal only
+when a pull is planned)"*, and the source-backlog sweep I ran treats it as key-blocked.
+**This is paid-for data the desk declined to mine — the L1.8 / under-exploration class, where the
+breach is the gap not closing.** The mis-grade is itself the mechanism: a row written when the
+key did not exist was never re-read after it did. → route to the ledger as a real work item;
+correcting the watchlist grade is the cheap half, actually pulling GLBX is the valuable half.
+
+### 4. METHOD — a research seat's 403 is NOT a verdict on the desk's collector (and vice versa)
+`api.stlouisfed.org` returns **403 Access Denied to the honest `ClaudeBot (quant research desk)` UA**
+while returning a normal **400** to `Mozilla/5.0` and `curl/8.0` — a UA-keyed edge block, the same
+Akamai class already recorded for BoE/RBA/NY Fed, now confirmed on FRED. I nearly filed this as
+"the wired FRED collector is silently dead". It is not: `scripts/collect_fred_macro.py` identifies
+as `quant-fred/1.0`, is unaffected, and its artifact is genuinely live (max **observation** date
+2026-08-27, checked as recency, not mtime). **Generalisation worth holding: production collectors
+and research seats present different identities, so a seat's block and a collector's health are
+independent facts and neither may be inferred from the other.** The converse is the dangerous
+direction — a seat that probes successfully proves nothing about a collector that does not.
+Related source death found in passing: **`TEDRATE` is dead at 2022-01-21** (LIBOR retirement).
+
+### 5. STRUCTURAL — the retail-quant blogosphere is 93.6% off-mandate, measured
+See the coverage note. Enumerated all 2,317 Quantocracy index pages → **6,908 dated items, 373
+blogs, 369 hosts, 2015-04-09 → 2026-08-27, 0 fetch errors**
+(`data/intelligence/quantocracy_blogosphere_index.json`). Only **445/6,908 (6.4%)** of titles touch
+FX / metals / rates / commodities / index futures; the rest is US equity factors and asset
+allocation. **358 of 369 hosts appear nowhere in this desk's `docs/` corpus** (and 6 of the 11
+"known" are generic: medium, t.co, youtube, arxiv, ssrn, substack). This re-prices s14's call that
+Quantocracy was "the highest-leverage single source catalogued in several runs": it is a genuine
+population enumerator (OP-098 class) and it is now enumerated once and for all — but for THIS
+desk's mandated universe it is a thin seam, and the value is concentrated in a handful of hosts
+the density ranking names, not in the 6,908.

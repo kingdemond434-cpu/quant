@@ -9199,6 +9199,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0713",
+   "source": "cycle",
+   "summary": "Databento key in data/secrets/databento.json is LIVE (probed 2026-08-28: metadata.list_datasets HTTP 200, entitles GLBX.MDP3 CME Globex + IFEU/IFLL/IFUS.IMPACT ICE + XEUR/XEEE.EOBI Eurex = the futures ground under the desk's mandated FX/gold/index/energy/softs symbols) but data_axis_watchlist.md still grades Databento 'signup-gated, page principal when a pull is planned' and no miner has ever pulled it. Paid-for data declined = L1.8 under-exploration breach. FIX: (a) correct the watchlist grade, (b) pull GLBX.MDP3 reference+sample for the MT5-adjacent contracts and grade the axis. Root cause: a row written before the key existed was never re-read after it did.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T20:52:42.086318+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
