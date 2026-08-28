@@ -6221,5 +6221,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"8153df4e2547cb37": {
+"t0": "2026-08-28T12:24:52+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "manuelhorvey/EigenCapital",
+"url": "https://github.com/manuelhorvey/EigenCapital",
+"text": "Asset-agnostic quantitative trading platform. Phase-gated qualification, frozen R4 strategy, live MT5 broker, 7-risk-gate enforcement, crash-resistant audit trail.",
+"symbols": [],
+"found_at": "2026-08-28T12:24:47+00:00",
+"topic": "metatrader5",
+"stars": 1,
+"star_delta": 0,
+"pushed": "2026-08-28T12:17:56Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

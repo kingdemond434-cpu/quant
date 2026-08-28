@@ -1,5 +1,5 @@
 {
-"cursor": 64,
+"cursor": 65,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -178,6 +178,9 @@
 "gewinn MT4",
 "gewinn MT5",
 "gewinn ranking",
+"handelsroboter MT4",
+"handelsroboter MT5",
+"handelsroboter ranking",
 "maximaler verlust MT4",
 "maximaler verlust MT5",
 "maximaler verlust ranking",

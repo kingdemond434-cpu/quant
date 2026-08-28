@@ -148,10 +148,10 @@
       "wait_bars": 8
     },
     "n": 2200,
-    "exp_r": 0.0762,
+    "exp_r": 0.0761,
     "max_dd_r": -26.03,
     "t_stat": 3.17,
-    "profit_factor": 1.156,
+    "profit_factor": 1.155,
     "win_rate": 0.4659,
     "source": "ext_reddit_EURUSD_session_range_breakout",
     "url": ""
@@ -164,9 +164,9 @@
       "wait_bars": 12
     },
     "n": 2226,
-    "exp_r": 0.0882,
+    "exp_r": 0.0881,
     "max_dd_r": -28.42,
-    "t_stat": 3.73,
+    "t_stat": 3.72,
     "profit_factor": 1.185,
     "win_rate": 0.4735,
     "source": "ext_reddit_EURUSD_session_range_breakout",
@@ -180,10 +180,10 @@
       "wait_bars": 8
     },
     "n": 2200,
-    "exp_r": 0.092,
+    "exp_r": 0.0919,
     "max_dd_r": -29.45,
     "t_stat": 3.45,
-    "profit_factor": 1.179,
+    "profit_factor": 1.178,
     "win_rate": 0.4355,
     "source": "ext_reddit_EURUSD_session_range_breakout",
     "url": ""
@@ -196,9 +196,9 @@
       "wait_bars": 12
     },
     "n": 2226,
-    "exp_r": 0.1195,
+    "exp_r": 0.1194,
     "max_dd_r": -30.02,
-    "t_stat": 4.55,
+    "t_stat": 4.54,
     "profit_factor": 1.242,
     "win_rate": 0.4506,
     "source": "ext_reddit_EURUSD_session_range_breakout",
@@ -212,7 +212,7 @@
       "wait_bars": 8
     },
     "n": 2200,
-    "exp_r": 0.1004,
+    "exp_r": 0.1003,
     "max_dd_r": -30.19,
     "t_stat": 3.53,
     "profit_factor": 1.191,
@@ -228,9 +228,9 @@
       "wait_bars": 12
     },
     "n": 2226,
-    "exp_r": 0.1367,
+    "exp_r": 0.1366,
     "max_dd_r": -26.24,
-    "t_stat": 4.87,
+    "t_stat": 4.86,
     "profit_factor": 1.273,
     "win_rate": 0.4403,
     "source": "ext_reddit_EURUSD_session_range_breakout",
@@ -244,10 +244,10 @@
       "wait_bars": 8
     },
     "n": 1977,
-    "exp_r": 0.121,
+    "exp_r": 0.1214,
     "max_dd_r": -15.25,
-    "t_stat": 5.77,
-    "profit_factor": 1.353,
+    "t_stat": 5.79,
+    "profit_factor": 1.354,
     "win_rate": 0.5281,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -260,10 +260,10 @@
       "wait_bars": 12
     },
     "n": 2111,
-    "exp_r": 0.1574,
+    "exp_r": 0.1578,
     "max_dd_r": -12.36,
-    "t_stat": 8.03,
-    "profit_factor": 1.513,
+    "t_stat": 8.05,
+    "profit_factor": 1.515,
     "win_rate": 0.5443,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -276,10 +276,10 @@
       "wait_bars": 8
     },
     "n": 1977,
-    "exp_r": 0.1296,
+    "exp_r": 0.13,
     "max_dd_r": -15.42,
-    "t_stat": 5.75,
-    "profit_factor": 1.369,
+    "t_stat": 5.76,
+    "profit_factor": 1.37,
     "win_rate": 0.5169,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -292,10 +292,10 @@
       "wait_bars": 12
     },
     "n": 2111,
-    "exp_r": 0.1731,
+    "exp_r": 0.1735,
     "max_dd_r": -13.32,
-    "t_stat": 8.19,
-    "profit_factor": 1.556,
+    "t_stat": 8.2,
+    "profit_factor": 1.557,
     "win_rate": 0.5362,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -308,10 +308,10 @@
       "wait_bars": 8
     },
     "n": 1977,
-    "exp_r": 0.1289,
+    "exp_r": 0.1293,
     "max_dd_r": -14.42,
-    "t_stat": 5.5,
-    "profit_factor": 1.363,
+    "t_stat": 5.51,
+    "profit_factor": 1.364,
     "win_rate": 0.5109,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -324,10 +324,10 @@
       "wait_bars": 12
     },
     "n": 2111,
-    "exp_r": 0.1774,
+    "exp_r": 0.1778,
     "max_dd_r": -12.44,
-    "t_stat": 8.03,
-    "profit_factor": 1.564,
+    "t_stat": 8.04,
+    "profit_factor": 1.566,
     "win_rate": 0.5315,
     "source": "ext_reddit_USDJPY_session_range_breakout",
     "url": ""
@@ -436,9 +436,9 @@
       "wait_bars": 8
     },
     "n": 2185,
-    "exp_r": 0.1059,
+    "exp_r": 0.1058,
     "max_dd_r": -27.7,
-    "t_stat": 4.4,
+    "t_stat": 4.39,
     "profit_factor": 1.223,
     "win_rate": 0.4773,
     "source": "ext_forexfactory_GBPUSD_session_range_breakout",
@@ -452,10 +452,10 @@
       "wait_bars": 12
     },
     "n": 2209,
-    "exp_r": 0.1126,
+    "exp_r": 0.1125,
     "max_dd_r": -24.94,
     "t_stat": 4.74,
-    "profit_factor": 1.243,
+    "profit_factor": 1.242,
     "win_rate": 0.4835,
     "source": "ext_forexfactory_GBPUSD_session_range_breakout",
     "url": ""
@@ -468,9 +468,9 @@
       "wait_bars": 8
     },
     "n": 2185,
-    "exp_r": 0.1331,
+    "exp_r": 0.133,
     "max_dd_r": -22.95,
-    "t_stat": 4.94,
+    "t_stat": 4.93,
     "profit_factor": 1.267,
     "win_rate": 0.4481,
     "source": "ext_forexfactory_GBPUSD_session_range_breakout",
@@ -484,7 +484,7 @@
       "wait_bars": 12
     },
     "n": 2209,
-    "exp_r": 0.1569,
+    "exp_r": 0.1568,
     "max_dd_r": -22.67,
     "t_stat": 5.9,
     "profit_factor": 1.327,
@@ -500,9 +500,9 @@
       "wait_bars": 8
     },
     "n": 2185,
-    "exp_r": 0.1585,
+    "exp_r": 0.1584,
     "max_dd_r": -21.46,
-    "t_stat": 5.43,
+    "t_stat": 5.42,
     "profit_factor": 1.312,
     "win_rate": 0.4348,
     "source": "ext_forexfactory_GBPUSD_session_range_breakout",
@@ -516,9 +516,9 @@
       "wait_bars": 12
     },
     "n": 2209,
-    "exp_r": 0.1869,
+    "exp_r": 0.1868,
     "max_dd_r": -22.17,
-    "t_stat": 6.49,
+    "t_stat": 6.48,
     "profit_factor": 1.383,
     "win_rate": 0.45,
     "source": "ext_forexfactory_GBPUSD_session_range_breakout",
@@ -820,9 +820,9 @@
       "wait_bars": 8
     },
     "n": 2154,
-    "exp_r": 0.0833,
+    "exp_r": 0.0831,
     "max_dd_r": -29.98,
-    "t_stat": 3.5,
+    "t_stat": 3.49,
     "profit_factor": 1.177,
     "win_rate": 0.4786,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
@@ -836,9 +836,9 @@
       "wait_bars": 12
     },
     "n": 2219,
-    "exp_r": 0.1151,
+    "exp_r": 0.1148,
     "max_dd_r": -23.82,
-    "t_stat": 5.01,
+    "t_stat": 5.0,
     "profit_factor": 1.261,
     "win_rate": 0.4966,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
@@ -852,9 +852,9 @@
       "wait_bars": 8
     },
     "n": 2154,
-    "exp_r": 0.081,
+    "exp_r": 0.0808,
     "max_dd_r": -28.81,
-    "t_stat": 3.12,
+    "t_stat": 3.11,
     "profit_factor": 1.164,
     "win_rate": 0.4494,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
@@ -868,10 +868,10 @@
       "wait_bars": 12
     },
     "n": 2219,
-    "exp_r": 0.1301,
+    "exp_r": 0.1298,
     "max_dd_r": -23.62,
-    "t_stat": 5.17,
-    "profit_factor": 1.286,
+    "t_stat": 5.16,
+    "profit_factor": 1.285,
     "win_rate": 0.4745,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
     "url": ""
@@ -884,10 +884,10 @@
       "wait_bars": 8
     },
     "n": 2154,
-    "exp_r": 0.0828,
+    "exp_r": 0.0826,
     "max_dd_r": -32.25,
-    "t_stat": 3.02,
-    "profit_factor": 1.165,
+    "t_stat": 3.01,
+    "profit_factor": 1.164,
     "win_rate": 0.4373,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
     "url": ""
@@ -900,10 +900,10 @@
       "wait_bars": 12
     },
     "n": 2219,
-    "exp_r": 0.1377,
+    "exp_r": 0.1375,
     "max_dd_r": -24.02,
-    "t_stat": 5.16,
-    "profit_factor": 1.297,
+    "t_stat": 5.15,
+    "profit_factor": 1.296,
     "win_rate": 0.4642,
     "source": "ext_forexfactory_USDCAD_session_range_breakout",
     "url": ""
