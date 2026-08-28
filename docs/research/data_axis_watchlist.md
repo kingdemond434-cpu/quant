@@ -7463,3 +7463,99 @@ run (r) note named.
    convention at two unrelated institutions; a third instance would make it a rule, not a pair).
 
 *(sections below are filled as each item resolves)*
+
+### ITEM 1a — MNB (Hungary) -> **DESTROYED-AT-SOURCE (a live WSDL in front of a dead service)**
+
+`www.mnb.hu/robots.txt` is **35 bytes** and disallows only `/archivum/` — §13 clear. The long-known
+door is the SOAP service `https://www.mnb.hu/arfolyamok.asmx`, and **`?WSDL` returns HTTP 200 with
+a complete, well-formed 4,143-byte descriptor** naming six operations (`GetCurrencies`,
+`GetCurrencyUnits`, `GetCurrentExchangeRates`, `GetDateInterval`, `GetExchangeRates`, `GetInfo`).
+**Every operation 404s.** Tried, all four transports: SOAP 1.1 (`text/xml` + the WSDL's own
+`soapAction=".../MNBArfolyamServiceSoap/GetDateInterval"`), SOAP 1.2 (`application/soap+xml`),
+HTTP-GET binding (`/arfolyamok.asmx/GetDateInterval`) and HTTP-POST binding. The GET binding returns
+ASP.NET's **"The resource cannot be found"** page — the handler is mounted, the operations are gone.
+
+**THE FAILURE MODE, and it is a new one for this seat: A DESCRIPTOR OUTLIVES ITS SERVICE.** A WSDL,
+an OpenAPI spec, a codelist or a schema is *documentation*, and documentation is a static file that
+keeps returning 200 long after the thing it describes stops answering. Any liveness check that
+probes the descriptor — the obvious thing to probe, because it is the one URL the docs give you —
+reads **200, well-formed, six operations available** on a service that cannot serve a single row.
+My own first probe did exactly this and I recorded "MNB SOAP works" before testing an operation.
+This is the run-(o) codelist finding one level up: *there,* a column was advertised and empty;
+*here,* an entire API is advertised and absent. **Probe an OPERATION, never a descriptor.**
+
+### ITEM 1b — BNR (Romania) -> **OUT OF MANDATE (and a silent-redirect trap on the way)**
+
+`www.bnr.ro/robots.txt` is 25 bytes with an **empty `Disallow:`** — the RFC 9309 full-allow, the most
+permissive verdict there is. The documented XML doors (`/nbrfxrates.xml`, `/nbrfxrates10days.xml`,
+`/files/xml/years/nbrfxrates<YYYY>.xml`) **all 302 to the homepage** — retired in a site redesign.
+Not UA-keyed: identical 302 under ClaudeBot, a browser UA, `curl/8.0` and no UA at all, so this is
+**relocation, not a wall.**
+
+*The trap:* `curl -sSL` on `nbrfxrates.xml` returns **HTTP 200, 119,885 bytes** — and it is the
+homepage. Following redirects converts a dead endpoint into a successful-looking fetch, and a
+collector that logged status+bytes would have recorded this source **healthy forever**. (Run (n)
+found a Wayback CDX 200 over a soft-404; this is the same class on a live host, and the desk's
+top-ranked collector lesson — *an empty artifact asserts absence* — has a sibling here: **a
+NON-empty artifact asserts presence, and it can be the wrong artifact.**)
+
+**§38 disposition — the exclusion spawns NO replacement hunt, and here is the honest reason.**
+I checked the universe registry before hunting: **`RON` appears in 0 of the desk's 248 MT5
+symbols.** BNR's retirement removes no capability this desk had or could use. Graded
+**out-of-mandate**, not "no replacement" — writing a replacement hunt for a currency the desk
+cannot trade would be padding. (Run (b) set this precedent as a jurisdictional kill.) By contrast
+**HUF has 6 MT5 symbols and TRY has 3**, which is what makes items 1a and 1c worth the tokens.
+
+### ITEM 1a-bis — §38 REPLACEMENT FOR MNB -> **ECB EXR, VERIFIED-CLEAN AT 2.4–3.3 bp, AND A BIGGER PRIZE THAN THE DOOR IT REPLACES**
+
+The primary source a Hungarian-rate vendor reads is not MNB, it is the **ECB daily reference rate**
+— and one keyless request returns **7,081 business days, 1999-01-04 → 2026-08-28, for HUF, PLN, CZK
+and TRY simultaneously.**
+
+*Route note (a real one).* `data-api.ecb.europa.eu/service/data/EXR/D.HUF.EUR.SP00.A` — the host the
+desk already graded verified-clean for the yield curve — returns **HTTP 503 "Security Check"** on
+the EXR dataflow under every attempt this run. Same host, different dataflow, opposite verdict: the
+desk's map records this host as PRIMARY for `YC`, and that grade **does not transfer** to `EXR`.
+The working route is the already-adopted `api.frankfurter.dev/v1/<from>..<to>?base=EUR&symbols=...`,
+which serves the same ECB series. **Grade the DATAFLOW, not the host** — the path-scoped twin of
+run (f)'s robots finding.
+
+**VERIFICATION — the offset scan, third run in a row, and this time it came back CLEAN.**
+Scanned lag ∈ {0,1} × hour ∈ {06..21} broker-EET against the desk's own H1 parquets:
+
+| cross | best cell | median abs error | n days | tape starts |
+|---|---|---|---|---|
+| EURCZK | **lag 0, 14:00 EET** | **2.40 bp** | 1,710 | 2017-03-26 |
+| EURPLN | **lag 0, 14:00 EET** | **2.69 bp** | 1,708 | 2012-05-21 |
+| EURHUF | **lag 0, 14:00 EET** | **3.28 bp** | 1,711 | 2017-07-02 |
+| EURTRY | lag 0, 14:00 EET | 8.24 bp | 1,708 | 2012-06-20 |
+
+**All four agree on the same cell, unanimously, and lag = 0.** This is the informative part:
+runs (q) and (r) found the Bank of Russia and NBP both label a series with its **effective** date
+(= the market of D−1), and I carried that forward as a suspected cross-institution rule. **The ECB
+does not do it** — its date label is its observation date, at lag 0, on four independent crosses.
+So the convention is **institution-specific and must be measured per source**, not assumed from two
+prior instances. A rule I was one instance away from generalising is now correctly bounded, and the
+offset scan is what bounded it — it costs one line and it has now paid three times.
+
+**DST-STABLE, and the runner-up flips — so the minimum is real.** Splitting the EURHUF scan:
+summer (Apr–Sep) best = 14:00 EET at 3.15 bp (n=825); winter (Nov–Feb) best = 14:00 EET at 3.12 bp
+(n=586). Identical hour in both regimes, while the **second-best flips from 15:00 (summer) to 13:00
+(winter)** — a neighbouring-hour artifact would not do that. The ECB concertation is 14:15 CET and
+the CET↔broker-EET offset is DST-stable at +1h, so the winning bar (opening 14:00 EET, closing
+15:00 EET = 14:00 CET) is **the last H1 bar completing before the fix**; the ~3 bp residual is
+consistent with that 15-minute gap plus the CFD's bid-vs-mid convention (run (r)'s NBP finding).
+
+**Grade: verified-clean** for HUF/PLN/CZK (2.4–3.3 bp); **needs-monitoring for TRY** at 8.2 bp —
+a lira quote spanning the 2018 and 2021 crises against a synthetic CFD is not expected to hold 3 bp,
+and I am not grading it clean on a number I have not decomposed by era.
+
+**THE PRIZE, stated plainly and with its limit stated too.** The desk's own tape for these crosses
+begins **2012–2017**. ECB EXR begins **1999-01-04**. That is **13–19 additional years** of daily
+history on the HUF (6 symbols), PLN (4), CZK (2) and TRY (3) books — **15 MT5 symbols** — verified
+to 2.4–3.3 bp *on the overlap*. **The pre-2012 extension is verified by construction and by
+continuity, NOT against the desk's tape, because no desk tape exists there** — that is exactly the
+posture run (r) took for NBP and it is the only honest one. It stacks with run (r)'s NBP extension
+(83 symbols, 16 years) into the same wiring item: a pre-2018 D1 panel the gauntlet has never once
+been able to test a candidate in.
+
