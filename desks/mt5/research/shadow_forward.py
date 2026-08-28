@@ -398,6 +398,21 @@ def main() -> None:
                          f"frozen identity and a NEW window.")
                     state[key] = st
                     continue
+                # THE DRIFT VERDICT MUST CLEAR ITSELF WHEN THE IDENTITY COMES BACK. Reaching this
+                # line means `verify()` found NO drifted field, so a stop left by an earlier pass
+                # is describing a code state that no longer exists. Six clocks sat dead this way
+                # for a day (2026-08-27 15:31 -> 2026-08-28) after a stale `families.py` was
+                # synced in and restored, blocking readiness rung 0 the whole time. Resumption is
+                # gated on this engine being a REPLAY -- `order_authority` false means no real
+                # fill was ever produced under the foreign code, and every number in `st` is
+                # recomputed from bars on this pass. See sleeve_registry.reconcile.
+                _resumed = _reg.reconcile(
+                    key, _ident, replayed=not st.get("order_authority"))
+                if _resumed:
+                    st["status"] = "ACTIVE"
+                    st.pop("identity_drift", None)
+                    slog(f"{key}: IDENTITY RESTORED -- {_resumed}; clock resumes on its "
+                         f"original forward_start ({st.get('forward_start')}), window unbroken.")
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
                             cost_fields=vars(costs))
                 st["sleeve_id"] = _ident["sleeve_id"]

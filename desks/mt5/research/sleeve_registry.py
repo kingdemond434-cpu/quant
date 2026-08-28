@@ -260,6 +260,65 @@ def mark(key: str, status: str, why: str) -> None:
     _write(reg)
 
 
+def reconcile(key: str, ident: dict, *, replayed: bool = False) -> str | None:
+    """Clear a stopped clock when the identity that stopped it is provably back and unspliced.
+
+    A STATUS THAT ONLY EVER GOES ONE WAY IS NOT A MEASUREMENT (the same argument this engine
+    already applies to `BLOCKED_SLEEVE_ERROR`, and L1.37). `mark()` is write-once: nothing in the
+    codebase has ever cleared `IDENTITY_BROKEN`, so a clock stopped by an INFRASTRUCTURE event
+    stayed dead against a code state that no longer exists anywhere on the box.
+
+    MEASURED 2026-08-28. Six clocks (CADJPY.asia x3, EURJPY.asia x3) were marked
+    `code_hash changed after the clock froze` at 15:31 on 2026-08-27. All twelve
+    `session_range_breakout` clocks froze the SAME hash `32b3bc38d228df35` -- one family, one
+    function, one source -- so six of them cannot have drifted while six did not, in any single
+    pass. The desk sync had pushed a stale `families.py` at 11:32:20 that differed from the live
+    file by a 20-line DOCSTRING (captured in `data/sync_refused/20260827T113220/`); the pass that
+    ran against it began marking rows in registry order and died before reaching the other six.
+    The file was restored, and every one of the seventeen rows now recomputes to exactly the hash
+    it froze -- yet `check_live_readiness` still blocked rung 0 on "6 sleeve(s) drifted after
+    freezing". The producer had recovered; the durable record could not.
+
+    WHY RESUMING IS SOUND HERE, AND WHY IT IS NOT A LOOSENING. The forward engine REPLAYS: every
+    pass calls `fam_fn(bars, **params)` over the whole history and recomputes n / cum_r / exp_r
+    from scratch, keeping only trades at or after `forward_start`. Nothing from a previous pass
+    survives into the numbers. So when the current identity is byte-identical to the frozen one on
+    every `IDENTITY_FIELDS` entry, the ENTIRE recorded forward series is by construction the
+    frozen strategy's own output -- there is no splice to preserve, and the transient contributed
+    no evidence. The two-stage law protects against evidence produced by a different strategy;
+    here no such evidence exists. If ANY field still differs the row stays terminal, unchanged.
+
+    `replayed` is the caller's assertion that this clock's evidence is replayed rather than
+    accumulated from real fills. A clock that has held order authority has fills that ARE
+    historical facts of whatever code was running, and those cannot be recomputed away -- so it is
+    never resumed here and must restart with a new identity and a new window.
+
+    Returns the reason when a clock was resumed, else None. The frozen identity, `forward_start`
+    and accrued evidence are never touched: this clears a FLAG, it does not re-base a clock.
+    """
+    if not replayed:
+        return None
+    reg = _read(REGISTRY)
+    row = reg.get("sleeves", {}).get(key)
+    if not row or str(row.get("status") or "").upper() != "IDENTITY_BROKEN":
+        return None
+    if verify(key, ident):
+        return None                     # still drifted on some field -- terminal stands
+    why = (f"identity intact on every field again (was: {row.get('status_why') or 'unknown'}); "
+           f"evidence is replayed from bars, so no observation from the drift survives in it")
+    row["status"] = "LIVE"
+    row["status_why"] = ""
+    row["status_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    row["identity_restored_at"] = row["status_at"]
+    row["identity_restored_why"] = why
+    # A CLOCK THAT KEEPS FLAPPING IS AN INFRASTRUCTURE ALARM, NOT A HEALTHY CLOCK. The count is
+    # kept so a repeatedly-trampled family is visible as such instead of looking permanently fine.
+    row["identity_restore_count"] = int(row.get("identity_restore_count") or 0) + 1
+    reg["updated_at"] = row["status_at"]
+    _write(reg)
+    return why
+
+
 def live_keys() -> set[str]:
     """Keys the registry considers live -- the ONE answer to 'how many sleeves are running'."""
     return {k for k, v in _read(REGISTRY).get("sleeves", {}).items()
