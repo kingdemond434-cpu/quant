@@ -386,3 +386,65 @@ a negative exit code is a verdict about the BOX, never the code).
 
 MECHANISED: `check_worktree_on_tmpfs` in `scripts/max_audit.py` — flags any worktree under `/tmp`
 or `/dev/shm` with its RAM cost, and shouts separately when its HEAD is on no branch.
+
+## 2026-08-28 — three angles from a CI red that hid three reverted fixes (cro-cycle)
+
+Added under the RECURSION RULE: each of these found a real defect this cycle and none of them was
+being asked. The first is mechanically checkable and is now `max_audit.check_sync_launder`.
+
+**"Was this guard built AFTER the damage — and did anyone sweep the residue?"**
+Every guard is future-tense by construction. `moneypath_precommit_guard.py` landed 2026-08-26 and
+works (measured: no mt5 sync commit has carried a `.py` change since). Nobody ever swept the 22
+sync commits that predated it, so `regime_monitor.py` ran for two days without the GAP 130 shadow
+wake — hibernation as a one-way door on the gateway path — and the only reason it was invisible is
+that the healing fence restores a HAND-MAINTAINED list and nobody had added it. Ask of every
+guard: what does it NOT retroactively cover, and what swept that?
+→ mechanised: `scripts/check_sync_launder.py` derives its scope from history, not a registry.
+
+**"Does this test read state it does not control?"**
+Sixteen `test_short_order_path` tests were refused by the live `data/CASHCARRY_KILL`, latched
+since 08-01; five governance fences read `ops/principal_doctrine.txt` after the law moved next
+door. A suite whose verdict flips with an operational latch or a file relocation is measuring the
+BOX, not the code. Corollary worth its own check: when you add the isolating fixture, ASSERT it
+took effect — `short_order_path` imports `frozen` at module scope while its spot sibling imports
+it inside the function, so the same fixture text works on one and is a silent no-op on the other.
+
+**"Is this red gate hiding a TRUE finding among false ones?"**
+The prompt ratchet correctly named seven load-bearing rules that had stopped reaching any organ,
+and the alarm was invisible for three days because eighteen other failures in the same red were
+false. `max_audit.check_ci_gate` already carries this lesson in its own body — a red nobody can
+act on recurs, gets skimmed, and buries a real one — and nothing had applied it to the SUITE.
+A false red is not a nuisance, it is a hiding place. Triage a bulk red by CAUSE before believing
+any of it, and read the "reads state the test does not control" partition FIRST.
+
+## 2026-08-28 — three angles from an eight-day scheduler outage (cro-cycle, later run)
+
+Added under the RECURSION RULE. All three found real defects this cycle; two are now enforced by
+`tests/ops/test_no_cron_only_scheduling.py` and one by
+`tests/ops/test_ci_gate_superseded_head.py`.
+
+**"Does the SCHEDULER exist, or only the schedule?"**
+`cron.service` reads `Active: failed (Result: oom-kill) since 2026-08-20 20:48:44`, peak 3.1G on
+a 4GB box, and needs root to restart. Every crontab line has been inert for eight days. Six
+organs had no executor at all — including the auto-pusher added by principal order the day
+before, which has therefore never run once. The desk kept looking healthy because the OTHER 75
+timers are systemd user units and those are fine. A dead scheduler and an unwired script are
+indistinguishable from the artifact side, and only one of them is fixed by wiring: `max_audit`
+called `check_governance_pulse` "referenced by NOTHING" and was right about the symptom and wrong
+about the cause. Ask the daemon (`systemctl is-active`), never the config file.
+
+**"What would have reported this — and where does THAT run?"**
+`check_unit_health.py` carries the only "CRON IS NOT RUNNING" alarm on this box, and it was
+itself a crontab line. Cron's death silenced the one guard written to announce it, so the outage
+suppressed its own alarm for eight days. Whenever a monitor is scheduled BY the thing it watches,
+its silence is the failure mode and not evidence of health. The general form: trace every alarm
+to its executor and check the two are not the same fate.
+
+**"Which TREE is this stored verdict about?"**
+`data/.ci_last_run.json` named 25 committed-code failures at 08:54; all were fixed by 09:39 and
+re-running the exact 25 at 10:00 gave 127 passed — while `max_audit` still printed "RED on
+COMMITTED code" and listed them. Nothing recorded which commit the verdict measured, so no
+consumer could separate "still broken" from "already fixed, never re-run", and those demand
+opposite work. Third instance of one class in that single function after `tracked_ok` and
+`killed`. Any stored pass/fail is a statement about a tree, and the tree moves: stamp the commit,
+and treat a missing stamp as fail-closed rather than as unchanged.

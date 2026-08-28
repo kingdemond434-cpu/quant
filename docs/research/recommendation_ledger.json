@@ -8821,6 +8821,62 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0686",
+   "source": "cycle",
+   "summary": "A false red is a HIDING PLACE, not a nuisance -- and the suite has no equivalent of check_ci_gate's own lesson. Measured 2026-08-28: the prompt ratchet correctly named 7 load-bearing rules dropping out of the injected doctrine payload on 08-25, and the finding was invisible for 3 days because 18 OTHER failures in the same CI red were false (a doctrine relocation + a live rail file). BUILD: a CI-red triage that partitions failures by whether the assertion reads state the test controls, so a true regression cannot be camouflaged by a bulk false red.",
+   "roi_bps": null,
+   "rank": null,
+   "roi_basis": null,
+   "raised": "2026-08-28T09:40:51.843270+00:00",
+   "status": "scheduled",
+   "reason": null,
+   "commit": null,
+   "due": "2026-09-04",
+   "disposed": "2026-08-28T09:41:57.825625+00:00"
+  },
+  {
+   "id": "R0687",
+   "source": "cycle",
+   "summary": "9 REVIEW rows in data/sync_launder.json carry authored lines a sync commit removed that a later rewrite may or may not have superseded (families.py 18, gateway.py 24, allocation.py 20, fetch_universe.py 52, promoter.py 39, qquant_gates.py 146, shadow_forward.py 31, universal_gate.py 28, test_risk_units.py 12). Nothing mechanical can separate superseded from buried -- each needs two versions of a rewritten file read by a mind. qquant_gates.py at 146 lines is the largest and goes first.",
+   "roi_bps": null,
+   "rank": null,
+   "roi_basis": null,
+   "raised": "2026-08-28T09:41:00.304682+00:00",
+   "status": "scheduled",
+   "reason": null,
+   "commit": null,
+   "due": "2026-09-11",
+   "disposed": "2026-08-28T09:42:09.483253+00:00"
+  },
+  {
+   "id": "R0688",
+   "source": "cycle",
+   "summary": "desks/mt5/scripts/sync_to_vps.ps1 is a ONE-WAY push with no ancestry check: it scp's the Dell's copy over desks/mt5 and commits it here over ssh. The pre-commit guard now refuses .py in ssh context, so code is safe -- but every non-.py artifact under desks/mt5 still travels that pipe unguarded (data/, reports/, docs/). The script lives in this repo and RUNS from a different checkout on the Dell, so an edit here is inert until it reaches that box. Ask: which non-.py desk artifacts can a stale Dell copy silently revert?",
+   "roi_bps": null,
+   "rank": null,
+   "roi_basis": null,
+   "raised": "2026-08-28T09:41:14.939778+00:00",
+   "status": "scheduled",
+   "reason": null,
+   "commit": null,
+   "due": "2026-09-04",
+   "disposed": "2026-08-28T09:42:16.313183+00:00"
+  },
+  {
+   "id": "R0689",
+   "source": "cycle",
+   "summary": "THREE lost fixes found in ONE cycle, all the same shape and all VISIBLE as red tests nobody triaged: regime_monitor.py's GAP 130 shadow wake (122 lines, reverted by an hourly sync), the R0544 freshness fixture in tests/conftest.py (dropped by a merge that KEPT the test naming it), and d10fbaa4's _rail_override + L1.44 freshness + guard() in run_growth_audit.py (absent from HEAD, its 4 tests red and NOT in the CI marker's list). The sync half now has a derived detector (check_sync_launder.py). The MERGE half does not, and a line-loss detector over merges would have collapsing precision because dropping lines is what a merge does. The high-precision signal is the one that was already there: a test that fails because its subject's fix is missing. Build the CI-red triage that partitions on it (R0686) and measure how many of these it would have caught.",
+   "roi_bps": null,
+   "rank": null,
+   "roi_basis": null,
+   "raised": "2026-08-28T09:50:15.482192+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
