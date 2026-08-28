@@ -85,8 +85,19 @@ def dbnomics_route(series_id: str) -> dict[str, float]:
         raise ValueError(f"DBnomics empty for {prov}/{dataset}/{sid}")
     periods = series[0].get("period") or []
     values = series[0].get("value") or []
-    out = {str(p): float(v) for p, v in zip(periods, values, strict=False)
-           if v is not None and v == v}
+    # DBnomics encodes gaps as the STRING "NA" (holidays on daily series), not null. float("NA")
+    # raises, which failed the whole route and sent the caller to "ALL routes failed" -- one
+    # holiday in a decade of treasury yields was enough to starve the axis (2026-08-28).
+    out: dict[str, float] = {}
+    for per, val in zip(periods, values, strict=False):
+        if val is None:
+            continue
+        try:
+            f = float(val)
+        except (TypeError, ValueError):
+            continue                      # "NA"/"" are absent observations, not failures
+        if f == f:
+            out[str(per)] = f
     if not out:
         raise ValueError(f"DBnomics no usable observations for {series_id}")
     return out
