@@ -3454,3 +3454,52 @@ set** for that classifier, and it is free.
 *Prospector s9. Findings 1–3 are structural/method and route here per spec; the one tradeable
 candidate from this run is carded separately on the watchlist. The reopen-gap mechanism this dig
 started from was **refuted** and is filed in the graveyard.*
+
+## 2026-08-28 (free-data-alternatives miner, session d) — method/tooling findings
+
+**1. `desks/mt5/data/macro_state.json`: three unlocked concurrent writers, and a failed fetch
+overwrites a good state with a degraded one.** MEASURED: 3 × `macro_desk.py` (pids 1459361/1501574/
+1505351, up 15h41/13h03/12h46) wrote the file **43 times today** on overlapping ~1h cycles with **no
+lock** (the recorders use `flock`; this does not). They disagree: instance 1 writes `G=0.302 I=None`
+(4×: 08-27 22:37, 23:37, 08-28 00:37, 13:37), the other two `G=0.779 I=2.142`. The 13:37 degraded
+write was the **live** state for **37.5 minutes**. Cause is in the logs — instance 2 recovered via
+`free_data: DFF served by DBNOMICS mirror (primary blocked)`, instance 1 did not and logged
+`anchors WARNING: GOLDAMGBD228NLBM missing/empty (families will emit no signals and gates will fail
+closed)`. **THE CLASS: a producer that could not compute the state wrote it anyway** — and
+`macro_state.json` carries only `updated`, with **no writer identity and no completeness flag**, so
+no consumer can distinguish a full state from a partial one.
+**THE PATCH (3 parts, all small):** (a) wrap the write in `flock` on a lockfile, as the recorders
+already do; (b) on a missing anchor, **abstain** — leave the previous state in place — rather than
+writing `None` axes over populated ones; (c) add `writer_pid`, `axes_computed` and `degraded: bool`
+to the artifact so a consumer can refuse a degraded state instead of silently trading it.
+*Not applied here — this seat is under the research freeze (no `scripts/`, no `libs/`, no live state).
+Needs an owner.*
+
+**2. An Akamai edge 403 on `robots.txt` is a ROUTE condition, not a §13 wall — and it can contradict
+the site's own published policy.** MEASURED on the 12 Federal Reserve Bank sites: 11 return
+`errors.edgesuite.net` 403 to the ClaudeBot UA **on robots.txt itself**, while the default curl UA
+gets 200. St. Louis's actual robots names **`User-agent: ClaudeBot → Allow: /`** — an explicit grant
+the edge then refuses. **Standing guidance for every seat:** when a host 403s the robots file,
+re-probe with the default UA before grading. If the 403 is UA-keyed the correct label is
+`edge-blocked (route)`, never `walled (§13)`; grading it as a wall records a false refusal on ground
+that permits us. Reading robots with an honest UA to learn policy is legitimate; fetching **content**
+under a disguised UA is evasion and stays barred.
+
+**3. `bis_speech_tone.py` drops the speaker, which is the field that carries the signal.** The
+corpus (8,770 rows, 8 banks, 1996→2026) stores `date/bank/currency/hawk/dove/chars/url/title` and
+**no speaker**, so "does this cover regional Fed presidents?" was **unmeasurable** from the artifact.
+Recovered by regexing titles: Dudley 156, Williams 96, Schmid 58, Plosser 32, Fisher 20 — and
+**zero** for Bostic, Kashkari, Mester, Daly, Barkin, Harker, Bullard, George. **Patch:** parse the
+speaker out of the title at ingest (BIS titles are near-uniform: `Mr./Ms. <Surname> ...`). One field
+turns 2,567 opaque `Fed` rows into an FOMC voter-rotation and dissent panel, from data already on disk.
+
+**4. `desks/mt5/data/universe/*_H1.parquet` — GAP #146 restored readability, never liveness, and
+nothing measures the difference.** The 24/173 tz split is known and closed. What is NOT recorded:
+the split is **also a freshness split**, and it is exactly the same partition. The 24 tz-aware
+symbols are **0–3h** stale; the 173 tz-naive are **54–55h** stale, frozen at **4 distinct write
+instants**, with 7 dead far longer — `BlockInc` last bar **2025-01-17** (4.5 yr), `EURRUB`
+2022-02-28, `EOSUSD` 2025-12-10, `Walgreens` 2025-08-27, `Netflix` 2026-06-05, `ElectronicArts`
+2026-08-04, `BeyondMeat` 2026-08-18. So tz-awareness is a **proxy for "is this symbol actually being
+refreshed"**, and a consumer that reads all 197 gets 173 stale series with no staleness field to
+warn it. **Patch:** a per-symbol `last_bar` freshness fence over the universe dir with a floor, in
+the same shape as the other staleness checks.

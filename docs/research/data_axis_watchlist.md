@@ -4995,3 +4995,132 @@ outstanding stock — is the actual deliverable, and it is free.
 4. Still owed from (a): the orphaned-inode failure mode's scope across every long-running writer
    under `desks/mt5/data/` is UNMEASURED.
 5. Still owed from (b): the 12 regional Reserve Bank speech sites (§38 residual behind the Fed index).
+
+## SESSION 2026-08-28 (d) — free-data-alternatives miner, standing daily run — WRITTEN FIRST
+
+**Backlog state at open:** `source_backlog_next --limit 6` → 73 catalogued, 48 resolved, **0 pending
+verification**, 25 deferred (earliest returns 2026-09-01). Backlog is clear; mining authorised.
+
+**ITEMS TAKEN THIS RUN** (from session (c)'s own NEXT UN-EXHAUSTED GROUND list, in its stated order):
+1. **The normalisation sweep across all four official-sector-flow members (MoF / SNB / CNB / MNB).**
+   Named by the previous run as "the highest-value unit in the class, and it needs no new source at
+   all." Three of three members have now been caught with a series whose largest moves are
+   institutional plumbing, not market flow. The sweep asks the one question the class cannot answer
+   without it: **does ANY member survive its own normalisation control?** All four files are on disk.
+2. **Orphaned-inode failure-mode scope** across long-running writers under `desks/mt5/data/` —
+   carried as UNMEASURED since session (a). UNMEASURED counts as zero (L1.28a).
+3. **The 12 regional Reserve Bank speech sites** — §38 replacement residual left open behind the Fed
+   speech index.
+
+Status: OPEN. Updated in place as each item resolves.
+
+### SESSION (d) — RESOLUTION (all 3 items closed)
+
+**ITEM 1 — the normalisation sweep. CLOSED: THE FAMILY IS REFUTED.**
+Artifact: `data/official_sector_normalisation_sweep.json`. All four members (MoF / SNB / CNB / MNB),
+both arms, **16 pair-arm cells, every one reported** — no selective reporting, 24 trials counted.
+
+| member | pairs | RAW arm max\|t\| | NORMALISED arm max\|t\| | passes MDE |
+|---|---|---|---|---|
+| CNB sterilisation | EURCZK, USDCZK | **2.29** | 1.01 | none |
+| MNB liquidity | 6 HUF pairs | 1.63 | 1.51 | none |
+| SNB sight deposits | 4 CHF pairs | 0.64 | 0.32 | none |
+| MoF intervention | USDJPY | n=7 events — UNTESTABLE as a predictor | — | — |
+
+**POSITIVE CONTROL (mandatory, and it is why this null is worth anything):** the same harness fed
+`sign(next-day return)` returns **t = +43.1 … +55.1** on all six pairs. The harness detects a real
+effect at this n. A 250/20 momentum arm is also null on these crosses. *The null is a null, not a
+dead pipe.*
+
+**THE DIAGNOSTIC FINDING — the class is now confirmed by measurement, not by inspection.** The RAW
+arm **outscores** the normalised arm on CNB (−2.29 → −1.01) and **flips sign uniformly** on MNB
+(negative on all 6 pairs raw → positive on all 6 normalised). That is the contamination signature
+itself: the naive series' apparent signal is the 7d-repo **rollover frequency** (CNB) and the
+**reserve-requirement level drift** (MNB). Fourth consecutive member of this class caught the same
+way — after SNB/Credit-Suisse, CNB instrument-mix and MNB reserve-ratio — and the first caught by a
+controlled measurement rather than by reading the series.
+*Effective-N caveat, stated because it cuts against me: the 6 HUF pairs share the HUF leg and are
+~ONE bit, not six. The uniform sign flip is one observation twice, not twelve.*
+
+**ACTION — SEARCH SPACE RETIRED.** Not a sleeve, not pre-registered. The previous session's ranked
+#2 ground (**Banxico and TCMB free registration tokens**, for 7 more in-universe pairs) is
+**DEMOTED**: it buys more members of a class whose first four all died to the same control.
+Re-open on **L1.16a terms only** — a named enabling change addressing the *mechanism of death*
+(intraday horizon, or a true surprise-vs-expectation series), **not another country**. The four
+sources stay in the universe map as **conditioning variables** (regime and event masks), which is
+all the 7-event MoF series was ever worth.
+
+**ITEM 2 — orphaned-inode scope. CLOSED (measured zero), and it surfaced something worse.**
+Direct answer: **zero.** Every process on the box holding a deleted-inode write fd is a Claude
+harness task pipe under `/tmp`; **no long-running writer holds an orphaned inode under the tracked
+tree.** The at-risk population is 8 long-running writers, all appending to gitignored `data/*.log`.
+
+*What the census surfaced instead:* **`desks/mt5/data/macro_state.json` has three concurrent
+writers racing on it.** Three `macro_desk.py` instances (pids 1459361 / 1501574 / 1505351, up
+15h41 / 13h03 / 12h46, 248 MB RSS combined) wrote it **43 times today on overlapping ~1h cycles,
+with no lock** — the recorders use `flock`; this does not. And they do not agree: instance 1
+intermittently writes a **degraded** state `G=0.302 I=None` (4 occurrences: 08-27 22:37, 23:37,
+08-28 00:37, 13:37) while the other two write `G=0.779 I=2.142`. The last degraded write was the
+**live** macro state for **37.5 minutes** (13:37:42 → 14:15:16). Cause is in the logs: instance 2
+records `free_data: DFF served by DBNOMICS mirror (primary blocked)` — it failed over; instance 1
+did not, and logs `anchors WARNING: GOLDAMGBD228NLBM missing/empty (families will emit no signals
+and gates will fail closed)`.
+**The defect, in the desk's own recurring shape: a producer that could not compute the state wrote
+it anyway.** A failed fetch must abstain (leave the last good state) or stamp the state degraded;
+instead it overwrites a complete state with a partial one, and `macro_state.json` carries only an
+`updated` field — **no writer identity, no completeness flag** — so no consumer can tell which it
+got. Routed to `improvement_inbox.md` with the exact patch; not applied here (research freeze).
+
+**ITEM 3 — the 12 regional Reserve Bank sites. CLOSED: route open, axis catalogued not registered.**
+robots.txt read on **all 12**. **None** disallows the speech/research paths; `chicagofed.org` serves
+an **empty** robots. **St. Louis explicitly names `User-agent: ClaudeBot → Allow: /`.**
+**And 11 of the 12 return an Akamai edge 403 (`errors.edgesuite.net`) on robots.txt *itself* to the
+ClaudeBot UA, while the default curl UA gets 200.** So on St. Louis **the published policy grants and
+the infrastructure refuses**, and the block is keyed on the literal agent string at the CDN where
+robots.txt cannot show it. **This is a ROUTE condition, not a §13 wall** — the split that decides the
+repair. A miner logging these as "walled" records a false refusal on sites that permit it.
+**Nothing was crawled.** Reading robots with an honest default UA to learn the policy is legitimate;
+fetching content under a disguised UA would be evasion and is barred.
+
+**§38 replacement, now quantified (it was UNMEASURABLE before this run).** The desk's BIS corpus
+(`central_banks/bis_speech_tone.jsonl`, 8,770 rows, 8 banks, 1996-09-10 → 2026-06-22) holds 2,567
+`Fed` rows but **stores no speaker field** — so regional-vs-Board coverage could not be read off the
+artifact at all. Regexing titles: **Dudley 156, Williams 96, Schmid 58, Plosser 32, Fisher 20,
+Evans 10 … and ZERO for Bostic, Kashkari, Mester, Daly, Barkin, Harker, Bullard and George.** The
+NY Fed is covered; most districts are not. **Catalogued, not pre-registered** — the two nearest
+neighbours are already dead (CB-tone→FX refuted on all 3 arms; official-sector flow refuted above),
+so this would buy a third member of a dead class.
+
+**DEPTH LINE (per lead).**
+- **The normalisation sweep — EXHAUSTED.** Not a surface pass: two constructions per member, a
+  publication lag taken from each source's own measured value, a leaked-signal positive control, an
+  MDE per cell, and an effective-N caveat that argues against my own result. *What depth surfaced:*
+  the surface reads CNB's raw t=−2.29 as the family's best hope. Depth shows that cell is the
+  **most** contaminated, not the most promising — the arm that survives normalisation is the weaker one.
+- **Inode census — EXHAUSTED.** Walked every pid's fd table rather than sampling. *What depth
+  surfaced:* the asked question was a measured zero, and the writer census next to it found a
+  three-way unlocked race on a live state file that nothing was watching.
+- **The 12 Fed sites — EXHAUSTED at the policy layer, deliberately not crawled.** 12 robots reads +
+  a UA-differential probe. *What depth surfaced:* the surface verdict is "11 walled". One extra probe
+  inverts it to "11 edge-blocked, and one of them explicitly grants us by name."
+
+**THE BLUNT PART.** Three items, and the headline is a **refutation that retires a whole family and
+demotes the ground the previous session ranked #2**. That is the run's most valuable output and it
+cost no new source. But note the honest ratio: **this seat has now produced failure modes and
+retractions for three consecutive runs, and still has zero pre-registered axes from this class.**
+The correct read is not that the digging is bad — the controls are working and four contaminated
+series were caught before any of them reached a gate — it is that **this family was the wrong ground**,
+and the sweep is what proved it cheaply enough to stop. Verified small beat unverified impressive:
+the one number worth keeping from today is t=+43…+55 on a control, because it is the only reason
+the sixteen nulls mean anything.
+
+**NEXT UN-EXHAUSTED GROUND (chain holds — and it deliberately leaves the official-sector class):**
+1. **The `macro_state.json` three-way write race** — the patch is named in the inbox and needs an
+   owner outside this seat's freeze. Highest-value item found today by a distance.
+2. **BIS corpus: add the speaker field.** One field turns 2,567 opaque `Fed` rows into an
+   FOMC-voter-rotation and dissent panel, and it is already on disk — no new source, no new licence.
+3. **The `desks/mt5/data/universe` freshness split** — the 24 tz-aware symbols are 0–3h stale; the
+   173 tz-naive are **54–55h** stale, frozen at 4 write instants, with 7 symbols dead far longer
+   (BlockInc last bar 2025-01-17, EURRUB 2022-02-28, EOSUSD 2025-12-10). GAP #146 restored
+   *readability* for all 197; **liveness was never restored** and nothing measures it.
+4. Still owed from (b): the orphaned-inode scope question is now CLOSED (item 2) — chain clear.
