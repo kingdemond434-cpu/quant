@@ -72,7 +72,8 @@ def test_the_summary_counts_exactly_the_rows_that_exist(mod) -> None:
 
 
 def test_a_retirement_is_announced_so_an_accidental_one_is_findable(mod) -> None:
-    """A JOBS line lost in an edit looks exactly like a deliberate retirement -- unless it speaks."""
+    """A JOBS line lost in an edit looks exactly like a deliberate retirement --
+    unless it speaks."""
     mod.STATE.write_text(json.dumps({"jobs": {
         "gone.json": {"status": "OK", "hash": "y", "hash_runs": 3},
     }}), encoding="utf-8")
