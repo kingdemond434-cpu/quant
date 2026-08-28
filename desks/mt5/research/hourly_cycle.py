@@ -33,8 +33,19 @@ BASE = Path(__file__).resolve().parent.parent
 for _p in (str(BASE), str(BASE / "research")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
-PY = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\pythonw.exe"
-PYE = r"C:\Users\dell\AppData\Local\Programs\Python\Python312\python.exe"
+# THE INTERPRETER THAT IS ACTUALLY RUNNING, never a path typed once and left behind. These were
+# hardcoded to C:\Users\dell\...\Python312, which is the OLD box: this desk runs as
+# Administrator on Python314, so the path did not exist and `start()` could never launch
+# anything. Verified 2026-08-28 -- dell pythonw.exe: False, Administrator pythonw.exe: True.
+# The failure was perfectly silent. `health()` read a hunt as dead, called `start()`,
+# Start-Process failed against a nonexistent binary in a detached hidden window, and the cycle
+# recorded "restarted": True. So the one repair this cycle performs has never once worked here,
+# and it reported success every time.
+# Deriving from sys.executable means a box move, a Python upgrade or a different user cannot
+# break it again -- the interpreter running this file is by definition the one that exists.
+PYE = sys.executable or "python.exe"
+_pyw = Path(PYE).with_name("pythonw.exe")
+PY = str(_pyw) if _pyw.exists() else PYE
 
 EXPECTED = {
     "hunt12": ("pythonw.exe", "run_hunt12.py"),
@@ -42,38 +53,82 @@ EXPECTED = {
 }
 
 
-def procs() -> list[str]:
-    out = subprocess.run(
-        ["powershell", "-NoProfile", "-Command",
-         "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe' OR Name='python.exe'\" "
-         "| ForEach-Object { $_.CommandLine }"],
-        capture_output=True, text=True, timeout=60)
+def procs() -> str | None:
+    """The running python command lines, or None when they COULD NOT BE READ.
+
+    None is not an empty list, and the difference decides whether this cycle launches processes.
+    Measured 2026-08-28: on a loaded box the PowerShell CIM query exceeded 60 seconds, the
+    TimeoutExpired propagated, and the ENTIRE hourly cycle died -- a health check killing the
+    thing it was checking, and doing it precisely when the box was busy, which is exactly when
+    the cycle matters most. MT5-Hourly had failed twice in a row on this before the stall
+    watchdog surfaced it.
+
+    Returning "" instead would be worse than crashing: every `script in blob` test would read
+    False, `health()` would conclude both hunts were dead, and it would launch duplicates onto
+    the box that was already too loaded to answer the query. Absence never resolves to a clean
+    verdict (L1.28a) -- and here the wrong verdict is actively harmful.
+    """
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe' OR Name='python.exe'\" "
+             "| ForEach-Object { $_.CommandLine }"],
+            capture_output=True, text=True, timeout=180)
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        print(f"  procs(): UNMEASURED ({type(exc).__name__}) -- launching nothing this pass")
+        return None
     return (out.stdout or "") + (out.stderr or "")
 
 
 def start(script: str) -> None:
     subprocess.Popen(
         ["powershell", "-NoProfile", "-Command",
-         f"Start-Process -FilePath '{PYE if False else PY}' -ArgumentList "
+         f"Start-Process -FilePath '{PY}' -ArgumentList "
          f"'-u','-W','ignore','research\\{script}' -WorkingDirectory "
          f"'{BASE}' -WindowStyle Hidden"],
         creationflags=0x08000000)
 
 
+def _cmd_lines() -> str | None:
+    """cmd.exe command lines, or None when unreadable. Same rule as procs()."""
+    try:
+        out = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
+             "| ForEach-Object { $_.CommandLine }"],
+            capture_output=True, text=True, timeout=180)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    return out.stdout or ""
+
+
 def health() -> dict:
     blob = procs()
-    res = {}
+    res: dict = {}
+    if blob is None:
+        # UNMEASURED, so nothing is declared dead and nothing is launched. A pass that cannot
+        # see the process table has no business starting processes.
+        for name in EXPECTED:
+            res[name] = {"alive": None, "note": "process table unreadable; no launch attempted"}
+        res["gateway_cmd"] = {"alive": None, "note": "process table unreadable"}
+        return res
     for name, (_, script) in EXPECTED.items():
         alive = script in blob
         res[name] = {"alive": alive}
         if not alive:
             start(script)
             res[name]["restarted"] = True
-    res["gateway_cmd"] = {"alive": "MT5Gateway.cmd" in blob or bool(
-        subprocess.run(["powershell", "-NoProfile", "-Command",
-                        "Get-CimInstance Win32_Process -Filter \"Name='cmd.exe'\" "
-                        "| ForEach-Object { $_.CommandLine }"],
-                       capture_output=True, text=True, timeout=60).stdout.find("MT5Gateway"))}
+    # `str.find` RETURNS -1 WHEN NOT FOUND, AND bool(-1) IS TRUE -- so this read "alive" exactly
+    # when MT5Gateway.cmd was absent, and False only in the one case where it sat at position 0.
+    # An inverted health check is worse than none: it reports green for the failure it exists to
+    # catch. Membership testing says what was meant.
+    cmds = _cmd_lines()
+    if "MT5Gateway.cmd" in blob:
+        res["gateway_cmd"] = {"alive": True}
+    elif cmds is None:
+        res["gateway_cmd"] = {"alive": None, "note": "cmd table unreadable"}
+    else:
+        res["gateway_cmd"] = {"alive": "MT5Gateway" in cmds}
     return res
 
 
