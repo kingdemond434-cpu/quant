@@ -91,11 +91,29 @@ def _load(p: Path, default: dict[str, Any]) -> dict[str, Any]:
 
 
 def _days_since(state: dict[str, Any], key: str) -> float:
+    """Days since `key` was stamped, or 1e9 ("due") when it genuinely has never been stamped.
+
+    A NAIVE STAMP IS A DATE, NOT AN ABSENCE (2026-08-28). Several of these keys are stamped by
+    LLM organs that are instructed in prose to "mark done: last_data_axis_dig" and write a bare
+    `"2026-08-28"`. `fromisoformat` parses that fine -- into a NAIVE datetime -- and subtracting
+    it from an aware `now()` raises TypeError, which this function swallowed into 1e9. The duty then
+    read as NEVER RUN forever: measured today, `last_data_axis_dig` held TODAY'S date while the
+    report printed "never run" and the engine re-fired a WEEKLY duty on every cycle.
+
+    That is the WS-005 class -- absence and a value the reader cannot parse must never render
+    identically. A naive stamp is therefore read as UTC. This can only make a duty look OLDER
+    than it is (never newer), so it errs toward firing and relaxes no floor.
+    """
+    raw = state.get(key)
+    if raw is None:
+        return 1e9                                    # never stamped -> due
     try:
-        then = datetime.fromisoformat(str(state[key]))
-        return (datetime.now(tz=UTC) - then).total_seconds() / 86400.0
-    except (KeyError, ValueError, TypeError):
-        return 1e9                                    # never ran -> due
+        then = datetime.fromisoformat(str(raw))
+    except (ValueError, TypeError):
+        return 1e9                                    # unparseable -> due (never skip on garbage)
+    if then.tzinfo is None:
+        then = then.replace(tzinfo=UTC)               # a date is a date, not an absence
+    return (datetime.now(tz=UTC) - then).total_seconds() / 86400.0
 
 
 #: (label, cadence_state key, period days) for the duties `--report-only` reports on.
