@@ -6851,3 +6851,83 @@ source as dead** while it is publishing normally. Add to that a **one-character 
 the amounts stay with the statistics table plus the press-release archive that run (m) adopted.**
 This is the same cross-source pair run (m) named, with the clock leg now extended forward rather
 than backward, which is the more useful direction.
+
+### SESSION CLOSE — 2026-08-28 (n)
+
+**Backlog:** clear on entry and on exit (0 pending verification, 0 pending legitimacy, 25 deferred
+to 2026-09-01+). Item 3 (Riksbank) **not opened** — I took two items to depth instead of three to
+the surface, and I am naming that rather than padding it.
+
+**Categories covered:** **5** (alternative/macro — the run's weight) and **6** (vendor replacement —
+DNFX against the CLS/Kaiko flow-by-counterparty product). **1 and 4 untouched. 2 and 3 remain VOID
+under the MT5 mandate as the spec writes them** (they name crypto on-chain and crypto regional
+venues; the spec predates the 2026-08-18 universe order — I keep naming that rather than reporting
+them skipped).
+
+**Counts: 4 sources ADOPTED/carded this run — 1 verified-clean against an independent arm I built
+(DNVALI, corr 0.915, n=141), 1 keyless delivery door verified-clean (api.statbank.dk, 107 DN tables),
+1 graded UNVERIFIED honestly (DNFX — structure confirmed, no ground-truth diff), 1 verified-clean as
+a schedule (Norges Bank announcement calendar); 1 carried item whose OWN PREMISE was refuted (the
+259-event CDX walk); 0 unverified links catalogued; 0 §13 walls hit (both Danish hosts green).**
+Universe map **137 → 142**.
+
+**BEST VENDOR-REPLACEMENT: `DNFX` / `DNFXSWAP`** — free, keyless, primary-source monthly FX turnover
+split by currency, **counterparty sector** and maturity. That is the shape of the product CLS and
+Kaiko sell, published by the settlement-side central bank itself. Graded UNVERIFIED and staying
+there until it is diffed.
+
+**BEST FIND OVERALL: `DNVALI`, a G10 central bank's DAILY FX-intervention tape, 673 signed
+observations over 24 years** — and the honest half of that sentence is that **DKK's peg makes the
+DKK legs untradable as a directional axis**, so its value is as a forced, daily, cross-instrument
+measure of safe-haven flow into a euro-periphery peg (test on EURSEK/EURNOK/EURCHF), and its series
+ends in 2022 so it is regime history, not a live signal.
+
+**CROSS-SOURCE PAIR (demonstrated, and it is what produced the verification):
+`DNVALI` × `DNINTVAL`.** The intervention tape is daily and has no accuracy check; the reserve table
+is monthly and mixes flow with valuation — but it ships the producer's **own value-adjustment
+column**, so subtracting it yields a transaction flow that is independently compiled and diffs at
+corr 0.915. Neither source verifies anything alone. **Same shape as run (m)'s table × archive pair
+and run (l)'s BoJ × FF pair: institutions publish the number and its check through different doors.**
+
+**NEW SOURCE CLASS: the national statistics agency as a central bank's delivery door.** Danmarks
+Nationalbank's entire statistical output — 107 tables — ships through *Statistics Denmark's* keyless
+API, not through the bank's own site, and is invisible to the bank's own sitemap. **Every
+central-bank dig this seat has run has gone at the central bank's host.** The generalisation to test
+next: Statistics Sweden (SCB) for the Riksbank, Statistics Norway (SSB) for Norges Bank, Stat-Nz,
+CBS. That reframes the "walled central bank" verdicts this seat has been issuing — a bank whose own
+host bars you may still publish everything through a statistics agency that does not.
+
+**DEPTH LINE.** Danmarks Nationalbank: **exhausted for this run's purpose** — owned-artifact check
+(0/137 hits) → robots on 3 hosts → sitemap (8,968 URLs, refuted as a data route) → statistics
+section → **statbank5a discovery → the DST API behind it** → full 2,310-table enumeration → 107 DN
+tables read → tableinfo on 3 → full data pull on 3 → **independent verification arm constructed from
+a fourth table's value-adjustment column** → producer-footnote reading that reclassified the
+sparseness → discovery of the three `'..'` rows as a *third* state, which is one layer past where I
+would have stopped and is the run's most load-bearing failure-mode finding. Norges Bank calendar:
+**exhausted at the CDX layer** — full-domain CDX over 4 slug families → 287 rows → 78 date slugs →
+last-banking-day rule tested on all 78 → 3 content fetches, **2 of which refuted their own CDX
+status row**. No reply chains or forks this run: the ground was institutional publishers, where the
+equivalent depth axis is producer footnotes and metadata-vs-data disagreement, and I mined both.
+
+**NEXT UN-EXHAUSTED GROUND** (each checked against the artifacts this run just adopted, per run (m)'s
+counter-measure — none of these is answered by the 107-table list or the CDX pull):
+1. **The statistics-agency-as-delivery-door generalisation** — SCB for the Riksbank, SSB for Norges
+   Bank, and re-test the hosts this seat previously graded walled. **Highest-yield ground I am
+   carrying**, because it potentially re-opens closed verdicts rather than adding a new source.
+2. **`DNIFVALE` / `DNFPVALE`** — currency exposure AND HEDGING of the Danish investment-fund and
+   pension sectors. A published panel of a structural recurring FX hedging flow; the most
+   interesting unopened row of the 107.
+3. **`DNPRND`** — DAILY Nationalbank balance sheet 2005→2026-08-26: the DKK analogue of SNB sight
+   deposits, daily rather than weekly and free of the Credit-Suisse contamination run (g) documented.
+4. **`DNVALD`** — 49 years of daily official FX fixings (1977-01-03→), a free long-history fixing tape.
+5. The Norwegian public-holiday calendar, to close the one unconditional gap in the announcement rule.
+6. Riksbank `official-reserve-assets-weekly-report` + `sale-of-government-bonds` + SWEA API (carried
+   from run (m), still unopened); `SAFE`/`TCMB`/`BCB`/`SARB` on DBnomics (carried from run (l)).
+
+**THE BLUNT PART.** Item 2 was carried into this run as *"259 extra events for one walk"* — a
+quantified, confident, ready-to-execute plan. The walk found that the 259 pages **do not exist**,
+and that the thing actually needed was a *rule*, which 78 slug dates and a `calendar.monthrange`
+call settle for free. **A next-ground item is a hypothesis, and it gets falsified like one.** Run (m)
+closed by writing that a next-ground list is a claim requiring verification; this run is the first
+instance of that claim being tested, and it failed in the direction (m) predicted — the second time
+in two runs that this seat's own forward plan was the least reliable artifact it produced.
