@@ -143,6 +143,48 @@ def main() -> int:
             m["cells_marginal"] = sum(1 for s in sharpes if s > hurdle * MARGINAL_BAND)
             m["best_as_fraction_of_hurdle"] = round(sharpes[-1] / hurdle, 3)
 
+    # ONE CURABLE GATE FROM A CERTIFICATE. The ten gates split into VALIDITY (no cure exists --
+    # a failure is terminal) and POWER (curable by forward evidence, per the policy's own
+    # cure_by_forward flag). A cell that clears every VALIDITY gate and fails only POWER ones is
+    # not a rejection: it is the desk's best candidate, waiting on evidence it has not been given
+    # a chance to gather.
+    # This is worth naming loudly because it is invisible in "0 passed". Measured 2026-08-28:
+    # CHFNOK carry passed NINE of ten -- OOS Sharpe 0.5914 at stability 1.0, PBO 0.0011, SPA
+    # p=0.0, surviving 3x costs -- and failed only the deflated Sharpe, whose hurdle had risen to
+    # 1.3593 because the sweep charged 5,963 trials. The edge was not judged weak; it was judged
+    # against the cost of everything else the desk looked at.
+    validity_gates, power_gates = set(), set()
+    try:
+        import yaml
+        spec = yaml.safe_load(
+            (ROOT / "desks" / "mt5" / "policy" / "gate_spec.yaml").read_text("utf-8"))
+        for g in spec.get("gates") or []:
+            (validity_gates if g.get("classification") == "validity"
+             else power_gates).add(g.get("name"))
+    except Exception:
+        pass
+
+    shortlist = []
+    if validity_gates:
+        for v in judged:
+            st = v.get("stages") or {}
+            if any(st.get(g, {}).get("passed") is False for g in validity_gates):
+                continue
+            failed_power = sorted(g for g in power_gates if st.get(g, {}).get("passed") is False)
+            if not failed_power:
+                continue
+            shortlist.append({
+                "cell": v.get("cell"), "sym": v.get("sym"), "family": v.get("family"),
+                "days": v.get("days"),
+                "failed_power_gates": failed_power,
+                "oos_sharpe": (st.get("walk_forward") or {}).get("oos_sharpe"),
+                "in_sample_sharpe": (st.get("in_sample_screen") or {}).get("sharpe"),
+                "dsr_hurdle": (st.get("deflated_sharpe") or {}).get("sr0"),
+            })
+        shortlist.sort(key=lambda r: -(r.get("oos_sharpe") or -9))
+    m["validity_pass_power_short"] = len(shortlist)
+    m["shortlist"] = shortlist[:10]
+
     # CONSECUTIVE BARREN SWEEPS. One zero is noise; a run of them on FRESH sweeps is a standing
     # condition, and the count is what makes it undeniable rather than a thing to explain away
     # each hour. Only a genuinely new sweep advances the streak -- re-reading the same report must
@@ -164,6 +206,29 @@ def main() -> int:
         m["breach"] = "CERT-YIELD-NO-JUDGMENT"
         m["verdict"] = (f"MACHINERY: {submitted} cells submitted and NONE judged -- every cell "
                         f"was dropped before a verdict.")
+    elif shortlist:
+        # NOT WEAK -- PRICED OUT. These cells cleared every gate that has no cure and failed only
+        # gates the policy itself marks curable by forward evidence. Calling that "too weak by
+        # shape" would be false and would prescribe exactly the wrong response: mining different
+        # mechanisms, when the desk already HAS candidates that clear every terminal gate.
+        # Measured 2026-08-28: 506 such cells, the best at OOS Sharpe 0.78 with stability 1.0,
+        # all failing the deflated Sharpe against a 1.3593 hurdle -- a hurdle that stood at
+        # 0.3786 when the sweep charged 597 trials and rose with the trial count as the docket
+        # grew. The multiplicity correction is doing its job; the question of whether the desk
+        # should be spending its trial budget this way is the principal's, not this fence's.
+        best = shortlist[0]
+        m["breach"] = "CERT-YIELD-MULTIPLICITY-BOUND"
+        m["verdict"] = (
+            f"PRICED OUT, NOT WEAK: {len(shortlist)} cell(s) passed EVERY validity gate -- the "
+            f"ones with no cure -- and failed only power gates. Best: {best['sym']} "
+            f"{best['family']} at out-of-sample Sharpe {best['oos_sharpe']} over {best['days']} "
+            f"days, failing {','.join(best['failed_power_gates'])} against a "
+            f"{best['dsr_hurdle']} hurdle set by {m['trial_charge']} charged trials. The gate is "
+            f"correct and is not negotiable here; what IS a decision is whether the desk keeps "
+            f"widening a sweep that raises this hurdle for every honest candidate, and whether "
+            f"a validity-passing cell may gather the forward evidence its failing gate is "
+            f"declared curable by. Both are the principal's calls."
+        )
     elif hurdle and sharpes and sharpes[-1] < hurdle:
         m["breach"] = "CERT-YIELD-SHAPE"
         m["verdict"] = (
@@ -189,6 +254,13 @@ def main() -> int:
     print(f"  submitted={m['submitted']} judged={m['judged']} unmeasured={m['unmeasured']} "
           f"passed={m['passed']} trials={m['trial_charge']}")
     print(f"  binding gate: {m['binding_gate']}")
+    if m.get("validity_pass_power_short"):
+        print(f"  ONE CURABLE GATE AWAY: {m['validity_pass_power_short']} cell(s) passed EVERY "
+              f"validity gate and failed only power gate(s):")
+        for r in m["shortlist"][:5]:
+            print(f"    {r['sym']!s:9s} {str(r['family'])[:20]:20s} days={r['days']} "
+                  f"oos_sharpe={r['oos_sharpe']} fails={','.join(r['failed_power_gates'])} "
+                  f"(hurdle {r['dsr_hurdle']})")
     print(f"  -> {OUT}")
     return 0
 
