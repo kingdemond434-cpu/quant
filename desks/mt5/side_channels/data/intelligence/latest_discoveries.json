@@ -8,6 +8,19 @@
     "discoveries": [
       {
         "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
+      },
+      {
+        "source": "github",
         "repo": "ashikscreativemath-commits/Paldo-ALM",
         "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
         "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
@@ -45,19 +58,6 @@
         ],
         "patterns": [],
         "confidence": 0.21400000000000002
-      },
-      {
-        "source": "github",
-        "repo": "ilahuerta-IA/tradingsystem",
-        "url": "https://github.com/ilahuerta-IA/tradingsystem",
-        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.16599999999999998
       },
       {
         "source": "github",
@@ -206,13 +206,13 @@
         "repo": "nmj94/momentum-lab",
         "url": "https://github.com/nmj94/momentum-lab",
         "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
-        "stars": 40,
+        "stars": 43,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.19
+        "confidence": 0.193
       },
       {
         "source": "github",
@@ -303,6 +303,19 @@
       },
       {
         "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
+      },
+      {
+        "source": "github",
         "repo": "ashikscreativemath-commits/Paldo-ALM",
         "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
         "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
@@ -342,19 +355,6 @@
           "MACD"
         ],
         "confidence": 0.48499999999999993
-      },
-      {
-        "source": "github",
-        "repo": "ilahuerta-IA/tradingsystem",
-        "url": "https://github.com/ilahuerta-IA/tradingsystem",
-        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.16599999999999998
       },
       {
         "source": "github",
@@ -468,8 +468,19 @@
     "discoveries": []
   },
   "reddit": {
-    "count": 18,
+    "count": 19,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Second Setup XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -608,9 +619,9 @@
         "title": "Some setups I called before the move last Friday",
         "url": "",
         "symbols": [
-          "USDJPY",
           "GBPJPY",
-          "NAS100"
+          "NAS100",
+          "USDJPY"
         ],
         "patterns": [],
         "confidence": 0.3
@@ -673,8 +684,8 @@
         "url": "",
         "symbols": [
           "GBPUSD",
-          "EURUSD",
-          "USDCAD"
+          "USDCAD",
+          "EURUSD"
         ],
         "patterns": [
           "pullback"
@@ -683,16 +694,13 @@
       },
       {
         "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Monday price actin prediction (XAUUSD). Thoughts ?",
+        "subreddit": "wallstreetbets",
+        "title": "$105K SPY 0DTE Gain",
         "url": "",
         "symbols": [
-          "XAUUSD"
+          "US500"
         ],
-        "patterns": [
-          "reversal",
-          "momentum"
-        ],
+        "patterns": [],
         "confidence": 0.3
       }
     ]
@@ -712,16 +720,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-24T13:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Treasury Sec Bessent Speaks"
@@ -734,16 +742,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-25T10:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: CB Consumer Confidence"
@@ -756,12 +764,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDCAD",
-          "AUDJPY",
-          "AUDNZD",
-          "GBPAUD",
           "AUDUSD",
-          "EURAUD"
+          "EURAUD",
+          "GBPAUD",
+          "AUDNZD",
+          "AUDJPY",
+          "AUDCAD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI m/m"
@@ -774,12 +782,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDCAD",
-          "AUDJPY",
-          "AUDNZD",
-          "GBPAUD",
           "AUDUSD",
-          "EURAUD"
+          "EURAUD",
+          "GBPAUD",
+          "AUDNZD",
+          "AUDJPY",
+          "AUDCAD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: CPI y/y"
@@ -792,12 +800,12 @@
         "impact": "HIGH",
         "date": "2026-08-25T21:30:00-04:00",
         "symbols": [
-          "AUDCAD",
-          "AUDJPY",
-          "AUDNZD",
-          "GBPAUD",
           "AUDUSD",
-          "EURAUD"
+          "EURAUD",
+          "GBPAUD",
+          "AUDNZD",
+          "AUDJPY",
+          "AUDCAD"
         ],
         "confidence": 0.7,
         "description": "High impact AUD event: Trimmed Mean CPI m/m"
@@ -810,16 +818,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Core PCE Price Index m/m"
@@ -832,16 +840,16 @@
         "impact": "HIGH",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim GDP q/q"
@@ -854,16 +862,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-26T08:30:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Prelim GDP Price Index q/q"
@@ -876,16 +884,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T08:30:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Unemployment Claims"
@@ -898,14 +906,14 @@
         "impact": "MEDIUM",
         "date": "2026-08-27T19:30:00-04:00",
         "symbols": [
-          "EURJPY",
+          "GBPJPY",
           "XAUUSD",
-          "USDJPY",
-          "NZDJPY",
-          "CHFJPY",
+          "EURJPY",
           "CADJPY",
+          "USDJPY",
+          "CHFJPY",
           "AUDJPY",
-          "GBPJPY"
+          "NZDJPY"
         ],
         "confidence": 0.4,
         "description": "Medium impact JPY event: Tokyo Core CPI y/y"
@@ -919,8 +927,8 @@
         "date": "2026-08-28T08:30:00-04:00",
         "symbols": [
           "NZDCAD",
-          "AUDCAD",
-          "USDCAD"
+          "USDCAD",
+          "AUDCAD"
         ],
         "confidence": 0.7,
         "description": "High impact CAD event: GDP m/m"
@@ -933,16 +941,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Fed Chairman Warsh Speaks"
@@ -955,16 +963,16 @@
         "impact": "HIGH",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.7,
         "description": "High impact USD event: Prelim Benchmark Payrolls Revision"
@@ -977,16 +985,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Consumer Sentiment"
@@ -999,16 +1007,16 @@
         "impact": "MEDIUM",
         "date": "2026-08-28T10:00:00-04:00",
         "symbols": [
-          "USDCHF",
-          "NAS100",
           "XAUUSD",
+          "USDCHF",
           "USDCAD",
-          "NZDUSD",
-          "GBPUSD",
           "USDJPY",
+          "EURUSD",
+          "NAS100",
           "US500",
           "AUDUSD",
-          "EURUSD"
+          "GBPUSD",
+          "NZDUSD"
         ],
         "confidence": 0.4,
         "description": "Medium impact USD event: Revised UoM Inflation Expectations"
@@ -1184,7 +1192,7 @@
     ]
   },
   "sec_edgar": {
-    "count": 10,
+    "count": 9,
     "discoveries": [
       {
         "source": "sec_edgar",
@@ -1269,18 +1277,6 @@
         ],
         "confidence": 0.4,
         "description": "Millennium has recent 13F filing - check for position changes"
-      },
-      {
-        "source": "sec_edgar",
-        "type": "13f_filing",
-        "fund": "Baupost",
-        "cik": "0001061768",
-        "symbols": [
-          "US500",
-          "NAS100"
-        ],
-        "confidence": 0.4,
-        "description": "Baupost has recent 13F filing - check for position changes"
       },
       {
         "source": "sec_edgar",
@@ -1373,8 +1369,25 @@
     ]
   },
   "correlations": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "correlation",
+        "type": "correlation_breakdown",
+        "pair": "gold_jpy",
+        "symbol1": "XAUUSD",
+        "symbol2": "USDJPY",
+        "long_correlation": -0.12,
+        "short_correlation": -0.522,
+        "change": 0.401,
+        "symbols": [
+          "XAUUSD",
+          "USDJPY"
+        ],
+        "confidence": 0.4014333579529531,
+        "description": "gold_jpy correlation breakdown: -0.12 -> -0.52"
+      }
+    ]
   },
   "seasonality": {
     "count": 19,
@@ -1537,7 +1550,7 @@
         "type": "historical_pattern",
         "symbol": "EURUSD",
         "month": 8,
-        "avg_return": 0.0003,
+        "avg_return": 0.0004,
         "overall_avg": 0.0001,
         "direction": "bullish",
         "symbols": [
@@ -1607,14 +1620,14 @@
         "type": "historical_pattern",
         "symbol": "BTCUSD",
         "month": 8,
-        "avg_return": 1.4075,
+        "avg_return": 1.4073,
         "overall_avg": 0.2158,
         "direction": "bullish",
         "symbols": [
           "BTCUSD"
         ],
         "confidence": 0.6,
-        "description": "BTCUSD historically bullish in month 8 (avg 1.408%)"
+        "description": "BTCUSD historically bullish in month 8 (avg 1.407%)"
       },
       {
         "source": "seasonality",

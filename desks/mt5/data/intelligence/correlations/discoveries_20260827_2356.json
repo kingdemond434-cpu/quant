@@ -1,0 +1,18 @@
+[
+  {
+    "source": "correlation",
+    "type": "correlation_breakdown",
+    "pair": "gold_jpy",
+    "symbol1": "XAUUSD",
+    "symbol2": "USDJPY",
+    "long_correlation": -0.12,
+    "short_correlation": -0.522,
+    "change": 0.401,
+    "symbols": [
+      "XAUUSD",
+      "USDJPY"
+    ],
+    "confidence": 0.4014333579529531,
+    "description": "gold_jpy correlation breakdown: -0.12 -> -0.52"
+  }
+]

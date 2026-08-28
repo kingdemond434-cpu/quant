@@ -1,21 +1,18 @@
 {
     "free_gb":  39.5,
-    "checked_at":  "2026-08-27T23:40:04.3155494Z",
+    "checked_at":  "2026-08-27T23:50:07.0791716Z",
     "actions":  [
-                    "UNIVERSE: registry shrank to 23 rows (canon 251) -- restored from canon"
+                    "STACKED external_gauntlet: killed duplicate pid 1728 (kept oldest 3544)",
+                    "STACKED external_gauntlet: killed duplicate pid 1000 (kept oldest 3544)"
                 ],
     "procs":  {
-                  "edge_search.2016":  {
-                                           "cpu":  451.140625,
-                                           "at":  "2026-08-28T01:40:04.3155494+02:00"
-                                       },
-                  "orthogonal_sweep.5080":  {
-                                                "cpu":  1939.515625,
-                                                "at":  "2026-08-28T01:40:04.3155494+02:00"
-                                            },
                   "external_gauntlet.3544":  {
-                                                 "cpu":  3732.328125,
-                                                 "at":  "2026-08-28T01:40:04.3155494+02:00"
-                                             }
+                                                 "cpu":  4209.4375,
+                                                 "at":  "2026-08-28T01:50:07.0791716+02:00"
+                                             },
+                  "orthogonal_sweep.5080":  {
+                                                "cpu":  2533.640625,
+                                                "at":  "2026-08-28T01:50:07.0791716+02:00"
+                                            }
               }
 }

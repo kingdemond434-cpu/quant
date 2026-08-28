@@ -18,7 +18,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"d1_swing_break\", \"id\": \"h18-002\", \"symbol\": null, \"title\": \"\"}": {
@@ -40,7 +40,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"h4_momentum\", \"id\": \"h18-003\", \"symbol\": null, \"title\": \"\"}": {
@@ -62,7 +62,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"macro_gold_yield\", \"id\": \"h18-004\", \"symbol\": null, \"title\": \"\"}": {
@@ -85,7 +85,7 @@
     "n_survivors": 1
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"macro_gold_yield\", \"id\": \"h18-005\", \"symbol\": null, \"title\": \"\"}": {
@@ -108,7 +108,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"macro_gold_yield\", \"id\": \"h18-006\", \"symbol\": null, \"title\": \"\"}": {
@@ -131,7 +131,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"gold_dxy_shock\", \"id\": \"h18-007\", \"symbol\": null, \"title\": \"\"}": {
@@ -154,7 +154,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"gold_dxy_shock\", \"id\": \"h18-008\", \"symbol\": null, \"title\": \"\"}": {
@@ -177,7 +177,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"asia_meanrev\", \"id\": \"h18-009\", \"symbol\": null, \"title\": \"\"}": {
@@ -200,7 +200,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"london_ny_breakout\", \"id\": \"h18-010\", \"symbol\": null, \"title\": \"\"}": {
@@ -222,7 +222,7 @@
     "n_survivors": 0
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "DONE"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-4a1e7e\", \"symbol\": null, \"title\": \"\"}": {
@@ -249,7 +249,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-1cb703\", \"symbol\": null, \"title\": \"\"}": {
@@ -276,7 +276,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-b9051e\", \"symbol\": null, \"title\": \"\"}": {
@@ -303,7 +303,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-b7879b\", \"symbol\": null, \"title\": \"\"}": {
@@ -330,7 +330,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-3103df\", \"symbol\": null, \"title\": \"\"}": {
@@ -357,7 +357,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-2bdfd3\", \"symbol\": null, \"title\": \"\"}": {
@@ -384,7 +384,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-b8fbbf\", \"symbol\": null, \"title\": \"\"}": {
@@ -411,7 +411,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-7e3774\", \"symbol\": null, \"title\": \"\"}": {
@@ -438,7 +438,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-063c29\", \"symbol\": null, \"title\": \"\"}": {
@@ -465,7 +465,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-ca332d\", \"symbol\": null, \"title\": \"\"}": {
@@ -492,7 +492,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-1bb7c5\", \"symbol\": null, \"title\": \"\"}": {
@@ -519,7 +519,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-cba5c1\", \"symbol\": null, \"title\": \"\"}": {
@@ -546,7 +546,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-c52f2e\", \"symbol\": null, \"title\": \"\"}": {
@@ -573,7 +573,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-f106fc\", \"symbol\": null, \"title\": \"\"}": {
@@ -600,7 +600,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-3bd9bc\", \"symbol\": null, \"title\": \"\"}": {
@@ -627,7 +627,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260825-79c403\", \"symbol\": null, \"title\": \"\"}": {
@@ -654,7 +654,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9ef39e\", \"symbol\": null, \"title\": \"\"}": {
@@ -686,7 +686,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-2e5675\", \"symbol\": null, \"title\": \"\"}": {
@@ -718,7 +718,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-f87b23\", \"symbol\": null, \"title\": \"\"}": {
@@ -750,7 +750,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9a6943\", \"symbol\": null, \"title\": \"\"}": {
@@ -782,7 +782,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-03aee1\", \"symbol\": null, \"title\": \"\"}": {
@@ -814,7 +814,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-6c296e\", \"symbol\": null, \"title\": \"\"}": {
@@ -846,7 +846,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-56597b\", \"symbol\": null, \"title\": \"\"}": {
@@ -878,7 +878,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-fe195c\", \"symbol\": null, \"title\": \"\"}": {
@@ -910,7 +910,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-22fe50\", \"symbol\": null, \"title\": \"\"}": {
@@ -942,7 +942,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-37387c\", \"symbol\": null, \"title\": \"\"}": {
@@ -974,7 +974,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-370a3d\", \"symbol\": null, \"title\": \"\"}": {
@@ -1006,7 +1006,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-145cdb\", \"symbol\": null, \"title\": \"\"}": {
@@ -1038,7 +1038,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-8e4795\", \"symbol\": null, \"title\": \"\"}": {
@@ -1070,7 +1070,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-51f264\", \"symbol\": null, \"title\": \"\"}": {
@@ -1102,7 +1102,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-545614\", \"symbol\": null, \"title\": \"\"}": {
@@ -1134,7 +1134,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-dcd365\", \"symbol\": null, \"title\": \"\"}": {
@@ -1166,7 +1166,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-7a9ec5\", \"symbol\": null, \"title\": \"\"}": {
@@ -1198,7 +1198,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-c05467\", \"symbol\": null, \"title\": \"\"}": {
@@ -1230,7 +1230,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"momentum_volgate\", \"id\": \"ext-20260826-78211b\", \"symbol\": null, \"title\": \"\"}": {
@@ -1261,7 +1261,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-d11045\", \"symbol\": null, \"title\": \"\"}": {
@@ -1293,7 +1293,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"ict_fvg\", \"id\": \"ext-20260826-e4ec3a\", \"symbol\": null, \"title\": \"\"}": {
@@ -1324,7 +1324,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-88a731\", \"symbol\": null, \"title\": \"\"}": {
@@ -1356,7 +1356,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"ict_fvg\", \"id\": \"ext-20260826-a4c099\", \"symbol\": null, \"title\": \"\"}": {
@@ -1387,7 +1387,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"mean_reversion_rsi\", \"id\": \"ext-20260826-0eaa43\", \"symbol\": null, \"title\": \"\"}": {
@@ -1418,7 +1418,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b00957\", \"symbol\": null, \"title\": \"\"}": {
@@ -1445,7 +1445,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-6fbd86\", \"symbol\": null, \"title\": \"\"}": {
@@ -1472,7 +1472,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b94d47\", \"symbol\": null, \"title\": \"\"}": {
@@ -1499,7 +1499,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-439894\", \"symbol\": null, \"title\": \"\"}": {
@@ -1526,7 +1526,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-68e4cc\", \"symbol\": null, \"title\": \"\"}": {
@@ -1553,7 +1553,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-f0ba4d\", \"symbol\": null, \"title\": \"\"}": {
@@ -1580,7 +1580,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-fd12ce\", \"symbol\": null, \"title\": \"\"}": {
@@ -1607,7 +1607,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-cbd07e\", \"symbol\": null, \"title\": \"\"}": {
@@ -1634,7 +1634,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-8241ec\", \"symbol\": null, \"title\": \"\"}": {
@@ -1666,7 +1666,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-b08a14\", \"symbol\": null, \"title\": \"\"}": {
@@ -1698,7 +1698,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-79831b\", \"symbol\": null, \"title\": \"\"}": {
@@ -1730,7 +1730,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-c253f6\", \"symbol\": null, \"title\": \"\"}": {
@@ -1762,7 +1762,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-e61e50\", \"symbol\": null, \"title\": \"\"}": {
@@ -1794,7 +1794,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-b2a294\", \"symbol\": null, \"title\": \"\"}": {
@@ -1826,7 +1826,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-5326b4\", \"symbol\": null, \"title\": \"\"}": {
@@ -1858,7 +1858,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-a7bed4\", \"symbol\": null, \"title\": \"\"}": {
@@ -1890,7 +1890,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9f2949\", \"symbol\": null, \"title\": \"\"}": {
@@ -1922,7 +1922,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-5cc2bd\", \"symbol\": null, \"title\": \"\"}": {
@@ -1954,7 +1954,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-4e1c8d\", \"symbol\": null, \"title\": \"\"}": {
@@ -1986,7 +1986,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-dfc395\", \"symbol\": null, \"title\": \"\"}": {
@@ -2018,7 +2018,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-ec4f34\", \"symbol\": null, \"title\": \"\"}": {
@@ -2050,7 +2050,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-11092d\", \"symbol\": null, \"title\": \"\"}": {
@@ -2082,7 +2082,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-6561a9\", \"symbol\": null, \"title\": \"\"}": {
@@ -2114,7 +2114,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-afbe7e\", \"symbol\": null, \"title\": \"\"}": {
@@ -2146,7 +2146,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9a8d7a\", \"symbol\": null, \"title\": \"\"}": {
@@ -2178,7 +2178,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-1f33d4\", \"symbol\": null, \"title\": \"\"}": {
@@ -2210,7 +2210,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-88c3cb\", \"symbol\": null, \"title\": \"\"}": {
@@ -2242,7 +2242,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-5388ed\", \"symbol\": null, \"title\": \"\"}": {
@@ -2274,7 +2274,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9470cc\", \"symbol\": null, \"title\": \"\"}": {
@@ -2306,7 +2306,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-0d3197\", \"symbol\": null, \"title\": \"\"}": {
@@ -2338,7 +2338,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-381916\", \"symbol\": null, \"title\": \"\"}": {
@@ -2370,7 +2370,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-c2fa0e\", \"symbol\": null, \"title\": \"\"}": {
@@ -2402,7 +2402,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-09edfa\", \"symbol\": null, \"title\": \"\"}": {
@@ -2434,7 +2434,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-269235\", \"symbol\": null, \"title\": \"\"}": {
@@ -2466,7 +2466,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-bfb675\", \"symbol\": null, \"title\": \"\"}": {
@@ -2498,7 +2498,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-9dbbbd\", \"symbol\": null, \"title\": \"\"}": {
@@ -2530,7 +2530,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-fe23e9\", \"symbol\": null, \"title\": \"\"}": {
@@ -2562,7 +2562,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-061efa\", \"symbol\": null, \"title\": \"\"}": {
@@ -2594,7 +2594,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-3cf4ec\", \"symbol\": null, \"title\": \"\"}": {
@@ -2626,7 +2626,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-a713c7\", \"symbol\": null, \"title\": \"\"}": {
@@ -2658,7 +2658,7 @@
     }
    },
    "first_seen": "2026-08-26T11:44:25+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"level_breakout\", \"id\": \"ext-20260826-6528dc\", \"symbol\": null, \"title\": \"\"}": {
@@ -2693,7 +2693,7 @@
     }
    },
    "first_seen": "2026-08-26T11:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-9e02a5\", \"symbol\": null, \"title\": \"\"}": {
@@ -2729,7 +2729,7 @@
     }
    },
    "first_seen": "2026-08-26T11:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"volatility_squeeze\", \"id\": \"ext-20260826-6fc463\", \"symbol\": null, \"title\": \"\"}": {
@@ -2760,7 +2760,7 @@
     }
    },
    "first_seen": "2026-08-26T11:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-81e6f3\", \"symbol\": null, \"title\": \"\"}": {
@@ -2796,7 +2796,7 @@
     }
    },
    "first_seen": "2026-08-26T11:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b7d893\", \"symbol\": null, \"title\": \"\"}": {
@@ -2832,7 +2832,7 @@
     }
    },
    "first_seen": "2026-08-26T11:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-45ccec\", \"symbol\": null, \"title\": \"\"}": {
@@ -2859,7 +2859,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-a51620\", \"symbol\": null, \"title\": \"\"}": {
@@ -2886,7 +2886,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-7f5f83\", \"symbol\": null, \"title\": \"\"}": {
@@ -2913,7 +2913,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-f3833c\", \"symbol\": null, \"title\": \"\"}": {
@@ -2940,7 +2940,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-bdedef\", \"symbol\": null, \"title\": \"\"}": {
@@ -2967,7 +2967,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b8291a\", \"symbol\": null, \"title\": \"\"}": {
@@ -2994,7 +2994,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-933a8d\", \"symbol\": null, \"title\": \"\"}": {
@@ -3021,7 +3021,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-934820\", \"symbol\": null, \"title\": \"\"}": {
@@ -3053,7 +3053,7 @@
     }
    },
    "first_seen": "2026-08-26T12:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-e439f4\", \"symbol\": null, \"title\": \"\"}": {
@@ -3085,7 +3085,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-48a97e\", \"symbol\": null, \"title\": \"\"}": {
@@ -3112,7 +3112,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-de3a50\", \"symbol\": null, \"title\": \"\"}": {
@@ -3144,7 +3144,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-d21f35\", \"symbol\": null, \"title\": \"\"}": {
@@ -3176,7 +3176,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-15bfef\", \"symbol\": null, \"title\": \"\"}": {
@@ -3203,7 +3203,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260826-33751e\", \"symbol\": null, \"title\": \"\"}": {
@@ -3235,7 +3235,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-050bec\", \"symbol\": null, \"title\": \"\"}": {
@@ -3262,7 +3262,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-4fda4d\", \"symbol\": null, \"title\": \"\"}": {
@@ -3289,7 +3289,7 @@
     }
    },
    "first_seen": "2026-08-26T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-81478a\", \"symbol\": null, \"title\": \"\"}": {
@@ -3316,7 +3316,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-4503dc\", \"symbol\": null, \"title\": \"\"}": {
@@ -3343,7 +3343,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-a1af87\", \"symbol\": null, \"title\": \"\"}": {
@@ -3370,7 +3370,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-c603ab\", \"symbol\": null, \"title\": \"\"}": {
@@ -3397,7 +3397,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-d324d3\", \"symbol\": null, \"title\": \"\"}": {
@@ -3424,7 +3424,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-014f14\", \"symbol\": null, \"title\": \"\"}": {
@@ -3451,7 +3451,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b0b66b\", \"symbol\": null, \"title\": \"\"}": {
@@ -3478,7 +3478,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-1aa227\", \"symbol\": null, \"title\": \"\"}": {
@@ -3505,7 +3505,7 @@
     }
    },
    "first_seen": "2026-08-26T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-4c7d2c\", \"symbol\": null, \"title\": \"\"}": {
@@ -3532,7 +3532,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-cd7234\", \"symbol\": null, \"title\": \"\"}": {
@@ -3559,7 +3559,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-128514\", \"symbol\": null, \"title\": \"\"}": {
@@ -3586,7 +3586,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-48cadf\", \"symbol\": null, \"title\": \"\"}": {
@@ -3613,7 +3613,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-8a6c4e\", \"symbol\": null, \"title\": \"\"}": {
@@ -3640,7 +3640,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-884f90\", \"symbol\": null, \"title\": \"\"}": {
@@ -3667,7 +3667,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-21890c\", \"symbol\": null, \"title\": \"\"}": {
@@ -3694,7 +3694,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-5f7c0d\", \"symbol\": null, \"title\": \"\"}": {
@@ -3721,7 +3721,7 @@
     }
    },
    "first_seen": "2026-08-26T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-79852a\", \"symbol\": null, \"title\": \"\"}": {
@@ -3748,7 +3748,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-10fb96\", \"symbol\": null, \"title\": \"\"}": {
@@ -3775,7 +3775,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-339db5\", \"symbol\": null, \"title\": \"\"}": {
@@ -3802,7 +3802,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-4469b5\", \"symbol\": null, \"title\": \"\"}": {
@@ -3829,7 +3829,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-7bf440\", \"symbol\": null, \"title\": \"\"}": {
@@ -3856,7 +3856,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-829d63\", \"symbol\": null, \"title\": \"\"}": {
@@ -3883,7 +3883,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-3511f3\", \"symbol\": null, \"title\": \"\"}": {
@@ -3910,7 +3910,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-797554\", \"symbol\": null, \"title\": \"\"}": {
@@ -3937,7 +3937,7 @@
     }
    },
    "first_seen": "2026-08-26T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-86decb\", \"symbol\": null, \"title\": \"\"}": {
@@ -3964,7 +3964,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-0ed191\", \"symbol\": null, \"title\": \"\"}": {
@@ -3991,7 +3991,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-145139\", \"symbol\": null, \"title\": \"\"}": {
@@ -4018,7 +4018,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-26dd86\", \"symbol\": null, \"title\": \"\"}": {
@@ -4045,7 +4045,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-c2da43\", \"symbol\": null, \"title\": \"\"}": {
@@ -4072,7 +4072,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-1596a7\", \"symbol\": null, \"title\": \"\"}": {
@@ -4099,7 +4099,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b0b41a\", \"symbol\": null, \"title\": \"\"}": {
@@ -4126,7 +4126,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-551830\", \"symbol\": null, \"title\": \"\"}": {
@@ -4153,7 +4153,7 @@
     }
    },
    "first_seen": "2026-08-26T17:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-db959b\", \"symbol\": null, \"title\": \"\"}": {
@@ -4180,7 +4180,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-a7aafe\", \"symbol\": null, \"title\": \"\"}": {
@@ -4207,7 +4207,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b3656b\", \"symbol\": null, \"title\": \"\"}": {
@@ -4234,7 +4234,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b64ae6\", \"symbol\": null, \"title\": \"\"}": {
@@ -4261,7 +4261,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-1280f6\", \"symbol\": null, \"title\": \"\"}": {
@@ -4288,7 +4288,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-c96c7a\", \"symbol\": null, \"title\": \"\"}": {
@@ -4315,7 +4315,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-f34905\", \"symbol\": null, \"title\": \"\"}": {
@@ -4342,7 +4342,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-59685c\", \"symbol\": null, \"title\": \"\"}": {
@@ -4369,7 +4369,7 @@
     }
    },
    "first_seen": "2026-08-26T18:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-1f6d41\", \"symbol\": null, \"title\": \"\"}": {
@@ -4396,7 +4396,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-2c41f8\", \"symbol\": null, \"title\": \"\"}": {
@@ -4423,7 +4423,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-f11325\", \"symbol\": null, \"title\": \"\"}": {
@@ -4450,7 +4450,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-0cfef7\", \"symbol\": null, \"title\": \"\"}": {
@@ -4477,7 +4477,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-52cdeb\", \"symbol\": null, \"title\": \"\"}": {
@@ -4504,7 +4504,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-f31ceb\", \"symbol\": null, \"title\": \"\"}": {
@@ -4531,7 +4531,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-e52640\", \"symbol\": null, \"title\": \"\"}": {
@@ -4558,7 +4558,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-9ea4f3\", \"symbol\": null, \"title\": \"\"}": {
@@ -4585,7 +4585,7 @@
     }
    },
    "first_seen": "2026-08-26T19:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260826-b4ccee\", \"symbol\": null, \"title\": \"\"}": {
@@ -4612,7 +4612,7 @@
     }
    },
    "first_seen": "2026-08-26T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"pca_residual\", \"id\": \"xp-h1-pca-residual\", \"symbol\": null, \"title\": \"PCA/Marchenko-Pastur residual mean reversion across the MT5 universe\"}": {
@@ -4630,7 +4630,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"pca_residual\", \"id\": \"xp-h2-ou-sscore\", \"symbol\": null, \"title\": \"OU half-life + s-score entry/exit for residual trades\"}": {
@@ -4648,7 +4648,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"xp-h3-ref-venue-lag\", \"symbol\": null, \"title\": \"Reference-venue composite vs Fusion CFD quote convergence (BTC/ETH CFDs)\"}": {
@@ -4668,7 +4668,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"xp-h4-survivor-sync\", \"symbol\": null, \"title\": \"Independent elite-survivor synchronization (consensus within a tight window)\"}": {
@@ -4688,7 +4688,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"xp-h5-cot-divergence\", \"symbol\": null, \"title\": \"COT commercial-vs-speculator divergence extremes as directional/regime input\"}": {
@@ -4706,7 +4706,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"xp-h6-weather-commodities\", \"symbol\": null, \"title\": \"Point-in-time weather forecast REVISIONS vs commodity CFDs\"}": {
@@ -4726,7 +4726,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"xp-h7-shortclock-micro\", \"symbol\": null, \"title\": \"Short-clock cross-market microstructure on Fusion BTC/XAU/indices\"}": {
@@ -4746,7 +4746,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"copied edges decay with latency; measuring decay at 100ms/1s/5s/30s/5m separates copyable public records from mirages profitable only at the provider's own fill\", \"id\": \"xp-h8-copy-decay\", \"symbol\": null, \"title\": \"Survivor copy-decay surface: alpha vs observation/execution delay\"}": {
@@ -4764,7 +4764,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"the original entry is not sacred; each new state re-ranks the transitions. Extends execution_resolver from entry-expression choice to lifecycle choice\", \"id\": \"xp-h9-action-resolver\", \"symbol\": null, \"title\": \"Continuous position re-optimisation (hold/add/reduce/hedge/exit by incremental E[log W])\"}": {
@@ -4782,7 +4782,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"macro_conditional\", \"id\": \"xp-h10-gex-regime\", \"symbol\": null, \"title\": \"Dealer gamma exposure sign/level as index regime conditioner\"}": {
@@ -4802,7 +4802,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"xp-h11-filing-contradiction\", \"symbol\": null, \"title\": \"Filing/earnings-call contradiction score vs post-event drift (US share CFDs)\"}": {
@@ -4822,7 +4822,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"xp-h12-insider-cluster\", \"symbol\": null, \"title\": \"Form-4 cluster purchases (3+ independent insiders, tight window) vs residual return\"}": {
@@ -4842,7 +4842,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"xp-h13-chatter-velocity\", \"symbol\": null, \"title\": \"Abnormal mention-velocity z-score (authors, novelty, dispersion) vs continuation/exhaustion\"}": {
@@ -4860,7 +4860,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"shared USD/JPY/rates/equity-beta exposure makes nominally distinct sleeves one bet; the graph feeds N_eff and blocks fake diversification from sizing as real\", \"id\": \"xp-h14-dependency-graph\", \"symbol\": null, \"title\": \"Sleeve/factor/venue dependency graph -- are 20 survivors 4 bets?\"}": {
@@ -4878,7 +4878,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"xp-h15-pm-probability-surface\", \"symbol\": null, \"title\": \"Prediction-market implied BTC distribution changes as Fusion BTCUSD features\"}": {
@@ -4898,7 +4898,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"UNRESOLVED mechanism -- source rules not recovered; do NOT invent the missing rule. Recover exact public rules first or leave dormant\", \"id\": \"xp-h16-capital-velocity\", \"symbol\": null, \"title\": \"Capital-velocity tracker (OI growth, participation change, rotation speed)\"}": {
@@ -4916,7 +4916,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; influencer P&L claims carry zero weight"
    },
    "first_seen": "2026-08-27T00:00:38+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-132d80\", \"symbol\": null, \"title\": \"\"}": {
@@ -4942,7 +4942,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2de8b0\", \"symbol\": null, \"title\": \"\"}": {
@@ -4968,7 +4968,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1dc146\", \"symbol\": null, \"title\": \"\"}": {
@@ -4994,7 +4994,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4fd8e3\", \"symbol\": null, \"title\": \"\"}": {
@@ -5020,7 +5020,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-31e25d\", \"symbol\": null, \"title\": \"\"}": {
@@ -5046,7 +5046,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-c0ab41\", \"symbol\": null, \"title\": \"\"}": {
@@ -5072,7 +5072,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-832ada\", \"symbol\": null, \"title\": \"\"}": {
@@ -5098,7 +5098,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-f3f361\", \"symbol\": null, \"title\": \"\"}": {
@@ -5124,7 +5124,7 @@
     }
    },
    "first_seen": "2026-08-27T00:54:11+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"family_discovered via ext_* external features\", \"id\": \"xp-h17-china-macro-pulse\", \"symbol\": null, \"title\": \"China macro pulse via AkShare (free) as external features on symbols we ALREADY trade\"}": {
@@ -5144,7 +5144,7 @@
     "discipline": "external prior, NOT evidence of alpha -- same 10 gates, same forward window as everything else; record-from-now only, revised history is lookahead"
    },
    "first_seen": "2026-08-27T01:04:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-ad8dc6\", \"symbol\": null, \"title\": \"\"}": {
@@ -5176,7 +5176,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-5ced97\", \"symbol\": null, \"title\": \"\"}": {
@@ -5208,7 +5208,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-b7c4ad\", \"symbol\": null, \"title\": \"\"}": {
@@ -5240,7 +5240,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-8e0b5c\", \"symbol\": null, \"title\": \"\"}": {
@@ -5272,7 +5272,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-4d257d\", \"symbol\": null, \"title\": \"\"}": {
@@ -5304,7 +5304,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-d41666\", \"symbol\": null, \"title\": \"\"}": {
@@ -5336,7 +5336,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-fe41e0\", \"symbol\": null, \"title\": \"\"}": {
@@ -5368,7 +5368,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-efa368\", \"symbol\": null, \"title\": \"\"}": {
@@ -5400,7 +5400,7 @@
     }
    },
    "first_seen": "2026-08-27T02:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-28f972\", \"symbol\": null, \"title\": \"\"}": {
@@ -5426,7 +5426,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-eadf6a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5452,7 +5452,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-485dfb\", \"symbol\": null, \"title\": \"\"}": {
@@ -5478,7 +5478,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-d88386\", \"symbol\": null, \"title\": \"\"}": {
@@ -5504,7 +5504,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ac18b0\", \"symbol\": null, \"title\": \"\"}": {
@@ -5530,7 +5530,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-49a4d6\", \"symbol\": null, \"title\": \"\"}": {
@@ -5556,7 +5556,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-87f92a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5582,7 +5582,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-0ab08a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5608,7 +5608,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4edd9b\", \"symbol\": null, \"title\": \"\"}": {
@@ -5634,7 +5634,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-fe8123\", \"symbol\": null, \"title\": \"\"}": {
@@ -5660,7 +5660,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-bf04d4\", \"symbol\": null, \"title\": \"\"}": {
@@ -5686,7 +5686,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ad017b\", \"symbol\": null, \"title\": \"\"}": {
@@ -5712,7 +5712,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-baecfd\", \"symbol\": null, \"title\": \"\"}": {
@@ -5738,7 +5738,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-301723\", \"symbol\": null, \"title\": \"\"}": {
@@ -5764,7 +5764,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-6f74b4\", \"symbol\": null, \"title\": \"\"}": {
@@ -5790,7 +5790,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-0a5498\", \"symbol\": null, \"title\": \"\"}": {
@@ -5816,7 +5816,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-76b212\", \"symbol\": null, \"title\": \"\"}": {
@@ -5842,7 +5842,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1efb3a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5868,7 +5868,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-a5653a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5894,7 +5894,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1490e5\", \"symbol\": null, \"title\": \"\"}": {
@@ -5920,7 +5920,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-657df4\", \"symbol\": null, \"title\": \"\"}": {
@@ -5946,7 +5946,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-da1ff8\", \"symbol\": null, \"title\": \"\"}": {
@@ -5972,7 +5972,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-5e459a\", \"symbol\": null, \"title\": \"\"}": {
@@ -5998,7 +5998,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4cb24f\", \"symbol\": null, \"title\": \"\"}": {
@@ -6024,7 +6024,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4273fe\", \"symbol\": null, \"title\": \"\"}": {
@@ -6050,7 +6050,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-44e8b4\", \"symbol\": null, \"title\": \"\"}": {
@@ -6076,7 +6076,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-603f75\", \"symbol\": null, \"title\": \"\"}": {
@@ -6102,7 +6102,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-178be5\", \"symbol\": null, \"title\": \"\"}": {
@@ -6128,7 +6128,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-0b7a9f\", \"symbol\": null, \"title\": \"\"}": {
@@ -6154,7 +6154,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1cd494\", \"symbol\": null, \"title\": \"\"}": {
@@ -6180,7 +6180,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-312e11\", \"symbol\": null, \"title\": \"\"}": {
@@ -6206,7 +6206,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b8c4a1\", \"symbol\": null, \"title\": \"\"}": {
@@ -6232,7 +6232,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-437f4a\", \"symbol\": null, \"title\": \"\"}": {
@@ -6258,7 +6258,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-63b0ed\", \"symbol\": null, \"title\": \"\"}": {
@@ -6284,7 +6284,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-a28dbd\", \"symbol\": null, \"title\": \"\"}": {
@@ -6310,7 +6310,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b633e2\", \"symbol\": null, \"title\": \"\"}": {
@@ -6336,7 +6336,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-612132\", \"symbol\": null, \"title\": \"\"}": {
@@ -6362,7 +6362,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-7d33cb\", \"symbol\": null, \"title\": \"\"}": {
@@ -6388,7 +6388,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-80353e\", \"symbol\": null, \"title\": \"\"}": {
@@ -6414,7 +6414,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-abb01b\", \"symbol\": null, \"title\": \"\"}": {
@@ -6440,7 +6440,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-70be98\", \"symbol\": null, \"title\": \"\"}": {
@@ -6466,7 +6466,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-aab98a\", \"symbol\": null, \"title\": \"\"}": {
@@ -6492,7 +6492,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-188319\", \"symbol\": null, \"title\": \"\"}": {
@@ -6518,7 +6518,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4eb897\", \"symbol\": null, \"title\": \"\"}": {
@@ -6544,7 +6544,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-0ac8a2\", \"symbol\": null, \"title\": \"\"}": {
@@ -6570,7 +6570,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4211d9\", \"symbol\": null, \"title\": \"\"}": {
@@ -6596,7 +6596,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-d156c6\", \"symbol\": null, \"title\": \"\"}": {
@@ -6622,7 +6622,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ae08a5\", \"symbol\": null, \"title\": \"\"}": {
@@ -6648,7 +6648,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ba4a3b\", \"symbol\": null, \"title\": \"\"}": {
@@ -6674,7 +6674,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-09be07\", \"symbol\": null, \"title\": \"\"}": {
@@ -6700,7 +6700,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-209a59\", \"symbol\": null, \"title\": \"\"}": {
@@ -6726,7 +6726,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ce7a9b\", \"symbol\": null, \"title\": \"\"}": {
@@ -6752,7 +6752,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-cd23aa\", \"symbol\": null, \"title\": \"\"}": {
@@ -6778,7 +6778,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b9906d\", \"symbol\": null, \"title\": \"\"}": {
@@ -6804,7 +6804,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4d6638\", \"symbol\": null, \"title\": \"\"}": {
@@ -6830,7 +6830,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-73f427\", \"symbol\": null, \"title\": \"\"}": {
@@ -6856,7 +6856,7 @@
     }
    },
    "first_seen": "2026-08-27T09:34:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1a8d95\", \"symbol\": null, \"title\": \"\"}": {
@@ -6882,7 +6882,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-9ca9ba\", \"symbol\": null, \"title\": \"\"}": {
@@ -6908,7 +6908,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-492d9d\", \"symbol\": null, \"title\": \"\"}": {
@@ -6934,7 +6934,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-bbc910\", \"symbol\": null, \"title\": \"\"}": {
@@ -6960,7 +6960,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-325e99\", \"symbol\": null, \"title\": \"\"}": {
@@ -6986,7 +6986,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4aeb6a\", \"symbol\": null, \"title\": \"\"}": {
@@ -7012,7 +7012,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b79865\", \"symbol\": null, \"title\": \"\"}": {
@@ -7038,7 +7038,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-bd1e77\", \"symbol\": null, \"title\": \"\"}": {
@@ -7064,7 +7064,7 @@
     }
    },
    "first_seen": "2026-08-27T09:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b65bc0\", \"symbol\": null, \"title\": \"\"}": {
@@ -7090,7 +7090,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1aac0f\", \"symbol\": null, \"title\": \"\"}": {
@@ -7116,7 +7116,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2658ca\", \"symbol\": null, \"title\": \"\"}": {
@@ -7142,7 +7142,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-a696f2\", \"symbol\": null, \"title\": \"\"}": {
@@ -7168,7 +7168,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-313fbd\", \"symbol\": null, \"title\": \"\"}": {
@@ -7194,7 +7194,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-9992c3\", \"symbol\": null, \"title\": \"\"}": {
@@ -7220,7 +7220,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-8255c1\", \"symbol\": null, \"title\": \"\"}": {
@@ -7246,7 +7246,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-16bc76\", \"symbol\": null, \"title\": \"\"}": {
@@ -7272,7 +7272,7 @@
     }
    },
    "first_seen": "2026-08-27T10:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-1cde7c\", \"symbol\": null, \"title\": \"\"}": {
@@ -7298,7 +7298,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"cot_positioning\", \"id\": \"ext-20260827-7f40a6\", \"symbol\": null, \"title\": \"\"}": {
@@ -7324,7 +7324,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"calendar_month\", \"id\": \"ext-20260827-d0bcca\", \"symbol\": null, \"title\": \"\"}": {
@@ -7351,7 +7351,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"calendar_month\", \"id\": \"ext-20260827-afa4f9\", \"symbol\": null, \"title\": \"\"}": {
@@ -7378,7 +7378,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-1ff03c\", \"symbol\": null, \"title\": \"\"}": {
@@ -7404,7 +7404,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2d7a78\", \"symbol\": null, \"title\": \"\"}": {
@@ -7430,7 +7430,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ceb74b\", \"symbol\": null, \"title\": \"\"}": {
@@ -7456,7 +7456,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-f4563c\", \"symbol\": null, \"title\": \"\"}": {
@@ -7482,7 +7482,7 @@
     }
    },
    "first_seen": "2026-08-27T11:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2c6b88\", \"symbol\": null, \"title\": \"\"}": {
@@ -7508,7 +7508,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-c99f27\", \"symbol\": null, \"title\": \"\"}": {
@@ -7534,7 +7534,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-8ed4af\", \"symbol\": null, \"title\": \"\"}": {
@@ -7560,7 +7560,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-a2b0eb\", \"symbol\": null, \"title\": \"\"}": {
@@ -7586,7 +7586,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-244ea7\", \"symbol\": null, \"title\": \"\"}": {
@@ -7612,7 +7612,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-de5a20\", \"symbol\": null, \"title\": \"\"}": {
@@ -7638,7 +7638,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2903a6\", \"symbol\": null, \"title\": \"\"}": {
@@ -7664,7 +7664,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-7cfb59\", \"symbol\": null, \"title\": \"\"}": {
@@ -7690,7 +7690,7 @@
     }
    },
    "first_seen": "2026-08-27T12:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-88b3ee\", \"symbol\": null, \"title\": \"\"}": {
@@ -7716,7 +7716,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-52b86e\", \"symbol\": null, \"title\": \"\"}": {
@@ -7742,7 +7742,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-7577c6\", \"symbol\": null, \"title\": \"\"}": {
@@ -7768,7 +7768,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-0d3936\", \"symbol\": null, \"title\": \"\"}": {
@@ -7794,7 +7794,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-291916\", \"symbol\": null, \"title\": \"\"}": {
@@ -7820,7 +7820,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-f558bd\", \"symbol\": null, \"title\": \"\"}": {
@@ -7846,7 +7846,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-14780f\", \"symbol\": null, \"title\": \"\"}": {
@@ -7872,7 +7872,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-f2dd61\", \"symbol\": null, \"title\": \"\"}": {
@@ -7898,7 +7898,7 @@
     }
    },
    "first_seen": "2026-08-27T13:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-5214ae\", \"symbol\": null, \"title\": \"\"}": {
@@ -7924,7 +7924,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-f171c4\", \"symbol\": null, \"title\": \"\"}": {
@@ -7950,7 +7950,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-64b295\", \"symbol\": null, \"title\": \"\"}": {
@@ -7976,7 +7976,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-adc9df\", \"symbol\": null, \"title\": \"\"}": {
@@ -8002,7 +8002,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-b9beba\", \"symbol\": null, \"title\": \"\"}": {
@@ -8028,7 +8028,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4369de\", \"symbol\": null, \"title\": \"\"}": {
@@ -8054,7 +8054,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-9dc3e8\", \"symbol\": null, \"title\": \"\"}": {
@@ -8080,7 +8080,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-931f1a\", \"symbol\": null, \"title\": \"\"}": {
@@ -8106,7 +8106,7 @@
     }
    },
    "first_seen": "2026-08-27T14:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-ef06f1\", \"symbol\": null, \"title\": \"\"}": {
@@ -8138,7 +8138,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-915747\", \"symbol\": null, \"title\": \"\"}": {
@@ -8170,7 +8170,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-8126f6\", \"symbol\": null, \"title\": \"\"}": {
@@ -8202,7 +8202,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-969860\", \"symbol\": null, \"title\": \"\"}": {
@@ -8234,7 +8234,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-581a84\", \"symbol\": null, \"title\": \"\"}": {
@@ -8266,7 +8266,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-bd2e4e\", \"symbol\": null, \"title\": \"\"}": {
@@ -8298,7 +8298,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-9b3136\", \"symbol\": null, \"title\": \"\"}": {
@@ -8330,7 +8330,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"discovered\", \"id\": \"ext-20260827-643f3b\", \"symbol\": null, \"title\": \"\"}": {
@@ -8362,7 +8362,7 @@
     }
    },
    "first_seen": "2026-08-27T15:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-6f43f5\", \"symbol\": null, \"title\": \"\"}": {
@@ -8388,7 +8388,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-e601d8\", \"symbol\": null, \"title\": \"\"}": {
@@ -8414,7 +8414,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-0300c1\", \"symbol\": null, \"title\": \"\"}": {
@@ -8440,7 +8440,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-e91cfd\", \"symbol\": null, \"title\": \"\"}": {
@@ -8466,7 +8466,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-bbe8ed\", \"symbol\": null, \"title\": \"\"}": {
@@ -8492,7 +8492,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-9cc663\", \"symbol\": null, \"title\": \"\"}": {
@@ -8518,7 +8518,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-ebf067\", \"symbol\": null, \"title\": \"\"}": {
@@ -8545,7 +8545,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-ed8223\", \"symbol\": null, \"title\": \"\"}": {
@@ -8572,7 +8572,7 @@
     }
    },
    "first_seen": "2026-08-27T16:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-74c924\", \"symbol\": null, \"title\": \"\"}": {
@@ -8599,7 +8599,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-7c51a2\", \"symbol\": null, \"title\": \"\"}": {
@@ -8626,7 +8626,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-d88174\", \"symbol\": null, \"title\": \"\"}": {
@@ -8652,7 +8652,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-e051c5\", \"symbol\": null, \"title\": \"\"}": {
@@ -8679,7 +8679,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-500364\", \"symbol\": null, \"title\": \"\"}": {
@@ -8706,7 +8706,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-ca1898\", \"symbol\": null, \"title\": \"\"}": {
@@ -8733,7 +8733,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-9e79d6\", \"symbol\": null, \"title\": \"\"}": {
@@ -8760,7 +8760,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-17549e\", \"symbol\": null, \"title\": \"\"}": {
@@ -8787,7 +8787,7 @@
     }
    },
    "first_seen": "2026-08-27T17:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-bad826\", \"symbol\": null, \"title\": \"\"}": {
@@ -8813,7 +8813,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-4ce290\", \"symbol\": null, \"title\": \"\"}": {
@@ -8840,7 +8840,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-837ba4\", \"symbol\": null, \"title\": \"\"}": {
@@ -8866,7 +8866,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-8ef1fb\", \"symbol\": null, \"title\": \"\"}": {
@@ -8893,7 +8893,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-1aa129\", \"symbol\": null, \"title\": \"\"}": {
@@ -8919,7 +8919,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-42ec8e\", \"symbol\": null, \"title\": \"\"}": {
@@ -8945,7 +8945,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-c64aa8\", \"symbol\": null, \"title\": \"\"}": {
@@ -8972,7 +8972,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-76a5dd\", \"symbol\": null, \"title\": \"\"}": {
@@ -8998,7 +8998,7 @@
     }
    },
    "first_seen": "2026-08-27T18:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-49fe3a\", \"symbol\": null, \"title\": \"\"}": {
@@ -9025,7 +9025,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-66d652\", \"symbol\": null, \"title\": \"\"}": {
@@ -9052,7 +9052,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-4d81db\", \"symbol\": null, \"title\": \"\"}": {
@@ -9078,7 +9078,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-0ae1eb\", \"symbol\": null, \"title\": \"\"}": {
@@ -9104,7 +9104,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"asia_momentum\", \"id\": \"ext-20260827-9bcc06\", \"symbol\": null, \"title\": \"\"}": {
@@ -9130,7 +9130,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-12a5cb\", \"symbol\": null, \"title\": \"\"}": {
@@ -9157,7 +9157,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-d5665c\", \"symbol\": null, \"title\": \"\"}": {
@@ -9184,7 +9184,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-31dfb7\", \"symbol\": null, \"title\": \"\"}": {
@@ -9211,7 +9211,7 @@
     }
    },
    "first_seen": "2026-08-27T19:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"session_range_breakout\", \"id\": \"ext-20260827-c647cf\", \"symbol\": null, \"title\": \"\"}": {
@@ -9238,7 +9238,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-540bfe\", \"symbol\": null, \"title\": \"\"}": {
@@ -9264,7 +9264,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-8db2b8\", \"symbol\": null, \"title\": \"\"}": {
@@ -9290,7 +9290,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-fc4359\", \"symbol\": null, \"title\": \"\"}": {
@@ -9316,7 +9316,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-daf863\", \"symbol\": null, \"title\": \"\"}": {
@@ -9342,7 +9342,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-d1dceb\", \"symbol\": null, \"title\": \"\"}": {
@@ -9368,7 +9368,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-ec4d12\", \"symbol\": null, \"title\": \"\"}": {
@@ -9394,7 +9394,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-56406c\", \"symbol\": null, \"title\": \"\"}": {
@@ -9420,7 +9420,7 @@
     }
    },
    "first_seen": "2026-08-27T20:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-2e8441\", \"symbol\": null, \"title\": \"\"}": {
@@ -9446,7 +9446,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-4d548c\", \"symbol\": null, \"title\": \"\"}": {
@@ -9472,7 +9472,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"event_reaction\", \"id\": \"ext-20260827-25b3ac\", \"symbol\": null, \"title\": \"\"}": {
@@ -9498,7 +9498,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-a6b61a\", \"symbol\": null, \"title\": \"\"}": {
@@ -9524,7 +9524,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-c730af\", \"symbol\": null, \"title\": \"\"}": {
@@ -9550,7 +9550,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-47aa5d\", \"symbol\": null, \"title\": \"\"}": {
@@ -9576,7 +9576,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-663df3\", \"symbol\": null, \"title\": \"\"}": {
@@ -9602,7 +9602,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-e4a7d7\", \"symbol\": null, \"title\": \"\"}": {
@@ -9628,7 +9628,7 @@
     }
    },
    "first_seen": "2026-08-27T21:54:00+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-7d4da6\", \"symbol\": null, \"title\": \"\"}": {
@@ -9654,7 +9654,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-c9ee0b\", \"symbol\": null, \"title\": \"\"}": {
@@ -9680,7 +9680,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-50f9d9\", \"symbol\": null, \"title\": \"\"}": {
@@ -9706,7 +9706,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-62d682\", \"symbol\": null, \"title\": \"\"}": {
@@ -9732,7 +9732,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-877bdc\", \"symbol\": null, \"title\": \"\"}": {
@@ -9758,7 +9758,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-4e1654\", \"symbol\": null, \"title\": \"\"}": {
@@ -9784,7 +9784,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-09e9ea\", \"symbol\": null, \"title\": \"\"}": {
@@ -9810,7 +9810,7 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
   },
   "{\"family\": \"carry\", \"id\": \"ext-20260827-4e33fc\", \"symbol\": null, \"title\": \"\"}": {
@@ -9836,12 +9836,284 @@
     }
    },
    "first_seen": "2026-08-27T22:54:01+00:00",
-   "last_seen": "2026-08-27T23:34:00+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
    "status": "PENDING"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-de6afc\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-de6afc",
+    "geneology_id": "external:edge_search:spread",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDUSD discovered params={'feature': 'spread', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=432 exp=0.40593629478111865R t=8.437227446365853 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "spread",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 432,
+     "exp_r": 0.40593629478111865,
+     "t_stat": 8.437227446365853,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "NZDUSD"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-1e50b4\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-1e50b4",
+    "geneology_id": "external:edge_search:spread",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPAUD discovered params={'feature': 'spread', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=462 exp=0.37813309994235134R t=8.12766290317639 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "spread",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 462,
+     "exp_r": 0.37813309994235134,
+     "t_stat": 8.12766290317639,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "GBPAUD"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-376719\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-376719",
+    "geneology_id": "external:edge_search:spread_z_12",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPUSD discovered params={'feature': 'spread_z_12', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=608 exp=0.3228914444110557R t=7.961746165465562 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "spread_z_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 608,
+     "exp_r": 0.3228914444110557,
+     "t_stat": 7.961746165465562,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "GBPUSD"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-e08832\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-e08832",
+    "geneology_id": "external:edge_search:ext_triangle_resid_AUD",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_triangle_resid_AUD', 'band': [0.1, 0.25], 'horizon': 1, 'side': -1} screened at n=279 exp=0.45524096872824477R t=7.604023326556014 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "ext_triangle_resid_AUD",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 279,
+     "exp_r": 0.45524096872824477,
+     "t_stat": 7.604023326556014,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "CADCHF"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-d3b203\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-d3b203",
+    "geneology_id": "external:edge_search:ext_lead_USDTRY_24_z",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_lead_USDTRY_24_z', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=1324 exp=0.20718410928566952R t=7.538768984789032 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "ext_lead_USDTRY_24_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 1324,
+     "exp_r": 0.20718410928566952,
+     "t_stat": 7.538768984789032,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "CADCHF"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-f323a1\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-f323a1",
+    "geneology_id": "external:edge_search:ext_lead_USDTRY_24_z",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_lead_USDTRY_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': -1} screened at n=1316 exp=0.19822844102050952R t=7.191076519932106 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "ext_lead_USDTRY_24_z",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 1316,
+     "exp_r": 0.19822844102050952,
+     "t_stat": 7.191076519932106,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "CADCHF"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-a394c5\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-a394c5",
+    "geneology_id": "external:edge_search:ext_lead_GBPNOK_24_z",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_lead_GBPNOK_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=1539 exp=0.1802749266381739R t=7.072201685430078 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "ext_lead_GBPNOK_24_z",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 1539,
+     "exp_r": 0.1802749266381739,
+     "t_stat": 7.072201685430078,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "CADCHF"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
+  },
+  "{\"family\": \"discovered\", \"id\": \"ext-20260827-9c3119\", \"symbol\": null, \"title\": \"\"}": {
+   "row": {
+    "id": "ext-20260827-9c3119",
+    "geneology_id": "external:edge_search:ext_xsection_breadth",
+    "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_xsection_breadth', 'band': [0.0, 0.1], 'horizon': 3, 'side': 1} screened at n=1369 exp=0.32962004129822203R t=7.04133012423149 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+    "family": "discovered",
+    "side": "BOTH",
+    "params": {
+     "feature": "ext_xsection_breadth",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": 1
+    },
+    "created_at": "2026-08-27T23:50:00.525693+00:00",
+    "status": "QUEUED_CANONICAL_GAUNTLET",
+    "route": "external_gauntlet",
+    "promotion_authority": false,
+    "external_screen": {
+     "n": 1369,
+     "exp_r": 0.32962004129822203,
+     "t_stat": 7.04133012423149,
+     "profit_factor": null,
+     "max_dd_r": null,
+     "win_rate": null,
+     "symbol": "CADCHF"
+    }
+   },
+   "first_seen": "2026-08-27T23:54:01+00:00",
+   "last_seen": "2026-08-27T23:54:01+00:00",
+   "status": "QUEUED_CANONICAL_GAUNTLET"
   }
  },
- "updated_at": "2026-08-27T23:34:00+00:00",
- "archived_rows": 361,
+ "updated_at": "2026-08-27T23:54:01+00:00",
+ "archived_rows": 369,
  "revocations": [
   {
    "at": "2026-08-26T11:47:19+00:00",
