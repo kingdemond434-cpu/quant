@@ -113,7 +113,23 @@ foreach ($tn in $researchTasks) {
 try {
   $os = Get-CimInstance Win32_OperatingSystem
   $freeMB = [math]::Round($os.FreePhysicalMemory / 1KB)
-  if ($freeMB -lt 500) {
+  # SUSTAINED, NOT INSTANTANEOUS. edge_search runs a sawtooth by design -- it builds primitives
+  # for one symbol (peaking near 3.7GB), emits, releases, and starts the next. Measured
+  # 2026-08-28: free RAM cycled 3329 -> 448 -> 3329MB on a ~12 minute period. A single sample
+  # below the floor therefore says nothing about whether the box is in trouble; it usually means
+  # the searcher is mid-symbol and about to hand the memory back. This watchdog happened to
+  # sample at 03:18 when free had recovered, and would have killed a perfectly healthy run had
+  # it sampled two minutes earlier.
+  # Two consecutive strikes, at a ~15 minute cadence, is the difference between the peak of a
+  # sawtooth and a box that is actually out of memory. Killing research is cheap but never free,
+  # and a watchdog that fires on noise trains everyone to ignore it.
+  $strikes = 0
+  try { $strikes = [int]((Get-Content $stateFile -Raw | ConvertFrom-Json).low_mem_strikes) } catch { $strikes = 0 }
+  if ($freeMB -lt 500) { $strikes = $strikes + 1 } else { $strikes = 0 }
+  if ($freeMB -lt 500 -and $strikes -lt 2) {
+    $actions += "RAM-LOW: ${freeMB}MB free (strike $strikes of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
+  }
+  if ($freeMB -lt 500 -and $strikes -ge 2) {
     $MONEY = @('run_gateway_loop', 'run_deadman_switch', 'terminal64')
     $hogs = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
               Where-Object { $cl = $_.CommandLine
@@ -246,7 +262,7 @@ if ($free -lt 5) {
   if ($free2 -lt 2) { $actions += "DISK CRITICAL: $([math]::Round($free2,1))GB free AFTER pruning -- needs a human decision" }
 }
 
-@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1) } |
+@{ checked_at = $now.ToUniversalTime().ToString('o'); actions = $actions; procs = $procsOut; free_gb = [math]::Round((Get-PSDrive C).Free / 1GB, 1); low_mem_strikes = $strikes } |
   ConvertTo-Json -Depth 4 | Set-Content $stateFile
 
 if ($actions) { $actions | ForEach-Object { "$($now.ToUniversalTime().ToString('u')) $_" } }
