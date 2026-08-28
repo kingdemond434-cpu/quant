@@ -229,6 +229,15 @@ def step_backtest(hypotheses):
         grid.append({"sym": sym, "family": family_name, "params": params,
                       "source": h.get("id", ""), "url": h.get("url", "")})
 
+    _seen_cells = set()
+    _unique_cells = []
+    for _c in grid:
+        _k = (_c["sym"], _c["family"])
+        if _k in _seen_cells:
+            continue
+        _seen_cells.add(_k)
+        _unique_cells.append(_c)
+    grid = _unique_cells
     print(f"  {len(grid)} cells across {len(set(c['family'] for c in grid))} families")
     survivors = []
     for cell in grid:
@@ -372,7 +381,7 @@ def step_gauntlet(survivors):
             "economic_prior": {"passed": True, "message": "discovered via external channel"},
             "in_sample_screen": {"passed": bool(sr > 0.0), "sharpe": round(float(sr), 4)},
         }
-        dsr = deflated_sharpe_ratio(arr, n_trials=n_trials, variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
+        dsr = deflated_sharpe_ratio(sr, n_trials=n_trials, variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
         stages["deflated_sharpe"] = {"passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
                                      "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials}
         stages["pbo"] = {"passed": pbo_ok, "pbo": round(pbo_val, 4)}
