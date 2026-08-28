@@ -167,6 +167,131 @@ def _cot_frame(symbol: str | None = None):
     return None
 
 
+def _legs(symbol: str) -> tuple[str, str] | None:
+    """(base, quote) for a six-letter FX/metal/crypto pair, else None. Names only, never prices."""
+    return (symbol[:3], symbol[3:]) if len(symbol) == 6 and symbol.isalpha() \
+        and symbol.isupper() else None
+
+
+def _peer_symbol(sym: str, symbols: list[str], meta: dict) -> str | None:
+    """The most RELATED instrument to `sym`, chosen structurally -- never alphabetically.
+
+    THE DEFECT THIS REPLACES (measured 2026-08-28). The peer was `[s for s in symbols if s !=
+    sym][:12]` over an alphabetically sorted universe, so `relative_value` and
+    `correlation_regime` ran XAUUSD against **3M** -- the industrial conglomerate share CFD --
+    and every FX cross against whichever of `3M / ADAUSD / ADP / AMD / AT&T` came first. Those two
+    families "ran on 297 symbols" each, which read as healthy coverage; what they actually
+    measured was ~590 economically arbitrary pairings. That is worse than wasted compute: a
+    survivor out of XAUUSD-vs-3M is a spurious pairing that would consume a forward slot and
+    corrupt the prior, and the real mechanism -- gold against its own currency and metal
+    complex, a JPY cross against another JPY cross -- was never tested, so the family would
+    eventually be graveyarded on evidence that was never about the mechanism. That is the FALSE
+    NULL direction, the one no gate here catches, because a killed axis raises no alert.
+
+    STRUCTURAL, SO THERE IS NOTHING TO LEAK. Selection reads only the symbol string and the
+    registry's `asset_class` and `bars` -- no returns, no correlations, no full-sample anything.
+    A peer picked by measured correlation would be a conditioning variable chosen with knowledge
+    of the whole sample, which is exactly the look-ahead this desk has paid for before.
+
+    Preference order: shares the non-USD leg (the leg that distinguishes the pair) > shares any
+    leg > same asset class. Ties break on the longest history, so the peer has bars to give.
+    """
+    def _bars_of(s: str) -> int:
+        row = meta.get(s) if isinstance(meta, dict) else None
+        return int((row or {}).get("bars") or 0)
+
+    others = [s for s in symbols if s != sym]
+    legs = _legs(sym)
+    if legs:
+        base, quote = legs
+        distinct = [leg for leg in (base, quote) if leg != "USD"] or [base, quote]
+        for wanted in (distinct, [base, quote]):
+            pool = [s for s in others
+                    if (lg := _legs(s)) and any(leg in lg for leg in wanted)]
+            if pool:
+                return max(pool, key=_bars_of)
+    cls = (meta.get(sym) or {}).get("asset_class") if isinstance(meta, dict) else None
+    pool = [s for s in others
+            if cls and (meta.get(s) or {}).get("asset_class") == cls]
+    return max(pool, key=_bars_of) if pool else (max(others, key=_bars_of) if others else None)
+
+
+#: Factor instruments for the residual families. Eight spans the latent forces the mechanism
+#: names (USD, JPY, risk, rates, metals, energy) while staying inside `_bars`' 16-frame cache
+#: beside the swept symbol and its peer -- the basket is loaded ONCE per sweep rather than
+#: rebuilt per symbol, so this is strictly less resident memory than the code it replaces.
+FACTOR_BASKET_MAX = 8
+
+
+def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
+    """One diversified factor basket for the whole sweep, spanning the asset classes present.
+
+    `pca_residual` REFUSES below four factors on purpose ("a universe factor extracted from two
+    peers is just a pair spread wearing a bigger name") and `cross_asset_residual` wants 2+.
+    They were being handed two alphabetical neighbours and nothing at all respectively, so one
+    family produced a pair spread under a grander name and the other returned [] on every symbol
+    in the universe -- filed as `no-signals (4+ factor instruments' H1)`, a message that quotes
+    the family's own requirement while the sweep held the data three lines away and never passed
+    it. Absence read as a clean verdict, on the one family built to break the concentration that
+    blocks N_eff.
+
+    Latent factors must SPAN, so take the longest-history instrument from each asset class before
+    deepening any one of them; classes are read from the registry, never listed here.
+    """
+    def _bars_of(s: str) -> int:
+        row = meta.get(s) if isinstance(meta, dict) else None
+        return int((row or {}).get("bars") or 0)
+
+    # A THIN FACTOR TRUNCATES EVERY RESIDUAL. The factor matrix is an INTERSECTION -- one
+    # 8,079-bar instrument in the basket threw away ~40,000 bars of XAUUSD history for every
+    # symbol swept. Members must carry at least half the universe's median history; the floor is
+    # derived from the data, so it moves as the universe does and hardcodes no horizon. A class
+    # whose every member is thin loses its seat rather than costing everyone their history:
+    # spanning is about the latent forces, and an instrument with no history carries none of them.
+    depths = sorted(b for b in (_bars_of(s) for s in symbols) if b > 0)
+    floor = (depths[len(depths) // 2] * 0.5) if depths else 0.0
+    by_class: dict[str, list[str]] = {}
+    for s in symbols:
+        cls = str((meta.get(s) or {}).get("asset_class") or "") if isinstance(meta, dict) else ""
+        by_class.setdefault(cls or "unclassified", []).append(s)
+    basket: list[str] = []
+    for cls in sorted(by_class):
+        best = max(by_class[cls], key=_bars_of)
+        if _bars_of(best) >= max(floor, 1.0):
+            basket.append(best)
+    # Deepen with the longest-history remainder only after every class has a representative.
+    rest = sorted((s for s in symbols if s not in basket), key=_bars_of, reverse=True)
+    basket.extend(rest[:max(0, FACTOR_BASKET_MAX - len(basket))])
+    return sorted(basket[:FACTOR_BASKET_MAX], key=_bars_of, reverse=True)
+
+
+#: Families this sweep deliberately does not source, and why. DECLARED, never silent: each of
+#: these would otherwise return [] on every symbol and be filed as a data gap, which is how
+#: `pca_residual` hid for its whole existence. An entry here is a statement that the input is not
+#: this organ's to resolve -- not that the family is dead. Anything NOT listed and not wired is a
+#: defect, and `test_every_family_needing_an_input_is_wired_to_one` fails on it.
+NOT_SOURCED_HERE = {
+    "discovered": "the primitive is named by edge_search at search time; this sweep enumerates "
+                  "families, it does not run the search that would name one",
+}
+
+
+def _unsuppliable(fn, supplied: dict) -> str | None:
+    """The required keyword-only args this sweep cannot supply, or None when it can run.
+
+    A FAMILY THAT CRASHES IS NOT A FAMILY WITH NO DATA. `calendar_month` takes `active_month` and
+    `side_bias` as REQUIRED keyword-only arguments -- its month and direction are source evidence,
+    not searched parameters -- so calling it blind raised TypeError on all 297 symbols, and the
+    handler filed those 297 crashes into `input_gaps` beside genuine acquisition gaps. A bug
+    wearing an input-gap costume is a bug nobody investigates. Detected by signature rather than
+    by a family list, so a new family with required evidence is classified the same way on day one.
+    """
+    import inspect
+    missing = [name for name, p in inspect.signature(fn).parameters.items()
+               if p.kind is p.KEYWORD_ONLY and p.default is p.empty and name not in supplied]
+    return ", ".join(missing) if missing else None
+
+
 @lru_cache(maxsize=1)
 def _event_index():
     """Recover point-in-time event timestamps already persisted by the calendar miner."""
@@ -202,18 +327,26 @@ def sweep() -> dict:
     symbols = sorted(p.stem.replace("_H1", "") for p in UNIVERSE.glob("*_H1.parquet"))
     hypotheses: list[dict] = []
     gaps: dict[str, int] = {}
+    errors: dict[str, int] = {}
     ran: dict[str, int] = {}
     untestable: dict[str, int] = {}
+
+    # ONE BASKET FOR THE SWEEP, chosen before the loop. Rebuilding a factor set per symbol reread
+    # the same parquets 297 times; this loads them once and keeps them resident in `_bars`' cache.
+    factor_syms = _factor_symbols(symbols, meta)
 
     for sym in symbols:
         df = _bars(sym)
         if df is None or len(df) < 2000:
             continue
-        # pca_residual needs a real cross-section: latent factors extracted from 3 peers are a
-        # pair spread wearing a bigger name. Give it a dozen; the MP bound decides what is real.
-        peers = [s for s in symbols if s != sym][:12]
-        peer_df = _bars(peers[0]) if peers else None
-        factor_dfs = [f for f in (_bars(s) for s in peers[:2]) if f is not None]
+        # THE PEER IS THE RELATED INSTRUMENT, THE FACTORS ARE THE UNIVERSE. Both were
+        # alphabetical before (`[s for s in symbols if s != sym][:12]`), which paired XAUUSD with
+        # 3M and handed the residual families two arbitrary neighbours; `pca_residual` was handed
+        # nothing at all and returned [] on all 297 symbols. See _peer_symbol / _factor_symbols.
+        peer_sym = _peer_symbol(sym, symbols, meta)
+        peer_df = _bars(peer_sym) if peer_sym else None
+        factor_names = [s for s in factor_syms if s != sym]
+        factor_dfs = [f for f in (_bars(s) for s in factor_names) if f is not None]
         spread, flow = _tape_series(sym, df.index)
         macro = _macro_series(df.index)
         cot = _cot_frame(sym)
@@ -224,6 +357,10 @@ def sweep() -> dict:
             "relative_value": {"peer": peer_df},
             "correlation_regime": {"peer": peer_df},
             "cross_asset_residual": {"factors": factor_dfs},
+            # NEVER PASSED BEFORE. Absent from this map, `pca_residual` ran with factors=None,
+            # hit its own `len(factors) < 4` refusal and returned [] on every symbol in the
+            # universe -- reported as a data gap while the data sat in `factor_dfs`.
+            "pca_residual": {"factors": factor_dfs},
             "liquidity_regime": {"spread_series": spread},
             "orderflow_imbalance": {"flow": flow},
             "macro_conditional": {"macro": macro},
@@ -235,9 +372,10 @@ def sweep() -> dict:
         # peer/factor candidates silently rebuild with no inputs and therefore no trades.
         identity_by_family = {
             "carry": {"input_symbol": sym},
-            "relative_value": {"peer_symbol": peers[0]} if peers else {},
-            "correlation_regime": {"peer_symbol": peers[0]} if peers else {},
-            "cross_asset_residual": {"factor_symbols": peers[:2]},
+            "relative_value": {"peer_symbol": peer_sym} if peer_sym else {},
+            "correlation_regime": {"peer_symbol": peer_sym} if peer_sym else {},
+            "cross_asset_residual": {"factor_symbols": factor_names},
+            "pca_residual": {"factor_symbols": factor_names},
             "liquidity_regime": {"input_source": "fusion_tick_tape"},
             "orderflow_imbalance": {"input_source": "fusion_tick_tape"},
             "macro_conditional": {"input_source": "macro_state"},
@@ -256,11 +394,24 @@ def sweep() -> dict:
 
         for fam, fn in sorted(ORTHOGONAL_FAMILIES.items()):
             kw = kwargs_by_family.get(fam, {})
+            if fam in NOT_SOURCED_HERE:
+                key = f"{fam}:not-sourced-here ({NOT_SOURCED_HERE[fam]})"
+                gaps[key] = gaps.get(key, 0) + 1
+                continue
+            # ASK BEFORE CALLING. A family whose required evidence this sweep has no source for
+            # is an acquisition gap, not a crash -- see _unsuppliable.
+            if (need_args := _unsuppliable(fn, kw)):
+                key = f"{fam}:needs-source-evidence ({need_args})"
+                gaps[key] = gaps.get(key, 0) + 1
+                continue
             try:
                 sigs = fn(df, **kw)
             except Exception as exc:
-                gaps[f"{fam}:error:{type(exc).__name__}"] = gaps.get(
-                    f"{fam}:error:{type(exc).__name__}", 0) + 1
+                # ERRORS ARE THEIR OWN CATEGORY. Filed into `input_gaps` these read as missing
+                # data and nobody looks; 297 identical TypeErrors sat there for exactly that
+                # reason. A crash is a defect in this desk's code, and it says so here.
+                key = f"{fam}:{type(exc).__name__}: {exc}"
+                errors[key] = errors.get(key, 0) + 1
                 continue
             if not sigs:
                 need = FAMILY_INPUTS.get(fam, ("unknown", None))[0]
@@ -302,6 +453,12 @@ def sweep() -> dict:
     return {"swept_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "symbols": len(symbols), "families_ran": ran,
             "input_gaps": gaps,
+            "family_errors": errors,
+            "family_errors_note": (
+                "exceptions raised BY THIS DESK'S CODE while calling a family. "
+                "Distinct from input_gaps, which are data the box does not have: "
+                "an error here is a defect to FIX, and folding the two together is "
+                "how 297 identical TypeErrors read as a missing feed."),
             "untestable_by_family": untestable,
             "untestable_note": (
                 f"cells that traded but on fewer than {MIN_TRADE_DAYS} distinct days -- the "
@@ -325,6 +482,10 @@ def main() -> int:
     if report["input_gaps"]:
         print("  input gaps (ACQUISITION tasks, not miner failures):")
         for k, n in sorted(report["input_gaps"].items())[:6]:
+            print(f"   {k}  x{n}")
+    if report["family_errors"]:
+        print("  FAMILY ERRORS (defects in this desk's code -- fix, do not acquire):")
+        for k, n in sorted(report["family_errors"].items())[:6]:
             print(f"   {k}  x{n}")
     return 0
 
