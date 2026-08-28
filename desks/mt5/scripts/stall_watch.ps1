@@ -19,6 +19,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 $base = 'C:\opt\quant\desks\mt5'
 $stateFile = Join-Path $base 'data\stall_watch.json'
 $patterns = @('external_gauntlet', 'shadow_cycle', 'edge_search', 'expand_universe',
+              'backfill_coverage',
               'moat_silver', 'orthogonal_sweep', 'qquant_gates', 'universal_gate')
 $researchTasks = @('MT5-Gauntlet', 'MT5-Shadow', 'MT5-Hourly', 'MT5-MoatSilver',
                    'MT5-MoatRecorder', 'MT5-QQuantShadow', 'MT5-UniversalGate',
