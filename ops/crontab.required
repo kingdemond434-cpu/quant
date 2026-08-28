@@ -1,4 +1,4 @@
-0 * * * * flock -n /tmp/hourly.lock sh -c 'cd /home/quant/quant-platform && .venv/bin/python hourly_controller.py >> /home/quant/logs/hourly_controller.log 2>&1'
+0 * * * * flock -n /tmp/hourly.lock sh -c 'cd /home/quant/quant-platform && .venv/bin/python -u hourly_controller.py >> /home/quant/logs/hourly_controller.log 2>&1'
 53 6 * * * cd "/home/quant/quant-platform" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1
 */5 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py >> data/cro_ai_logs/research_health.log 2>&1
 15 6 * * 0 cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py --weekly >> data/cro_ai_logs/research_health.log 2>&1
