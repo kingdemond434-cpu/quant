@@ -3885,3 +3885,26 @@ turns an unmeasurable family into a measurable one.
    applied twice more this run and it worked both times). Corollary added: 294 of 8,783 BoJ FoF
    series stop at 2007Q3 — **a per-series last-observation histogram also surfaces DEAD series that
    a last-value loader reads as live.**
+
+## 2026-08-28 — free-data run (m): method findings
+
+1. **A robots rule that NAMES your agent is a verdict, not an obstacle.** `data.norges-bank.no` has
+   `User-agent: * / Allow: /` plus a specific `User-agent: ClaudeBot / Disallow: /`. RFC 9309: most
+   specific group wins. Run (j)'s lesson ("a robots verdict is a property of your User-Agent") is
+   being applied in one direction only — it is equally an argument for NOT UA-shopping when the rule
+   names you. Suggest the §13 checklist state both directions explicitly.
+2. **A sitemap is not a site index, and the failure is silent.** Norges Bank's 4,875-URL English
+   sitemap omitted both target pages and 46 of 61 press releases while being dominated by
+   commemorative coins. Sitemap-driven discovery returns a plausible non-empty result that simply
+   does not contain the thing. Fall through to the SECTION INDEX PAGE's own hrefs before grading a
+   site as not-carrying-X.
+3. **`*.xls` in robots does NOT match `.xlsx`** (no trailing wildcard). Riksbank bars xls and permits
+   xlsx. A conservative "spreadsheets are barred" reading shrinks the universe incorrectly — the §38
+   attrition failure mode, from over-reading a pattern.
+4. **`article:published_time` separator hazard:** Norges Bank emits `10:00:00 AM` (U+202F narrow
+   no-break space). Naive `strptime('%I:%M:%S %p')` fails; naive UTC assumption is off by 1–2h.
+5. **URL slug date ≠ publication date** — `/2021-08-30-fx/` published 2021-08-31. Any event study
+   keyed on a slug inherits a silent off-by-one. Join on `published_time`.
+6. **Verify your own next-ground list before writing it.** Run (l) named six digs as next ground;
+   five were already covered by run (l)'s own headline adoption, discoverable with one CSV count.
+   A next-ground list is a claim and deserves verify-don't-trust like any source.

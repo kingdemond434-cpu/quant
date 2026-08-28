@@ -6492,3 +6492,191 @@ the data universe** — §38's "mining regression by attrition", committed by th
 prevent it. The mechanism is always the same and it is now named: **a 403 is not a verdict, it is a
 prompt to ask WHOSE 403 it is.** The counter-measure is cheap and I should have been running it from
 the start — two UAs and a Wayback robots read, ~10 seconds, before any host is graded walled.
+
+---
+
+## SESSION 2026-08-28 (m) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Backlog on entry:** clear (0 pending verification, 25 deferred to 2026-09-01+). Resuming run (l)'s
+own named next ground, not opening fresh ground.
+
+**ITEMS TAKEN THIS RUN (bounded; depth maxed):**
+1. **The 7 central banks absent from DBnomics** — Norges Bank, Riksbank, Bank of Korea, SNB, MAS,
+   PBoC (RBNZ closed in run (l)). NOK/SEK/KRW/CHF/SGD/CNH are all MT5 legs. One route each; §13
+   graded per-PATH with the two-UA + Wayback-robots counter-measure run BEFORE any "walled" verdict.
+2. **The release-calendar-as-point-in-time-time-series class**, applied outside Japan: Fed, ECB,
+   ONS, BLS, ABS. Run (l) discovered the class on the BoJ (17 vintages); it is untested elsewhere.
+3. (if budget allows) `SAFE`, `TCMB`, `BCB`, `SARB` on DBnomics — carded in run (l)'s census, unopened.
+
+*(Status updated in-place as each item resolves; findings are never held in context to the end.)*
+
+### ITEM 1 — RESOLVED: the "7 central banks absent from DBnomics" gap was 5/6 ALREADY CLOSED
+
+Run (l) named this as next ground: *"Norges Bank, Riksbank, Bank of Korea, SNB, MAS, PBoC — one
+route each."* I re-pulled the 207 MB WS_CBPOL CSV that **run (l) itself adopted** and counted per
+`REF_AREA`:
+
+| area | obs | last |
+|---|---|---|
+| NO | 13,349 | 2026-08-24 |
+| SE | 11,559 | 2026-08-25 |
+| KR | 6,796 | 2026-08-03 |
+| CH | 9,562 | 2026-08-25 |
+| CN | 10,887 | 2026-07-19 |
+| SG | **ABSENT** | — (MAS runs an S$NEER band, not a policy rate: a fact about the instrument) |
+
+**Six host digs were queued against a question one CSV count answers**, and the answer was already
+on disk inside the same run's headline adoption. Only KR (25d) and CN (40d) are stale enough to
+justify an origin route. All six currencies are real ground — 34 tradable legs in the 251-symbol
+universe (NOK 6, SEK 6, KRW 1, CHF 13, SGD 7, CNH 1) — so the ground was right and the route was
+redundant.
+
+### ITEM 1-bis — ADOPTED, verified-clean: **Norges Bank's daily FX transactions on behalf of the government**
+
+The policy-rate question being closed, I asked what these banks publish that a rate panel does not.
+Norway's answer is the best free-data find this seat has made in several runs.
+
+**§13 FIRST, and it went against me:** `data.norges-bank.no/robots.txt` carries a Cloudflare-managed
+block naming **`User-agent: ClaudeBot / Disallow: /`**. The `*` group allows everything; the specific
+group governs under RFC 9309. **I did not UA-shop around it.** Run (j)'s lesson — a robots verdict is
+a property of your User-Agent — cuts both ways: *a rule that names you is a verdict, not an obstacle.*
+The open SDMX API is closed to this seat. **§38 replacement hunt opened and CLOSED in the same run:**
+`www.norges-bank.no` carries `User-agent: * / Crawl-delay: 5` and **zero Disallow**, and it publishes
+the same facts. Crawl-delay 5 honoured on every request this session.
+
+**WHAT IT IS.** Under Norway's fiscal rule, Norges Bank must convert a **pre-announced, fixed NOK
+amount every single business day** on behalf of the Ministry of Finance — smoothed over the month,
+published in advance "so that market operators know the amounts to be converted."
+
+**MECHANISM — who is forced and why they cannot stop:** the central bank itself, by statute. It
+cannot time the flow, cannot skip it, and pre-commits publicly a month ahead. This is not a
+sentiment proxy or a positioning guess; it is a *mandated* order flow with a published size and a
+published clock. That is the same structural family as the desk's only repeat survivor
+(funding/carry as a leverage-demand premium) and it is direction-agnostic-testable.
+
+**COVERAGE.** 27 years — **320 monthly observations of the daily amount, 2000-01 → 2026-08**, from a
+single HTML table. Sign convention: positive = Norges Bank *buys* FX / sells NOK; negative = *sells*
+FX / buys NOK. The series flips sign (2000-2024 mostly positive, 2026 strongly negative: −650 in
+January to −350 in August), so both directions are populated.
+
+**VERIFIED — three-for-three exact, against an independently-worded source:**
+
+| month | statistics table | press release text |
+|---|---|---|
+| Aug 2026 | −350 | "sell foreign exchange … equivalent to NOK 350 million per day" ✓ |
+| Jul 2026 | −400 | "…NOK 400 million per day" ✓ |
+| May 2026 | −100 | "…NOK 100 million per day" ✓ |
+
+**THE CLOCK, and it is unusually clean.** Each month's amount is announced by press release at
+`article:published_time` = **10:00 Oslo local on the last business day of the preceding month**,
+stable at 10:00 in 10 of 11 releases sampled across 2020-11 → 2026-07. Oslo (CET/CEST) and the
+broker tape (EET/EEST) shift together, so this is **11:00 broker-EET year-round — a DST-stable
+stamp**, which the desk's own EET-tape finding from runs (i)/(k) makes directly executable.
+
+**FAILURE MODES — the important one is a collapsed distinction:**
+- **THE STATISTICS TABLE OMITS THE SECOND LEG.** It carries only the government/petroleum leg.
+  Norges Bank *also* sells FX to fund the transfer of dividends and interest to the government —
+  **124 m NOK/day** in May/Jul/Aug 2026. True total Aug-2026 net daily sale is **474 m, not 350 m**:
+  the table alone **understates the actual flow by 35%**. Only the press release carries both legs.
+  A producer computes a distinction and the statistics page collapses it — the desk's recurring class.
+- **SLUG DATE ≠ EVENT DATE.** `…/2021-08-30-fx/` has `published_time` = 2021-08-31. Join on
+  `published_time`, never on the URL.
+- `published_time` is local wall-clock with no zone marker and a **U+202F narrow no-break space**
+  before AM/PM — naive `strptime` fails on the separator and naive-UTC is off by 1–2h.
+- **THE SITEMAP DOES NOT CONTAIN THE TARGET.** The 4,875-URL English sitemap is dominated by
+  commemorative coins and lists **neither** the GPFG topic page **nor** the daily-transactions
+  statistics page; it holds 15 of the 61 discoverable FX press releases (~25%). A sitemap-driven
+  crawler misses this source entirely. The section index page's own `href`s are the working route.
+- Pre-2020-11 announcements use free-text slugs (`…/Norges-Banks-foreign-exchange-purchases-in-April-2010/`)
+  and need a CDX walk to enumerate — **the amount table already covers those months; only the clock is missing.**
+
+### ITEM 1-ter — DOCUMENTED NULL: Riksbank has no live pre-announced daily FX flow
+
+Searched for the direct SEK analogue. `www.riksbank.se/robots.txt` **permits** (the `*` group bars
+only `*.doc`, `*.docx`, `*.xls`, `/*?query=*`, `/*/?year=*` — note that **`*.xls` does not match
+`.xlsx`**, no trailing wildcard, so xlsx is permitted and xls is not). I enumerated **all 1,723
+`/en-gb/markets/` URLs** from the 3.0 MB flat sitemap: there is **no** currency-purchase/sale page;
+the 2023–24 FX-reserve hedging programme has no surviving dedicated page. Two direct probes 404.
+**This is a documented search that failed, not a default.** Next-run routes, enumerated and unopened:
+`riksbanks-balance-sheet/official-reserve-assets-weekly-report` (weekly SEK reserves) and
+`market-operations/sale-of-government-bonds` (scheduled QT flow), plus the SWEA API.
+
+### AXIS PROPOSED — not pre-registered here (the registry is outside this seat's research freeze)
+
+**`nok_mandated_flow_surprise`** — the month-over-month **change** in Norges Bank's pre-announced
+daily FX transaction amount (**both legs**, from the press release, not the table), evaluated at the
+announcement stamp **10:00 Oslo = 11:00 broker-EET, last business day of the month**, on USDNOK,
+EURNOK, GBPNOK, CHFNOK, NOKJPY, NOKSEK. **n = 61 events with verified clocks** (2020-11 → 2026-07);
+320 months of amounts if the pre-2020 announcement dates are recovered by CDX walk.
+**Mechanism (who is forced):** the central bank, by statute, for the following month, publicly
+pre-committed. **Falsifier:** no reaction at the 11:00-EET stamp, or a reaction equally present at a
+placebo stamp on a random business day of the same month. **Second, stronger falsifier available for
+free:** the *level* of the daily flow is public and constant all month, so an efficient market should
+show **no** persistent drift — if a drift appears, the axis is more likely mis-specified than real.
+**Honest prior: n=61 is thin and this desk's graveyard is full of calendar-class deaths** (TDOM was
+discarded on a calendar-class graveyard match on 2026-08-25). Propose as a **direction-agnostic
+volatility/spread axis first** — does the 11:00-EET bar widen, and by how much — because volatility
+is predictable and direction is not.
+
+### SESSION CLOSE — 2026-08-28 (m)
+
+**Backlog:** clear on entry and on exit (0 pending verification; 25 deferred to 2026-09-01+).
+
+**Categories covered:** **5** (alternative/macro — the run's weight), **6** (vendor replacement — one
+§38 exclusion opened AND closed in-run). **1 and 4 untouched. 2 and 3 remain VOID under the MT5
+mandate as the spec writes them** (they name crypto on-chain and crypto regional venues); the spec
+predates the 2026-08-18 universe order and I keep naming that rather than reporting them skipped.
+
+**Counts: 1 source ADOPTED verified-clean (Norges Bank government FX transactions — 320 monthly
+observations + 61 timestamped announcements, diffed 3/3 exact against an independent wording),
+1 host graded excluded-illegitimate by a UA-named robots rule and REPLACED in the same run,
+1 documented NULL with its search recorded (Riksbank), 1 prior-run gap CLOSED by re-reading an
+owned artifact (5 of 6 central banks), 0 unverified links catalogued.** Universe map 133 → 137.
+
+**BEST VENDOR-REPLACEMENT: Norges Bank's daily government FX transactions.** A statutorily forced,
+pre-announced, daily, sign-flipping FX order flow in a currency with 6 tradable legs, 27 years deep,
+free, licence-clean, on a DST-stable broker-clock stamp. No vendor sells this better than the source.
+
+**CROSS-SOURCE PAIR (demonstrated): the amount TABLE × the press-release ARCHIVE.** The table has
+27 years of amounts and no clock and only one of the two legs. The archive has both legs and an exact
+timestamp but only 5.75 years. Neither is sufficient alone: the table alone understates the current
+flow by 35%, the archive alone loses two-thirds of the history. **Same shape as run (l)'s BoJ ×
+FF pair — which makes it a pattern worth naming rather than a coincidence:** institutions publish the
+*number* and the *clock* through different doors, and the free-data seat's job is to join them.
+
+**NEW SOURCE CLASS: the pre-announced mandated sovereign flow.** Not sentiment, not positioning, not
+a survey — a *published, dated, statutory obligation to trade a named size*. Norway publishes it
+because the fiscal rule requires transparency. The class generalises to any sovereign wealth or
+FX-reserve mechanism with a transparency mandate, and I have tested exactly one member of it.
+
+**DEPTH LINE.** Norges Bank: **exhausted for this run's purpose** — robots on two hosts → §13 wall →
+replacement host → section index (after the sitemap failed) → topic page → mechanism text → linked
+statistics page → full 27-year table parse → press-release archive → 61-event slug census → 3-month
+value diff → 11-release clock-stability sample → discovery of the omitted second leg *inside* the
+press-release wording, which is one layer past where I would have stopped and is the run's most
+load-bearing finding. Riksbank: **exhausted at the enumeration layer** — robots → sitemap → all 1,723
+market URLs → null, with two next routes named. BIS WS_CBPOL: re-verified per-area, not re-surface-scanned.
+
+**NEXT UN-EXHAUSTED GROUND, named so the chain holds:**
+1. **The release-calendar-as-point-in-time-series class applied to the Fed, ECB, ONS, BLS, ABS** —
+   run (l) discovered it on the BoJ (17 vintages) and it is *still* untested elsewhere. Carried, not done.
+2. **The pre-announced-mandated-flow class, generalised** — the new class above, tested on exactly one
+   member. Candidates: Danmarks Nationalbank (DKK, intervention publishing, 2 MT5 legs), SNB sight
+   deposits (already known contaminated by the CS rescue), Israel/Chile/Peru sovereign FX programmes,
+   and any SWF with a transparency mandate. **This is the highest-yield ground I am carrying.**
+3. **Norges Bank pre-2020 announcement dates via CDX walk** — the amounts are already held; only the
+   clock is missing, so this is 259 extra events for one walk.
+4. **KR and CN policy-rate origin routes** (BoK, PBoC) — the only two areas where BIS is materially stale.
+5. Riksbank `official-reserve-assets-weekly-report` + `sale-of-government-bonds` + SWEA API.
+6. `SAFE`, `TCMB`, `BCB`, `SARB` on DBnomics — carded in run (l), still unopened.
+
+**THE BLUNT PART.** Run (l) closed by naming six central-bank digs as its next ground; five of them
+were already answered by run (l)'s own headline adoption, and finding that out cost one CSV read.
+That is the desk's top-ranked lesson — *when a claim is checkable in one command, checking is cheaper
+than being wrong* — committed by this seat in the act of writing its own next-ground list. **The
+counter-measure is now explicit and belongs in every future close: before naming a next ground,
+query the artifact this run just adopted to see whether it already covers it.** A next-ground list is
+a claim, and it gets the same verify-don't-trust treatment as a source.
+
+The run took one item to genuine depth and returned one honest null. I opened no third item and I am
+naming that rather than padding it.
