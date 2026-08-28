@@ -3667,3 +3667,46 @@ A first-all-numeric-row header heuristic on the BoE OIS 2009–2015 workbook rea
 header instead of `years:`, silently converting a 10-year tenor request into 10 months and
 fabricating a smooth, monotone, plausible-looking spread series. Any parser of BoE/central-bank
 era workbooks must key on the literal `years:` label. Detail in `data_axis_watchlist.md` 2026-08-28 (g).
+
+## 2026-08-28 — DESK MT5 BAR TAPE IS STAMPED `+00:00` BUT CARRIES BROKER EET (free-data seat)
+
+**Not a source finding — a defect in the desk's own primary tape**, surfaced by offset-scanning an
+external tick source against it (the check this seat adopted last run precisely to catch look-ahead).
+
+**What:** `desks/mt5/data/universe/*_{M1,M5,M15,H1}.parquet` carry a tz-aware index labelled
+`+00:00` whose values are **broker server time (EET)**, not UTC.
+
+**Evidence, three independent lines:**
+1. **Offset scan vs Dukascopy true-UTC ticks**, XAUUSD 2026-08-20, hours 08/09/11 scanned separately
+   over ±240 min: every hour locked on **+180 min**, median|diff| **$0.11–0.13** against **$0.7–1.1**
+   at ±1 min. Not a broad optimum — a spike.
+2. **Winter leg**, XAUUSD 2026-01-14 vs `XAUUSD_H1`, scanned ±6h: locks on **+120 min**
+   (median|diff| $0.173 vs $1.9 at zero offset). **So the offset is +2h winter / +3h summer — it is
+   DST-varying, and no constant shift repairs it.**
+3. **Structural, needing no external source at all:** in the claimed-UTC index the Friday session
+   closes at **23:56** and Monday opens at **01:00** (true UTC: ~21:00 Fri / ~22:00 Sun). Max Friday
+   hour is **23 in both January and July**, every year 2018–2026 — a fixed *server-time* week close.
+   **191 of 197 `*_H1.parquet` files** contain Friday bars at/after 22:00 "UTC", impossible in real UTC.
+
+**Why it matters (and why it is not cosmetic):** every join between bars and a genuinely-UTC series
+is silently misaligned by 2–3 hours. That includes the **ForexFactory macro-surprise panel adopted
+by this seat last run** (12,423 events, UTC release minutes) — the exact cross-source pair named as
+the nearest-to-money item this seat holds. A 2–3h misalignment on an event study does not error; it
+moves the event window off the release and **manufactures either a null or a look-ahead depending on
+sign**, and the DST variation means the direction flips between summer and winter samples. Also hits
+session/hour-of-day features, the swap-rollover hour, and any macro-state join.
+
+**The class:** this is the desk's recurring one — a producer computes a distinction and the consumer
+collapses it. Here the producer (MT5) hands server time; something `tz_localize`d it to UTC instead
+of `tz_convert`ing from EET. `tz_localize('UTC')` on server-time values is the single most likely
+line, and it is indistinguishable from correct code at the call site.
+
+**Fix (owner: MT5 desk — outside this seat's research freeze, chasing not building):** locate the
+writer of `desks/mt5/data/universe/*.parquet`, convert with a real EET zone (`Europe/Athens`, which
+carries the DST rule) rather than a constant, and add a fence asserting **no Friday bar at/after
+22:00 UTC** on any FX/metals symbol — a one-line invariant that would have caught this from day one
+and that no existing gate expresses. Until fixed, treat the index as EET everywhere it meets a UTC
+series.
+
+**Cheapest detector, for reuse:** the Friday-close hour test. It needs no external data, runs in
+under a second over the whole universe, and is decisive.

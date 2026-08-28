@@ -1829,7 +1829,196 @@
    "name": "rbnz_host",
    "grade": "UNMEASURABLE THIS RUN",
    "verified_2026_08_28g": "www.rbnz.govt.nz returned a Cloudflare 'Website unavailable' interstitial with meta refresh 360 -- an availability failure, NOT a block and NOT a permit. Re-probe next run; do not carry forward as either verdict.",
-   "correction": "2026-08-28g PATH-GRANULARITY RE-PROBE of institutions this seat had graded 'walled' on their statistics-DB path. Confirms the 2026-08-28f lesson: GRADE THE PATH, NEVER THE HOST."
+   "correction": "2026-08-28g PATH-GRANULARITY RE-PROBE of institutions this seat had graded 'walled' on their statistics-DB path. Confirms the 2026-08-28f lesson: GRADE THE PATH, NEVER THE HOST.",
+   "reprobe_2026_08_28h": "Re-probed: www.rbnz.govt.nz/robots.txt now returns HTTP 403 with a 31KB Cloudflare body (previously a 200-with-interstitial). Still an availability/edge failure, still NOT a robots verdict. Grade UNMEASURABLE carried forward for a second run; two consecutive failures make this a candidate for the Wayback-CDX route rather than a live re-probe."
+  },
+  "buba_sdmx_api": {
+   "name": "buba_sdmx_api",
+   "category": "5-alternative-macro / new class extension",
+   "grade": "verified-clean (access + catalogue)",
+   "url": "https://api.statistiken.bundesbank.de/rest/metadata/dataflow/BBK",
+   "provides": "Keyless SDMX 2.1 REST API, ~85 Bundesbank dataflows (yields/term structure BBSIS, ECB reference FX BBEX3, central bank rates BBIN1, MMSR money market BBMMU/BBMMS, securities BBSSY, foreign indicators BBXE1/BBXF1/BBXL3).",
+   "replaces": "paid German/EUR macro terminals for the covered series",
+   "verified_2026_08_28": "HTTP 200, 43,826-byte dataflow catalogue. Wildcard keys work as DOT-PADDED keys (e.g. 'D'+16 dots); asterisk wildcards are rejected with an explicit 400 naming BBK01 as the only asterisk-capable flow. No robots.txt on the API host (404 JSON body, i.e. the API answers -- no restriction expressed).",
+   "genealogy": {
+    "method": "curl SDMX REST, format=csv",
+    "license": "Bundesbank open statistics; robots on www.bundesbank.de permits * with Crawl-delay 10 (measured 2026-08-28g)",
+    "cadence": "per-flow, varies"
+   },
+   "failure_modes": [
+    "Dataflow id is NOT the datastructure id -- /metadata/datastructure/BBK/<flow> 404s; must follow the <Ref id=\"BBK_...\"> in the dataflow catalogue.",
+    "Key arity is dataflow-specific (BBMMU=17 dims); a short dot-key 404s with no hint.",
+    "CSV is semicolon-separated, German decimal comma, UTF-8 BOM, with a VARIABLE number of metadata header rows before the first ISO-date row (12 for BBMMU) -- a fixed skiprows or first-numeric-row heuristic misreads it (same class as the BoE two-header-row unit trap of 2026-08-28g).",
+    "Suppressed values render as '.' with a German flag string in the adjacent _FLAGS column, and as '-' in some flows."
+   ]
+  },
+  "buba_mmsr_maintenance_panel": {
+   "name": "buba_mmsr_maintenance_panel",
+   "category": "5-alternative-macro (EUR funding)",
+   "grade": "verified-clean BUT LOW-FREQUENCY -- adopted as a slow regime variable only",
+   "url": "https://api.statistiken.bundesbank.de/rest/data/BBMMU/D................?format=csv  (and BBMMS)",
+   "provides": "German MMSR money-market aggregates, unsecured (BBMMU, 2017-03-14->2026-07-28) and secured/repo (BBMMS, 2018-03-13->2026-07-28). 121 series with data: volume-weighted mean RATE (VMR), average daily TURNOVER (ADT, EUR millions) and SUV, across the full maturity ladder ON/TN/SN/1W/1M/3M/6M/9M/12M, all-counterparty and bank-only.",
+   "replaces": "paid euro money-market/repo analytics (turnover by segment is the part no yield curve gives)",
+   "artifact": "data/buba_mmsr_maintenance_panel.json (121 series, 6,430 points)",
+   "verified_2026_08_28": "GROUND-TRUTH DIFF vs ECB \u20acSTR (data-api.ecb.europa.eu EST.B.EU000A2X2A25.WT, independent publisher): unsecured ON all-sector VMR vs \u20acSTR over 55 common observations -- LEVEL CORRELATION 0.99980, median spread -11.4bp, sd 14.0bp. The negative median is economically correct: \u20acSTR is borrowing from FINANCIAL counterparties only, the DE panel includes cheaper non-financial/government lenders. EVENT-ALIGNED: secured-minus-unsecured ON troughs at -27.0bp (2022-11-01) and -25.0bp (2022-09-13) -- the German collateral-scarcity squeeze.",
+   "THE_TRAP": "THE FREQUENCY DIMENSION IS D AND THE TIME-FORMAT METADATA IS P1D, AND BOTH ARE WRONG. The file has 3,424 daily date rows and 76 observations per series -- gaps of 35-56 days. It is an ECB RESERVE MAINTENANCE PERIOD panel (~6-weekly), not a daily series. An automated ingester trusting FREQ builds a 98%-NaN daily axis with a live-looking end date. n=76 over 9.4 years is a slow regime variable and NOTHING more; it cannot carry a daily conditioning variable.",
+   "failure_modes": [
+    "FREQ=D / P1D is false; true cadence ~6-weekly maintenance periods (n=76).",
+    "PER-SERIES liveness differs inside ONE live file: BBMMU bank-only ON (VMR.A.BK.A.ON...) DIED at 2023-10-31 (n=53) while the file's last date row and the all-sector series both run to 2026-07-28. 3 of 63 BBMMU series are dead; 15 of 58 BBMMS series last printed before 2026. Liveness must be measured PER SERIES, never per file or per host.",
+    "~1 month publication lag (last obs 2026-07-28 while \u20acSTR was at 2026-08-27) -- any live use must lag >= 1 month.",
+    "BBMMS carries an in-band comment row ('Bemerkung zu 2025-10-01: Ohne EUREX') AFTER the last data row; a naive tail() reads it as an observation."
+   ]
+  },
+  "hf_carlossilva1_xauusd_ticks": {
+   "name": "hf_carlossilva1_xauusd_ticks",
+   "category": "4-community-data-lake / EXECUTION-COST",
+   "grade": "verified-clean WITH A MANDATORY +2h TIMESTAMP SHIFT",
+   "url": "https://huggingface.co/datasets/CarlosSilva1/xauusd-ticks",
+   "provides": "174 parquet files partitioned year=YYYY/month=MM from 2021-05, millisecond XAUUSD BID/ASK ticks with bid_volume/ask_volume. 83,680 ticks in the single 2024-03 chunk read.",
+   "replaces": "a paid FX/metals tick vendor for gold AND -- the part that matters -- gives the desk a SECOND BROKER'S SPREAD TAPE, so Fusion execution cost is benchmarkable against an outside venue for the first time.",
+   "license": "cc-by-4.0 (declared on the dataset card); underlying quotes are facts, not copyrightable",
+   "verified_2026_08_28": "GROUND-TRUTH DIFF vs the desk's own XAUUSD_H1.parquet for 2024-03-01. At +2h: mean -0.111 USD, sd 0.138, max|0.62| over 16 hours. Every other offset from -4h to +1h is ~50x worse (best alternative sd 6.15). The -0.111 residual is HALF THE DESK SPREAD (desk median spread that day = 18 points = 0.18 USD) and its sign confirms the desk's close is the BID while the HF series is the MID.",
+   "THE_TRAP": "THE TIMESTAMPS ARE 2 HOURS BEHIND UTC AND THE DATASET CARD DOES NOT SAY SO. Ingesting them as UTC places every tick 2 hours in the PAST, so a model stamped 08:00 reads 10:00 prices -- a 2-hour LOOK-AHEAD that fails toward a FALSE POSITIVE. Broker server time (EET) mislabelled, the classic MT5 timestamp trap.",
+   "measured_execution_fact": "HF median spread 33 points (p95 37) vs the desk's own recorded XAUUSD spread median 18 points on the same day. Fusion's gold spread is ~55% of this (unnamed) broker's.",
+   "failure_modes": [
+    "+2h shift required, undocumented.",
+    "Broker of origin is NOT declared on the card -- the spread benchmark is against an unnamed venue.",
+    "part000N files are chunks WITHIN a month, not whole months; one part covers a partial session (part0000 of 2024-03 spans 00:00-15:58 local).",
+    "Uploader-declared licence does not bind the originating broker; adopted on the facts-are-not-copyrightable basis."
+   ]
+  },
+  "hf_forex_factory_calendar": {
+   "name": "hf_forex_factory_calendar",
+   "category": "5-alternative/event + 4-community-lake",
+   "grade": "verified-clean on structure; POINT-IN-TIME STATUS UNVERIFIED",
+   "url": "https://huggingface.co/datasets/Ehsanrs2/Forex_Factory_Calendar (forex_factory_cache.csv, 68 MB, license mit)",
+   "provides": "83,427 macro calendar events 2007-01-01 -> 2025-04-07 UTC, 9 G10 currencies + CNY, with Actual / Forecast / Previous and a full FF detail blob (source, usual effect, frequency, next release). 54,669 rows (65.5%) have BOTH actual and forecast, so SURPRISE = actual - forecast is computable; 12,538 of those are HIGH impact.",
+   "replaces": "a paid economic-surprise / event-calendar feed (Bloomberg ECO, Econoday) for every MT5 FX leg",
+   "artifact": "data/ff_macro_surprise_high_impact.parquet -- 12,423 high-impact events, 9 currencies, 2007-01-03 -> 2025-04-04, numeric actual/forecast/previous with K/M/B/T/% suffixes parsed and a signed surprise column",
+   "economic_story": "A macro surprise is a forced repricing: dealers quoted the forecast and must re-hedge against the print. The forced party is named and cannot decline. Every leg (USD/EUR/GBP/JPY/AUD/CAD/NZD/CHF) is a live MT5 symbol.",
+   "failure_modes": [
+    "NOT VERIFIED POINT-IN-TIME: ForexFactory OVERWRITES the Actual field on revision, so a scraped cache may hold REVISED prints rather than first prints. A surprise computed from a revised actual is a look-ahead. This is the load-bearing unknown and it is stamped UNVERIFIED -- it needs a point-in-time snapshot to settle.",
+    "DateTime carries the uploader's LOCAL Iran offsets (+03:30 and +04:30, i.e. DST-switching); conversion to UTC is exact but only if the offset is honoured -- parsing as naive local time misplaces every event by 3.5-4.5 hours.",
+    "Ends 2025-04-07: 16 months stale. Historical only unless a live FF collector is wired.",
+    "Actual/Forecast are strings with K/M/B/T/% suffixes and units differ per event; the surprise is only comparable WITHIN an event series, never across events, until standardised."
+   ]
+  },
+  "hf_snail000_tickmill_xauusd_ticks": {
+   "name": "hf_snail000_tickmill_xauusd_ticks",
+   "category": "4-community-data-lake",
+   "grade": "excluded-on-SAFETY (not licence)",
+   "url": "https://huggingface.co/datasets/Snail000/Tickmill-XAUUSD-Ticks",
+   "license": "mit",
+   "provides": "Named-broker (Tickmill) XAUUSD tick workspace, 326 files",
+   "excluded_because": "The data ships as .pkl -- Python pickle. Loading a pickle from an untrusted uploader IS executing untrusted code, which the standing supply-chain rule forbids on desk hardware. The licence is clean; the FORMAT is the block.",
+   "replacement_adopted": "hf_carlossilva1_xauusd_ticks (parquet, cc-by-4.0, verified above) covers the same axis safely. Residual: the Tickmill dataset NAMES its broker and this one does not, so the named-venue spread benchmark is still owed."
+  },
+  "hf_saif101_histdata_eurusd": {
+   "name": "hf_saif101_histdata_eurusd",
+   "category": "4-community-data-lake",
+   "grade": "destroyed-at-source (empty)",
+   "url": "https://huggingface.co/datasets/saif101/HistData_2003-2025_EURUSD-1m",
+   "finding": "The card advertises 2003-2025 EURUSD 1-minute data; the repo contains .gitattributes and README.md and NOTHING ELSE. A catalogue entry with zero data files. Counted here so no future run re-opens it."
+  },
+  "dukascopy_datafeed_bi5": {
+   "name": "dukascopy_datafeed_bi5",
+   "category": "1-exchange/broker-native tick archive (MT5-relevant legs)",
+   "grade": "verified-clean ON DATA / \u00a713 UNRESOLVED ON ROUTE -- see licence_status",
+   "url": "https://datafeed.dukascopy.com/datafeed/{SYMBOL}/{YYYY}/{MM0}/{DD}/{HH}h_ticks.bi5  (MM0 is ZERO-INDEXED month; verified: 2024/04 = May 2024, 2026/00 = Jan 2026)",
+   "provides": "Named-broker (Dukascopy/JForex) TICK-level BID and ASK with bid/ask volumes, one LZMA-alone file per symbol-hour, back to ~2003 on majors. Decodes with the PYTHON STDLIB ONLY (lzma FORMAT_ALONE + struct '>IIIff', 20-byte records: ms-offset-in-hour, ask_points, bid_points, ask_vol, bid_vol) -- no third-party tooling, so the supply-chain rule is satisfied.",
+   "replaces": "A paid FX/metals tick vendor (Tardis/Kaiko-class for FX, or TrueFX/HistData premium tiers) AND -- more importantly -- supplies the SECOND VENUE bid/ask the desk needs to measure whether Fusion's execution is good.",
+   "provenance_verified_this_run": [
+    "https://datafeed.dukascopy.com/datafeed/EURUSD/2024/04/03/10h_ticks.bi5 -> 200, 10881 B, 2125 ticks, median spread 2.0e-05 (0.2 pip)",
+    "https://datafeed.dukascopy.com/datafeed/XAUUSD/2024/04/03/10h_ticks.bi5 -> 200, 20135 B, 4785 ticks, median spread $0.361",
+    "https://datafeed.dukascopy.com/datafeed/XAUUSD/2026/07/20/{08,09,11}h_ticks.bi5 -> 200, 35544 ticks, median spread $0.55",
+    "https://datafeed.dukascopy.com/datafeed/XAUUSD/2026/00/14/{08,09,10}h_ticks.bi5 -> 200, 35479 ticks, median spread $0.59"
+   ],
+   "verification_method": "OFFSET-SCANNED against the desk's own XAUUSD_M1/H1 tape (the check this seat adopted last run). Three independent hours each resolved to the SAME offset with median|diff| $0.11-0.13 versus $0.7-1.1 one minute either side -- an unambiguous lock, not a broad optimum.",
+   "verified_finding": "Dukascopy timestamps are TRUE UTC and clean. The offset the scan found is a defect in the DESK's tape, not in Dukascopy -- see defect_found_in_desk_data.",
+   "defect_found_in_desk_data": "desks/mt5/data/universe/*_{M1,H1,M5,M15}.parquet carry BROKER SERVER TIME (EET) stamped as '+00:00'. Offset is +3h in summer (Aug 2026 scan) and +2h in winter (Jan 2026 scan) -- NOT constant, so no fixed shift repairs it. Confirmed structurally and independently of Dukascopy: Friday session close sits at 23:56 and Monday open at 01:00 in the claimed-UTC index (true UTC is ~21:00 Fri / ~22:00 Sun), and max-Friday-hour is 23 in BOTH January and July across every year 2018-2026. 191 of 197 H1 files carry Friday bars at/after 22:00 'UTC', which is impossible in real UTC. Routed to docs/research/improvement_inbox.md.",
+   "licence_status": "UNRESOLVED, and deliberately not adopted for bulk pull. datafeed.dukascopy.com/robots.txt returns HTTP 503 on 3/3 consecutive attempts (a 107-byte HAProxy 'No server is available' body). RFC 9309 2.3.1.4 says a robots.txt that is UNAVAILABLE (5xx) must be treated as FULL DISALLOW -- the opposite of an absent (404) robots.txt. So this is NOT an 'empty robots = allowed' case. www.dukascopy.com/robots.txt is a DIFFERENT HOST (200, 'Allow: /') and does not govern the datafeed host. Single-file probes for verification were run; bulk collection is BLOCKED pending a robots read that actually resolves.",
+   "cadence": "hourly files, current to yesterday",
+   "known_failure_modes": [
+    "ZERO-INDEXED MONTH in the path -- an off-by-one here silently returns a real, plausible, WRONG month of data.",
+    "The host is a load-balanced pool where individual backends 503 intermittently: identical URLs returned 503 then 200 on retry, and one hour (2026-07-20 10h) never served in 3 tries. A naive collector reads these as data gaps. Retry before recording absence.",
+    "Coverage is per-symbol and thins on crosses/exotics; majors and metals are the dense legs.",
+    "Weekend/holiday hours return empty or 404-equivalent bodies, not errors."
+   ],
+   "next_action": "Resolve robots (Wayback the datafeed host's robots.txt; or read Dukascopy's published historical-data terms). Until then: NO bulk pull.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "hf_mito0o852_dukascopy_ticks": {
+   "name": "hf_mito0o852_dukascopy_ticks",
+   "category": "4-community-data-lake (mirror of a primary broker feed)",
+   "grade": "UNLICENSED-MIRROR -- not adopted; primary source graded separately",
+   "url": "https://huggingface.co/datasets/mito0o852/dukascopy-ticks",
+   "provides": "804 parquet files, 7 MT5-relevant symbols, tick data re-hosted from the Dukascopy feed. Verified coverage from the HF API sibling list: EURUSD 126 files 2016-01-01->2026-05-01, GBPUSD 126 same span, XAGUSD 126 same span, XAUUSD 237 2016-01-01->2026-04-01, USDJPY 84 ->2022-11-24, USDCHF 59 ->2022-04-28, AUDUSD 45 ->2023-10-20. Last modified 2026-05-02.",
+   "licence_status": "cardData is NULL -- the repo declares NO licence at all. Under the \u00a713 gate an undeclared licence is not a permission, so the MIRROR is not adopted. The underlying content is raw market facts, which are not copyrightable, so the correct route is the PRIMARY feed (dukascopy_datafeed_bi5) rather than this convenience copy.",
+   "value_retained": "The repo is still a useful CENSUS: it tells the desk which Dukascopy legs have dense history without paying 804 requests to find out, and its parquet layout (symbol/date-range) is a sane collector schema to copy.",
+   "known_failure_modes": [
+    "Three symbols (USDCHF, USDJPY, AUDUSD) stopped updating years ago while the repo as a whole shows a 2026-05 mtime -- REPO-LEVEL FRESHNESS IS NOT SERIES-LEVEL FRESHNESS, the exact trap this seat recorded last run."
+   ],
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "hf_broker_tick_class_census": {
+   "name": "hf_broker_tick_class_census",
+   "category": "4-community-data-lake -- CLASS CENSUS",
+   "grade": "census (population measured, members individually ungraded)",
+   "url": "https://huggingface.co/api/datasets?search=... (keyless, no auth, returns downloads/likes/lastModified/siblings/cardData in one call)",
+   "provides": "The keyless HF dataset API is a POPULATION ENUMERATOR for this class -- the same role Wayback CDX plays for track-record sites. Sweeping 10 terms (forex tick / metatrader / XAUUSD / EURUSD / dukascopy / GBPJPY / forex spread / forex bid ask / USDJPY / gold ticks) returned ~90 distinct datasets. Structure of the population: XAUUSD is enormously over-represented (40+ repos) and is dominated by ~15 BYTE-IDENTICAL FORKS of one upload ('xauusd-gold-price-historical-data-2004-2025'), so raw repo counts overstate the ground by roughly an order of magnitude. Terms 'forex tick', 'GBPJPY', 'forex spread', 'forex bid ask', 'gold ticks' returned ZERO -- the class does not self-describe with the vocabulary the desk searches with; it self-describes by SYMBOL. Search by symbol, never by concept.",
+   "verified_secondary_finds": {
+    "AlexGus1/dukascopy-data": "2 files, XAU-USD 1-minute BID, one in Etc/UTC and one in America/New_York -- an explicit-timezone-in-filename upload, useful as a tz control",
+    "High-Will/MetaTrader5-Market-Data": "single market_data_mt5.csv, no licence",
+    "alshahri/xauusd-h1-bid-2019-01-01-2023-05-30": "licence 'other', BID-side H1, dead since 2023",
+    "Riot186/M1_EURUSD_candles": "afl-3.0, 125 .npz weekly files 2021-2023, dead"
+   },
+   "known_failure_modes": [
+    "The HF search endpoint matches repo NAME and card text only -- concept queries miss the class entirely.",
+    "Fork storms inflate the apparent population; dedupe by file digest before claiming coverage."
+   ],
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "boj_stat_search": {
+   "name": "boj_stat_search",
+   "category": "5-alternative/macro -- central-bank cube (JPY leg)",
+   "grade": "\u00a713 PERMITTED and reachable -- data route UNMINED (next ground)",
+   "url": "https://www.stat-search.boj.or.jp/ (BoJ Time-Series Data Search)",
+   "provides": "The JPY leg of the CB-cube class (SNB/Bundesbank/CNB already adopted). JPY is an MT5 major on every cross the desk trades.",
+   "licence_verdict_this_run": "PERMITTED. www.boj.or.jp/robots.txt returns HTTP 404 -- an ABSENT robots.txt, which under RFC 9309 means unrestricted, and which is a genuinely different verdict from Dukascopy's 503. www.stat-search.boj.or.jp/robots.txt returns a Shift_JIS custom error page rather than a robots file (also absent). Root https://www.stat-search.boj.or.jp/index_en.html -> HTTP 200, 58,913 B.",
+   "known_failure_modes": [
+    "Shift_JIS encoding on error and some data pages -- a UTF-8-assuming reader mojibakes silently.",
+    "Session/form-driven CSV export rather than a clean REST path; the download route is not yet mapped."
+   ],
+   "next_action": "Map the CSV export route and pull the policy-rate / monetary-base series; offset-scan any dated series before use.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "rba_gov_au": {
+   "name": "rba_gov_au",
+   "category": "5-alternative/macro -- central-bank cube (AUD leg)",
+   "grade": "UNMEASURABLE -- edge block, not a robots verdict",
+   "url": "https://www.rba.gov.au/robots.txt",
+   "finding": "HTTP 403 with an Akamai 'Access Denied' body citing errors.edgesuite.net. This is the SAME cross-institution UA-keyed Akamai 403 the desk already recorded for the BoE -- it is an edge/WAF verdict about the client, NOT a robots verdict about the path, in either direction. Consistent with two prior seat observations, so this is now a confirmed class rather than an incident.",
+   "next_action": "Wayback CDX for www.rba.gov.au/robots.txt (the route that worked for RBNZ this run), not a fourth live probe.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
+  },
+  "rbnz_wayback_cdx_route": {
+   "name": "rbnz_wayback_cdx_route",
+   "category": "3/5 -- route re-establishment",
+   "grade": "route VERIFIED (payload not yet mined)",
+   "url": "http://web.archive.org/cdx/search/cdx?url=rbnz.govt.nz/statistics*&output=json&collapse=urlkey&filter=statuscode:200",
+   "finding": "The live host retired after two consecutive failures (200-interstitial, then a 31 KB Cloudflare 403). The Wayback CDX route WORKS keylessly and enumerates real 200 captures of rbnz.govt.nz/statistics/* back to 2003-11-05. The ground is reachable; only the live door is shut. Grading RBNZ 'blocked' would have been a false null about the GROUND when the evidence only supported a claim about the ROUTE.",
+   "known_failure_modes": [
+    "CDX returns assets (png/jpg/gif) alongside documents -- filter on mimetype text/html or the yield looks far thinner than it is.",
+    "Path-prefix CDX is subdomain-blind (prior seat lesson, still applies)."
+   ],
+   "next_action": "Mine the enumerated HTML captures for the statistics tables; this is ground, not a probe.",
+   "first_seen": "2026-08-28",
+   "last_verified": "2026-08-28"
   }
  },
  "residual_gaps_unpurchasable": [
@@ -1905,6 +2094,24 @@
    "replacement_adopted": "Bank of England GLC daily yield curve, 1979 -> 2026-08-27, keyless, robots-permitted path (source card boe_glc_yield_curve_daily)",
    "why_the_hunt_was_opened_at_all": "a path-scoped Disallow was read as a host-scoped exclusion; the data was free, permitted and one directory away from the barred path",
    "residual": "none for the nominal gilt curve. Real/inflation/OIS curves also available and NOT yet parsed."
+  },
+  "named_broker_tick_benchmark": {
+   "opened": "2026-08-28",
+   "need": "a NAMED-broker XAUUSD/FX tick tape in a non-executable format, to benchmark Fusion spreads against an identified venue",
+   "excluded_source": "Snail000/Tickmill-XAUUSD-Ticks (pickle-only)",
+   "searched_this_run": "HuggingFace dataset search across forex/MT5/tick/XAUUSD/EURUSD/metatrader; the only NAMED-broker tape found is the pickle one",
+   "residual_grade": "needs-monitoring -- CarlosSilva1 covers the axis but not the attribution"
+  },
+  "dukascopy_route_licence": {
+   "opened": "2026-08-28",
+   "trigger": "datafeed.dukascopy.com robots.txt unresolvable (503 x3) -> under RFC 9309 that is a full disallow, which removes the best free tick route found this run. \u00a738: an exclusion spawns a hunt.",
+   "candidates": [
+    "Wayback capture of datafeed.dukascopy.com/robots.txt (settles the verdict without another live probe)",
+    "Dukascopy's own published historical-data terms on www.dukascopy.com (that host is 200 and Allow: /)",
+    "TrueFX (registration-free tick archive, bid/ask, majors) as an independent second-venue tape",
+    "HistData.com free 1-minute bid/ask (weaker: no ask on all legs)",
+    "The desk's OWN MT5 terminal tick history (CopyTicks) -- a first-party route that needs no third-party licence at all, and which is the strongest candidate because it is already owned"
+   ]
   }
  }
 }

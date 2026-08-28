@@ -5698,3 +5698,270 @@ would have shipped clean. That is the one finding here I would call load-bearing
    has no instrument for it and should say so plainly (L1.46) rather than imply the map is fresh.
 5. Still owed, outside this seat's freeze: the `macro_state.json` three-way write race and the
    bar-liveness `n_unobservable` patch — both still without an owner.
+
+---
+
+## SESSION 2026-08-28 (h) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Backlog: CLEAR** (`source_backlog_next.py`: 73 catalogued / 48 resolved / **0 pending
+verification** / 25 deferred, earliest return 2026-09-01). Nothing to resume; mining authorised.
+
+**ITEMS TAKEN THIS RUN (bounded per completion contract, depth uncapped):**
+1. **Mine the four re-graded hosts** (SNB open, RBA permitted, Bundesbank crawl-delay-10, BoJ no
+   robots) for the *national-CB open-data-cube* class discovered last run — SNB first, cube API proven.
+2. **Category 4 — community data lakes**, owed for three runs, taken first-class this run.
+3. **Re-probe `www.rbnz.govt.nz`** (graded UNMEASURABLE, neither blocked nor permitted).
+
+*(status updated in-place as each resolves; if this run dies, the next resumes here)*
+
+### CARD — Bundesbank SDMX REST API (`api.statistiken.bundesbank.de`) · verified-clean · NEW HOST for the CB-cube class
+~85 keyless dataflows, HTTP 200, no robots restriction expressed on the API host (`/robots.txt`
+returns the API's own 404 JSON — the service answers, so nothing is expressed). Wildcards are
+**dot-padded, never asterisks**: `data/BBMMU/D................` works; `data/BBMMU/M.*` returns an
+explicit 400 naming `BBK01` as the only asterisk-capable flow. The dataflow id is **not** the
+datastructure id — `metadata/datastructure/BBK/BBMMU` 404s, `.../BBK_MAMMU` is the real one.
+This closes the EUR leg of last run's *national-CB open-data-cube* class (SNB done, Buba done).
+
+### CARD — BBMMU / BBMMS German MMSR money market · **verified-clean but the FREQ dimension is a LIE**
+121 series / 6,430 points → `data/buba_mmsr_maintenance_panel.json`. Unsecured 2017-03-14→2026-07-28,
+secured 2018-03-13→2026-07-28. Volume-weighted mean **rate**, average daily **turnover** (EUR m) and
+SUV, over ON/TN/SN/1W/1M/3M/6M/9M/12M, all-counterparty and bank-only. Turnover by segment is the
+part no yield curve gives, and it is the EUR analogue of last run's gilt–OIS funding-stress axis.
+
+**GROUND TRUTH (independent publisher).** Unsecured ON all-sector VMR vs ECB €STR
+(`data-api.ecb.europa.eu/service/data/EST/B.EU000A2X2A25.WT`), 55 common observations:
+**level correlation 0.99980**, median spread **−11.4bp**, sd 14.0bp. The negative median is
+*correct*, not drift: €STR is borrowing from **financial** counterparties only, while the German
+panel includes cheaper non-financial and government lenders. **Event-aligned:** secured-minus-
+unsecured ON troughs at **−27.0bp (2022-11-01)** and **−25.0bp (2022-09-13)** — the German
+collateral-scarcity squeeze, in the right months, at the right sign.
+
+**THE TRAP, and it is the biggest thing this run produced.** The frequency dimension is `D` and the
+time-format metadata says `P1D`. **Both are false.** The file carries 3,424 daily date rows and
+**76 observations per series**, with gaps of 35–56 days: it is an ECB **reserve-maintenance-period**
+panel, ~6-weekly. An ingester that trusts `FREQ` builds a 98%-NaN "daily" series whose last date row
+is today's, and it will look healthy in every emptiness check the desk owns. n=76 over 9.4 years is
+a **slow regime variable and nothing more**; it cannot carry a daily conditioning variable, and I am
+grading it that way rather than on how good the correlation looks.
+
+**And a second liveness lesson, one level finer than last run's.** Last run the lesson was
+*liveness is the last observation, never the host or the publishing stamp*. This run: **liveness is
+per SERIES, not per FILE.** Inside one live file — last date row 2026-07-28, most series current —
+the bank-only overnight series `BBMMU.D.A.VMR.A.BK.A.ON...` **died at 2023-10-31** (n=53). Three of
+63 BBMMU series are dead; **15 of 58** BBMMS series last printed before 2026. I computed a
+publishable-looking +4.5bp mean tracking error against €STR on that dead series before checking its
+last observation. Also: BBMMS appends an in-band comment row (`Bemerkung zu 2025-10-01: Ohne EUREX`)
+*after* the final data row, so a naive `tail()` reads prose as an observation.
+
+### CARD — `CarlosSilva1/xauusd-ticks` (HuggingFace, cc-by-4.0) · verified-clean **with a mandatory +2h shift**
+174 parquet files, `year=YYYY/month=MM`, from 2021-05: millisecond XAUUSD **bid/ask** ticks with
+volumes. Beyond price history this is the first thing the desk has ever held that benchmarks its own
+execution against an outside venue — and execution is a named bottleneck (L1.13).
+
+**GROUND TRUTH vs the desk's own `XAUUSD_H1.parquet`, 2024-03-01, offset scan −4h…+2h:**
+
+| offset | n | mean (USD) | sd | max abs |
+|---|---|---|---|---|
+| +0h (as shipped) | 15 | −1.958 | 7.073 | 18.27 |
+| +1h | 16 | −1.671 | 6.813 | 23.46 |
+| **+2h** | **16** | **−0.111** | **0.138** | **0.62** |
+
+**The timestamps are 2 hours behind UTC and the dataset card does not say so.** Ingested as UTC,
+every tick lands 2 hours in the past — a model stamped 08:00 reads 10:00 prices. That is a **2-hour
+look-ahead, and it fails toward a FALSE POSITIVE**, the direction no gate here catches. Broker
+server time (EET) mislabelled: the classic MT5 timestamp trap, in a community re-upload.
+The residual −0.111 USD is not noise either — it is **half the desk's own recorded spread that day**
+(median 18 points = 0.18 USD), which independently confirms the desk's `close` is the **bid** and the
+HF series is the **mid**.
+
+**Measured execution fact:** HF median spread **33 points** (p95 37) vs the desk's own recorded
+XAUUSD spread median **18 points** on the same session. Fusion's gold spread is ~55% of this broker's.
+
+### CARD — `Ehsanrs2/Forex_Factory_Calendar` (MIT, 68 MB) · structure verified · **point-in-time UNVERIFIED**
+83,427 events **2007-01-01 → 2025-04-07**, 9 G10 currencies + CNY, with Actual / Forecast / Previous.
+**54,669 rows (65.5%) have both actual and forecast**, so surprise is computable; **12,538 of those
+are High impact.** Derived and committed: `data/ff_macro_surprise_high_impact.parquet` — 12,423
+high-impact events, 9 currencies, 2007-01-03 → 2025-04-04, K/M/B/T/% suffixes parsed, signed surprise.
+**Mechanism, and the forced party is nameable:** dealers quoted the forecast and must re-hedge
+against the print; they cannot decline. Every leg is a live MT5 symbol.
+**The load-bearing unknown, stamped UNVERIFIED and not dressed up:** ForexFactory **overwrites**
+`Actual` on revision, so a scraped cache may hold **revised** prints, not first prints — and a
+surprise built on a revised actual is a look-ahead. Settling it needs a point-in-time snapshot the
+desk does not have. Secondary: `DateTime` carries the uploader's **Iran** offsets (`+03:30`/`+04:30`,
+DST-switching) — exact if honoured, 3.5–4.5h wrong if parsed naive; and the file ends 16 months ago.
+
+### EXCLUSION + REPLACEMENT (§38) — `Snail000/Tickmill-XAUUSD-Ticks` · excluded on **SAFETY, not licence**
+MIT-licensed, 326 files, and it **names its broker** — which is exactly what the CarlosSilva1 set does
+not. It ships as `.pkl`. Loading a pickle from an untrusted uploader **is executing untrusted code**,
+which the standing supply-chain rule forbids on desk hardware. The licence is clean; the *format* is
+the block. Replacement adopted the same run: CarlosSilva1 (parquet), covering the axis safely.
+**Residual, honestly graded:** the *named-venue* spread benchmark is still owed —
+`replacement_hunts.named_broker_tick_benchmark` opened.
+
+### NULL — `saif101/HistData_2003-2025_EURUSD-1m` · destroyed-at-source (empty)
+Card advertises 22 years of EURUSD 1-minute data. The repo contains `.gitattributes` and `README.md`
+and **nothing else**. Logged so no future run re-opens it.
+
+### RE-PROBE — `www.rbnz.govt.nz` · still UNMEASURABLE (second consecutive run)
+Now HTTP **403** with a 31 KB Cloudflare body (last run: 200 + "Website unavailable" interstitial).
+An edge failure is still **not** a robots verdict, in either direction. Two consecutive failures
+retire the live-probe route: next attempt goes via Wayback CDX, not another curl.
+
+**SESSION CLOSE — 2026-08-28 (h).**
+**Backlog:** clear on entry (0 pending verification), so this run was pure mining, as authorised.
+**Categories covered:** **4 (community data lakes)** — taken first-class after being owed three runs,
+and it produced the two best finds. **5 (alternative/macro)** — Bundesbank, the EUR leg of the CB-cube
+class. **6 (vendor-replacement)** — the FF surprise panel replaces a paid ECO calendar; the XAUUSD tick
+set replaces a paid metals tick vendor. **1 — not re-dug (backlog clear). 2 and 3 remain VOID under the
+MT5 mandate as written in the spec** (they name crypto on-chain and crypto regional venues); the spec
+predates the 2026-08-18 universe order and I am naming that rather than reporting them as skipped.
+**Counts: 4 sources ADOPTED (3 verified against independent ground truth, 1 verified on structure with
+its point-in-time status stamped UNVERIFIED), 1 EXCLUDED-on-safety with its replacement adopted the
+same run, 1 graded destroyed-at-source-empty, 1 host re-probed and still unmeasurable, 0 unverified
+links catalogued.** Universe map 113 → 119.
+**BEST VENDOR-REPLACEMENT:** the ForexFactory high-impact surprise panel — 12,423 events, 18 years,
+all nine G10 legs, MIT, £0, against a paid ECO feed. Caveated on revisions and *only* on revisions.
+**CROSS-SOURCE PAIR (joint value exceeds either alone):** **FF macro surprise × CarlosSilva1 XAUUSD
+ticks.** The calendar gives the exact release minute of 12,423 forced-repricing events; the tick set
+gives millisecond bid/ask *around* those minutes. Separately they are an event list and a price tape.
+Together they measure **realised spread widening and slippage at the event**, which is the number that
+decides whether a macro-surprise mechanism survives costs — and cost realism is where this desk's
+candidates actually die (L1.5). Neither source can produce it alone.
+**NEW SOURCE CLASS:** **community re-uploads of BROKER-NATIVE tick tapes.** Not "free price history" —
+the desk already has price history. What is new is a *second venue's bid/ask*, which converts an
+unobservable (is Fusion's execution good?) into a measurement. The class is large on HuggingFace and
+essentially unmined here.
+
+**THE BLUNT PART.** Three runs in a row my largest finding was a correction of my own confident claim;
+this run it happened twice more, and both were the *same shape at finer grain*. Last run I learned
+"liveness is the last observation, not the host" — this run I computed a clean-looking +4.5bp tracking
+result on a series that **died in 2023**, inside a file that is live, because I checked liveness at the
+file level. And I took `FREQ=D` at face value on a panel with 76 observations. **The correct rule is
+narrower than the one I wrote down last week: measure liveness and cadence on the SERIES you are
+actually going to use, from its own observations, every time.**
+What is genuinely load-bearing here is the +2h shift. It was invisible — the data is real, the prices
+are right, the file parses cleanly, and the error direction manufactures a look-ahead that inflates
+results. Nothing in the desk's gates would have caught it; only an offset scan against the desk's own
+tape did, and that scan cost about ten lines. **Every community-sourced tape must be offset-scanned
+against desk truth before adoption. That is now the cheapest high-value check this seat owns.**
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **Mine the community broker-tick class properly** — the new class found this run. HuggingFace,
+   Kaggle and Zenodo, all MT5 legs, offset-scanned on arrival. This is the highest-yield ground open.
+2. **The FF × ticks pair** — build the event-window spread/slippage measurement. That is a *conversion*
+   of two adopted sources, not new mining, and it is the nearest-to-money item this seat holds.
+3. **Settle the FF point-in-time question** — find any first-print archive (Wayback of FF calendar
+   pages, an academic surprise dataset with vintages). Until then the panel is historical-research only.
+4. **RBA and BoJ** — re-graded permitted last run, still un-mined; SNB and Bundesbank are now done.
+5. **`www.rbnz.govt.nz` via Wayback CDX**, not a third live probe.
+6. Still owed and still without an owner (outside this seat's freeze): the `macro_state.json` three-way
+   write race, and the bar-liveness `n_unobservable` patch.
+
+---
+
+## SESSION 2026-08-28 (i) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Backlog on entry:** CLEAR (73 catalogued / 48 resolved / **0 pending verification** / 25 deferred,
+next returns 2026-09-01). Verified with `scripts/source_backlog_next.py --limit 6`. Mining authorised.
+
+**ITEMS TAKEN THIS RUN (bounded scope, maxed depth):**
+1. **The community broker-tick / MT5-leg class** — the new source class opened last run (h) and named
+   as ground #1. HuggingFace + Kaggle + Zenodo, every MT5 leg, **offset-scanned against desk truth on
+   arrival** (the check that caught the +2h silent look-ahead last run).
+2. **RBA and BoJ** — re-graded permitted two runs ago, still un-mined (ground #4). CB-cube class.
+3. **`www.rbnz.govt.nz` via Wayback CDX** (ground #5) — live probe retired after two failures.
+
+Findings appended below as each resolves.
+
+### ADOPTED (data) / BLOCKED (route) — `datafeed.dukascopy.com` bi5 tick feed · **the run's find**
+Named-broker **tick bid+ask** with volumes, one LZMA file per symbol-hour, back to ~2003, and it
+decodes with the **Python stdlib alone** (`lzma` FORMAT_ALONE + `struct '>IIIff'`, 20-byte records) —
+so the no-third-party-tooling rule is satisfied without argument. Verified live this run on four
+symbol-hours: EURUSD 2024-05-03 10h (2,125 ticks, median spread 0.2 pip) and XAUUSD on three dates
+(4,785 / 35,544 / 35,479 ticks; median spread $0.36 in 2024, $0.55–0.59 in 2026).
+**Path gotcha: the month is ZERO-INDEXED** (`2024/04` = May 2024). An off-by-one returns a real,
+plausible, *wrong* month — it never errors.
+**Route is BLOCKED, and the reason is the interesting part.** `datafeed.dukascopy.com/robots.txt`
+returns **HTTP 503 on 3/3 attempts**. I nearly recorded that as "empty robots ⇒ allowed". It is the
+opposite: **RFC 9309 §2.3.1.4 — an UNAVAILABLE (5xx) robots.txt must be treated as FULL DISALLOW**,
+whereas an ABSENT (404) one means unrestricted. `www.dukascopy.com` (200, `Allow: /`) is a *different
+host* and does not govern this one. Single-file verification probes only; **no bulk pull** until the
+robots read resolves. Replacement hunt `dukascopy_route_licence` opened the same run (§38) — and its
+strongest candidate is the one that needs nobody's licence: **the desk's own MT5 `CopyTicks`**.
+
+### THE FINDING — the offset scan fired, and it fired at the DESK
+The scan I adopted last run to catch look-ahead in *community* tapes found the defect in **our own**.
+`desks/mt5/data/universe/*.parquet` are stamped `+00:00` and carry **broker EET**: **+3h in summer,
++2h in winter** (DST-varying, so no constant shift repairs it). Three independent lines — a per-hour
+offset lock on Dukascopy at median|diff| $0.11–0.13 vs $0.7–1.1 one minute away; a January scan
+locking on +120 min; and, needing no external data at all, a **Friday close at 23:56 / Monday open at
+01:00** with max-Friday-hour 23 in *both* January and July across 2018–2026. **191/197 `_H1` files**
+hold Friday bars at/after 22:00 "UTC", which real UTC cannot produce.
+It lands on this seat's own nearest-to-money item: the **FF macro-surprise × tick** pair joins a
+UTC event list to a tape that is 2–3h off, which on an event study manufactures a null or a
+look-ahead *depending on sign*, flipping between summer and winter samples. Routed to
+`improvement_inbox.md` with the one-line fence that would have caught it (no Friday bar ≥22:00 UTC).
+
+### CENSUS — the HF broker-tick class is **symbol-named, not concept-named**
+The keyless HF dataset API is a population enumerator for this class (the CDX role, for HuggingFace).
+Ten terms, ~90 distinct datasets. Two structural facts worth more than the list: **`forex tick`,
+`GBPJPY`, `forex spread`, `forex bid ask` and `gold ticks` all returned ZERO** — the class does not
+describe itself in the desk's vocabulary, it describes itself by SYMBOL — and **XAUUSD's 40+ repos
+are ~15 byte-identical forks of one upload**, so repo counts overstate the ground by an order of
+magnitude. Search by symbol; dedupe by digest before claiming coverage.
+`mito0o852/dukascopy-ticks` (804 parquet, 7 legs, EURUSD/GBPUSD/XAGUSD dense to 2026-05) declares
+**NO licence** (`cardData: null`) ⇒ mirror **not adopted**; the primary feed is the correct route.
+Its census value survives, and it re-demonstrates last run's lesson at repo scale: **repo mtime
+2026-05 while USDCHF died 2022-04, USDJPY 2022-11, AUDUSD 2023-10.** Repo freshness ≠ series freshness.
+
+### §13 VERDICTS — three hosts, three genuinely different answers
+- **BoJ — PERMITTED, and previously assumed otherwise.** `www.boj.or.jp/robots.txt` = **404**
+  (absent ⇒ unrestricted), `stat-search.boj.or.jp/robots.txt` serves a Shift_JIS error page (also
+  absent), root `index_en.html` = 200 / 58,913 B. The JPY leg of the CB-cube class is open ground.
+  Data route not yet mapped — recorded as ground, not padded into an adoption.
+- **RBA — UNMEASURABLE, not walled.** 403 with an Akamai `errors.edgesuite.net` body: the *same*
+  UA-keyed edge block already seen at the BoE. Third sighting ⇒ this is now a confirmed **class**,
+  and it is a verdict about the client, never about the path.
+- **RBNZ — the ground was never dead, only the door.** Wayback CDX enumerates real 200 captures of
+  `rbnz.govt.nz/statistics/*` back to **2003-11-05**. Two failed live probes would have graded this
+  "blocked": a false null about the GROUND from evidence that only supported a claim about the ROUTE.
+
+**SESSION CLOSE — 2026-08-28 (i).**
+**Backlog:** clear on entry (0 pending verification), so this run was pure mining, as authorised.
+**Categories covered:** **1** (broker-native tick archives, the MT5-legal analogue of exchange dumps),
+**4** (community lakes — the class census), **5** (macro/CB — BoJ, RBA, RBNZ), **6** (vendor
+replacement — the tick feed replaces a paid FX/metals tick vendor). **2 and 3 remain VOID under the
+MT5 mandate as the spec writes them** (they name crypto on-chain and crypto regional venues); the
+spec predates the 2026-08-18 universe order and I keep naming that rather than reporting them skipped.
+**Counts: 1 source verified-clean on data (route blocked on a licence technicality), 1 mirror refused
+on an absent licence, 1 class census with two structural findings, 3 §13 verdicts (1 flipped OPEN,
+1 confirmed as an edge-block class, 1 route re-established), 1 replacement hunt opened, 0 unverified
+links catalogued.** Universe map 119 → 125.
+**BEST VENDOR-REPLACEMENT:** the Dukascopy bi5 feed — stdlib-decodable named-broker tick bid/ask
+back to 2003, against a paid FX tick vendor, £0 — *conditional on the robots read resolving*.
+**CROSS-SOURCE PAIR:** unchanged from last run (FF surprise × ticks) and it is now **blocked on the
+timestamp defect above**, which is exactly why that defect is the run's headline rather than a note.
+**NEW SOURCE CLASS:** none new; instead the class opened last run was **measured** — and measuring it
+showed the vocabulary problem that would have made every future sweep under-count it.
+
+**THE BLUNT PART.** Four runs running, my largest finding has been a correction — but this one is
+different in kind and I want to be precise about why. The previous three corrected *my* claims about
+*external* data. This one corrected the desk's claim about its own primary tape, and it did so via a
+check that costs ten lines and that I only own because the last three runs went badly. **The offset
+scan has now paid for itself twice, and the second payment was larger than the source I built it for.**
+The near-miss worth recording is the robots one: I saw a 503 body, read "no robots restrictions",
+and was one sentence from bulk-pulling a host that RFC 9309 says is fully disallowed. **A 5xx robots
+and a 404 robots produce opposite verdicts, and the failure mode is that they look identical in a
+terminal.** That distinction is now in the map against three hosts.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **Settle the Dukascopy robots** via Wayback of `datafeed.dukascopy.com/robots.txt` — one request
+   decides whether the best free tick route this seat has found is usable. Highest EV open item.
+2. **The desk's own MT5 `CopyTicks`** — a first-party second-venue tape needing no external licence.
+   Chase, don't build (outside this seat's freeze).
+3. **Mine the HF broker-tick class BY SYMBOL** now that the vocabulary problem is known — all MT5
+   legs, deduped by digest, offset-scanned on arrival.
+4. **BoJ stat-search CSV export route** (permitted, reachable, unmapped) — the JPY leg of the CB cube.
+5. **RBNZ statistics via the CDX captures**, and **RBA robots via CDX** rather than a fourth live probe.
+6. Still owed, still outside this seat: the `macro_state.json` three-way write race, and the
+   bar-liveness `n_unobservable` patch. **Now joined by the EET timestamp fix, which outranks both.**
