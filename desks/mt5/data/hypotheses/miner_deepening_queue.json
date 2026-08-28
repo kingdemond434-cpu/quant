@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T10:15:07+00:00",
+ "built_at": "2026-08-28T11:09:19+00:00",
  "tasks": [
   {
    "source": "github",
@@ -301,8 +301,8 @@
   {
    "source": "quantconnect",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "forum shape drifted",
-   "url": "https://www.quantconnect.com/forum",
+   "title": "HTTPSConnectionPool(host='www.quantconnect.com', port=443): Read timed out. (read timeout=20)",
+   "url": "",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6489,6 +6489,22 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "softwaredevelop/mql5",
+   "url": "https://github.com/softwaredevelop/mql5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "shazzadu1/Trade-Halting-Safeguard",
+   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
    "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
    "symbols": [],
@@ -6593,16 +6609,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "bipbopcompany-droid/Risk-Nexus-Command",
-   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Vandoriz/MT5-Economic-News-Filter",
-   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "title": "PNX89/QUOTEZ",
+   "url": "https://github.com/PNX89/QUOTEZ",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6611,6 +6619,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
    "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "karidasd/forex-institutional-scalper",
+   "url": "https://github.com/karidasd/forex-institutional-scalper",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6659,6 +6675,22 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "RPNATION1/Tradingalgos",
    "url": "https://github.com/RPNATION1/Tradingalgos",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "bipbopcompany-droid/Risk-Nexus-Command",
+   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -7370,6 +7402,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1417792/",
    "symbols": [],
@@ -7415,8 +7458,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1441196/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7428,17 +7471,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy883301/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7668,8 +7700,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7679,8 +7711,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7789,6 +7821,28 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "symbols": [],
@@ -7802,17 +7856,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1430080/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7855,17 +7898,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
    "symbols": [],
@@ -7879,17 +7911,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7943,6 +7964,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
    "symbols": [],
@@ -7954,8 +7986,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -7965,8 +7997,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -8053,17 +8085,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "symbols": [],
@@ -8077,6 +8098,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -8681,10 +8713,28 @@
    "mechanism_tags": []
   },
   {
+   "source": "arxiv",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
+   "url": "https://arxiv.org/abs/2608.27423v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
    "source": "github",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
    "url": "https://github.com/goodie1972/algoforge",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "\ud83d\udd25 GOLD \u2014 Supply Zone Rejection",
+   "url": "",
    "symbols": [
     "XAUUSD"
    ],
@@ -8767,98 +8817,6 @@
    "url": "",
    "symbols": [
     "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "SPY Day Trade Review \u2014 +0.5R, but the biggest win was sticking to the plan",
-   "url": "",
-   "symbols": [
-    "US500"
-   ],
-   "mechanism_tags": [
-    "EMA"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "I created an amazing Oil strategy!",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "RTH and ETH EMA9/21\uff0c which to use?",
-   "url": "",
-   "symbols": [
-    "ETHUSD"
-   ],
-   "mechanism_tags": [
-    "EMA"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Week 17 - Day 3 - One and done option trade. Growing a small account $300 to $60,000 in 6 months",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": [
-    "SMA"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud83d\udd2e $SPY & $SPX \u2014 Levels and Scenarios for Friday, August 28, 2026",
-   "url": "",
-   "symbols": [
-    "US500"
-   ],
-   "mechanism_tags": [
-    "trend"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Question about my friends trade",
-   "url": "",
-   "symbols": [
-    "NAS100"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "I spent 7 months coding an algorithmic system for NAS100 + Gold. Here are the 9+ year backtest results (Spoiler: It's bonkers).",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Sold my first put - RDDT $115 11/20 for $4.15 per share",
-   "url": "",
-   "symbols": [
-    "US500"
    ],
    "mechanism_tags": []
   },
@@ -8999,6 +8957,28 @@
    "url": "",
    "symbols": [
     "USDILS"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Bridgewater has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Renaissance has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
    ],
    "mechanism_tags": []
   },

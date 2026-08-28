@@ -1,5 +1,5 @@
 {
-"cursor": 63,
+"cursor": 64,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -161,6 +161,9 @@
 "k\u00e2r MT4",
 "k\u00e2r MT5",
 "k\u00e2r ranking",
+"maksimum d\u00fc\u015f\u00fc\u015f MT4",
+"maksimum d\u00fc\u015f\u00fc\u015f MT5",
+"maksimum d\u00fc\u015f\u00fc\u015f ranking",
 "sinyal MT4",
 "sinyal MT5",
 "sinyal ranking"
