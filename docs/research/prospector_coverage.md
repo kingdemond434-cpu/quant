@@ -8966,3 +8966,20 @@ wrong.
    volatility (18) and HFT/microstructure (14) clusters are unread, and execution/cost material is
    the desk's standing bottleneck class.
 5. **Card 27's MT5 stat-arb analogue** (returns 2026-09-01) — carry R0703 in as its prior.
+
+---
+
+## SESSION s13 — 2026-08-28 (prospector, standing daily)
+
+**Backlog: CLEAR** (`source_backlog_next --limit 6`: 73 catalogued, 48 resolved, **0 pending
+verification**, 25 deferred with dates 2026-09-01→09-15). Mining authorised; no verification debt
+to clear first. Resuming from s12's own NEXT-GROUND list, items 1–3.
+
+**ITEMS TAKEN THIS RUN**
+1. **R0702 — build and EMPIRICALLY TEST `God's Equity Curve`** on the desk's own 251-symbol MT5
+   tape, before the five track-record grounds return from deferral 2026-09-03→09-05. Status: OPEN
+2. **`finance.naver.com/research/`** — walk the §38 replacement s12 opened but did not enter.
+   Status: OPEN
+3. **The 2 confirmed-permitted parse bugs** (`so.eastmoney.com`, `kr.investing.com`). Status: OPEN
+
+(updated in place as each resolves)
