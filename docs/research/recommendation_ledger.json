@@ -8765,6 +8765,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0682",
+   "source": "max_audit",
+   "summary": "§33 TAG GRAMMAR FAILS SILENTLY IN TWO SHAPES, and both cost this seat its first effort today (4 cards, 3 owing at T1/T2 for a full day while their evidence sat on disk). Reproduced against libs/research/mine_conversion.parse_dispositions: (1) an ILLEGAL VERB is correctly diagnosed per-item as illegal_reason=\"unknown disposition 'converted'\", but conversion_report's verdict string reports only 'N item(s) owe a disposition' -- the diagnosis exists and never reaches the operator, who reads a card whose grade says CONVERTED and a fence that says untagged, with no way to tell a mis-typed verb from an undone conversion (same class as R-2429 'absent input arrived as a verdict'). (2) WORSE, and silent end-to-end: _DISP_RE orders tier BEFORE the arrow, so the natural form '[§33: wired -> path/x.json tier:1]' parses artifact='path/x.json tier:1' and fails backing as anchor-absent -- a CORRECTLY CITED card reads as an uncorroborated claim, i.e. the launder-detector firing on honest work. Fixes, both small and independent: (a) surface illegal_reason in the verdict and in ConversionReport (illegal_names is already carried but unprinted); (b) accept tier on EITHER side of the arrow in _DISP_RE, or strip a trailing 'tier:N' from the captured artifact. NOTE the freeze: this seat is research-only and did not touch libs/; the four cards were re-tagged to the legal grammar instead (docs/research/data_axis_watchlist.md cards 61/65/65b/66, backlog now CLEAR).",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T07:50:19.375283+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

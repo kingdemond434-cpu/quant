@@ -3785,7 +3785,7 @@ mechanism folklore + refutations at zero marginal cost.
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
 pre-built month instead of browsing.
 
-### 61. [seed S21] BIS central-banker speeches full-text — grade: **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: converted(2026-08-28) tier:2]
+### 61. [seed S21] BIS central-banker speeches full-text — grade: **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: screened tier:2 -> desks/mt5/reports/cb_tone_screen.json]
 - **The residual below is discharged, by a route nobody had looked for.** The owed item was "the
   speech BODIES behind each `link`", assumed to be a 215-request crawl of per-bank landing pages.
   BIS publishes a **pre-compiled full-text extract of every speech it has collected since 1996**
@@ -4181,7 +4181,7 @@ the clock probe **backwards to 2018** and forwards — a handful of cheap probes
 *rule* into a verified per-year seam table covering the whole tape. (iii) The §38 IBA replacement:
 LBMA's own site and the auction operator's publications for per-round data on a permitted route.
 
-### 65. [dig 2026-08-28] FX Blue track-record corpus — grade: **CONVERTED — the ground's only consumer had been silently empty, and it now carries two preregistered hypotheses** [§33: converted(2026-08-28) tier:1]
+### 65. [dig 2026-08-28] FX Blue track-record corpus — grade: **CONVERTED — the ground's only consumer had been silently empty, and it now carries two preregistered hypotheses** [§33: wired tier:1 -> data/intelligence/hypotheses/H-20260828-006.yaml]
 The 08-27 debt was "the corpus is a hypothesis SOURCE and has produced none yet". The reason was
 not the corpus. `fxblue_mechanism_summary.py` read ONE file and filtered `status == "has_data"`;
 the first-generation harvest labels the same records `live`, so the summariser printed
@@ -4204,7 +4204,7 @@ de-dup by account, and re-derive liveness from the chart data rather than from a
   accounts profitable at 15:00 — z~2.4 across 24 hourly tests, not significant under Holm, and
   the accounts are not independent) is recorded as a pointer and is NOT the basis of either rule.
 
-### 66. [dig 2026-08-28] A running miner writing into an ORPHANED INODE — silent, and a class not a bug [§33: repaired(2026-08-28) tier:1]
+### 66. [dig 2026-08-28] A running miner writing into an ORPHANED INODE — silent, and a class not a bug [§33: wired tier:1 -> desks/mt5/data/intelligence/fxblue/track_records_wave3a.jsonl]
 Found live, mid-dig. Both FX Blue harvesters logged row 50 while their output files held 28 rows;
 the `shell`/`dead` counts matched exactly and only the large `has_data` records were missing.
 `/proc/<pid>/fd/4 -> ...track_records_wave2a.jsonl (deleted)` — the file had been **unlinked and
@@ -4223,7 +4223,7 @@ inodes. **Nothing errored; a reader would have seen a clean, short, plausible fi
   the same failure available to it. That audit is owed, and until it runs the scope of this defect
   is UNMEASURED, not one file (L1.28a).
 
-### 65b. [dig 2026-08-28, same run] FX Blue corpus 111 -> 525 mineable accounts: the CLOCK confirms out-of-sample, the PERFORMANCE half decays [§33: converted(2026-08-28) tier:1]
+### 65b. [dig 2026-08-28, same run] FX Blue corpus 111 -> 525 mineable accounts: the CLOCK confirms out-of-sample, the PERFORMANCE half decays [§33: wired tier:1 -> desks/mt5/data/intelligence/fxblue/track_records_wave3a.jsonl]
 Re-harvested 700 further accounts (stride 7, offsets 1 and 3) on the repaired writer path — a
 positive control for card 66's fix as well as a corpus expansion: **700/700 rows landed, against
 57/700 on the pre-fix path.** Corpus is now **887 records / 525 mineable**, and the wave-2/3
