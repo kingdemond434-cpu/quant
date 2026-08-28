@@ -7390,6 +7390,61 @@ def check_worktree_on_tmpfs(defects) -> None:
             "holds uncommitted work, relocate it to real disk rather than deleting it."))
 
 
+def check_sync_launder(defects) -> None:
+    """Code a one-way sync reverted and nobody put back -- DERIVED, so no file falls through.
+
+    The Dell's hourly sync scp's its copy over desks/mt5 and commits it here over ssh. Two
+    defences exist and both are LIST-shaped: the pre-commit guard is future-tense (it works --
+    no mt5 sync commit has carried a .py change since 2026-08-26 02:02), and the content fence
+    restores only files somebody already added to its hand-maintained PROTECTED map.
+
+    MEASURED 2026-08-28: desks/mt5/research/regime_monitor.py lost 122 of 149 lines -- the GAP 130
+    shadow-replay wake -- to a sync two hours after it shipped, and sat dead in HEAD for two days
+    with its 5 tests inside a 25-test CI red nobody traced. It was invisible for one reason: it
+    was in no list. A registry of files already damaged cannot name the file about to be, and
+    every entry in it was bought with the loss it was meant to prevent.
+
+    Reads the artifact rather than re-deriving it (the walk is a few hundred `git show` calls);
+    the producer is scripts/check_sync_launder.py, wired to run before this. Only CLEAN-REVERT
+    rows are defects: a REVIEW row cannot be closed mechanically -- it needs two versions of a
+    rewritten file read by a mind -- and a red nobody can act on gets skimmed and buries a real
+    one, which is the lesson check_ci_gate already carries in its own body.
+    """
+    # PRODUCER AND CONSUMER ON ONE SCHEDULE, so they cannot rot apart. The manifest has 120 rows
+    # with no scheduler since the 08-20 cron death; adding a 121st would be wiring an organ to a
+    # dead clock and calling it done. The walk is a few hundred `git show` calls -- refreshed at
+    # most once a day, bounded, and a failure leaves the previous artifact rather than a lie.
+    art = ROOT / "data" / "sync_launder.json"
+    stale = (not art.exists()) or (NOW - art.stat().st_mtime) > 20 * 3600
+    if stale:
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            subprocess.run([sys.executable, str(ROOT / "scripts" / "check_sync_launder.py")],
+                           cwd=ROOT, capture_output=True, text=True, timeout=600, check=False)
+    if not art.exists():
+        return
+    try:
+        rows = json.loads(art.read_text("utf-8")).get("residue") or []
+    except (OSError, json.JSONDecodeError, TypeError):
+        return
+    clean = [r for r in rows if r.get("verdict") == "CLEAN-REVERT"]
+    if clean:
+        named = ", ".join(f"{r['file']} ({r['lines_lost']} lines, {r['sync_commit']})"
+                          for r in clean[:4])
+        defects.append(("sync-launder",
+                        f"{len(clean)} file(s) still carry authored code a SYNC commit reverted "
+                        f"and nothing restored: {named}. Each is desk work that reached HEAD, was "
+                        "overwritten by a one-way push, and is being run in its stale form right "
+                        "now. Heal with scripts/check_sync_launder.py --heal (previous bytes are "
+                        "quarantined), then commit."))
+    review = [r for r in rows if r.get("verdict") == "REVIEW"]
+    if len(review) > 12:
+        defects.append(("sync-launder-review-backlog",
+                        f"{len(review)} file(s) carry sync-removed lines that a later rewrite may "
+                        "or may not have superseded -- nothing mechanical can tell those apart. "
+                        "The backlog is only worth reporting when it grows: read the samples in "
+                        "data/sync_launder.json and close each one with a judgement."))
+
+
 CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("close-retry-loop", check_close_retry_loop),
            ("paid-target-registry", check_paid_target_registry),
@@ -7398,7 +7453,8 @@ CHECKS += [("fee-carry-ratio", check_fee_carry_ratio),
            ("rail-verdict-published", check_rail_verdict_published),
            ("universal-doctrine", check_universal_doctrine),
            ("route-shaped-identity", check_route_shaped_identity),
-           ("worktree-on-tmpfs", check_worktree_on_tmpfs)]
+           ("worktree-on-tmpfs", check_worktree_on_tmpfs),
+           ("sync-launder", check_sync_launder)]
 
 
 #: Every reasoning organ. An organ that does not carry the constitution is optimising for

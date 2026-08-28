@@ -102,6 +102,45 @@ def _denominator_registry_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setattr("libs.ops.denominator._root", lambda: tmp_path)
 
 
+# LOST IN A MERGE AND RESTORED 2026-08-28. This fixture landed in 3358a73b and was gone at HEAD
+# with NO commit touching this file after 84cbf97d -- the unification class: the merge kept the
+# test that names the guarantee (tests/governance/test_conftest_isolation.py) and dropped the
+# fixture it guards. Restored verbatim; the two isolation halves are siblings and travel together.
+
+@pytest.fixture(autouse=True)
+def _freshness_registry_in_tmp(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """NOR THE L1.44 FRESHNESS REGISTRY (R0544, R0398 follow-up).
+
+    `read_fresh` appends its contract row to `data/freshness_contracts.jsonl` under
+    `fresh._root()`, which is cwd when QUANT_FRESH_ROOT is unset -- so a test that points a
+    production reader at a tmp artifact still files that read in the PRODUCTION registry, under
+    an absolute /tmp/pytest-of-quant/... path. Measured 2026-08-12: 1089 of 1097 rows. Re-measured
+    2026-08-19 after the row sat open: 2053 of 2478 (82.8%), from exactly two callers --
+    `run_cashcarry_executor._structurally_bleeding` (1322) and `._rt_bps` (731).
+
+    THE VERDICTS WERE NEVER WRONG, THE DENOMINATOR WAS. `check_freshness.py` quarantines an
+    off-root path as FOREIGN, so nothing was mis-graded; what it lost is the one number the L1.44
+    fence is read for. n_contracts=8 real contracts inside 2478 rows is the L1.57 class pointed at
+    a self-building registry: a count that grows with test volume and is 82.8% noise reads as
+    coverage. Deleting the rows would be the wrong repair twice over -- it treats the symptom, and
+    it blinds the FOREIGN guard to a real production leak, which is the thing it exists to catch.
+
+    FIX AT THE WRITER, WHICH IS WHY THIS IS SUITE-WIDE AND NOT PER-DIRECTORY. The two owning
+    suites (tests/ops/test_fresh*.py, tests/governance/test_freshness_fence.py) already pin the
+    root; the leak is from every OTHER test that drives a production reader and has no reason to
+    know a second path exists. Opt-in isolation only ever protects the tests that remembered to
+    ask, and the next one will not -- the same argument the execution suite's bleed-cache fixture
+    was written on, one level up.
+
+    tmp_path, not a shared temp dir: it is the SAME per-test directory the test itself writes its
+    fixture artifacts into, so a relative read resolves exactly where the test put the file and
+    `_rel()` records it by its relative name rather than as an off-root absolute. A test that
+    passes `root=` explicitly, or that delenv's this itself to exercise the cwd fallback, still
+    wins inside its own scope.
+    """
+    monkeypatch.setenv("QUANT_FRESH_ROOT", str(tmp_path))
+
+
 def pytest_runtest_teardown(item: Any) -> None:
     """After every test: re-hash, name the culprit, put the bytes back."""
     if _SNAP is None:
