@@ -6931,3 +6931,19 @@ call settle for free. **A next-ground item is a hypothesis, and it gets falsifie
 closed by writing that a next-ground list is a claim requiring verification; this run is the first
 instance of that claim being tested, and it failed in the direction (m) predicted — the second time
 in two runs that this seat's own forward plan was the least reliable artifact it produced.
+
+---
+
+## SESSION START — 2026-08-28 (o)  [free-data miner, standing daily run]
+
+**Items taken THIS RUN** (both carried from run (n)'s next-ground list, highest-yield first):
+1. **The statistics-agency-as-delivery-door generalisation** — run (n) found Danmarks Nationalbank
+   ships all 107 of its statistical tables through *Statistics Denmark's* keyless API, invisible to
+   the bank's own sitemap. Test the generalisation on **SSB (Norway)** and **SCB (Sweden)**, and use
+   it to **re-open hosts this seat previously graded WALLED**. A verdict-reopening find outranks a
+   new source.
+2. **`DNVALD` / `DNPRND`** — the two cheapest un-opened rows of the 107: 49 years of daily official
+   FX fixings (1977→) and the DAILY Nationalbank balance sheet (2005→2026-08), the DKK analogue of
+   SNB sight deposits without the Credit-Suisse contamination.
+
+Status: OPEN. Updated in place as each item resolves.
