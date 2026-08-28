@@ -51,9 +51,34 @@ brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then
 # mines on in the SAME run -- mining is never throttled. It replaces a `_MINE_PRIORITY`
 # variable that was computed here and never referenced, under this exact comment.
+# AN IN-FLIGHT SENTINEL, NOT A COMPLETION MARKER. The obvious repair -- write an "exit" line
+# after the dig -- was already in this file, unconditionally, and STILL never appeared: measured
+# 2026-08-28, not one frontier_unified log on disk carries one. The dig is TERMINATED (session
+# limit, seat timeout, watchdog) and the shell never reaches the next statement. A trap does not
+# save it either; verified by killing the process group exactly as systemd does, and bash died
+# without running its handler.
+#
+# So do not try to write something at the moment of death. Write it at the START and remove it on
+# success. Being killed then needs no cooperation from the dying process: the sentinel simply
+# stays, and its PRESENCE is the evidence that this dig did not finish. That is robust to
+# SIGKILL, to a seat timeout, and to the box rebooting mid-dig.
+#
+# This matters because of what the resume gate does with it: the principal's standing instruction
+# is that a dig cut off by a session limit must pick up from the same spot once the limit lifts.
+# Judged by log SIZE, the 06:20 dig on 2026-08-28 wrote 10,667 bytes of real work, was cut off,
+# and counted as "produced today" -- so it never resumed. Bytes are not completion.
+RUNMARK="data/.digs/frontier_${REGION}_$(date -u +%Y%m%d).running"
+mkdir -p data/.digs
+echo "started=$(date -u +%FT%TZ) pid=$$ log=$LOG" > "$RUNMARK"
+
 echo "=== frontier-$REGION start $(date -u) ===" >> "$LOG"
 claude --effort "${BRAIN_EFFORT:-low}" --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/frontier_${REGION}_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
-echo "=== frontier-$REGION exit $? at $(date -u) ===" >> "$LOG"
+_rc=$?
+echo "=== frontier-$REGION exit $_rc at $(date -u) ===" >> "$LOG"
+# Cleared ONLY on a clean return from the dig. A non-zero exit is still a finished attempt for
+# the day -- the dig ran and stopped for its own reasons -- but a KILLED run never reaches here,
+# which is exactly the case the sentinel exists to catch.
+rm -f "$RUNMARK"
 
 exit $?
 }
