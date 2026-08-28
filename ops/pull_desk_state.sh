@@ -40,6 +40,21 @@ scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json" \
     desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp 2>/dev/null \
   && mv desks/mt5/reports/UNIVERSAL_SURVIVORS.json.tmp desks/mt5/reports/UNIVERSAL_SURVIVORS.json
 
+# THE GATE REPORT ITSELF, which was never pulled at all. Every question worth asking about the
+# pipeline -- which gate binds, how many cells were judged versus dropped, what the trial charge
+# actually was -- is answered ONLY here, and this box was reading a copy two days older than the
+# box that produced it. So the sweep ran hourly while every diagnosis made here described
+# Wednesday, and the difference was invisible because the local file's mtime was refreshed by
+# everything EXCEPT its own content.
+# Measured 2026-08-28: local swept_at 08-26T04:54 (149 verdicts) against 08-28T01:13 (460
+# verdicts) on the box. The recertification audit is the same story -- it decides whether a
+# standing certificate still holds, and judging that from a stale copy is worse than not judging
+# it, because it reports an answer.
+for f in universal_gates_external.json recertification_audit.json; do
+  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/$f" "desks/mt5/reports/$f.tmp" 2>/dev/null \
+    && mv "desks/mt5/reports/$f.tmp" "desks/mt5/reports/$f"
+done
+
 # The job manifest judges FRESHNESS, so it has to see the trading box's own artifacts rather than
 # this box's stale copies -- otherwise it would report a dead organ as healthy, which is the exact
 # failure mode it exists to catch.
