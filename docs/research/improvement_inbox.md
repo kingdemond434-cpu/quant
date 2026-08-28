@@ -3335,3 +3335,122 @@ and **overstate every short** on 122 symbols by the instrument's dividend yield.
    enabling change addressing the original mechanism of death"** — the standard L1.16a requires for
    re-opening a graveyarded axis. It should be re-opened **only after** the construction is fixed
    and verified, never before.
+
+---
+
+## PROSPECTOR s9 — 2026-08-28 — the desk's return series is time-blind, and its holiday organ is unwired, hardcoded and empirically wrong
+
+Three linked structural findings from the broker operational-notice class (the class s8 opened via
+R0691 and named as the run's largest finding — it has now paid twice).
+
+### FINDING 1 — `operational_calendar_miner.py` is unwired, has never run, and its holiday table is wrong in both directions
+
+`desks/mt5/side_channels/operational_calendar_miner.py` declares in its own docstring that it
+covers *"Exchange holidays / half-days / local banking holidays"*.
+
+- **Zero external callers.** Every repo reference to `operational_calendar` outside the file itself
+  is a docstring mention (`side_channels/__init__.py:6`), a string literal in a source-name enum
+  (`base.py:35`, `side_channels_init.py:56`) or a routing key (`intersection_hunter.py:67`). Nothing
+  invokes it.
+- **It has never run.** Its own output directory `desks/mt5/data/operational_calendar/` **does not
+  exist** (the module `mkdir`s it at import, so the directory's absence proves the module has never
+  even been imported in this tree). III.16: built is not a status.
+- **It fetches nothing.** Zero URLs in the file. The 28 `OperationalEvent` entries are a hardcoded
+  literal list — the anti-hardcode law's exact shape (LAWS §1), and here the list is *not* a
+  declared bootstrap seed.
+- **And the hardcoded holiday rows are empirically wrong.** Checked against the broker's own
+  published dated tables (below):
+  - `London_Holiday` sets `affected_instruments=["ALL_EUR","ALL_GBP","FTSE100","EU50","XAUUSD"]`.
+    On the **Summer Bank Holiday 31/08/2026** the broker closes **UK100, COFROB and the five LME
+    base metals (XALUSD, XCUUSD, XNIUSD, XPBUSD, XZNUSD)** — and does **not** close XAUUSD. The
+    entry **names gold, which trades, and omits the five metals, which halt.** Base metals track
+    London/LME; precious metals track US/COMEX (on MLK 19/01/2026 "Precious Metals" is
+    `Early Close 21:30` — a *US* holiday). The hardcoded row has the split backwards.
+  - `US_Market_Holiday` carries a single `forced_action="reduced_liquidity"`. The actual Juneteenth
+    19/06/2025 table shows **five distinct treatments on one day**: Early Close 21:30 (precious
+    metals, XNGUSD, XTIUSD), 20:30 (XBRUSD), 20:00 (US indices, UST05Y, UST10Y), **19:00 (SUGAR)**,
+    and fully **Closed** (USCOCOA, COFARA, COTTON, OJ, SUGARRAW, USDBRL, USDIDR, USDINR, USDKRW,
+    Equities). SUGAR early-closes at 19:00 while SUGARRAW closes outright — two sugar contracts,
+    same day, different states. The schema cannot express any of this.
+- **A schema defect, not a data-entry defect (the important half):** `OperationalEvent.frequency`
+  ranges over `daily|weekly|monthly|quarterly|annually|ad_hoc`. Several recurring halts fall on
+  **Islamic lunar dates** — Id-e-milad (25–26/08/2026), Ascension of the Prophet (16/01/2026), Eid
+  al-Adha (06/06/2025), Islamic New Year (27/06/2025) — which move ~11 days earlier per Gregorian
+  year. **No Gregorian-annual encoding can represent them**, so any hardcoded entry is guaranteed to
+  drift wrong rather than merely be incomplete. There are also purely **ad-hoc political** closures
+  (USDKRW closed 03/06/2025, Korean presidential election) that no calendar frequency covers at all.
+
+### FINDING 2 — the return construction treats a multi-session gap as one period, and the annualisation comment still assumes the banned universe
+
+`libs/research/transcript_candidates.py:50` `positions_to_returns` is close-to-close over
+consecutive bars with no notion of elapsed time. `libs/research/vol_risk_premium.py:77` states the
+governing assumption verbatim:
+
+> "Calendar-day annualisation. **Crypto trades continuously, so a year holds 365 daily returns**..."
+
+That is a **crypto-universe assumption running on the MT5 universe** — a mandate-migration residue
+of the same class as the banned-universe findings of 2026-08-27/28. Measured on the desk's own
+`desks/mt5/data/universe/*_H1.parquet` (196 symbols with ≥500 bars):
+
+| quantity | value |
+|---|---|
+| halted/missing weekday sessions, universe-wide | **29,444** |
+| median share of weekday sessions absent, per symbol | **3.58%** |
+| symbols with >2% / >5% of weekdays absent | **132 / 37** |
+| USDIDR | 151 of 1,330 weekdays absent (**11.4%**) |
+
+**The broker's published calendar predicts the desk's own tape exactly** — 5 of 5 spot-checked
+dates (2025-06-06, 2025-06-19, 2025-06-27, 2026-01-01, 2026-01-16) have **zero bars** in
+`USDIDR_H1.parquet`. So these are real halts, not collection failures.
+
+**Consequence, quantified.** Because variance scales with sessions spanned, treating a 2–5 session
+return as one period **overstates** per-period realised vol, which **understates** Sharpe and
+**over-shrinks** position size — a timidity/under-sizing defect (LAWS §2a), the mirror of R0691:
+
+| symbol | naive sd (bp) | true per-session sd (bp) | vol overstated by | Sharpe understated |
+|---|---|---|---|---|
+| USDKRW | 68.85 | 58.47 | 1.178x | **15.1%** |
+| HK50 | 137.35 | 125.38 | 1.096x | 8.7% |
+| USDIDR | 42.30 | 39.60 | 1.068x | 6.4% |
+| USDINR | 27.12 | 26.27 | 1.032x | 3.1% |
+| USDBRL | 87.87 | 85.29 | 1.030x | 2.9% |
+| GBPZAR / EURNOK | — | — | 1.017x / 1.008x | 1.7% / 0.8% |
+
+**Reported at honest weight: this is a 1–15% sizing error on a minority of the universe, not a
+headline.** It is worth fixing because it is cheap and one-directional (always toward timidity),
+not because it is large.
+
+**A third defect falls out of the census and is arguably the most actionable:** the desk currently
+**cannot distinguish a scheduled halt from a data-collection gap**. JPN225 shows 75.5% of weekdays
+absent, USDRUB 42.0%, BankofAmericaCorp 27.0% — those are collection artifacts, not holidays, yet
+they are byte-identical to a halt in the tape. Both corrupt a close-to-close return and only one is
+a market fact. **UNMEASURED must not read as a clean verdict (L1.28a/WS-005)** — and right now a
+75%-missing series and a genuine holiday calendar are the same object to every consumer.
+
+### FINDING 3 — the calendar is published as a PNG, and that is why nobody has mined it
+
+`fusionmarkets.com/posts/upcoming-holidays` renders the table **only as an image**
+(`/static_images/August_2026_FM_NEW_cebdd13318.png`). Text extraction returns the surrounding prose
+and **nothing of the table** — `<table>` count 0, `<tr>` count 0, and every instrument/time string
+absent from the HTML. This is exactly the "boring, structurally unindexed" layer the deep-forest
+mandate targets: the data is public, free, dated, authoritative and machine-invisible.
+
+**Working route, recorded so no future run re-derives it:** the page is overwritten monthly, but
+**Wayback CDX enumerates the historical run** (`collapse=digest` → 7 distinct snapshots
+2024-04→2026-01), and the archived HTML still carries the `/static_images/…png` filenames, **which
+are all still live on the origin CDN** — so the images fetch directly, no archive replay needed.
+Reading the PNG with the image reader recovers the full table. Three months recovered this run
+(June 2025, Jan 2026, Aug 2026) and each is a complete dated per-instrument halt matrix.
+
+### The repair, and it is one fix, not three
+
+Build the halt calendar **from the desk's own tape** rather than from a hardcoded list — a
+per-symbol session index is derivable directly from the parquet lake and is *already* the ground
+truth (the broker page merely confirms it). Then (a) carry elapsed sessions alongside every return
+so vol scales correctly, and (b) grade every absent session as `halt | collection_gap | unknown`
+instead of collapsing all three into "no bar". The broker PNG calendar is the **labelled training
+set** for that classifier, and it is free.
+
+*Prospector s9. Findings 1–3 are structural/method and route here per spec; the one tradeable
+candidate from this run is carded separately on the watchlist. The reopen-gap mechanism this dig
+started from was **refuted** and is filed in the graveyard.*

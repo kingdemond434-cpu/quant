@@ -966,3 +966,70 @@ is `Allow: /`, but its own sitemap serves every content URL from **`wp.the5ers.c
 apex's grant does **not** extend, robots being host-scoped. Content fetched before that robots read
 was **discarded unparsed and unused**. Replacement found in the same run: **Alpha Capital Group**,
 which is what the third row above is; the count of rulebooks read is unreduced by the exclusion.
+
+---
+
+## PROSPECTOR s9 — 2026-08-28 — prop-firm news-blackout forced flow
+
+**Provenance: VERIFIED** (primary source, quoted verbatim, read this run)
+`alphacapitalgroup.uk/posts/alpha-capital-news-trading-and-overnight-rules-explained-2026`
+(host robots `User-agent: * / Allow: /`; the content-signal preamble present in that robots file
+**defines** the signal vocabulary but **sets no signal**, which under its own clause (c) "neither
+grants nor restricts" — recorded because a future run will re-read this file and must not mistake
+the boilerplate for a restriction).
+
+### The mechanism, and who is forced
+
+On **Qualified Analyst** accounts (the *funded* stage — i.e. where the size actually is), Pro /
+One / Three / Direct traders **may not open or close a position on a targeted instrument from 5
+minutes before until 5 minutes after** a listed high-impact release — a **10-minute two-sided
+blackout**. The clause that makes it a forced flow rather than a preference is verbatim:
+
+> "...closing, whether by market execution or by pending order, **including stop-loss and
+> take-profit**."
+
+A stop filling inside the window is a violation. So every funded trader carrying risk into a
+scheduled release has exactly three options and no fourth: **flatten before T−5min**, **hold
+through with stops effectively disarmed**, or **size down in advance**. This is a dated,
+clock-precise, obligation-bearing constraint on a known pool — the same structural class as the
+s7/s8 prop-firm clock and drawdown-basis findings, and it is the **third** axis on that pool.
+
+### The sharpest part: the restriction table is asymmetric across instruments
+
+- **Indices** — restricted around **three** US events only (CPI, Fed funds decision + presser, NFP).
+- **Metals (XAUUSD/XAGUSD)** — "a much broader list": *all* USD, AUD and CAD high-impact news and
+  speeches, *all* EUR and GBP high-impact speeches, plus rate decisions, CPI, GDP, PCE, PMI and
+  employment figures **across all currencies**.
+- **FX pairs and oil** — restricted per constituent currency.
+
+**Gold is therefore the most heavily blackout-constrained instrument in the prop universe, and
+indices the least.** That asymmetry is the falsifier's gift: it supplies a **built-in control
+group**. Around a high-impact *non-US* release (e.g. an AUD or CAD print), the funded pool is
+blacked out in gold and **not** in indices, on the same clock, in the same session.
+
+### Pre-registration-ready cells
+
+- **H1 (primary, difference-in-differences):** in the (T−10min, T−5min) window before a release that
+  is restricted for metals but not for indices, XAUUSD shows elevated flattening flow relative to
+  US500/US30 versus a matched non-event control. Direction-agnostic; test on volume/absolute return
+  and quoted spread, not on signed direction.
+- **H2:** the (T+5min, T+10min) window shows the re-entry mirror of H1.
+- **Falsifier:** no metals-vs-index differential at the same event → the pool is too small to move
+  the tape, and the whole family dies with it. **State this as the expected outcome**; the pool's
+  share of gold volume is unmeasured and may well be negligible.
+
+**EV gate** (`libs/research/alpha_economics`, honest inputs, one sleeve):
+`propfirm_blackout_metals_vs_index_differential` **ev 0.0036**, p_survive 0.24, `new_orthogonal_data`
+→ **QUEUE**. Sibling framing `propfirm_news_blackout_forced_flow` **ev 0.0033** → QUEUE. Both sit
+~1.8x the 0.002 threshold and *below* the carry-class reference (0.009) — this is a modest
+candidate, not a headline, and is logged at that weight.
+
+**Graveyard cross-check:** no match. The nearest rows are the *calendar-dummy* family
+(`hijri_ramadan_calendar_axis`, `lit_retail_signal_families` calendar rules); this is neither — the
+unit is an intraday blackout window with a named contractual forcing clause and a within-event
+control group, not a seasonal dummy.
+
+**Honest limits:** ONE firm's rulebook. Whether other firms' tables share the metals-vs-index
+asymmetry is **unverified** and is the cheapest next check (s7/s8 already hold open routes into
+FundedNext and The5%ers-replacement ground). Pool size is unmeasured. Provenance of the *mechanism*
+is VERIFIED; provenance of the *market impact* is **CLAIM** until H1 runs.

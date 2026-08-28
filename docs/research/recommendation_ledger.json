@@ -8905,6 +8905,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0692",
+   "source": "cycle",
+   "summary": "PROSPECTOR s9: operational_calendar_miner.py is unwired (zero callers), has NEVER run (its own output dir desks/mt5/data/operational_calendar/ does not exist), fetches nothing (28 hardcoded OperationalEvent literals, not declared as bootstrap seeds), and its holiday rows are empirically WRONG both ways -- London_Holiday names XAUUSD (which trades on UK Summer Bank Holiday) and omits the five LME base metals XALUSD/XCUUSD/XNIUSD/XPBUSD/XZNUSD (which halt); US_Market_Holiday flattens 5 distinct same-day treatments into one reduced_liquidity. Schema defect too: frequency has no lunar option, so recurring Islamic-calendar halts (Id-e-milad, Eid al-Adha, Ascension, Islamic New Year) drift ~11d/yr and cannot be encoded at all. Repair: derive the halt calendar from the desk's own parquet session index, not a literal list. Evidence docs/research/improvement_inbox.md PROSPECTOR s9.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T13:59:21.401914+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0693",
+   "source": "cycle",
+   "summary": "PROSPECTOR s9: return construction is TIME-BLIND and the annualisation assumption is banned-universe residue. positions_to_returns (libs/research/transcript_candidates.py:50) is close-to-close over consecutive bars with no elapsed-time term, while vol_risk_premium.py:77 still states 'Crypto trades continuously, so a year holds 365 daily returns' -- applied to MT5 where 29,444 weekday sessions are absent across 196 symbols (median 3.58%/symbol, USDIDR 11.4%). Verified real halts not collection gaps: broker's published calendar predicts the desk tape 5/5 (zero bars on those dates). Treating a 2-5 session gap as one period overstates realised vol 1.008x-1.178x, so Sharpe is UNDERSTATED 0.8-15.1% (USDKRW worst) and size over-shrunk -- a timidity defect, mirror of R0691. Third defect: halt vs collection-gap are byte-identical in the tape (JPN225 75.5% absent is an artifact, USDIDR 11.4% is a market fact) so UNMEASURED reads as clean (L1.28a/WS-005). Repair: carry elapsed sessions with every return; grade absent sessions halt|collection_gap|unknown using the broker PNG calendar as the free labelled set. Evidence docs/research/improvement_inbox.md PROSPECTOR s9.",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T13:59:23.809945+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

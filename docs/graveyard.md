@@ -1796,3 +1796,62 @@ class**, opened 2026-08-28 and now at three verified members: **Japan MoF interv
 operations** (card 69). The mechanism transfers exactly: a participant who is forced to transact,
 publishes the fact, and cannot stop. The replacement hunt is open, not closed — Banxico, RBI, CBRT,
 MNB and NBP are named and unopened.
+
+### exotic_fx_halt_reopen_gap_vol (PROSPECTOR s9, 2026-08-28) — `mechanism_refuted`, and refuted on the desk's own data
+
+**THE HYPOTHESIS.** MT5 exotic FX crosses (USDIDR, USDINR, USDBRL, USDKRW) are halted at the broker
+on their home-country holidays — 10.4–11.4% of all weekday sessions — while USD-side and global risk
+keeps trading. A position held across the halt cannot be exited and stops cannot fill; at reopen the
+price should gap to absorb accumulated global information, giving excess reopen volatility that a
+direction-agnostic vol strategy could harvest. Direction-agnostic by construction, which is the
+class the desk's own lessons say to prefer.
+
+**THE HALTS ARE REAL — that part verified, and it survives the kill.** The broker's published dated
+calendar predicts the desk's tape exactly: 5 of 5 spot-checked halt dates have **zero bars** in
+`desks/mt5/data/universe/USDIDR_H1.parquet` (2025-06-06 Eid al-Adha, 2025-06-19 Juneteenth,
+2025-06-27 Islamic New Year, 2026-01-01, 2026-01-16 Ascension of the Prophet). The refutation is of
+the *edge*, not of the *calendar*.
+
+**FIRST PASS LOOKED STRONG, AND IT WAS AN ARTIFACT.** Uncontrolled, post-halt daily return dispersion
+runs **1.34x–3.08x** normal with Levene p < 0.01 on all four symbols — the kind of result that ships
+if nobody asks what else changed. What else changed is that a post-halt return **spans more calendar
+time**, so variance scales with it mechanically. Controlling by dividing each return by
+√(weekday-sessions spanned):
+
+| symbol | n halts | raw ratio | mechanical √(sessions) | ratio AFTER control | Levene p |
+|---|---|---|---|---|---|
+| USDIDR | 56 | 1.967 | 1.923 | **0.933** | 0.913 |
+| USDINR | 73 | 1.380 | 1.712 | **0.916** | 0.529 |
+| USDBRL | 71 | 1.345 | 1.728 | **0.911** | 0.232 |
+| USDKRW | 56 | 3.080 | 1.861 | **1.052** | 0.946 |
+
+**The excess vanishes completely.** Every controlled ratio sits at or below 1.0 and every p is
+0.23–0.95 — not "weaker than hoped", but *indistinguishable from ordinary time-scaled volatility*,
+in all four symbols independently. Two of the four (USDINR, USDBRL) had raw ratios *below* their own
+mechanical expectation, i.e. reopen returns were **quieter** than √t predicts. There is no
+halt-reopen premium here.
+
+**THE EV GATE AGREED INDEPENDENTLY**, which is worth recording as a gate-calibration data point:
+scored pre-registration, `exotic_fx_halt_reopen_gap_vol` returns **ev 0.0001, p_survive 0.0112,
+"REJECT (hard economic kill)"** on `price_only + narrow_breadth` — breadth is 4 symbols, and the
+mechanism as specified was price-only. The gate and the data killed it for the same reason from
+opposite directions.
+
+**DO NOT REOPEN** by swapping the vol estimator, the horizon, or the symbol set: all three vary the
+measurement, none changes the mechanism, and the breadth ceiling (four halt-heavy exotics, ~56–73
+episodes each) is structural. The nearest live-again condition would be a genuinely different
+quantity — e.g. *spread* or *fill quality* at reopen rather than return dispersion — which is a
+different mechanism and would need its own card.
+
+**WHAT SURVIVES AND IS THE ACTUAL DELIVERABLE.** The √t model fitting almost exactly is precisely
+what makes the desk's *accounting* defect measurable: since variance really does scale with sessions
+spanned, treating a multi-session gap as one period overstates realised vol by 1.01x–1.18x and
+therefore under-sizes. That, the unwired/hardcoded/empirically-wrong `operational_calendar_miner`,
+and the working PNG-plus-Wayback-CDX route to the broker's dated halt calendar are all filed in
+`docs/research/improvement_inbox.md` (PROSPECTOR s9).
+
+**RELATION TO `hijri_ramadan_calendar_axis` (2026-08-12, `unmeasurable_by_construction`).** Different
+quantity and different universe — a broker halt/reopen event on MT5 exotics, not a seasonal return
+dummy on crypto — so this is not a re-litigation of that row. But that row's kill reason (episode-level
+n too small) applies here too and is now joined by a measured null: this one is **refuted**, not
+merely unmeasurable, and it retires the mechanism rather than a method.

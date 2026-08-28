@@ -8337,3 +8337,100 @@ candidate.**
    ratchet) suggests reading rulebooks for *which products a firm bans* — news-trading and
    overnight-hold bans are forced-flow constraints on the same pool. Alpha Capital publishes exactly
    such a page (`/posts/alpha-capital-news-trading-and-overnight-rules-explained-2026`), unread.
+
+---
+
+## PROSPECTOR s9 — 2026-08-28 (session note written BEFORE research, per completion contract)
+
+**Items taken this run** (from s8's NEXT UN-EXHAUSTED GROUND, in its stated order):
+
+1. **The broker operational-notice class, continued** — s8 entered it via one page and it produced
+   the run's largest finding (R0691). Unmined remainder: `/posts/upcoming-holidays` (dated
+   session/schedule changes = announced liquidity-regime changes) and the **margin-requirement
+   change notice** sub-class (announced, dated, forced deleveraging in a known pool).
+2. **Second prop-firm axis** — Alpha Capital Group's news-trading / overnight-hold rules page.
+   Product and timing BANS are forced-flow constraints on the same pool whose clock and basis
+   heterogeneity s8 established.
+3. **`aircrushin` star-graph hop** — listed and untaken for two sessions. Take it or grade it away
+   this run (no third session of carrying it).
+
+Status: **CLOSED** — all three items resolved to depth. Resolutions below.
+
+### Resolutions
+
+**Item 1 — broker operational-notice class: CLOSED, and it paid twice in two sessions.**
+`/posts/upcoming-holidays` publishes its table **only as a PNG**; text extraction returns `<table>`
+count 0 and not one instrument string. Route solved and recorded: **Wayback CDX enumerates the
+historical run of the page** (`collapse=digest` → 7 distinct snapshots 2024-04→2026-01, the page
+being overwritten monthly), the archived HTML still carries the `/static_images/*.png` filenames,
+and **those images are all still live on the origin CDN** — so no archive replay is needed, the PNGs
+fetch directly and the image reader recovers the full matrix. **Three complete dated per-instrument
+halt matrices recovered** (June 2025, Jan 2026, Aug 2026).
+Yield: **three structural findings → inbox**, **one mechanism refuted → graveyard**. Headline
+numbers: the broker calendar predicts the desk's own tape **5/5**; **29,444 halted weekday-sessions
+across 196 symbols**, median 3.58%; `operational_calendar_miner.py` is **unwired, has never run
+(its own output dir does not exist), hardcoded, and empirically wrong in both directions** on the
+London/US split; and the vol-annualisation comment still reads *"Crypto trades continuously"* — a
+banned-universe residue governing MT5 sizing.
+
+**Item 2 — Alpha Capital news/overnight rules: CLOSED, carded.** The 10-minute two-sided blackout on
+Qualified Analyst accounts is a forced-flow constraint whose forcing clause is explicit — stop-losses
+and take-profits filling inside the window **count as violations**. The valuable half is the
+**asymmetry**: metals carry a restriction list spanning all USD/AUD/CAD news and all-currency rate/
+CPI/GDP/PCE/PMI/employment prints, while indices are restricted around **three** US events only —
+which hands the test a **built-in control group** (non-US release ⇒ gold blacked out, indices not,
+same clock). EV **0.0036 / 0.0033 → QUEUE**, ~1.8x threshold and below the carry-class reference:
+carded at that honest weight, not as a headline.
+
+**Item 3 — `aircrushin` star-graph: CLOSED by grading away, as s8 required.** 77 repos enumerated;
+**76 are non-quant** (prompt tooling, Dify workflows, generative visuals, meditation apps) — a
+generalist AI-app developer, not a quant. **The ground is graded dead and no future run should
+re-enter it.** One residual, mined as TEXT only per the standing no-third-party-tooling rule:
+`wq-alpha-agent` (MIT, 12★) — a WorldQuant BRAIN factor-mining agent whose stated bottleneck is
+*"preserving lessons from failed simulations instead of rediscovering them"* and which gates
+submissions on a **fingerprint-based SELF_CORRELATION check against existing ACTIVE alphas**. That
+is an independent outside implementation of **L1.61** ("selection optimises marginal independence
+directly, so a second copy of a held edge scores ~0"). Logged as convergent-design evidence for a
+law the desk already holds — **not** a new idea, and it elevates nothing.
+
+### Coverage bookkeeping
+
+| Source family | Visited | Yield |
+|---|---|---|
+| Broker operational-notice archive (Fusion holiday tables, PNG + CDX route) | ✅ | **EXHAUSTED for the 3 recovered months**; 3 inbox findings + 1 graveyard refutation |
+| Prop-firm rulebooks — Alpha Capital news/overnight axis | ✅ | **1 watchlist card** (EV 0.0036, QUEUE) — third axis on this pool after s7 clock + s8 basis |
+| `aircrushin` profile + star-graph (77 repos) | ✅ | **GRADED DEAD** (76/77 non-quant); 1 convergent-design note |
+| Desk-side verification (196 symbol parquets, halt census, √t control) | ✅ | the run's decisive work — turned a 3.08x "finding" into a refutation |
+
+- **DEPTH:** holidays → **surface page → PNG-only wall → CDX historical enumeration → CDN direct
+  fetch → 3 matrices read → cross-validated against the desk's own 196-symbol parquet lake → √t
+  control → refutation.** The depth is the entire result: the surface gave a plausible 1.34–3.08x
+  edge and the control killed it. Rulebook → **primary source, verbatim clauses, restriction table
+  cross-tabulated to find the control group.** aircrushin → **full 77-repo enumeration**, which is
+  what let it be graded dead with evidence rather than carried a third session.
+- **NEGATIVE RESULTS, first-class:** the reopen-gap mechanism is **refuted with its control shown**,
+  not shelved. The EV gate hard-killed it independently (`price_only + narrow_breadth`) — recorded as
+  a gate-calibration data point where gate and data agreed from opposite directions.
+- **§38 EXCLUSION → REPLACEMENT:** none triggered this run. No source was excluded; the one wall hit
+  (PNG-only publication) was **solved**, not excluded, so no replacement hunt was owed.
+- **Video:** 0 fetched, 0 locked. No route attempted or needed; nothing added to
+  `video_locked_log.md` (a platform is logged only when actually tried and failed).
+- **NEW OPERATOR LESSON (image-only publication):** a page whose `<table>` count is 0 while its prose
+  says "the markets above" is publishing its data as an image — check `/static_images/` before
+  grading the source thin. And the monthly-overwrite pattern means **CDX gives you the history for
+  free while the CDN still serves the assets**: enumerate snapshots for the *filenames*, then fetch
+  from origin.
+
+### NEXT UN-EXHAUSTED GROUND (for s10, in order)
+
+1. **The remaining 4 recoverable holiday matrices** — CDX returned 7 distinct snapshots and this run
+   read 3. The 2024-04, 2024-08, 2025-02 and 2025-04 snapshots are unread (the last two rendered
+   without images in the archived HTML and need the origin-CDN filename hop or a different snapshot).
+   Each is a free labelled month for the halt-vs-collection-gap classifier the inbox proposes.
+2. **The same class at other MT5 brokers** — every broker publishes this and none of it is mined.
+   Cross-broker disagreement on a halt date is itself a signal about which venue's pool is trapped.
+3. **Margin-requirement change notices** — named in s8 as the highest-value sub-class of this family
+   and *still* unread. Announced, dated, forced deleveraging in a known pool; strictly better-shaped
+   than the holiday calendar because it names the direction.
+4. **Does the metals-vs-index blackout asymmetry replicate at a second prop firm?** — the cheapest
+   check on this run's one card, and the one that decides whether it is a firm quirk or a pool fact.
