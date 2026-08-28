@@ -7657,3 +7657,106 @@ exogenous half (an administered policy decision is not a re-weighting of the mar
 **Grade: verified-clean** (both dataflows returned full, dated, plausible history under a documented
 robots boundary). **Class result: the supranational door is real and it is broader than the
 national one** — one schema, one auth story (none), every MT5 currency.
+
+### ITEM 1c — TCMB (Turkey) -> **VERIFIED-CLEAN AS HISTORY, CLOCK UNRECOVERABLE, AND A DEAD COLUMN THAT MAKES A RULE**
+
+`www.tcmb.gov.tr/robots.txt` returns **HTTP 404** — under RFC 9309, no rules, full allow. The door is
+the keyless daily XML `https://www.tcmb.gov.tr/kurlar/YYYYMM/DDMMYYYY.xml`. **Depth probed back to
+1997-01-03** (1996 not served): 29 years of daily official TRY rates, `ForexBuying`/`ForexSelling`/
+`BanknoteBuying`/`BanknoteSelling` per currency. Pulled 2023-01-02 → 2026-08-27: **908 rows from
+954 business-day requests, 46 HTTPError** (Turkish public holidays — a 404 here means "not a
+publication day", the same shape as run (r)'s NBP table B).
+
+**THE UNITS BREAK IS IN THE TAPE, AND IT IS SIX ORDERS OF MAGNITUDE.** `USD ForexBuying` reads
+**915,708 on 2001-03-01** and **1.3383 on 2005-01-03**: the 2005-01-01 redenomination (1 TRY =
+1,000,000 TRL) is un-flagged in the XML, which carries the same tag name and no unit attribute
+change. This is run (p)'s "one row sets the sd" class at maximum severity — a naive 1997→2026 pull
+produces a series whose entire variance is one 2005 boundary. **The physical-bound check belongs at
+ingest, not in a z-score.**
+
+**THE OFFSET SCAN RETURNS A DOCUMENTED NULL — AND THE NULL TAUGHT ME THE INSTRUMENT'S PRECONDITION.**
+Against the desk's USDTRY H1 tape, lag × hour:
+
+| rank | cell | median abs err |
+|---|---|---|
+| 1 | lag 0, **21:00** EET | 7.66 bp |
+| 2 | lag 0, **06:00** EET | 7.76 bp |
+| 3 | lag 0, **07:00** EET | 7.96 bp |
+| 4 | lag 0, 20:00 EET | 8.02 bp |
+| 5 | lag 0, 19:00 EET | 8.34 bp |
+
+**That is a flat surface, not a minimum** — 0.68 bp separates hours 06 and 21, which are fifteen
+hours apart. Compare ECB/EURHUF, where the winner beat its neighbour 3.28 vs 6.50 bp. The
+summer/winter split confirms it: Turkey has had **no DST since 2016**, so a TRT-anchored fix must
+shift by one hour against broker-EET between regimes — and instead both seasons pick hour 19 with
+neighbours within ~1 bp. **The TCMB fixing hour is NOT identifiable from this data, and I am
+recording that as UNMEASURED rather than adopting the 21:00 cell that happened to rank first.**
+
+**WHY, quantified — the precondition for the whole offset-scan instrument (runs q, r, s):**
+
+| symbol | median intraday range | level bias vs the official rate | ratio |
+|---|---|---|---|
+| EURHUF | **41.5 bp** | 3.3 bp | **12.6** — sharp minimum |
+| USDTRY | **10.4 bp** | ~7.7 bp | **1.3** — flat surface |
+
+**The scan identifies a clock only when the instrument's intraday variation is large relative to the
+constant level bias between the two sources.** A managed, low-intraday-vol currency quoted against a
+CFD with a persistent ~8 bp basis has no hour-to-hour signal to find. This is the honest boundary of
+the tool this seat has been using for three runs, and it was only visible because a source failed it.
+
+**THE DEAD COLUMN — SECOND INSTANCE, SO IT IS NOW A RULE.** TCMB's published `ForexSelling`/
+`ForexBuying` spread: **median 18.02 bp, mean 18.02, sd 0.01 bp, 901 of 908 days at exactly 18.0 bp**
+(2 distinct values at 1 d.p. across 908 observations). It is a hardcoded ±0.09% convention, not a
+measurement. Run (r) found NBP table C's bid/ask to be a hardcoded ±1%. **Two unrelated central
+banks, same defect: a published central-bank bid-ask spread is an ARITHMETIC CONVENTION, and any FX
+stress, liquidity or spread-widening indicator built on one is measuring a constant.** Anyone
+reconstructing a paid "FX liquidity" product from official sources must take the spread from a
+trading venue, never from a central bank.
+
+**Grade: verified-clean as history** (29 years, keyless, no robots restriction, dated and plausible),
+with the units break, the holiday-404s and the schema drift documented; **UNMEASURED on the clock.**
+
+### CROSS-SOURCE PAIR — NBP × ECB, TWO INDEPENDENT OFFICIAL PIPELINES FOR ONE CURRENCY
+
+Pulled NBP table A `eur` 2018→2026 (**n = 2,142**, run (r)'s verified door) and diffed against the
+ECB's PLN reference rate over **2,133 shared days**: **median 7.98 bp at lag 0** (p90 26.75), versus
+14.48 bp at lag +1 and 18.63 bp at lag −1. Two central banks with no shared pipeline agree to 8 bp
+**on the same date label**, and the lag structure is symmetric around 0 — so **neither is
+effective-dated relative to the other**, and the residual 8 bp is the genuine gap between NBP's
+morning fixing and the ECB's 14:15 CET concertation.
+
+**This refines runs (q)/(r)'s finding rather than repeating it.** Those runs found CBR's rate and
+NBP's *gold* price both label with the **effective** date (D = market of D−1). NBP's *table A* does
+not, and neither does the ECB. **The convention is a property of the SERIES, not of the institution**
+— one central bank ships both kinds. The offset scan must therefore be run per-series, and "I
+verified this institution's clock" is not a statement that transfers to its other products.
+
+### UNPLANNED FINDING — **THE DESK'S OWN `*_H1.parquet` FILES ARE A D1/H1 SPLICE**
+
+Found while computing the intraday-range precondition above, and it is the most consequential thing
+in this run for anyone other than this seat:
+
+| symbol | rows | days | median bars/day | days with exactly 1 bar |
+|---|---|---|---|---|
+| EURPLN | 43,810 | 4,004 | **1** | **56.7%** |
+| USDTRY | 42,762 | 3,199 | 24 | **46.1%** |
+| EURCZK | 42,285 | 2,520 | 24 | 31.2% |
+| EURHUF | 42,191 | 2,437 | 24 | 28.8% |
+
+Every file has an **hour-00 bar on essentially every day of its span** (EURPLN: 4,003 of 4,004)
+while every other hour appears on only ~1,730 days. **The single bars are DAILY bars stamped 00:00.**
+Proof, on EURPLN: the hour-0 bar's own high–low range is **47.2 bp on solo days** versus **7.7 bp on
+days that carry a full 24 bars** — 6× wider, and wider than an hour-14 bar (12.5 bp). A one-hour bar
+does not have four times a mid-session hour's range; a **daily** bar does. Spans:
+**D1 2012-05-21 → 2025-01-01, true H1 2019-10-17 → 2026-06-19 — and they OVERLAP**, so the overlap
+region carries both a D1 bar and 24 H1 bars for the same day.
+
+**Consequences, stated plainly.** (1) Any intraday statistic computed over a full `*_H1.parquet`
+silently mixes daily bars into an hourly population, and the hour-0 slice is *mostly daily bars*.
+(2) A coverage or liveness check that counts rows or distinct days reads these files as **fully
+covered H1** — the run-(e) lesson (*a count is not recency*) with a new face: **a count is not a
+frequency.** (3) My own ECB verification above is unaffected because it used hours 06–21 only and
+n≈1,710 lands exactly on the true-H1 era — but that also means **the ECB overlap verification
+covers roughly 2019→2026, not the full tape span**, and I am stating that limit rather than letting
+the row counts imply more. Routed to `improvement_inbox.md`; **I did not touch the files or any
+code — this seat is under a research freeze and this is a report, not a repair.**
