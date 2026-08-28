@@ -6680,3 +6680,23 @@ a claim, and it gets the same verify-don't-trust treatment as a source.
 
 The run took one item to genuine depth and returned one honest null. I opened no third item and I am
 naming that rather than padding it.
+
+## SESSION 2026-08-28 (n) — FREE-DATA-ALTERNATIVES standing daily run — WRITTEN FIRST
+
+**Backlog on entry:** clear (0 pending verification, 0 pending legitimacy, 25 deferred to 2026-09-01+).
+Mining authorised. Resuming run (m)'s own named next ground — not opening fresh ground.
+
+**ITEMS TAKEN THIS RUN (bounded; depth maxed):**
+1. **The PRE-ANNOUNCED MANDATED SOVEREIGN FLOW class, generalised** — run (m)'s new source class,
+   tested on exactly one member (Norges Bank) and named by (m) as "the highest-yield ground I am
+   carrying". Members to open: Danmarks Nationalbank (DKK), SNB sight deposits (known CS-contaminated),
+   and any transparency-mandated sovereign FX/reserve programme reachable free. §13 per-PATH,
+   two-UA + Wayback-robots counter-measure BEFORE any "walled" verdict.
+2. **Norges Bank pre-2020 announcement dates via CDX walk** — amounts already held (320 months);
+   only the clock is missing. 259 extra timestamped events for one walk.
+3. (if budget allows) Riksbank `official-reserve-assets-weekly-report` + `sale-of-government-bonds`.
+
+**COUNTER-MEASURE APPLIED FROM RUN (m)'s CLOSE (its own blunt lesson):** before opening any host,
+query the artifacts this desk already owns to see whether they cover the question. Recorded per item.
+
+*(Status updated in-place as each item resolves; findings are never held in context to the end.)*
