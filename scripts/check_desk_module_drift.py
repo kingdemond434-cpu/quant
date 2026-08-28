@@ -55,6 +55,12 @@ MODULES = [
     "desks/mt5/scripts/warm_gauntlet_cache.py",
     "desks/mt5/scripts/stall_watch.ps1",
     "libs/research/bar_span.py",
+    # The program-level gates the sweep imports. reality_check was NOT on this list and
+    # was stale on the box by a full optimisation (2026-08-28) -- a module can be central
+    # to certification and still be invisible to every sync, because nothing names it.
+    "libs/validation/reality_check.py",
+    "libs/validation/pbo.py",
+    "libs/validation/bootstrap.py",
 ]
 
 
