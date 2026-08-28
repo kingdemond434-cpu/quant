@@ -103,10 +103,10 @@
   "fr": {
    "region": "France/Africa francophone",
    "open_frontier": true,
-   "queries_exercised": 15,
+   "queries_exercised": 18,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-27T19:22:00+00:00",
+   "last_swept": "2026-08-28T01:22:00+00:00",
    "native_terms_available": 10
   },
   "en": {

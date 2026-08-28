@@ -1,5 +1,5 @@
 {
- "swept_at": "2026-08-27T23:04:35+00:00",
+ "swept_at": "2026-08-28T00:01:48+00:00",
  "symbols": 299,
  "families_ran": {
   "correlation_regime": 297,
@@ -11,9 +11,9 @@
   "vol_mean_reversion": 297,
   "vol_transition": 297,
   "lvc_asia_london": 139,
-  "orderflow_imbalance": 122,
-  "liquidity_regime": 84,
-  "cot_positioning": 11
+  "cot_positioning": 11,
+  "orderflow_imbalance": 102,
+  "liquidity_regime": 69
  },
  "input_gaps": {
   "calendar_month:error:TypeError": 297,
@@ -21,10 +21,10 @@
   "cot_positioning:no-signals (COT net positioning)": 286,
   "discovered:no-signals (whatever primitive the search named)": 297,
   "event_reaction:no-signals (an economic calendar)": 297,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 213,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 228,
   "lvc_asia_london:no-signals (unknown)": 158,
   "macro_conditional:no-signals (a macro state series)": 297,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 175,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 195,
   "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 297,
   "overnight_gap_decay:no-signals (price only)": 1,
   "drawdown_conditional:no-signals (price only)": 11,
@@ -32,7 +32,7 @@
  },
  "untestable_by_family": {
   "correlation_regime:untestable (54 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (59 trading days < 60 the gates need)": 3,
+  "correlation_regime:untestable (59 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (56 trading days < 60 the gates need)": 9,
   "vol_transition:untestable (45 trading days < 60 the gates need)": 2,
   "correlation_regime:untestable (39 trading days < 60 the gates need)": 2,
@@ -56,7 +56,7 @@
   "correlation_regime:untestable (48 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 2,
-  "lvc_asia_london:untestable (57 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 4,
   "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 3,
   "drawdown_conditional:untestable (30 trading days < 60 the gates need)": 7,
@@ -68,49 +68,46 @@
   "vol_transition:untestable (52 trading days < 60 the gates need)": 3,
   "correlation_regime:untestable (29 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (49 trading days < 60 the gates need)": 11,
-  "vol_transition:untestable (59 trading days < 60 the gates need)": 6,
+  "vol_transition:untestable (59 trading days < 60 the gates need)": 5,
   "drawdown_conditional:untestable (49 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (49 trading days < 60 the gates need)": 2,
   "vol_mean_reversion:untestable (50 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (51 trading days < 60 the gates need)": 5,
   "correlation_regime:untestable (58 trading days < 60 the gates need)": 3,
-  "vol_transition:untestable (57 trading days < 60 the gates need)": 5,
+  "vol_transition:untestable (57 trading days < 60 the gates need)": 4,
   "drawdown_conditional:untestable (42 trading days < 60 the gates need)": 3,
   "cross_asset_residual:untestable (57 trading days < 60 the gates need)": 1,
   "relative_value:untestable (59 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 7,
-  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 4,
-  "lvc_asia_london:untestable (30 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 8,
+  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 5,
+  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 3,
+  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 6,
   "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 9,
   "drawdown_conditional:untestable (50 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (55 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (46 trading days < 60 the gates need)": 4,
-  "lvc_asia_london:untestable (42 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (42 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 3,
+  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 3,
   "lvc_asia_london:untestable (51 trading days < 60 the gates need)": 2,
-  "lvc_asia_london:untestable (37 trading days < 60 the gates need)": 3,
+  "lvc_asia_london:untestable (32 trading days < 60 the gates need)": 4,
   "lvc_asia_london:untestable (35 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (43 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (45 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (57 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (57 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (58 trading days < 60 the gates need)": 5,
   "overnight_gap_decay:untestable (40 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (46 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (50 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (47 trading days < 60 the gates need)": 4,
-  "lvc_asia_london:untestable (39 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (47 trading days < 60 the gates need)": 2,
   "relative_value:untestable (50 trading days < 60 the gates need)": 1,
-  "cot_positioning:untestable (37 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (58 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 4,
-  "lvc_asia_london:untestable (32 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (55 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (37 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (39 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (48 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (49 trading days < 60 the gates need)": 1,
   "overnight_gap_decay:untestable (34 trading days < 60 the gates need)": 1,
@@ -122,6 +119,7 @@
   "cross_asset_residual:untestable (52 trading days < 60 the gates need)": 1,
   "relative_value:untestable (49 trading days < 60 the gates need)": 1,
   "overnight_gap_decay:untestable (57 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (57 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (54 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (31 trading days < 60 the gates need)": 1,
   "cross_asset_residual:untestable (51 trading days < 60 the gates need)": 1,
@@ -129,12 +127,10 @@
   "cross_asset_residual:untestable (53 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (57 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (59 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 2,
   "overnight_gap_decay:untestable (44 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (59 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (47 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (36 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (54 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
@@ -1725,8 +1721,8 @@
      "A"
     ]
    },
-   "n": 180,
-   "exp_r": 0.3437,
+   "n": 179,
+   "exp_r": 0.3512,
    "max_dd_r": -15.09,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -2386,8 +2382,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 135,
-   "exp_r": 0.0657,
+   "n": 136,
+   "exp_r": 0.0654,
    "max_dd_r": -11.46,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2661,8 +2657,8 @@
    "symbol": "AUDCAD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 439,
-   "exp_r": 0.2042,
+   "n": 478,
+   "exp_r": 0.1959,
    "max_dd_r": -2.05,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -2674,12 +2670,23 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 245,
-   "exp_r": 0.0027,
+   "n": 244,
+   "exp_r": 0.0033,
    "max_dd_r": -21.14,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 756,
+   "exp_r": 0.0024,
+   "max_dd_r": -35.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
   },
   {
    "symbol": "AUDCHF",
@@ -2687,8 +2694,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 157,
-   "exp_r": 0.1182,
+   "n": 155,
+   "exp_r": 0.1172,
    "max_dd_r": -13.32,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2714,9 +2721,9 @@
    "symbol": "AUDCHF",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 613,
-   "exp_r": 0.2399,
-   "max_dd_r": -1.79,
+   "n": 653,
+   "exp_r": 0.2352,
+   "max_dd_r": -2.05,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -2725,8 +2732,8 @@
    "symbol": "AUDHUF",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 667,
-   "exp_r": 0.194,
+   "n": 727,
+   "exp_r": 0.1803,
    "max_dd_r": -23.27,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -2752,8 +2759,8 @@
    "symbol": "AUDJPY",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 302,
-   "exp_r": 0.1376,
+   "n": 336,
+   "exp_r": 0.1385,
    "max_dd_r": -5.2,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -2765,8 +2772,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 282,
-   "exp_r": 0.0465,
+   "n": 281,
+   "exp_r": 0.0481,
    "max_dd_r": -21.04,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -2776,25 +2783,12 @@
    "symbol": "AUDJPY",
    "family": "turn_of_month",
    "params": {},
-   "n": 682,
-   "exp_r": 0.0258,
+   "n": 815,
+   "exp_r": 0.0196,
    "max_dd_r": -24.11,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDNZD",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "3M"
-   },
-   "n": 111,
-   "exp_r": 0.0012,
-   "max_dd_r": -17.03,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AUDNZD",
@@ -2816,8 +2810,8 @@
    "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 617,
-   "exp_r": 0.1322,
+   "n": 663,
+   "exp_r": 0.1281,
    "max_dd_r": -2.4,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -2827,8 +2821,8 @@
    "symbol": "AUDNZD",
    "family": "turn_of_month",
    "params": {},
-   "n": 597,
-   "exp_r": 0.1446,
+   "n": 703,
+   "exp_r": 0.1204,
    "max_dd_r": -68.09,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
@@ -2840,8 +2834,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 137,
-   "exp_r": 0.0151,
+   "n": 135,
+   "exp_r": 0.0307,
    "max_dd_r": -13.66,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2851,8 +2845,8 @@
    "symbol": "AUDSGD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 414,
-   "exp_r": 0.4494,
+   "n": 438,
+   "exp_r": 0.4342,
    "max_dd_r": -2.52,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -2862,9 +2856,9 @@
    "symbol": "AUDSGD",
    "family": "vol_transition",
    "params": {},
-   "n": 183,
-   "exp_r": 0.1766,
-   "max_dd_r": -6.7,
+   "n": 204,
+   "exp_r": 0.0902,
+   "max_dd_r": -21.52,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -2881,19 +2875,6 @@
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "cot_positioning",
-   "params": {
-    "input_source": "cot_point_in_time"
-   },
-   "n": 97,
-   "exp_r": 0.0328,
-   "max_dd_r": -10.56,
-   "source": "orthogonal_sweep:cot_positioning",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "COT net positioning"
   },
   {
    "symbol": "AUDUSD",
@@ -2915,21 +2896,21 @@
    "symbol": "AUDUSD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 217,
-   "exp_r": 0.0516,
-   "max_dd_r": -4.27,
+   "n": 241,
+   "exp_r": 0.036,
+   "max_dd_r": -8.81,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
    "symbol": "AUDUSD",
-   "family": "vol_transition",
+   "family": "turn_of_month",
    "params": {},
-   "n": 228,
-   "exp_r": 0.0014,
-   "max_dd_r": -14.05,
-   "source": "orthogonal_sweep:vol_transition",
+   "n": 845,
+   "exp_r": 0.0086,
+   "max_dd_r": -33.66,
+   "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -2937,8 +2918,8 @@
    "symbol": "AVAXUSD",
    "family": "drawdown_conditional",
    "params": {},
-   "n": 108,
-   "exp_r": 0.0462,
+   "n": 107,
+   "exp_r": 0.057,
    "max_dd_r": -11.97,
    "source": "orthogonal_sweep:drawdown_conditional",
    "mechanism_status": "NAMED",
@@ -2950,9 +2931,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 163,
-   "exp_r": 0.1146,
-   "max_dd_r": -14.56,
+   "n": 154,
+   "exp_r": 0.0665,
+   "max_dd_r": -11.77,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2961,8 +2942,8 @@
    "symbol": "BTCUSD",
    "family": "drawdown_conditional",
    "params": {},
-   "n": 111,
-   "exp_r": 0.1551,
+   "n": 120,
+   "exp_r": 0.0933,
    "max_dd_r": -14.47,
    "source": "orthogonal_sweep:drawdown_conditional",
    "mechanism_status": "NAMED",
@@ -3004,9 +2985,9 @@
      "A"
     ]
    },
-   "n": 300,
-   "exp_r": 0.4309,
-   "max_dd_r": -13.62,
+   "n": 295,
+   "exp_r": 0.4505,
+   "max_dd_r": -12.49,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3015,9 +2996,9 @@
    "symbol": "CADJPY",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 208,
-   "exp_r": 0.1141,
-   "max_dd_r": -4.3,
+   "n": 259,
+   "exp_r": 0.1547,
+   "max_dd_r": -3.19,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3028,9 +3009,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 283,
-   "exp_r": 0.013,
-   "max_dd_r": -30.54,
+   "n": 282,
+   "exp_r": 0.0286,
+   "max_dd_r": -26.14,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3039,9 +3020,9 @@
    "symbol": "CADJPY",
    "family": "vol_transition",
    "params": {},
-   "n": 236,
-   "exp_r": 0.1182,
-   "max_dd_r": -20.11,
+   "n": 346,
+   "exp_r": 0.1405,
+   "max_dd_r": -15.98,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3120,9 +3101,9 @@
      "A"
     ]
    },
-   "n": 308,
-   "exp_r": 0.0689,
-   "max_dd_r": -15.4,
+   "n": 295,
+   "exp_r": 0.0888,
+   "max_dd_r": -13.72,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3131,9 +3112,9 @@
    "symbol": "CHFJPY",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 235,
-   "exp_r": 0.1846,
-   "max_dd_r": -4.78,
+   "n": 602,
+   "exp_r": 0.3019,
+   "max_dd_r": -3.28,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3145,30 +3126,19 @@
     "peer_symbol": "3M"
    },
    "n": 255,
-   "exp_r": 0.1363,
-   "max_dd_r": -20.66,
+   "exp_r": 0.1503,
+   "max_dd_r": -17.83,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "CHFJPY",
-   "family": "vol_mean_reversion",
-   "params": {},
-   "n": 746,
-   "exp_r": 0.0059,
-   "max_dd_r": -46.01,
-   "source": "orthogonal_sweep:vol_mean_reversion",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFJPY",
    "family": "vol_transition",
    "params": {},
-   "n": 210,
-   "exp_r": 0.1074,
-   "max_dd_r": -9.61,
+   "n": 291,
+   "exp_r": 0.0504,
+   "max_dd_r": -18.13,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3361,9 +3331,9 @@
      "A"
     ]
    },
-   "n": 305,
-   "exp_r": 0.4561,
-   "max_dd_r": -8.47,
+   "n": 300,
+   "exp_r": 0.4098,
+   "max_dd_r": -9.48,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3372,9 +3342,9 @@
    "symbol": "EURAUD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 129,
-   "exp_r": 0.053,
-   "max_dd_r": -8.53,
+   "n": 327,
+   "exp_r": 0.0333,
+   "max_dd_r": -9.6,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3385,9 +3355,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 240,
-   "exp_r": 0.0449,
-   "max_dd_r": -37.17,
+   "n": 238,
+   "exp_r": 0.0556,
+   "max_dd_r": -32.27,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3396,21 +3366,10 @@
    "symbol": "EURAUD",
    "family": "vol_mean_reversion",
    "params": {},
-   "n": 755,
-   "exp_r": 0.0057,
-   "max_dd_r": -78.02,
+   "n": 1064,
+   "exp_r": 0.0404,
+   "max_dd_r": -50.46,
    "source": "orthogonal_sweep:vol_mean_reversion",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "EURAUD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 190,
-   "exp_r": 0.0296,
-   "max_dd_r": -13.95,
-   "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -3461,9 +3420,9 @@
      "A"
     ]
    },
-   "n": 271,
-   "exp_r": 0.1295,
-   "max_dd_r": -26.51,
+   "n": 267,
+   "exp_r": 0.2731,
+   "max_dd_r": -12.9,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3472,9 +3431,9 @@
    "symbol": "EURCHF",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 628,
-   "exp_r": 0.2767,
-   "max_dd_r": -2.41,
+   "n": 814,
+   "exp_r": 0.2993,
+   "max_dd_r": -1.54,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3499,9 +3458,9 @@
      "A"
     ]
    },
-   "n": 242,
-   "exp_r": 0.2458,
-   "max_dd_r": -10.24,
+   "n": 244,
+   "exp_r": 0.1765,
+   "max_dd_r": -14.59,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3510,9 +3469,9 @@
    "symbol": "EURGBP",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 380,
-   "exp_r": 0.0513,
-   "max_dd_r": -5.01,
+   "n": 456,
+   "exp_r": 0.0478,
+   "max_dd_r": -6.06,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3523,9 +3482,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 250,
-   "exp_r": 0.0206,
-   "max_dd_r": -18.6,
+   "n": 249,
+   "exp_r": 0.017,
+   "max_dd_r": -18.5,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3628,9 +3587,9 @@
      "A"
     ]
    },
-   "n": 284,
-   "exp_r": 0.2017,
-   "max_dd_r": -9.0,
+   "n": 288,
+   "exp_r": 0.1779,
+   "max_dd_r": -14.05,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3639,9 +3598,9 @@
    "symbol": "EURJPY",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 220,
-   "exp_r": 0.1019,
-   "max_dd_r": -3.59,
+   "n": 329,
+   "exp_r": 0.0999,
+   "max_dd_r": -4.76,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3652,20 +3611,31 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 256,
-   "exp_r": 0.0143,
-   "max_dd_r": -31.96,
+   "n": 255,
+   "exp_r": 0.0158,
+   "max_dd_r": -31.99,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "EURJPY",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 1009,
+   "exp_r": 0.0002,
+   "max_dd_r": -66.13,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURJPY",
    "family": "vol_transition",
    "params": {},
-   "n": 232,
-   "exp_r": 0.1264,
-   "max_dd_r": -17.24,
+   "n": 341,
+   "exp_r": 0.0497,
+   "max_dd_r": -26.53,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3716,8 +3686,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 132,
-   "exp_r": 0.0809,
+   "n": 131,
+   "exp_r": 0.0895,
    "max_dd_r": -19.56,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -3903,12 +3873,25 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 132,
-   "exp_r": 0.056,
-   "max_dd_r": -21.65,
+   "n": 129,
+   "exp_r": 0.0709,
+   "max_dd_r": -13.55,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "cot_positioning",
+   "params": {
+    "input_source": "cot_point_in_time"
+   },
+   "n": 76,
+   "exp_r": 0.0047,
+   "max_dd_r": -9.17,
+   "source": "orthogonal_sweep:cot_positioning",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "COT net positioning"
   },
   {
    "symbol": "EURUSD",
@@ -3919,23 +3902,12 @@
      "A"
     ]
    },
-   "n": 326,
-   "exp_r": 0.5591,
-   "max_dd_r": -25.14,
+   "n": 320,
+   "exp_r": 0.5278,
+   "max_dd_r": -24.15,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "EURUSD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 287,
-   "exp_r": 0.0538,
-   "max_dd_r": -14.95,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
   },
   {
    "symbol": "EURZAR",
@@ -4059,8 +4031,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 172,
-   "exp_r": 0.1085,
+   "n": 171,
+   "exp_r": 0.1057,
    "max_dd_r": -12.64,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -4455,8 +4427,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 216,
-   "exp_r": 0.1257,
+   "n": 215,
+   "exp_r": 0.1278,
    "max_dd_r": -14.84,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -4532,8 +4504,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 267,
-   "exp_r": 0.0107,
+   "n": 266,
+   "exp_r": 0.0113,
    "max_dd_r": -27.29,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -4798,8 +4770,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 75,
-   "exp_r": 0.13,
+   "n": 74,
+   "exp_r": 0.1299,
    "max_dd_r": -7.73,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -4948,8 +4920,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 145,
-   "exp_r": 0.048,
+   "n": 142,
+   "exp_r": 0.0437,
    "max_dd_r": -23.23,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -4988,9 +4960,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 174,
-   "exp_r": 0.0825,
-   "max_dd_r": -10.13,
+   "n": 172,
+   "exp_r": 0.0956,
+   "max_dd_r": -9.56,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -5168,9 +5140,9 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 146,
-   "exp_r": 0.1561,
-   "max_dd_r": -22.49,
+   "n": 144,
+   "exp_r": 0.1729,
+   "max_dd_r": -20.38,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -5203,8 +5175,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 142,
-   "exp_r": 0.1334,
+   "n": 140,
+   "exp_r": 0.1211,
    "max_dd_r": -15.21,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5413,8 +5385,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 254,
-   "exp_r": 0.0129,
+   "n": 252,
+   "exp_r": 0.0155,
    "max_dd_r": -39.94,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -5512,8 +5484,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 119,
-   "exp_r": 0.0039,
+   "n": 117,
+   "exp_r": 0.0235,
    "max_dd_r": -14.88,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5525,8 +5497,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 131,
-   "exp_r": 0.0726,
+   "n": 130,
+   "exp_r": 0.0809,
    "max_dd_r": -11.45,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5554,8 +5526,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 255,
-   "exp_r": 0.0371,
+   "n": 251,
+   "exp_r": 0.0436,
    "max_dd_r": -26.63,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -5578,8 +5550,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 163,
-   "exp_r": 0.1821,
+   "n": 161,
+   "exp_r": 0.1969,
    "max_dd_r": -11.75,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5607,8 +5579,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 246,
-   "exp_r": 0.0121,
+   "n": 242,
+   "exp_r": 0.0193,
    "max_dd_r": -27.21,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -5779,8 +5751,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 98,
-   "exp_r": 0.1269,
+   "n": 96,
+   "exp_r": 0.1107,
    "max_dd_r": -9.46,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5832,8 +5804,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 93,
-   "exp_r": 0.0331,
+   "n": 92,
+   "exp_r": 0.0242,
    "max_dd_r": -13.68,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5861,8 +5833,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 229,
-   "exp_r": 0.0434,
+   "n": 227,
+   "exp_r": 0.0445,
    "max_dd_r": -30.36,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -5973,8 +5945,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 99,
-   "exp_r": 0.2408,
+   "n": 95,
+   "exp_r": 0.2246,
    "max_dd_r": -8.11,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -5986,8 +5958,8 @@
    "params": {
     "peer_symbol": "3M"
    },
-   "n": 196,
-   "exp_r": 0.1028,
+   "n": 192,
+   "exp_r": 0.1198,
    "max_dd_r": -22.8,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",

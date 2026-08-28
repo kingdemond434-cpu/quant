@@ -1,5 +1,5 @@
 {
-"cursor": 53,
+"cursor": 54,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -168,6 +168,9 @@
 "gain MT4",
 "gain MT5",
 "gain ranking",
+"perte maximale MT4",
+"perte maximale MT5",
+"perte maximale ranking",
 "rendement MT4",
 "rendement MT5",
 "rendement ranking",
