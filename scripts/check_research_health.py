@@ -64,6 +64,29 @@ def _age_h(ts: str | None, now: datetime) -> float | None:
         return None
 
 
+def _live_desk_procs(now) -> tuple[set[str], float | None]:
+    """Producer names currently alive on the desk box, from the stall watchdog's own table.
+
+    Returns an EMPTY set when the snapshot is missing or stale, so an unreadable liveness signal
+    can never be mistaken for "nothing is running" -- callers then fall back to age alone, which
+    is the conservative direction (it reports a breach rather than hiding one). UNMEASURED is a
+    real answer; it just is not a reassuring one.
+    """
+    snap = _read(DESK / "data" / "stall_watch.json")
+    if not isinstance(snap, dict):
+        return set(), None
+    age_h = _age_h(snap.get("checked_at"), now)
+    # The watchdog runs every few minutes; anything older than 20 describes a box we no longer
+    # have current information about.
+    if age_h is None or age_h > (20.0 / 60.0):
+        return set(), (round(age_h, 2) if age_h is not None else None)
+    procs = snap.get("procs")
+    if not isinstance(procs, dict):
+        return set(), round(age_h, 2)
+    # Keys are "<script>.<pid>"; the script name is the identity that matters here.
+    return {str(k).rsplit(".", 1)[0] for k in procs}, round(age_h, 2)
+
+
 def _mtime_age_h(p: Path, now: datetime) -> float | None:
     try:
         return (now - datetime.fromtimestamp(p.stat().st_mtime, UTC)).total_seconds() / 3600.0
@@ -123,15 +146,37 @@ def collect(now: datetime) -> tuple[list[str], dict]:
     # --- searchers: the docket can look fresh on miners alone while both search legs are
     # dead (measured 2026-08-27: edge_search OOM-dead 25h, docket green the whole time --
     # a per-source blind spot). Each producer owes its own freshness.
-    for fname, label in (("edge_search_results.json", "SEARCH"),
-                         ("orthogonal_candidates.json", "SWEEP")):
+    # STILL WORKING IS NOT STOPPED. These producers write their artifact ONCE, at the end, and a
+    # full search takes well over an hour -- so artifact age alone calls a healthy long run dead.
+    # That is not a harmless false positive: the SEARCH fixer responds by clearing the job lock,
+    # which invites a SECOND searcher onto a box that has already been driven to 0.3GB free by
+    # one (2026-08-28). The fence would have been manufacturing the collision it exists to catch.
+    # The desk box's own stall watchdog already publishes a live process table with per-process
+    # CPU, and that artifact is pulled here, so liveness costs nothing extra to consult.
+    live_procs, procs_age_h = _live_desk_procs(now)
+    m["desk_procs_age_h"] = procs_age_h
+    for fname, label, proc in (("edge_search_results.json", "SEARCH", "edge_search"),
+                               ("orthogonal_candidates.json", "SWEEP", "orthogonal_sweep")):
         f_age = _mtime_age_h(DESK / "data" / "hypotheses" / fname, now)
         m[f"{label.lower()}_age_h"] = round(f_age, 2) if f_age is not None else None
-        if f_age is None or f_age > 3.0:
-            breaches.append(f"{label}: {fname} is "
-                            f"{'missing' if f_age is None else str(round(f_age, 1)) + 'h old'} "
-                            f"(hourly leg) -- the {label.lower()} has stopped producing; the "
-                            f"docket is running on miners alone")
+        running = proc in live_procs
+        m[f"{label.lower()}_running"] = running
+        if f_age is not None and f_age <= 3.0:
+            continue
+        # A run that is alive but has produced nothing for this long is no longer "in progress",
+        # it is stuck -- so liveness postpones the breach, it never cancels it.
+        if running and (f_age is not None and f_age <= 6.0):
+            m.setdefault("notes", []).append(
+                f"{label}: artifact is "
+                f"{str(round(f_age, 1)) + 'h old' if f_age is not None else 'missing'} but "
+                f"{proc} is RUNNING on the desk box -- in progress, not stopped. No fixer.")
+            continue
+        breaches.append(f"{label}: {fname} is "
+                        f"{'missing' if f_age is None else str(round(f_age, 1)) + 'h old'} "
+                        f"(hourly leg) -- the {label.lower()} has stopped producing; the "
+                        f"docket is running on miners alone"
+                        + (f" ({proc} is alive but has produced nothing in "
+                           f"{round(f_age, 1)}h -- stuck, not working)" if running else ""))
 
     # --- gauntlet: last sweep's actual judgment numbers, for the dashboard pulse
     gates = _read(DESK / "reports" / "universal_gates_external.json") or {}
