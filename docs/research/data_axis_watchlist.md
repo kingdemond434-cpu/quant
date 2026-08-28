@@ -7308,4 +7308,137 @@ run (q)'s named next-ground, items 1 and 2.
    (RUB)** — both probed robots-clear last run, both unopened. Verify against a second door.
 3. If 1 and 2 close: SWEA curve SLOPE arm (2Y/5Y/7Y/10Y), untested — run (q) tested level only.
 
-Status: IN PROGRESS.
+Status: **ITEMS 1 AND 2 CLOSED; item 3 not reached — carried.** 1 axis REFUTED on 44 reported
+cells, 3 sources graded (2 verified-clean, 1 needs-monitoring), 1 history extension worth 16 years
+on 83 symbols, 1 reusable tape instrument, 1 dead column exposed, 1 cross-institution trap named.
+
+**ITEM 1 — the BoC auction panel vs USDCAD -> AXIS REFUTED, PANEL RETAINED.**
+462 result-only bond auctions 2018-01-10 → 2026-08-26 against the desk's own USDCAD H1 tape. The
+release bar is built per-auction from the published `BID_DEADLINE` in `America/Toronto` converted
+to the broker's `Europe/Helsinki` stamp — not a fixed hour, so the ~2-week windows where NA and EU
+DST disagree are handled exactly. Run (q)'s row-doubling break reproduced independently: 250 shell
+rows, all from 2022-02-02, 99.6% of them sharing an auction date with a real result row; dedup by
+`AVG_YIELD is not null`.
+
+**44 cells, all reported.** 6 signals (COVERAGE, its point-in-time z, TAIL, its z, announced-amount
+z, percent-allotted-to-foreign) × 6 horizons (release bar, +1h, +2h, +4h, +8h, +24h) = 36, plus 8
+robustness cells.
+- **max |t| tradable = 2.97** (raw TAIL at h=8) against a Bonferroni-36 bar of ~3.39. **Fails.**
+- max |t| on the contemporaneous release bar = 1.75 — and this is the first run in three where the
+  significance was NOT hiding in the untradable bar. The lag-0 control came back clean and the
+  answer was still no.
+- **The one survivor dies to its own controls, four ways.** (a) **Wrong sign** — a wide tail is a
+  weak auction and should weaken CAD (USDCAD *up*); the coefficient is negative. (b) The
+  **point-in-time z-scored** tail, the only form usable live, falls to |t| = 1.72; the raw-level
+  version is borrowing a slow yield-regime trend. (c) **Split-half**: first half t = −0.64, second
+  half t = −2.87. (d) Concentrated in 2y and 10y only (5y +0.27, 3y −0.54, 30y −1.10).
+- **The headline number a paid product sells is the deadest cell in the table**: bid-to-cover is
+  null on every horizon, max |t| = 1.19. Announced amount likewise (1.75, and that is the
+  untradable bar).
+The panel stays ADOPTED as reference/event data — a 28-year clock-stamped sovereign supply event
+panel is worth holding — but it does not move USDCAD at any horizon I can trade.
+
+**ITEM 2a — `api.nbp.pl` -> VERIFIED-CLEAN, AND IT IS THE RUN'S FIND.**
+Keyless, robots.txt is HTTP 404 (⇒ full allow under RFC 9309), 100 requests this run with **zero
+throttles**. 32 currencies + XDR vs PLN, **daily mid from 2002-01-02**, one request per
+currency-year, no misses across 4 × 25 year-chunks.
+
+**THE FIND: this extends the desk's OWN FX history by SIXTEEN YEARS on 83 of its 117 FX-shaped
+symbols.** The MT5 tape starts 2018-01-02. NBP starts 2002-01-02. Any cross with both legs in
+table A reconstructs daily by triangulation through PLN — 83/117, the other 34 being crypto,
+indices and metals, i.e. effectively **all of the FX book**. That is 2008 and 2011: two regimes the
+desk's tape does not contain *at all*, for free, from a keyless endpoint.
+
+**Verified in both directions.** Direct: NBP mid vs the tape close, offset-scanned across every
+broker-stamp hour, on all four PLN crosses **independently** — all four land on the **same hour,
+11:00 broker-EET**, at median-absolute **2.02 / 2.09 / 2.25 / 2.45 bp** (EURPLN/USDPLN/GBPPLN/
+CHFPLN, n≈1,675 each), with the next-best hour 3–5× worse. Triangulated: NBP-derived crosses vs
+the desk's direct tape at the same bar, n=2,184 days — **EURUSD 0.64 bp, GBPUSD 0.65, USDCHF 0.94,
+EURGBP 1.03, EURCHF 1.02**.
+*The internal control that makes it believable:* the residual bias is −1.6…−2.2 bp on the PLN
+crosses and only −0.6…−1.0 bp on the triangulated majors. Correct sign, correct magnitude — NBP
+publishes a **mid**, the MT5 close is a **bid**, the PLN half-spread is ~1–2 bp, and the leg
+cancels under triangulation. A bias that explains itself.
+*And it verifies the tape, not just the source:* four independent crosses agreeing on one hour is
+an independent re-confirmation that parquets stamped `+00:00` carry **broker EET**.
+
+*Failure mode — A DEAD COLUMN:* **NBP table C's bid/ask is a hardcoded ±1% convention.** Measured
+median 200.00–200.07 bp across 13 currencies over 64 days, sd 0.11–0.55 bp — pure rounding of the
+mid. Anyone building an FX-stress or liquidity indicator from a central bank's published bid-ask
+here is measuring arithmetic. (Same class as run (o)'s codelist finding: a column exists and
+carries nothing.)
+*Failure mode — the gold series does NOT verify:* `cenyzlota` (PLN/gram, daily 2013→) reads 50.4 bp
+against XAUUSD×USDPLN/31.1035 on its own date label, and 26.1 bp at lag 1 / the 16:00 EET bar.
+26 bp is too loose to be an oracle and the fix time is only weakly identified — graded
+**needs-monitoring, not adopted.** Two of three NBP products verify hard; the third does not, and
+that is the honest ledger.
+*Also:* table B (~110 exotics) is **weekly** — a 404 on a non-Wednesday means "not a publication
+day", not a broken endpoint. Per-request window caps at 367 days.
+
+**ITEM 2b — `www.cbr.ru` -> VERIFIED-CLEAN WITH A NAMED OFF-BY-ONE, REFERENCE ONLY.**
+robots.txt is 300 bytes disallowing only `/search/`, `/Content/SaveToPdf/Page*` and three specific
+PDFs — `/scripts/` unrestricted. Keyless daily official rates back to 1992, windows-1251 with
+comma decimals. USD/RUB n=3,615 (2012→2026-08-27) scanned over lag × hour against the desk's
+USDRUB tape: best cell **lag = 1 day at the 10:00 broker-EET bar (= 11:00 MSK, inside CBR's
+10:00–11:30 MSK fixing window), median-abs 14.2 bp, n=1,266** — versus 34.3 bp on n=519 joined
+naively. 14 bp is honest for a capital-controlled currency against a synthetic CFD; adopted as
+pre-2022 regime history, **not** as an oracle and not as an axis. Incidentally measured: the
+desk's **EURRUB tape died at 2022-02-28** while **USDRUB is still live to 2026-08-26** — but with
+only 2,226 distinct days over 14 years, heavily gapped.
+
+**THE CROSS-INSTITUTION TRAP FOUND TWICE THIS RUN — AN OFFICIAL RATE'S DATE LABEL IS ITS EFFECTIVE
+DATE, NOT ITS OBSERVATION DATE.** The Bank of Russia rate dated D is the market of D−1 (14.2 bp at
+lag 1 vs 34.3 at lag 0). NBP's gold price dated D is likewise D−1 (26.1 vs 50.4). Two unrelated
+institutions, same convention, flagged in neither API. Joining such a series on its own label is a
+silent one-day staleness: as a verification target it manufactures ~20 bp of fake tracking error
+and would have had me grade both sources dirty; as a **feature** it is a stale input that reads as
+a live one. Any adopter of a CB fixing must scan lag ∈ {0,1} first — it costs one line. Routed to
+`improvement_inbox.md` with the offset-scan instrument (M1) and this trap (M2).
+
+**CROSS-SOURCE PAIRS (joint value > either alone):**
+1. **NBP table A × the desk's own MT5 parquets** — the pair is the point. Neither dates its own
+   clock; the offset scan across four crosses pins the hour, and the residual pins the bid/mid
+   convention. Generalises to any tape and any published fixing.
+2. **NBP USD × NBP EUR (triangulation) × the direct EURUSD tape** — the PLN leg cancels, so the
+   triangulated cross verifies (0.64 bp) *better* than either PLN comparison (2.0–2.1 bp). A
+   third-currency pivot is a **noise-cancelling** verification, not a lossy one.
+3. **BoC auction panel × USDCAD H1 tape** — pairing produced the refutation. Worth as much.
+4. **CBR × NBP** — two independent official RUB/PLN fixings from institutions with no shared
+   pipeline, and the SAME undocumented date-label convention. The pair is what turned a
+   single-source quirk into a rule.
+
+**DEPTH LINE.** BoC auction panel: **exhausted for this axis** — full result history, per-auction
+deadline clock, 6 signals × 6 horizons, 4 independent robustness controls, term-bucket split.
+NBP: **exhausted** — all four products opened (A, B, C, gold), full 2002→ history pulled for four
+currencies, direct + triangulated verification, dead-column diagnosed, gold refuted as an oracle,
+rate limit probed to 100 requests. CBR: **surface + verification** — one series pulled and
+lag×hour scanned; the code directory and the other ~60 currencies not opened. Not
+breadth-theater: three sources, two of them taken to exhaustion, one axis killed with all cells
+reported.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **BUILD THE NBP HISTORY EXTENSION.** This is the highest-value unconverted thing on this
+   watchlist: 83 MT5 symbols × 16 extra years of daily bars, verified to under 1 bp. It is not a
+   mining item, it is a *wiring* item — pull all 33 table-A currencies 2002→, triangulate, and
+   stitch a pre-2018 D1 panel the gauntlet can use as held-out history. Route: engine build, not
+   another dig.
+2. **SWEA curve SLOPE arm** (2Y/5Y/7Y/10Y) — carried unreached from run (q); level tested, slope
+   never.
+3. **The keyless-CB-API class is now 4 doors deep and still producing** (Riksbank, BoC, NBP, CBR).
+   Next: **MNB (Hungary)**, **CNB (Czech, already partly known)**, **BNR (Romania)**, **CBRT
+   (Turkey)** — all four are MT5 currencies with a PLN-table analogue, and all four are candidates
+   for the same 2002→ history extension.
+4. **CBR's remaining ~60 currencies + the code directory** — surface only this run.
+5. Carried: SSB 08428/10701; the 43 broken SCB datasets; Norwegian holiday calendar; Riksbank
+   weekly reserves; SAFE/TCMB/BCB/SARB on DBnomics; the SNB/BFS two-doors test.
+
+**THE BLUNT PART.** The axis I took as the run's headline lead died, and it died cleanly — 44
+cells, all reported, the single |t|=2.97 killed by its own wrong sign before multiplicity even had
+to. Three runs in a row the thing I most expected to be alpha has been refuted, and that is the
+system working: the desk now has three fewer live macro-to-FX beliefs than it did on Tuesday. The
+run's actual value came from the side item — a Polish central bank's free API that hands the desk
+sixteen years of pre-2018 FX history on effectively its whole FX book, verified to 0.64 bp by a
+triangulation whose residual bias explains itself. That is reference data, not alpha, and I am
+saying so plainly; but 2008 and 2011 are regimes this desk has *never once* tested a candidate in,
+and the gauntlet has been starved of exactly that. Verified small beats unverified impressive —
+and this one is verified and large.

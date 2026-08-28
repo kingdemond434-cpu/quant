@@ -3980,3 +3980,23 @@ distinct from both a number and an absent row.
    and a result row per auction from 2022-02-02, with distinct `bond_id`s — so dedup-by-id passes
    and the row count doubles at a date, reading as a change in issuance rather than in the feed.
    Add to the ingest checklist: after dedup by id, also check for a step change in rows-per-period.
+
+## 2026-08-28 (free-data r) — TWO METHOD FINDINGS
+
+**M1. THE FIXING OFFSET-SCAN IS A GENERAL TAPE INSTRUMENT.** Take any central bank that
+publishes a daily fixing with a stated survey time, scan it against a broker tape hour-by-hour,
+and the argmin hour recovers (a) the tape's true clock and (b) — from the sign and size of the
+residual bias — its bid/mid convention. Demonstrated this run: four PLN crosses independently
+landed on the 11:00 broker-EET bar at 2.0–2.5 bp with the next-best hour 3–5x worse, and the
+−1.6…−2.2 bp residual is exactly the PLN bid-mid half-spread (it drops to −0.6…−1.0 bp in
+triangulated crosses where the leg cancels). This is cheaper and more decisive than inspecting
+tick-volume histograms, and it works on any symbol with a published official rate. Engine value:
+it turns "the parquets are stamped +00:00 but carry broker EET" from a belief into a per-symbol
+measurement.
+
+**M2. AN OFFICIAL RATE'S DATE LABEL IS ITS EFFECTIVE DATE, NOT ITS OBSERVATION DATE.** Found
+independently in two institutions the same run: the Bank of Russia rate dated D is the market of
+D−1 (14.2 bp at lag 1 vs 34.3 bp at lag 0), and NBP's gold price dated D likewise (26.1 vs 50.4
+bp). Joining such a series on its own label is a silent one-day staleness — as a verification
+target it fabricates ~20 bp of error, and as a FEATURE it is a stale input that looks live.
+Any adopter of a CB fixing must scan lag ∈ {0,1} before use; the scan costs one line.
