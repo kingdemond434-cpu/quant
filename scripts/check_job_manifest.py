@@ -172,9 +172,38 @@ def main() -> int:
             "max_age_h": max_age_h, "consumer": consumer,
         }
 
+    # RETIRE THE ROWS THIS RUN NO LONGER EVALUATES, LOUDLY. `jobs` persists across runs and was
+    # never pruned, so an artifact dropped from JOBS left its last verdict behind forever while
+    # `summary` -- computed from `rows`, this run's evaluations -- silently stopped counting it.
+    # Measured 2026-08-28: `jobs` held 17 rows and 2 FROZEN, `summary` said 16 and 1, and the
+    # extra was `desks/mt5/data/sleeve_registry.json`, deliberately retired 19 hours earlier with
+    # a good reason (age is the wrong instrument for an idempotent registry) and still reading
+    # FROZEN to anything that walked `jobs`. Two consumers, two answers, one file. The row moves
+    # to `retired` with the day it left rather than being deleted: a deliberate retirement stays
+    # visible, and an ACCIDENTAL one -- a JOBS line dropped in an edit -- is discoverable here
+    # instead of looking like the artifact was never monitored.
+    retired = state.setdefault("retired", {})
+    for rel in [k for k in jobs if k not in JOBS]:
+        retired[rel] = {**jobs.pop(rel), "retired_at": now.isoformat(timespec="seconds"),
+                        "note": "no longer declared in JOBS; last verdict frozen as-is"}
+        findings.append(
+            f"RETIRED {rel}: dropped from the manifest, last status "
+            f"{retired[rel].get('status')}. If that was deliberate this line is the record; if a "
+            f"JOBS entry was lost in an edit, the artifact is now unmonitored and this is how you "
+            f"find out.")
+
     state["checked_at"] = now.isoformat(timespec="seconds")
     state["summary"] = {s: sum(1 for r in rows.values() if r["status"] == s)
                         for s in sorted({r["status"] for r in rows.values()})}
+    # THE SUMMARY MUST DESCRIBE THE ROWS. Anything reading `jobs` and anything reading `summary`
+    # now count the same population. Reported rather than asserted: a liveness organ that dies on
+    # its own consistency check is a worse failure than the miscount it was checking for, and an
+    # `assert` vanishes entirely under -O.
+    if not (sum(state["summary"].values()) == len(jobs) == len(rows)):
+        findings.append(
+            f"SELF-INCONSISTENT: summary counts {sum(state['summary'].values())}, jobs holds "
+            f"{len(jobs)}, this run evaluated {len(rows)}. Two consumers of this file will "
+            f"disagree until that is one number.")
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=1, default=str), "utf-8")
 
