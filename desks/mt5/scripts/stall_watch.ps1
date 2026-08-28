@@ -102,6 +102,36 @@ foreach ($tn in $researchTasks) {
   }
 }
 
+# RAM FLOOR (2026-08-28). This box has 8GB and runs the live MT5 terminal alongside the miners.
+# Measured the night the sweep stalled: 0.3GB free, edge_search at 4.3GB, the gauntlet thrashing
+# instead of computing. Bounding the caches removes tonight's cause; this rule removes the CLASS,
+# because the next miner to bloat will not announce itself and the terminal is what pays.
+# Shedding is safe in a way that stopping is not: a killed miner restarts on its schedule with
+# its per-cell cache intact, so the work resumes. A terminal starved of memory mid-session is a
+# money-path event, and the money path is never something research gets to gamble.
+# The largest offender goes first, and NOTHING on the money path is ever a candidate.
+try {
+  $os = Get-CimInstance Win32_OperatingSystem
+  $freeMB = [math]::Round($os.FreePhysicalMemory / 1KB)
+  if ($freeMB -lt 500) {
+    $MONEY = @('run_gateway_loop', 'run_deadman_switch', 'terminal64')
+    $hogs = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
+              Where-Object { $cl = $_.CommandLine
+                             $cl -and -not ($MONEY | Where-Object { $cl -match $_ }) } |
+              Sort-Object -Property WorkingSetSize -Descending)
+    if ($hogs.Count -gt 0) {
+      $victim = $hogs[0]
+      $name = '?'
+      if ($victim.CommandLine -match '([\w_]+\.py)') { $name = $matches[1] }
+      $rss = [math]::Round($victim.WorkingSetSize / 1MB)
+      Stop-Process -Id $victim.ProcessId -Force -ErrorAction SilentlyContinue
+      $actions += "RAM-FLOOR: only ${freeMB}MB free -- shed $name (rss ${rss}MB), the largest non-money-path job; it resumes from cache on its next trigger"
+    } else {
+      $actions += "RAM-FLOOR: only ${freeMB}MB free and NOTHING sheddable -- every remaining process is money-path; needs a human"
+    }
+  }
+} catch { }
+
 # PROGRESS, NOT JUST PULSE (2026-08-28). A CPU-delta test asks "is it breathing"; it cannot ask
 # "is it getting anywhere". The 6,024-cell sweep sat 87 minutes alive with a trickle of CPU
 # (~10s per 4 min -- comfortably above the liveness floor) having written ZERO cache files and

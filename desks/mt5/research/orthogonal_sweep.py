@@ -329,7 +329,10 @@ def _cli_main() -> int:
     except ModuleNotFoundError:            # entrypoint put research/ on the path, not desks/mt5
         from job_lock import exclusive_job
 
-    with exclusive_job("orthogonal_sweep") as acquired:
+    # Headroom from the MEASURED peak on 2026-08-28 (1055MB RSS), not a guess -- but a
+    # FIRST estimate all the same: tighten it from observed successful runs, never from
+    # another guess. Below this the box cannot fit the job beside the live terminal.
+    with exclusive_job("orthogonal_sweep", need_mb=800) as acquired:
         return main() if acquired else 75
 
 

@@ -58,9 +58,70 @@ def _owner_is_dead(path: Path) -> bool:
     return False
 
 
+def free_mb() -> int | None:
+    """Physical memory actually available right now, or None where it cannot be read.
+
+    UNMEASURED is a real answer (L1.28a): if this cannot be determined, admission must not
+    invent a number, and the caller admits the job rather than blocking work on ignorance.
+    """
+    if sys.platform == "win32":
+        import ctypes
+
+        class _MS(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong),
+                        ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong),
+                        ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong),
+                        ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+
+        st = _MS()
+        st.dwLength = ctypes.sizeof(_MS)
+        try:
+            if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(st)):
+                return None
+        except (AttributeError, OSError):
+            return None
+        return int(st.ullAvailPhys // (1024 * 1024))
+    try:
+        for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except (OSError, ValueError, IndexError):
+        return None
+    return None
+
+
 @contextmanager
-def exclusive_job(name: str):
-    """Yield True to one writer, False to concurrent duplicates; recover stale crash locks."""
+def exclusive_job(name: str, need_mb: int = 0):
+    """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
+
+    THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
+    beside the miners. A per-name lock stops a job racing itself; it has nothing to say about
+    edge_search and external_gauntlet colliding, and colliding is what they did -- measured that
+    night at 0.3GB free, with the sweep alive 87 minutes at a trickle of CPU having produced
+    nothing. A thrashing process still breathes, so every liveness check passed while the box
+    made no progress at all. The same collision shows up three times as `oom-kill` in the unit
+    death log, so this is a recurring class, not an incident.
+
+    Starting a job that does not fit is strictly worse than not starting it: it destroys its own
+    run, degrades every neighbour, and endangers the terminal that holds live positions. Standing
+    down is cheap -- the trigger is hourly and the per-cell cache makes the next attempt resume
+    rather than restart -- so refusal costs a delay while admission costs the hour AND the box.
+
+    The refusal is LOUD and names the number, because a silent stand-down is indistinguishable
+    from the crash it prevents, and this desk has been burned by exactly that ambiguity.
+    """
+    if need_mb > 0:
+        avail = free_mb()
+        if avail is not None and avail < need_mb:
+            print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available. "
+                  f"Not started (a job that does not fit thrashes the box and the live "
+                  f"terminal); the next scheduled trigger retries and the cache makes it resume.")
+            yield False
+            return
     LOCK_ROOT.mkdir(parents=True, exist_ok=True)
     path = LOCK_ROOT / f"{name}.json"
     token = uuid.uuid4().hex

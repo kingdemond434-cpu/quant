@@ -9,6 +9,7 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 from __future__ import annotations
 
 import json
+from collections import OrderedDict
 import math
 import sys
 import time
@@ -89,8 +90,20 @@ def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:
 #: byte-identical bars, and skipping hundreds of redundant parquet reads makes the sweep FASTER.
 #: (Re-applied 2026-08-26 after the first attempt was lost before it reached a commit -- the
 #: fence now carries `_H1_CACHE` as a marker so a second loss is caught rather than repeated.)
-_H1_CACHE: dict[str, object] = {}
-_NATIVE_CACHE: dict[tuple[str, str], object] = {}
+#: BOUNDED, because breadth broke the assumption above. The sharing cache was written when a
+#: sweep touched a handful of FX majors, so an unbounded dict keyed by symbol WAS bounded in
+#: practice. Class-balanced rotation across the full 251-symbol offering (2026-08-28) removed
+#: that accident: the sweep now walks every class, the dict grows a frame per symbol, and on an
+#: 8GB box that also runs the live MT5 terminal it consumed the machine. Measured that night --
+#: 0.3GB free, the sweep alive 87 minutes at a trickle of CPU having produced nothing, because a
+#: thrashing process still breathes.
+#: An LRU keeps the entire benefit (cells on one symbol arrive together, so the hit rate is
+#: unchanged) while making peak memory a constant instead of a function of universe size. M5
+#: frames hold twelve bars per H1 bar and get a proportionally smaller budget.
+_H1_MAX = 24
+_M5_MAX = 3
+_H1_CACHE: OrderedDict[str, object] = OrderedDict()
+_NATIVE_CACHE: OrderedDict[tuple[str, str], object] = OrderedDict()
 
 
 def _h1_for(sym: str):
@@ -101,6 +114,10 @@ def _h1_for(sym: str):
             return None
         frame = families._h1(pd.read_parquet(pq))
         _H1_CACHE[sym] = frame
+        while len(_H1_CACHE) > _H1_MAX:
+            _H1_CACHE.popitem(last=False)
+    else:
+        _H1_CACHE.move_to_end(sym)
     return frame
 
 
@@ -121,6 +138,10 @@ def _frame_for(sym: str, family: str):
                        else frame.index.tz_convert("UTC"))
         frame = frame[~frame.index.duplicated(keep="last")]
         _NATIVE_CACHE[key] = frame
+        while len(_NATIVE_CACHE) > _M5_MAX:
+            _NATIVE_CACHE.popitem(last=False)
+    else:
+        _NATIVE_CACHE.move_to_end(key)
     return frame
 
 
@@ -858,7 +879,10 @@ def main():
 def _cli_main() -> int:
     from research.job_lock import exclusive_job
 
-    with exclusive_job("external_gauntlet") as acquired:
+    # Headroom from the MEASURED peak on 2026-08-28 (1926MB RSS), not a guess -- but a
+    # FIRST estimate all the same: tighten it from observed successful runs, never from
+    # another guess. Below this the box cannot fit the job beside the live terminal.
+    with exclusive_job("external_gauntlet", need_mb=1200) as acquired:
         if not acquired:
             return 75
         main()

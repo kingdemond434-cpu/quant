@@ -45,7 +45,7 @@ from __future__ import annotations
 import json
 import math
 from datetime import UTC, datetime
-from functools import cache
+from functools import cache, lru_cache
 from itertools import combinations
 from pathlib import Path
 
@@ -101,9 +101,16 @@ def _interaction_pool_size(n_rows: int, n_features: int) -> int:
     return max(2, min(n_features, affordable_features))
 
 
-@cache
+@lru_cache(maxsize=64)
 def _close(symbol: str):
-    """Load a close series once per run; all-peer discovery otherwise rereads N² parquet files."""
+    """Load a close series once per run; all-peer discovery otherwise rereads N² parquet files.
+
+    BOUNDED (2026-08-28). `@cache` never evicts, so all-peer discovery across the full offering
+    pinned a close series per symbol for the life of the run -- one contributor to the 4.3GB peak
+    that left an 8GB box, shared with the live terminal, at 0.3GB free. 64 series covers the peer
+    set any single symbol actually correlates against, so the reread it exists to prevent still
+    does not happen.
+    """
     import pandas as pd
 
     path = UNIVERSE / f"{symbol}_H1.parquet"
@@ -880,7 +887,10 @@ def _cli_main() -> int:
     except ModuleNotFoundError:
         from job_lock import exclusive_job
 
-    with exclusive_job("edge_search") as acquired:
+    # Headroom from the MEASURED peak on 2026-08-28 (4347MB RSS), not a guess -- but a
+    # FIRST estimate all the same: tighten it from observed successful runs, never from
+    # another guess. Below this the box cannot fit the job beside the live terminal.
+    with exclusive_job("edge_search", need_mb=2000) as acquired:
         return main() if acquired else 75
 
 
