@@ -1,29 +1,16 @@
 {
-    "free_gb":  38.5,
-    "checked_at":  "2026-08-28T08:50:50.9924369Z",
+    "free_gb":  38.4,
+    "checked_at":  "2026-08-28T11:50:21.1196090Z",
     "actions":  [
-                    "STACKED external_gauntlet: killed duplicate pid 5604 (kept oldest 3656)",
-                    "STACKED external_gauntlet: killed duplicate pid 10492 (kept oldest 3656)",
-                    "FAILING MT5-Gauntlet: last result 1 twice in a row -- re-run",
-                    "NO-PROGRESS check on external_gauntlet: silent for 20m but working at 0.32 core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
+                    "RAM-FLOOR: only 130MB free -- shed ? (rss 1875MB), the largest non-money-path job; it resumes from cache on its next trigger",
+                    "FEED LAG: 7 CLOCKED symbol(s) \u003e6h stale: CADJPY,EURJPY,EURZAR,GBPJPY,USDJPY,USDZAR,XAUUSD",
+                    "FEED LAG fixer: re-selected 7 symbol(s) in MarketWatch"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  2,
     "procs":  {
                   "fail.MT5-Gauntlet":  {
-                                            "cpu":  1,
-                                            "at":  "2026-08-28T10:50:36.2412688+02:00"
-                                        },
-                  "external_gauntlet.3656":  {
-                                                 "cpu":  11003.90625,
-                                                 "at":  "2026-08-28T10:50:36.2412688+02:00"
-                                             },
-                  "edge_search.9636":  {
-                                           "cpu":  8100.796875,
-                                           "at":  "2026-08-28T10:50:36.2412688+02:00"
-                                       },
-                  "orthogonal_sweep.5872":  {
-                                                "cpu":  2465.40625,
-                                                "at":  "2026-08-28T10:50:36.2412688+02:00"
-                                            }
+                                            "cpu":  75,
+                                            "at":  "2026-08-28T13:50:12.3678673+02:00"
+                                        }
               }
 }

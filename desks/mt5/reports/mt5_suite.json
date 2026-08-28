@@ -1,5 +1,5 @@
 {
- "checked_at": "2026-08-28T07:47:24+00:00",
+ "checked_at": "2026-08-28T12:01:35+00:00",
  "verdict": "FAIL",
  "counts": {
   "passed": 680,
@@ -52,5 +52,5 @@
   "7 NEW failing test(s) on the money path: desks.mt5.tests.test_hourly_frontier_search::test_orthogonal_candidates_persist_runtime_provenance; desks.mt5.tests.test_job_lock_liveness::test_a_dead_windows_owner_is_recognised_as_dead; desks.mt5.tests.test_job_lock_liveness::test_a_live_windows_owner_is_never_reclaimed; desks.mt5.tests.test_job_lock_liveness::test_another_hosts_lock_is_never_judged; desks.mt5.tests.test_job_lock_liveness::test_any_other_oserror_stays_unknown[5-access denied -- the process may well exist under another token]; desks.mt5.tests.test_job_lock_liveness::test_any_other_oserror_stays_unknown[None-an OSError with no winerror at all: origin unknown]",
   "28 test(s) now pass and are struck from the floor -- a ratchet never gives ground back: desks.mt5.tests.test_daily_cycle::test_the_hourly_loop_actually_calls_it; desks.mt5.tests.test_daily_cycle::test_the_real_step_order_is_shadow_then_promoter_then_markout; desks.mt5.tests.test_fusion_zero_costs::test_live_fusion_profile_keeps_spread_units_and_round_trip; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_it_raises_rather_than_returning_an_empty_list; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_no_early_return_of_an_empty_list_survives_in_the_source; desks.mt5.tests.test_portfolio_projection.TestAnAbsentSurvivorReportIsARefusalNotASmallerBook::test_the_refusal_names_what_is_missing_and_where_to_run_it"
  ],
- "pytest_tail": "FAILED desks/mt5/tests/test_job_lock_liveness.py::test_posix_behaviour_is_unchanged\nFAILED desks/mt5/tests/test_job_lock_liveness.py::test_another_hosts_lock_is_never_judged\n7 failed, 680 passed in 23.22s"
+ "pytest_tail": "FAILED desks/mt5/tests/test_job_lock_liveness.py::test_posix_behaviour_is_unchanged\nFAILED desks/mt5/tests/test_job_lock_liveness.py::test_another_hosts_lock_is_never_judged\n7 failed, 680 passed in 86.43s (0:01:26)"
 }
