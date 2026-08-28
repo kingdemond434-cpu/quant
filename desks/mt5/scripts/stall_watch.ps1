@@ -21,6 +21,19 @@ $stateFile = Join-Path $base 'data\stall_watch.json'
 $patterns = @('external_gauntlet', 'shadow_cycle', 'edge_search', 'expand_universe',
               'backfill_coverage',
               'moat_silver', 'orthogonal_sweep', 'qquant_gates', 'universal_gate')
+# The script each research task actually runs, so 'is this task failing' can be separated from
+# 'is this task's work already in flight'. A task not listed here simply gets no busy-check.
+$taskScripts = @{
+  'MT5-Gauntlet'          = 'external_gauntlet'
+  'MT5-Shadow'            = 'shadow_cycle'
+  'MT5-Hourly'            = 'hourly_cycle'
+  'MT5-QQuantShadow'      = 'qquant_shadow'
+  'MT5-UniversalGate'     = 'universal_gate'
+  'MT5-ResearchSupervisor' = 'research_supervisor'
+  'MT5-MoatSilver'        = 'moat_silver'
+  'MT5-MoatRecorder'      = 'moat_recorder'
+}
+
 $researchTasks = @('MT5-Gauntlet', 'MT5-Shadow', 'MT5-Hourly', 'MT5-MoatSilver',
                    'MT5-MoatRecorder', 'MT5-QQuantShadow', 'MT5-UniversalGate',
                    'MT5-QQuantGatesCertify', 'MT5-ResearchSupervisor')
@@ -96,8 +109,27 @@ foreach ($tn in $researchTasks) {
   if ($q.Status -eq 'Ready' -and $lr -ne 0 -and $lr -ne 267009 -and $lr -ne 267014) {
     $failKey = "fail.$tn"
     if ($prev.ContainsKey($failKey) -and [int64]$prev[$failKey].cpu -eq $lr) {
-      schtasks /Run /TN $tn | Out-Null
-      $actions += "FAILING ${tn}: last result $lr twice in a row -- re-run"
+      # IS ITS WORK ALREADY RUNNING? The task Status says 'Ready' whenever no TASK INSTANCE is
+      # executing -- which is not the same question as whether the work is in flight. A task
+      # instance that timed out or was killed leaves its python child ORPHANED and still
+      # computing, and the task then reports Ready with a failing last result forever.
+      # Measured 2026-08-28: this fired on MT5-Gauntlet at 10:23, 10:30, 10:45 and 10:50, each
+      # time launching a fresh sweep on top of one that had been building cells for six hours,
+      # which the STACKED rule then had to kill. The healer for a stuck task had become the
+      # reason the task could never finish.
+      # Re-running a task whose work is already running cannot help under any circumstances, so
+      # the guard is unconditional rather than tuned.
+      $busy = $false
+      if ($taskScripts.ContainsKey($tn)) {
+        $pat = $taskScripts[$tn]
+        $busy = @($allProcs | Where-Object { $_.CommandLine -and $_.CommandLine -match $pat }).Count -gt 0
+      }
+      if ($busy) {
+        $actions += "FAILING ${tn}: last result $lr, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)"
+      } else {
+        schtasks /Run /TN $tn | Out-Null
+        $actions += "FAILING ${tn}: last result $lr twice in a row -- re-run"
+      }
     }
     $procsOut[$failKey] = @{ cpu = $lr; at = $now.ToString('o') }
   }
