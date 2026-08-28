@@ -4037,3 +4037,36 @@ endpoints of the date range before trusting any long pull.**
 Six sequential series pulled clean at **25 s spacing with zero 429s**. Before recording a source as
 capped, vary the spacing — the difference between "4 requests per run, forever" and "unlimited at
 25 s" is the whole source.
+
+**M5 — THE DESK'S `desks/mt5/data/universe/*_H1.parquet` FILES ARE A D1/H1 SPLICE (measured, 4 symbols).**
+Every file carries an hour-00 bar on ~every day of its span while all other hours appear on only
+~1,730 days: EURPLN **56.7%** of its 4,004 days hold exactly ONE bar, USDTRY 46.1%, EURCZK 31.2%,
+EURHUF 28.8%. Those single bars are **daily bars stamped 00:00** — on EURPLN the hour-0 bar's
+high–low range is **47.2 bp on solo days vs 7.7 bp on full-24-bar days** (and 12.5 bp for an hour-14
+bar); a one-hour bar cannot be 6× a comparable hour. D1 span 2012-05-21→2025-01-01, true H1
+2019-10-17→2026-06-19, **overlapping**. Consequences: (a) any intraday statistic over a full file
+mixes frequencies, and the hour-0 slice is *mostly daily bars*; (b) **a count is not a frequency** —
+a row/day-count coverage check reads these as fully-covered H1 (the run-(e) *a count is not recency*
+lesson with a new face); (c) any study that filtered `hour==0` believing it read the midnight hour
+read daily bars instead. **Not repaired: this seat is under a research freeze.** Needs an owner —
+either split the frequencies into separate files or add a bar-frequency column, and add a
+frequency assertion to whatever check currently reports these files healthy.
+
+**M6 — THE OFFSET SCAN HAS A PRECONDITION, now quantified (bounds runs q/r/s's own instrument).**
+The lag×hour scan recovers a published fixing's clock only when the instrument's **intraday range is
+large relative to the constant level bias** between the two sources: EURHUF 41.5 bp range / 3.3 bp
+bias = **ratio 12.6 → sharp minimum**; USDTRY 10.4 bp / ~7.7 bp = **ratio 1.3 → flat surface**
+(0.68 bp separates hours 06 and 21). **Compute the ratio before trusting a winning cell**, and when
+it is near 1 record the clock as UNMEASURED rather than adopting whichever hour ranked first.
+
+**M7 — A PUBLISHED CENTRAL-BANK BID/ASK IS AN ARITHMETIC CONVENTION (2nd instance ⇒ rule).**
+TCMB's ForexSelling/ForexBuying spread: median **18.02 bp, sd 0.01 bp, 901/908 days at exactly
+18.0**. NBP table C (run r) is a hardcoded ±1%. Any FX-stress / liquidity / spread-widening
+indicator reconstructed from official CB spreads is measuring a constant — take spreads from a
+trading venue.
+
+**M8 — THE EFFECTIVE-DATE CONVENTION IS A PROPERTY OF THE SERIES, NOT THE INSTITUTION.**
+CBR's rate and NBP's *gold* label with the effective date (D = market of D−1); NBP's *table A* and
+the ECB's EXR do not (NBP×ECB agree to 7.98 bp at lag 0, symmetric in lag). One institution ships
+both kinds, so a verified clock does NOT transfer to that institution's other products. Scan
+per-series.
