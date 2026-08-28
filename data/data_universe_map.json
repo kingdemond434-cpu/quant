@@ -1871,21 +1871,14 @@
   },
   "hf_carlossilva1_xauusd_ticks": {
    "name": "hf_carlossilva1_xauusd_ticks",
-   "category": "4-community-data-lake / EXECUTION-COST",
-   "grade": "verified-clean WITH A MANDATORY +2h TIMESTAMP SHIFT",
+   "category": "1/4 -- gold tick tape (community re-upload)",
+   "grade": "UNVERIFIED-PROVENANCE -- NOT ADOPTED (data quality verified-clean)",
    "url": "https://huggingface.co/datasets/CarlosSilva1/xauusd-ticks",
-   "provides": "174 parquet files partitioned year=YYYY/month=MM from 2021-05, millisecond XAUUSD BID/ASK ticks with bid_volume/ask_volume. 83,680 ticks in the single 2024-03 chunk read.",
-   "replaces": "a paid FX/metals tick vendor for gold AND -- the part that matters -- gives the desk a SECOND BROKER'S SPREAD TAPE, so Fusion execution cost is benchmarkable against an outside venue for the first time.",
-   "license": "cc-by-4.0 (declared on the dataset card); underlying quotes are facts, not copyrightable",
-   "verified_2026_08_28": "GROUND-TRUTH DIFF vs the desk's own XAUUSD_H1.parquet for 2024-03-01. At +2h: mean -0.111 USD, sd 0.138, max|0.62| over 16 hours. Every other offset from -4h to +1h is ~50x worse (best alternative sd 6.15). The -0.111 residual is HALF THE DESK SPREAD (desk median spread that day = 18 points = 0.18 USD) and its sign confirms the desk's close is the BID while the HF series is the MID.",
-   "THE_TRAP": "THE TIMESTAMPS ARE 2 HOURS BEHIND UTC AND THE DATASET CARD DOES NOT SAY SO. Ingesting them as UTC places every tick 2 hours in the PAST, so a model stamped 08:00 reads 10:00 prices -- a 2-hour LOOK-AHEAD that fails toward a FALSE POSITIVE. Broker server time (EET) mislabelled, the classic MT5 timestamp trap.",
-   "measured_execution_fact": "HF median spread 33 points (p95 37) vs the desk's own recorded XAUUSD spread median 18 points on the same day. Fusion's gold spread is ~55% of this (unnamed) broker's.",
-   "failure_modes": [
-    "+2h shift required, undocumented.",
-    "Broker of origin is NOT declared on the card -- the spread benchmark is against an unnamed venue.",
-    "part000N files are chunks WITHIN a month, not whole months; one part covers a partial session (part0000 of 2024-03 spans 00:00-15:58 local).",
-    "Uploader-declared licence does not bind the originating broker; adopted on the facts-are-not-copyrightable basis."
-   ]
+   "provides": "XAUUSD tick bid/ask + volumes, ms resolution, 2021-05-24 -> 2026-05-24, 2.65 GB, hive-partitioned parquet, cc-by-4.0 declared, 1865 downloads",
+   "verification_this_run": "OFFSET SCAN PASSES on year=2024/month=06/part0001 (22.4 MB, 2,423,212 ticks): first Sunday tick 22:00:00.628, last Friday tick 20:59:58, ZERO Saturday ticks, spread median $0.387 (p01 0.287 / p99 0.461), no negative spreads, both volume columns populated. Genuine UTC -- cleaner than the desk's own EET-stamped MT5 tape.",
+   "why_not_adopted": "The README provenance section says only 'aggregated tick feed reconstructed from broker data' and NEVER NAMES THE BROKER. Schema is (timestamp_ms, bid, ask, bid_volume, ask_volume) with volumes ~0.00012 -- exactly the Dukascopy bi5 20-byte record and its millions-of-units volume convention -- and the $0.387 median matches the $0.36 measured directly off Dukascopy last run. Stated as INFERENCE, not proof: high-confidence Dukascopy-derived. If so the uploader's CC-BY grant is void.",
+   "class_lesson": "A CC-BY tag on a community RE-UPLOAD is a claim about the UPLOADER's intent, never about the data's origin licence -- a re-uploader cannot license data they did not originate. An unnamed source on a redistributed dataset is not a documentation gap; it is the licence question left unanswered, and it must read as a BLOCKER, not a blank.",
+   "reopen_condition": "origin resolves to something redistributable -> adoptable 5-year gold tick tape"
   },
   "hf_forex_factory_calendar": {
    "name": "hf_forex_factory_calendar",
@@ -1905,13 +1898,12 @@
   },
   "hf_snail000_tickmill_xauusd_ticks": {
    "name": "hf_snail000_tickmill_xauusd_ticks",
-   "category": "4-community-data-lake",
-   "grade": "excluded-on-SAFETY (not licence)",
+   "category": "1/4 -- NAMED second-broker gold tick tape",
+   "grade": "UNVERIFIED -- licence clean (mit), payload unsafe to open as shipped",
    "url": "https://huggingface.co/datasets/Snail000/Tickmill-XAUUSD-Ticks",
-   "license": "mit",
-   "provides": "Named-broker (Tickmill) XAUUSD tick workspace, 326 files",
-   "excluded_because": "The data ships as .pkl -- Python pickle. Loading a pickle from an untrusted uploader IS executing untrusted code, which the standing supply-chain rule forbids on desk hardware. The licence is clean; the FORMAT is the block.",
-   "replacement_adopted": "hf_carlossilva1_xauusd_ticks (parquet, cc-by-4.0, verified above) covers the same axis safely. Residual: the Tickmill dataset NAMES its broker and this one does not, so the named-venue spread benchmark is still owed."
+   "provides": "A NAMED second broker (Tickmill) -- exactly the cross-broker spread comparison this seat wants against the desk's Fusion tape. 326 files, 5.56 GB.",
+   "failure_modes": "It is an ML WORKSPACE DUMP, not a dataset: largest files are .pkl (944 MB, 405 MB, 277 MB, 217 MB). UNPICKLING UNTRUSTED FILES EXECUTES CODE -- never unpickle. Only workspace/prepared/features/gold_train.csv (237 MB) is safe to read.",
+   "next_action": "read gold_train.csv only; offset-scan on arrival"
   },
   "hf_saif101_histdata_eurusd": {
    "name": "hf_saif101_histdata_eurusd",
@@ -2019,6 +2011,45 @@
    "next_action": "Mine the enumerated HTML captures for the statistics tables; this is ground, not a probe.",
    "first_seen": "2026-08-28",
    "last_verified": "2026-08-28"
+  },
+  "dukascopy_bi5_datafeed_VERDICT": {
+   "name": "dukascopy_bi5_datafeed_VERDICT",
+   "category": "1/6 -- broker-native tick archive (vendor replacement)",
+   "grade": "excluded-illegitimate",
+   "url": "https://www.dukascopy.com/swiss/english/legal-pages/terms-of-use/ (read 2026-08-28); https://datafeed.dukascopy.com/robots.txt",
+   "supersedes": "the prior run's 'BLOCKED on a 503 robots' verdict, which was WRONG IN ITS REASONING though right to stop",
+   "finding": "TWO reads settle this and they point opposite ways. (a) The 503 was RATE-LIMITING, not policy, and the status is UA-KEYED: same host same minute -- Mozilla/5.0 -> 404 (3/3), curl/8.5.0 -> 503, python-requests -> 429, empty-UA and ClaudeBot -> 000 refused. Wayback CDX: 90 captures over 21 years, 32x404 + 58x502 with every 502 inside a single 2018-2019 outage, most recent capture 2024-11-25 = 404. The host has NEVER served a robots file. (b) The real wall is the TCU: 'You shall not use any scraper, robot, bot, spider, data mining ... to access, acquire, copy, or monitor any portion of the WEBSITE, any data or content found on or accessed through the WEBSITE ... without the prior express written consent of DUKASCOPY', plus 'solely for your own non-commercial use'. A trading desk is commercial and the collection is automated.",
+   "failure_modes": "UA-keyed bot management makes a robots read a property of YOUR OWN HEADERS: under RFC 9309 a 4xx robots means unrestricted and a 5xx means fully disallowed, so the same path is simultaneously allowed and forbidden depending on which client asks. A robots read is evidence only if rate-isolated and taken with the UA you will actually crawl with; Wayback is the tiebreaker. Path month is also ZERO-INDEXED (2024/04 = May 2024): an off-by-one returns a real, plausible, WRONG month and never errors.",
+   "class_lesson": "TCU FIRST, ROBOTS SECOND for any named-vendor host. Robots governs CRAWLING; the TCU governs USE. An entire prior run's headline went to a robots technicality that was an artefact, while the binding wall sat in the TCU and would have given the same verdict whatever robots said.",
+   "action": "HARD STOP under DIGGING_CHARTER s13. Four single-file verification probes were already run and are disclosed; no bulk pull was ever made and none will be. Replacement hunt dukascopy_route_licence remains open; strongest candidate needs nobody's licence -- the desk's own MT5 CopyTicks."
+  },
+  "hf_broker_tick_class_census_by_symbol": {
+   "name": "hf_broker_tick_class_census_by_symbol",
+   "category": "4 -- community data lakes (class census)",
+   "grade": "census verified-clean; class 77% unadoptable on licence",
+   "url": "https://huggingface.co/api/datasets?search=<SYMBOL>&limit=100&full=true (keyless)",
+   "finding": "20 MT5 legs queried -> 108 distinct datasets. (1) The class is TWO SYMBOLS, not a universe: XAUUSD 48, EURUSD 24, and ELEVEN of 20 legs return ZERO -- USDCHF, USDCAD, NZDUSD, GBPJPY, EURGBP, XAGUSD and EVERY index leg (US30, NAS100, SPX500, DE40, UK100, JP225). Index/CFD tick data does not exist in this class. (2) 83/108 (77%) declare NO licence (cardData null) => not adoptable whatever the content. (3) Fork duplication survives INTO the licensed subset: CarlosSilva1/xauusd-ticks, addyAIMLprojects/xauusd-ticks and Junsoo1/xauusd-ticks are all cc-by-4.0, all 176 files, all 2652.3 MB, with IDENTICAL LFS oids on every file -- one upload, three repos.",
+   "failure_modes": "Repo counts overstate the ground by ~an order of magnitude; dedupe by LFS digest before claiming coverage. Repo mtime is NOT series freshness. The class describes itself by SYMBOL, never by concept -- 'forex tick', 'forex spread', 'gold ticks' all return zero.",
+   "method": "scripted, keyless, no context cost; re-runnable"
+  },
+  "hf_saif101_histdata_eurusd_EMPTY": {
+   "name": "hf_saif101_histdata_eurusd_EMPTY",
+   "category": "4 -- community lake (empty artifact)",
+   "grade": "destroyed-at-source (repo is empty)",
+   "url": "https://huggingface.co/datasets/saif101/HistData_2003-2025_EURUSD-1m",
+   "finding": "Title promises 22 years of EURUSD 1-minute data; repo contains TWO files -- .gitattributes and a 24-byte README. Zero data. Licence (mit), download count (6) and title all look exactly like a real dataset.",
+   "class_lesson": "The empty-artifact class one level up: at REPO level, where every metadata signal a search API returns is present and correct and the payload is absent. File-tree size, not repo metadata, is the liveness test for a community lake."
+  },
+  "boj_flatfile_archive": {
+   "name": "boj_flatfile_archive",
+   "category": "5 -- macro / central-bank cube (JPY leg) -- ADOPTED",
+   "grade": "needs-monitoring (route + liveness verified; ships a look-ahead trap)",
+   "url": "https://www.stat-search.boj.or.jp/info/dload_en.html",
+   "supersedes": "boj_stat_search (was 'PERMITTED, data route UNMINED') -- route now mapped and exercised",
+   "provides": "Keyless bulk zip/CSV flat files, 20 archives: Balance of Payments (monthly + regional), IIP, CGPI/PPI, SPPI, TANKAN, Flow of Funds, 4x BIS locational/consolidated banking. The JPY leg of the CB-cube class; JPY is an MT5 major on every cross the desk trades.",
+   "verified_this_run": "bp_m_en.zip 2,769 series 1996-01->2026-06; cgpi_m_en.zip 3,042 series 2020-01->2026-07; co.zip (TANKAN) 48,430 series / 54,831 rows 2025-01->2026-03. robots 404 on BOTH boj.or.jp and stat-search.boj.or.jp (absent => unrestricted).",
+   "failure_modes": "(1) LOOK-AHEAD VECTOR: bp_m_en.csv's header runs to 202702, FIVE MONTHS INTO THE FUTURE, and those columns are NOT empty. 2,757 of 2,769 series stop at 202606; exactly 20 run 8 months further, and they are X-12-ARIMA SEASONAL FACTORS, forward-projected by construction. The seasonal factor that will be applied to a FUTURE BoP release is published today -- any 'read the CSV, take the latest column' loader puts post-release information into a pre-release row. This is the pct_circ_now class (contaminated CONDITIONING variable, fails toward a false null) on a new axis. (2) 'NA' is a LITERAL STRING, not an empty cell. (3) Two of the 20 seasonal factors carry -5724 and -1317 against ~0.9 for the other eighteen -- mixed units inside one labelled block, the failure that ships because it sits in a plausible range. (4) EVERY file is Shift_JIS, and grep here is ugrep: one invalid UTF-8 byte VOIDS THE WHOLE FILE SILENTLY (my first extraction returned zero series codes from a page holding seventeen). Read with python and an explicit codec, never bare grep.",
+   "class_lesson": "LIVENESS ON A WIDE PANEL IS THE LAST PERIOD WHERE THE MAJORITY OF SERIES REPORT, never the last period where ANY series does. Liveness is a property of the PANEL, not of the file. Both a header read and a last-non-empty read give the same wrong answer here."
   }
  },
  "residual_gaps_unpurchasable": [

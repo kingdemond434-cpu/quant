@@ -5965,3 +5965,180 @@ terminal.** That distinction is now in the map against three hosts.
 5. **RBNZ statistics via the CDX captures**, and **RBA robots via CDX** rather than a fourth live probe.
 6. Still owed, still outside this seat: the `macro_state.json` three-way write race, and the
    bar-liveness `n_unobservable` patch. **Now joined by the EET timestamp fix, which outranks both.**
+
+---
+
+## SESSION 2026-08-28 (j) — FREE-DATA-ALTERNATIVES standing daily run
+
+**Backlog on entry:** CLEAR (73 catalogued / 48 resolved / **0 pending verification** / 25 deferred,
+next returns 2026-09-01), verified with `scripts/source_backlog_next.py --limit 6`. Mining authorised.
+
+**ITEMS TAKEN THIS RUN (bounded scope, maxed depth):**
+1. **Settle the Dukascopy robots** (ground #1 last run) — Wayback CDX of `datafeed.dukascopy.com/robots.txt`.
+   One read decides whether the best free tick route this seat holds is usable.
+2. **Mine the HF broker-tick class BY SYMBOL** (ground #3) — all MT5 legs, deduped by digest,
+   offset-scanned on arrival, licence-graded before any adoption.
+3. **BoJ stat-search CSV export route** (ground #4) — the JPY leg of the CB-cube class; permitted
+   (404 robots), reachable, unmapped.
+
+Findings appended below as each resolves.
+
+### ITEM 1 — Dukascopy: **EXCLUDED-ILLEGITIMATE**, and the robots question was the wrong question
+Two reads settle it, and they point opposite ways from last run.
+**(a) The 503 was never a policy — it was RATE-LIMITING, and the status is UA-KEYED.** Same host,
+same minute, four clients: `Mozilla/5.0` → **404 (3/3)**, `curl/8.5.0` → **503**,
+`python-requests/2.31.0` → **429**, empty-UA and `ClaudeBot/1.0` → **000 (connection refused)**.
+Wayback CDX settles it historically: **90 captures of `datafeed.dukascopy.com/robots.txt` over 21
+years — 32×404 and 58×502, every 502 inside a single 2018–2019 outage window, and the most recent
+capture (2024-11-25) is 404.** The host has never served a robots file. So last run's "RFC 9309 §2.3.1.4
+⇒ full disallow" was a correct rule applied to a **bot-management artefact**, not to a robots policy.
+**THE CLASS, and it is the general one:** under RFC 9309 a 4xx robots means *unrestricted* and a 5xx
+means *fully disallowed* — so on any host with UA-keyed rate limiting the SAME path is simultaneously
+allowed and forbidden depending on which client asks, and the verdict you get is a property of your
+own headers. A robots read is only evidence if it is **rate-isolated and taken with the UA you will
+actually crawl with**; a 5xx under throttling is not a policy and Wayback is the tiebreaker.
+**(b) The wall is real, it is just somewhere else.** `www.dukascopy.com/swiss/english/legal-pages/terms-of-use/`
+(200, read this run): *"You shall not use or attempt to use any 'scraper,' 'robot,' 'bot,' 'spider,'
+'data mining,' … to access, acquire, copy, or monitor any portion of the WEBSITE, any data or content
+found on or accessed through the WEBSITE … without the prior express written consent of DUKASCOPY"*
+and *"you agree to use the WEBSITE solely for your own non-commercial use and benefit."* A trading
+desk is commercial use, and the collection is automated by definition. **Graded `excluded-illegitimate`
+under §13 — a HARD STOP, not a hurdle.** The four single-file verification probes already run are
+disclosed and stop here; no bulk pull was ever made and none will be.
+**The uncomfortable part:** I spent an entire run's headline on a robots technicality that was an
+artefact, while the binding wall sat in the TCU and would have produced the same verdict whatever
+robots said. **Robots was the wrong instrument for this question.** Robots governs *crawling*; the
+TCU governs *use* — and my own OP-096 (robots ≠ reuse grant) already said so. Order of operations
+from now on for any named-vendor host: **TCU first, robots second.**
+**§38 REPLACEMENT HUNT** (`dukascopy_route_licence`, opened last run) — the strongest candidate needs
+nobody's licence and is unaffected by this verdict: **the desk's own MT5 `CopyTicks`**, a first-party
+tick tape from the broker the desk already has a commercial relationship with. Chase, don't build.
+
+### ITEM 2 — the HF broker-tick class, mined BY SYMBOL: **the licence is the binding constraint, not the data**
+20 MT5 legs queried against the keyless HF dataset API → **108 distinct datasets**. Three structural
+facts, each of which changes how this class should be counted:
+- **The class is two symbols, not a universe.** XAUUSD (48) and EURUSD (24) carry it; USDCHF, USDCAD,
+  NZDUSD, GBPJPY, EURGBP, XAGUSD and **every index leg** (US30, NAS100, SPX500, DE40, UK100, JP225)
+  returned **ZERO**. Last run I named this ground "all MT5 legs"; measured, **11 of 20 legs are empty**.
+  Index/CFD tick data does not exist in this class at all.
+- **77% carry no licence.** 83/108 have `cardData: null` ⇒ **not adoptable**, whatever the content.
+- **The fork problem survives into the licensed subset.** `CarlosSilva1/xauusd-ticks`,
+  `addyAIMLprojects/xauusd-ticks` and `Junsoo1/xauusd-ticks` are all cc-by-4.0, all 176 files,
+  all 2,652.3 MB, and **every LFS oid is identical** — one upload, three repos. Dedupe by digest
+  before any count; three licensed repos is one licensed dataset.
+**Data verdict on the best of them — `CarlosSilva1/xauusd-ticks` (cc-by-4.0, 1,865 downloads, 2.65 GB,
+2021-05→2026-05): the offset scan PASSES.** One 22.4 MB file pulled (`year=2024/month=06/…part0001`,
+2,423,212 ticks): first Sunday tick **22:00:00.628**, last Friday tick **20:59:58**, **zero Saturday
+ticks**, spread median **$0.387** (p01 0.287 / p99 0.461), **no negative spreads**, both volume
+columns populated. That is genuine UTC — the FX week opens Sun 22:00 UTC in BST and closes Fri 21:00
+— and it is *cleaner than the desk's own tape*, which is the EET defect found last run.
+**NOT ADOPTED, and the reason is provenance.** The README's own provenance section says only
+*"aggregated tick feed reconstructed from broker data"* — **it never names the broker.** The schema is
+`(timestamp_ms, bid, ask, bid_volume, ask_volume)` with volumes ~0.00012, which is **exactly the
+Dukascopy bi5 20-byte record and its millions-of-units volume convention**, and the $0.387 median
+matches the $0.36 measured off Dukascopy directly last run. I cannot prove the origin without probing
+a host I have just excluded, so I state it as inference: **high-confidence Dukascopy-derived.** If it
+is, the uploader's CC-BY-4.0 grant is void — **a re-uploader cannot license data they did not
+originate**, and Dukascopy's TCU forbids exactly this redistribution.
+**THE CLASS, and it is the one that matters for every community lake this seat mines: a CC-BY tag on
+a community re-upload is a claim about the UPLOADER's intent, never about the data's origin licence.
+An unnamed source on a redistributed dataset is not a documentation gap — it is the licence question
+left unanswered, and it should read as a BLOCKER, not a blank.** Graded `UNVERIFIED-PROVENANCE /
+not adopted`; the *quality* verdict (verified-clean UTC) stands and is worth keeping, because if the
+origin ever resolves to something redistributable this is an adoptable 5-year gold tick tape.
+Two smaller finds: **`Snail000/Tickmill-XAUUSD-Ticks`** (mit, 5.5 GB) is a **named second broker** and
+therefore the cross-broker spread comparison this seat wants — but it is an ML workspace dump whose
+largest files are **`.pkl` (944 MB, 405 MB, …)**, and unpickling untrusted files executes code:
+**never unpickle it**; only `gold_train.csv` is safe to read. And **`saif101/HistData_2003-2025_EURUSD-1m`**,
+whose title promises 22 years of EURUSD 1m, contains **two files: `.gitattributes` and a 24-byte
+README**. Zero data. The empty-artifact class again, one level up — at REPO level, where the title,
+the licence tag and the download count all look exactly like a real dataset.
+
+### ITEM 3 — BoJ flat-file archive: **ADOPTED (route + liveness verified)**, and it ships a look-ahead trap
+`www.stat-search.boj.or.jp/info/dload_en.html` (200) — **keyless bulk zip/CSV flat files**, robots
+**404 on both `boj.or.jp` and `stat-search.boj.or.jp`** (absent ⇒ unrestricted; the BoJ §13 verdict
+from last run holds and is now exercised, not just claimed). 20 archives: Balance of Payments,
+regional BoP, IIP, CGPI/PPI, SPPI, TANKAN, Flow of Funds, and four BIS locational/consolidated
+banking sets. Three pulled and parsed this run:
+| file | series | span | verified |
+|---|---|---|---|
+| `bp_m_en.zip` | 2,769 | 1996-01 → **2026-06** | monthly BoP, BPM6 |
+| `cgpi_m_en.zip` | 3,042 | 2020-01 → **2026-07** | CGPI/PPI |
+| `co.zip` (TANKAN) | 48,430 | 2025-01 → **2026-03** | 54,831 rows |
+**Encoding gotcha, and it is my own standing lesson firing again: every file is Shift_JIS, and `grep`
+here is ugrep — one invalid UTF-8 byte VOIDS THE WHOLE FILE SILENTLY.** My first extraction returned
+zero series codes from a page that holds seventeen. Read these with python and an explicit codec;
+never with bare grep.
+**THE TRAP — liveness on a wide-format panel is not the last populated column.** `bp_m_en.csv` header
+runs to **202702, five months into the future**, and those columns are **not empty**. A header read
+says "data to Feb 2027"; a last-non-empty read says the same. Both are wrong. Row-aware:
+**2,757 of 2,769 series stop at 202606**, and exactly **20 series** run 8 months further. Those 20 are
+**X-12-ARIMA seasonal factors**, forward-projected by construction.
+Two consequences, and the first is worth more than the dataset:
+1. **It is a genuine look-ahead vector.** The seasonal factor that will be applied to a *future* BoP
+   release is published *today*. Joined naively to a historical panel — which is what any
+   "read the CSV, take the latest column" loader does — it puts post-release information into a
+   pre-release row. This is the `pct_circ_now` class (a contaminated *conditioning* variable, failing
+   toward a false null) on a new axis.
+2. **The correct liveness statistic for a wide panel is the last period where the MAJORITY of series
+   report, never the last period where ANY series does.** Liveness is a property of the panel.
+Two parse traps beside it: **`NA` is a literal string, not an empty cell** (2 of the 20), and two of
+the "seasonal factors" carry values of **−5724 and −1317** against ~0.9 for the other eighteen —
+mixed units inside a single labelled block, the failure that ships because it sits in a plausible
+range. Adopted as **needs-monitoring** for that reason, not verified-clean.
+
+**SESSION CLOSE — 2026-08-28 (j).**
+**Backlog:** clear on entry (0 pending verification), so this run was pure mining, as authorised.
+**Categories covered:** **1** (broker-native tick archives), **4** (community lakes — the class census),
+**5** (macro/CB — BoJ adopted), **6** (vendor replacement — and the replacement was *withdrawn*, see
+below). **2 and 3 remain VOID under the MT5 mandate as the spec writes them** (they name crypto
+on-chain and crypto regional venues); the spec predates the 2026-08-18 universe order, and I keep
+naming that rather than reporting them skipped.
+**Counts: 1 source ADOPTED with verified route + liveness (BoJ, 20 archives, 3 parsed), 1 source
+EXCLUDED-ILLEGITIMATE on a TCU read (Dukascopy), 1 source verified-clean on DATA but refused on
+PROVENANCE, 1 named-broker tape found and flagged unsafe-as-shipped, 1 repo-level empty artifact,
+1 class census over 108 datasets with three structural findings, 3 method findings routed to the
+inbox, 0 unverified links catalogued.** Universe map 125 → 129.
+**BEST VENDOR-REPLACEMENT: none this run, and that is the honest answer.** Last run's headline
+(Dukascopy bi5) is now **withdrawn on licence**, and the best community substitute for it is refused
+on provenance because it is probably the same data wearing a CC-BY tag it cannot grant. The seat is
+net *down* one adopted tick source and net *up* one correct §13 verdict, and the second is worth more.
+**CROSS-SOURCE PAIR:** unchanged (FF surprise × ticks), still blocked on last run's EET defect. New
+candidate pair worth naming: **BoJ TANKAN release dates × JPY-cross tick spreads** — a scheduled,
+JPY-specific, high-attention event with a 48,430-series official panel behind it, on legs the desk
+actually trades. Both halves are now adopted and licence-clean, which the FF × ticks pair is not.
+**NEW SOURCE CLASS:** none new; two existing classes were **measured** instead, and both measurements
+shrank them — the HF broker-tick class is two symbols and 77% unlicensed, and the CB-cube's JPY leg is
+real but ships a look-ahead vector.
+
+**THE BLUNT PART.** This run's largest finding is a correction *of my own last run*, which makes four
+in a row, and this one is the most instructive because I was rigorous and still wrong. I applied
+RFC 9309 §2.3.1.4 correctly to a 503 — and the 503 was a rate-limit artefact that changes with the
+User-Agent, so I had derived a policy verdict from my own headers. Meanwhile the actual wall was
+sitting in a Terms-of-Use page I had not opened, one link off a page I *had* opened, and it says
+"no scraper, robot, bot, spider or data mining" in as many words. **I graded a host on the instrument
+that was easy to read rather than the one that was binding.** The generalisation is not "read the
+TCU too" — it is that a *clean, rule-shaped, correctly-applied* verdict is exactly the kind that never
+gets re-examined. The near-miss underneath it is worse and I want it recorded plainly: had the robots
+read come back 404 on the first attempt, I would have bulk-pulled a feed whose TCU forbids it, and my
+own audit trail would have shown a correct §13 check passing. **The check would have been genuine and
+the conclusion would still have been wrong.**
+The offset scan paid out a third time — this time as a *positive*, clearing a community tape that the
+desk's own tape would have failed. That is worth stating because the last two payouts were both
+defects: the instrument is not a defect-detector, it is a timestamp verdict, and it just as usefully
+says clean.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **`Snail000/Tickmill-XAUUSD-Ticks` → `gold_train.csv` only** (mit, named second broker). The
+   cross-broker spread comparison against the desk's Fusion tape is the nearest-to-money item this
+   seat now holds, and both legs are licence-clean. **Never unpickle the .pkl files.**
+2. **BoJ: the remaining 17 archives**, Flow of Funds and the four BIS banking sets first — and build
+   the TANKAN release-date list, which is the other half of the new pair.
+3. **Re-grade every host this seat has ever marked walled on a 5xx**, with a fixed UA and Wayback
+   corroboration. Finding #1 above means some of those verdicts are artefacts of my own client.
+   Start with RBA (Akamai 403) — that one is a client verdict too, and now has a named method.
+4. **The desk's own MT5 `CopyTicks`** — first-party, no external licence, unaffected by any of this.
+   Chase, don't build (outside this seat's freeze).
+5. **RBNZ statistics via the CDX captures** (route verified last run, payload still unmined).
+6. Still owed, still outside this seat: the `macro_state.json` three-way write race, the bar-liveness
+   `n_unobservable` patch, and — outranking both — the **EET timestamp fix** on the desk's own tape.

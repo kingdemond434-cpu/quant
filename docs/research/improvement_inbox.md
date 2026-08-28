@@ -3839,3 +3839,25 @@ thin — measured over the first 80 of 186 archived EN notices: **6 margin/lever
 ten gates, and pooling across firms does not fix an unmeasured transmission channel. The
 instrumentation above is worth doing **on its own merits** — it is free, it is owned data, and it
 turns an unmeasurable family into a measurable one.
+
+## 2026-08-28 (free-data j) — three method findings, each with the fence that would have caught it
+
+1. **A robots verdict is a property of your own headers.** `datafeed.dukascopy.com` returns 404 to
+   `Mozilla/5.0`, 503 to `curl/8.5.0`, 429 to `python-requests`, and refuses empty-UA/`ClaudeBot`
+   outright — same host, same minute. Under RFC 9309 a 4xx means *unrestricted* and a 5xx means
+   *fully disallowed*, so UA-keyed rate limiting makes one path simultaneously allowed and forbidden.
+   **FENCE:** any §13 robots read must record the UA used, must be rate-isolated, and a 5xx must be
+   corroborated against Wayback CDX before it is written down as a policy verdict.
+   **ORDERING:** for a named-vendor host, read the **TCU first and robots second** — robots governs
+   crawling, the TCU governs use, and the TCU is usually the binding one.
+2. **Wide-panel liveness must be measured on the panel, not the file.** BoJ `bp_m_en.csv` has a header
+   running to 202702 with non-empty cells, while 2,757 of 2,769 series stop at 202606; the 20
+   outliers are forward-projected X-12-ARIMA seasonal factors. A header read and a last-non-empty read
+   give the *same wrong answer*. **FENCE:** `liveness = max period where >=50% of series report`, and
+   flag any series extending materially past that as a look-ahead candidate rather than as fresh data.
+   This is the `pct_circ_now` class on a new axis: a contaminated **conditioning** variable, which
+   fails toward a **false null** — the one direction no gate here catches.
+3. **`grep` is ugrep and one invalid UTF-8 byte voids a whole file silently.** Every BoJ flat file and
+   every stat-search page is Shift_JIS; my first extraction returned zero series codes from a page
+   holding seventeen, with exit 0. Standing rule, now paid for a second time: read non-UTF-8 corpora
+   with python and an explicit codec, never with bare `grep`.
