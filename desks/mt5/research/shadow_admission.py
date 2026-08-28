@@ -77,14 +77,15 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
         cert = row.get("qquant_gates") or {}
         if not is_exact_policy(cert.get("policy")) or not all_ten_pass(cert.get("stages")):
             continue
-        family = str(row.get("fam") or "SESSION_RANGE_BREAKOUT").casefold()
-        if family not in {"breakout", "session_range_breakout"}:
-            continue
+        # Normalise the alias, exclude nothing, and CARRY the family into the spec instead of
+        # asserting a literal. This dropped every certified compatibility row outside one family
+        # and then wrote "session_range_breakout" regardless, so a certificate for any other
+        # mechanism was either discarded or relabelled as something it is not.
+        family = str(row.get("fam") or "SESSION_RANGE_BREAKOUT")
         if str(row.get("side") or "LONG").upper() != "LONG":
             continue
         state = row.get("state") or None
-        out.add((str(row["sym"]), str(row["win"]), state,
-                 "session_range_breakout", False))
+        out.add((str(row["sym"]), str(row["win"]), state, _exec_family(family), False))
 
     universal = _read(reports / "UNIVERSAL_SURVIVORS.json")
     if is_exact_policy(universal.get("gate_policy")):
@@ -177,8 +178,8 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
         if len(parts) != 5:
             continue
         symbol, family, _side, selector, condition = parts
-        if family.casefold() not in {"breakout", "session_range_breakout"}:
-            continue
+        # No whitelist here either -- the cure lane must be open to every mechanism that clears
+        # the validity gates, which is the entire point of curing by forward evidence.
         state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
         out.add((symbol, selector, state, "session_range_breakout", False))
     return out

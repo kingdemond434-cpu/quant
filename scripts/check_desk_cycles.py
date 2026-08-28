@@ -171,12 +171,13 @@ def check_cycles(now: datetime) -> tuple[list[str], list[str]]:
     return breaches, fixes
 
 
-def check_cure_lane(now: datetime) -> list[str]:
+def check_cure_lane(now: datetime) -> tuple[list[str], list[str]]:
     """If the sweep found validity-pass cells, the cure lane must be publishing them."""
     breaches: list[str] = []
+    fixes: list[str] = []
     gates = _read(DESK / "reports" / "universal_gates_external.json")
     if not gates:
-        return breaches
+        return breaches, fixes
     judged = [v for v in (gates.get("verdicts") or []) if (v.get("stages") or {})]
     eligible = 0
     for v in judged:
@@ -190,7 +191,7 @@ def check_cure_lane(now: datetime) -> list[str]:
                for g in CANONICAL_POWER):
             eligible += 1
     if not eligible:
-        return breaches
+        return breaches, fixes
     cure = _read(DESK / "reports" / "POWER_CURE_CANDIDATES.json")
     if not cure:
         breaches.append(
@@ -201,7 +202,15 @@ def check_cure_lane(now: datetime) -> list[str]:
         breaches.append(
             f"CURE LANE EMPTY: {eligible} eligible cell(s) in the gate report but the cure "
             f"artifact lists none -- the two disagree and the artifact is what admission reads")
-    return breaches
+    if breaches:
+        # THE FIXER: the artifact is written BY the sweep, so the repair is to run one. Only the
+        # gauntlet may produce it -- this never writes the file itself, because a cure candidate
+        # invented outside the gate run is a candidate nobody gated.
+        rc, _ = _run(["ssh", "-o", "ConnectTimeout=25", "contabo-mt5",
+                      "powershell -Command \"schtasks /Run /TN MT5-Gauntlet\""], 90)
+        fixes.append(f"CURE LANE: triggered MT5-Gauntlet (rc={rc}) so the sweep publishes "
+                     f"POWER_CURE_CANDIDATES.json for the {eligible} eligible cell(s)")
+    return breaches, fixes
 
 
 def main() -> int:
@@ -216,7 +225,9 @@ def main() -> int:
     cb, cf = check_cycles(now)
     breaches += cb
     fixes += cf
-    breaches += check_cure_lane(now)
+    lb, lf = check_cure_lane(now)
+    breaches += lb
+    fixes += lf
 
     report = {
         "checked_at": now.isoformat(timespec="seconds"),
