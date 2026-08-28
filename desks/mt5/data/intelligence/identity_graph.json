@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-28T16:24:29+00:00",
+ "rebuilt_at": "2026-08-28T17:24:23+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -938,7 +938,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -953,7 +953,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1054,6 +1054,36 @@
    },
    "cohorts": [
     "8153df4e2547cb37"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "rick12357": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "59b3119692d1e477"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "ashikscreativemath-commits": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "a9365638efff390c"
    ],
    "scores": {
     "independent_evidence": 1,

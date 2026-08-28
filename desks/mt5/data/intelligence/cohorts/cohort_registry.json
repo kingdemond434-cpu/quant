@@ -6273,5 +6273,51 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"59b3119692d1e477": {
+"t0": "2026-08-28T17:24:22+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "Rick12357/python-expert-agent",
+"url": "https://github.com/Rick12357/python-expert-agent",
+"text": "Provide Python automation with specialized skills and subagents using FastAPI patterns for efficient local project management.",
+"symbols": [],
+"found_at": "2026-08-28T17:24:18+00:00",
+"topic": "metatrader5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-28T17:20:45Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a9365638efff390c": {
+"t0": "2026-08-28T17:24:22+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "ashikscreativemath-commits/Paldo-ALM",
+"url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+"text": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+"symbols": [],
+"found_at": "2026-08-28T17:24:20+00:00",
+"topic": "forex-trading",
+"stars": 21,
+"star_delta": 0,
+"pushed": "2026-08-28T17:16:53Z"
+},
+"mechanism_tags": [
+"scalping",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
