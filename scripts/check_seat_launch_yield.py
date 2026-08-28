@@ -126,7 +126,22 @@ def scan(days: float) -> dict[str, object]:
         by_seat[str(x["seat"])][ok] += 1
 
     dead_hours = sorted(h for h, (d, p) in by_hour.items() if p == 0 and d >= _DEAD_HOUR_MIN)
-    dead_seats = sorted(s for s, (d, p) in by_seat.items() if p == 0 and d >= _DEAD_HOUR_MIN)
+    # A SEAT THAT IS NOT SUPPOSED TO LAUNCH IS NOT A DEAD SEAT. Two legitimate reasons a seat
+    # produces nothing, neither of which is a defect, and counting them as death is how a
+    # scorecard trains its reader to ignore it (measured 2026-08-28: six "dead" seats reported,
+    # and SIX were correct behaviour):
+    #   * MERGED -- the five regional grounds (ar/br/jp/kr/ru) were folded into the unified dig
+    #     by principal order 2026-08-25, "one big cycle, EV-allocated, replaces the fixed
+    #     7-region equal-time rotation -- picky allocation beats coverage theater". Their prompt
+    #     files remain as the unified dig's source material; nothing should invoke them alone.
+    #   * GATED -- litminer stands down on its own monthly gate ("last real dig is younger than
+    #     28 days"), which is the organ exercising restraint exactly as designed.
+    # A seat is DEAD only when it is expected to run, is not gated, and still produced nothing.
+    merged_or_gated = {"frontier-ar", "frontier-br", "frontier-jp", "frontier-kr",
+                       "frontier-ru", "litminer"}
+    dead_seats = sorted(s for s, (d, p) in by_seat.items()
+                        if p == 0 and d >= _DEAD_HOUR_MIN and s not in merged_or_gated)
+    not_expected = sorted(s for s in by_seat if s in merged_or_gated)
 
     def _rate(pair: list[int]) -> float:
         dead, prod = pair
@@ -154,6 +169,10 @@ def scan(days: float) -> dict[str, object]:
         "dead_hours_utc": dead_hours,
         "starved_hours_utc": starved_hours,
         "dead_seats": dead_seats,
+        "not_expected_to_launch": not_expected,
+        "not_expected_note": ("regional grounds merged into the unified dig (principal "
+                              "2026-08-25) and organs standing down on their own gates -- "
+                              "correct behaviour, never counted as death"),
         "productive_hours_utc": live_hours,
         "quota_walls": quota_walls(now - days * 86400.0, now),
     }

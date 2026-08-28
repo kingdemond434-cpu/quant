@@ -6001,5 +6001,51 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"c4e54efa249cff79": {
+"t0": "2026-08-28T02:24:42+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Amir28604320",
+"url": "https://my.litefinance.org/traders/Amir28604320",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T02:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.0
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c550aa04e00cb13f": {
+"t0": "2026-08-28T02:24:42+00:00",
+"frozen": {
+"source": "litefinance",
+"kind": "track_record",
+"title": "@Eshaghtrader",
+"url": "https://my.litefinance.org/traders/Eshaghtrader",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T02:22:28+00:00",
+"region": "CIS/SEA",
+"stats": {
+"return_pct": 0.0
+},
+"evidence_grade": "A",
+"lang": "en+ru+vi",
+"mechanism_tags": []
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

@@ -10496,5 +10496,237 @@
    "win_rate": null,
    "symbol": "AMAZON"
   }
+ },
+ {
+  "id": "ext-20260828-85f6f8",
+  "geneology_id": "external:edge_search:rng_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD discovered params={'feature': 'rng_3', 'band': [0.0, 0.1], 'horizon': 1, 'side': -1} screened at n=3499 exp=0.11838354734365968R t=7.002664515850958 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "rng_3",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 3499,
+   "exp_r": 0.11838354734365968,
+   "t_stat": 7.002664515850958,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  }
+ },
+ {
+  "id": "ext-20260828-cbaf03",
+  "geneology_id": "external:edge_search:spread_z_48",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'spread_z_48', 'band': [0.75, 0.9], 'horizon': 1, 'side': -1} screened at n=1234 exp=0.19205234674613544R t=6.746479393070222 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "spread_z_48",
+   "band": [
+    0.75,
+    0.9
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1234,
+   "exp_r": 0.19205234674613544,
+   "t_stat": 6.746479393070222,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CADCHF"
+  }
+ },
+ {
+  "id": "ext-20260828-120dc6",
+  "geneology_id": "external:edge_search:spread",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDJPY discovered params={'feature': 'spread', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=564 exp=0.2820749108681258R t=6.698907971637712 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "spread",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 564,
+   "exp_r": 0.2820749108681258,
+   "t_stat": 6.698907971637712,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDJPY"
+  }
+ },
+ {
+  "id": "ext-20260828-81c4c1",
+  "geneology_id": "external:edge_search:ext_lead_NOKSEK_24_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_lead_NOKSEK_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=1608 exp=0.1613633368518571R t=6.470649687611375 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_NOKSEK_24_z",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1608,
+   "exp_r": 0.1613633368518571,
+   "t_stat": 6.470649687611375,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CADCHF"
+  }
+ },
+ {
+  "id": "ext-20260828-6ff209",
+  "geneology_id": "external:edge_search:ext_lead_USDTRY_24_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD discovered params={'feature': 'ext_lead_USDTRY_24_z', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=1337 exp=0.1743165294664039R t=6.373885747269713 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_USDTRY_24_z",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1337,
+   "exp_r": 0.1743165294664039,
+   "t_stat": 6.373885747269713,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  }
+ },
+ {
+  "id": "ext-20260828-013fd9",
+  "geneology_id": "external:edge_search:ext_lead_GBPSEK_24_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'ext_lead_GBPSEK_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=1576 exp=0.15949312246560068R t=6.33169617364822 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_GBPSEK_24_z",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1576,
+   "exp_r": 0.15949312246560068,
+   "t_stat": 6.33169617364822,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CADCHF"
+  }
+ },
+ {
+  "id": "ext-20260828-36d1f4",
+  "geneology_id": "external:edge_search:ext_triangle_resid_EUR",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF discovered params={'feature': 'ext_triangle_resid_EUR', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=868 exp=0.2121578493980176R t=6.250560555431375 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_triangle_resid_EUR",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 868,
+   "exp_r": 0.2121578493980176,
+   "t_stat": 6.250560555431375,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDCHF"
+  }
+ },
+ {
+  "id": "ext-20260828-0f6a1f",
+  "geneology_id": "external:edge_search:ext_lead_USDTRY_24",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURJPY discovered params={'feature': 'ext_lead_USDTRY_24', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=315 exp=0.35019661215716574R t=6.215373291878957 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_USDTRY_24",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-28T01:50:00.918996+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 315,
+   "exp_r": 0.35019661215716574,
+   "t_stat": 6.215373291878957,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURJPY"
+  }
  }
 ]

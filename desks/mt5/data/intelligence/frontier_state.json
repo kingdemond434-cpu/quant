@@ -1,5 +1,5 @@
 {
-"cursor": 54,
+"cursor": 55,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -8,6 +8,9 @@
 "\u590d\u5236\u4ea4\u6613 MT4",
 "\u590d\u5236\u4ea4\u6613 MT5",
 "\u590d\u5236\u4ea4\u6613 ranking",
+"\u5e26\u5355 MT4",
+"\u5e26\u5355 MT5",
+"\u5e26\u5355 ranking",
 "\u8ddf\u5355 MT4",
 "\u8ddf\u5355 MT5",
 "\u8ddf\u5355 ranking"

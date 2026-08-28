@@ -4,10 +4,10 @@
   "zh": {
    "region": "China",
    "open_frontier": false,
-   "queries_exercised": 9,
+   "queries_exercised": 12,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-27T08:22:01+00:00",
+   "last_swept": "2026-08-28T02:22:01+00:00",
    "native_terms_available": 19
   },
   "ja": {

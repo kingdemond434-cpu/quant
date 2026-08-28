@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T02:09:11+00:00",
+ "built_at": "2026-08-28T02:23:40+00:00",
  "window_days": 7,
  "universe_size": 197,
  "targets": [
@@ -125,8 +125,8 @@
   },
   {
    "symbol": "META",
-   "score": 398.0,
-   "from_miners": 371.0,
+   "score": 400.0,
+   "from_miners": 373.0,
    "from_moat": 27.0
   },
   {
@@ -1194,7 +1194,7 @@
    "usable_rate": 0.0
   },
   "amarkets": {
-   "rows": 6369,
+   "rows": 6482,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
@@ -1254,9 +1254,9 @@
    "usable_rate": 1.0
   },
   "fbs_tape": {
-   "rows": 57,
+   "rows": 58,
    "fetch_errors": 0,
-   "rows_naming_a_symbol": 57,
+   "rows_naming_a_symbol": 58,
    "usable_rate": 1.0
   },
   "ff_calendar_vintage": {
@@ -1314,13 +1314,13 @@
    "usable_rate": 0.0
   },
   "instaforex_copy": {
-   "rows": 225,
+   "rows": 229,
    "fetch_errors": 1,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
   },
   "litefinance": {
-   "rows": 798,
+   "rows": 813,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 3,
    "usable_rate": 0.004
@@ -1392,9 +1392,9 @@
    "usable_rate": 0.98
   },
   "regional_survivors": {
-   "rows": 9143,
+   "rows": 9314,
    "fetch_errors": 10,
-   "rows_naming_a_symbol": 64,
+   "rows_naming_a_symbol": 65,
    "usable_rate": 0.007
   },
   "roboforex_copyfx": {
@@ -1434,7 +1434,7 @@
    "usable_rate": 1.0
   },
   "trading_latam": {
-   "rows": 2164,
+   "rows": 2202,
    "fetch_errors": 0,
    "rows_naming_a_symbol": 0,
    "usable_rate": 0.0
