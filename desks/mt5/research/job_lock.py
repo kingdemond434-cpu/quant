@@ -16,31 +16,41 @@ LOCK_ROOT = BASE / "data" / ".job_locks"
 STALE_SECONDS = 45 * 60
 
 
-def _owner_is_dead(path: Path) -> bool:
-    """True when the lock names a process on THIS host that no longer exists.
+def _owner_state(path: Path) -> str:
+    """"DEAD", "ALIVE" or "UNKNOWN" for the process named in the lock.
 
-    A time-only stale rule makes live work wait on a corpse: a killed ssh leaves an orphaned
-    writer, or the box reboots mid-run, and the next 45 minutes of hourly attempts are refused
-    by a lock nobody holds (measured 2026-08-27 -- the searcher was blocked this way minutes
-    after its import crash was fixed). Liveness is checked first and the timer remains the
-    backstop for the cases liveness cannot answer: a lock written by a DIFFERENT host, or an
-    unreadable/short-write lock file, is never reclaimed on this basis.
+    TRI-STATE ON PURPOSE. This used to answer only "is it dead", and the caller could therefore
+    use liveness to ADD staleness but never to VETO it -- so a lock older than STALE_SECONDS was
+    reclaimed even when its owner was demonstrably alive and working. With sweeps that legitimately
+    run 60-90 minutes against a 45 minute timer, that is not an edge case: it GUARANTEES a
+    duplicate. Measured 2026-08-28 -- two external_gauntlet processes at once (66 and 22 minutes),
+    both sweeping, on an 8GB box that also runs the live terminal, saturating it so completely
+    that ssh could not complete.
+
+    A living owner is proof the job is not abandoned, which is the only thing the age rule was
+    ever trying to guess at. Age remains the backstop for the cases liveness genuinely cannot
+    answer: a lock written by another host, or an unreadable one.
+    The original lesson still holds and is why liveness exists at all: a time-only rule makes
+    live work wait on a corpse -- a killed ssh leaves an orphaned writer, or the box reboots
+    mid-run, and the next 45 minutes of hourly attempts are refused by a lock nobody holds
+    (measured 2026-08-27). Both directions are now covered: a corpse never blocks, and a living
+    owner is never robbed.
     """
     try:
         row = json.loads(path.read_text("utf-8"))
     except (OSError, ValueError):
-        return False                      # unreadable: fall back to the age rule, never guess
+        return "UNKNOWN"                  # unreadable: fall back to the age rule, never guess
     if str(row.get("host") or "") != socket.gethostname():
-        return False                      # another machine's lock is not ours to judge
+        return "UNKNOWN"                  # another machine's lock is not ours to judge
     pid = row.get("pid")
     if not isinstance(pid, int) or pid <= 0:
-        return False
+        return "UNKNOWN"
     try:
         os.kill(pid, 0)                   # signal 0: existence check, never delivers a signal
     except ProcessLookupError:
-        return True
+        return "DEAD"
     except PermissionError:
-        return False                      # alive under another user
+        return "ALIVE"                    # running under another user is still running
     except OSError as exc:
         # WINDOWS NEVER RAISES ProcessLookupError HERE, so on the box this whole function could
         # only ever return False and the liveness path -- the entire reason it exists -- was dead
@@ -54,9 +64,9 @@ def _owner_is_dead(path: Path) -> bool:
         # lock from a process that is merely unreachable would let two writers run at once, which
         # is worse than waiting.
         if sys.platform == "win32" and getattr(exc, "winerror", None) == 87:
-            return True
-        return False
-    return False
+            return "DEAD"
+        return "UNKNOWN"
+    return "ALIVE"
 
 
 def free_mb() -> int | None:
@@ -153,9 +163,16 @@ def exclusive_job(name: str, need_mb: int = 0):
                 stale = datetime.now(UTC).timestamp() - path.stat().st_mtime > STALE_SECONDS
             except OSError:
                 stale = False
-            if _owner_is_dead(path):
+            state = _owner_state(path)
+            if state == "DEAD":
                 print(f"{name}: reclaiming lock from dead owner (pid gone) -- {path}")
                 stale = True
+            elif state == "ALIVE" and stale:
+                # LIVENESS VETOES AGE. The holder is running; the lock is not abandoned, it is
+                # merely old. Reclaiming here is what produced two concurrent sweeps.
+                print(f"{name}: lock is older than {STALE_SECONDS // 60}min but its owner is "
+                      f"ALIVE -- not reclaiming; a long job is not an abandoned one")
+                stale = False
             if stale:
                 with suppress(OSError):
                     path.unlink()
