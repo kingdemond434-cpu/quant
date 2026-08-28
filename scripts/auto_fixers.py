@@ -147,35 +147,21 @@ def fix_data_macro() -> tuple[bool, str]:
 
 
 def fix_data_cot() -> tuple[bool, str]:
-    """Refresh the MT5 desk's COT cache -- NOT the crypto one.
+    """Refresh the MT5 desk's COT z-cache INCREMENTALLY from CFTC's fast API.
 
-    quant-cot-fetch writes data/cot/{btc,eth}.parquet: retired crypto ground under the MT5-only
-    mandate. The FX/metal `cot_positioning` family reads data/cot_zcache.parquet, whose producer
-    is run_cot_screen (CFTC deacot history -> 11-asset weekly z-cache). Pointing the fixer at
-    the crypto unit meant the fence 'fixed' COT every pass while the file it watches sat 67 days
-    stale -- a fixer aimed at the wrong artifact is worse than none, because the breach looks
-    attended (measured 2026-08-28).
+    Three defects lived on this one path. quant-cot-fetch writes data/cot/{btc,eth}.parquet --
+    retired crypto ground -- while the FX/metal `cot_positioning` family reads
+    data/cot_zcache.parquet, so the fence 'fixed' COT every pass while the watched file sat 67
+    days stale (a fixer aimed at the wrong artifact is worse than none: the breach looks
+    attended). run_cot_screen, the only other candidate, is READER-FIRST and re-screens the
+    stale cache reporting success. And rebuilding from the 26 years of history zips takes long
+    enough that every fixer attempt timed out and correctly restored the stale file -- endless
+    motion, zero progress. refresh_cot_zcache appends only the missing weeks from Socrata:
+    seconds, not minutes, and banked history can never be lost to a bad fetch.
     """
-    # READER-FIRST MEANS A STALE CACHE IS NEVER REFRESHED BY ITS OWN SCREEN: run_cot_screen
-    # consumes data/cot_zcache.parquet when present, so running it on a 67-day-old cache
-    # re-screens 67-day-old data and reports success. The cache is moved aside (kept, never
-    # deleted -- it is the fallback if the CFTC fetch fails) so the rebuild path runs; if the
-    # rebuild does not produce a fresher file, the old one is restored and the breach stands.
-    from datetime import datetime as _dt
-    cache = ROOT / "data" / "cot_zcache.parquet"
-    stamp = _dt.now(UTC).strftime("%Y%m%dT%H%M")
-    parked = cache.with_suffix(f".parquet.stale-{stamp}")
-    had = cache.exists()
-    if had:
-        cache.rename(parked)
-    rc, out = _run([sys.executable, str(ROOT / "scripts" / "run_cot_screen.py")], timeout=900)
-    fresh = cache.exists() and (not had or cache.stat().st_mtime > parked.stat().st_mtime)
-    if not fresh and had:
-        if cache.exists():
-            cache.unlink()
-        parked.rename(cache)
-        return False, f"rebuild produced no fresher cache (rc={rc}); stale cache restored"
-    return rc == 0, f"cot cache rebuilt (rc={rc}) {out[-120:]}"
+    rc, out = _run([sys.executable, str(ROOT / "scripts" / "refresh_cot_zcache.py")],
+                   timeout=300)
+    return rc == 0, out[-200:]
 
 
 def fix_data_events() -> tuple[bool, str]:

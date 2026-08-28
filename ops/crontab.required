@@ -4,3 +4,4 @@
 15 6 * * 0 cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py --weekly >> data/cro_ai_logs/research_health.log 2>&1
 */10 * * * * cd /home/quant/quant-platform && bash scripts/auto_push.sh >> data/cro_ai_logs/auto_push.log 2>&1
 */10 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_unit_health.py >> data/cro_ai_logs/unit_health.log 2>&1
+35 7 * * 2,3,6 .venv/bin/python scripts/refresh_cot_zcache.py >> data/cro_ai_logs/cot_zcache.log 2>&1
