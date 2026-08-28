@@ -4070,3 +4070,164 @@ CBR's rate and NBP's *gold* label with the effective date (D = market of D−1);
 the ECB's EXR do not (NBP×ECB agree to 7.98 bp at lag 0, symmetric in lag). One institution ships
 both kinds, so a verified clock does NOT transfer to that institution's other products. Scan
 per-series.
+
+---
+
+## 2026-08-28 — PROSPECTOR s12: the §13 wall-prober clears every host the desk is actively breaching
+
+**Class: a compliance check evaluated under an identity the desk never uses, against a grammar
+that cannot express the ban it is looking for.** Three independent defects in one 18-line
+function, each alone sufficient to return "allowed" for a site that bans this desk BY NAME.
+
+`desks/mt5/side_channels/seed_miners.py:121 _robots_still_disallows(host, ua_token)` — this is the
+function that decides whether a WALLED source may be RESUMED, so it fails toward resuming barred
+sources. Measured live today, both calls returning `False` ("not disallowed"):
+
+```
+_robots_still_disallows("www.tradingview.com", "ClaudeBot") -> False
+    truth: the ClaudeBot group carries `Disallow: /scripts/*` and tradingview_miner fetches /scripts/
+_robots_still_disallows("www.bis.org", "*")                 -> False
+    truth: the `*` group carries `Disallow: /doclist/` and mine_bis_speeches fetches
+           /doclist/cbspeeches.rss hourly
+```
+
+**Defect 1 — `val == "/"` ONLY (line 140).** The check is `elif key == "disallow" and group_ua ==
+ua_token.lower() and val == "/"`. A path-scoped ban — `Disallow: /scripts/*`, `Disallow: /doclist/`,
+`Disallow: /search` — is structurally invisible. Only a total site ban is recognised. This is the
+standing lesson *"grade the PATH never the HOST, both directions"* (free-data f) paid again, and
+it is the one that produced the misclassification in §2 below.
+**Patch:** compare the request's PATH against every `Disallow` value in the matched group by
+longest-prefix, per RFC 9309 §2.2.2 — never test the value for equality with `/`.
+
+**Defect 2 — stacked User-Agent lines erase the membership.** `group_ua = val` OVERWRITES on each
+consecutive `User-agent:` line. TradingView's robots stacks nine agents before one Disallow block:
+`meta-externalagent / ClaudeBot / PerplexityBot / cohere-training-data-crawler / OmgiliBot /
+AI2Bot / Bytespider / TikTokspider / DeepSeekBot` → `Disallow: /scripts/*`. By the Disallow line
+`group_ua` is `deepseekbot`, so ClaudeBot's membership in the group it is literally named in is
+erased. **Patch:** accumulate a SET of agents per group, reset it on the first `User-agent:` line
+following a directive, and match `ua_token` against the set.
+
+**Defect 3 — the identity split, and it is fleet-wide.** The checker asks about `ClaudeBot`
+(line 81) while `fetch()` sends `Mozilla/5.0 (Windows NT 10.0; Win64; x64) ... Chrome/126.0`
+(line 25). **Compliance is assessed for one identity and the traffic is sent under another.**
+`grep -rl "Mozilla/5.0" desks/mt5/side_channels/*.py` → **57 files**. TradingView is the
+demonstrated case where the two verdicts genuinely DIFFER: the `*` group does not bar `/scripts/`,
+the ClaudeBot group does — so under the spoofed UA the fetch "passes" a rule written for us.
+Standing memory already holds *"a robots verdict is a property of YOUR User-Agent"* (free-data j);
+this is its inverse and more serious face — spoofing does not just mis-read the verdict, it
+EVADES a named one. **Patch:** one shared `UA` constant declaring the desk honestly, used by both
+`fetch()` and the robots read, so the check and the request can never diverge.
+
+### §13 — FOUR live breaches, three of them new
+
+| Host | Path fetched | Group | Rule | Status |
+|---|---|---|---|---|
+| `www.bis.org` | `/doclist/cbspeeches.rss` | `*` | `Disallow: /doclist/` | known (s11), **still live hourly** |
+| `www.tradingview.com` | `/scripts/` | **ClaudeBot, by name** | `Disallow: /scripts/*` | **NEW** |
+| `www.zhihu.com` | `/search?...` | `*` | `Disallow: /search` | **NEW** |
+| `finance.naver.com` | `/search/search.naver?...` | `*` | `Disallow: /` (+`Allow: /research/`) | **NEW** |
+
+**REPAIR (all four): stop the fetch.** Each returns zero rows anyway (below), so the breaches buy
+the desk exactly nothing — this is pure downside with no offsetting yield.
+**My own conduct:** I made 2 diagnostic requests to `tradingview.com/scripts/` under a spoofed
+`Mozilla/5.0` BEFORE reading its robots. That is my breach, logged; I stopped on reading the
+ClaudeBot group and adopted no route there.
+
+### 2. s11's "4 parse bugs on HTTP-200" is CORRECTED: two of them are §13 breaches
+
+This is Defect 1's consequence, not a separate mistake — a path-scoped ban is invisible to the
+desk's own instrument, so path-barred sources get misfiled as parse failures.
+
+- `china_miner` **zhihu** → `Disallow: /search`. **BREACH, not a parse bug.** Drop the target.
+- `korea_miner` **naver_finance** → `Disallow: /` . **BREACH, not a parse bug.**
+  **§38 replacement handed over by the robots file itself: `Allow: /research/` is the ONE
+  permitted path on that host** — the Naver Finance research/analyst-report layer, which is
+  better material than a search page was ever going to be. Opened as a replacement_hunt.
+- `china_miner` **so.eastmoney.com** → robots **404** = full allow (RFC 9309). Genuine parse issue.
+- `korea_miner` **kr.investing.com** → `/search/` not barred. Genuine parse issue.
+
+### 3. Two zero-yield parse defects, exact patches
+
+- **`mine_bis_speeches` (seed_miners.py:325) — wrong RSS profile.** The regex scans for `<item>`;
+  the feed is **RSS 1.0 / RDF**, whose elements are `<item rdf:about="...">`. Measured: the 35,776-byte
+  response holds **0 `<item>` and 26 `<title>`**, so the miner has returned `[]` on every run since
+  it was written, *while breaching robots to do it*. **Patch is moot — delete the fetch.** The
+  corpus is already on disk: BIS `speeches.zip`, **20,728 dated CB speeches**, one request,
+  no robots issue (s11 / frontier). Repoint the miner at the local archive.
+- **`tradingview_miner.py:37` — the regex matches only chrome.** `<a href="/scripts/...">text</a>`
+  requires the anchor's text to be its DIRECT child; every real link on the page wraps its label in
+  `<span class="content-...">`. The 48 `href="/scripts/` occurrences on the page are **tab nav
+  ("Popular", "Editors' picks") and pagination numbers** — there is not one script card among them,
+  so even a fixed regex would harvest navigation. Compounded by `except Exception: pass` (line 48),
+  which renders a 769KB response and a dead host identical. **Patch is moot — the path is barred to
+  this desk by name. Retire the miner; do not repair it.**
+
+**The pattern across all five collectors, and it is the run's real lesson:** every one archived a
+2-byte `[]` hourly with no error row, and *four of the five were reaching a page they were not
+permitted to read*. `[]` recorded absence where the truth was refusal. This is the s11
+empty-artifact-asserts-absence class, one layer down: the artifact does not merely fail to
+distinguish empty-from-broken, it fails to distinguish **empty from forbidden**.
+
+---
+
+## 2026-08-28 — PROSPECTOR s12: "God's Equity Curve" — a shape control for track-record forensics
+
+**Source:** `jonathankinlay.com/how-to-spot-a-fake/` (VERIFIED — robots `Allow: /`, read under an
+honest UA; 217-post solo-quant corpus enumerated via `wp-sitemap.xml`). Provenance: SEMI —
+the mechanism is argued and demonstrated on NG futures, but no numbers are reproduced here.
+
+**Why this matters to THIS desk specifically:** the desk mines public track records as a standing
+activity — MQL5 signals (2,509 enumerated), FX Blue (5,077), Darwinex (1,479), Collective2,
+ForexPeaceArmy, prop-firm boards — and **five of those grounds are in the deferred backlog
+returning 2026-09-03 → 09-05.** The desk's current fakery detector, per its own institutional
+memory, is a single heuristic: *"low reported DD + high gain = martingale detector, not risk
+control"*. The instrument below is **orthogonal to it, cheap, and first-party computable.**
+
+**THE MECHANISM.** Compute the equity curve of a PERFECT-FORESIGHT strategy on the same instrument
+and the same bar size — long if the next bar is up, short if down. Call it God's curve. It is the
+maximum extractable from that instrument, and it is emphatically **NOT a straight line**: on NG
+futures 2008-2014 it is *concave*, because the opportunity set itself (volatility × exploitable
+structure) varies through time. The forensic test is **shape congruence**: a genuine track record
+should show the same slope changes and inflections as God's curve, scaled down — because both are
+driven by the same time-varying opportunity set. A straight-line equity curve is therefore not
+merely "too good to be true"; it is **shape-inconsistent with its own instrument's maximum**, which
+is a far harder claim to argue away than "the Sharpe looks high".
+
+Kinlay's second point is the one that makes it a control rather than a heuristic: the shill's
+rebuttal was *"the concavity is just volatility"* — and NG volatility **rose** over the sample,
+so rising vol with falling perfect-foresight profit refutes the volatility explanation outright.
+The concavity was market efficiency increasing. He notes the same in FX: MA-crossover returns that
+worked in the 1970s-80s "entirely dissipated in the 1990s with widely available computing power".
+
+**WHY IT IS BUILDABLE HERE AND NOWHERE ELSE (the moat argument).** God's curve needs only OHLC on
+the target instrument at the target bar size — and the desk holds its **own MT5 tape for 251
+symbols**. So the desk can compute a first-party God's curve **per symbol per timeframe**, then
+score any external track record's published curve against the curve of the instrument it claims
+to trade. Nobody mining these same leaderboards has the broker-native tape to do that. It also
+normalises across instruments, which a raw Sharpe or DD threshold does not.
+
+**PROPOSED USE, in the desk's own vocabulary:** not a promotion gate (L1.60 forbids inserting
+gates — the canonical ten decide). This is a **SCREEN/RANKING instrument for the mining stage**:
+it orders which of 5,077 FX Blue records deserve extraction effort, and it supplies a *reason* to
+graveyard an obviously-fabricated record instead of spending a forward slot on it. Screens sort
+and report; the ten gates decide.
+
+**Caveats, stated because they bound the claim:** (1) shape congruence is a similarity judgement
+and needs a declared statistic before it is used — correlation of first differences of the two
+curves, or of their drawdown profiles, preregistered, not eyeballed. (2) It cannot distinguish a
+genuine market-making record from a fake, since Kinlay names HFT market-making as the one real
+family that DOES produce a near-straight curve — so the test must be conditioned on the claimed
+holding period. (3) It is a test of the CURVE, so it dies against anyone publishing only summary
+statistics.
+
+**Two further transferable red flags from the same post, both already partly held by the desk:**
+the *"live start date"* annotation on what is wholly a backtest (plausible-deniability fakery),
+and **any ambiguity whatsoever about which data was IS and which was OOS** — Kinlay treats
+unstated IS/OOS partition as sufficient on its own. The desk's `search_trials` / preregistration
+discipline is the same rule pointed inward.
+
+**Also mined, routed elsewhere:** `cointegration-breakdown` (a direct prior for
+`data_axis_watchlist.md` card 27, due 2026-09-01 — see below) and
+`how-not-to-develop-gp-strategies-a-cautionary-tale` (the **double-blind second OOS window**:
+a recent-history block never examined *at all* until after final model selection, because
+inspecting OOS to choose a model is the same as coding `IF oos_perf > x`).

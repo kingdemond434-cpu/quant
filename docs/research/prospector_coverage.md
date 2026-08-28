@@ -8834,3 +8834,135 @@ noun-phrase queries only; never for conceptual ones; budget ~2 min/query.**
    — thin at one firm, but the dates are extracted and free to join against any second firm's
    archive; the family becomes testable only if pooling reaches n≈40.
 5. **`jonathankinlay.com` fork/citation dig** — solo-quant long-form, one of the two capped hand-priorities.
+
+---
+
+## PROSPECTOR s12 — 2026-08-28 (session note written FIRST, per the completion contract)
+
+**Backlog: CLEAR** (`source_backlog_next --limit 6`: 73 catalogued, 48 resolved, **0 pending
+verification**, 25 deferred to dates 2026-09-01 → 09-15). Mining authorised; no verification
+bottleneck to clear first. Resuming from s11's named next-ground list, items 1, 2 and 5.
+
+**ITEMS TAKEN THIS RUN (bounded breadth, unbounded depth per item):**
+1. **The 4 parse-bug collectors** (`tradingview`, `earnings`, `china`, `korea`) — s11 confirmed all
+   four are HTTP-200 with content present and archiving `[]`. Owned ground returning nothing for a
+   regex reason: cheapest yield on the board. Deliverable = exact patch per collector (research
+   freeze: named + ledgered, not applied to code).
+2. **`bis_speeches` repoint** — closes a live §13 robots breach (`bis.org/doclist/` is Disallow)
+   AND opens the 20,728-dated-speech corpus already on disk.
+3. **`jonathankinlay.com`** — solo-quant long-form, one of the two capped hand-priorities.
+
+_(status updated in place as each resolves; findings routed as they land, never held in context)_
+
+### RESULT — all three items CLOSED. Zero watchlist cards, and that is the honest outcome.
+
+**ITEM 1 + 2 merged into one finding, because they turned out to be the same defect.** s11 handed
+me "4 parse-bug collectors" and "one §13 breach at bis.org". Both descriptions were wrong in the
+same direction, and the thing that made them wrong is the desk's own instrument.
+
+`seed_miners._robots_still_disallows()` — the function that decides whether a WALLED source may be
+RESUMED — **returns `False` ("not disallowed") for every host the desk is actively breaching.**
+Measured live: `("www.tradingview.com","ClaudeBot") -> False` while that group carries
+`Disallow: /scripts/*`; `("www.bis.org","*") -> False` while that group carries `Disallow: /doclist/`.
+Three independent defects, each alone sufficient: (1) line 140 tests `val == "/"`, so a
+**path-scoped** Disallow is structurally invisible — only a total site ban is recognised;
+(2) `group_ua` overwrites on stacked `User-agent:` lines, erasing ClaudeBot's membership in
+TradingView's nine-agent block; (3) the checker asks about `ClaudeBot` while `fetch()` sends a
+spoofed `Chrome/126.0` — **57 files** under `side_channels/` carry a spoofed browser UA, so
+compliance is assessed for one identity and the traffic is sent under another. TradingView is the
+case where the two verdicts genuinely differ: `*` permits `/scripts/`, the ClaudeBot group does not.
+
+**Consequence — FOUR live §13 breaches, three new**: `bis.org/doclist/` (known, still hourly),
+`tradingview.com/scripts/` (ClaudeBot named), `zhihu.com/search`, `finance.naver.com/` (`Disallow: /`).
+**Two of s11's "parse bugs" were breaches, not parse bugs** — which is defect (1)'s direct
+consequence, not a separate mistake: a path-scoped ban is invisible to the instrument, so
+path-barred sources get misfiled as regex failures. Of the four, only `so.eastmoney.com`
+(robots 404 = full allow) and `kr.investing.com` (`/search/` unbarred) are genuine parse issues.
+
+**All five collectors return `[]` anyway**, so every breach buys the desk exactly nothing.
+`mine_bis_speeches` parses the wrong RSS profile — it scans for `<item>` but the feed is RSS 1.0 /
+RDF (`<item rdf:about=...>`): measured **0 `<item>` and 26 `<title>` in 35,776 bytes**, so it has
+returned `[]` on every run since it was written, while breaching robots to do it. `tradingview_miner`'s
+regex requires the anchor label to be a direct child, but every real link wraps its label in a
+`<span>` — and the 48 `href="/scripts/` on the page are **tab nav and pagination, zero script cards**,
+so even a repaired regex would harvest navigation. Both repairs are moot: **retire both fetches.**
+The BIS corpus is already on disk (`speeches.zip`, 20,728 dated speeches, one request, no robots issue).
+
+**The class, one layer below s11's:** every collector archived a 2-byte `[]` hourly with no error
+row, and four of five were reaching a page they were not permitted to read. `[]` recorded absence
+where the truth was **refusal**. s11's lesson was "empty artifact asserts absence"; the correction
+is that it cannot distinguish empty from **forbidden** either.
+→ ledgered **R0697–R0701**; full detail + patches in `improvement_inbox.md`.
+
+**ITEM 3 — `jonathankinlay.com`, EXHAUSTED at the census layer, 4 posts read to depth.**
+Robots `Allow: /` (77 bytes, zero Disallow) and it hands over `wp-sitemap.xml` → **217 posts**
+enumerated, slug-censused by mechanism vocabulary (volatility 18, futures 13, HFT 12, arbitrage 8,
+pairs 7, momentum 7). Corpus is mostly US equity/ETF/VIX — largely outside the MT5 universe — so I
+read for METHOD and for NEGATIVE results rather than for alpha, which is where its density is.
+- **`how-to-spot-a-fake` → the run's one genuinely new instrument: "God's Equity Curve."** The
+  perfect-foresight equity curve on the same instrument and bar size is **not a straight line**
+  (concave on NG 2008-14, because the opportunity set varies); a real record should share its
+  inflections. A straight-line curve is thus *shape-inconsistent with its own instrument's maximum* —
+  a much harder claim to argue away than "high Sharpe". Kinlay kills the obvious rebuttal with data:
+  NG vol **rose** over the sample, so vol cannot explain the concavity. **This is first-party
+  buildable here and almost nowhere else** — it needs only OHLC, and the desk holds its own tape for
+  251 symbols, so it can grade the 5,077 FX Blue / 2,509 MQL5 / 1,479 Darwinex records **five of
+  which return from deferral 2026-09-03→09-05**. Orthogonal to the desk's existing low-DD/high-gain
+  martingale heuristic. Routed as a mining-stage SCREEN, never a gate (L1.60). → **R0702**.
+- **`cointegration-breakdown` → a timely prior, not a card.** Johansen finds up to 3 cointegrating
+  vectors at 95%, the portfolio is stationary in-sample and **fails** the unit-root test OOS; more
+  in-sample data does not repair it; a correlation "safety check" adds nothing. `data_axis_watchlist`
+  card 27 returns **2026-09-01** (4 days) already correctly re-scoped to a Fusion analogue — this
+  says its MT5 version must make OOS residual stationarity a **precondition tested up front**, not a
+  result. → **R0703**.
+- **`how-not-to-develop-gp-strategies`** → the double-blind SECOND OOS window: a recent block never
+  examined *at all* until after final model selection, because inspecting OOS to pick a model is
+  identical to coding `IF oos_perf > x`. Logged in the inbox.
+- **`lazarus-trade-easter-...` → DISCARDED to the graveyard, not carded.** The author tests the
+  unconditional post-Easter week, gets **not significant**, then conditions on a prior-week selloff
+  to reach "significant at 0.2%" — a second hypothesis after the first failed, reported as one
+  finding, with the cut itself a free parameter. And n = **26 events in 65 years**: no correction and
+  no patience reaches the gates' sufficiency bar. Calendar-class match (`TDOM`,
+  `hijri_ramadan_calendar_axis`). `post_hoc_conditioning` / `n_too_small` / `no_economics`.
+
+**A HYPOTHESIS OF MINE THAT DIED TO ITS OWN CHECK (reported because it is a result):** I suspected
+the 25 deferred backlog rows were seeded with banned crypto-exchange ground that would auto-return
+and consume six future sessions — the s7 class. **REFUTED.** Card 27 was explicitly mandate-re-graded
+on 2026-08-24 ("the current venue mandate is Fusion MT5 rather than Binance", `translate_to_mt5()`
+returns no mapping) and names its MT5 analogue; Kraken is "scoped to MT5-universe symbols"; NAVER
+carries a 2026-08-25 mandate re-grade. The deferral queue is being maintained correctly and I was
+wrong.
+
+| Source family | Visited | Yield |
+|---|---|---|
+| 5 zero-yield collectors → miner source → **import-graph into the robots checker** | ✅ | **triple defect in the §13 wall-prober; 4 live breaches, 3 new** — the run's headline |
+| Live robots reads: bis, tradingview, zhihu, eastmoney, naver, kr.investing | ✅ | 4 breaches · 2 confirmed-allowed · 1 §38 replacement handed over by robots itself |
+| `jonathankinlay.com` — robots → sitemap → 217-post census → 4 posts read full | ✅ | **1 new instrument (God's curve)** · 1 timely prior · 1 method · **1 graveyard entry** |
+| Deferred-backlog mandate audit (25 rows) | ✅ | **null — my hypothesis refuted**, queue is correctly maintained |
+
+- **DEPTH:** collectors → **exhausted** (source read → import graph → the shared checker → run the
+  checker against the breached hosts → 57-file UA audit). `jonathankinlay.com` → **census-exhausted**
+  (robots → sitemap index → post-sitemap → 217 slugs → vocabulary census → 4 full reads). Surface
+  said "parse bugs"; the walk said two are breaches and the instrument that should have caught them
+  is blind by construction.
+- **§38 EXCLUSION → REPLACEMENT:** `finance.naver.com` search is barred, but its robots carries
+  **`Allow: /research/`** — the analyst-report layer, the one permitted path, and better material
+  than a search page. Opened as the KR replacement route (**R0700**).
+- **§13:** four breaches named with their repair (stop the fetch). **My own conduct:** I made 2
+  diagnostic requests to `tradingview.com/scripts/` under a spoofed `Mozilla/5.0` **before** reading
+  its robots. That is my breach; I stopped on reading the ClaudeBot group and adopted no route there.
+  Every subsequent request this run went out under an honest `ClaudeBot (quant research desk)` UA.
+- **Video:** 0 fetched, 0 locked, none needed. Nothing added to `video_locked_log.md`.
+- **Cards:** **ZERO.** Nothing survived graveyard + EV, and nothing was manufactured to look productive.
+
+### NEXT UN-EXHAUSTED GROUND (for s13, in order)
+1. **Build/spec `God's Equity Curve` (R0702)** and run it against the FX Blue / MQL5 / Darwinex
+   corpora — the five track-record grounds return from deferral **2026-09-03→09-05**, so the
+   instrument wants to exist *before* they land. Highest-leverage item on the board.
+2. **`finance.naver.com/research/`** — the §38 replacement this run opened but did not walk.
+3. **The 2 genuine parse bugs** (`so.eastmoney.com`, `kr.investing.com`) — both confirmed permitted;
+   note Eastmoney's >35min TLS-drop cooldown, probe once, never retry-loop.
+4. **`jonathankinlay.com` remaining ~213 posts** — census done, so this is now targeted: the
+   volatility (18) and HFT/microstructure (14) clusters are unread, and execution/cost material is
+   the desk's standing bottleneck class.
+5. **Card 27's MT5 stat-arb analogue** (returns 2026-09-01) — carry R0703 in as its prior.

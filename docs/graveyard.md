@@ -1855,3 +1855,39 @@ quantity and different universe — a broker halt/reopen event on MT5 exotics, n
 dummy on crypto — so this is not a re-litigation of that row. But that row's kill reason (episode-level
 n too small) applies here too and is now joined by a measured null: this one is **refuted**, not
 merely unmeasurable, and it retires the mechanism rather than a method.
+
+### `lazarus_easter_conditional_reversion_sp500` — PROSPECTOR s12, 2026-08-28 — `post_hoc_conditioning` + `n_too_small` + calendar-class match
+
+_Source: jonathankinlay.com/lazarus-trade-easter-mean-reversion-sp500-index (VERIFIED, robots
+`Allow: /`, read under an honest UA). S&P 500 weekly data from 1950._
+
+**CLAIM:** the week AFTER Easter, *conditional on the index having sold off in the week before
+Easter*, delivers a mean return more than 2x the unconditional post-Easter week and ~4x the
+average week, with less than half the standard deviation — an information ratio ~10x larger,
+an 85% win rate (22/26) against 57% unconditional, and a 58bp difference "statistically
+significant at the 0.2% level".
+
+**DISCARDED — not screened, not carded, and the author's own narrative is the reason.** He tests
+the unconditional post-Easter week FIRST, reports the t-test (unequal variances) as **not
+significant**, and only then conditions on a prior-week selloff to obtain the significant result.
+That is a second hypothesis tested after the first failed, reported as one finding: the
+garden-of-forking-paths this desk's multiplicity law names explicitly ("EVERY TRIAL IS REPORTED";
+selective reporting is indistinguishable from a real result at the point of reading, and it is the
+failure that retracted this desk's flagship signal). The published p is uncorrected for the
+conditioning choice, and the cut — "sold off in the prior week" — is itself a free parameter with
+an unreported set of alternatives (magnitude threshold, window length, index vs ETF).
+
+**And the n forecloses it regardless of the multiplicity argument: 26 events in 65 years.** No
+correction, and no amount of patience, brings a once-a-year event to the canonical ten gates'
+sufficiency bar — 65 more years buys 26 more observations. MT5-tradability is not the binding
+constraint (US500 is in the Fusion universe); the sample is.
+
+**Calendar-class graveyard match** — consistent with `TDOM` (discarded, calendar-class) and with
+`hijri_ramadan_calendar_axis` (`unmeasurable_by_construction`). Per WS-006 the significance of a
+calendar **dummy** is a different quantity from the mechanism, and no forced flow is named here:
+the post offers no answer to *who* is obliged to trade against this and why they cannot stop.
+
+**TAG:** `post_hoc_conditioning` / `n_too_small` / `no_economics`.
+**RE-OPEN CONDITION (L1.16a):** only on a named forced-flow mechanism for the Easter week
+(a settlement, hedging or mandated-rebalance obligation), tested pre-registered across MANY
+indices to buy breadth the calendar cannot buy in time — never on a re-run of this conditioning.
