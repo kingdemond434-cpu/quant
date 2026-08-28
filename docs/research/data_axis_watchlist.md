@@ -7442,3 +7442,24 @@ triangulation whose residual bias explains itself. That is reference data, not a
 saying so plainly; but 2008 and 2011 are regimes this desk has *never once* tested a candidate in,
 and the gauntlet has been starved of exactly that. Verified small beats unverified impressive —
 and this one is verified and large.
+
+---
+
+## SESSION 2026-08-28 (s) — FREE-DATA-ALTERNATIVES, run (s)
+
+**STATUS: IN PROGRESS (written first per completion contract).** Backlog re-checked:
+`source_backlog_next.py --limit 6` → 0 pending verification, 0 pending legitimacy, 25 deferred
+(next returns 2026-09-01). Nothing workable is owed, so this run advances the ground my own
+run (r) note named.
+
+**ITEMS TAKEN THIS RUN (bounded, depth uncapped):**
+1. **The keyless-central-bank-API class, door 5+** — run (r) left MNB (Hungary), BNR (Romania)
+   and CBRT (Turkey) named but unopened, each an MT5 currency with a plausible NBP-table analogue
+   and the same 2002→ history-extension prize. §13 first (robots + terms), then history depth,
+   then the offset-scan (lag × hour) against the desk's own tape.
+2. **SWEA curve SLOPE arm** (2Y/5Y/7Y/10Y) — carried unreached from run (q): the level was
+   tested and refuted, the slope never was. Slope is the arm with the term-premium story.
+3. Any dead column / date-label trap re-test on the new doors (runs (q),(r) found the same
+   convention at two unrelated institutions; a third instance would make it a rule, not a pair).
+
+*(sections below are filled as each item resolves)*
