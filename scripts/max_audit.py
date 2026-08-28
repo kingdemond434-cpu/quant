@@ -230,6 +230,21 @@ _PATH_METHODS = ("exists", "stat", "glob", "rglob", "iterdir", "open",
                  "read_text", "read_bytes", "is_file", "is_dir")
 
 
+def _git_head() -> str | None:
+    """The repo's current HEAD sha, or None when it cannot be resolved.
+
+    None is the honest answer for a detached/absent/broken git dir, and every caller must treat
+    it as "cannot tell" rather than "unchanged" -- a comparison against an unknown must never
+    soften a safety verdict.
+    """
+    try:
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
+                           text=True, timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return ((r.stdout or "").strip() or None) if r.returncode == 0 else None
+
+
 def _rel_root(p: Path) -> str:
     """Repo-relative when inside the repo, absolute otherwise. `relative_to` RAISES outside ROOT,
     and this session has now fixed that same crash in four separate scripts."""
@@ -1704,10 +1719,34 @@ def check_ci_gate(defects) -> None:
                                     "memory (scripts/disk_guard.py has a tmpfs arm) and re-run "
                                     "scripts/run_ci.py when the box is quiet."))
                 else:
-                    defects.append(("ci-gate-red",
-                                    f"last CI run ({ci.get('ts')}) was RED on COMMITTED code -> "
-                                    f"{failed}; the desk-wide safety gate is down. "
-                                    "Run scripts/run_ci.py + fix"))
+                    # A RED IS A STATEMENT ABOUT A TREE, AND THE TREE MOVES (2026-08-28).
+                    # run_ci now stamps the commit it measured. On 2026-08-28 the 08:54 marker
+                    # named 25 committed-code failures; every one was fixed by 09:39, and this
+                    # check went on reporting "RED on COMMITTED code" -- sending a reader to hunt
+                    # a bug that no longer existed. Same burying as the tracked_ok and
+                    # resource-killed splits above: an un-actionable red recurs, gets skimmed, and
+                    # hides the next real one. The two demand OPPOSITE work -- one is "find the
+                    # bug", the other is "re-run the gate" -- so they get separate names.
+                    # STILL A DEFECT either way: a verdict about a superseded tree has proven
+                    # NOTHING about this one, and unknown is never green. An absent `head`
+                    # (markers written before this fix) or an unresolvable HEAD keeps the old
+                    # escalation, so the fail-closed direction is unchanged.
+                    marker_head = ci.get("head")
+                    live_head = _git_head()
+                    if marker_head and live_head and marker_head != live_head:
+                        defects.append(("ci-gate-red-superseded",
+                                        f"last CI run ({ci.get('ts')}) was red -> {failed}, but "
+                                        f"it measured commit {marker_head[:8]} and HEAD is now "
+                                        f"{live_head[:8]}. Do NOT hunt those failures until they "
+                                        "are re-observed -- they may already be fixed. The gate "
+                                        "has proven nothing about the current tree (unknown is "
+                                        "not green): re-run scripts/run_ci.py, then fix whatever "
+                                        "survives."))
+                    else:
+                        defects.append(("ci-gate-red",
+                                        f"last CI run ({ci.get('ts')}) was RED on COMMITTED code "
+                                        f"-> {failed}; the desk-wide safety gate is down. "
+                                        "Run scripts/run_ci.py + fix"))
             # NOW is epoch seconds (time.time()), not a datetime -- compare in epoch space.
             age_h = (NOW - datetime.fromisoformat(str(ci.get("ts"))).timestamp()) / 3600.0
             if age_h > _CI_STALE_H:

@@ -389,6 +389,21 @@ def _run_steps() -> int:
     # Freshest-truth CI status marker (2026-07-23): a red desk-wide gate sat undetected 81h
     # because the brain cycle that runs run_ci was quota-dead; max_audit now surfaces this
     # marker so a red gate always enters the escalation path. Additive; never affects the gate.
+    # WHICH COMMIT WAS THIS VERDICT ABOUT? (2026-08-28). A red verdict is a statement about a
+    # TREE, and the tree moves. On 2026-08-28 the 08:54 run recorded 25 committed-code failures;
+    # they were all fixed by 09:39, and max_audit went on reporting "RED on COMMITTED code" about
+    # a bug that no longer existed -- sending a reader to hunt it. That is the same burying the
+    # `tracked_ok` and `killed` fields above were each written to stop: an un-actionable red
+    # recurs, gets skimmed, and hides the next real one. The marker could not say which commit it
+    # measured, so no consumer could tell "still broken" from "already fixed, not re-run".
+    # ADDITIVE and carries no authority: absent on older markers, and a consumer that cannot
+    # resolve it must keep treating the red as live (unknown is never green).
+    head = None
+    with contextlib.suppress(OSError, subprocess.SubprocessError):
+        r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_ROOT, capture_output=True,
+                           text=True, timeout=30, check=False)
+        if r.returncode == 0:
+            head = (r.stdout or "").strip() or None
     with contextlib.suppress(OSError):
         (_ROOT / "data/.ci_last_run.json").write_text(
             # `ok`/`failed` keep their exact old meaning (whole tree) so every pre-existing reader
@@ -404,7 +419,8 @@ def _run_steps() -> int:
                         "failed": failed, "tracked_ok": not failed_tracked,
                         "failed_tracked": failed_tracked, "inflight": inflight,
                         "failed_tests": details,
-                        "killed": [s for s in failed if "(KILLED sig" in s]}), "utf-8")
+                        "killed": [s for s in failed if "(KILLED sig" in s],
+                        "head": head}), "utf-8")
     return 1 if failed else 0
 
 
