@@ -4701,7 +4701,7 @@ which is the whole point of the hunt.
 + coverage diff). This does **not** retire the BIS corpus — it gives the desk a licence-clean route
 for the largest single bank in it.
 
-### 69. [dig 2026-08-28] Czech National Bank open API — official-sector-flow class member #3, and a free official CARRY series — grade: **verified-clean (forward points) / UNVERIFIED (open market operations)** [§33: screened tier:2 -> data/cnb_forward_points.json]
+### 69. [dig 2026-08-28] Czech National Bank open API — official-sector-flow class member #3, and a free official CARRY series — grade: **verified-clean** (forward points verified 2026-08-28(b); the open-market-operations half CLOSED 2026-08-28(c) — full history pulled year-by-year, 13,470 operations 1997-09-30 → 2026-08-28, sterilisation stock reconstructed and diffed against the EURCZK 27.00 floor episode) [§33: screened tier:2 -> data/cnb_omo_sterilisation.json]
 
 **Why the CNB and not the next country on a list.** Chosen from the **live universe registry, not
 from my assumptions** (anti-hardcode): the 251-symbol universe was decomposed into its constituent
@@ -4834,3 +4834,164 @@ anything.
    in-universe pair count (HUF 6, MXN 4, PLN 4, TRY 3, INR 1).
 4. Still owed from (a): the orphaned-inode failure mode's scope across every long-running writer
    under `desks/mt5/data/` is UNMEASURED.
+
+## SESSION 2026-08-28 (c) — free-data-alternatives miner, standing daily run — COMPLETE (3 items taken, 3 closed)
+
+**Resume, not restart.** The 08-28(b) note names an unfinished item and the source backlog holds
+exactly 3 pending verifications, all of them mine. Contract: finish the unfinished one first.
+
+**ITEMS TAKEN THIS RUN (bounded per L1.35/completion contract; depth per item unbounded):**
+1. **CNB `/omo` in full, chunked** — the owed half of card 69. Pull with the 10,000-row cap assumed
+   guilty, diff against the 2013-11 → 2017-04 EURCZK floor episode. STATUS: open.
+2. **Banxico SIE + the official-sector-flow frontier** — MXN (4 in-universe pairs) is the largest
+   tractable unopened member after MoF/SNB/CNB. Verify a route, licence, cadence, and the silent-
+   truncation class on a fourth institution. STATUS: open.
+3. **Dispose the 3 pending source-backlog verifications** (BIS speeches S21, SNB sight deposits,
+   CNB open API) so the verification bottleneck actually clears rather than growing. STATUS: open.
+
+Findings are written into this note as each item resolves — nothing held in context.
+
+### 70. [dig 2026-08-28 (c)] MNB monetary policy instruments — official-sector-flow class member #4, and the DAILY analogue of the SNB weekly series — grade: **needs-monitoring** (data verified-clean and correctly parsed; the SIGNAL claim was retracted in-run — see below) [§33: screened tier:2 -> data/mnb_official_liquidity_daily.json]
+
+**Why the MNB.** Chosen off the live universe registry, not a list: decomposing the 251-symbol
+universe by currency puts **HUF in 6 pairs** (AUDHUF, CHFHUF, EURHUF, GBPHUF, NZDHUF, USDHUF) —
+the largest in-universe footprint of any unopened member of this class, ahead of MXN (4), PLN (4),
+TRY (3), INR (1).
+
+**Route.** `https://www.mnb.hu/letoltes/mnb-instruments.xlsx` (545KB, 13 sheets), reached from the
+English instruments landing page. §13: `www.mnb.hu/robots.txt` is 35 bytes, a single `*` group
+disallowing only `/archivum/` — this path is permitted. No key, no registration.
+
+**WHAT IT IS: daily HUF reserve-account balances 2007-01-02 → 2026-08-27 (7,060 observations),
+plus daily overnight net central-bank deposits (5,535), monthly required reserves (236 months),
+and six discontinued instruments.** The SNB sight-deposit series this desk verified two runs ago is
+**weekly**; this is the same mechanism at **five times the resolution and nineteen years deep**.
+
+**THE RETRACTION, and it is the most useful thing in this card.** My first pass "verified" the
+series against the HUF crisis of **2022-10-14** — the MNB's emergency O/N tender to 18% with
+EURHUF at its all-time high — and found reserve balances falling **3,264 → 2,339 HUF bln, −28.3%,
+on the exact day.** That looks like a textbook confirmation and I nearly shipped it. Re-reading the
+surrounding path **killed it**: the series steps **266 → 4,013 between 2022-09-29 and 2022-10-06**,
+and daily swings of **+93% and −12%** are routine inside that week. The crisis-day move is a
+coincidence inside an administrative transition.
+
+**What the series ACTUALLY is.** Monthly medians expose **three clean step-changes — 2022-10
+(+823%), 2023-04 (+96%), 2023-10 (+192%)** — matching the MNB's published reserve-ratio increases.
+So the parse is right and the file is honest (**the steps ARE the policy history, which is the real
+ground-truth confirmation**), but the variance of the raw series is dominated by **reserve-
+requirement policy, not by official FX flow.** An independent internal control does hold: the
+`quick depo` sheet spans **2022-10-14 → 2023-09-29**, exactly the published life of the emergency
+instrument.
+
+**THE RECONSTRUCTION (this is the part a vendor charges for).** The usable quantity is **excess
+reserves = daily balance − that month's required reserve**, computable entirely from this one free
+file. It removes the 2022-10 break (+823% → +182 HUF bln) and the 2023-04 break (+96% → +42).
+**HONEST RESIDUAL: the 2023-10 break SURVIVES it (−689 → +6,293 HUF bln)** — the requirement sheet
+does not capture whatever changed that month, so any consumer carries a structural-break dummy at
+2023-10 or starts the sample after it. Stamped `needs-monitoring`, not adopted.
+
+**Failure modes** (all in the artifact): **positional-column trap** — three sheets carry a *second
+date column* (maturity) in position B, so a `[0,1]` reader returns Excel date serials (44849) as
+billions of HUF, large and plausible and monotone, with no error; **sparse cells** are omitted from
+the XML entirely so any row with a gap shifts columns; **sheet-order trap** — `sheet10.xml` sorts
+before `sheet2.xml`, so `sorted(namelist)` mislabels 11 of 13 sheets (this bit me, and I caught it
+only by checking the rels table before publishing); **weekend fill-forward**; **survivorship** — 6
+of 13 series are dead instruments; and the workbook is **republished in place with no version
+stamp**, so revisions are silent and every pull must be archived.
+
+## SESSION 2026-08-28 (c) — CLOSE
+
+**Items taken: 3. Items closed: 3.** No fourth opened, no padding.
+
+**1. CNB `/omo` — CLOSED, the owed half of card 69 discharged.** Full history pulled year-by-year
+(**13,470 operations, 1997-09-30 → 2026-08-28**), signed by `liquidityImpact` and accumulated
+settlement→maturity into a true outstanding sterilisation stock. Ground-truth diff against the
+**EURCZK 27.00 floor**: the stock steps **400.8 → 600.0 CZKbln in the announcement month**
+(+49.7%, the largest one-month move in the pre-2017 series) and rises monotonically to 2,170 by the
+exit. Card 69 upgraded to **verified-clean**; artifact `data/cnb_omo_sterilisation.json`.
+
+**THE FINDING, and it is a new instance of the desk's own worst class.** The obvious way to
+aggregate this endpoint — sum `totalAllotedVolume` per month — is **not a stock**. The overnight
+deposit facility rolls ~252×/yr against the repo's ~26×/yr, so the naive sum is ~82% weighted to
+whichever instrument happens to be in use. When the CNB moved sterilisation from the O/N facility
+to 14-day repos after the 2017-04 floor exit, **the naive sum fell 27,431 → 8,204 CZKbln (−70%)
+while the true outstanding stock was FLAT at ~2,200.** The obvious aggregation manufactures a
+70%-liquidity-drain signal **at the single highest-attention moment in the series.**
+
+**2. MNB — CLOSED, class member #4, card 70 above.** Daily HUF official liquidity, 19 years, free.
+Signal claim retracted in-run; excess-reserve reconstruction supplied with its surviving break
+named.
+
+**3. Backlog — 3 pending → 2, cleared by work, not by waving through.** Card 69 resolved because
+its pending component was actually verified this run. Cards 61 (BIS speeches) and 68 (SNB sight
+deposits) were **left pending on purpose**: 61 still owes a licence decision and a measured 2.5%
+venue-attribution patch, 68 still owes the Credit-Suisse contamination control. Resolving those to
+make the number look better is exactly the "passing more instead of screening more" the laws
+forbid.
+
+**BONUS FINDING — a parser trap in the backlog classifier itself.** My first rewrite of card 69
+narrated the closure with the sentence "the UNVERIFIED /omo half CLOSED", and the card **stayed
+pending**: `_classify` checks non-terminal substrings first, so the word `unverified` *anywhere* in
+the grade line — including in prose announcing that it is no longer unverified — keeps the card in
+the queue forever. Same family as the `[§33: deferred until DATE]` grammar traps already in the
+desk's memory. Routed to `improvement_inbox.md`.
+
+**CROSS-SOURCE PAIRS (joint value > either alone):**
+1. **CNB sterilisation stock × CNB forward points** — intervention leg and carry leg from one
+   institution on one clock, the exact join a vendor sells.
+2. **MNB excess reserves × SNB sight deposits × CNB stock** — three independent realisations of
+   *the same* forced-participant mechanism, in three currencies, at three cadences. None survives a
+   multiplicity correction alone; as a family they have a control.
+3. **MNB daily × SNB weekly** — the daily series is a direct test of whether the weekly cadence is
+   throwing away signal, answerable without buying anything.
+
+**NEW SOURCE CLASSES: 0 new, 1 materially extended and 1 frontier honestly closed off.** The
+official-sector-flow class now has **four verified members (MoF / SNB / CNB / MNB)**. The
+frontier probes are recorded as findings rather than dropped: **Banxico returns HTTP 200 with a
+2-byte `{}` body when unauthenticated** — a 200-plus-empty wall that any status-code liveness
+check passes; **TCMB 302s to login**; **RBI's WAF blocks `robots.txt` itself** (a route wall, not a
+§13 verdict); and **NBP's keyless API works first try but carries FX rates and gold only** — no
+balance-sheet data, so it is **not** a class member and is catalogued as a rate source instead of
+being padded into the family.
+
+**DEPTH LINE (mandated, per lead):**
+- **CNB `/omo` — EXHAUSTED.** Not a surface touch: the OpenAPI spec re-read to establish that
+  `daily-year` is the *only* bulk route (no `dateFrom`/`dateTo` exists, so the 10,000-row cap found
+  last run cannot be tested here), **all 32 years 1995–2026 pulled**, the stock reconstructed from
+  settlement/maturity legs rather than trusted as a sum, and diffed against the floor episode.
+  **What depth surfaced that the surface did not:** the surface is "sum the allotted volumes." Depth
+  says that sum is 82% rollover-frequency artifact and inverts the sign of the story at the floor
+  exit.
+- **MNB — EXHAUSTED for this file, residual named.** Went past the first parse three times: caught
+  my own lexicographic sheet-order bug via the rels table, caught the second-date-column trap by
+  dumping cell references instead of positions, and then **caught my own false verification** by
+  plotting the path around the event instead of the event alone. **What depth surfaced:** the
+  difference between a series that confirms a crisis and a series whose biggest moves are plumbing.
+  A one-day check said the first; the monthly medians said the second.
+- **Frontier (Banxico/TCMB/RBI/NBP) — SURFACE, deliberately, and labelled as such.** Four §13 reads
+  and four route probes, no depth beyond that. Two are registration-gated and neither token was
+  obtained this run; I am not going to grade a registration wall as a dig.
+
+**THE BLUNT PART.** Two of my three items produced **failure modes rather than data**, and the
+third produced a **retraction of my own claim**. That is the honest ratio and it is the second run
+running: the CNB instrument-mix artifact and the MNB reserve-ratio contamination are now the
+**second and third instances**, after the SNB/Credit-Suisse case, of one specific class —
+**an official-sector series whose largest moves are institutional plumbing rather than market
+flow.** Three for three. The working assumption for every remaining member of this family
+(Banxico, TCMB, RBI, and the rest) should now be that the raw series is contaminated by
+administrative policy until a normalisation is found and diffed. Not one of these four sources is
+a sleeve, and none was pre-registered, because **the class does not yet have a single member whose
+raw signal survived its own control.** The reconstruction that fixes this — excess reserves, true
+outstanding stock — is the actual deliverable, and it is free.
+
+**NEXT UN-EXHAUSTED GROUND (the chain holds):**
+1. **The normalisation sweep across all four members** — apply the excess/true-stock construction
+   to MoF, SNB, CNB and MNB uniformly, and only then ask whether the family has a signal. This is
+   now the highest-value unit in the class and it needs no new source at all.
+2. **Banxico and TCMB free tokens** — both are free-by-registration; obtaining them is the whole
+   blocker for 7 more in-universe pairs (MXN 4, TRY 3).
+3. **The MNB 2023-10 structural break** — unexplained by the requirement sheet; the answer is
+   likely in the MNB's own instrument announcements, which are on the same permitted path.
+4. Still owed from (a): the orphaned-inode failure mode's scope across every long-running writer
+   under `desks/mt5/data/` is UNMEASURED.
+5. Still owed from (b): the 12 regional Reserve Bank speech sites (§38 residual behind the Fed index).

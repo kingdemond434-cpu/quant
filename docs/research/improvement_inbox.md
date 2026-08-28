@@ -3043,3 +3043,53 @@ the desk has its own MT5 tick tape — take the empirical median of `(ask - bid)
 Related and stronger: **R0679** shows the engine has no slippage term at all, so the cost model's
 only symbol-varying component for the majors is the commission.
 
+
+## 2026-08-28 — free-data-alternatives miner: two exact patches, neither applied (research-only freeze)
+
+**1. `desks/mt5/side_channels/bis_speech_tone.py` — venue contamination, 2.5% of rows (GBP 6.8%).**
+The BIS description reads *"Speech by the <role> of the <SPEAKER'S BANK>, Mr X, **at the**
+<VENUE>"*, and the venue is usually also a central bank, so matching `BANKS` against the whole
+`title + description` files a PBoC speech delivered at a Bank of England seminar as **GBP**.
+Measured over all 8,770 tone rows: 8,555 correct, **215 attributed only from the venue segment**
+(GBP 55/812, USD 81/2567, EUR 59/2742); 154 rows match >1 bank and take whichever key iterates
+first; only 700 rows matched on the title at all.
+**PATCH:** cut the description at the first of `" at the "` / `" at a "` / `" to the "` /
+`" before the "` and match institution phrases only in the prefix, falling back to the title.
+That is exactly the computation used to measure the defect, so its positive control has already
+run: 8,555 kept, 215 rejected. **Also** add the Eurosystem NCBs (Bundesbank, Banque de France, …)
+to `BANKS` for EUR — their governors vote, and today they enter the EUR series only by accident.
+
+**2. Same module — the availability lag is warned about but never measured, so no consumer can
+size it.** The BIS review URL encodes its own publication date (`/review/r<YYMMDD><letter>.htm`),
+parseable on 10,222 of 20,728 rows. Lag (pub − delivery): **median 4d, p90 28d, p99 87d**.
+**PATCH:** emit `available_date = max(delivery_date + 28d, url_pub_date)` alongside `date`, and
+drop the 28 rows whose URL stamp precedes their delivery date (2 of them are dated in 2027).
+
+**3. Method finding, applies desk-wide — every per-account-normalised statistic needs a trimmed
+twin.** The FX Blue 00:00 spike survived to preregistration because a mean-over-per-account-shares
+gives a 20-trade account with a broken clock the same weight as a 10,655-trade account with a good
+one. Dropping ten accounts moved it from 6.11% to the 4.17% uniform baseline. Related and worth
+hard-coding as a habit: **"the effect grew with the sample" is not evidence against an artifact**
+unless the artifact class is shown not to scale with n — here it scaled faster than the signal.
+
+## 2026-08-28 (c) — free-data-alternatives miner — backlog classifier: a resolved card cannot describe its own resolution
+
+`libs/research/source_backlog.py::_classify` checks non-terminal substrings BEFORE terminal ones,
+so `"unverified" in grade_raw.lower()` keeps a card pending **even when the word appears in prose
+announcing that it is no longer unverified**. Observed live this run: rewriting card 69's grade to
+`**verified-clean** (... the UNVERIFIED /omo half CLOSED 2026-08-28(c) ...)` left the backlog count
+at 3; deleting that one word from the narration dropped it to 2. Nothing errored.
+
+**Why it matters:** the natural way to close a card is to say what was closed, and the natural
+phrasing re-arms the pending flag. A card can therefore be fully verified, documented, and
+artifact-backed, and still occupy a verification slot forever — while the report that surfaces it
+reads exactly like genuine owed work. Same family as the `[§33: deferred until DATE]` grammar trap
+already in the desk's memory: a status field that is also prose.
+
+**Exact fix:** classify on the **bolded grade token only** — the text between the first `**...**`
+pair on the `### N.` line — and treat the remainder of the line as commentary. That is where every
+existing card already puts its grade, so it is a narrowing of the match, not a semantic change, and
+it makes the class of bug impossible rather than one-off-fixed. Add a regression test whose card
+text is `**verified-clean** (the UNVERIFIED half is now closed)` and asserts `resolved`.
+
+Scope note: this is `libs/`, which the free-data miner's freeze forbids touching — routed, not fixed.
