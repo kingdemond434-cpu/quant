@@ -6388,5 +6388,30 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"069c390bdcf572db": {
+"t0": "2026-08-28T22:24:16+00:00",
+"frozen": {
+"source": "trading_latam",
+"kind": "track_record",
+"title": "Pulso semanal",
+"url": "https://trading-latam.com/pulso-ranking-traders/",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-28T22:22:26+00:00",
+"region": "LATAM",
+"nearby_pcts": [],
+"stats": {},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"evidence_grade": "B",
+"lang": "es"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

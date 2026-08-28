@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-28T21:07:44+00:00",
+ "compiled_at": "2026-08-28T22:15:23+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -2501,9 +2501,9 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 29
+   "deepening": 30
   },
   "central_bank": {
    "rows": 1,
@@ -2511,7 +2511,7 @@
    "deepening": 13
   },
   "forexfactory": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 0,
    "deepening": 62
   },
@@ -2636,13 +2636,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 7,
+   "rows": 9,
    "candidates": 0,
-   "deepening": 7
+   "deepening": 9
   }
  },
- "rows_accounted": 890,
+ "rows_accounted": 894,
  "executable_candidates": 206,
- "deepening_tasks": 645,
+ "deepening_tasks": 650,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
