@@ -4000,3 +4000,40 @@ D−1 (14.2 bp at lag 1 vs 34.3 bp at lag 0), and NBP's gold price dated D likew
 bp). Joining such a series on its own label is a silent one-day staleness — as a verification
 target it fabricates ~20 bp of error, and as a FEATURE it is a stale input that looks live.
 Any adopter of a CB fixing must scan lag ∈ {0,1} before use; the scan costs one line.
+
+## 2026-08-28 — FREE-DATA run (s): three collector-integrity methods
+
+**M1 — PROBE AN OPERATION, NEVER A DESCRIPTOR (new failure class: a descriptor outlives its
+service).** `www.mnb.hu/arfolyamok.asmx?WSDL` returns HTTP 200 with a well-formed 4,143-byte
+descriptor naming six operations; **all six 404** on SOAP 1.1, SOAP 1.2, the HTTP-GET binding and
+the HTTP-POST binding. WSDLs, OpenAPI specs, SDMX codelists and JSON schemas are *static files* and
+keep returning 200 long after the service dies — so a liveness check aimed at the descriptor (the
+one URL the documentation hands you) reports a healthy API with six operations on a service that
+cannot serve a single row. **Applies to every collector health check on this desk**: the health
+signal must be a successful OPERATION returning a dated row, never a 200 on the spec. This is the
+run-(o) "codelist advertises columns that are empty" finding one level up — there a column was
+advertised and empty, here an entire API is.
+
+**M2 — A NON-EMPTY ARTIFACT ASSERTS PRESENCE (the twin of the desk's top collector lesson).**
+`curl -sSL https://www.bnr.ro/nbrfxrates.xml` returns **HTTP 200 and 119,885 bytes** — of the
+homepage; the real endpoint 302s and `-L` silently converts a dead door into a successful fetch.
+The desk already knows *an empty artifact asserts absence* (prospector s11); this is the same
+defect inverted, and it is worse because a byte-count health check reads it as **thriving**.
+Two cheap counter-measures for any collector: **do not follow redirects on a data endpoint without
+asserting the final URL**, and **assert the CONTENT-TYPE / a parse of the expected schema**, never
+status+bytes.
+
+**M3 — SCHEMA DRIFT INSIDE ONE ENDPOINT'S OWN HISTORY, at HTTP 200 throughout.** TCMB's keyless
+daily FX XML (`/kurlar/YYYYMM/DDMMYYYY.xml`) changed **twice** across its own archive: the declared
+encoding went **ISO-8859-9 → UTF-8**, and the markup went from compact to **pretty-printed**
+(`</ForexBuying><ForexSelling>` became `</ForexBuying>\r\n\t\t\t<ForexSelling>`). My first pull used
+a regex requiring adjacency; it parsed 1997–2001 perfectly and returned **zero rows for 2022–2026**
+— every request HTTP 200, every file valid, and my loop swallowed the misses into an empty result.
+I caught it only because I diagnosed the zero instead of reporting it. **Rule: parse a historical
+archive with an XML/CSV parser, never a regex tuned on one era, and diff the schema at the
+endpoints of the date range before trusting any long pull.**
+
+**M4 — a 429 may be a RATE, not a quota.** Run (q) recorded SWEA as "4 requests then HTTP 429".
+Six sequential series pulled clean at **25 s spacing with zero 429s**. Before recording a source as
+capped, vary the spacing — the difference between "4 requests per run, forever" and "unlimited at
+25 s" is the whole source.
