@@ -1,0 +1,60 @@
+{
+  "AUD": {
+    "status": "MEASURED",
+    "n": 437,
+    "n_hi": 144,
+    "n_lo": 144,
+    "spread_bp": -25.49,
+    "t": -1.336
+  },
+  "CAD": {
+    "status": "MEASURED",
+    "n": 479,
+    "n_hi": 158,
+    "n_lo": 158,
+    "spread_bp": 5.18,
+    "t": 0.37
+  },
+  "CHF": {
+    "status": "MEASURED",
+    "n": 177,
+    "n_hi": 59,
+    "n_lo": 59,
+    "spread_bp": -17.75,
+    "t": -0.8
+  },
+  "EUR": {
+    "status": "MEASURED",
+    "n": 1652,
+    "n_hi": 545,
+    "n_lo": 545,
+    "spread_bp": -16.4,
+    "t": -1.97
+  },
+  "GBP": {
+    "status": "MEASURED",
+    "n": 558,
+    "n_hi": 184,
+    "n_lo": 184,
+    "spread_bp": 7.39,
+    "t": 0.541
+  },
+  "JPY": {
+    "status": "MEASURED",
+    "n": 600,
+    "n_hi": 198,
+    "n_lo": 198,
+    "spread_bp": 27.77,
+    "t": 2.047
+  },
+  "NZD": {
+    "status": "INSUFFICIENT",
+    "n": 191
+  },
+  "POOLED": {
+    "n_hi": 1288,
+    "n_lo": 1288,
+    "spread_bp": -7.07,
+    "t": -1.309
+  }
+}

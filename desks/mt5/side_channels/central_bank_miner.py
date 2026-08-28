@@ -56,7 +56,14 @@ FEEDS: dict[str, dict[str, str]] = {
     # replacement route (§38) is owed. Absence must never read as a clean verdict (WS-005).
     "RBA": {"url": "https://www.rba.gov.au/rss/rss-cb-media-releases.xml", "currency": "AUD"},
     "BoC": {"url": "https://www.bankofcanada.ca/content_type/press-releases/feed/", "currency": "CAD"},
-    "BIS": {"url": "https://www.bis.org/doclist/cbspeeches.rss", "currency": "XXX"},
+    # BIS REMOVED 2026-08-28 (§13). https://www.bis.org/doclist/cbspeeches.rss lives under
+    # `Disallow: /doclist/` in bis.org/robots.txt -- the access boundary is a hard limit, not a
+    # preference, and this miner had been reading it. BIS's own RSS path now redirects to the
+    # allowed listing page whose only content link is the free full-text research download at
+    # /speeches/speeches.zip (no robots bar, terms allow noncommercial use). That corpus is
+    # strictly better ground anyway -- 20,728 DATED speeches with BODIES back to 1996, against
+    # this feed's headline-only stream -- and it is mined by side_channels/bis_speech_tone.py.
+    # Its currency was "XXX", so no MT5 leg loses coverage by the removal.
 }
 
 #: Currency -> the MT5/Fusion instruments whose price a statement by that bank moves. Derived

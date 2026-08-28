@@ -1,0 +1,127 @@
+=== frontier-unified attempt Fri Aug 28 06:20:23 AM UTC 2026 ===
+=== frontier-unified start Fri Aug 28 06:20:33 AM UTC 2026 ===
+
+# UNIFIED FRONTIER DIG — 2026-08-28
+
+## ALLOCATION (the reasoning is the deliverable)
+
+Two grounds funded: the **creator/track-record ground** and the **macro-document ground**.
+Neither was next in a rotation; the debt ledger and the measured conversion prior picked them.
+The creator ground is the desk's measured best source class (Davidd/RFT/Saleh -> 94 stage-A
+survivors and the only exact ten-gate certificate the desk holds) and it carried TWO explicit
+owed debts from 08-27: the FX Blue population was 117/5,077 harvested, and the corpus had
+produced ZERO hypotheses — "ground opened, conversion owed" in yesterday's own words. The
+macro-document ground carried the oldest debt on the board: the central-bank document BODIES,
+owed since 08-26 and untouched on 08-27, which is the single input the absent `macro_conditional`
+family needs. Both debts are *conversion* debts, not breadth debts, which is why they outrank
+opening new ground.
+
+**Grounds NOT worked, each named:**
+- **en / ru / jp / ar / br** — no cardable debt a unified dig can close without the seat's own
+  operator set, and the §33 backlog was declared CLEAR at this run's start (26 carded finds all
+  disposed). They are NOT demoted: their last real logs are old because seat auth/OOM has been
+  down, which is an infrastructure defect and not a ground verdict.
+- **cn** — worked 08-25 (s12, real 2718b log). Its open unit (Bilibili) needs the CN operator set
+  and Zhihu is recorded WALLED twice; probing a known wall again re-derives a known verdict.
+- **kr** — its ground still needs re-scoping: the KR venue-state layer it fed was killed by the
+  2026-08-18 mandate re-grade, so the question is not yet well-posed.
+- **Video/YouTube** — the transcript route is dead and the description-link layer was worked
+  08-27; nothing owed today that text ground does not cover better.
+
+## FINDING 1 (T1) — the body layer was never a crawl problem, it was a route-not-found problem
+
+Owed twice: "fetch the document BODIES behind cb_documents.jsonl links". The assumed route was a
+215-request crawl of per-bank pages. BIS publishes a **pre-compiled full-text extract of every
+central banker speech since 1996** — one CSV, **20,728 dated rows** of
+`url,title,description,date,text,author`, ~18k characters each, at `/speeches/speeches.zip`,
+offered explicitly to researchers, terms permitting noncommercial use, no robots bar. One
+request replaced a 215-page crawl and returned 30 years instead of 3 months.
+
+**8,770 speeches attribute to an MT5 currency's own central bank:** EUR 2742, USD 2567, GBP 812,
+JPY 801, CAD 613, **AUD 589, CHF 437**, NZD 209. AUD had been a dead 403 leg since 08-26 and CHF
+had no feed at all — *both uncovered legs close by finding a different route, not by retrying a
+blocked one.* The other 11,956 name no listed bank and are DROPPED, never defaulted to a currency.
+
+## FINDING 2 (T1, §13) — the wired miner had been reading a robots-barred path
+
+`central_bank_miner.FEEDS["BIS"]` = `bis.org/doclist/cbspeeches.rss`. `bis.org/robots.txt`
+carries `Disallow: /doclist/`. That feed has been read every run since 2026-08-26 and card 61
+celebrates it. The access boundary is a hard limit, not a preference: the row is REMOVED in this
+change. Its currency was `XXX`, so no MT5 leg loses coverage — and the replacement ground is
+strictly better (bodies vs headlines). BIS's own RSS path now 302s to the allowed listing page
+whose only content link is the download above.
+
+## FINDING 3 (T1) — the hypothesis this corpus existed to produce is REFUTED, on three arms
+
+Built the tone series (`cb_tone_series.jsonl`, 7,420 dated per-(date,currency) rows) and screened
+it against 30 years of FRED daily FX, lag 2 / horizon 5 trading days:
+- tone LEVEL -> own currency vs USD: pooled **t = -0.777**; every |t| < 1.7; signs disagree.
+- tone SURPRISE (z vs own trailing 250-obs baseline — run because the lexicon is 5:1 dove-skewed
+  by base rate, so a level is confounded): pooled **t = -1.309**. EUR -1.97 and JPY +2.05 are
+  OPPOSITE-signed at 7 tests: multiplicity, not two edges.
+- direction-agnostic VOLATILITY arm (the desk's own prior says direction is not predictable and
+  vol is): forward/prior vol ratio **0.903 on speech days vs 0.888 on an all-days control**
+  (n 5,008 vs 90,165); splits t = 0.105 and -0.633. Central-bank speech days are not even
+  volatile days.
+No threshold was applied in either direction and nothing was promoted (L1.60). **This disproof is
+the run's most valuable output**: it retires the daily-aggregated directional reading of central
+bank language, an axis the desk was about to fund. What survives is the corpus (a genuine 30-year
+PIT text asset) and the UNMEASURED residual: the intraday event window, which this daily lake
+cannot see and which is therefore not absent (L1.28a).
+
+## FINDING 4 (T1, live defect, repaired) — a running miner writing into an orphaned inode
+
+Mid-dig, both FX Blue harvesters reported row 50 while their output files held 28 rows. The
+shell/dead counts matched EXACTLY and only the large `has_data` records were missing, which is
+not a parse bug. `/proc/<pid>/fd/4 -> ...track_records_wave2a.jsonl (deleted)`: the file had been
+UNLINKED and replaced by a stale snapshot at 06:24, and both processes carried on appending to
+orphaned inodes. **Nothing errored, nothing warned, and a reader would have seen a clean short
+file.** Cause: `desks/mt5/data/` is git-TRACKED and this box's automation (auto_push every 10
+min, the hourly cycle) checks files out from under long-running processes — the launder class the
+desk has paid for repeatedly, in a new costume.
+- **Recovered** every lost row by reading the deleted inodes through `/proc/<pid>/fd/` (152 rows
+  vs the 57 on disk) — the fd is write-only, but the proc symlink still opens for read.
+- **Repaired**: the miner now appends to a staging file OUTSIDE the repo and publishes to the
+  tracked artifact in one pass at the end, so the window a checkout can eat is a single rename
+  and the staging file makes any interrupted run replayable.
+
+## FINDING 5 (T2, repaired) — a summariser that reported `n=0` over a corpus of 120
+
+`fxblue_mechanism_summary.py` read ONE file and filtered `status == "has_data"`. The
+first-generation harvest predates that vocabulary and labels the same records `live`, so the
+summary printed **"n=0 accounts"** for a 120-record corpus — and printed it as a RESULT rather
+than as an unreadable input. This is why the ground had produced no hypotheses: its only
+consumer had been silently empty. Repaired to read every wave, de-duplicate by account, and
+RE-DERIVE liveness from the data (a stored label is never trusted over the chart behind it).
+Corpus now: **293 records, 111 mineable.**
+
+## FINDING 6 (T1) — what the corpus actually says, and the two hypotheses it produced
+
+With the consumer fixed, the retail MT5 flow clock is legible for the first time
+(per-account normalised, n=107; uniform baseline 4.17%/hour):
+- **15:00-17:00 UTC = 7.45 / 7.23 / 6.96%** — a ~1.8x concentration into the NY/London overlap.
+- **00:00 = 5.84%** — the largest hour OUTSIDE the overlap, with its neighbours at baseline
+  (22:00 3.30%, 01:00 3.25%). 00:00 server time is the **swap boundary**.
+- Instrument mix: EURUSD 51.4% of accounts, GBPUSD 42.3%, USDJPY 37.8%, AUDUSD 32.4%,
+  **XAUUSD 21.6%**.
+Preregistered as **H-20260828-005** (overlap-hour flow absorption; dealer-inventory counterparty)
+and **H-20260828-006** (swap-boundary flow imbalance, Wednesday triple-swap as a SEPARATE arm).
+Both are ACTIVITY-half cards: survival selects which accounts stay visible, it does not invent
+the hour at which they trade. The PERFORMANCE half (61.3% of accounts profitable at 15:00,
+z~2.4 on 24 hourly tests — not significant under Holm, and the accounts are not independent) is
+recorded as a pointer and is deliberately NOT the basis of either rule. H-006 direction is left
+at 0 on purpose: this desk's record is 129/129 directional mechanisms failed while carry survived.
+
+## OWED NEXT RUN
+1. **The FX Blue wave-2 harvest is still running** (offsets 1 and 3, stride 7, 700 accounts).
+   Publish and re-summarise; the population is 5,077 and this brings it to ~15%. It wants a
+   timer, not another manual run.
+2. **The intraday arm of finding 3** — the daily lake cannot test a speech-day event window. This
+   is the honest residual of the refutation and the only surviving directional use of the corpus.
+3. **H-005 / H-006 into the backtest and the ten gates the same day they are picked up** (L1.58).
+4. **Apply finding 4's repair to every other long-running writer under `desks/mt5/data/`** — the
+   fxblue miner is one instance of a class, and any other miner appending there for >10 minutes
+   has the same silent failure available to it. That audit is not done.
+5. Still owed and untouched: the **body-line `[§33:]` parser fix** (engineering-owned),
+   **Myfxbook `/members/*` and Collective2 `/strategies/*` under OP-098**, and the **Darwinex
+   metrics XHR** respecting the `/api` robots bar.

@@ -25,9 +25,40 @@ SRC = BASE / "data" / "intelligence" / "fxblue" / "track_records.jsonl"
 
 
 def main() -> int:
-    src = Path(sys.argv[1]) if len(sys.argv) > 1 else SRC
-    recs = [json.loads(ln) for ln in src.read_text(encoding="utf-8").splitlines() if ln.strip()]
-    live = [r for r in recs if r.get("status") == "has_data"]
+    # READ EVERY WAVE, AND RE-DERIVE LIVENESS FROM CONTENT (repair 2026-08-28).
+    # This consumer read ONE file and filtered on `status == "has_data"`. The first-generation
+    # harvest predates that vocabulary and labels the same records `live`, so the summary
+    # printed `n=0 accounts` over a corpus of 120 -- and reported it as a result rather than as
+    # an unreadable input. The producer's distinction is honoured by RE-COMPUTING it: a record
+    # is mineable iff some mechanism chart carries a non-zero number, which is what the miner
+    # itself means by has_data. A stored label is never trusted over the data behind it.
+    if len(sys.argv) > 1:
+        paths = [Path(a) for a in sys.argv[1:]]
+    else:
+        paths = sorted(SRC.parent.glob("track_records*.jsonl"))
+    recs = []
+    seen: set[str] = set()
+    for path in paths:
+        for ln in path.read_text(encoding="utf-8").splitlines():
+            if not ln.strip():
+                continue
+            r = json.loads(ln)
+            key = str(r.get("user", ""))
+            if key in seen:  # waves overlap at the edges; an account counted twice is one
+                continue     # account's habits weighted double, which is a fake population.
+            seen.add(key)
+            recs.append(r)
+
+    def _mineable(r: dict) -> bool:
+        for parsed in (r.get("charts") or {}).values():
+            for _, value in (parsed.get("rows") or []):
+                if value:
+                    return True
+        ov = r.get("overview") or {}
+        return bool(ov.get("closed_profit") or ov.get("balance"))
+
+    live = [r for r in recs if _mineable(r)]
+    print(f"sources: {[p.name for p in paths]}")
     from collections import Counter as _C
     print(f"records={len(recs)} " + " ".join(f"{k}={v}" for k, v in sorted(_C(r.get("status") for r in recs).items())))
 

@@ -3785,7 +3785,50 @@ mechanism folklore + refutations at zero marginal cost.
 Keyless Atom API: new q-fin abstracts daily into the corpus; the monthly lit dig then judges a
 pre-built month instead of browsing.
 
-### 61. [seed S21] BIS central-banker speeches full-text — grade: **route half SATISFIED 2026-08-26 via seed S6 (card 46); residual is the full-text bodies only** [§33: deferred(2026-09-08) tier:2]
+### 61. [seed S21] BIS central-banker speeches full-text — grade: **CLOSED 2026-08-28 — bodies acquired (20,728 dated speeches, 1996–2026), tone series built, and the directional hypothesis it existed to produce is REFUTED** [§33: converted(2026-08-28) tier:2]
+- **The residual below is discharged, by a route nobody had looked for.** The owed item was "the
+  speech BODIES behind each `link`", assumed to be a 215-request crawl of per-bank landing pages.
+  BIS publishes a **pre-compiled full-text extract of every speech it has collected since 1996**
+  at `https://www.bis.org/speeches/speeches.zip` — one request, one 390MB CSV, 20,728 rows of
+  `url,title,description,date,text,author`, offered explicitly "to assist researchers" with terms
+  permitting noncommercial use and **no robots bar on `/speeches/`**. Free-frontier: the body
+  layer was never a crawl problem, it was a *route-not-found* problem.
+- **§13 DEFECT FOUND IN THE WIRED MINER, repaired in the same change.** The feed this card
+  celebrates above — `bis.org/doclist/cbspeeches.rss` — sits under `Disallow: /doclist/` in
+  bis.org/robots.txt. `central_bank_miner.py` had been reading a robots-barred path since
+  2026-08-26. The feed row is removed (`side_channels/central_bank_miner.py`); its currency was
+  `XXX`, so no MT5 leg loses coverage. The access boundary is a hard limit, not a preference.
+- **Two uncovered currency legs close by route, not by retrying a blocked one.** RBA/AUD has been
+  a dead 403 leg since 2026-08-26 and SNB/CHF had no feed at all. Both speak in this corpus:
+  **AUD 589 and CHF 437 attributed speeches.** Full attribution: EUR 2742, USD 2567, GBP 812,
+  JPY 801, CAD 613, AUD 589, CHF 437, NZD 209 — 8,770 of 20,728 attributed to an MT5 currency's
+  own central bank; the other 11,956 name no listed bank and are DROPPED, never defaulted to a
+  currency (the `USDUSD` class of defect this corpus replaces). 2 future-dated rows dropped as a
+  look-ahead.
+- **Artifacts:** `desks/mt5/side_channels/bis_speech_tone.py` (builder),
+  `.../central_banks/bis_speech_tone.jsonl` (per speech), `.../cb_tone_series.jsonl` (7,420
+  dated per-(date,currency) rows), `desks/mt5/research/cb_tone_screen.py` (screen),
+  `desks/mt5/reports/cb_tone_{screen,surprise_screen,vol_screen}.json`.
+- **THE VERDICT — REFUTED, and this is the run's most valuable output (a disproof withdraws
+  capital from a false edge and retires search space).** Three pre-stated arms, all null at
+  lag 2 / horizon 5 trading days:
+  - **tone LEVEL → own currency vs USD:** pooled t = **−0.777** (n 688 hawk / 3508 dove); every
+    per-currency |t| < 1.7 and the signs disagree (CHF −1.69, GBP +0.36).
+  - **tone SURPRISE** (z vs the currency's own trailing 250-obs baseline — run because the
+    lexicon is 5:1 dove-skewed by base rate, so a *level* is confounded): pooled t = **−1.309**.
+    EUR −1.97 and JPY +2.05 are opposite-signed at 7 tests: that is multiplicity, not two edges.
+  - **direction-agnostic volatility arm** (the desk's own measured prior says direction is not
+    predictable and volatility is): forward/prior vol ratio on speech days **0.903** vs an
+    all-days control of **0.888**, n 5,008 vs 90,165; splits on speech count t = **0.105** and on
+    |net tone| t = **−0.633**. Central-bank speech days are not even *volatile* days.
+  - No threshold was applied in either direction and nothing was promoted (L1.60); these are
+    sorting numbers on non-independent currency-days, never admission statistics.
+- **What survives the refutation:** the corpus itself, which is a genuine 30-year PIT text asset
+  and the input h19-003 (news/event trading) needs. What died is the *daily-aggregated
+  directional* reading of it. The untested residual is the **intraday event window** — this lake
+  is daily, so a 5-minute reaction to a scheduled speech is UNMEASURED, not absent (L1.28a).
+
+### 61-legacy note (the state this card was in before 2026-08-28) [§33: superseded(2026-08-28) tier:3]
 - **Convergence, recorded once (not two discoveries):** this seed's stated ask was a dated PIT
   text layer with "no per-CB scrapers needed". `https://www.bis.org/doclist/cbspeeches.rss` is
   now probed, parsed and wired by the repaired central-bank miner — 25 dated speech rows in the
@@ -4137,3 +4180,45 @@ closed at tick resolution without the terminal; the unmapped residue is the hone
 the clock probe **backwards to 2018** and forwards — a handful of cheap probes converts the measured
 *rule* into a verified per-year seam table covering the whole tape. (iii) The §38 IBA replacement:
 LBMA's own site and the auction operator's publications for per-round data on a permitted route.
+
+### 65. [dig 2026-08-28] FX Blue track-record corpus — grade: **CONVERTED — the ground's only consumer had been silently empty, and it now carries two preregistered hypotheses** [§33: converted(2026-08-28) tier:1]
+The 08-27 debt was "the corpus is a hypothesis SOURCE and has produced none yet". The reason was
+not the corpus. `fxblue_mechanism_summary.py` read ONE file and filtered `status == "has_data"`;
+the first-generation harvest labels the same records `live`, so the summariser printed
+**`n=0 accounts` over 120 records** — and printed it as a result, not as an unreadable input. A
+ground was graded barren because its reader could not see it. Repaired to read every wave,
+de-dup by account, and re-derive liveness from the chart data rather than from a stored label.
+- **Corpus now 293 records / 111 mineable**, wave-2 harvest (700 accounts) still running.
+- **The retail MT5 flow clock, per-account normalised (n=107, uniform baseline 4.17%/hr):**
+  15:00-17:00 UTC = 7.45 / 7.23 / 6.96% (~1.8x, the NY/London overlap); **00:00 = 5.84%**, the
+  biggest hour outside the overlap while 22:00 (3.30%) and 01:00 (3.25%) sit at baseline —
+  00:00 server time is the **swap boundary**, which is the desk's only repeat-survivor mechanism
+  wearing an order-flow costume (L1.47).
+- **Instrument mix:** EURUSD 51.4% of accounts, GBPUSD 42.3%, USDJPY 37.8%, AUDUSD 32.4%,
+  XAUUSD 21.6%.
+- **Preregistered:** `H-20260828-005` (overlap-hour flow absorption) and `H-20260828-006`
+  (swap-boundary imbalance; Wednesday triple-swap as a SEPARATE arm so a 3x weekday effect
+  cannot be laundered through a pooled average).
+- **Bias discipline:** these are ACTIVITY-half cards. Survivorship selects which accounts stay
+  visible; it does not invent the hour at which they trade. The PERFORMANCE half (61.3% of
+  accounts profitable at 15:00 — z~2.4 across 24 hourly tests, not significant under Holm, and
+  the accounts are not independent) is recorded as a pointer and is NOT the basis of either rule.
+
+### 66. [dig 2026-08-28] A running miner writing into an ORPHANED INODE — silent, and a class not a bug [§33: repaired(2026-08-28) tier:1]
+Found live, mid-dig. Both FX Blue harvesters logged row 50 while their output files held 28 rows;
+the `shell`/`dead` counts matched exactly and only the large `has_data` records were missing.
+`/proc/<pid>/fd/4 -> ...track_records_wave2a.jsonl (deleted)` — the file had been **unlinked and
+replaced by a stale snapshot at 06:24** and both processes carried on appending to orphaned
+inodes. **Nothing errored; a reader would have seen a clean, short, plausible file.**
+- **Cause:** `desks/mt5/data/` is git-TRACKED, and this box's automation (`auto_push.sh` every 10
+  minutes, the hourly cycle) checks files out from under long-running processes. Same launder
+  class the desk has paid for repeatedly — new costume: it eats *live process output*, not commits.
+- **Recovery route worth keeping:** a write-only fd is still readable through its `/proc` symlink,
+  so `cat /proc/<pid>/fd/N` recovered every lost row (152 vs the 57 on disk) without stopping the
+  run. That is the general rescue for any truncated-under-a-live-writer artifact.
+- **Repair:** the miner appends to a staging file OUTSIDE the repo and publishes to the tracked
+  artifact in one pass at the end — the window a checkout can eat shrinks to a single rename, and
+  the staging file makes an interrupted run replayable.
+- **RESIDUAL, explicitly not done:** every other long-running writer under `desks/mt5/data/` has
+  the same failure available to it. That audit is owed, and until it runs the scope of this defect
+  is UNMEASURED, not one file (L1.28a).

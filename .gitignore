@@ -222,3 +222,8 @@ desks/*/data/recover_candidates.json
 **/sleeves.json
 **/regime_state.json
 **/sync_marker.jsonbackups/
+
+# BIS speech corpus: a 123MB source archive GitHub rejects; the DERIVED
+# cb_tone_series.jsonl is the committed artifact, the zip is re-downloadable
+# from https://www.bis.org/speeches/speeches.zip in one request.
+desks/mt5/data/intelligence/central_banks/bis_speeches/

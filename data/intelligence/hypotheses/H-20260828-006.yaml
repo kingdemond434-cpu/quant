@@ -1,0 +1,104 @@
+id: H-20260828-006
+version: 1
+parent_id: null
+origin:
+  region: global
+  language: en
+  source_type: track_record_corpus
+  source_id: fxblue_population_2026
+  source_url: https://www.fxblue.com/
+  evidence_tier: observed_population_behaviour
+  collected_at: '2026-08-28T06:33:04.593192+00:00'
+  collector_version: fxblue_track_record_miner/2026-08-28
+  metadata:
+    population_enumerated: 5077
+    accounts_harvested: 293
+    accounts_mineable: 111
+    enumerator: wayback CDX (OP-098)
+    bias_note: the population is survivorship-selected; ACTIVITY (when/what it trades) is used, PERFORMANCE
+      (where it made money) is NOT the basis of this card
+mechanism:
+  mechanism_class: discrete_payment_boundary
+  participant: retail
+  constraint: swap_accrual
+  information_source: retail_flow_structure
+  why_edge_should_exist: 'Trade share spikes to 5.84% at 00:00 broker time -- the single largest hour
+    outside the NY overlap and 1.4x the uniform baseline -- while the neighbouring hours (22:00 3.30%,
+    01:00 3.25%) sit near baseline. 00:00 server time is the swap boundary: it is where MT5 books the
+    financing charge, and where triple swap is booked on Wednesday. The forced counterparty is anyone
+    whose position economics change discretely at a known instant -- carry holders rolling to avoid or
+    to capture the charge. The desk''s ONLY repeat-survivor mechanism is funding/carry, and L1.47 names
+    discrete payments booked as continuous accruals as an expectation error: this is that error''s order-flow
+    footprint.'
+  information_propagation: scheduled and known to every participant in advance
+  persistence: structural -- it is a contract mechanic, not a behaviour
+  kill_conditions:
+  - broker changes the swap boundary or moves to continuous financing
+  - the 00:00 concentration disappears from a re-harvest of the corpus
+market:
+  symbols:
+  - EURUSD
+  - AUDUSD
+  - USDJPY
+  - XAUUSD
+  primary_symbol: AUDUSD
+  timeframe: M15
+  session: broker_midnight
+  regime_required: []
+  regime_excluded: []
+rule:
+  inputs:
+  - AUDUSD_M15
+  trigger: swap_boundary_flow_imbalance
+  direction: 0
+  holding_horizon: 90m
+  exit: time_stop_at_01:30_server
+  stop: atr_1.5
+  trail: null
+  re_entry: null
+  position_scaling: null
+  max_positions: 1
+  filters:
+    hour_server: 0
+    triple_swap_wednesday_arm: tested as a SEPARATE arm, never pooled
+economics:
+  expected_edge_bps_per_trade: 4.0
+  expected_trades_per_month: 20
+  expected_capacity_lots: 10
+  expected_capacity_category: small
+  correlation_with_existing: {}
+  orthogonality_score: 1.0
+  execution_risk: normal
+  leakage_risk: low
+falsifier:
+  condition: exp_r < 0.05R over 100 forward trades
+  horizon: 100_trades
+  threshold: 0.05
+  data_source: shadow_forward
+novelty:
+  nearest_existing_family: carry_funding
+  similarity: 0.5
+  translation_gap: false
+  translation_gap_details: null
+  unknown_unknown: false
+costs:
+  research_cost_usd: 0.0
+  research_cost_hours: 1.0
+  data_cost_usd_monthly: 0.0
+  execution_cost_bps_per_trade: 0.0
+status: discovered
+created_at: '2026-08-28T06:33:04.593192+00:00'
+updated_at: '2026-08-28T06:33:04.593192+00:00'
+source_attribution: {}
+miner_attribution:
+  dig: frontier_unified_20260828
+validation_history: []
+tags:
+- fxblue
+- retail_flow
+- mt5
+notes: 'The desk holds the terminal-native swap route already, so the financing leg is measurable without
+  a vendor. Direction is left at 0 on purpose: the corpus establishes WHEN the flow concentrates, not
+  which way it leans -- direction is the gauntlet''s question, and this desk''s own record is that 129/129
+  directional mechanisms failed while carry survived. The Wednesday triple-swap arm is preregistered as
+  separate so a 3x-sized effect on one weekday cannot be laundered through a pooled average.'

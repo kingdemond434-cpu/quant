@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import time
 import urllib.error
@@ -184,14 +185,25 @@ def main() -> int:
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
+    # WRITE OUTSIDE THE TRACKED TREE, PUBLISH AT THE END (defect found 2026-08-28, live).
+    # `desks/mt5/data/` is git-TRACKED and this box's automation (auto_push every 10 minutes, the
+    # hourly cycle) checks files out from under long-running processes. A harvest appending here
+    # for 30 minutes had its output file UNLINKED and replaced by a stale snapshot mid-run: both
+    # workers kept writing happily into orphaned inodes -- `/proc/<pid>/fd/N -> ...(deleted)` --
+    # and 22 of 50 harvested records existed nowhere a reader could find them. Nothing errored.
+    # The staging file lives outside the repo and is appended there; the tracked artifact is
+    # written ONCE, at the end, so the window in which a checkout can eat it is a single rename.
     OUT.mkdir(parents=True, exist_ok=True)
+    stage_dir = Path(os.environ.get("FXBLUE_STAGE", "/home/quant/fxblue_scratch"))
+    stage_dir.mkdir(parents=True, exist_ok=True)
     pop = enumerate_population(OUT / "population.txt")
     print(f"population: {len(pop)} handles")
     batch = pop[args.offset :: args.stride][: args.limit]
     out_path = Path(args.out) if args.out else OUT / "track_records.jsonl"
+    stage_path = stage_dir / f"{out_path.name}.staging"
 
     has_data = shell = dead = failed = 0
-    with out_path.open("a", encoding="utf-8") as fh:
+    with stage_path.open("a", encoding="utf-8") as fh:
         for i, user in enumerate(batch, 1):
             rec = harvest_user(user, args.delay)
             rec["harvested_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -204,6 +216,13 @@ def main() -> int:
             if i % 10 == 0:
                 print(f"  {i}/{len(batch)} data={has_data} shell={shell} dead={dead} failed={failed}", flush=True)
             time.sleep(args.delay)
+
+    # Publish: append the staged rows to the tracked artifact in one pass. If a checkout races
+    # THIS, the staging file still holds every row and the run is replayable -- which is exactly
+    # what the orphaned-inode failure destroyed.
+    with out_path.open("a", encoding="utf-8") as fh:
+        fh.write(stage_path.read_text(encoding="utf-8"))
+    print(f"published {stage_path} -> {out_path}")
 
     print(f"DONE offset={args.offset} n={len(batch)} data={has_data} shell={shell} dead={dead} failed={failed} -> {out_path}")
     return 0
