@@ -3503,3 +3503,25 @@ instants**, with 7 dead far longer — `BlockInc` last bar **2025-01-17** (4.5 y
 refreshed"**, and a consumer that reads all 197 gets 173 stale series with no staleness field to
 warn it. **Patch:** a per-symbol `last_bar` freshness fence over the universe dir with a floor, in
 the same shape as the other staleness checks.
+
+## 2026-08-28 — free-data seat (e): the universe registry cannot measure bar LIVENESS
+
+**Evidence:** `data/mt5_universe_bar_liveness.json` (measured this run, 197 parquets walked).
+24/197 symbols fresh ≤2d; 166 frozen at 2026-08-25 22:00; 7 dead >7d (EURRUB 1642.5d);
+**54/251 registry symbols have no H1 parquet at all**, including all softs (CORN/WHEAT/SOYBEAN/
+SUGAR/SUGARRAW/UKCOCOA/USCOCOA/COTTON/OJ) and all rates (UST05Y/UST10Y/UKGILT/US2000).
+
+**Root cause, exact:** `scripts/repair_universe_registry.py:parquet_facts()` (line ~79) does
+`pd.read_parquet(path, columns=["close"])` — it never reads the time index, so it measures bar
+COUNT and is structurally incapable of measuring recency. `universe.json` carries `last` on
+23/251 symbols. The registry's `updated_at` (2026-08-28T04:40 on 238 rows) is the **repairer's**
+clock printed on top of 2.7-day-old data — WS-005 class.
+
+**PATCH (named, not applied — research freeze bars this seat from `scripts/`):**
+1. `parquet_facts()` → also read the time column/index and return `last_bar: dict[str,str]`;
+   `merge()` it into every row as `last_bar` with `source="parquet_on_disk"`, so all 251 carry it.
+2. `defects()` → add two checks: (a) `last_bar` older than N sessions for a symbol whose asset
+   class is currently open; (b) **registry symbol with no parquet at all** — currently invisible.
+3. The 54 bar-less symbols are a separate ownership question: the canon ratchet restores rows from
+   `universe.canon.json` but nothing fetches bars for what it restores, so the ratchet grows the
+   registry and the coverage hole together.
