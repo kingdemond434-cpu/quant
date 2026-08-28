@@ -7912,3 +7912,123 @@ actually works.** **Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forw
 bodies and 0 RU threads read.** No new *alpha* was found and none was expected — the yield was a
 measurement of the desk's binding constraint, and the most important thing in it is the falsifier
 that stops the headline number from being used.
+
+---
+
+## SESSION 2026-08-28 (prospector, standing daily) — IN PROGRESS
+
+Backlog verified clear before opening ground (`source_backlog_next.py`: 68 catalogued, 42 resolved,
+**0 pending verification**, 26 deferred to dates from 2026-09-01). Resuming the named next ground
+from 2026-08-27(c), not restarting.
+
+**ITEMS TAKEN THIS RUN (bounded; depth unbounded per item):**
+1. **Finish the MQL5 slippage harvest** — host probed 200 on `/en/signals/mt5/list` AND `/en/blogs`
+   at run start, so the 08-27 rate wall has cleared. Single-threaded, checkpointed, `MQL5_DELAY=3`.
+2. **Settle the XAUUSD pip unit** (R0679's own resolving test) — until it is settled the 8.2x
+   cross-symbol slippage ratio cannot be converted, and the row says so.
+3. **Consume the unconsumed pre-fetched corpora** under `desks/mt5/data/intelligence/` (60 miner
+   grounds, today's `discoveries_*` all uncommitted) — corpora-first mandate: the python miners
+   gather for free and my tokens are for the mechanism verdicts on what they gathered.
+
+(status updated inline below as each resolves)
+
+### ITEM 1 — MQL5 slippage harvest RESUMED, and the population was 74% larger than assumed
+
+Host probed 200 at run start; the 08-27 self-inflicted rate wall had cleared. Relaunched
+single-threaded at `MQL5_DELAY=3`, seeded from the 40 usable rows of the 08-27 JSON (8 of the 48
+had `n_broker_rows=0` and were deliberately NOT seeded, so they retry).
+
+**Enumeration ran to genuine exhaustion: page55 404s, so the signal list ends at page 54 and the
+population is 2,509 unfetched signals — not the ~1,440 the 08-27 note assumed.** The harvest is
+still running at session close, one flushed JSON line per signal; a kill costs one signal. **This
+is a HANDOFF, not a completed item.**
+
+### ITEM 2 — the pip unit is SETTLED, and it CORRECTS the 08-27 headline (R0680)
+
+Settled with **zero extra MQL5 traffic**, from cells already on disk. The digit-class test:
+**USDJPY (3 digits) reports median 1.50 pips against EURUSD (5 digits) 0.93.** If MQL5 reported
+raw points, JPY would come in ~100x the majors; it does not. So **MQL5 normalises pip = 10 points**,
+and XAUUSD (2 digits, tick 0.01) therefore has **1 pip = 0.10/oz**.
+
+Converting both legs to money per lot — which is what the 08-27 run did *not* do:
+
+| symbol | median pips | trades | pip value | slippage per lot |
+|---|---|---|---|---|
+| XAUUSD | 2.55 | 1,146 | 0.10/oz x 100 oz | **$25.50** |
+| EURUSD | 0.93 | 846 | 0.0001 x 100,000 | **$9.30** |
+
+**Gold slips 2.74x EURUSD in money per lot — NOT the 8.2x the 08-27 note reported.** That 8.2x was
+a pips-vs-pips comparison, and pips are normalised to relative price units, so it compared
+percentage-of-price rather than cost. The 08-27 *conclusion* survives in direction (one uniform
+slippage multiplier is relatively too soft on gold) but its magnitude was overstated ~3x.
+Gold slippage is also **1.76x its own 14.5-point registry median spread**.
+
+**Graded SEMI, not VERIFIED:** the pip rule rests on **n=2 JPY cells**. The gold and EURUSD legs
+carry n=1,146 and n=846, so the *ratio* is well-backed once the rule holds. The running harvest is
+the strengthening test and it is already launched.
+
+### ITEM 3 — corpora consumed; TWO hypotheses of mine died to their own controls
+
+Consumed today's `desks/mt5/data/intelligence/` output: **6,409 rows across 54 grounds** (23 of the
+54 returned zero — already carded ground, not re-mined). Ranked by mechanism-keyword density rather
+than reading HTML into context.
+
+**`broker_swaps` (1,488 rows, the desk's own terminal tape) — VERIFIED CLEAN, zero cards.**
+- *Hypothesis A (mine): the zero-swap sides are a read failure*, the `tick_value`-zeroing class.
+  **REFUTED by its own test.** Zeros are stable per-symbol across all 22 snapshots and do NOT
+  cluster by snapshot; XALUSD *acquired* a real quote (0.0,-188.76) -> (-82.32,-59.64) mid-tape.
+  These are genuine broker quotes on 4 base-metal CFDs (XNIUSD, XCUUSD, XZNUSD, XPBUSD).
+- *Hypothesis B (mine): the registry carries stale swaps while the tape re-quotes.* **REFUTED:
+  0 mismatches on 248/248 symbols.** Median re-quote range across 246 symbols is **0.00%** — the
+  tape is near-static with a thin moving tail (XNGUSD 116%, XALUSD 100%, USDTHB 94%).
+- The carry cost path is therefore **clean end-to-end**: tape -> registry -> `execution_resolver`
+  (signed by direction, currency-per-lot, nights actually held) with Wednesday-triple handled in
+  `swap_exposure.py`. Worth stating plainly because carry is the desk's only repeat survivor.
+- Retained observation, NOT a card: the desk is 3 days into a proprietary hourly swap series
+  nobody else archives. 3 days is far too short to card; it is worth keeping.
+
+**`github_topics` — an honest null with a fix (R0681).** star_delta is **0 for 80/80 distinct repos
+over 59 snapshots**. I filed this as a broken instrument and **was wrong twice**: the churn
+hypothesis died (resample rate **63.6%**) and the state hypothesis died (`seed_miners_state.json`
+holds **51 real star counts**). The instrument works; `sort=updated&per_page=15` simply samples
+0-3-star brand-new repos (23/68 owners synthetic-looking, 38 pushed in one day), a population where
+novelty cannot appear. Fix named in R0681, and S23 does not run until 2026-09-08.
+- Extracted anyway (no-rejection-rule): the crowd **vocabulary** — SMC / liquidity-scanner /
+  order-flow-footprint / confluence-matrix / prop-firm-drawdown-guard. That is what is being sold
+  to MT5 retail right now, i.e. the crowded narrative, and it sharpens future query operators.
+
+### DEPTH LINE (honest)
+- MQL5 slippage: **enumeration EXHAUSTED** (page 54 boundary established by a 404, population
+  2,509 fixed); **fetch in progress**, handed off running.
+- broker_swaps: **EXHAUSTED for this tape** — 22 snapshots x 248 symbols cross-checked against the
+  registry and traced into the consuming code path. Depth past the surface is what killed both of
+  my hypotheses: the surface said "4 symbols quote zero swap", the layer below said the zeros are
+  stable and real, and the layer below that said the consumer already handles them correctly.
+- github_topics: **surface + producer code + state file** — the state file is what refuted me;
+  the discovery rows alone would have shipped a false defect.
+- Forks/citations/reply-chains chased: **0.** Video fetched: **0**; video locked: **0** (no route
+  tried and failed, so nothing to log). Blog bodies: **0** (deliberately deferred — I would not
+  compete with my own harvester for the same host after last run's ban).
+- **Breadth-theater check:** 3 items, all closed to a measured artifact or a named handoff. No new
+  ground opened while an unfinished item was outstanding.
+
+### NEXT UN-EXHAUSTED GROUND (named before closing)
+1. **Collect the finished slippage harvest** (2,509 signals, running) and re-derive the per-symbol
+   money-per-lot table at real n. Then promote the pip rule from SEMI to VERIFIED on JPY cells
+   numbering in the hundreds rather than 2.
+2. **Carried unchanged from 08-27, still owed:** MQL5 blog bodies (top-283 mechanism-essay bucket,
+   ranked list on disk) and the RU reply-count selector + re-rank of the 2,140. Both are the same
+   host as the harvest — run them AFTER it finishes, never alongside.
+3. Carried: EN `trading_systems` pages 26-138; `forum_general_en` (45,001+), `forum_ea_en` (15,683).
+4. Fresh, not yet touched: `regional_survivors` (1,011 rows/day) and `forextsd_cdx` (720/day) are
+   the two largest unconsumed mechanism-bearing corpora after broker_swaps.
+
+**RUN CLOSE 2026-08-28:** backlog verified clear before opening ground (0 pending verification).
+**2 ledger rows raised (R0680 resolving-and-correcting R0679, R0681), 1 previously-UNMEASURED row
+converted to measured, 1 published headline corrected 8.2x -> 2.74x, 1 cost path verified clean
+end-to-end, 1 population boundary established (2,509, was assumed ~1,440), 1 harvest handed off
+running.** **Honest zeros: 0 new watchlist cards, 0 trials burned, 0 forward clocks minted, 0 forks
+or citations chased, 0 blog bodies read.** **No new alpha was found and none was expected.** The
+yield was measurement: two of my own hypotheses died to their own controls, and the single most
+useful output is the correction — the 8.2x number was already in the desk's record and would have
+been converted at ~3x its true size.

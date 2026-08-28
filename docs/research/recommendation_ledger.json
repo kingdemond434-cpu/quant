@@ -8737,6 +8737,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0680",
+   "source": "cycle",
+   "summary": "R0679 RESOLVED + headline CORRECTED: MQL5 normalises pip=10 points (USDJPY 3-digit 1.50 vs EURUSD 5-digit 0.93 -- raw points would give ~100x), so XAUUSD pip=0.10. Gold slippage median 2.55 pips = $25.50/lot vs EURUSD 0.93 pips = $9.30/lot: gold slips 2.74x EURUSD IN MONEY PER LOT, not the 8.2x the 08-27 run reported from a pips-vs-pips comparison. Gold slippage is 1.76x its own 14.5-point median spread. Uniform slippage multiplier in the engine still errs soft on gold, but by 2.74x not 8.2x. Pip rule graded SEMI: the digit-class test rests on n=2 JPY cells; the running 2509-signal harvest strengthens it.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T06:11:03.004235+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0681",
+   "source": "cycle",
+   "summary": "S23 GitHub star-delta novelty sweep (deferred to 2026-09-08) is pointed at a population where novelty CANNOT appear: mine_github_topics uses sort=updated&per_page=15, which samples the freshest-pushed repos -- median 1 star, max 316, 51 tracked in seed_miners_state.json, and star_delta 0 for 80/80 distinct repos over 59 snapshots / 3 days. The instrument is NOT broken (state persists with real counts; resample rate 63.6%, so deltas would be seen if stars moved) -- the sampled population is 0-3 star brand-new repos, 23/68 owners synthetic-looking, 38 pushed in one day. Fix before S23 runs: add a sort=stars arm so the sweep resamples the stable population where a star delta is informative. Verify from the state file, not the discovery rows.",
+   "roi_bps": null,
+   "rank": 4.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-28T06:11:14.860280+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
