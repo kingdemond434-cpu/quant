@@ -1,0 +1,17 @@
+[
+  {
+    "entry_time": "2026-08-17 01:00:00+00:00",
+    "exit_time": "2026-08-17 01:00:00+00:00",
+    "side": 1,
+    "entry": 62916.67,
+    "exit": 62929.49488310848,
+    "r_multiple": -2.1875534189449795,
+    "reason": "stop",
+    "bar_source": "MT5:VantageMarkets-Live 14",
+    "bars_fetched_utc": "2026-08-22T22:02:06+00:00",
+    "bars_freshest": "2026-08-22T22:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": false,
+    "h1_source_version": "h1src-2026-08-18-a"
+  }
+]

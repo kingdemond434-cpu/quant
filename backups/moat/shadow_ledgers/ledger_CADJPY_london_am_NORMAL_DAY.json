@@ -1,0 +1,32 @@
+[
+  {
+    "entry_time": "2026-08-19 15:00:00+00:00",
+    "exit_time": "2026-08-19 15:00:00+00:00",
+    "side": -1,
+    "entry": 114.585,
+    "exit": 114.16499999999998,
+    "r_multiple": 1.8568095238095292,
+    "reason": "target",
+    "bar_source": "MT5:VantageMarkets-Live 14",
+    "bars_fetched_utc": "2026-08-22T22:03:04+00:00",
+    "bars_freshest": "2026-08-21T23:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": false,
+    "h1_source_version": "h1src-2026-08-18-a"
+  },
+  {
+    "entry_time": "2026-08-20 14:00:00+00:00",
+    "exit_time": "2026-08-21 02:00:00+00:00",
+    "side": 1,
+    "entry": 115.118,
+    "exit": 115.318,
+    "r_multiple": 0.5343710691824025,
+    "reason": "ttl",
+    "bar_source": "MT5:VantageMarkets-Live 14",
+    "bars_fetched_utc": "2026-08-22T22:03:04+00:00",
+    "bars_freshest": "2026-08-21T23:00:00+00:00",
+    "bars_stale": false,
+    "promotion_authority": false,
+    "h1_source_version": "h1src-2026-08-18-a"
+  }
+]

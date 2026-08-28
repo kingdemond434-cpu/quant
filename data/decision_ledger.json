@@ -3811,7 +3811,9 @@
     "ecf671f7",
     "9b510056"
    ],
-   "notes": "The near-miss is the more valuable half: /tmp/lit10-wt's HEAD 16a68718 -- a complete litminer run 10 -- was reachable from NO branch, and tmpfs does not survive a reboot. It was tagged rescued/litminer-run10-20260825 and verified reachable BEFORE the worktree was removed. A reflexive cleanup would have destroyed a full research session and left no trace that it had. R0666 ledgered to sweep the desk's other registries-of-callables for the same shape-vs-dispatcher class."
+   "notes": "The near-miss is the more valuable half: /tmp/lit10-wt's HEAD 16a68718 -- a complete litminer run 10 -- was reachable from NO branch, and tmpfs does not survive a reboot. It was tagged rescued/litminer-run10-20260825 and verified reachable BEFORE the worktree was removed. A reflexive cleanup would have destroyed a full research session and left no trace that it had. R0666 ledgered to sweep the desk's other registries-of-callables for the same shape-vs-dispatcher class.",
+   "review_due": "2026-09-25",
+   "review_due_source": "default"
   }
  ]
 }

@@ -8,8 +8,8 @@
   "capability_wired": {
     "artifact": "data/utilisation.json",
     "proving_command": "python scripts/check_utilisation.py",
-    "recorded": "2026-08-26T02:30:32Z",
-    "value": 0.859
+    "recorded": "2026-08-28T04:44:11Z",
+    "value": 0.885
   },
   "disk_headroom_ratio": {
     "artifact": "data/moat_mine.json",
@@ -50,7 +50,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-26T02:30:32Z",
+    "recorded": "2026-08-28T04:44:11Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {

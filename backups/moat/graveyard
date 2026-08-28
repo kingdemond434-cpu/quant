@@ -1729,3 +1729,37 @@ negative — a forward slot would be spent confirming a measured null. RE-OPEN T
 The MECHANISM (invoice-custom settlement demand) is not refuted — only its current-price is zero;
 the flow persists per Akiyama et al. (JAFEE 19, 2021, JP): anomaly strength tracks USD invoice
 share of JP imports.
+
+---
+
+## `tradingview_pine_agentic_mining` — KILLED 2026-08-27 on §13 legitimacy, not on yield (unified frontier dig)
+
+**What it was.** Seeds S3 and S12 (watchlist cards 43 and 52) proposed systematically mining
+TradingView's public Pine script library and idea stream as a strategy-mechanism corpus — a large,
+obvious, MT5-relevant body of published retail logic.
+
+**Why it is dead.** `https://www.tradingview.com/robots.txt` carries TWO user-agent groups. The
+`*` group bars almost nothing relevant (only `/scripts/search/`, `/ideas/search/`). A SECOND group
+enumerates 16 AI crawlers — `Google-Extended, GoogleOther, Applebot-Extended, Amazonbot,
+meta-externalagent, **ClaudeBot**, PerplexityBot, cohere-training-data-crawler, OmgiliBot, AI2Bot,
+Bytespider, TikTokspider, DeepSeekBot, ...` — and gives that group
+`Disallow: /ideas/*, /scripts/*, /script/*, /v/*, /symbols/*/minds/*, /u/*, /chat/*, /chart/*,
+/watchlists/*`. The publisher has explicitly and specifically withheld this exact ground from this
+exact class of agent. §13 is absolute; the desk does not build UA-substitution routes.
+
+**The methodological point, which is the reusable part.** A single-group robots read INVERTS this
+verdict — read only the `*` group and TradingView looks wide open. This is the false-POSITIVE twin
+of the KR-s5 lesson (a truncated read showed `Allow:` while the whole file scoped it to `yeti`).
+**Group-scope every robots read against the desk's OWN agent identity, never against `*`.**
+
+**RE-OPEN TRIGGERS (named, per L1.16a — a re-open needs an enabling change addressing the
+mechanism of death, not a fresh appetite).**
+(a) TradingView removes `ClaudeBot`/the AI-crawler group from robots, or publishes a research API
+    or licensed bulk export covering `/scripts/`; or
+(b) the desk obtains explicit written permission from TradingView for research use.
+A human reading the site in a browser is NOT a re-open trigger and does not become one at scale.
+
+**What is NOT killed.** The *mechanism families* retail Pine encodes are reachable on §13-clean
+ground the desk already holds — the Forex-TSD CDX attachment corpus (OP-096b), MQL5's own surface
+(card 41), and the FX Blue track-record layer opened the same day (card 53). Nothing about this
+kill withdraws the search space; it withdraws one route into it.

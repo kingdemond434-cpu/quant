@@ -54,3 +54,6 @@
 
 ## 2026-08-19T03:16:13.122872+00:00 POISONED DEPENDENCY
 - binance funding (live API) (DQS 0.0) feeds ['A001'] -- feeds the live cash-carry entry gate
+
+## 2026-08-28T04:43:59.253641+00:00 POISONED DEPENDENCY
+- axis_shadow_state.json (live clocks) (DQS 0.3792) feeds ['A002'] -- THE running forward clocks: kimchi day 6/40 due 2026-09-01, stablecoin day 5/40 due 2026-09-02, cny not started

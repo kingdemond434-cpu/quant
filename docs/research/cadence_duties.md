@@ -1,4 +1,4 @@
-# Generation due -- 2026-08-28T03:42Z (stage S0)
+# Generation due -- 2026-08-28T04:25Z (stage S0)
 
 The cadence engine flags these; the brain executes SCOPED generate runs (graveyard-excluded, pre-registration mandatory) and then marks them done by setting gen_done_<name> / last_live_generate in data/cadence_state.json.
 

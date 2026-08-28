@@ -1,0 +1,48 @@
+{
+  "updated_at": "2026-08-28T03:30:54+00:00",
+  "shadow_start": "2026-08-22T18:00:00+00:00",
+  "source": {
+    "fetched_at": "2026-08-28T03:30:52+00:00",
+    "source_server": "FusionMarkets-Live",
+    "source_company": "Fusion Markets Pty Ltd",
+    "account_trade_allowed": true,
+    "symbol": "XAUUSD",
+    "rows": {
+      "M1": 20000,
+      "M5": 20000,
+      "M15": 20000
+    },
+    "promotion_authority": true
+  },
+  "declared_sleeves": 4,
+  "configured_sleeves": 0,
+  "gate_blocked_sleeves": 4,
+  "sleeves": {},
+  "quarantined_candidates": {
+    "xau_m15_anti_breakout": {
+      "status": "QUARANTINED_UNCERTIFIED",
+      "n": 0,
+      "promotion_authority": false,
+      "gate_reason": "missing exact original universal ten-gate pass"
+    },
+    "xau_m15_anti_momentum": {
+      "status": "QUARANTINED_UNCERTIFIED",
+      "n": 0,
+      "promotion_authority": false,
+      "gate_reason": "missing exact original universal ten-gate pass"
+    },
+    "xau_m5_anti_breakout_overlap": {
+      "status": "QUARANTINED_UNCERTIFIED",
+      "n": 0,
+      "promotion_authority": false,
+      "gate_reason": "missing exact original universal ten-gate pass"
+    },
+    "xau_m5_anti_momentum_ny": {
+      "status": "QUARANTINED_UNCERTIFIED",
+      "n": 0,
+      "promotion_authority": false,
+      "gate_reason": "missing exact original universal ten-gate pass"
+    }
+  },
+  "represented_sleeves": 0
+}

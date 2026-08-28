@@ -1,7 +1,8 @@
 {
- "swept_at": "2026-08-28T03:03:15+00:00",
+ "swept_at": "2026-08-28T04:12:35+00:00",
  "symbols": 299,
  "families_ran": {
+  "carry": 234,
   "correlation_regime": 297,
   "cross_asset_residual": 296,
   "drawdown_conditional": 286,
@@ -12,20 +13,21 @@
   "vol_transition": 297,
   "lvc_asia_london": 139,
   "cot_positioning": 11,
+  "event_reaction": 193,
   "orderflow_imbalance": 102,
   "liquidity_regime": 69
  },
  "input_gaps": {
   "calendar_month:error:TypeError": 297,
-  "carry:no-signals (contract/swap terms)": 297,
   "cot_positioning:no-signals (COT net positioning)": 286,
   "discovered:no-signals (whatever primitive the search named)": 297,
-  "event_reaction:no-signals (an economic calendar)": 297,
+  "event_reaction:no-signals (an economic calendar)": 104,
   "liquidity_regime:no-signals (spread series from the tick tape)": 228,
   "lvc_asia_london:no-signals (unknown)": 158,
   "macro_conditional:no-signals (a macro state series)": 297,
   "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 195,
   "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 297,
+  "carry:no-signals (contract/swap terms)": 63,
   "overnight_gap_decay:no-signals (price only)": 1,
   "drawdown_conditional:no-signals (price only)": 11,
   "cross_asset_residual:no-signals (2+ factor instruments' H1)": 1
@@ -2741,6 +2743,19 @@
   },
   {
    "symbol": "AUDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDJPY"
+   },
+   "n": 1875,
+   "exp_r": 0.0669,
+   "max_dd_r": -52.58,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "AUDJPY",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -2991,6 +3006,19 @@
   },
   {
    "symbol": "CADJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CADJPY"
+   },
+   "n": 2455,
+   "exp_r": 0.0054,
+   "max_dd_r": -68.79,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "CADJPY",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -3039,6 +3067,19 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFDKK"
+   },
+   "n": 1842,
+   "exp_r": 0.0334,
+   "max_dd_r": -51.33,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "CHFDKK",
@@ -3158,6 +3199,19 @@
   },
   {
    "symbol": "CHFNOK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFNOK"
+   },
+   "n": 1849,
+   "exp_r": 0.1521,
+   "max_dd_r": -36.01,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "CHFNOK",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 986,
@@ -3177,6 +3231,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFSEK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFSEK"
+   },
+   "n": 1787,
+   "exp_r": 0.0077,
+   "max_dd_r": -31.56,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "CHFSEK",
@@ -3215,6 +3282,19 @@
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFSGD"
+   },
+   "n": 1598,
+   "exp_r": 0.0011,
+   "max_dd_r": -41.13,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "CHFSGD",
@@ -3464,6 +3544,19 @@
   },
   {
    "symbol": "EURGBP",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURGBP"
+   },
+   "n": 2854,
+   "exp_r": 0.016,
+   "max_dd_r": -54.8,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "EURGBP",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -3501,6 +3594,19 @@
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "EURHKD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURHKD"
+   },
+   "n": 1988,
+   "exp_r": 0.0073,
+   "max_dd_r": -50.5,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "EURHKD",
@@ -3582,6 +3688,19 @@
   },
   {
    "symbol": "EURILS",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURILS"
+   },
+   "n": 1502,
+   "exp_r": 0.0425,
+   "max_dd_r": -39.39,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "EURILS",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 586,
@@ -3590,6 +3709,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURJPY"
+   },
+   "n": 2477,
+   "exp_r": 0.0089,
+   "max_dd_r": -69.58,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "EURJPY",
@@ -3655,6 +3787,19 @@
   },
   {
    "symbol": "EURMXN",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURMXN"
+   },
+   "n": 1882,
+   "exp_r": 0.0644,
+   "max_dd_r": -25.86,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "EURMXN",
    "family": "correlation_regime",
    "params": {
     "peer_symbol": "3M"
@@ -3692,6 +3837,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURNOK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURNOK"
+   },
+   "n": 1815,
+   "exp_r": 0.0634,
+   "max_dd_r": -37.68,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "EURNOK",
@@ -3776,6 +3934,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "EURRUB",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURRUB"
+   },
+   "n": 366,
+   "exp_r": 0.2238,
+   "max_dd_r": -11.55,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "EURRUB",
@@ -3924,6 +4095,19 @@
   },
   {
    "symbol": "EURZAR",
+   "family": "carry",
+   "params": {
+    "input_symbol": "EURZAR"
+   },
+   "n": 1709,
+   "exp_r": 0.0494,
+   "max_dd_r": -36.73,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "EURZAR",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -3999,6 +4183,19 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPCAD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPCAD"
+   },
+   "n": 2008,
+   "exp_r": 0.0092,
+   "max_dd_r": -63.16,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "GBPCAD",
@@ -4129,6 +4326,19 @@
   },
   {
    "symbol": "GBPJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPJPY"
+   },
+   "n": 2452,
+   "exp_r": 0.0611,
+   "max_dd_r": -38.3,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "GBPJPY",
    "family": "correlation_regime",
    "params": {
     "peer_symbol": "3M"
@@ -4202,6 +4412,19 @@
   },
   {
    "symbol": "GBPMXN",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPMXN"
+   },
+   "n": 1998,
+   "exp_r": 0.0577,
+   "max_dd_r": -37.63,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "GBPMXN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -4229,6 +4452,19 @@
   },
   {
    "symbol": "GBPNOK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPNOK"
+   },
+   "n": 1784,
+   "exp_r": 0.0832,
+   "max_dd_r": -25.95,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "GBPNOK",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 764,
@@ -4237,6 +4473,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPNZD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPNZD"
+   },
+   "n": 1719,
+   "exp_r": 0.0319,
+   "max_dd_r": -33.72,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "GBPNZD",
@@ -4414,6 +4663,19 @@
   },
   {
    "symbol": "GBPZAR",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GBPZAR"
+   },
+   "n": 1660,
+   "exp_r": 0.0543,
+   "max_dd_r": -38.68,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "GBPZAR",
    "family": "lvc_asia_london",
    "params": {},
    "n": 61,
@@ -4483,6 +4745,19 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "HKDJPY"
+   },
+   "n": 1703,
+   "exp_r": 0.0672,
+   "max_dd_r": -33.8,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "HKDJPY",
@@ -4613,6 +4888,19 @@
   },
   {
    "symbol": "NZDHUF",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NZDHUF"
+   },
+   "n": 1741,
+   "exp_r": 0.0439,
+   "max_dd_r": -40.07,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "NZDHUF",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 765,
@@ -4676,6 +4964,19 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SGDJPY"
+   },
+   "n": 1529,
+   "exp_r": 0.0364,
+   "max_dd_r": -43.93,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "SGDJPY",
@@ -4789,6 +5090,19 @@
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDCAD"
+   },
+   "n": 2982,
+   "exp_r": 0.0055,
+   "max_dd_r": -91.09,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "USDCAD",
@@ -5058,6 +5372,19 @@
   },
   {
    "symbol": "USDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDJPY"
+   },
+   "n": 2451,
+   "exp_r": 0.049,
+   "max_dd_r": -50.37,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "USDJPY",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -5149,6 +5476,19 @@
   },
   {
    "symbol": "USDMXN",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDMXN"
+   },
+   "n": 2016,
+   "exp_r": 0.0004,
+   "max_dd_r": -68.06,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "USDMXN",
    "family": "correlation_regime",
    "params": {
     "peer_symbol": "3M"
@@ -5181,6 +5521,19 @@
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDNOK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDNOK"
+   },
+   "n": 1870,
+   "exp_r": 0.0441,
+   "max_dd_r": -49.35,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "USDNOK",
@@ -5335,6 +5688,19 @@
   },
   {
    "symbol": "USDTRY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDTRY"
+   },
+   "n": 1935,
+   "exp_r": 0.0105,
+   "max_dd_r": -106.74,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "USDTRY",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -5348,6 +5714,19 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USDZAR"
+   },
+   "n": 1903,
+   "exp_r": 0.0176,
+   "max_dd_r": -65.67,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "USDZAR",
@@ -5674,6 +6053,19 @@
   },
   {
    "symbol": "XBRUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "XBRUSD"
+   },
+   "n": 1472,
+   "exp_r": 0.0234,
+   "max_dd_r": -33.77,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "XBRUSD",
    "family": "correlation_regime",
    "params": {
     "peer_symbol": "3M"
@@ -5757,6 +6149,19 @@
    "source": "orthogonal_sweep:vol_mean_reversion",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "XCUUSD"
+   },
+   "n": 1257,
+   "exp_r": 0.0174,
+   "max_dd_r": -71.1,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "XCUUSD",
@@ -5852,6 +6257,19 @@
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "XTIUSD"
+   },
+   "n": 1844,
+   "exp_r": 0.0228,
+   "max_dd_r": -45.2,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "XTIUSD",
