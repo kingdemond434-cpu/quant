@@ -7559,3 +7559,59 @@ posture run (r) took for NBP and it is the only honest one. It stacks with run (
 (83 symbols, 16 years) into the same wiring item: a pre-2018 D1 panel the gauntlet has never once
 been able to test a candidate in.
 
+### ITEM 2 — SWEA CURVE **SLOPE** ARM -> **AXIS REFUTED ON 360 REPORTED CELLS**, and the refutation now has a *shape*
+
+Run (q) tested the SWEA yield **level** differential and refuted it; the **slope** arm — the one with
+the term-premium story — was carried unreached into run (r) and again into this run. It is now
+closed. Pulled keyless from `api.riksbank.se/swea/v1/Observations/<id>/<from>/<to>`:
+`SEGVB2YC` (9,181 obs), `SEGVB5YC` (9,183), `SEGVB7YC` (9,181), `SEGVB10YC` (9,181), plus
+`DEGVB10Y` (9,126) and `USGVB10Y` (8,853), all **1990-01-02 → 2026-08-27**.
+
+*Rate-limit note, correcting run (q)'s failure mode into an operating rule:* run (q) recorded an
+undocumented **4-request/HTTP-429** limit. Six sequential series pulled clean here with **25 s
+spacing and no 429 at all**. The limit is a **RATE**, not a quota — it is defeated by spacing, not
+by giving up at four. The dangerous version of that failure mode still stands (a naive fast pull
+loses everything after the 4th series while the first four look complete).
+
+**DESIGN — every trial counted, every cell reported (no forking path).** 5 signals
+(`SE_slope_10_2`, `SE_slope_10_5`, `SE_curv_2_5_10`, `SEDE_10y_diff`, `SEUS_10y_diff`) × 2 forms
+(252-day z of the level; 252-day z of the 5-day change) × 6 SEK crosses (EURSEK, USDSEK, GBPSEK,
+CHFSEK, NOKSEK, SEKJPY, from the desk's own H1 tape resampled to daily) × 3 horizons (1, 5, 20 d) ×
+**2 arms** = **360 cells, all of them reported here.** The two arms are the point: `TRADABLE` is the
+strictly-forward return (signal known at the close of D, return measured D→D+h); `CONTEMP` is the
+same-window return at lag 0 — **untradable by construction and included solely as the leak control**
+(desk lesson, run (d): without it a null is indistinguishable from a dead pipe). Overlapping windows
+are deflated to n_eff = n/h before the t-stat, per run (r)'s overlap lesson.
+
+| arm | max abs t | cells with abs t > 2.5 |
+|---|---|---|
+| **CONTEMP (lag 0, untradable)** | **6.74** | **17 / 180** |
+| **TRADABLE** | **2.28** | **0 / 180** |
+
+The pipe is emphatically alive — `SEUS_10y_diff` 5-day change against same-day USDSEK is
+**t = −6.74** (corr −0.144, n_eff 2,151), and `SEDE_10y_diff` against EURSEK is t = −5.34. **Move the
+window forward by one bar and the entire effect vanishes:** the best tradable cell in the whole grid
+is t = 2.28, against a Bonferroni threshold of ≈ 3.6 on 180 trials. **REFUTED.**
+
+**THE CLASS RESULT, which is worth more than this one axis.** This is the **fourth consecutive**
+macro→FX screen this seat has run, and all four died with the *identical* signature — enormous
+contemporaneous significance, nothing tradable:
+
+| run | axis | contemp | best tradable |
+|---|---|---|---|
+| (p) | Danish pension FX hedging | t = −9.71 | abs t ≤ 1.36 |
+| (q) | SWEA yield **level** panel | t = +13.52 | ≤ 1.99 (54 cells) |
+| (r) | BoC auction → USDCAD | — | 2.97, **wrong sign**, dies at 1.72 point-in-time (44 cells) |
+| **(s)** | **SWEA curve SLOPE + curvature** | **−6.74** | **2.28 (360 cells)** |
+
+That is not four unlucky draws, it is **one mechanism failing four times**: a published macro series
+and the FX rate are *the same information arriving simultaneously*, so the correlation is real,
+large, and worth exactly nothing — by the time the number is on the wire, the move is in the price.
+**Stated as a prior for the next seat that proposes a macro→FX axis: the burden is now on showing
+why THIS series is not already in the price at its own timestamp, and the contemporaneous t-stat is
+NOT evidence for the axis — on this desk's record it is the signature of its death.** Four axes
+retired is four fewer places the desk will spend a forward slot.
+
+**SWEA is graded verified-clean and RETAINED as reference data** (36 years of a 9-country daily
+benchmark-yield panel, keyless, no robots restriction on the API host) — the *panel* is sound; the
+*axis* built on it is dead. Those are separate verdicts and this run is issuing both.
