@@ -15,6 +15,7 @@ Two different kinds of statement are produced and they are kept apart on purpose
 
 from __future__ import annotations
 
+import gzip
 import json
 import sys
 from collections import defaultdict
@@ -36,6 +37,19 @@ def main() -> int:
         paths = [Path(a) for a in sys.argv[1:]]
     else:
         paths = sorted(SRC.parent.glob("track_records*.jsonl"))
+    # The RAW waves are gitignored (14MB each, re-harvestable); the committed artifact is the
+    # gzipped digest. A fresh clone has the digest and nothing else, so read it when the raw
+    # waves are absent -- a consumer that only works on the machine that mined is not wired.
+    digest = SRC.parent / "mechanism_digest.jsonl.gz"
+    if not paths and digest.exists():
+        with gzip.open(digest, "rt", encoding="utf-8") as dh:
+            lines = dh.read().splitlines()
+        recs = [json.loads(ln) for ln in lines if ln.strip()]
+        for r in recs:  # the digest hoists chart rows to the top level; restore the shape
+            r["charts"] = {k: {"rows": v} for k, v in r.items() if k.startswith("ch_")}
+        live = [r for r in recs if r.get("mineable")]
+        print(f"sources: [{digest.name}]")
+        return _report(recs, live)
     recs = []
     seen: set[str] = set()
     for path in paths:
@@ -59,6 +73,10 @@ def main() -> int:
 
     live = [r for r in recs if _mineable(r)]
     print(f"sources: {[p.name for p in paths]}")
+    return _report(recs, live)
+
+
+def _report(recs: list, live: list) -> int:
     from collections import Counter as _C
     print(f"records={len(recs)} " + " ".join(f"{k}={v}" for k, v in sorted(_C(r.get("status") for r in recs).items())))
 

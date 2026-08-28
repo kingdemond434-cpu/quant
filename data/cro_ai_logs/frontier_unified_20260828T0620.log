@@ -125,3 +125,23 @@ at 0 on purpose: this desk's record is 129/129 directional mechanisms failed whi
 5. Still owed and untouched: the **body-line `[§33:]` parser fix** (engineering-owned),
    **Myfxbook `/members/*` and Collective2 `/strategies/*` under OP-098**, and the **Darwinex
    metrics XHR** respecting the `/api` robots bar.
+
+## CLOSE-OUT — the wave-3 re-harvest (same run)
+
+The first 700-account harvest ran on the PRE-fix path and its orphaned inodes were freed when
+the processes exited: I recovered them once at row ~50 and not again, so ~500 harvested records
+no longer exist anywhere. My error, and the rule it yields is in card 65b — while a writer is
+known to be orphaned, re-recover on a timer or restart it on the fixed path immediately; a
+single rescue is a snapshot, not a save.
+
+Re-ran on the repaired path, which doubles as its end-to-end positive control: **700/700 rows
+landed, against 57/700 before.** Corpus is now **887 records / 525 mineable** (was 111), and
+because the new accounts are different accounts, it is an out-of-sample read on H-005/H-006:
+- the overlap-hour concentration HOLDS (15:00-17:00 = 7.13/6.87/6.91% vs a 4.17% baseline);
+- **the swap-boundary spike GROWS: 00:00 = 6.59%, up from 5.84%**, second-largest hour of the
+  day, isolated between 22:00 3.54% and 01:00 2.82%. H-20260828-006 is the stronger card.
+- the PERFORMANCE half decayed exactly as its bias warning predicted: 15:00 61.3% -> **53.7%**.
+  Neither rule rested on it. The refusal was checked, and it was right.
+Raw waves are gitignored (14MB each, re-harvestable in ~40min from a keyless route); the
+committed artifact is `mechanism_digest.jsonl.gz` (4.4MB, 887 accounts), and the summariser
+falls back to it so a fresh clone reproduces every number above without the raw harvest.

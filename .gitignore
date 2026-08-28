@@ -227,3 +227,7 @@ desks/*/data/recover_candidates.json
 # cb_tone_series.jsonl is the committed artifact, the zip is re-downloadable
 # from https://www.bis.org/speeches/speeches.zip in one request.
 desks/mt5/data/intelligence/central_banks/bis_speeches/
+
+# FX Blue RAW harvest waves: ~14MB per 350-account wave and re-harvestable in ~40min
+# from a public keyless route. The committed artifact is mechanism_digest.jsonl.gz.
+desks/mt5/data/intelligence/fxblue/track_records*.jsonl

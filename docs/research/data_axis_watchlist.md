@@ -4222,3 +4222,29 @@ inodes. **Nothing errored; a reader would have seen a clean, short, plausible fi
 - **RESIDUAL, explicitly not done:** every other long-running writer under `desks/mt5/data/` has
   the same failure available to it. That audit is owed, and until it runs the scope of this defect
   is UNMEASURED, not one file (L1.28a).
+
+### 65b. [dig 2026-08-28, same run] FX Blue corpus 111 -> 525 mineable accounts: the CLOCK confirms out-of-sample, the PERFORMANCE half decays [§33: converted(2026-08-28) tier:1]
+Re-harvested 700 further accounts (stride 7, offsets 1 and 3) on the repaired writer path — a
+positive control for card 66's fix as well as a corpus expansion: **700/700 rows landed, against
+57/700 on the pre-fix path.** Corpus is now **887 records / 525 mineable**, and the wave-2/3
+accounts are DIFFERENT accounts from the 111 that produced H-005/H-006, so this is an
+out-of-sample read on both cards' premises.
+- **The clock holds and sharpens** (per-account normalised, n=499, baseline 4.17%/hr):
+  15:00-17:00 = **7.13 / 6.87 / 6.91%** (was 7.45 / 7.23 / 6.96 at n=107), and
+  **00:00 = 6.59%, UP from 5.84%** — the swap-boundary spike is now the second-largest hour of
+  the day and sits 1.58x baseline between neighbours at 3.54% (22:00) and 2.82% (01:00). A sharp,
+  isolated, contract-mechanic-aligned spike that grew with the sample is the opposite of what a
+  small-sample artifact does. **H-20260828-006 is the stronger of the two cards on this evidence.**
+- **Instrument mix stable:** EURUSD 48.2%, GBPUSD 36.2%, USDJPY 28.2%, AUDUSD 24.8%,
+  USDCHF 23.4%, XAUUSD 16.2% of live accounts.
+- **THE SELF-CHECK THAT PAID:** the performance half's headline — "61.3% of accounts profitable
+  at 15:00" (n=111) — **decays to 53.7% at n=525**, and 16:00 likewise 55.9% -> 54.1%. Neither
+  rule was based on it, on the stated ground that it is survivorship-conditioned and that 24
+  hourly tests do not survive Holm. Had it been the basis, this run would have been a promotion
+  built on a number that lost half its excess to a 4.7x sample. Recorded because *refusing* a
+  tempting number is only worth something if the desk checks later whether the refusal was right.
+- **Cost paid, recorded (my error):** the first 700-account harvest ran on the pre-fix path; I
+  recovered its orphaned inodes ONCE at row ~50 and not again, so when both processes exited the
+  kernel freed ~500 harvested records that no longer exist anywhere. The re-run cost ~40 minutes
+  of wall clock. The rule that follows: while a writer is known to be orphaned, re-recover on a
+  timer, or restart it on the fixed path immediately — a single rescue is a snapshot, not a save.
