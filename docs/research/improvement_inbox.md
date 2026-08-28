@@ -4231,3 +4231,66 @@ discipline is the same rule pointed inward.
 `how-not-to-develop-gp-strategies-a-cautionary-tale` (the **double-blind second OOS window**:
 a recent-history block never examined *at all* until after final model selection, because
 inspecting OOS to choose a model is the same as coding `IF oos_perf > x`).
+
+---
+
+## 2026-08-28 — prospector s14 — `execution_resolver.py` swap term is unit-wrong for 181/251 symbols (LATENT: zero callers)
+
+**MEASURED, not inferred.** `desks/mt5/research/execution_resolver.py:172–181` documents
+`swap_long`/`swap_short` as "CURRENCY PER LOT PER NIGHT" and computes
+`swap_r = swap_ccy * nights / (sym_risk * contract)` on that basis. The field is in **POINTS**.
+
+**Evidence (held-out design, not an assertion).** Points and currency-per-lot coincide exactly
+when `tick_size × contract_size = 1`, which holds for 70 five-digit FX pairs and nothing else.
+Fit `carry_ann` on the BIS policy-rate differential over the **22 non-JPY majors** (factor 1.0,
+conventions indistinguishable), then **predict the 7 JPY majors out of sample** (factor 100):
+
+| convention | RMSE |
+|---|---|
+| **POINTS** | **0.232 pp/yr** |
+| currency-per-lot | 207.499 pp/yr |
+
+**894× separation.** Corroborated by the in-sample fit itself: slope **1.002**, R² **0.978**
+against an *independently sourced* rate — a wrong unit conversion cannot produce a unit slope.
+
+**BLAST RADIUS.** `tick_size × contract_size` spans **10⁻⁴ to 10⁴** across `universe.json`:
+JPY crosses **100×**, `USDKRW` **1000×**, `USDIDR` **10,000×** UNDERSTATED; the 102 equities
+(factor 0.01) **100× OVERSTATED**; bonds/indices/commodities/crypto assorted. Correct for
+**70/251**. This is the desk's twice-ledgered unit failure shape (the 184× JPY commission
+undercharge; `tick_value` deleted → 0/197 costable) in a third costume.
+
+**WHY IT IS STILL LATENT — and why that is the argument for fixing it now.** `execution_resolver`
+has **zero callers** (III.16). Nothing has consumed the error, so no historical verdict is
+contaminated. It is a resolver whose whole job is to decide whether a net edge survives costs; the
+moment it is wired it silently under-charges the carry cost of every JPY and exotic expression by
+two to four orders of magnitude, in the direction that manufactures survivors.
+
+**THE FIX (named, not "investigate" — L1.28b):** multiply by `tick_size × contract_size` to reach
+quote currency, then convert quote→account currency (EUR, measured) before dividing by the risk
+leg. **Precondition:** MT5's `symbol_info.swap_mode` (`SYMBOL_SWAP_MODE_*`) is **recorded
+nowhere** in `universe.json` — the collector must capture it, because POINTS is one of seven legal
+modes and this finding establishes the convention *empirically for FX only*. Until `swap_mode` is
+stored, the conversion is an inference, and equities/crypto (where I have no rate anchor to test
+against) are **UNMEASURED, not confirmed** (L1.28a).
+
+**Not patched here — research freeze (writes limited to `docs/research/*` and `data/*`).**
+Evidence: `data/research/s14_swap_decomposition.json`; derivation in `prospector_coverage.md` s14.
+
+## 2026-08-28 — prospector s14 — §38: FRED's international daily rate coverage is DEAD; BIS `WS_CBPOL` replaces it
+
+`IR3TIB01<CC>M156N` / `IRSTCI01<CC>M156N` (OECD MEI) now return **HTTP 400 — series does not
+exist** for all 27 currencies tested. Not empty, not stale: withdrawn. FRED's daily rate coverage
+is **US and EUR only**, and any desk code or card assuming FRED for a foreign policy rate is
+broken. (s13's swap card asserted the lake held `fred_ECBDFR`; it does not.)
+
+**REPLACEMENT — verified live this run, keyless, no registration:**
+`https://stats.bis.org/api/v1/data/WS_CBPOL/D.<AREA>/all?startPeriod=YYYY-MM-DD&format=csv`
+(v2 also works: `/api/v2/data/dataflow/BIS/WS_CBPOL/1.0/D.<AREA>`). Daily central-bank policy
+rates, **26 of 27 desk currencies**, each row carrying a `COMPILATION` provenance string naming the
+source central bank and its splice history — better provenance than FRED gave. `D/all` returns
+29 jurisdictions in **one 50KB call**.
+**§13:** `stats.bis.org/robots.txt` **301s** to `data.bis.org`, whose robots is `Allow: /` with
+disallows only on query-param patterns (`*filter=`, `*sort=`, `*q=`, `*rows=`, `*cols=`,
+`*page_size=`, `*selectedDate=`) that the SDMX path does not use. Clean.
+**Residual gap, graded:** **SGD only** — Singapore has no policy rate (MAS runs an FX band), so
+`D.SG` is empty *correctly*. The quantity does not exist; no replacement is owed.

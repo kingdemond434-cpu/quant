@@ -1089,7 +1089,21 @@ measurement that decides this family, and still the cheapest thing that could ki
 
 ---
 
-## CARD — `mt5_broker_swap_markup_asymmetry` (prospector s13, 2026-08-28)
+## CARD — `mt5_broker_swap_markup_asymmetry` (prospector s13, 2026-08-28) — **KILLED 2026-08-28 (s14)**
+
+> **STATUS: KILLED by its own pre-committed first test, one day after carding.** s14 ran step 1
+> (the crowdedness decomposition). On the 29 Forex majors/crosses the administered swap regresses
+> on the BIS policy-rate differential with **slope 1.002, R² 0.978, residual sd 0.258 pp/yr** — a
+> pass-through, not a residual. `crowded_known` **applies** → EV **0.0013** → REJECT, exactly the
+> branch this card pre-registered as killing. The exotics' apparent residual is the broker's
+> both-sides **markup** (corr(|resid|, markup) = 0.943 overall, −0.005 within the low-markup
+> subsample), which is a **cost paid on either side** and cannot be earned.
+> Two card claims were also false: the lake does **not** hold `fred_ECBDFR`, and `swap_long` is in
+> **POINTS, not currency-per-lot** (held-out test on 7 JPY pairs: RMSE 0.232 vs 207.5 pp/yr).
+> Evidence: `data/research/s14_swap_decomposition.json`; write-up in `prospector_coverage.md` s14.
+> **Do not re-open** without a named enabling change (L1.16a) — the pass-through is the mechanism
+> of death and it is a property of how the broker sets the rate, not of the sample.
+
 
 **Family:** CARRY-FUNDING, on **MT5 ground** — where it has **never been tested** (see the coverage-map
 finding below; the family's 6/6 "tested" candidates and all 3 `do_not_repeat` carry tokens

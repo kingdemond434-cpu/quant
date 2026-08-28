@@ -9093,3 +9093,434 @@ robots is HTTP **404**, which is *allow* under RFC 9309 — but note the trap: i
 send (this desk's own 08-28 lesson), so fetching a permitted path under a false identity still
 misrepresents the desk — and on Zhihu it is a spoofed UA used to reach an explicitly forbidden path.
 → ledgered.
+
+### EXPANSION (≥25% mandate) — **the coverage map that tells every hunter where to hunt is grading MT5 families on crypto evidence, and it regenerated TODAY.**
+The strategy-family mandate orders "read `data/strategy_coverage.json` … prefer an unhunted family
+over deepening a worked one." I read it to pick this run's expansion ground and then audited its
+corpus instead, because every candidate name in it looked crypto-native. **Measured, not impressions:
+34/53 (64%) of all "tested" candidate names are crypto-exchange-native**, and the distribution is
+what convicts it — it is not uniform, it is concentrated in the HUNTED verdicts:
+
+| family | state | crypto-named / tested | true MT5 n_tested |
+|---|---|---|---|
+| **CARRY-FUNDING** | HUNTED | **6/6** | **0** |
+| **ONCHAIN-FLOW** | HUNTED | **6/6** | **0** — and structurally void: no settlement layer exists for FX/metals/indices |
+| **COPY-TRADER-SKILL** | HUNTED | **3/3** | **0** |
+| CROSS-VENUE-PREMIUM | HUNTED | 6/8 | 2 |
+| TREND-AND-STRUCTURE | HUNTED | 4/8 | 4 |
+| ORDER-FLOW-POSITIONING | HUNTED | 1/5 | 4 |
+| CROSS-SECTIONAL-FACTOR | HUNTED | 1/5 | 4 |
+| VOL-AND-OPTIONS | HUNTED | 0/3 | 3 |
+
+`generated: 2026-08-28T05:51Z`, `n_hunted: 8/14` — **regenerated this morning, so s7's report of this
+class did not reach the generator.** Three consequences, and they are not cosmetic:
+1. **The three 100%-crypto families are NEVER-HUNTED on this desk's universe and are labelled HUNTED**,
+   which under the mandate's own instruction actively steers every hunter *away* from them.
+2. **The steer is worst exactly where the prior is best.** CARRY-FUNDING is the desk's *only repeat
+   survivor family* ("funding/carry is a real leverage-demand premium"); its MT5 analogue is broker
+   swap/rollover, the desk already runs an hourly terminal-native swap recorder, and **nothing reads
+   it**. COPY-TRADER-SKILL is marked worked precisely as its five MT5 grounds (MQL5, FX Blue,
+   Darwinex, Collective2, Myfxbook) return from deferral **2026-09-03→09-05**.
+3. **ONCHAIN-FLOW should be DELETED, not re-graded** — it has no MT5 referent at all, and while it
+   sits in the family list it inflates the denominator (14) and *understates* the coverage gap.
+The suppression is doubled by `research_agenda.json::do_not_repeat`, which holds ≥9 carry-family
+kill tokens (`funding_carry`, `basis_carry`, `single_venue_carry`, …) — **all crypto-venue**, so a
+hunter checking *either* store bounces off a family with zero MT5 tests. The repair is to re-grade
+from mandate-valid evidence only and to make the generator carry universe provenance per candidate,
+so a crypto-corpus verdict can never again render identically to an MT5 one. → **R0707**.
+**This run acted on the finding rather than only filing it:** the CARRY-FUNDING gap is now a
+pre-registration card (`prospector_watchlist.md`, `mt5_broker_swap_markup_asymmetry`).
+
+---
+
+### s13 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| **The desk's own 197-file H1 tape** (God's curve, 80 genuine-H1 symbols, 4 metrics × rules + permutation and random-trader controls) | ✅ | **R0702 half-refuted, half-recalibrated** — the run's headline |
+| `finance.naver.com` robots (full read) → §38 replacement → **`ecos.bok.or.kr`** live probe | ✅ | **R0700 void (own OP-103 repeat)** · 57yr USDKRW extension found · **new sample-key-probe instrument** |
+| `korea_miner.py` / `china_miner.py` source + `zhihu`/`eastmoney`/`kr.investing` robots | ✅ | **1 live §13 breach** · 2 miners reclassified unfixable-by-design · 1 soft-404 trap |
+| `data/strategy_coverage.json` + `research_agenda.json` corpus audit (53 candidates classified) | ✅ | **3 families falsely HUNTED, 1 structurally void** — steering every hunter away from the best prior |
+| The desk's own `broker_swaps` panel (73 snapshots × 248 symbols) + `universe.json` swap fields | ✅ | **1 CARD** (the run's only survivor, EV 0.0037) · 1 recorder defect |
+
+- **DEPTH.** God's curve → **exhausted** (claim → build → 80-symbol measurement → 2 metrics → 2 rules
+  → permutation null → random-trader control → multiplicity → re-scope). `finance.naver.com` →
+  **exhausted** (full 13-line robots → group boundary → verdict inverted → §38 replacement → live API
+  probe → row cap found → start date proven at 1964). The two miners → **exhausted** (robots of all
+  three targets read to the LAST group → source read → extractor read → the defect found one level
+  above the reported one). Coverage map → **exhausted** (read → corpus classified candidate-by-
+  candidate → generator timestamp → the second suppressing store → acted on as a card).
+  Surface said "two parse bugs and a fetch route"; the walk said one breach, two unfixable miners,
+  a void replacement route, and a coverage map misdirecting the whole desk.
+- **§38 EXCLUSION → REPLACEMENT:** `finance.naver.com` walled in full → **`ecos.bok.or.kr`**, the
+  primary source rather than another aggregator, robots fully open, verified live.
+- **§13, INCLUDING MY OWN CONDUCT:** every request this run went out under an honest
+  `ClaudeBot (quant research desk)` UA — no spoofing, unlike s12. One live desk breach found
+  (`china_miner` → `zhihu.com/search`) with its repair named (stop the fetch).
+- **Video:** 0 fetched, 0 locked, none needed. Nothing added to `video_locked_log.md`.
+- **Cards: 1** (`mt5_broker_swap_markup_asymmetry`), EV-gated at 0.0037 with the losing tag branch
+  written into the card as its own first killing test. **Graveyard cross-check passed explicitly
+  against BOTH stores** — the failure mode that produced graveyard row 276.
+- **A HYPOTHESIS OF MINE THAT DIED TO ITS OWN CHECK:** I expected the coverage map to be ~100%
+  banned-universe (s7's claim). It is **64%**, and four families are legitimately MT5-tested. The
+  measurement is weaker than the memory and the memory is corrected.
+
+### NEXT UN-EXHAUSTED GROUND (for s14, in order)
+1. **Run the crowdedness decomposition** on the swap card (step 1) — it is cheap, it is allowed to
+   kill the card, and the card should not age un-tested. The lake already holds `fred_DFF` +
+   `fred_ECBDFR`, so the EURUSD leg is runnable today.
+2. **Re-grade `data/strategy_coverage.json` from mandate-valid evidence** (R0707) — until it is
+   fixed it misdirects every hunter, including s14.
+3. **`jonathankinlay.com`** — 213 posts still unread; the volatility (18) and HFT/microstructure
+   (14) clusters, which are the desk's standing execution-bottleneck class.
+4. **The COPY-TRADER-SKILL MT5 ground**, timed to the five track-record grounds returning
+   **2026-09-03→09-05**, carrying the God's-curve **ceiling** screen (not the refuted shape screen).
+5. **The `sample`-key probe applied as a sweep** — re-open every source ever excluded as
+   "needs a key" and prove or disprove its coverage at zero registration cost.
+
+---
+
+## SESSION s14 — 2026-08-28 (PROSPECTOR, standing daily)
+
+Backlog clear at open (73 catalogued / 48 resolved / 0 pending / 25 deferred, next returns 09-01),
+so this run resumes s13's named next-ground list rather than cataloguing anything new.
+
+**ITEMS TAKEN THIS RUN (3):**
+1. **Run the crowdedness decomposition on the swap card** (s13's own step 1) — cheap, pre-committed,
+   and allowed to KILL the card. It must not age un-tested.
+2. **Re-grade `data/strategy_coverage.json` from mandate-valid evidence** (R0707) — it misdirects
+   every hunter, including this one, until fixed.
+3. **`jonathankinlay.com`** — 213 posts unread; volatility (18) + HFT/microstructure (14) clusters.
+
+*(status updated in place as each item resolves — nothing held in context)*
+
+- [x] item 1 — **CLOSED: card KILLED by its own pre-committed test**
+- [x] item 2 — **CLOSED: root cause found (format blindness), corrected grade published**
+- [x] item 3 — **CLOSED: cluster-exhausted; MT5-alpha surface graded NIL, 1 null-model instrument extracted**
+
+### ITEM 1 — CROWDEDNESS DECOMPOSITION: **THE CARD IS KILLED** (and the units precondition inverted)
+
+s13 pre-committed this as the card's first test and wrote that it was *allowed to kill the card*.
+It does. Run honestly, reported in full.
+
+**The test could not be run as specified.** The card said the lake holds `fred_DFF` + `fred_ECBDFR`
+so the EURUSD leg was "runnable today". `fred_ECBDFR` **is not on disk** (the cache holds only US
+legs: `DFF`, `DGS2`, `DGS10`, CPI, PAYEMS, UNRATE, INDPRO). Worse, the obvious repair is dead:
+**FRED's OECD-MEI international rate series are GONE** — `IR3TIB01<CC>M156N` / `IRSTCI01<CC>M156N`
+return **HTTP 400 (series does not exist)**, not an empty series, for all 27 currencies. FRED's
+daily rate coverage is now **US and EUR only**. That is a §38 exclusion.
+
+**§38 REPLACEMENT (found, verified live, keyless) — BIS `WS_CBPOL`.** The primary source rather
+than another aggregator, exactly as §38 prescribes:
+`https://stats.bis.org/api/v1/data/WS_CBPOL/D.<AREA>/all?startPeriod=…&format=csv`
+No key, no registration. **26 of my 27 currencies in one call**, daily, end-of-period, each row
+carrying its own `COMPILATION` provenance string naming the source central bank and its splice
+history. `robots.txt`: `stats.bis.org` **301-redirects** to `data.bis.org`, whose robots is
+`Allow: /` with disallows only on query-param patterns (`*filter=`, `*sort=`, `*q=`, `*rows=`, …)
+that the SDMX path does not use. **Clean under §13.**
+**The one genuine gap is structural, not a route failure: SGD.** Singapore has no policy rate —
+MAS runs an FX-band regime — so `D.SG` is empty *correctly*. Graded: no replacement needed, the
+quantity does not exist.
+
+**THE DECOMPOSITION.** `carry_ann = (long_ann − short_ann)/2`, annualised as
+`swap_points × tick_size / price × 365`, regressed on the BIS policy differential `r_base − r_quote`:
+
+| sample | N | slope | intercept | **R²** | resid sd (pp/yr) |
+|---|---|---|---|---|---|
+| **Forex majors/crosses** | 29 | **1.002** | 0.038 | **0.9781** | **0.258** |
+| all FX with both rates | 79 | 1.028 | −1.402 | 0.3635 | 9.739 |
+| Forex Exotics | 50 | 0.978 | −2.385 | 0.3182 | 12.202 |
+| markup < 5pp/yr | 70 | 0.995 | 0.075 | 0.9799 | 0.356 |
+
+**A slope of 1.002 with R² 0.978 is a pass-through, not a residual.** The broker's administered
+swap on the majors *is* the policy differential, to within **26 bp/yr**. There is no
+broker-specific mispricing to trade. **`crowded_known` applies → EV 0.0013 → REJECT**, which is
+precisely the branch s13 pre-registered as the killing one. The card is retired.
+
+**AND THE EXOTIC "RESIDUAL" IS NOT MISPRICING EITHER — it is the broker's fee.** The exotics'
+R² of 0.32 looks like unexplained structure until it is conditioned: `corr(|resid|, markup)` is
+**0.943** across all 79, and **−0.005** within the markup<5pp subsample. The entire apparent
+residual is the both-sides wedge leaking into a mid that a symmetric markup does not remove
+cleanly. A markup is a **cost paid on either side** — there is no side of USDINR (markup **100
+pp/yr**), USDBRL (36) or USDIDR (33) that earns it. The card's central object dissolves on both
+halves of the universe, for two different reasons.
+
+**THE UNITS PRECONDITION IS DISCHARGED — AND IT INVERTS THE DESK'S ASSUMPTION.** Card step 2
+demanded units be verified against an account statement before any return was computed. That was
+not available, so I ran a **held-out convention test** instead, which is stronger:
+- For the 70 five-digit FX pairs, `tick_size × contract_size = 1e-5 × 1e5 = 1.0` — points and
+  currency-per-lot are **numerically identical**, so those pairs cannot discriminate.
+- For the 7 JPY majors the factor is **100**, so the two conventions differ 100×.
+- Fit on the 22 non-JPY majors, **predict the 7 JPY pairs out of sample**:
+
+| convention | RMSE (pp/yr) |
+|---|---|
+| **POINTS** | **0.232** |
+| currency-per-lot | 207.499 |
+
+**894× separation.** `swap_long`/`swap_short` are **POINTS**. (The R²=0.978 is itself the unit
+proof: a wrong conversion cannot produce a unit slope against an independently-sourced rate.)
+
+**→ A LATENT DEFECT IN `execution_resolver.py` (routed to the inbox, NOT patched — research
+freeze).** Lines 172–181 document the field as "CURRENCY PER LOT PER NIGHT" and divide it by
+`sym_risk × contract` on that basis. That is correct for exactly the **70/251 symbols** where the
+factor is 1.0, and wrong everywhere else — the factor ranges over **10⁻⁴ to 10⁴** across this
+universe: JPY crosses **100×**, `USDKRW` **1000×**, `USDIDR` **10,000×** understated; the 102
+equities **100× overstated**. `symbol_info`'s `swap_mode` is **recorded nowhere** (the s11 finding),
+so the desk currently has no field that would have caught this. The resolver has **zero callers**,
+so nothing has consumed the error yet — which is the only reason this is latent rather than a live
+mispricing, and the reason the fix must land *before* it is ever wired.
+
+**WHAT SURVIVES — the markup term structure, as a COST fact, not an alpha.** The wedge on majors
+runs **0.55 pp/yr (GBPUSD) to 2.43 (GBPCHF)**, a **4.4× spread**, ordered by quote currency
+(CHF > JPY > commodity dollars) and correlated with |rate differential| at 0.316. That is real
+first-party information about *where a carry-holding expression is cheapest*, which under the
+bottleneck law is worth having — but `execution_resolver` already reads the true per-symbol field,
+so it is a measurement of an existing input, not a missing one. **No card.**
+
+**Artifact:** `data/research/s14_swap_decomposition.json` (79 symbols, all fits, the convention
+test, the 26 BIS rates with as-of dates).
+**DEPTH: exhausted** — card → its own pre-committed test → the test's data dependency found false
+→ FRED route found dead → §38 primary-source replacement found and verified → decomposition run →
+conditioned on the confound → units discharged by a held-out design → the resolver defect one
+level below → the missing `swap_mode` field one level below that.
+
+### ITEM 2 — RE-GRADING `strategy_coverage.json` (R0707): the root cause is a **PARSER**, not a corpus
+
+R0690 (s7) said the coverage map is 100% crypto evidence. R0707 (s13) "corrected" that to 64% and
+recorded that four families are legitimately MT5-tested. **s13 was wrong and s7 was right**, and
+s14's own prior — inherited from s13 — is corrected here. I classified all 57 candidates the organ
+actually reads against `docs/graveyard.md` and the mandate:
+
+| verdict | n |
+|---|---|
+| CRYPTO_VOID (explicit crypto-venue tokens in its own graveyard row) | 39 |
+| AMBIGUOUS by name — **all 15 read individually, all crypto-book** | 18 |
+| **MT5_VALID** | **0** |
+
+The 18 "ambiguous" are ambiguous only in their *names*. Read: `funding`/`basis` are quoted in
+**bps/8h** (an 8-hour funding interval is a perp construct); `options VRP` died on "breadth 2 —
+revisit only with more vol markets" (Deribit BTC+ETH); `vol-target` is an overlay on "the carry
+edge"; `tfatrexitbreakout`/`tftrailbreakout`/`trend_regime_gated` are scored `max_corr 0.91 vs
+trend book` and dated **2026-07-19**, a month before the universe flip. **0/57. s13's 64% came
+from scoring name tokens and letting ambiguity default to valid** — absence read as a clean
+verdict, WS-005, in the very audit written to catch it.
+
+**BUT THE INTERESTING FINDING IS WHY, AND IT IS NOT "THE CORPUS IS CRYPTO".**
+`scripts/run_strategy_coverage.py::_corpus` (line 158) extracts candidates with
+`re.match(r"\|\s*([a-z0-9_-]{3,})\b", ln)` — **markdown TABLE ROWS ONLY**. The graveyard's
+recording format migrated: newer kills are written as `##`/`###` prose sections with a narrative
+body. **There are 53 section-format entries in `docs/graveyard.md` and the organ can see none of
+them** (56 table-row candidates parsed, 53 sections invisible, overlap 2).
+
+**And the section format is where every single MT5-ground kill lives.** The desk *does* have
+mandate-valid evidence — roughly eight candidates — and **not one is in the coverage map**:
+
+| invisible MT5-ground kill | family it is evidence for |
+|---|---|
+| `gotobi_nakane_drift` (USDJPY 09:55 JST fix, replicates 2018–20, dead 2021–26) | EVENT-AND-CALENDAR |
+| `exotic_fx_halt_reopen_gap_vol` (USDIDR/INR/BRL/KRW halts) | EVENT-AND-CALENDAR |
+| `lazarus_easter_conditional_reversion_sp500` | EVENT-AND-CALENDAR |
+| `cot_hedging_pressure_level` | ORDER-FLOW-POSITIONING |
+| `cn_bucketshop_retail_loss_as_directional_signal` | ORDER-FLOW-POSITIONING |
+| `retail_fx_stophunt_feed_manipulation` | LEVEL-REACTION |
+| `wctc_leader_follower_replication` | COPY-TRADER-SKILL |
+
+**THE FAILURE SHAPE.** The organ reports `n_unhunted: 0` and `status: THIN` — among the most
+confident verdicts it can emit — off a corpus that **structurally cannot contain an MT5 test**,
+while the MT5 tests that exist sit in the same file in a format it cannot parse. It is wrong in
+*both* directions at once: families graded HUNTED on banned evidence, and families whose genuine
+MT5 evidence is invisible. It then publishes `next_family` and is imported into hunter prompts
+(s7), so the error steers the desk. A regex that silently reads 51% of its own source file is the
+`benchmark_returns` shape — a gate whose input nobody walked.
+
+**CORRECTED GRADE — mandate-valid evidence only.** Two families have **no MT5 referent at all**
+and should be DELETED, not re-graded: **ONCHAIN-FLOW** (there is no settlement layer under a CFD)
+and **CROSS-VENUE-PREMIUM** (Fusion is a *single broker*; there is no second venue to arb).
+Deleting them takes the denominator 14 → 12 and makes the measured gap **larger**, which is the
+honest direction (L1.28b(f): never shrink a denominator to flatter a rate).
+
+| | published | **corrected (mandate-valid)** |
+|---|---|---|
+| families | 14 | **12** |
+| HUNTED | 8 | **0** |
+| THIN | 6 | **4** (EVENT-AND-CALENDAR 3, ORDER-FLOW-POSITIONING 2, LEVEL-REACTION 1, COPY-TRADER-SKILL 1) |
+| **NEVER-HUNTED** | **0** | **8** |
+| candidates | 57 | **8** |
+
+**Eight of twelve strategy families have never been tested on the desk's mandated universe, and
+the organ whose job is to say so reports zero.** That is the single largest under-exploration
+finding available to this seat, and it is a *breach* under L1.51 — "exhausted" claimed without
+evidence — not merely a stale file.
+
+**THE FIX (named, not "investigate"; NOT applied — research freeze on `scripts/`):** `_corpus`
+must parse `##`/`###` section headings as well as table rows, AND each candidate must carry a
+`universe` field (`mt5` | `crypto_banned` | `unknown`) derived from its graveyard body, so a
+crypto verdict can never again render identically to an MT5 one. Grade families on the `mt5`
+subset only; report the `crypto_banned` count separately as retired-search-space rather than
+deleting it. **UNKNOWN must grade as NEVER-HUNTED, never as hunted** — that default is the whole
+bug. → ledgered **R0710**, joining the open R0690/R0707 which describe the symptom.
+
+**DEPTH: exhausted** — file read → 57 candidates classified one by one against their own
+graveyard rows → 15 ambiguous ones read individually rather than defaulted → contradiction with
+s13 found and s13 refuted → generator source read → the regex found → the 53 invisible sections
+counted → the 8 invisible MT5 kills identified and mapped to families → corrected grade computed
+→ two families found structurally void → fix specified with its failure default named.
+
+### ITEM 3 — `jonathankinlay.com`, the volatility / HFT-microstructure clusters: **MT5 alpha surface graded NIL, one instrument extracted**
+
+**A ROUTE CORRECTION FIRST, and it is the "empty artifact" failure in miniature.** s12's census
+used `wp-sitemap.xml`. That URL now **301s** to a Yoast `sitemap_index.xml`, and `curl` without
+`-L` returns **HTTP 301, 0 bytes** — which parses as "no posts" rather than as "moved". Any
+collector pointed at the old route would archive `[]` and assert absence. Corrected route:
+`https://jonathankinlay.com/sitemap_index.xml` → `post-sitemap.xml` (**217 posts**, census
+confirmed). Robots re-read live: `Allow: /`, 77 bytes, zero Disallow. §13 clean.
+
+**AND THE SITE PUBLISHES ITS OWN TAXONOMY, which beats the slug-keyword census s12 used.**
+`category-sitemap.xml` enumerates **~250 author-assigned categories** with post counts. That is a
+free, exact, author-labelled clustering — no vocabulary guessing. It also settles the item
+decisively:
+
+| MT5-relevant category | posts |
+|---|---|
+| F/X | **2** |
+| Foreign Exchange | **2** |
+| Gold | **2** |
+| Metals | **2** |
+| Silver / Platinum | 1 / 1 |
+| Toxic Flow | 3 |
+
+against Volatility Modeling **37**, VIX Index **22**, HFT **25**, Statistical Arbitrage 18,
+Pairs Trading 16, eMini 15, Equities 25. **The entire MT5-tradable surface of this blog is ~6
+distinct posts**, and I read all of them plus the four densest execution posts (10 total, full
+text). s12's impression ("largely outside the MT5 universe") is now a **measured** claim.
+**GRADE: the remaining ~207 posts are NIL for MT5 alpha.** Value is METHOD and NULL MODELS only.
+Do not re-queue this ground as an alpha source; it is closed.
+
+**THE ONE REAL EXTRACTION — `the-mathematics-of-scalping` (2018), a zero-edge win-rate prior.**
+Kinlay's framing: a bar's maximum favourable excursion is an *extreme-value* quantity, so for any
+(profit-target, stop-loss, volatility) triple there is an **expected win rate and per-trade P&L
+that assumes no edge whatsoever**. His conclusion — "scalping is essentially a volatility trade;
+at low vol set tight targets and wide stops, as vol rises reverse it" — is the corollary.
+
+**Why this is a desk instrument and not a strategy.** Every sleeve here is judged in **R-multiples**
+where R is a stop distance, and `execution_resolver` derives `sym_risk` from `_atr_distance`. The
+desk therefore has an entire promotion apparatus keyed on (target, stop) geometry and **no null
+model for it**. A TP/SL rule that "wins 65% of the time" is telling you nothing until you know what
+65% would have been at that instrument's volatility with zero predictive content. Confirmed absent:
+`trade_path.py` mines MAE/MFE for an **already-validated** signal ("does not re-validate the signal
+itself", and it has **zero callers**); `profit_retention` / `execution_quality` are post-hoc.
+**Nothing computes the zero-edge prior.** This is the same *class* as s13's God's Equity Curve — a
+ceiling/null instrument, buildable from OHLC alone on the desk's own 251 symbols — and it routes
+the same way: **a mining-stage screen, never a gate (L1.60)**. → **R0711**, inbox, no watchlist card:
+it is not alpha and must not be dressed as any.
+
+**AND AN IMPROVEMENT ON HIS METHOD, stated because it changes the build.** Kinlay fits a **Gumbel**
+(β = √6·σ/π, α = −γ·β). Gumbel is the *asymptotic* maximum law; the running maximum of a driftless
+random walk is not Gumbel — it has an exact reflection-principle law, and real bars have fat tails
+and intrabar path structure besides. **Do not port the algebra.** The transferable content is the
+FRAMING; the null should be **non-parametric on the desk's own tape** — walk the actual bars,
+measure the empirical (TP, SL) hit rate per symbol per volatility bucket. That is both more correct
+and cheaper than fitting his distribution, and it makes the instrument exact rather than approximate.
+
+**WHAT DID NOT SURVIVE, reported because a null is a result:**
+- **VPIN / toxic flow (2021) — NOT CONSTRUCTIBLE ON MT5 GROUND.** VPIN needs volume-bucketed
+  buy/sell-classified *trades*. Fusion CFDs have no consolidated tape; reported "volume" is
+  broker-internal tick count, not market volume. His own simulation earns **½ tick per trade**,
+  below any realistic MT5 CFD cost, before that. Killed on constructibility, not on merit. The
+  one transferable finding is methodological and the desk already holds it: order-flow imbalance
+  is mean-reverting ~2/3 of the time and trending ~1/3, so a **single linear model is misspecified**
+  (R² 7% linear vs **27%** Markov-switching) — which is RESEARCH §6c's regime law, independently
+  arrived at.
+- **`metal-logic` — metals VAR: DISCARDED, and by the author's own follow-up.** Ratio/differential
+  models on gold-silver-platinum fail (non-stationary residuals); a trivariate VAR forecasts well
+  OOS Jan–Aug 2016. The desk holds **XAUUSD, XAGUSD, XPTUSD, XPDUSD**, so it is testable here —
+  but the OOS window is **one 8-month block**, and Kinlay states in the same post that the
+  gold-platinum relative-value trade "has not worked out as expected… and is perhaps unlikely to".
+  A VAR forecasting price *levels* with an author-reported forward failure is the overfit shape.
+  **No card.** Recorded as the nearest MT5-ground referent for STATISTICAL-ARBITRAGE (the desk's
+  n=0 family) when `data_axis_watchlist` card 27 returns **2026-09-01**.
+- **`a-study-in-gold`** — GDX rules at Sharpe >3 decaying to nothing by 2013; an ETF, not MT5.
+  A decay prior, not a candidate.
+- **`fx-momentum-strategy`** — a **product page**, 1,187 chars, zero evidence. Per the
+  mine-everything rule the mechanism is still harvested and the number dropped: *"prices tend to
+  fall faster than they rise"* — down-moves faster than up in FX. That asymmetry is a real
+  stylised fact (the carry-crash shape) and is free to test on the desk's own tape. Logged, not carded.
+- **`high-frequency-statistical-arbitrage` (2024)** — a survey with no mechanism and no data.
+  **SOURCE-YIELD LEARNING:** this blog's 2016–2021 originals are dense with first-party
+  measurement; its **2024+ posts are generic survey prose**. Weight recent posts down, not up.
+
+**ONE DO-NOT-BUILD, and it is worth as much as a card — `reinforcement-learning-for-optimal-execution`
+(2026-05).** Full post read; verdict quoted: *"RL slots in above a size threshold, Almgren–Chriss
+remains the default below it, and TWAP is what you fall back to when your data feed is broken."*
+For a book with **$150k** measured capacity, that is an evidenced **do-not-build** on RL execution —
+the desk's bottleneck is cost and capacity, and the marginal resource should not go here. Cited
+(Macrì & Lillo arXiv:2411.06389; Cheng & Cartea arXiv:2410.13493; Almgren–Chriss 2000) so the
+decision can be re-litigated on evidence rather than re-argued. → inbox, engine-idea REJECTED.
+
+**§38 / SEARCH-SPACE EXPANSION (new ground, not previously catalogued).** The site's **Blogroll**
+names 15 practitioner sources, several of them the dead/solo-quant long-form this seat is
+mandated to prioritise: *QUSMA (Alexander Pagonidis)*, *Quant at Risk*, *QuantStrat TradeR*,
+*Systematic Investor*, *Trading the Odds*, *The Aleph Blog*, *Factor Wave*, *System Trader
+Success*, *EP Chan*, and **Quantocracy** — which is not a blog but a **daily aggregator of the
+entire retail-quant blogosphere**, i.e. a population enumerator of exactly the kind CDX was for
+track-record sites (OP-098). Two of the posts I read carry Quantocracy pingbacks, confirming it
+indexes this corpus. Catalogued as next ground; **not** verified this run (named honestly rather
+than claimed).
+
+**DEPTH: cluster-exhausted** — robots re-read → old sitemap route found dead and the silent-301
+trap identified → new route → author taxonomy discovered and used instead of slug guessing → 19
+target categories enumerated → 33 posts identified, **10 read in full** → each graded to a verdict
+→ one instrument extracted AND its method corrected → checked against the desk's existing code to
+prove the instrument is absent → blogroll harvested as new ground.
+
+### s14 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| **The desk's own swap panel + `universe.json` + BIS rates** (the s13 card's own pre-committed test) | ✅ | **CARD KILLED** (slope 1.002, R² 0.978) · **`execution_resolver` unit defect on 181/251 symbols** · units convention inverted |
+| `api.stlouisfed.org` (FRED) international rate series | ✅ | **SOURCE DEATH** — OECD-MEI rates withdrawn, HTTP 400, 27/27 currencies |
+| **`stats.bis.org` `WS_CBPOL`** (§38 replacement, primary source) | ✅ | **26/27 currencies, keyless, one call** · per-row CB provenance · SGD graded structurally absent |
+| `data/strategy_coverage.json` + `run_strategy_coverage.py` source + `docs/graveyard.md` | ✅ | **ROOT CAUSE: table-row-only regex; 53 sections invisible** · corrected grade **8/12 NEVER-HUNTED vs published 0** · s13 refuted |
+| `jonathankinlay.com` — sitemap → **author category taxonomy** → 19 clusters → 10 posts full-text | ✅ | **MT5 surface measured NIL** · **1 null-model instrument** · 1 evidenced do-not-build · 1 not-constructible kill · new blogroll ground |
+
+- **DEPTH.** All three items **exhausted**, each one level past where the surface stopped: the card
+  died to its own test and the *test's data dependency* was the finding below it; the coverage
+  re-grade turned out to be a parser bug and the invisible corpus was the finding below that; the
+  blog's alpha grade was NIL and the null-model instrument was the finding below that.
+- **DEPTH LINE, honest:** citations chased (Easley/Lopez de Prado VPIN; Macrì & Lillo; Cheng &
+  Cartea; Almgren–Chriss) — read as provenance, not followed to their own citation trees, because
+  each terminated in a verdict here. **No reply/comment chains mined this run** (the blog's
+  comments are closed on every post read — verified, not assumed) and **no fork trees followed**
+  (no repos in scope). By the depth mandate that is a real gap and I name it rather than let the
+  three exhausted items cover for it.
+- **§38 EXCLUSION → REPLACEMENT:** FRED international rates dead → **BIS `WS_CBPOL`**, the primary
+  source, verified live, 26/27 covered, residual graded (SGD does not exist).
+- **§13:** every request this run under an honest `ClaudeBot (quant research desk)` UA. Robots read
+  in full before each host: `data.bis.org` (`Allow: /`, query-param disallows only, SDMX path
+  clean), `jonathankinlay.com` (`Allow: /`, zero Disallow). **No breach, mine or anyone's.**
+- **Video:** 0 fetched, 0 locked, none needed. Nothing added to `video_locked_log.md`.
+- **Cards: 0 added, 1 KILLED.** That is the correct output: the public strategy space is
+  picked-clean and the run's value was three refutations and two build instruments. No survivor
+  was fabricated to look productive.
+- **HYPOTHESES OF MINE THAT DIED TO THEIR OWN CHECKS (three, reported because they are results):**
+  (1) I expected the swap markup to be a tradeable residual — it is a pass-through plus a cost.
+  (2) I expected `strategy_coverage.json`'s problem to be a crypto corpus — it is a regex that
+  reads 51% of its own source file. (3) I carried s13's prior that four families are legitimately
+  MT5-tested — **0/57 are**; s13 corrected s7 and s13 was the one that was wrong.
+
+### NEXT UN-EXHAUSTED GROUND (for s15, in order)
+1. **`quantocracy.com`** — a daily aggregator indexing the whole retail-quant blogosphere; the
+   OP-098 population-enumerator class, and the highest-leverage single source this seat has
+   catalogued in several runs. Verify robots, then enumerate rather than browse.
+2. **The blogroll's dead/solo long-form** — QUSMA, Quant at Risk, QuantStrat TradeR, Systematic
+   Investor, Trading the Odds, The Aleph Blog. Era-archaeology class, several likely dormant →
+   Wayback CDX.
+3. **The `sample`-key probe as a sweep** (carried from s13, still unrun) — re-open every source
+   ever excluded as "needs a key" and prove or disprove coverage at zero registration cost. The
+   BIS find this run is the same shape: a source assumed to need registration that does not.
+4. **The COPY-TRADER-SKILL MT5 ground**, timed to the five track-record grounds returning
+   **2026-09-03→09-05**, carrying the God's-curve **ceiling** screen and now also the **(TP,SL)
+   zero-edge win-rate null** (R0711) as a second grading instrument.
+5. **The 8 NEVER-HUNTED families** from this run's corrected grade — that list, not the published
+   `next_family: ATTENTION-SENTIMENT`, is the true unhunted frontier until R0710 lands.

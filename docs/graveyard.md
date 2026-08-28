@@ -1891,3 +1891,52 @@ the post offers no answer to *who* is obliged to trade against this and why they
 **RE-OPEN CONDITION (L1.16a):** only on a named forced-flow mechanism for the Easter week
 (a settlement, hedging or mandated-rebalance obligation), tested pre-registered across MANY
 indices to buy breadth the calendar cannot buy in time — never on a re-run of this conditioning.
+
+### mt5_broker_swap_markup_asymmetry — the administered MT5 swap IS the policy differential (PROSPECTOR s14, 2026-08-28)   [universe: **MT5**, mandate-valid]
+
+**CARDED s13 2026-08-28, KILLED s14 2026-08-28 by its own pre-committed first test.** One day of
+life, which is the pipeline working: the card wrote the crowdedness decomposition as step 1 and
+declared it allowed to kill the card, and it did.
+
+**MECHANISM OF DEATH — pass-through, not residual.** The claim was that an MT5 broker's swap is an
+*administered* rate that drifts from the true rate differential, leaving a broker-specific,
+staleness-and-markup residual only this desk can see. Measured on the 29 Forex majors/crosses
+against BIS `WS_CBPOL` daily central-bank policy rates:
+**`carry_ann = 0.038 + 1.002 × (r_base − r_quote)`, R² = 0.9781, residual sd = 0.258 pp/yr.**
+A unit slope is a pass-through. The administered swap *is* the policy differential to within 26
+bp/yr, so the object the card was built on does not exist on the majors. `crowded_known` applies
+→ EV **0.0013** → REJECT, the exact branch the card pre-registered as killing.
+
+**AND THE EXOTICS' APPARENT RESIDUAL IS A COST, NOT A MISPRICING.** All-FX R² is only 0.36, which
+looks like structure until conditioned: `corr(|resid|, markup)` = **0.943** across 79 symbols and
+**−0.005** within the markup<5pp subsample. The entire exotic residual is the broker's both-sides
+wedge (USDINR **100 pp/yr**, USDBRL 36, USDIDR 33) leaking into the mid. **A markup is paid on
+either side; there is no leg that earns it.** The family dies on both halves of the universe for
+two different reasons.
+
+**TWO CARD CLAIMS ALSO FALSIFIED, recorded so they are not re-inherited:** (1) the lake does NOT
+hold `fred_ECBDFR` — and FRED's OECD-MEI international rate series are withdrawn entirely (HTTP
+400, 27/27 currencies), so the stated data route was dead as well as absent; (2) `swap_long` /
+`swap_short` are **POINTS, not currency-per-lot** — held-out test fitting 22 non-JPY majors (where
+`tick_size × contract_size` = 1 and the conventions coincide) and predicting the 7 JPY majors
+(factor 100): RMSE **0.232** vs **207.499** pp/yr, an 894× separation.
+
+**TAGS:** `crowded` + `no_economics` (on the majors) / `costs_killed_edge` (on the exotics).
+
+**L1.16a RE-ENTRY DOOR (named, narrow).** The pass-through is a property of how this broker *sets*
+the rate, not of the sample, so more data is NOT an enabling change and neither is another symbol
+set. Re-open ONLY on: a demonstrated **time-series** lag — the swap table updating on a slower
+clock than a *policy change*, measured across an actual rate decision with ≥3 months of the
+hourly `broker_swaps` panel (73 snapshots over 3 days is not a sample). That is a different
+quantity from the cross-sectional residual killed here, and it is the only version left alive.
+
+**WHAT SURVIVED AS A COST FACT, not an alpha:** the majors' markup runs **0.55 pp/yr (GBPUSD) to
+2.43 (GBPCHF)**, a 4.4× spread ordered by quote currency (CHF > JPY > commodity dollars),
+correlated 0.316 with |rate differential|. Useful for choosing where to express a carry-holding
+view; `execution_resolver` already reads the per-symbol field, so it is a measurement of an
+existing input rather than a missing one.
+
+**EVIDENCE:** `data/research/s14_swap_decomposition.json` (79 symbols, four fits, the convention
+test, 26 BIS rates with as-of dates). Derivation: `docs/research/prospector_coverage.md` s14 item 1.
+Related: **R0708** (the `execution_resolver` unit defect this test exposed), **R0709** (the BIS
+replacement source).
