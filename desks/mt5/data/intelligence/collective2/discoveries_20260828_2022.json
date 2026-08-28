@@ -1,0 +1,14 @@
+[
+ {
+  "source": "collective2",
+  "kind": "walled",
+  "title": "HTTP_403 (probe not due)",
+  "url": "https://collective2.com/leaderboard",
+  "text": "robots.txt PERMITS /leaderboard (its Disallow list is only /grid, /newgrid, /cgi-perl/system/grid.mpl, /strategy/csv/*), but the server answers 403 to this box. Policy allows, server refuses -- so this is a reversible block (WAF/datacenter IP), not a licence refusal.",
+  "symbols": [],
+  "found_at": "2026-08-28T20:24:06+00:00",
+  "verdict": "HTTP_403",
+  "walled_since": "2026-08-26",
+  "needs_selector_work": false
+ }
+]

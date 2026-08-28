@@ -6366,5 +6366,27 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"72322146dc563a02": {
+"t0": "2026-08-28T20:24:32+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "avangardistic/VeriTrade",
+"url": "https://github.com/avangardistic/VeriTrade",
+"text": "Autonomous Trading System Verification Framework",
+"symbols": [],
+"found_at": "2026-08-28T20:24:26+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-28T19:34:16Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
