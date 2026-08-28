@@ -17,9 +17,15 @@ producing nothing while every liveness check reports it healthy.
 WHAT THIS DOES INSTEAD
 
 Exactly what the gauntlet does to fill its cache -- same cell identity, same key, same series,
-same trim to the last complete day -- but one cell at a time, releasing each before starting the
-next, and stopping when the box gets tight. Afterwards the real sweep finds its cells cached and
-runs in the cheap regime that was measured working: "Cell cache: 460/460 loaded, 0 to compute".
+same trim to the last complete day -- but ACROSS SEVERAL PROCESSES, releasing each cell before
+starting the next, and stopping when the box gets tight. Afterwards the real sweep finds its
+cells cached and runs in the cheap regime that was measured working: "Cell cache: 460/460
+loaded, 0 to compute".
+
+Parallel because the measurement demanded it. After 6.6 hours the sweep had cached 2,597 cells of
+~6,270 and was still adding about 160 an hour -- another 22 hours -- while using 0.84 of the
+box's 4 cores. Cell series are independent and deterministic, so three workers do the same work
+in a third of the time, and the fourth core stays free for the sweep and the terminal.
 
 WHAT IT DELIBERATELY DOES NOT DO
 
@@ -32,8 +38,10 @@ is built cannot silently drift from what this warms.
 from __future__ import annotations
 
 import json
+import os
 import sys
 import time
+from multiprocessing import Pool
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parents[3]
@@ -50,6 +58,69 @@ FLOOR_MB = 1200
 #: Report progress this often. Cheap, and it makes the log a live progress signal rather than a
 #: single line at exit -- the blind spot that cost 87 minutes tonight.
 REPORT_EVERY = 25
+
+#: WORKERS. The desk box has 4 cores and the sweep uses 0.84 of one -- measured 2026-08-28, after
+#: 6.6 hours it had cached 2,597 cells of ~6,270 and was still adding roughly 160 an hour, which
+#: is another 22 hours of wall-clock for work that three idle cores could have absorbed. Cell
+#: series are INDEPENDENT and deterministic, so this parallelises exactly: each worker computes
+#: whole cells and writes them to the same content-addressed cache the sweep reads.
+#: Three, not four: one core stays for the sweep itself and the live terminal. A warmer that
+#: starves the thing it is trying to help is not help.
+WORKERS = int(os.environ.get("WARM_WORKERS", "3"))
+
+#: Warm from the END of the eligible list backwards. The sweep walks it forwards, so the two meet
+#: in the middle instead of recomputing the same cells in the same order. The cache makes overlap
+#: harmless but not free, and this makes it rare.
+REVERSE = True
+
+
+#: Set once per worker process by `_init`, so the universe registry is not pickled per cell.
+_META: dict | None = None
+
+
+def _init(meta: dict) -> None:
+    global _META
+    _META = meta
+
+
+def _warm_one(spec: dict) -> str:
+    """Compute and cache ONE cell's 1x and 3x daily series. Returns a one-word outcome.
+
+    Runs in a worker process, so it must be importable at module level (Windows spawns rather
+    than forks). Every function it calls comes from external_gauntlet, so the series it writes
+    are the ones the sweep would have computed itself -- same identity, same key, same trim.
+    """
+    import external_gauntlet as G
+
+    meta = _META or {}
+    obj = None
+    try:
+        frame = G._h1_for(spec["sym"])
+        if frame is None or len(frame) == 0:
+            return "missing"
+        last_day = frame.index[-1].normalize()
+        ckey = G._cache_key(spec["sym"], spec["family"], spec["params"] or {},
+                            str(last_day.date()))
+        if G.cache_load(ckey) is not None:
+            return "already"
+        obj = G.build_cell(spec["sym"], spec["family"], spec["params"], meta)
+        if not obj:
+            return "failed"
+        ds1 = G._series_trim_partial(
+            G.daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
+        costs3 = G.costs_for(spec["sym"], meta, mult=G.COST_SCENARIO)
+        ds3 = G._series_trim_partial(
+            G.daily_series(obj["df"], obj["sigs"], costs3), last_day)
+        if ds1 is None or ds3 is None:
+            return "failed"
+        G.cache_save(ckey, ds1, ds3)
+        return "warmed"
+    except Exception:
+        return "failed"
+    finally:
+        if obj is not None:
+            obj["sigs"] = None
+            obj["df"] = None
 
 
 def main() -> int:
@@ -80,59 +151,37 @@ def main() -> int:
     print(f"docket {len(survivors)} rows -> {len(cells)} cells -> {len(eligible)} eligible "
           f"({len(rejected)} rejected at the economic prior, as the sweep would)")
 
-    warmed = missing = failed = already = 0
+    order = list(reversed(eligible)) if REVERSE else list(eligible)
+    counts = {"warmed": 0, "already": 0, "missing": 0, "failed": 0}
     t0 = time.time()
-    for i, spec in enumerate(eligible):
-        if i % REPORT_EVERY == 0:
+    stopped = False
+
+    # chunksize=1 so a worker cannot sit on a queue of cells while the pool is being shut down,
+    # and so the memory check below can act promptly.
+    with Pool(processes=max(1, WORKERS), initializer=_init, initargs=(meta,)) as pool:
+        it = pool.imap_unordered(_warm_one, order, chunksize=1)
+        for i, outcome in enumerate(it, 1):
+            counts[outcome] = counts.get(outcome, 0) + 1
+            if i % REPORT_EVERY:
+                continue
             avail = free_mb()
             if avail is not None and avail < FLOOR_MB:
-                print(f"STOPPING at {i}/{len(eligible)}: {avail}MB free, floor is {FLOOR_MB}MB. "
+                print(f"STOPPING at {i}/{len(order)}: {avail}MB free, floor is {FLOOR_MB}MB. "
                       f"Warming is optional work and yields the box; the next run resumes from "
                       f"what is already cached.")
+                pool.terminate()
+                stopped = True
                 break
-            if i:
-                print(f"  [{i}/{len(eligible)}] warmed={warmed} cached_already={already} "
-                      f"missing_bars={missing} failed={failed} "
-                      f"{time.time() - t0:.0f}s free={avail}MB")
+            rate = i / max(1e-9, time.time() - t0) * 60.0
+            print(f"  [{i}/{len(order)}] warmed={counts['warmed']} "
+                  f"cached_already={counts['already']} missing_bars={counts['missing']} "
+                  f"failed={counts['failed']} {time.time() - t0:.0f}s "
+                  f"{rate:.0f} cells/min free={avail}MB")
 
-        frame = G._h1_for(spec["sym"])
-        if frame is None or len(frame) == 0:
-            missing += 1
-            continue
-        last_day = frame.index[-1].normalize()
-        ckey = G._cache_key(spec["sym"], spec["family"], spec["params"] or {},
-                            str(last_day.date()))
-        if G.cache_load(ckey) is not None:
-            already += 1
-            continue
-
-        obj = None
-        try:
-            obj = G.build_cell(spec["sym"], spec["family"], spec["params"], meta)
-            if not obj:
-                failed += 1
-                continue
-            ds1 = G._series_trim_partial(
-                G.daily_series(obj["df"], obj["sigs"], obj["costs"]), last_day)
-            costs3 = G.costs_for(spec["sym"], meta, mult=G.COST_SCENARIO)
-            ds3 = G._series_trim_partial(
-                G.daily_series(obj["df"], obj["sigs"], costs3), last_day)
-            if ds1 is None or ds3 is None:
-                failed += 1
-                continue
-            G.cache_save(ckey, ds1, ds3)
-            warmed += 1
-        except Exception as exc:
-            failed += 1
-            print(f"  FAIL {spec['sym']}.{spec['family']}: {type(exc).__name__}: {str(exc)[:110]}")
-        finally:
-            # RELEASE BEFORE THE NEXT CELL. This is the entire point: the signal list is the
-            # expensive object, and holding 4,400 of them at once is what does not fit.
-            if obj is not None:
-                obj["sigs"] = None
-                obj["df"] = None
-            del obj
-
+    warmed, already = counts["warmed"], counts["already"]
+    missing, failed = counts["missing"], counts["failed"]
+    if stopped:
+        print("  (stopped early on the memory floor -- progress is cached and resumable)")
     print(f"warmed {warmed} cell(s) in {time.time() - t0:.0f}s "
           f"(already cached {already}, missing bars {missing}, failed {failed}); "
           f"the next sweep loads these instead of computing them")
