@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import time
 import sys
 import uuid
 from contextlib import contextmanager, suppress
@@ -115,7 +116,21 @@ def exclusive_job(name: str, need_mb: int = 0):
     from the crash it prevents, and this desk has been burned by exactly that ambiguity.
     """
     if need_mb > 0:
-        avail = free_mb()
+        # MEDIAN OF THREE, NOT ONE SAMPLE. Free memory on this box is a sawtooth: the searcher
+        # builds primitives for a symbol, peaks, emits, releases. Measured 2026-08-28, a single
+        # reading said 55MB while readings seconds either side said 1,605MB -- and the backfill
+        # stood down on the trough for a box that had ample room. One sample of a sawtooth is a
+        # coin flip, and a job whose start depends on a coin flip is not scheduled, it is
+        # gambled. Three readings across ~20 seconds outlast the trough; a genuinely starved box
+        # reads low in all of them.
+        readings = []
+        for i in range(3):
+            if i:
+                time.sleep(10)
+            r = free_mb()
+            if r is not None:
+                readings.append(r)
+        avail = sorted(readings)[len(readings) // 2] if readings else None
         if avail is not None and avail < need_mb:
             print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available. "
                   f"Not started (a job that does not fit thrashes the box and the live "
