@@ -96,6 +96,16 @@ def main() -> int:
     m["forward_clocks_active"] = len(active)
     m["forward_trades_total"] = sum(int(shadow[k].get("n") or 0) for k in active)
 
+    # --- PER-PRODUCER YIELD. "The miners" is not an organ -- it is a dozen producers, and an
+    # aggregate hides a dead one behind a busy one (principal 2026-08-28: the watchdogs must
+    # make sure the LOCAL miners hunt too). Each row carries the producer that emitted it, so
+    # contribution is attributable: a producer whose share of the testable docket collapses is
+    # a specific broken thing with a name, not a vague slowdown.
+    producers = Counter(str(r.get("producer") or "unattributed") for r in named)
+    m["by_producer"] = dict(producers.most_common())
+    m["producers_contributing"] = len([p for p, n in producers.items()
+                                       if p != "unattributed" and n > 0])
+
     # --- COST: launches spent for that yield
     sy = _read(ROOT / "data" / "seat_launch_yield.json") or {}
     launches = int(sy.get("launches") or 0)

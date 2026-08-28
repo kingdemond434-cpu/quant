@@ -246,6 +246,22 @@ def collect(now: datetime) -> tuple[list[str], dict]:
             breaches.append(f"SEATS: {died} launch(es) DIED at or after start (not quota "
                             f"walls) -- a crashing seat is a defect, not a closed window")
 
+    # --- LOCAL MINER CONTRIBUTION. Every producer that feeds the docket owes a measurable
+    # share; an aggregate "docket is healthy" hides a dead producer behind a busy one. A
+    # producer that has been contributing and drops to zero is a named breach with a fixer.
+    roi_doc = _read(ROOT / "data" / "dig_roi.json") or {}
+    by_prod = roi_doc.get("by_producer") or {}
+    if by_prod:
+        m["producers_contributing"] = roi_doc.get("producers_contributing")
+        m["by_producer"] = by_prod
+        known = ("edge_search_results.json", "orthogonal_candidates.json",
+                 "miner_candidates.json", "external_backtest_results.json")
+        silent = [k for k in known if int(by_prod.get(k) or 0) == 0]
+        if len(silent) >= 3:
+            breaches.append(f"MINERS: {len(silent)} of {len(known)} local producers contribute "
+                            f"ZERO testable candidates: {', '.join(silent)} -- the docket is "
+                            f"carried by one source and the rest are not hunting")
+
     # --- certificates in the pipeline: the same-day fence is the authority on
     # CERTIFIED-NOT-ENROLLED / UNSTAMPED / IDLE-CLOCK; its verdict rides every pulse so the
     # dashboard shows certificate wiring at the same cadence as everything else.
