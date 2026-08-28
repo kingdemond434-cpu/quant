@@ -1,138 +1,179 @@
 {
- "updated": "2026-08-28T04:35:36.755119+00:00",
+ "updated": "2026-08-22T19:15:03.609602+00:00",
  "series": {
-  "PAYEMS": {
-   "series": "PAYEMS",
-   "ok": true,
-   "last": 159069.0,
-   "last_date": "2025-01-01",
-   "z": 1.73441873917903,
-   "mom": 0.21593792998012537
-  },
   "INDPRO": {
    "series": "INDPRO",
    "ok": true,
    "last": 102.9939,
-   "last_date": "2026-07-31",
-   "z": 1.5875934159495095,
-   "mom": 0.05979010797122544
+   "last_date": "2026-07-01",
+   "z": 1.071715709945595,
+   "mom": null
   },
-  "CPILFESL": {
-   "series": "CPILFESL",
+  "UNRATE": {
+   "series": "UNRATE",
    "ok": true,
-   "last": 324.739,
-   "last_date": "2025-01-01",
-   "z": 2.141835461725848,
-   "mom_yoy": 0.6661826577732168
+   "last": 4.1,
+   "last_date": "2026-07-01",
+   "z": -0.7170259393006181
+  },
+  "UMCSENT": {
+   "series": "UMCSENT",
+   "ok": true,
+   "last": 49.5,
+   "last_date": "2026-06-01",
+   "z": -2.02265834586611
+  },
+  "PAYEMS": {
+   "series": "PAYEMS",
+   "ok": true,
+   "last": 158858.0,
+   "last_date": "2026-07-01",
+   "z": 1.4899276962563588,
+   "mom": null
   },
   "CPIAUCSL": {
    "series": "CPIAUCSL",
    "ok": true,
-   "last": 319.086,
-   "last_date": "2025-01-01",
-   "z": 2.262197268791182,
-   "mom_yoy": 0.7090840921264062
+   "last": 332.813,
+   "last_date": "2026-07-01",
+   "z": 2.1248315723792675,
+   "mom_yoy": null
+  },
+  "T5YIE": {
+   "series": "T5YIE",
+   "ok": true,
+   "last": 2.34,
+   "last_date": "2026-08-21",
+   "z": 0.830994132421051
+  },
+  "CPILFESL": {
+   "series": "CPILFESL",
+   "ok": true,
+   "last": 336.789,
+   "last_date": "2026-07-01",
+   "z": 2.0656685159718973,
+   "mom_yoy": null
+  },
+  "T10YIE": {
+   "series": "T10YIE",
+   "ok": true,
+   "last": 2.34,
+   "last_date": "2026-08-21",
+   "z": 0.7572277987847038
   },
   "DFF": {
    "series": "DFF",
    "ok": true,
    "last": 3.63,
-   "last_date": "2026-08-25",
-   "z": -0.2723170989075569
+   "last_date": "2026-08-20",
+   "z": 1.1656637230280276
+  },
+  "DGS10": {
+   "series": "DGS10",
+   "ok": true,
+   "last": 4.69,
+   "last_date": "2026-08-20",
+   "z": 1.9317136188249047
+  },
+  "T10Y2Y": {
+   "series": "T10Y2Y",
+   "ok": true,
+   "last": 0.5,
+   "last_date": "2026-08-21",
+   "z": -0.49968074101100496
   },
   "DGS2": {
    "series": "DGS2",
    "ok": true,
    "last": 4.19,
-   "last_date": "2026-08-26",
-   "z": -0.20878059927286485
-  },
-  "DGS10": {
-   "series": "DGS10",
-   "ok": true,
-   "last": 4.66,
-   "last_date": "2026-08-26",
-   "z": -0.391091711216379
-  },
-  "T5YIE": {
-   "series": "T5YIE",
-   "ok": false
-  },
-  "RETAILSMxSA": {
-   "series": "RETAILSMxSA",
-   "ok": false
-  },
-  "T10YIE": {
-   "series": "T10YIE",
-   "ok": false
-  },
-  "DFEDTARU": {
-   "series": "DFEDTARU",
-   "ok": false
-  },
-  "UMCSENT": {
-   "series": "UMCSENT",
-   "ok": false
-  },
-  "SOFR": {
-   "series": "SOFR",
-   "ok": false
-  },
-  "T10Y2Y": {
-   "series": "T10Y2Y",
-   "ok": false
-  },
-  "UNRATE": {
-   "series": "UNRATE",
-   "ok": true,
-   "last": 4.0,
-   "last_date": "2025-01-01",
-   "z": -0.984541688380747
+   "last_date": "2026-08-20",
+   "z": 1.5734094802369898
   },
   "RRPONTSYD": {
    "series": "RRPONTSYD",
-   "ok": false
+   "ok": true,
+   "last": 0.2,
+   "last_date": "2026-08-21",
+   "z": -0.610192360437756
   },
-  "WALCL": {
-   "series": "WALCL",
-   "ok": false
+  "DFEDTARU": {
+   "series": "DFEDTARU",
+   "ok": true,
+   "last": 3.75,
+   "last_date": "2026-08-22",
+   "z": 1.1508518690625005
   },
-  "VIXCLS": {
-   "series": "VIXCLS",
-   "ok": false
+  "SOFR": {
+   "series": "SOFR",
+   "ok": true,
+   "last": 3.63,
+   "last_date": "2026-08-20",
+   "z": 0.49511778069700213
   },
   "BAMLH0A0HYM2": {
    "series": "BAMLH0A0HYM2",
-   "ok": false
+   "ok": true,
+   "last": 2.75,
+   "last_date": "2026-08-20",
+   "z": -0.9239324594934706,
+   "mom": -0.02826855123674914
+  },
+  "WALCL": {
+   "series": "WALCL",
+   "ok": true,
+   "last": 6745699.0,
+   "last_date": "2026-08-19",
+   "z": 0.7401877226466227,
+   "mom": -0.21159931048676975
+  },
+  "VIXCLS": {
+   "series": "VIXCLS",
+   "ok": true,
+   "last": 16.01,
+   "last_date": "2026-08-20",
+   "z": -0.35642324176941925,
+   "mom": 0.042317708333333474
+  },
+  "DTWEXBGS": {
+   "series": "DTWEXBGS",
+   "ok": true,
+   "last": 118.9028,
+   "last_date": "2026-08-14",
+   "z": 0.8045049788555811,
+   "mom": -0.01021559976691914
+  },
+  "DCOILWTICO": {
+   "series": "DCOILWTICO",
+   "ok": true,
+   "last": 86.48,
+   "last_date": "2026-08-18",
+   "z": 0.6888764115641048,
+   "mom": 0.3306662563471305
   },
   "GOLDAMGBD228NLBM": {
    "series": "GOLDAMGBD228NLBM",
    "ok": false
   },
-  "DTWEXBGS": {
-   "series": "DTWEXBGS",
-   "ok": false
-  },
-  "DCOILWTICO": {
-   "series": "DCOILWTICO",
+  "RETAILSMxSA": {
+   "series": "RETAILSMxSA",
    "ok": false
   }
  },
  "states": {
-  "GROWTH_STATE": 0.779,
-  "INFLATION_STATE": 2.142,
-  "LIQUIDITY_STATE": null,
-  "RISK_STATE": null,
-  "DOLLAR_STATE": null,
-  "POLICY_RATE": null,
+  "GROWTH_STATE": -0.045,
+  "INFLATION_STATE": 1.218,
+  "LIQUIDITY_STATE": 0.065,
+  "RISK_STATE": -0.64,
+  "DOLLAR_STATE": 0.805,
+  "POLICY_RATE": 3.75,
   "EFF_RATE": 3.63,
-  "CURVE_T10Y2Y": null,
+  "CURVE_T10Y2Y": 0.5,
   "GOLD_USD": null,
-  "WTI": null,
-  "POLICY_STATE": null,
+  "WTI": 86.48,
+  "POLICY_STATE": 1.151,
   "POLICY_PATH_HAWKISH": false
  },
  "differentials": {
-  "US10Y": 4.66
+  "US10Y": 4.69
  }
 }

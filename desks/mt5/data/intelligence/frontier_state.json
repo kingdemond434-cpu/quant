@@ -1,5 +1,5 @@
 {
-"cursor": 60,
+"cursor": 61,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -94,7 +94,10 @@
 "l\u1ee3i nhu\u1eadn ranking",
 "sao ch\u00e9p giao d\u1ecbch MT4",
 "sao ch\u00e9p giao d\u1ecbch MT5",
-"sao ch\u00e9p giao d\u1ecbch ranking"
+"sao ch\u00e9p giao d\u1ecbch ranking",
+"t\u1ef7 su\u1ea5t MT4",
+"t\u1ef7 su\u1ea5t MT5",
+"t\u1ef7 su\u1ea5t ranking"
 ],
 "id": [
 "imbal hasil MT4",

@@ -1,34 +1,35 @@
 {
- "swept_at": "2026-08-28T06:04:24+00:00",
+ "swept_at": "2026-08-28T07:08:38+00:00",
  "symbols": 299,
  "families_ran": {
   "carry": 234,
   "correlation_regime": 297,
   "cross_asset_residual": 297,
   "drawdown_conditional": 286,
-  "event_reaction": 222,
   "overnight_gap_decay": 296,
-  "pca_residual": 297,
+  "pca_residual": 296,
   "relative_value": 297,
   "turn_of_month": 297,
   "vol_mean_reversion": 297,
   "vol_transition": 297,
   "lvc_asia_london": 139,
-  "orderflow_imbalance": 116,
-  "liquidity_regime": 78,
-  "cot_positioning": 11
+  "cot_positioning": 11,
+  "event_reaction": 193,
+  "orderflow_imbalance": 105,
+  "liquidity_regime": 72
  },
  "input_gaps": {
   "calendar_month:needs-source-evidence (active_month, side_bias)": 297,
   "cot_positioning:no-signals (COT net positioning)": 286,
   "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 297,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 219,
+  "event_reaction:no-signals (an economic calendar)": 104,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 225,
   "lvc_asia_london:no-signals (unknown)": 158,
   "macro_conditional:no-signals (a macro state series)": 297,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 181,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 192,
   "carry:no-signals (contract/swap terms)": 63,
-  "event_reaction:no-signals (an economic calendar)": 75,
   "overnight_gap_decay:no-signals (price only)": 1,
+  "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1,
   "drawdown_conditional:no-signals (price only)": 11
  },
  "family_errors": {},
@@ -39,61 +40,65 @@
   "drawdown_conditional:untestable (33 trading days < 60 the gates need)": 4,
   "vol_transition:untestable (54 trading days < 60 the gates need)": 9,
   "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 9,
-  "correlation_regime:untestable (32 trading days < 60 the gates need)": 1,
-  "cross_asset_residual:untestable (51 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (42 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (29 trading days < 60 the gates need)": 1,
+  "cross_asset_residual:untestable (45 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (37 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (32 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (41 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (39 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (40 trading days < 60 the gates need)": 1,
-  "cross_asset_residual:untestable (23 trading days < 60 the gates need)": 1,
-  "relative_value:untestable (40 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (37 trading days < 60 the gates need)": 1,
+  "cross_asset_residual:untestable (59 trading days < 60 the gates need)": 3,
+  "pca_residual:untestable (31 trading days < 60 the gates need)": 1,
   "turn_of_month:untestable (18 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (31 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (38 trading days < 60 the gates need)": 2,
-  "pca_residual:untestable (58 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (59 trading days < 60 the gates need)": 5,
-  "correlation_regime:untestable (59 trading days < 60 the gates need)": 5,
-  "pca_residual:untestable (56 trading days < 60 the gates need)": 2,
+  "pca_residual:untestable (57 trading days < 60 the gates need)": 2,
+  "correlation_regime:untestable (58 trading days < 60 the gates need)": 3,
+  "pca_residual:untestable (55 trading days < 60 the gates need)": 5,
+  "pca_residual:untestable (59 trading days < 60 the gates need)": 6,
+  "correlation_regime:untestable (57 trading days < 60 the gates need)": 3,
+  "pca_residual:untestable (56 trading days < 60 the gates need)": 4,
   "vol_transition:untestable (48 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 2,
-  "lvc_asia_london:untestable (57 trading days < 60 the gates need)": 2,
-  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (51 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 4,
+  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 2,
+  "correlation_regime:untestable (53 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (47 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 3,
   "drawdown_conditional:untestable (30 trading days < 60 the gates need)": 7,
+  "pca_residual:untestable (58 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (47 trading days < 60 the gates need)": 4,
-  "correlation_regime:untestable (58 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (41 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (57 trading days < 60 the gates need)": 3,
+  "correlation_regime:untestable (56 trading days < 60 the gates need)": 5,
   "vol_transition:untestable (52 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (55 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (48 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (50 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (48 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (49 trading days < 60 the gates need)": 11,
-  "pca_residual:untestable (46 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (44 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (59 trading days < 60 the gates need)": 5,
   "drawdown_conditional:untestable (49 trading days < 60 the gates need)": 1,
-  "correlation_regime:untestable (31 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (35 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (30 trading days < 60 the gates need)": 1,
+  "cross_asset_residual:untestable (58 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (32 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (50 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (51 trading days < 60 the gates need)": 5,
-  "vol_transition:untestable (57 trading days < 60 the gates need)": 5,
+  "vol_transition:untestable (57 trading days < 60 the gates need)": 4,
   "drawdown_conditional:untestable (42 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (56 trading days < 60 the gates need)": 6,
+  "correlation_regime:untestable (49 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (40 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 7,
-  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 4,
-  "lvc_asia_london:untestable (30 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 8,
+  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 5,
+  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 3,
+  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 2,
+  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 6,
   "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 9,
   "drawdown_conditional:untestable (50 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (55 trading days < 60 the gates need)": 3,
   "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (42 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 5,
+  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 3,
   "lvc_asia_london:untestable (51 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (32 trading days < 60 the gates need)": 4,
   "lvc_asia_london:untestable (35 trading days < 60 the gates need)": 1,
@@ -103,34 +108,31 @@
   "vol_transition:untestable (58 trading days < 60 the gates need)": 5,
   "overnight_gap_decay:untestable (40 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (46 trading days < 60 the gates need)": 3,
+  "pca_residual:untestable (53 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (50 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (47 trading days < 60 the gates need)": 3,
-  "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 3,
-  "cross_asset_residual:untestable (59 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (28 trading days < 60 the gates need)": 1,
-  "cot_positioning:untestable (45 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (47 trading days < 60 the gates need)": 2,
+  "pca_residual:untestable (29 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (58 trading days < 60 the gates need)": 3,
+  "lvc_asia_london:untestable (55 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (37 trading days < 60 the gates need)": 2,
-  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 4,
   "lvc_asia_london:untestable (39 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (48 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (49 trading days < 60 the gates need)": 1,
   "overnight_gap_decay:untestable (34 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (39 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (54 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (53 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (34 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (59 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (35 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (38 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (47 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (49 trading days < 60 the gates need)": 2,
   "overnight_gap_decay:untestable (57 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (57 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (54 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (55 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (46 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (57 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (54 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (59 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 2,
   "overnight_gap_decay:untestable (44 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (59 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (47 trading days < 60 the gates need)": 1,
@@ -154,9 +156,9 @@
      "WHEAT"
     ]
    },
-   "n": 192,
-   "exp_r": 0.2612,
-   "max_dd_r": -7.0,
+   "n": 188,
+   "exp_r": 0.2774,
+   "max_dd_r": -8.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -187,8 +189,8 @@
      "WHEAT"
     ]
    },
-   "n": 69,
-   "exp_r": 0.1645,
+   "n": 65,
+   "exp_r": 0.1211,
    "max_dd_r": -8.96,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -200,9 +202,9 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 112,
-   "exp_r": 0.0952,
-   "max_dd_r": -12.8,
+   "n": 109,
+   "exp_r": 0.0741,
+   "max_dd_r": -12.94,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -235,9 +237,9 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 76,
-   "exp_r": 0.0961,
-   "max_dd_r": -8.88,
+   "n": 74,
+   "exp_r": 0.1258,
+   "max_dd_r": -6.88,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -257,9 +259,9 @@
      "WHEAT"
     ]
    },
-   "n": 186,
-   "exp_r": 0.1713,
-   "max_dd_r": -14.07,
+   "n": 180,
+   "exp_r": 0.1894,
+   "max_dd_r": -13.07,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -290,8 +292,8 @@
      "WHEAT"
     ]
    },
-   "n": 88,
-   "exp_r": 0.1309,
+   "n": 82,
+   "exp_r": 0.1097,
    "max_dd_r": -12.12,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -303,8 +305,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 124,
-   "exp_r": 0.1493,
+   "n": 117,
+   "exp_r": 0.1886,
    "max_dd_r": -10.25,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -347,8 +349,8 @@
      "WHEAT"
     ]
    },
-   "n": 232,
-   "exp_r": 0.3012,
+   "n": 212,
+   "exp_r": 0.3212,
    "max_dd_r": -11.07,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -371,8 +373,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 86,
-   "exp_r": 0.0127,
+   "n": 79,
+   "exp_r": 0.0644,
    "max_dd_r": -10.01,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -393,8 +395,8 @@
      "WHEAT"
     ]
    },
-   "n": 244,
-   "exp_r": 0.242,
+   "n": 226,
+   "exp_r": 0.2476,
    "max_dd_r": -13.11,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -417,8 +419,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 132,
-   "exp_r": 0.0638,
+   "n": 127,
+   "exp_r": 0.0718,
    "max_dd_r": -13.8,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -463,9 +465,9 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 80,
-   "exp_r": 0.0882,
-   "max_dd_r": -8.18,
+   "n": 79,
+   "exp_r": 0.102,
+   "max_dd_r": -7.18,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -485,9 +487,9 @@
      "WHEAT"
     ]
    },
-   "n": 218,
-   "exp_r": 0.0559,
-   "max_dd_r": -20.92,
+   "n": 205,
+   "exp_r": 0.0633,
+   "max_dd_r": -20.58,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -509,8 +511,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 162,
-   "exp_r": 0.0154,
+   "n": 158,
+   "exp_r": 0.0143,
    "max_dd_r": -16.84,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -555,8 +557,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 110,
-   "exp_r": 0.0397,
+   "n": 125,
+   "exp_r": 0.0434,
    "max_dd_r": -13.36,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -577,9 +579,9 @@
      "WHEAT"
     ]
    },
-   "n": 221,
-   "exp_r": 0.2426,
-   "max_dd_r": -8.9,
+   "n": 206,
+   "exp_r": 0.2596,
+   "max_dd_r": -11.27,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -630,28 +632,6 @@
   },
   {
    "symbol": "AAPL.24H",
-   "family": "cross_asset_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 153,
-   "exp_r": 0.4083,
-   "max_dd_r": -14.68,
-   "source": "orthogonal_sweep:cross_asset_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "AAPL.24H",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 92,
@@ -667,8 +647,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 101,
-   "exp_r": 0.3714,
+   "n": 78,
+   "exp_r": 0.3201,
    "max_dd_r": -10.07,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -700,8 +680,8 @@
      "WHEAT"
     ]
    },
-   "n": 385,
-   "exp_r": 0.1296,
+   "n": 366,
+   "exp_r": 0.1165,
    "max_dd_r": -19.61,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -733,8 +713,8 @@
      "WHEAT"
     ]
    },
-   "n": 156,
-   "exp_r": 0.0981,
+   "n": 141,
+   "exp_r": 0.1304,
    "max_dd_r": -17.5,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -753,19 +733,6 @@
   },
   {
    "symbol": "ABBVIE",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 93,
-   "exp_r": 0.006,
-   "max_dd_r": -10.22,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ABBVIE",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -779,8 +746,8 @@
      "WHEAT"
     ]
    },
-   "n": 220,
-   "exp_r": 0.1619,
+   "n": 208,
+   "exp_r": 0.154,
    "max_dd_r": -17.06,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -836,8 +803,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 95,
-   "exp_r": 0.0417,
+   "n": 89,
+   "exp_r": 0.0276,
    "max_dd_r": -12.78,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -858,8 +825,8 @@
      "WHEAT"
     ]
    },
-   "n": 254,
-   "exp_r": 0.3845,
+   "n": 247,
+   "exp_r": 0.3594,
    "max_dd_r": -21.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -902,8 +869,8 @@
      "WHEAT"
     ]
    },
-   "n": 234,
-   "exp_r": 0.2073,
+   "n": 214,
+   "exp_r": 0.2219,
    "max_dd_r": -15.69,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -957,8 +924,8 @@
      "WHEAT"
     ]
    },
-   "n": 261,
-   "exp_r": 0.2047,
+   "n": 245,
+   "exp_r": 0.2332,
    "max_dd_r": -13.19,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -970,8 +937,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 119,
-   "exp_r": 0.2548,
+   "n": 114,
+   "exp_r": 0.2646,
    "max_dd_r": -15.38,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -1003,9 +970,9 @@
      "WHEAT"
     ]
    },
-   "n": 141,
-   "exp_r": 0.243,
-   "max_dd_r": -12.27,
+   "n": 132,
+   "exp_r": 0.1898,
+   "max_dd_r": -14.27,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1047,25 +1014,12 @@
      "WHEAT"
     ]
    },
-   "n": 162,
-   "exp_r": 0.1001,
-   "max_dd_r": -10.0,
+   "n": 150,
+   "exp_r": 0.1462,
+   "max_dd_r": -11.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "ABT",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 107,
-   "exp_r": 0.0054,
-   "max_dd_r": -16.14,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ABT",
@@ -1095,8 +1049,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 80,
-   "exp_r": 0.1411,
+   "n": 75,
+   "exp_r": 0.1386,
    "max_dd_r": -13.01,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -1117,9 +1071,9 @@
      "WHEAT"
     ]
    },
-   "n": 221,
-   "exp_r": 0.1777,
-   "max_dd_r": -9.83,
+   "n": 212,
+   "exp_r": 0.3067,
+   "max_dd_r": -11.49,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1172,9 +1126,9 @@
      "WHEAT"
     ]
    },
-   "n": 203,
-   "exp_r": 0.0889,
-   "max_dd_r": -21.98,
+   "n": 189,
+   "exp_r": 0.1269,
+   "max_dd_r": -24.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1238,9 +1192,9 @@
      "WHEAT"
     ]
    },
-   "n": 177,
-   "exp_r": 0.1154,
-   "max_dd_r": -16.06,
+   "n": 173,
+   "exp_r": 0.1022,
+   "max_dd_r": -19.1,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1255,6 +1209,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ACN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "BCHUSD"
+   },
+   "n": 109,
+   "exp_r": 0.0091,
+   "max_dd_r": -15.07,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ACN",
@@ -1282,8 +1249,8 @@
      "WHEAT"
     ]
    },
-   "n": 246,
-   "exp_r": 0.1688,
+   "n": 220,
+   "exp_r": 0.1505,
    "max_dd_r": -18.08,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1339,8 +1306,8 @@
      "WHEAT"
     ]
    },
-   "n": 179,
-   "exp_r": 0.282,
+   "n": 176,
+   "exp_r": 0.3095,
    "max_dd_r": -9.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1385,8 +1352,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 160,
-   "exp_r": 0.0494,
+   "n": 151,
+   "exp_r": 0.0732,
    "max_dd_r": -16.9,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -1407,9 +1374,9 @@
      "WHEAT"
     ]
    },
-   "n": 402,
-   "exp_r": 0.2242,
-   "max_dd_r": -16.4,
+   "n": 363,
+   "exp_r": 0.2351,
+   "max_dd_r": -15.4,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1442,8 +1409,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 80,
-   "exp_r": 0.0922,
+   "n": 79,
+   "exp_r": 0.1061,
    "max_dd_r": -7.1,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -1464,8 +1431,8 @@
      "WHEAT"
     ]
    },
-   "n": 173,
-   "exp_r": 0.5137,
+   "n": 176,
+   "exp_r": 0.4747,
    "max_dd_r": -13.79,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1488,8 +1455,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 98,
-   "exp_r": 0.1288,
+   "n": 95,
+   "exp_r": 0.133,
    "max_dd_r": -18.11,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -1532,34 +1499,12 @@
      "WHEAT"
     ]
    },
-   "n": 169,
-   "exp_r": 0.151,
-   "max_dd_r": -17.98,
+   "n": 161,
+   "exp_r": 0.1407,
+   "max_dd_r": -15.98,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "ADM",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 73,
-   "exp_r": 0.0466,
-   "max_dd_r": -12.61,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "ADM",
@@ -1567,8 +1512,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 103,
-   "exp_r": 0.2712,
+   "n": 102,
+   "exp_r": 0.2435,
    "max_dd_r": -16.43,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -1591,8 +1536,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 79,
-   "exp_r": 0.3674,
+   "n": 76,
+   "exp_r": 0.3411,
    "max_dd_r": -6.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -1613,8 +1558,8 @@
      "WHEAT"
     ]
    },
-   "n": 221,
-   "exp_r": 0.3849,
+   "n": 219,
+   "exp_r": 0.3111,
    "max_dd_r": -8.41,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1679,9 +1624,9 @@
      "WHEAT"
     ]
    },
-   "n": 85,
-   "exp_r": 0.1544,
-   "max_dd_r": -4.81,
+   "n": 75,
+   "exp_r": 0.2124,
+   "max_dd_r": -4.5,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -1699,19 +1644,6 @@
   },
   {
    "symbol": "ADSK",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 66,
-   "exp_r": 0.3227,
-   "max_dd_r": -4.02,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ADSK",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -1725,8 +1657,8 @@
      "WHEAT"
     ]
    },
-   "n": 180,
-   "exp_r": 0.1674,
+   "n": 169,
+   "exp_r": 0.174,
    "max_dd_r": -12.13,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1780,9 +1712,9 @@
      "WHEAT"
     ]
    },
-   "n": 225,
-   "exp_r": 0.3022,
-   "max_dd_r": -12.22,
+   "n": 208,
+   "exp_r": 0.2081,
+   "max_dd_r": -14.95,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1813,9 +1745,9 @@
      "WHEAT"
     ]
    },
-   "n": 107,
-   "exp_r": 0.0223,
-   "max_dd_r": -10.52,
+   "n": 101,
+   "exp_r": 0.0336,
+   "max_dd_r": -9.45,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -1826,8 +1758,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 139,
-   "exp_r": 0.0657,
+   "n": 131,
+   "exp_r": 0.0807,
    "max_dd_r": -17.08,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -1848,8 +1780,8 @@
      "WHEAT"
     ]
    },
-   "n": 204,
-   "exp_r": 0.1895,
+   "n": 192,
+   "exp_r": 0.176,
    "max_dd_r": -9.85,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1925,8 +1857,8 @@
      "WHEAT"
     ]
    },
-   "n": 195,
-   "exp_r": 0.2985,
+   "n": 186,
+   "exp_r": 0.213,
    "max_dd_r": -17.47,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -1960,8 +1892,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 80,
-   "exp_r": 0.1825,
+   "n": 79,
+   "exp_r": 0.1595,
    "max_dd_r": -7.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -1983,8 +1915,8 @@
     ]
    },
    "n": 170,
-   "exp_r": 0.6152,
-   "max_dd_r": -7.6,
+   "exp_r": 0.6155,
+   "max_dd_r": -7.49,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2026,8 +1958,8 @@
      "WHEAT"
     ]
    },
-   "n": 160,
-   "exp_r": 0.4164,
+   "n": 154,
+   "exp_r": 0.3798,
    "max_dd_r": -27.2,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -2046,19 +1978,6 @@
   },
   {
    "symbol": "AFL",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 101,
-   "exp_r": 0.0086,
-   "max_dd_r": -12.03,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AFL",
    "family": "turn_of_month",
    "params": {},
    "n": 472,
@@ -2074,8 +1993,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 108,
-   "exp_r": 0.024,
+   "n": 99,
+   "exp_r": 0.0748,
    "max_dd_r": -8.87,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2118,9 +2037,9 @@
      "WHEAT"
     ]
    },
-   "n": 213,
-   "exp_r": 0.3709,
-   "max_dd_r": -6.02,
+   "n": 206,
+   "exp_r": 0.3594,
+   "max_dd_r": -6.35,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2162,9 +2081,9 @@
      "WHEAT"
     ]
    },
-   "n": 231,
-   "exp_r": 0.3711,
-   "max_dd_r": -8.85,
+   "n": 218,
+   "exp_r": 0.4068,
+   "max_dd_r": -7.85,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2195,8 +2114,8 @@
      "WHEAT"
     ]
    },
-   "n": 97,
-   "exp_r": 0.0828,
+   "n": 95,
+   "exp_r": 0.0822,
    "max_dd_r": -12.28,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -2208,8 +2127,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 134,
-   "exp_r": 0.1517,
+   "n": 128,
+   "exp_r": 0.1817,
    "max_dd_r": -8.96,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -2252,9 +2171,9 @@
      "WHEAT"
     ]
    },
-   "n": 215,
-   "exp_r": 0.7464,
-   "max_dd_r": -14.32,
+   "n": 218,
+   "exp_r": 0.7132,
+   "max_dd_r": -13.32,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2296,9 +2215,9 @@
      "WHEAT"
     ]
    },
-   "n": 272,
-   "exp_r": 0.1529,
-   "max_dd_r": -15.65,
+   "n": 259,
+   "exp_r": 0.1781,
+   "max_dd_r": -15.21,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2340,9 +2259,9 @@
      "WHEAT"
     ]
    },
-   "n": 179,
-   "exp_r": 0.3149,
-   "max_dd_r": -9.56,
+   "n": 172,
+   "exp_r": 0.2849,
+   "max_dd_r": -10.56,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2397,8 +2316,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 113,
-   "exp_r": 0.1147,
+   "n": 121,
+   "exp_r": 0.0695,
    "max_dd_r": -11.51,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2419,9 +2338,9 @@
      "WHEAT"
     ]
    },
-   "n": 293,
-   "exp_r": 0.2239,
-   "max_dd_r": -13.9,
+   "n": 275,
+   "exp_r": 0.1958,
+   "max_dd_r": -13.45,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2441,8 +2360,8 @@
      "WHEAT"
     ]
    },
-   "n": 99,
-   "exp_r": 0.1407,
+   "n": 96,
+   "exp_r": 0.1412,
    "max_dd_r": -7.27,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -2454,8 +2373,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 248,
-   "exp_r": 0.0492,
+   "n": 266,
+   "exp_r": 0.1131,
    "max_dd_r": -16.92,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -2467,8 +2386,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 73,
-   "exp_r": 0.0251,
+   "n": 70,
+   "exp_r": 0.069,
    "max_dd_r": -12.25,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2490,8 +2409,8 @@
     ]
    },
    "n": 162,
-   "exp_r": 0.2007,
-   "max_dd_r": -8.67,
+   "exp_r": 0.2103,
+   "max_dd_r": -7.67,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2531,19 +2450,6 @@
   },
   {
    "symbol": "AKAM",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 118,
-   "exp_r": 0.0131,
-   "max_dd_r": -19.22,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AKAM",
    "family": "turn_of_month",
    "params": {},
    "n": 532,
@@ -2570,8 +2476,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 102,
-   "exp_r": 0.2427,
+   "n": 95,
+   "exp_r": 0.2556,
    "max_dd_r": -8.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2592,8 +2498,8 @@
      "WHEAT"
     ]
    },
-   "n": 287,
-   "exp_r": 0.1403,
+   "n": 282,
+   "exp_r": 0.126,
    "max_dd_r": -20.17,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -2656,28 +2562,6 @@
   },
   {
    "symbol": "ALAB",
-   "family": "cross_asset_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 102,
-   "exp_r": 0.1733,
-   "max_dd_r": -8.15,
-   "source": "orthogonal_sweep:cross_asset_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "ALAB",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 241,
@@ -2686,19 +2570,6 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "ALAB",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 73,
-   "exp_r": 0.0126,
-   "max_dd_r": -11.0,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ALAB",
@@ -2717,8 +2588,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 72,
-   "exp_r": 0.1038,
+   "n": 70,
+   "exp_r": 0.0496,
    "max_dd_r": -6.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -2739,9 +2610,9 @@
      "WHEAT"
     ]
    },
-   "n": 235,
-   "exp_r": 0.1383,
-   "max_dd_r": -18.65,
+   "n": 226,
+   "exp_r": 0.1486,
+   "max_dd_r": -15.65,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2763,8 +2634,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 123,
-   "exp_r": 0.0565,
+   "n": 115,
+   "exp_r": 0.118,
    "max_dd_r": -11.72,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -2788,8 +2659,8 @@
     "peer_symbol": "BCHUSD"
    },
    "n": 68,
-   "exp_r": 0.0795,
-   "max_dd_r": -14.43,
+   "exp_r": 0.0462,
+   "max_dd_r": -16.42,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2809,9 +2680,9 @@
      "WHEAT"
     ]
    },
-   "n": 175,
-   "exp_r": 0.3065,
-   "max_dd_r": -12.38,
+   "n": 167,
+   "exp_r": 0.154,
+   "max_dd_r": -13.38,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2826,28 +2697,6 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "ALGN",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 88,
-   "exp_r": 0.0029,
-   "max_dd_r": -11.36,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "ALGN",
@@ -2875,9 +2724,9 @@
      "WHEAT"
     ]
    },
-   "n": 770,
-   "exp_r": 0.0244,
-   "max_dd_r": -73.64,
+   "n": 752,
+   "exp_r": 0.0353,
+   "max_dd_r": -73.55,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2910,9 +2759,9 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 111,
-   "exp_r": 0.1171,
-   "max_dd_r": -10.52,
+   "n": 119,
+   "exp_r": 0.0669,
+   "max_dd_r": -11.14,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2932,9 +2781,9 @@
      "WHEAT"
     ]
    },
-   "n": 303,
-   "exp_r": 0.0958,
-   "max_dd_r": -25.61,
+   "n": 293,
+   "exp_r": 0.1274,
+   "max_dd_r": -24.61,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2985,28 +2834,6 @@
   },
   {
    "symbol": "ALIBABA.24H",
-   "family": "cross_asset_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 166,
-   "exp_r": 0.1793,
-   "max_dd_r": -10.0,
-   "source": "orthogonal_sweep:cross_asset_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "ALIBABA.24H",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 129,
@@ -3015,19 +2842,6 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "ALIBABA.24H",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "BCHUSD"
-   },
-   "n": 107,
-   "exp_r": 0.0118,
-   "max_dd_r": -14.44,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ALIBABA.24H",
@@ -3046,8 +2860,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 76,
-   "exp_r": 0.147,
+   "n": 74,
+   "exp_r": 0.1386,
    "max_dd_r": -9.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -3068,8 +2882,8 @@
      "WHEAT"
     ]
    },
-   "n": 197,
-   "exp_r": 0.1173,
+   "n": 188,
+   "exp_r": 0.0858,
    "max_dd_r": -21.8,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -3092,8 +2906,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 123,
-   "exp_r": 0.1633,
+   "n": 120,
+   "exp_r": 0.1552,
    "max_dd_r": -15.84,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -3127,8 +2941,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 74,
-   "exp_r": 0.2488,
+   "n": 68,
+   "exp_r": 0.1986,
    "max_dd_r": -7.07,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -3149,9 +2963,9 @@
      "WHEAT"
     ]
    },
-   "n": 172,
-   "exp_r": 0.4228,
-   "max_dd_r": -9.39,
+   "n": 163,
+   "exp_r": 0.4049,
+   "max_dd_r": -9.93,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3171,8 +2985,8 @@
      "WHEAT"
     ]
    },
-   "n": 78,
-   "exp_r": 0.2833,
+   "n": 76,
+   "exp_r": 0.317,
    "max_dd_r": -5.52,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -3184,8 +2998,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 104,
-   "exp_r": 0.2461,
+   "n": 101,
+   "exp_r": 0.2682,
    "max_dd_r": -11.4,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -3217,9 +3031,9 @@
      "WHEAT"
     ]
    },
-   "n": 607,
-   "exp_r": 0.0788,
-   "max_dd_r": -39.14,
+   "n": 581,
+   "exp_r": 0.083,
+   "max_dd_r": -40.05,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3228,8 +3042,8 @@
    "symbol": "AUDCAD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 439,
-   "exp_r": 0.2042,
+   "n": 478,
+   "exp_r": 0.1959,
    "max_dd_r": -2.05,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -3250,12 +3064,23 @@
      "WHEAT"
     ]
    },
-   "n": 265,
-   "exp_r": 0.0409,
-   "max_dd_r": -20.35,
+   "n": 252,
+   "exp_r": 0.0093,
+   "max_dd_r": -22.34,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 756,
+   "exp_r": 0.0024,
+   "max_dd_r": -35.13,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
   },
   {
    "symbol": "AUDCHF",
@@ -3272,9 +3097,9 @@
      "WHEAT"
     ]
    },
-   "n": 735,
-   "exp_r": 0.0266,
-   "max_dd_r": -43.32,
+   "n": 696,
+   "exp_r": 0.0768,
+   "max_dd_r": -33.96,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3283,41 +3108,19 @@
    "symbol": "AUDCHF",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 613,
-   "exp_r": 0.2399,
-   "max_dd_r": -1.79,
+   "n": 653,
+   "exp_r": 0.2352,
+   "max_dd_r": -2.05,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
-   "symbol": "AUDCHF",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 308,
-   "exp_r": 0.024,
-   "max_dd_r": -38.09,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
    "symbol": "AUDHUF",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 667,
-   "exp_r": 0.194,
+   "n": 727,
+   "exp_r": 0.1803,
    "max_dd_r": -23.27,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -3329,12 +3132,25 @@
    "params": {
     "input_symbol": "AUDJPY"
    },
-   "n": 1651,
-   "exp_r": 0.0684,
+   "n": 1875,
+   "exp_r": 0.0669,
    "max_dd_r": -52.58,
    "source": "orthogonal_sweep:carry",
    "mechanism_status": "NAMED",
    "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "AUDUSD"
+   },
+   "n": 468,
+   "exp_r": 0.022,
+   "max_dd_r": -46.21,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AUDJPY",
@@ -3351,9 +3167,9 @@
      "WHEAT"
     ]
    },
-   "n": 798,
-   "exp_r": 0.0815,
-   "max_dd_r": -45.72,
+   "n": 741,
+   "exp_r": 0.0825,
+   "max_dd_r": -46.24,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3362,8 +3178,8 @@
    "symbol": "AUDJPY",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 303,
-   "exp_r": 0.1373,
+   "n": 336,
+   "exp_r": 0.1385,
    "max_dd_r": -5.2,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -3384,9 +3200,9 @@
      "WHEAT"
     ]
    },
-   "n": 324,
-   "exp_r": 0.1387,
-   "max_dd_r": -19.04,
+   "n": 305,
+   "exp_r": 0.1337,
+   "max_dd_r": -19.05,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3395,8 +3211,8 @@
    "symbol": "AUDJPY",
    "family": "turn_of_month",
    "params": {},
-   "n": 681,
-   "exp_r": 0.025,
+   "n": 815,
+   "exp_r": 0.0196,
    "max_dd_r": -24.11,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
@@ -3408,8 +3224,8 @@
    "params": {
     "peer_symbol": "AUDUSD"
    },
-   "n": 324,
-   "exp_r": 0.1133,
+   "n": 378,
+   "exp_r": 0.0993,
    "max_dd_r": -27.08,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -3419,8 +3235,8 @@
    "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 617,
-   "exp_r": 0.1322,
+   "n": 663,
+   "exp_r": 0.1281,
    "max_dd_r": -2.4,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -3430,8 +3246,8 @@
    "symbol": "AUDNZD",
    "family": "turn_of_month",
    "params": {},
-   "n": 597,
-   "exp_r": 0.1439,
+   "n": 703,
+   "exp_r": 0.1204,
    "max_dd_r": -68.09,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
@@ -3441,8 +3257,8 @@
    "symbol": "AUDSGD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 414,
-   "exp_r": 0.4494,
+   "n": 438,
+   "exp_r": 0.4342,
    "max_dd_r": -2.52,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
@@ -3452,9 +3268,9 @@
    "symbol": "AUDSGD",
    "family": "vol_transition",
    "params": {},
-   "n": 183,
-   "exp_r": 0.1766,
-   "max_dd_r": -6.7,
+   "n": 204,
+   "exp_r": 0.0902,
+   "max_dd_r": -21.52,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3465,9 +3281,9 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 105,
-   "exp_r": 0.0667,
-   "max_dd_r": -10.56,
+   "n": 109,
+   "exp_r": 0.0001,
+   "max_dd_r": -13.33,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
    "mechanism_note": "COT net positioning"
@@ -3487,9 +3303,9 @@
      "WHEAT"
     ]
    },
-   "n": 696,
-   "exp_r": 0.0534,
-   "max_dd_r": -29.79,
+   "n": 673,
+   "exp_r": 0.0467,
+   "max_dd_r": -36.63,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3498,9 +3314,9 @@
    "symbol": "AUDUSD",
    "family": "overnight_gap_decay",
    "params": {},
-   "n": 218,
-   "exp_r": 0.0512,
-   "max_dd_r": -4.27,
+   "n": 241,
+   "exp_r": 0.036,
+   "max_dd_r": -8.81,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3520,9 +3336,9 @@
      "WHEAT"
     ]
    },
-   "n": 294,
-   "exp_r": 0.044,
-   "max_dd_r": -13.97,
+   "n": 275,
+   "exp_r": 0.038,
+   "max_dd_r": -13.93,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3533,21 +3349,21 @@
    "params": {
     "peer_symbol": "AUDJPY"
    },
-   "n": 694,
-   "exp_r": 0.0179,
-   "max_dd_r": -22.14,
+   "n": 810,
+   "exp_r": 0.0156,
+   "max_dd_r": -28.51,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AUDUSD",
-   "family": "vol_transition",
+   "family": "turn_of_month",
    "params": {},
-   "n": 228,
-   "exp_r": 0.0014,
-   "max_dd_r": -14.05,
-   "source": "orthogonal_sweep:vol_transition",
+   "n": 845,
+   "exp_r": 0.0086,
+   "max_dd_r": -33.66,
+   "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -3555,8 +3371,8 @@
    "symbol": "AVAXUSD",
    "family": "drawdown_conditional",
    "params": {},
-   "n": 108,
-   "exp_r": 0.0462,
+   "n": 107,
+   "exp_r": 0.057,
    "max_dd_r": -11.97,
    "source": "orthogonal_sweep:drawdown_conditional",
    "mechanism_status": "NAMED",
@@ -3568,8 +3384,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 518,
-   "exp_r": 0.0354,
+   "n": 565,
+   "exp_r": 0.0378,
    "max_dd_r": -41.38,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -3601,9 +3417,9 @@
      "WHEAT"
     ]
    },
-   "n": 760,
-   "exp_r": 0.1486,
-   "max_dd_r": -118.94,
+   "n": 730,
+   "exp_r": 0.1445,
+   "max_dd_r": -107.58,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3673,9 +3489,9 @@
      "WHEAT"
     ]
    },
-   "n": 797,
-   "exp_r": 0.0679,
-   "max_dd_r": -52.73,
+   "n": 759,
+   "exp_r": 0.0536,
+   "max_dd_r": -58.48,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3706,9 +3522,9 @@
      "WHEAT"
     ]
    },
-   "n": 291,
-   "exp_r": 0.0214,
-   "max_dd_r": -24.98,
+   "n": 266,
+   "exp_r": 0.0135,
+   "max_dd_r": -25.91,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3776,9 +3592,9 @@
      "WHEAT"
     ]
    },
-   "n": 276,
-   "exp_r": 0.0367,
-   "max_dd_r": -17.02,
+   "n": 271,
+   "exp_r": 0.0377,
+   "max_dd_r": -17.01,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3866,9 +3682,9 @@
      "WHEAT"
     ]
    },
-   "n": 286,
-   "exp_r": 0.0014,
-   "max_dd_r": -15.65,
+   "n": 261,
+   "exp_r": 0.0461,
+   "max_dd_r": -14.59,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3923,8 +3739,8 @@
      "WHEAT"
     ]
    },
-   "n": 279,
-   "exp_r": 0.0239,
+   "n": 264,
+   "exp_r": 0.0325,
    "max_dd_r": -16.64,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -3969,9 +3785,9 @@
      "WHEAT"
     ]
    },
-   "n": 681,
-   "exp_r": 0.0731,
-   "max_dd_r": -49.58,
+   "n": 652,
+   "exp_r": 0.0716,
+   "max_dd_r": -49.5,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4013,9 +3829,9 @@
      "WHEAT"
     ]
    },
-   "n": 732,
-   "exp_r": 0.0453,
-   "max_dd_r": -43.76,
+   "n": 708,
+   "exp_r": 0.1028,
+   "max_dd_r": -45.89,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4046,8 +3862,8 @@
      "WHEAT"
     ]
    },
-   "n": 285,
-   "exp_r": 0.0203,
+   "n": 272,
+   "exp_r": 0.024,
    "max_dd_r": -31.31,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -4059,9 +3875,9 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 656,
-   "exp_r": 0.0458,
-   "max_dd_r": -16.66,
+   "n": 944,
+   "exp_r": 0.0271,
+   "max_dd_r": -37.61,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4125,9 +3941,9 @@
      "WHEAT"
     ]
    },
-   "n": 273,
-   "exp_r": 0.0397,
-   "max_dd_r": -17.74,
+   "n": 268,
+   "exp_r": 0.0229,
+   "max_dd_r": -19.17,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -4182,9 +3998,9 @@
      "WHEAT"
     ]
    },
-   "n": 270,
-   "exp_r": 0.1129,
-   "max_dd_r": -16.67,
+   "n": 253,
+   "exp_r": 0.1316,
+   "max_dd_r": -15.58,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -4217,9 +4033,9 @@
      "WHEAT"
     ]
    },
-   "n": 634,
-   "exp_r": 0.0858,
-   "max_dd_r": -28.26,
+   "n": 601,
+   "exp_r": 0.086,
+   "max_dd_r": -28.99,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4250,9 +4066,9 @@
      "WHEAT"
     ]
    },
-   "n": 300,
-   "exp_r": 0.0166,
-   "max_dd_r": -20.88,
+   "n": 276,
+   "exp_r": 0.0138,
+   "max_dd_r": -19.36,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -4283,9 +4099,9 @@
      "WHEAT"
     ]
    },
-   "n": 737,
-   "exp_r": 3.3246,
-   "max_dd_r": -216.72,
+   "n": 710,
+   "exp_r": 3.4606,
+   "max_dd_r": -198.83,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4331,9 +4147,9 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 742,
+   "n": 738,
    "exp_r": 0.0364,
-   "max_dd_r": -24.95,
+   "max_dd_r": -24.79,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4357,9 +4173,9 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 356,
-   "exp_r": 0.0044,
-   "max_dd_r": -43.83,
+   "n": 504,
+   "exp_r": 0.0549,
+   "max_dd_r": -38.47,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4390,9 +4206,9 @@
      "WHEAT"
     ]
    },
-   "n": 341,
-   "exp_r": 0.0055,
-   "max_dd_r": -25.52,
+   "n": 327,
+   "exp_r": 0.0076,
+   "max_dd_r": -26.51,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -4458,8 +4274,8 @@
      "WHEAT"
     ]
    },
-   "n": 257,
-   "exp_r": 0.0587,
+   "n": 239,
+   "exp_r": 0.0583,
    "max_dd_r": -19.51,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -4471,9 +4287,9 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 704,
-   "exp_r": 0.0335,
-   "max_dd_r": -38.78,
+   "n": 702,
+   "exp_r": 0.0294,
+   "max_dd_r": -38.76,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4493,28 +4309,6 @@
   },
   {
    "symbol": "EURNOK",
-   "family": "cross_asset_residual",
-   "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "EURUSD",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 706,
-   "exp_r": 0.1039,
-   "max_dd_r": -68.35,
-   "source": "orthogonal_sweep:cross_asset_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "EURNOK",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 686,
@@ -4530,8 +4324,8 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 704,
-   "exp_r": 0.0482,
+   "n": 699,
+   "exp_r": 0.0457,
    "max_dd_r": -17.7,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -4552,9 +4346,9 @@
      "WHEAT"
     ]
    },
-   "n": 718,
-   "exp_r": 0.1004,
-   "max_dd_r": -32.67,
+   "n": 684,
+   "exp_r": 0.1381,
+   "max_dd_r": -28.74,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4572,13 +4366,35 @@
   },
   {
    "symbol": "EURNZD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 286,
+   "exp_r": 0.0006,
+   "max_dd_r": -22.52,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "EURNZD",
    "family": "relative_value",
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 668,
-   "exp_r": 0.0153,
-   "max_dd_r": -35.61,
+   "n": 664,
+   "exp_r": 0.0176,
+   "max_dd_r": -35.54,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4647,8 +4463,8 @@
     "peer_symbol": "EURUSD"
    },
    "n": 182,
-   "exp_r": 0.1933,
-   "max_dd_r": -10.34,
+   "exp_r": 0.1817,
+   "max_dd_r": -10.61,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -4703,44 +4519,25 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 942,
-   "exp_r": 0.0142,
-   "max_dd_r": -84.0,
+   "n": 939,
+   "exp_r": 0.0219,
+   "max_dd_r": -79.51,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "EURUSD",
-   "family": "cross_asset_residual",
+   "family": "cot_positioning",
    "params": {
-    "factor_symbols": [
-     "BCHUSD",
-     "ETHUSD",
-     "USDZAR",
-     "XAGUSD",
-     "JPN225",
-     "XNGUSD",
-     "WHEAT"
-    ]
+    "input_source": "cot_point_in_time"
    },
-   "n": 767,
-   "exp_r": 0.0489,
-   "max_dd_r": -81.29,
-   "source": "orthogonal_sweep:cross_asset_residual",
+   "n": 83,
+   "exp_r": 0.0251,
+   "max_dd_r": -9.17,
+   "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "EURUSD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 287,
-   "exp_r": 0.0538,
-   "max_dd_r": -14.95,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
+   "mechanism_note": "COT net positioning"
   },
   {
    "symbol": "EURZAR",
@@ -4754,6 +4551,28 @@
    "source": "orthogonal_sweep:carry",
    "mechanism_status": "NAMED",
    "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "EURZAR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 593,
+   "exp_r": 0.0099,
+   "max_dd_r": -71.87,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "EURZAR",
@@ -4842,9 +4661,9 @@
      "WHEAT"
     ]
    },
-   "n": 804,
-   "exp_r": 0.0515,
-   "max_dd_r": -81.95,
+   "n": 773,
+   "exp_r": 0.0433,
+   "max_dd_r": -83.23,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4875,9 +4694,9 @@
      "WHEAT"
     ]
    },
-   "n": 275,
-   "exp_r": 0.0629,
-   "max_dd_r": -25.33,
+   "n": 258,
+   "exp_r": 0.0513,
+   "max_dd_r": -23.04,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -4934,9 +4753,9 @@
      "WHEAT"
     ]
    },
-   "n": 750,
-   "exp_r": 0.253,
-   "max_dd_r": -92.99,
+   "n": 726,
+   "exp_r": 0.2472,
+   "max_dd_r": -89.19,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -4967,9 +4786,9 @@
      "WHEAT"
     ]
    },
-   "n": 289,
-   "exp_r": 0.0282,
-   "max_dd_r": -17.2,
+   "n": 281,
+   "exp_r": 0.0322,
+   "max_dd_r": -18.39,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -5013,8 +4832,8 @@
      "WHEAT"
     ]
    },
-   "n": 251,
-   "exp_r": 0.0929,
+   "n": 241,
+   "exp_r": 0.1196,
    "max_dd_r": -16.26,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5070,8 +4889,8 @@
      "WHEAT"
     ]
    },
-   "n": 273,
-   "exp_r": 0.0206,
+   "n": 260,
+   "exp_r": 0.0409,
    "max_dd_r": -25.09,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5105,9 +4924,9 @@
      "WHEAT"
     ]
    },
-   "n": 754,
-   "exp_r": 0.088,
-   "max_dd_r": -47.07,
+   "n": 721,
+   "exp_r": 0.0654,
+   "max_dd_r": -50.94,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5149,8 +4968,8 @@
      "WHEAT"
     ]
    },
-   "n": 297,
-   "exp_r": 0.1316,
+   "n": 278,
+   "exp_r": 0.1244,
    "max_dd_r": -19.15,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5230,9 +5049,9 @@
      "WHEAT"
     ]
    },
-   "n": 277,
-   "exp_r": 0.054,
-   "max_dd_r": -17.13,
+   "n": 258,
+   "exp_r": 0.087,
+   "max_dd_r": -12.97,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -5302,9 +5121,9 @@
      "WHEAT"
     ]
    },
-   "n": 715,
-   "exp_r": 0.1663,
-   "max_dd_r": -82.71,
+   "n": 692,
+   "exp_r": 0.1956,
+   "max_dd_r": -82.26,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5370,9 +5189,9 @@
      "WHEAT"
     ]
    },
-   "n": 671,
-   "exp_r": 0.0628,
-   "max_dd_r": -69.97,
+   "n": 644,
+   "exp_r": 0.0558,
+   "max_dd_r": -75.38,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5387,6 +5206,28 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "GBPSGD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 225,
+   "exp_r": 0.0061,
+   "max_dd_r": -26.78,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "GBPSGD",
@@ -5440,9 +5281,9 @@
      "WHEAT"
     ]
    },
-   "n": 264,
-   "exp_r": 0.0747,
-   "max_dd_r": -9.92,
+   "n": 240,
+   "exp_r": 0.1049,
+   "max_dd_r": -9.32,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -5510,8 +5351,8 @@
      "WHEAT"
     ]
    },
-   "n": 228,
-   "exp_r": 0.1275,
+   "n": 213,
+   "exp_r": 0.1052,
    "max_dd_r": -11.07,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5529,6 +5370,28 @@
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "HK50",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 589,
+   "exp_r": 0.0154,
+   "max_dd_r": -62.93,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "HK50",
@@ -5582,9 +5445,9 @@
      "WHEAT"
     ]
    },
-   "n": 783,
-   "exp_r": 0.0789,
-   "max_dd_r": -28.73,
+   "n": 759,
+   "exp_r": 0.0644,
+   "max_dd_r": -35.18,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5615,9 +5478,9 @@
      "WHEAT"
     ]
    },
-   "n": 283,
-   "exp_r": 0.0676,
-   "max_dd_r": -17.01,
+   "n": 265,
+   "exp_r": 0.0592,
+   "max_dd_r": -19.41,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -5673,9 +5536,9 @@
      "WHEAT"
     ]
    },
-   "n": 733,
-   "exp_r": 0.0511,
-   "max_dd_r": -43.99,
+   "n": 697,
+   "exp_r": 0.0481,
+   "max_dd_r": -47.06,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5708,9 +5571,9 @@
      "WHEAT"
     ]
    },
-   "n": 336,
-   "exp_r": 0.0199,
-   "max_dd_r": -28.73,
+   "n": 302,
+   "exp_r": 0.0207,
+   "max_dd_r": -29.96,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -5738,6 +5601,28 @@
    "mechanism_note": "price only"
   },
   {
+   "symbol": "NZDCAD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 262,
+   "exp_r": 0.0264,
+   "max_dd_r": -13.74,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
    "symbol": "NZDCHF",
    "family": "overnight_gap_decay",
    "params": {},
@@ -5763,8 +5648,8 @@
      "WHEAT"
     ]
    },
-   "n": 288,
-   "exp_r": 0.0777,
+   "n": 269,
+   "exp_r": 0.0843,
    "max_dd_r": -18.1,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5844,9 +5729,9 @@
      "WHEAT"
     ]
    },
-   "n": 721,
-   "exp_r": 0.1022,
-   "max_dd_r": -42.83,
+   "n": 685,
+   "exp_r": 0.1232,
+   "max_dd_r": -54.85,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -5936,8 +5821,8 @@
      "WHEAT"
     ]
    },
-   "n": 276,
-   "exp_r": 0.0614,
+   "n": 261,
+   "exp_r": 0.0615,
    "max_dd_r": -12.26,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -5993,9 +5878,9 @@
      "WHEAT"
     ]
    },
-   "n": 313,
-   "exp_r": 0.0536,
-   "max_dd_r": -30.73,
+   "n": 294,
+   "exp_r": 0.0142,
+   "max_dd_r": -29.66,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -6050,12 +5935,34 @@
      "WHEAT"
     ]
    },
-   "n": 149,
-   "exp_r": 0.0926,
-   "max_dd_r": -16.03,
+   "n": 147,
+   "exp_r": 0.0911,
+   "max_dd_r": -16.04,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "USDBRL",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 218,
+   "exp_r": 0.0781,
+   "max_dd_r": -38.33,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "USDBRL",
@@ -6063,8 +5970,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 133,
-   "exp_r": 0.2308,
+   "n": 128,
+   "exp_r": 0.2263,
    "max_dd_r": -10.85,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -6157,8 +6064,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 336,
-   "exp_r": 0.0297,
+   "n": 322,
+   "exp_r": 0.0375,
    "max_dd_r": -21.07,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
@@ -6179,9 +6086,9 @@
      "WHEAT"
     ]
    },
-   "n": 741,
-   "exp_r": 0.1089,
-   "max_dd_r": -41.34,
+   "n": 720,
+   "exp_r": 0.1115,
+   "max_dd_r": -39.65,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6212,8 +6119,8 @@
      "WHEAT"
     ]
    },
-   "n": 296,
-   "exp_r": 0.0902,
+   "n": 280,
+   "exp_r": 0.1023,
    "max_dd_r": -17.39,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -6225,8 +6132,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 525,
-   "exp_r": 0.07,
+   "n": 508,
+   "exp_r": 0.0638,
    "max_dd_r": -27.25,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -6242,6 +6149,28 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 288,
+   "exp_r": 0.0331,
+   "max_dd_r": -20.5,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "USDDKK",
@@ -6282,8 +6211,8 @@
      "WHEAT"
     ]
    },
-   "n": 673,
-   "exp_r": 0.3152,
+   "n": 638,
+   "exp_r": 0.3187,
    "max_dd_r": -23.56,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
@@ -6326,8 +6255,8 @@
      "WHEAT"
     ]
    },
-   "n": 287,
-   "exp_r": 0.0147,
+   "n": 271,
+   "exp_r": 0.0075,
    "max_dd_r": -21.98,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
@@ -6385,9 +6314,9 @@
      "WHEAT"
     ]
    },
-   "n": 801,
-   "exp_r": 0.1559,
-   "max_dd_r": -20.25,
+   "n": 767,
+   "exp_r": 0.1473,
+   "max_dd_r": -20.85,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6418,9 +6347,9 @@
      "WHEAT"
     ]
    },
-   "n": 292,
-   "exp_r": 0.084,
-   "max_dd_r": -14.92,
+   "n": 275,
+   "exp_r": 0.0716,
+   "max_dd_r": -15.92,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -6466,8 +6395,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 326,
-   "exp_r": 0.0243,
+   "n": 312,
+   "exp_r": 0.0314,
    "max_dd_r": -45.6,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -6501,9 +6430,9 @@
      "WHEAT"
     ]
    },
-   "n": 724,
-   "exp_r": 0.1851,
-   "max_dd_r": -27.24,
+   "n": 697,
+   "exp_r": 0.1864,
+   "max_dd_r": -28.36,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6584,9 +6513,9 @@
      "WHEAT"
     ]
    },
-   "n": 684,
-   "exp_r": 0.0951,
-   "max_dd_r": -31.2,
+   "n": 650,
+   "exp_r": 0.0963,
+   "max_dd_r": -36.64,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6687,9 +6616,9 @@
      "WHEAT"
     ]
    },
-   "n": 282,
-   "exp_r": 0.0051,
-   "max_dd_r": -23.0,
+   "n": 265,
+   "exp_r": 0.019,
+   "max_dd_r": -21.96,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -6769,9 +6698,9 @@
      "WHEAT"
     ]
    },
-   "n": 693,
-   "exp_r": 0.0263,
-   "max_dd_r": -66.17,
+   "n": 664,
+   "exp_r": 0.0386,
+   "max_dd_r": -68.86,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6786,6 +6715,28 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAGEUR",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 696,
+   "exp_r": 0.0374,
+   "max_dd_r": -32.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "XAGEUR",
@@ -6804,9 +6755,9 @@
    "params": {
     "peer_symbol": "XAGEUR"
    },
-   "n": 374,
-   "exp_r": 0.0526,
-   "max_dd_r": -19.92,
+   "n": 368,
+   "exp_r": 0.0545,
+   "max_dd_r": -26.12,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -6817,9 +6768,9 @@
    "params": {
     "input_source": "cot_point_in_time"
    },
-   "n": 100,
-   "exp_r": 0.0392,
-   "max_dd_r": -9.17,
+   "n": 124,
+   "exp_r": 0.0638,
+   "max_dd_r": -14.09,
    "source": "orthogonal_sweep:cot_positioning",
    "mechanism_status": "NAMED",
    "mechanism_note": "COT net positioning"
@@ -6838,9 +6789,9 @@
      "WHEAT"
     ]
    },
-   "n": 794,
-   "exp_r": 0.0356,
-   "max_dd_r": -27.77,
+   "n": 752,
+   "exp_r": 0.0683,
+   "max_dd_r": -41.3,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6849,8 +6800,8 @@
    "symbol": "XAGUSD",
    "family": "drawdown_conditional",
    "params": {},
-   "n": 72,
-   "exp_r": 0.1147,
+   "n": 86,
+   "exp_r": 0.0215,
    "max_dd_r": -10.22,
    "source": "orthogonal_sweep:drawdown_conditional",
    "mechanism_status": "NAMED",
@@ -6860,10 +6811,21 @@
    "symbol": "XAGUSD",
    "family": "turn_of_month",
    "params": {},
-   "n": 703,
-   "exp_r": 0.0126,
-   "max_dd_r": -43.49,
+   "n": 969,
+   "exp_r": 0.006,
+   "max_dd_r": -38.53,
    "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 361,
+   "exp_r": 0.0075,
+   "max_dd_r": -27.42,
+   "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -6895,9 +6857,9 @@
      "WHEAT"
     ]
    },
-   "n": 715,
-   "exp_r": 0.5439,
-   "max_dd_r": -31.77,
+   "n": 683,
+   "exp_r": 0.5451,
+   "max_dd_r": -31.76,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6928,9 +6890,9 @@
      "WHEAT"
     ]
    },
-   "n": 722,
-   "exp_r": 0.0836,
-   "max_dd_r": -62.62,
+   "n": 702,
+   "exp_r": 0.0874,
+   "max_dd_r": -61.34,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -6941,9 +6903,9 @@
    "params": {
     "peer_symbol": "EURUSD"
    },
-   "n": 715,
-   "exp_r": 0.0159,
-   "max_dd_r": -34.38,
+   "n": 710,
+   "exp_r": 0.0158,
+   "max_dd_r": -34.43,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -6974,9 +6936,9 @@
      "WHEAT"
     ]
    },
-   "n": 766,
-   "exp_r": 0.1008,
-   "max_dd_r": -47.75,
+   "n": 745,
+   "exp_r": 0.0839,
+   "max_dd_r": -45.07,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -7042,9 +7004,9 @@
      "WHEAT"
     ]
    },
-   "n": 734,
-   "exp_r": 0.0359,
-   "max_dd_r": -56.05,
+   "n": 707,
+   "exp_r": 0.0463,
+   "max_dd_r": -56.3,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -7073,12 +7035,34 @@
   },
   {
    "symbol": "XBRUSD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "BCHUSD",
+     "ETHUSD",
+     "USDZAR",
+     "EURUSD",
+     "XAGUSD",
+     "JPN225",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 273,
+   "exp_r": 0.0329,
+   "max_dd_r": -13.05,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "XBRUSD",
    "family": "relative_value",
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 448,
-   "exp_r": 0.0069,
+   "n": 426,
+   "exp_r": 0.014,
    "max_dd_r": -27.22,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -7134,9 +7118,9 @@
      "WHEAT"
     ]
    },
-   "n": 593,
-   "exp_r": 0.1057,
-   "max_dd_r": -49.06,
+   "n": 558,
+   "exp_r": 0.1061,
+   "max_dd_r": -49.1,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -7156,9 +7140,9 @@
      "WHEAT"
     ]
    },
-   "n": 246,
-   "exp_r": 0.0845,
-   "max_dd_r": -17.09,
+   "n": 229,
+   "exp_r": 0.0696,
+   "max_dd_r": -16.42,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -7169,8 +7153,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 357,
-   "exp_r": 0.0653,
+   "n": 344,
+   "exp_r": 0.0429,
    "max_dd_r": -26.5,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -7193,8 +7177,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 342,
-   "exp_r": 0.0456,
+   "n": 327,
+   "exp_r": 0.0497,
    "max_dd_r": -25.82,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
@@ -7241,9 +7225,9 @@
      "WHEAT"
     ]
    },
-   "n": 798,
-   "exp_r": 0.1115,
-   "max_dd_r": -35.92,
+   "n": 766,
+   "exp_r": 0.1301,
+   "max_dd_r": -31.66,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -7274,9 +7258,9 @@
      "WHEAT"
     ]
    },
-   "n": 321,
-   "exp_r": 0.0505,
-   "max_dd_r": -15.2,
+   "n": 294,
+   "exp_r": 0.101,
+   "max_dd_r": -10.64,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -7287,8 +7271,8 @@
    "params": {
     "peer_symbol": "BCHUSD"
    },
-   "n": 495,
-   "exp_r": 0.0101,
+   "n": 476,
+   "exp_r": 0.0004,
    "max_dd_r": -28.96,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",

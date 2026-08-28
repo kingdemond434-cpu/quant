@@ -67,6 +67,61 @@
       "server": "FusionMarkets-Demo",
       "is_fusion": true,
       "account": 441575
+    },
+    "GBPAUD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "GBPJPY": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "GBPUSD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "NZDCAD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "NZDJPY": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "NZDUSD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "USDCAD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "USDCHF": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "USDJPY": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "XAGUSD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
+    },
+    "XAUUSD": {
+      "server": "FusionMarkets-Demo",
+      "is_fusion": true,
+      "account": 441575
     }
   }
 }
