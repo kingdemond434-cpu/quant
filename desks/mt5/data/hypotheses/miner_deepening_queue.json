@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T18:07:55+00:00",
+ "built_at": "2026-08-28T19:07:52+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3967,6 +3967,38 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "vatsasr8846/PriceAction-EngulfingZone-EA",
+   "url": "https://github.com/vatsasr8846/PriceAction-EngulfingZone-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "lenardclimatical374/MT5-volume-profile-indicator",
+   "url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
    "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
    "symbols": [],
@@ -4055,32 +4087,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Confluence-Signal-Matrix",
-   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "title": "dceoy/mt5cli",
+   "url": "https://github.com/dceoy/mt5cli",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4103,24 +4119,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "justwinstuff/hakarutrade",
-   "url": "https://github.com/justwinstuff/hakarutrade",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4135,16 +4135,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+   "title": "Designated-AICoder/sri-lankan-exchange-rates",
+   "url": "https://github.com/Designated-AICoder/sri-lankan-exchange-rates",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Designated-AICoder/sri-lankan-exchange-rates",
-   "url": "https://github.com/Designated-AICoder/sri-lankan-exchange-rates",
+   "title": "Quorvathz/Confluence-Signal-Matrix",
+   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5308,6 +5308,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
    "symbols": [],
@@ -5332,17 +5343,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1185040/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -5429,17 +5429,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
    "symbols": [],
@@ -5475,6 +5464,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -5528,6 +5528,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "symbols": [],
@@ -5541,17 +5552,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -6196,6 +6196,24 @@
   },
   {
    "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What was your favorite trade of the week?",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Need help understanding NASDAQ",
+   "url": "",
+   "symbols": [
+    "NAS100"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Second Setup XAUUSD",
    "url": "",
@@ -6472,6 +6490,17 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Two Sigma has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Millennium has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -6495,17 +6524,6 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Soros has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Appaloosa has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
