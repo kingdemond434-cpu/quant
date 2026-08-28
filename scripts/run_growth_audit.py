@@ -139,15 +139,39 @@ def main() -> None:
     rec = _num(sl.get("recommended_leverage"))
     actual_lev = 1.0
     lev_gap = conf > 0 and rec > actual_lev * 1.1
+    # THE SAME RETIRED-BOOK BLINDNESS AS ITEM 4, ONE ROW UP (found 2026-08-28). Item 4 was taught
+    # to consult `_clamp_state()` on 2026-08-27; this item reads the SAME `cash_and_carry` sleeve
+    # and was left shouting `NONE -- the auto-ramp MUST engage` about a book the principal
+    # permanently retired (b0fe6f50), held flat by a latched rail, whose entire universe the MT5
+    # mandate forbids trading ever again. Fixing item 4 alone bought one cycle: this is the
+    # per-instance repair the carry-over law calls the defect, so the clamp is now consulted
+    # wherever an item is scoped to a clamped book rather than in the one row somebody noticed.
+    #
+    # NOT A SOFTENING, and the direction is the whole argument. Ramping leverage on a book that
+    # cannot take a fill is not growth foregone, it is arithmetic; and an anti-timidity gate that
+    # spends its authority on retired ground is how a REAL under-deployment gets read as noise.
+    # The gate stays exactly as strict on a live book: only a LATCHED RAIL moves the verdict, and
+    # the justification names the rail instead of pretending the ramp is running.
+    if lev_gap and clamp is not None:
+        lev_verdict = "RETIRED"
+        lev_why = (f"RAIL ({clamp['rail']}) -- {clamp['detail']}; latched {clamp['since']}. The "
+                   f"sleeve is retired, so a {rec:g}x recommendation is arithmetic about a book "
+                   f"that will never take another fill, NOT foregone growth. Lifting condition: "
+                   f"the same principal re-arm item 1 names -- re-arming a rail is never "
+                   f"autonomous, and on re-arm this row becomes a live ACT-NOW again.")
+    elif lev_gap:
+        lev_verdict = "GAP"
+        lev_why = ("NONE -- validation confidence is positive but sizing has not ramped: "
+                   "the auto-ramp MUST engage (this is the defect class the audit exists for)")
+    else:
+        lev_verdict = "OK"
+        lev_why = "evidence (confidence=0: floored on unproven edge is honest, not timid)"
     items.append({
         "check": "leverage_vs_growth_optimal",
         "utilized": f"{actual_lev:g}x", "authorized": f"recommended {rec:g}x @ conf {conf:g} "
         f"(ruin cap {_num(sl.get('ruin_cap')):g}x)",
-        "verdict": "GAP" if lev_gap else "OK",
-        "justified_by": ("NONE -- validation confidence is positive but sizing has not ramped: "
-                         "the auto-ramp MUST engage (this is the defect class the audit exists for)"
-                         if lev_gap else
-                         "evidence (confidence=0: floored on unproven edge is honest, not timid)"),
+        "verdict": lev_verdict,
+        "justified_by": lev_why,
     })
 
     # 3) LIVE DEPLOYMENT readiness: armed policy waiting only on the one-time human setup.
