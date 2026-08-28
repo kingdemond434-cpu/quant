@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-28T13:08:04+00:00",
+ "built_at": "2026-08-28T14:23:24+00:00",
  "tasks": [
   {
    "source": "github",
@@ -529,6 +529,981 @@
    "mechanism_tags": []
   },
   {
+   "symbol": "AUDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "MXNJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NOKJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "SEKJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "ZARJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "ADAUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "DOTUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EOSUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "ETHUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "LNKUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "LTCUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "SOLUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "US500",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDBRL",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDCZK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDHKD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDIDR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDILS",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDINR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDKRW",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDRUB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDTHB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XALUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XLMUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XNGUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XNIUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XPBUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XPDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XPTUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XZNUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAUAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "EURGBP historically bearish in month 8 (avg -0.001%)",
@@ -638,6 +1613,500 @@
    "url": "https://www.forexpeacearmy.com/",
    "symbols": [],
    "mechanism_tags": []
+  },
+  {
+   "symbol": "EURNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "NZDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURCZK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURHKD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURILS",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURRUB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "EURZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAGEUR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
+  },
+  {
+   "symbol": "GBPZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
+   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
    "source": "ff_calendar_vintage",
@@ -2498,6 +3967,38 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Confluence-Signal-Matrix",
+   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZrakD/Mt5-Forex-position-size-calculator",
    "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
    "symbols": [],
@@ -2586,38 +4087,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
-   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aloni-zin/Equity-Ray-Tracer",
-   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "manuelhorvey/EigenCapital",
    "url": "https://github.com/manuelhorvey/EigenCapital",
    "symbols": [],
@@ -2666,14 +4135,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
@@ -2682,24 +4143,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
-   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
+   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
-   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
+   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
+   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3150,8 +4611,8 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@Aliakhavan72",
-   "url": "https://my.litefinance.org/traders/Aliakhavan72",
+   "title": "@AlphaTrader2020",
+   "url": "https://my.litefinance.org/traders/AlphaTrader2020",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3266,8 +4727,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3277,8 +4738,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1076372/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1428084/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4127,17 +5588,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
    "symbols": [],
@@ -4184,6 +5634,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1440351/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4740,6 +6201,14 @@
    "mechanism_tags": []
   },
   {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Gold_LiveTop",
+   "url": "https://my.litefinance.org/traders/Gold_LiveTop",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "\ud83d\udd25 GOLD \u2014 Supply Zone Rejection",
@@ -4826,227 +6295,6 @@
    "url": "",
    "symbols": [
     "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Dear Costco metals team, please consider making rounds!",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Succumbed to the Hype!",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "What\u2019s the catch on these?",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Just started stacking.",
-   "url": "",
-   "symbols": [
-    "XAGUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "In case any of Costco's metals team read this subreddit, please make a hot-dog silver coin with $1.50 face value.",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "I can\u2019t get Costco silver so brought out my square caps to make me feel better",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Best Silver Cleaner. What do you use?",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "New addiction in conjunction with my love for junk silver",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Silver Reverse Proofs",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "I think my local LCS sold me a fake pcgs silver eagle. What do I do?",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Needed to have silver with my last name",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Well I\u2019ve reached that point in the hobby.",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "First time buying Silver Maple Leafs \u2014 Do these look legit to you?",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "10oz Coors bar",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "10 ounces of mexican silver",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "1968 Panama silver proof set",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Advice on selling silver bullions",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Can't Wait to Get From the Mint...",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "my stainless steel bracelet is my beater piece, silver is for special occasions",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "1 year silversary",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Silver statue",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Hand Engraved and carved, Medallion Silver 900 Native American Chief Classic",
-   "url": "",
-   "symbols": [
-    "XAGUSD"
    ],
    "mechanism_tags": []
   },
