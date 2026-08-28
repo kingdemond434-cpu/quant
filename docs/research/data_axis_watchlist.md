@@ -7040,3 +7040,18 @@ invisible in the metadata** — the codelist advertises what the data does not c
 collector that trusts a codelist is building features that will silently never populate. That is the
 same class as this desk's standing lesson about empty artifacts asserting absence, and it is now
 recorded against three separate tables in one run.
+
+---
+
+## 2026-08-28 — FREE-DATA run (p) — SESSION NOTE (written FIRST; updated as items resolve)
+
+Backlog: clear (0 pending verification; 25 deferred, next 2026-09-01). Resuming run (o)'s named
+next-ground. **Items taken this run:**
+
+1. **`DNPRND`** — the one item run (o) carded UNVERIFIED and did not close. Pull in full, diff, grade.
+2. **`DNIFVALE` / `DNFPVALE`** — Danish investment-fund + pension currency exposure AND hedging
+   (structural recurring FX hedging flow). The most interesting unopened row on the carried list.
+3. **The SCB/Riksbank leg** — §38 replacement hunt left OPEN: api.scb.se rc=56 from this box.
+   Alternate doors: Riksbank SWEA API, DBnomics mirrors.
+
+Status: IN PROGRESS.
