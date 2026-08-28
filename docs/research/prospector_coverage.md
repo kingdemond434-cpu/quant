@@ -9062,3 +9062,34 @@ cost, and only the *bulk pull* needs the free registered key. Generalises the fr
 **probe the vendor's own documented sample credential first** — it answers the coverage question,
 which is the only question that decides whether the key is worth getting.
 → handed to the free-data seat: register an ECOS key and extend USDKRW 1964→2021. Ledgered.
+
+### ITEM 3 — the "2 genuine parse bugs" — **RECLASSIFIED. They are not parse bugs, and one is a live §13 breach.**
+`desks/mt5/side_channels/korea_miner.py` + `china_miner.py` read to depth (research freeze: diagnosed,
+**not** patched — the repair is handed over, not applied).
+
+**(a) The zero yield is OVER-DETERMINED — fixing the parse would still yield nothing.**
+`content = re.sub(r'<[^>]+>', ' ', resp.text)[:2000]` truncates to the first 2,000 characters
+*after* tag-stripping, which on any modern search page is `<head>` + nav boilerplate: the results
+never enter the window. But the deeper defect is one level up — `_extract_symbols` maps 8 currency
+NOUNS ("금"→XAUUSD, "유로"→EURUSD …) to symbols and returns **only the symbol list**, discarding
+title, text and URL-of-result, at a fixed `confidence: 0.2`. **It is a keyword-mention detector, not
+a miner: it cannot emit a mechanism by construction**, so even a perfect parse produces zero cards.
+s12 queued these as cheap fixes; they are not fixable, they are **replaceable**. That distinction is
+the finding — a "parse bug" label invited a patch that would have bought a working pipe to nothing.
+
+**(b) `except Exception: continue` — the s11/s12 class, third confirmed instance.** No error row, no
+status: refusal, timeout, 404 and genuine-empty all render identically as `[]`. Both files.
+
+**(c) §13 — `zhihu.com/search` is a LIVE BREACH.** Read to the END of Zhihu's robots (10 groups):
+the final `User-Agent: *` group is `Allow: /tardis/jm` / **`Disallow: /`**. `china_miner` requests
+`/search?type=content&q=外汇交易策略` on every run. **Stop the fetch.** (`so.eastmoney.com` is fine —
+robots is HTTP **404**, which is *allow* under RFC 9309 — but note the trap: it 404s with a full
+**HTML soft-404 body**, so a parser that reads the body and ignores the status code finds no
+`Disallow` and returns "allowed" for the wrong reason. Same shape as the Wayback soft-404.)
+`kr.investing.com` confirmed permitted: 98-line robots, the `*` group's 27 `Disallow:` lines cover
+`/research/`, `/brokers2/`, `/members` … but **not** `/search`.
+
+**(d) BOTH FILES SPOOF `User-Agent: Mozilla/5.0`.** A robots verdict is a property of the UA you
+send (this desk's own 08-28 lesson), so fetching a permitted path under a false identity still
+misrepresents the desk — and on Zhihu it is a spoofed UA used to reach an explicitly forbidden path.
+→ ledgered.
