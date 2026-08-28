@@ -164,6 +164,37 @@ def main() -> int:
     except ImportError as exc:
         print(f"   mechanism map unavailable ({exc}); producer stamps carried unchanged")
 
+    # THE DOCKET IS A BANK, NOT A SNAPSHOT (principal 2026-08-28: "test as many cells as
+    # possible hourly for max certificates"). The freshness contract correctly decides which
+    # SOURCES count as this run's discovery -- but it was also deciding the whole docket, so
+    # the moment a searcher artifact aged past the pipeline start the docket collapsed from
+    # ~6,700 cells to ~460 and the gauntlet had almost nothing to judge (measured 2026-08-28:
+    # three sweeps in a row loaded 459/460/460 while 6,024 known candidates sat on disk).
+    # Judging a cell again is idempotent and nearly free -- the per-cell series cache reloads
+    # it -- so the docket now UNIONS this run's fresh rows with everything already banked,
+    # deduped by executable identity. `first_seen` is preserved so no stale row can ever be
+    # counted as a fresh discovery; freshness still governs provenance, never capacity.
+    banked = _read(TARGET)
+    readmitted = 0
+    if isinstance(banked, list):
+        for row in banked:
+            if not isinstance(row, dict):
+                continue
+            ident = _identity(row)
+            if ident in merged:
+                merged[ident].setdefault("first_seen", row.get("first_seen")
+                                         or row.get("merged_at") or now.isoformat())
+                continue
+            row.setdefault("first_seen", row.get("merged_at") or now.isoformat())
+            row["banked"] = True
+            merged[ident] = row
+            readmitted += 1
+    for row in merged.values():
+        row.setdefault("first_seen", now.isoformat(timespec="seconds"))
+    if readmitted:
+        print(f"   docket bank: {readmitted} previously-known candidate(s) re-admitted "
+              f"(idempotent re-judging; freshness still governs provenance)")
+
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)
     # NEVER SHRINK THE DOCKET TO NOTHING. The freshness contract makes every source STALE_SKIPPED
