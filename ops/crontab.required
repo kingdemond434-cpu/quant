@@ -1,7 +1,25 @@
-0 * * * * flock -n /tmp/hourly.lock sh -c 'cd /home/quant/quant-platform && .venv/bin/python -u hourly_controller.py >> /home/quant/logs/hourly_controller.log 2>&1'
-53 6 * * * cd "/home/quant/quant-platform" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1
-*/5 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py >> data/cro_ai_logs/research_health.log 2>&1
-15 6 * * 0 cd /home/quant/quant-platform && .venv/bin/python scripts/check_research_health.py --weekly >> data/cro_ai_logs/research_health.log 2>&1
-*/10 * * * * cd /home/quant/quant-platform && bash scripts/auto_push.sh >> data/cro_ai_logs/auto_push.log 2>&1
-*/10 * * * * cd /home/quant/quant-platform && .venv/bin/python scripts/check_unit_health.py >> data/cro_ai_logs/unit_health.log 2>&1
-35 7 * * 2,3,6 cd /home/quant/quant-platform && .venv/bin/python scripts/refresh_cot_zcache.py >> data/cro_ai_logs/cot_zcache.log 2>&1
+# REQUIRED CRONTAB LINES -- now EMPTY, and that is the finished state, not a wipe.
+#
+# cron.service on this box died on 2026-08-20 20:48:44 UTC with Result: oom-kill (3.1G peak on
+# a 4GB box) and cannot be restarted without root, which user `quant` does not have by design.
+# Every line this file used to demand was therefore inert for 8 days while the guard that reads
+# it went on merging them back and reporting success -- evidence of protection that did not
+# exist. All seven have been migrated to systemd USER timers, which is the desk's real
+# scheduler (75 live timers) and the sanctioned non-root path:
+#
+#   hourly_controller.py        -> quant-hourly-controller (ops/hourly-controller.timer)
+#   check_research_health.py    -> quant-research-health
+#   check_bar_span.py           -> quant-bar-span         (added 2026-08-28)
+#   auto_push.sh                -> quant-auto-push        (added 2026-08-28)
+#   check_unit_health.py        -> quant-unit-health      (added 2026-08-28)
+#   refresh_cot_zcache.py       -> quant-cot-zcache       (added 2026-08-28)
+#   check_governance_pulse.py   -> quant-governance-pulse (added 2026-08-28; was never in this
+#                                  file, which is part of why it went 8 days unnoticed)
+#
+# The unit files are committed under ops/ and their live-vs-committed drift is fenced by
+# scripts/check_unit_parity.py -- a stronger check than this file ever was, because it compares
+# against what systemd is ACTUALLY running rather than against a text file nothing executes.
+#
+# DO NOT re-add lines here to "be safe". A demanded line in a dead crontab reads as a fence and
+# is not one; that false green is the entire lesson above. If a new organ needs a schedule, it
+# gets a user timer with a committed copy in ops/.
