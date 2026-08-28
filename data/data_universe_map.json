@@ -2459,6 +2459,98 @@
     "The self-pair cells (hedged-to-EUR x EUR) are omitted from the response entirely rather than returned null -- a naive full-cross reshape silently mis-aligns.",
     "DNIFVALE requires HOVEDKAT to be named or the extract 400s."
    ]
+  },
+  "riksbank_swea_benchmark_yield_panel": {
+   "grade": "verified-clean (data, gold standard) / REFUTED as a predictive axis (54 cells, this run)",
+   "opened": "2026-08-28",
+   "provides": "11-country daily 10Y government benchmark yields (SE/US/JP/DE/NL/FR/GB/EU/NO/DK/FI) + 7-country 5Y + SE 2Y/7Y curve + SE T-bill benchmarks 1983-> + STIBOR 1987-2020 + policy/discount rate to 1907-11-11. DK 10Y starts 1982-01-04; SE/GB/JP 1987; 6,931-11,147 obs per series.",
+   "replaces": "the sovereign-yield leg of a paid macro terminal (Bloomberg/Refinitiv/Macrobond) for the G10 + Scandi block.",
+   "urls": [
+    "https://api.riksbank.se/swea/v1/Series",
+    "https://api.riksbank.se/swea/v1/Observations/{seriesId}/{fromDate}"
+   ],
+   "license_and_access": "keyless; NO robots.txt on api.riksbank.se (404 => full allow under RFC 9309); the 109-byte www-host robots governs a different host.",
+   "verification": {
+    "method": "SWEA USGVB10Y diffed against the Federal Reserve's OWN H.15 10Y constant-maturity (DBnomics FED/H15/RIFLGFCY10_N.B) -- two independent institutions publishing the same benchmark.",
+    "result": "n=8,647 common business days 1991-01-02 -> 2026-08-26: median difference -0.75 bp, mean -0.82 bp, sd 1.75 bp, ZERO days beyond 25 bp. Per-year medians stay inside +/-1.7 bp for 35 years.",
+    "verdict": "verified-clean"
+   },
+   "known_failure_modes": [
+    "HARD RATE LIMIT: ~4 requests then HTTP 429 with Retry-After: 35. A naive multi-series pull silently loses every series after the 4th unless it retries -- the first 4 look complete.",
+    "systematic -0.75 bp bias vs the Fed on the US leg: the Riksbank samples at a different hour, so this is a timestamp property, not an error. Do not use SWEA and a domestic source interchangeably inside one spread.",
+    "5Y panel is NARROWER than the 10Y panel: no NO/DK/FI at 5Y (group 99 = 7 series, group 100 = 10). A code that assumes tenor symmetry silently drops three countries.",
+    "SEGVB5YSTFIXC / SETB12MBENCH / the whole STIBOR block are DEAD series (end 2010/2019/2020-07-03) still listed alongside live ones with no status flag."
+   ],
+   "screen_run_2026_08_28": {
+    "setup": "10Y yield differential (base country - quote country) vs six Scandi MT5 crosses in the desk's own D1 tape (EURSEK/EURNOK/EURDKK/GBPSEK/GBPNOK/GBPDKK, 2012-10 -> 2026-06). Mechanism: rate-differential / UIP-deviation carry flow.",
+    "cells": "54 reported, ALL of them. 18 daily (contemporaneous dDiff, lag-1 dDiff, lag-1 level) + 36 non-overlapping forward-return cells (h=5/21/63 x level and change x 6 pairs).",
+    "contemporaneous_control": "STRONG and untradable: dDiff vs same-day return t = +9.11 (EURSEK), +8.03 (EURNOK), +10.62 (GBPSEK), +10.30 (GBPNOK), +13.52 (GBPDKK). EURDKK only +1.81 -- correct, because DKK is pegged to EUR, which is the internal control that the contemporaneous number is real economics and not an artifact.",
+    "tradable_arms": "ALL NULL. Daily lag-1 max |t| = 2.38 (EURDKK, a pegged pair, wrong sign, fails Holm at 18 trials). Multi-horizon non-overlapping max |t| = 1.99 over 36 cells against a Bonferroni bar of ~3.4.",
+    "verdict": "REFUTED at daily-to-quarterly frequency on this universe and window. Same trap shape as run (p)'s Danish pension axis: every significant number lives in the bar you cannot trade."
+   },
+   "residual": "the panel remains adopted as verified REFERENCE data (curve levels, spreads, regime conditioning, 1982-> history for OOS windows). Only the naive differential->FX-direction axis is refuted."
+  },
+  "riksbank_swea_pre_euro_legacy_fx": {
+   "grade": "verified-clean; EXHAUSTED (dead data, one-time)",
+   "opened": "2026-08-28",
+   "exhausted": "2026-08-28",
+   "provides": "Daily SEK quotes against 11 pre-euro legacy currencies -- DEM FRF ITL ESP NLG FIM GRD IEP PTE ATS BEF -- 1993-01-04 -> 2002-02-28, 2,301 observations each (25,311 rows). Plus SEKEURPMI/SEKUSDPMI 1993-> (8,451) and the dead post-euro block EEK/LTL/LVL/SIT/SKK/CYP/TRL/KWD/SAR/MAD/RUB.",
+   "replaces": "pre-EMU regime history that no free vendor carries and that the desk's held-out OOS windows are starved for (dead-data archaeology, MAX-EXTRACTION addendum 7).",
+   "urls": [
+    "https://api.riksbank.se/swea/v1/Observations/SEKDEMPMI/1980-01-01"
+   ],
+   "license_and_access": "keyless, same host and same rate limit as the yield panel.",
+   "verification": {
+    "method": "THE EMU IRREVOCABLE-CONVERSION ORACLE. After 1999-01-01 each legacy currency was locked to the euro at a published rate, so legacy_quote x conversion_rate MUST equal the EUR quote to rounding. Ten of eleven reproduce it at a median 0.01-0.54 bp over 795 days (DEM 0.01, NLG 0.01, FRF 0.02, FIM 0.02, IEP 0.03, ATS 0.05, ESP 0.06, PTE 0.07, BEF 0.13, ITL 0.54).",
+    "control_that_should_fail_and_did": "GRD is off by a median 312 bp for 1999-2000 and snaps to 0.15 bp from 2001-01-01 -- Greece joined the euro two years after the others. The one series that should disagree does, on the right date.",
+    "anti_synthesis_control": "Pre-1999 deviations are 146-355 bp median (max 2,542 bp) -- so these are genuine independent quotes, NOT legacy prices back-synthesised from the euro. A vendor that had synthesised them would show ~0 bp before 1999 too, which is impossible.",
+    "verdict": "verified-clean"
+   },
+   "known_failure_modes": [
+    "SEKEURPMI carries 1,506 observations BEFORE the euro existed (1993-01-04 -> 1998-12-31). Those are ECU basket quotes published under a series labelled EUR: a silent definitional splice covering 18% of the series, with no flag anywhere in the API.",
+    "GRD before 2001-01-01 is a floating quote inside a series that looks locked for the rest of its life."
+   ],
+   "method_generalisation": "The EMU conversion rates are a FREE GROUND-TRUTH ORACLE for any legacy-currency series from any source, and they test both directions: post-1999 agreement proves scale/units, pre-1999 DISagreement proves the quotes are not synthetic."
+  },
+  "bank_of_canada_valet": {
+   "grade": "verified-clean (auction yields) / needs-monitoring (row structure)",
+   "opened": "2026-08-28",
+   "provides": "15,922 keyless series and 2,534 groups from the Bank of Canada. The load-bearing find is the GOVERNMENT AUCTION EVENT PANEL: 1,149 nominal-bond auction records 1998-10-28 -> 2026-09-03 and 2,422 T-bill records 1998-10-13 -> 2026-09-08, each with auction date, bid deadline (clock time), issue date, ISIN, term, amount, average/high/low yield, COVERAGE (bid-to-cover), TAIL, outstanding-after, BoC purchase, allotment ratio, and -- since 2025-04-03 -- PERCENT ALLOTTED TO FOREIGN vs CANADIAN and to distributors vs customers. Also CEER daily effective CAD indices, 329 FX series, CORRA, benchmark 2/3/5/10Y yields.",
+   "replaces": "the Canadian primary-market leg of a paid rates/flow product (auction results, bid-to-cover history, foreign take-up) and the CAD macro leg of a terminal.",
+   "urls": [
+    "https://www.bankofcanada.ca/valet/lists/series/json",
+    "https://www.bankofcanada.ca/valet/observations/group/AUC_BOND_RESULTS/json?start_date=2000-01-01",
+    "https://www.bankofcanada.ca/valet/observations/TB.CDN.90D.MID/json"
+   ],
+   "license_and_access": "keyless; robots.txt is 120 bytes and disallows only /wp-admin/, so /valet/ is explicitly allowed. Terms: BoC open data.",
+   "verification": {
+    "method": "AUC_TBILL_AVG_YIELD on 85-98 day bills diffed against the BoC's separately-published daily 3-month T-bill mid (TB.CDN.90D.MID) on the same date.",
+    "result": "n=659 auctions: median +0.60 bp, mean +1.59 bp, sd 3.63 bp, exactly one day beyond 25 bp. The sd is the 10:30-auction-to-close move, not an error.",
+    "verdict": "verified-clean"
+   },
+   "known_failure_modes": [
+    "THE ROW-DOUBLING BREAK: from 2022-02-02 the API emits TWO rows per auction -- a shell (bond_id '<date>_<id>') carrying only date and bid deadline, and a child ('<date>_<id>-1') carrying every result field. bond_id is UNIQUE across both, so dedup-by-id does not remove them. Result: 2024 shows 96 auction 'rows' for 48 real auctions. Any count, mean bid-to-cover or event-study built on raw rows is diluted ~50% from 2022 onward -- a structural break in the DATA that reads as a change in issuance. Dedup rule: keep only rows where AUC_BOND_AVG_YIELD is non-null.",
+    "AUC_BOND_RESULTS and AUC_BOND_UPCOMING_DETAILS return the SAME 1,149 observations under different names, so the 'results' group contains future auctions (out to 2026-09-03) that have no results. 251 of 1,149 rows (22%) carry no yield.",
+    "coverage cliff by column: ISIN/amount/yield 899 rows, allotment ratio 249, foreign/domestic allotment split only 87 (starts 2025-04-03). A column that exists in the schema is not a column that exists in the history.",
+    "the ANNOUNCEMENT date is absent -- only the auction date is published, so the point-in-time moment at which the size became public cannot be recovered from this table. Any pre-auction study must source the announcement separately."
+   ],
+   "next_axis": "pre-announced, non-discretionary, clock-stamped sovereign supply (bid deadline 10:30/12:00 ET) against USDCAD -- the same mechanism class as the Norges Bank statutory FX flow found in run (m). NOT screened this run."
+  },
+  "dbnomics_scb_mirror": {
+   "grade": "verified-clean (route) -- closes the api.scb.se §38 replacement hunt",
+   "opened": "2026-08-28",
+   "provides": "2,834 of Statistics Sweden's 2,877 datasets, mirrored and keyless, including monthly goods imports/exports by commodity and trading partner (ImpExpSPIN2015M, 395,026 series), HS-code trade (10.6M series), producer/consumer prices, national accounts, labour-cost indices.",
+   "replaces": "api.scb.se, which is rc=56 (connection reset) from this box under every User-Agent tried across two runs -- a ROUTE fact, not a wall. §38: an exclusion spawns a hunt; this is the replacement.",
+   "urls": [
+    "https://api.db.nomics.world/v22/datasets/SCB?limit=50&offset=0"
+   ],
+   "license_and_access": "keyless; SCB data is CC-BY-equivalent; DBnomics redistributes with provenance.",
+   "known_failure_modes": [
+    "43 of the 2,877 datasets fail to load at the mirror ('Could not load dataset.json for dataset SCB/<code>'), and ONE bad member returns HTTP 404 for the ENTIRE 50-row listing page it lands in. So a straightforward paginated enumerator gets 404 on ~15% of pages and can conclude the provider is broken or empty. Recovery requires subdividing a failed page to single-row requests; that recovers 2,834 and names the 43.",
+    "limit is capped at 500 and a larger value is a 400, not a clamp.",
+    "the /v22/search endpoint returns ZERO results for provider_code=SCB on obvious terms ('trade', 'consumer price') while the datasets themselves exist -- the search index does not cover this provider. An availability judgement made from search is a false negative."
+   ],
+   "residual": "monthly trade data at a ~45-day lag is REFERENCE, not a tradable axis. Adopted as reference; no screen run."
   }
  },
  "residual_gaps_unpurchasable": [

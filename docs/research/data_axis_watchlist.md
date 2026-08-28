@@ -7160,3 +7160,135 @@ finding anything new. The refuted item is worth as much as the adopted one: the 
 axis is now closed with a documented six-arm null instead of sitting on the carried list forever
 looking promising. And the honest ledger for the run is **one genuinely new adopted axis** (SEK/USD
 forward premium, 1980→, CIP-verified) — verified small beats unverified impressive.
+
+## 2026-08-28 — FREE-DATA run (q) — SESSION NOTE (written FIRST; updated as items resolve)
+
+Backlog: clear (0 pending verification, 25 deferred, next 2026-09-01). Resuming run (p)'s named
+next-ground. **Items taken this run:**
+
+1. **SWEA 9-country benchmark yield panel** (SE/US/DE/FR/GB/JP/NL/DK/NO/FI, 5Y+10Y, daily from
+   1982/1987, keyless) — run (p) named it "the biggest unopened thing I now know exists". Pull,
+   verify against a second door, grade; test the rate-differential axis on the Scandi MT5 crosses.
+2. **The dead pre-euro currency block** (DEM/FRF/ITL/ESP/NLG/FIM/GRD/IEP/PTE/ATS/BEF vs SEK, daily
+   → 2002-02-28) — one-time-exhaustible dead-data archaeology; mark EXHAUSTED when pulled.
+3. **`api.scb.se` §38 replacement leg** — DBnomics SCB mirror (confirmed 200 last run, unopened).
+
+Status: **ALL 3 CLOSED, plus one unplanned new source class.** 4 sources graded (3 verified-clean,
+1 verified-clean-route), 1 predictive axis REFUTED on 54 reported cells, 1 reusable verification
+ORACLE discovered, 4 named silent-corruption failure modes.
+
+**ITEM 1 — the SWEA benchmark-yield panel -> DATA VERIFIED-CLEAN, AXIS REFUTED.** 11 countries of
+daily 10Y government yields (SE/US/JP/DE/NL/FR/GB/EU/NO/DK/FI), DK back to **1982-01-04**, keyless.
+Verified the hard way: SWEA's US 10Y against the **Federal Reserve's own H.15 constant-maturity**
+(via DBnomics FED/H15) — **n=8,647 business days 1991→2026, median difference 0.75 bp, sd 1.75 bp,
+ZERO days beyond 25 bp**, and per-year medians inside ±1.7 bp for thirty-five years. Two
+independent institutions publishing the same benchmark and agreeing to under a basis point is the
+strongest verification this seat has produced.
+
+**And the axis it exists for is dead.** Rate differential (base − quote) vs six Scandi MT5 crosses
+in the desk's own D1 tape, 2012-10 → 2026-06. **54 cells, all reported**: 18 daily + 36
+non-overlapping forward-return cells (h=5/21/63 × level and change × 6 pairs).
+- **Contemporaneous, untradable: t = +9.11 / +8.03 / +10.62 / +10.30 / +13.52.** Enormous.
+- **Every tradable arm null.** Daily lag-1 max |t| = 2.38 on 18 trials (and it is EURDKK, a
+  pegged pair, with the wrong sign). Multi-horizon max |t| = **1.99** against a Bonferroni-36 bar
+  of ~3.4. Non-overlapping sampling, so no overlap-inflated t.
+- The internal control that says the contemporaneous number is real economics and not an
+  artifact: **EURDKK is the one weak contemporaneous cell (+1.81)** — correct, because DKK is
+  pegged to EUR and its differential cannot move the cross.
+**This is now the second consecutive run where the strongest number I produced was untradable and
+only the lag-0 control revealed it.** Run (p): −9.71 contemporaneous, ≤1.36 tradable. Run (q):
++13.52 contemporaneous, ≤1.99 tradable. That is not a coincidence about two datasets, it is a
+property of **macro state variables joined to FX**: the yield and the exchange rate are both
+repricing the same news within the bar. The lag-0 control is now mandatory on this whole class.
+The panel stays ADOPTED as reference data (curve levels, spreads, regime conditioning, 1982→ OOS
+history); only the naive differential→direction axis is graveyarded.
+
+**ITEM 2 — the dead pre-euro block -> VERIFIED-CLEAN and EXHAUSTED.** 11 legacy currencies vs SEK
+(DEM FRF ITL ESP NLG FIM GRD IEP PTE ATS BEF), daily 1993-01-04 → 2002-02-28, 2,301 obs each,
+25,311 rows of pre-EMU regime history. One-time-exhaustible dead data, now marked EXHAUSTED.
+
+**THE VERIFICATION IS THE FIND: the EMU irrevocable-conversion oracle.** After 1999-01-01 each
+legacy currency was locked to the euro at a published rate, so `legacy_quote × conversion_rate`
+must equal the EUR quote to rounding. **Ten of eleven reproduce it at a median 0.01–0.54 bp** over
+795 days (DEM 0.01, NLG 0.01, FRF 0.02, FIM 0.02, IEP 0.03, ATS 0.05, ESP 0.06, PTE 0.07, BEF
+0.13, ITL 0.54). **The eleventh is the control that should fail and did: GRD sits 312 bp off for
+1999–2000 and snaps to 0.15 bp on 2001-01-01** — Greece joined two years later. The data knows its
+own history.
+And the **anti-synthesis control**, which is the half nobody runs: pre-1999 deviations are
+**146–355 bp median** (max 2,542 bp), so these are genuine independent quotes rather than legacy
+prices back-computed from the euro. A vendor that had synthesised them would show ~0 bp *before*
+1999 too — an impossible perfection that this test makes visible. **This oracle is reusable
+against any legacy-currency series from any source, and it tests both directions.**
+*Failure mode found:* `SEKEURPMI` carries **1,506 observations before the euro existed**
+(1993-01-04 → 1998-12-31). Those are **ECU basket quotes published under a series labelled EUR** —
+a silent definitional splice across 18% of the series, flagged nowhere in the API.
+
+**ITEM 3 — `api.scb.se` §38 hunt CLOSED.** api.scb.se is still rc=56 from this box (a route fact).
+The **DBnomics SCB mirror carries 2,834 of SCB's 2,877 datasets**, keyless and reachable, incl.
+monthly goods trade by commodity × partner (395,026 series) and HS-code trade (10.6M). Graded
+REFERENCE, not an axis — monthly at a ~45-day lag. *Failure mode, and it is a nasty one:* **43
+datasets fail to load at the mirror, and ONE bad member 404s the ENTIRE 50-row listing page it
+falls in.** A straightforward paginated enumerator gets 404 on roughly 15% of pages and concludes
+the provider is broken; recovering the full list requires subdividing every failed page to
+single-row requests. Also `/v22/search` returns **zero** results for `provider_code=SCB` on terms
+whose datasets demonstrably exist — an availability judgement made from the search endpoint is a
+false negative.
+
+**UNPLANNED — NEW SOURCE CLASS: the Bank of Canada Valet API, 15,922 keyless series, and inside it
+a 28-year SOVEREIGN AUCTION EVENT PANEL.** robots.txt is 120 bytes and disallows only
+`/wp-admin/`, so `/valet/` is explicitly allowed. 1,149 nominal-bond auctions (1998-10-28 →
+**2026-09-03, i.e. forward-dated**) and 2,422 T-bill auctions, each with **bid deadline clock
+time**, amount, average/high/low yield, **coverage (bid-to-cover)**, tail, outstanding-after, BoC
+purchase, and since 2025-04-03 **percent allotted to FOREIGN vs Canadian**. This is the same
+mechanism class as run (m)'s Norges Bank statutory flow: pre-announced, non-discretionary,
+clock-stamped supply against a major MT5 pair. **Not screened this run — carded as the next axis.**
+*Verified:* T-bill auction average yield on 85–98 day bills vs the BoC's own daily 3M T-bill mid,
+**n=659, median 0.60 bp, sd 3.63 bp, one outlier** (the sd is the 10:30-auction-to-close move).
+*Failure mode — THE ROW-DOUBLING BREAK:* from **2022-02-02** the API emits **two rows per
+auction**, a shell carrying only date+deadline and a child carrying every result field, and
+`bond_id` is **unique across both** so dedup-by-id does not remove them. 2024 shows **96 rows for
+48 real auctions**. Any count, mean bid-to-cover or event study on raw rows is diluted ~50% from
+2022 onward — a break in the DATA that reads as a change in issuance policy. Dedup by
+`AVG_YIELD is not null`. And the column coverage cliff: yield 899 rows, allotment ratio 249,
+foreign/domestic split **87**. A column in the schema is not a column in the history.
+
+**CROSS-SOURCE PAIRS (joint value > either alone):**
+1. **SWEA × FED/H15** — neither verifies itself; together they gave a 0.75 bp cross-institution
+   check on 35 years. Generalises: *a foreign central bank that re-publishes another's benchmark
+   is a free auditor of both.*
+2. **SWEA legacy FX × the published EMU conversion rates** — a static 11-number table turns a
+   dead price series into a self-verifying one, in both directions.
+3. **BoC auction panel × BoC daily benchmark yields** — the auction is a point event, the daily
+   series is the continuous state; the difference between them is the auction concession, which
+   is the tradable quantity and is not published anywhere.
+
+**FAILURE MODES ADDED THIS RUN (all four are the same class — a count that lies):** SWEA's
+undocumented 4-request/HTTP-429 rate limit (a naive pull loses everything after the 4th series and
+the first four look complete); the ECU-under-an-EUR-label splice; BoC's row doubling; DBnomics'
+one-bad-member-kills-the-page pagination.
+
+**NEXT UN-EXHAUSTED GROUND:**
+1. **Screen the BoC auction panel** — announced size and bid-to-cover against USDCAD around the
+   10:30/12:00 ET deadline. The biggest unscreened thing I now know exists. Note the announcement
+   date is NOT in the table; source it separately or the point-in-time moment is unrecoverable.
+2. **The other central banks that run their OWN keyless API** — the Valet find says this class is
+   bigger than Riksbank. Probed and robots-clear this run but unopened: **api.nbp.pl** (robots
+   404 ⇒ full allow) and **www.cbr.ru** (robots disallows only 5 unrelated paths). Both are MT5
+   currencies (PLN, and RUB history).
+3. **SWEA's 5Y panel and the SE curve** (2Y/5Y/7Y/10Y) — slope, not level, is the untested arm;
+   this run tested only the 10Y differential.
+4. **SSB 08428 / 10701** (Norges Bank balance sheet, NIBOR) — carried from run (o), still unpulled.
+5. **The 43 broken SCB datasets** — named this run; check whether any is economically relevant and
+   reachable by a different door (the two-doors rule).
+6. Carried: the Norwegian public-holiday calendar; Riksbank weekly reserves; SAFE/TCMB/BCB/SARB
+   on DBnomics; the SNB/BFS two-doors test.
+
+**THE BLUNT PART.** The honest ledger is **three verified-clean sources, one route closed, and one
+axis killed** — and the killed axis is the most useful line in it, because it retires the whole
+"macro state variable → FX direction" family at daily-to-quarterly frequency for the second run
+running, with 54 reported cells instead of a headline. The panel I spent the most effort verifying
+turned out to be reference data, not alpha. The thing most likely to be alpha — the Canadian
+auction panel — I found by accident while probing robots.txt on six hosts, and I did not screen
+it, which is the correct order but leaves the run's best lead unconverted. Verified small beats
+unverified impressive.
+

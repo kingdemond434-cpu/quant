@@ -3963,3 +3963,20 @@ distinct from both a number and an absent row.
    Detection that worked: a *physical-plausibility* bound (|F−S|/S > 10% is impossible at 3M) and a
    *decade-median* view; detection that failed: mean, sd, correlation. Rule: every adopted price or
    points series gets a physical bound at ingest, not a z-score.
+
+## 2026-08-28 — free-data run (q): three method findings
+
+1. **THE LAG-0 CONTROL IS MANDATORY FOR MACRO-STATE→FX SCREENS.** Two consecutive runs produced a
+   huge contemporaneous t (−9.71 run p, +13.52 run q) with every tradable arm null (≤1.36, ≤1.99).
+   The mechanism is structural, not coincidental: a macro state variable and the exchange rate
+   reprice the same news inside the same bar. Any screen joining a published macro series to an FX
+   return must report the lag-0 arm beside the lagged arms, or its headline number is unreadable.
+2. **THE EMU IRREVOCABLE-CONVERSION ORACLE — a free two-directional data verifier.** For any
+   source publishing pre-euro legacy currency quotes: post-1999 `legacy × conversion_rate` must
+   equal the EUR quote (proves scale, units, and that the source is not fabricating), AND pre-1999
+   it must NOT (proves the quotes are genuine, not back-synthesised from the euro). Demonstrated
+   this run at 0.01–0.54 bp on ten currencies with GRD as the date-shifted control.
+3. **A UNIQUE ID DOES NOT MEAN A UNIQUE EVENT.** Bank of Canada's auction API emits a shell row
+   and a result row per auction from 2022-02-02, with distinct `bond_id`s — so dedup-by-id passes
+   and the row count doubles at a date, reading as a change in issuance rather than in the feed.
+   Add to the ingest checklist: after dedup by id, also check for a step change in rows-per-period.
