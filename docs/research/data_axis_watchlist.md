@@ -7760,3 +7760,87 @@ n≈1,710 lands exactly on the true-H1 era — but that also means **the ECB ove
 covers roughly 2019→2026, not the full tape span**, and I am stating that limit rather than letting
 the row counts imply more. Routed to `improvement_inbox.md`; **I did not touch the files or any
 code — this seat is under a research freeze and this is a report, not a repair.**
+
+### SESSION CLOSE — 2026-08-28 (s)
+
+**Backlog:** clear on entry and on exit (0 pending verification, 0 pending legitimacy, 25 deferred,
+next returns 2026-09-01). **Items taken: 3. Items closed: 3, plus one search-space expansion and
+two unplanned findings.**
+
+**Categories covered:** **5** (alternative/macro — the run's weight), **6** (vendor replacement — one
+§38 exclusion opened and closed in-run). **1 and 4 untouched; 2 and 3 remain VOID under the MT5
+mandate as the spec writes them** (they name crypto-exchange and on-chain ground the standing order
+permanently bans). That is the honest coverage statement, not "all six dug".
+
+**Sources graded: 5.** verified-clean **3** (ECB EXR, SWEA curve panel, BIS API v2) + 1 conditional
+(TCMB: clean as history, UNMEASURED on its clock); destroyed-at-source **1** (MNB); out-of-mandate
+**1** (BNR). **UNVERIFIED carded: 0** — every source in this run was diffed against something.
+
+**Axes: 1 REFUTED on 360 reported cells** (SWEA curve slope/curvature), **1 killed before it cost a
+screen** (BIS EER, circular by construction). **0 axes proposed.**
+
+**Best vendor replacement:** **ECB EXR** — 7,081 days from 1999-01-04 in one keyless request,
+verified at **2.40/2.69/3.28 bp** on EURCZK/EURPLN/EURHUF at a unanimously-agreed lag-0 14:00-EET
+cell, DST-stable with a flipping runner-up. It replaces the dead MNB door and hands the desk
+**13–19 extra years on 15 MT5 symbols**.
+
+**Cross-source pairs (joint value > either alone):**
+1. **NBP × ECB** — two official pipelines, one currency, 2,133 shared days, 7.98 bp at lag 0. The
+   pair is what proved the effective-date convention is **per-series, not per-institution**; neither
+   source alone could have shown that.
+2. **TCMB × the desk's USDTRY tape** — the pair produced a *null*, and the null is what exposed the
+   offset scan's precondition (range/bias ratio). A failed verification bounded the instrument.
+3. **The intraday-range comparison across four symbols** — no single symbol reveals the D1/H1 splice;
+   the cross-symbol table is what made 56.7%-of-days-hold-one-bar visible.
+
+**New source CLASS discovered: the supranational keyless API** (BIS v2) — one schema, no auth, every
+MT5 currency, replacing five runs of country-by-country national-CB scraping.
+
+**DEPTH LINE.** MNB: **exhausted** — robots, WSDL, and all four transports of all six operations
+probed to a verdict. BNR: **exhausted** — robots, four documented doors, four user-agents, redirect
+chain resolved, mandate checked against the symbol registry. ECB EXR: **deep** — full 1999→ history,
+4 currencies, 2 lags × 16 hours, DST split, second-door cross-check against NBP. TCMB: **deep** —
+robots, depth probed to 1997, schema drift diagnosed across eras, 908 rows pulled, offset scan +
+DST discriminator + dead-column test + redenomination located. SWEA: **exhausted for this axis** —
+6 series, 360 cells, both arms, overlap-deflated. BIS: **surface + operation-verified** (2 dataflows
+probed; the other ~40 not enumerated — named as next ground, not claimed).
+Not breadth-theater: 6 sources, 4 taken to exhaustion or near it, 2 axes killed, every cell reported.
+
+**NEXT UN-EXHAUSTED GROUND** (each checked against what this run closed, per run (m)'s rule):
+1. **THE HISTORY-EXTENSION WIRING ITEM, now doubled and still unbuilt.** Run (r) left NBP (83
+   symbols × 16 years); this run adds ECB EXR (15 symbols × 13–19 years, and the ECB serves *all*
+   its published currencies, not just the four I pulled). This is the largest unconverted thing on
+   this watchlist across two runs. **It is an engine/wiring item, not a mining item** — and it is
+   now blocked on the D1/H1 splice above, because the panel it would extend is not the frequency
+   its filenames claim. Sequence: fix the splice, then stitch.
+2. **The `*_H1.parquet` D1/H1 splice** — needs an owner outside this seat's freeze (inbox M5).
+3. **BIS v2's remaining dataflows** — I probed 2 of ~40. `WS_XRU`, `WS_LBS`, `WS_DEBT_SEC`,
+   `WS_CREDIT_GAP` and the locational banking statistics are unopened, on a door already proven
+   keyless. Cheapest known breadth on the board.
+4. **CBRT's remaining currencies + the `BanknoteBuying/Selling` legs**, and the 1997–2004 TRL era as
+   dead-data archaeology (one-time-exhaustible) — *with the redenomination handled at ingest*.
+5. **CBR's remaining ~60 currencies + the code directory** (carried from run (r), still surface).
+6. Carried: SSB 08428/10701; the 43 broken SCB datasets; Norwegian holiday calendar; Riksbank weekly
+   reserves; SAFE/BCB/SARB on DBnomics; the SNB/BFS two-doors test. **TCMB is now struck from this
+   carried list — it was opened this run.**
+
+**THE BLUNT PART.** **Five consecutive runs have now refuted a macro→FX axis, and the fifth died
+with the same fingerprint as the four before it** — contemporaneous t = −6.74, tradable t = 2.28,
+zero of 180 forward cells clearing 2.5. I no longer think these are five separate results. They are
+one result measured five times: *a published macro series and the FX rate are the same information
+arriving at the same instant*, and this desk should stop spending screens on the family until
+someone can name why a specific series is not already in the price at its own timestamp. I have
+written that as a prior rather than as a mood, because the next seat will otherwise re-run it.
+
+The run's real value is in three things I did not go looking for. The **offset scan has a
+precondition** and I only learned it because TCMB failed it — three runs of clean clock recoveries
+had left me treating a first-ranked cell as an answer, and on a flat surface it is a coin flip.
+**A published central-bank bid/ask is a hardcoded convention** at two unrelated institutions, which
+retires a whole genre of reconstructed "FX liquidity" indicator before anyone builds one. And
+**the desk's own hourly tape is not hourly for half its span** — a file called `_H1` where 56.7% of
+EURPLN's days hold a single daily bar, sitting under the exact directory every MT5 study reads,
+invisible to every row-count check because a count is not a frequency.
+
+That last one is worth more than the sixteen years of Hungarian history, and I found it by
+accident while computing a denominator. **Verified small beats unverified impressive** — and the
+smallest number in this run, `sd = 0.01 bp`, is the one that killed an indicator genre.
