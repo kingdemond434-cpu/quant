@@ -1,5 +1,5 @@
 {
-"cursor": 65,
+"cursor": 66,
 "queries_done": {
 "zh": [
 "\u558a\u5355 MT4",
@@ -207,6 +207,9 @@
 "rendement MT4",
 "rendement MT5",
 "rendement ranking",
+"robot de trading MT4",
+"robot de trading MT5",
+"robot de trading ranking",
 "signaux MT4",
 "signaux MT5",
 "signaux ranking"

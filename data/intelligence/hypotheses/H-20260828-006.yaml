@@ -102,3 +102,31 @@ notes: 'The desk holds the terminal-native swap route already, so the financing 
   which way it leans -- direction is the gauntlet''s question, and this desk''s own record is that 129/129
   directional mechanisms failed while carry survived. The Wednesday triple-swap arm is preregistered as
   separate so a 3x-sized effect on one weekday cannot be laundered through a pooled average.'
+
+# ---------------------------------------------------------------------------
+# PREMISE REFUTED 2026-08-28 by the free-data-alternatives miner (source
+# verification of the FX Blue corpus). This is the card's OWN kill condition
+# firing, on a robustness test rather than a re-harvest.
+#
+# The 00:00 share is not a population property. Over 471 unique accounts with
+# >=20 trades (mean per-account share, uniform baseline 4.17%/hr):
+#     00:00  mean 6.11%  ->  drop-top10 4.14%  ->  drop-top25 2.80%
+#     15:00  mean 7.38%  ->  drop-top10 6.87%  ->  drop-top25 6.49%
+# 10%-trimmed means: 00:00 2.29% vs 01:00 2.08% and 23:00 1.82%; the MEDIAN
+# 00:00 share (1.90%) is BELOW 01:00 (1.96%) and 02:00 (1.94%).
+#
+# Cause: 00:00 is the corpus's missing-timestamp dumping bucket. 7 of the 10
+# accounts that book >=99% of their trades in a SINGLE hour book it at 00:00
+# (vs 1 each at 09:00 / 22:00 / 23:00), and 5 accounts sit at exactly 100.0%.
+#
+# The "spike GREW with sample" argument (5.84% at n=107 -> 6.59% at n=525) was
+# read as confirmation. It is not: the contaminating class scales with n, so a
+# mean-of-shares statistic rises with sample precisely BECAUSE of the artifact.
+# Growth-with-sample is not evidence against an artifact unless the artifact
+# class is shown not to scale.
+#
+# status: REFUTED_AT_PREMISE -- not carried forward. H-20260828-005 (the
+# 15:00-17:00 overlap card) passes the identical test and is unaffected.
+status: refuted_at_premise
+refuted_on: '2026-08-28'
+refuted_by: free_data_alternatives_miner/source_verification
