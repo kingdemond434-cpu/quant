@@ -47,8 +47,21 @@ def _run(cmd: list[str], timeout: int = SSH_TIMEOUT) -> tuple[int, str]:
         return 1, str(exc)
 
 
+#: Lines OpenSSH writes to stderr that say nothing about the command that was run. They were
+#: being concatenated into every fixer's report, so a breach summary read
+#: "FIXER BREADTH: attempted -- backfill_rc=75 ypt later\" attacks." -- the client's
+#: post-quantum advisory sliced mid-word by the 400-character tail. A report a human cannot parse
+#: is a report a human stops reading, and these fixer lines are the desk's account of what it did
+#: about a breach.
+_SSH_NOISE = ("post-quantum", "store now, decrypt later", "openssh.com/pq.html",
+              "may need to be upgraded", "This session may be vulnerable")
+
+
 def _ssh(command: str) -> tuple[int, str]:
-    return _run(["ssh", "-o", "ConnectTimeout=20", REMOTE, command])
+    rc, out = _run(["ssh", "-o", "ConnectTimeout=20", REMOTE, command])
+    kept = [ln for ln in out.splitlines()
+            if ln.strip() and not any(n in ln for n in _SSH_NOISE)]
+    return rc, "\n".join(kept)
 
 
 def _desk_task(name: str) -> tuple[bool, str]:
