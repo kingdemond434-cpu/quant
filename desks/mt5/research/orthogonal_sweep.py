@@ -180,8 +180,14 @@ def _event_index():
         for row in rows if isinstance(rows, list) else []:
             if not isinstance(row, dict):
                 continue
-            raw = next((row.get(k) for k in ("date", "datetime", "timestamp", "time")
-                        if row.get(k)), None)
+            # `event_date` FIRST, because it is the key the calendar miner actually writes and
+            # it was absent from this list -- so the reader parsed 56 vintage files and recovered
+            # zero timestamps, and every event_reaction cell returned no signals with no error
+            # (2026-08-28). The scheduled event time is the right anchor: `found_at`/`captured_at`
+            # record when THIS DESK learned of the event, which is a fact about our polling, not
+            # about the market.
+            raw = next((row.get(k) for k in ("event_date", "date", "datetime", "timestamp",
+                                             "time") if row.get(k)), None)
             if raw is not None:
                 values.append(raw)
     idx = pd.to_datetime(values, utc=True, errors="coerce")
