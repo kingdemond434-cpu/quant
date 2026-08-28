@@ -1,13 +1,13 @@
 {
- "updated": "2026-08-28T02:13:09.824229+00:00",
+ "updated": "2026-08-28T02:30:21.913043+00:00",
  "series": {
-  "PAYEMS": {
-   "series": "PAYEMS",
+  "CPILFESL": {
+   "series": "CPILFESL",
    "ok": true,
-   "last": 159069.0,
+   "last": 324.739,
    "last_date": "2025-01-01",
-   "z": 1.73441873917903,
-   "mom": 0.21593792998012537
+   "z": 2.141835461725848,
+   "mom_yoy": 0.6661826577732168
   },
   "UNRATE": {
    "series": "UNRATE",
@@ -15,6 +15,14 @@
    "last": 4.0,
    "last_date": "2025-01-01",
    "z": -0.984541688380747
+  },
+  "PAYEMS": {
+   "series": "PAYEMS",
+   "ok": true,
+   "last": 159069.0,
+   "last_date": "2025-01-01",
+   "z": 1.73441873917903,
+   "mom": 0.21593792998012537
   },
   "INDPRO": {
    "series": "INDPRO",
@@ -32,13 +40,12 @@
    "z": 2.262197268791182,
    "mom_yoy": 0.7090840921264062
   },
-  "CPILFESL": {
-   "series": "CPILFESL",
+  "DGS2": {
+   "series": "DGS2",
    "ok": true,
-   "last": 324.739,
-   "last_date": "2025-01-01",
-   "z": 2.141835461725848,
-   "mom_yoy": 0.6661826577732168
+   "last": 4.19,
+   "last_date": "2026-08-26",
+   "z": -0.20878059927286485
   },
   "DFF": {
    "series": "DFF",
@@ -47,13 +54,6 @@
    "last_date": "2026-08-25",
    "z": -0.2723170989075569
   },
-  "DGS2": {
-   "series": "DGS2",
-   "ok": true,
-   "last": 4.19,
-   "last_date": "2026-08-26",
-   "z": -0.20878059927286485
-  },
   "DGS10": {
    "series": "DGS10",
    "ok": true,
@@ -61,28 +61,28 @@
    "last_date": "2026-08-26",
    "z": -0.391091711216379
   },
-  "T10YIE": {
-   "series": "T10YIE",
+  "UMCSENT": {
+   "series": "UMCSENT",
    "ok": false
   },
   "RETAILSMxSA": {
    "series": "RETAILSMxSA",
    "ok": false
   },
-  "DFEDTARU": {
-   "series": "DFEDTARU",
-   "ok": false
-  },
-  "UMCSENT": {
-   "series": "UMCSENT",
-   "ok": false
-  },
-  "SOFR": {
-   "series": "SOFR",
+  "T10YIE": {
+   "series": "T10YIE",
    "ok": false
   },
   "T5YIE": {
    "series": "T5YIE",
+   "ok": false
+  },
+  "DFEDTARU": {
+   "series": "DFEDTARU",
+   "ok": false
+  },
+  "SOFR": {
+   "series": "SOFR",
    "ok": false
   },
   "T10Y2Y": {
@@ -105,12 +105,12 @@
    "series": "VIXCLS",
    "ok": false
   },
-  "DCOILWTICO": {
-   "series": "DCOILWTICO",
-   "ok": false
-  },
   "GOLDAMGBD228NLBM": {
    "series": "GOLDAMGBD228NLBM",
+   "ok": false
+  },
+  "DCOILWTICO": {
+   "series": "DCOILWTICO",
    "ok": false
   },
   "DTWEXBGS": {
