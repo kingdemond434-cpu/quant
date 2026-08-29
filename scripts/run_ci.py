@@ -378,6 +378,33 @@ def _run_steps() -> int:
                 for ln in (r.stdout or "").splitlines()
                 if ln.startswith(("FAILED ", "ERROR "))
             ][:25]
+            # "TESTS FAILED" AND "THE RUN COULD NOT FINISH" ARE DIFFERENT VERDICTS (2026-08-29).
+            # The parser above only harvests `FAILED `/`ERROR ` lines, so a pytest-timeout kill
+            # -- which prints a `+++ Timeout +++` banner and a stack dump instead -- recorded
+            # `failed: ['tests (pytest)']` with `failed_tests: []`. MEASURED: the 2026-08-29
+            # 01:20 marker held exactly that, and max_audit escalated `ci-gate-red` naming no
+            # test at all. A red with nothing named cannot be acted on, so it is read as noise
+            # and the gate stops meaning anything -- which is how the 08-28 red sat 34h.
+            #
+            # Worse, it is a MISDIRECTION rather than a mere absence: a reader sees "RED on
+            # COMMITTED code" and goes looking for a broken test that does not exist. The 25
+            # node IDs recorded on 08-28 were the same event -- timeout casualties, every one
+            # passing in isolation -- so the marker sent the desk hunting bugs that were never
+            # there. Absence and misattribution are the two ways this fails and this names both.
+            blob = (r.stdout or "") + (r.stderr or "")
+            if "+++ Timeout" in blob or "Timeout +++" in blob:
+                hung = [
+                    ln.strip()
+                    for ln in blob.splitlines()
+                    if ln.strip().startswith(("~~~~", "File ")) and "tests/" in ln
+                ][:5]
+                details[label] = [
+                    "TIMEOUT -- the run did NOT finish, so this is not a statement about any "
+                    "test passing or failing. Any node IDs below are where the clock ran out, "
+                    "not necessarily a defect; re-run them in isolation before believing them."
+                    + (f" Nearest frames: {'; '.join(hung)}" if hung else ""),
+                    *details[label],
+                ]
     failed_tracked, inflight = _attribute(failed)
     stale = [s for s in failed if s not in failed_tracked]
     if stale:

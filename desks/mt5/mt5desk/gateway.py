@@ -36,7 +36,7 @@ from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance as _prov  # noqa: E402
 from mt5desk.independence import measure_from_ledger  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
-from mt5desk.sizing import clamp_risk_frac  # noqa: E402
+from mt5desk.sizing import clamp_risk_frac, decay_factor  # noqa: E402
 
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
@@ -122,7 +122,8 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
 
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
-                 risk_frac: float | None = None) -> float:
+                 risk_frac: float | None = None,
+                 decay_faded: object = None) -> float:
     """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
 
     RISK BASE (principal order 2026-08-25): promoted sleeves target
@@ -144,7 +145,13 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     this path is always taken.
     """
     ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    q_eff = clamp_risk_frac(risk_frac) * ramp
+    # L1.59 FADE, OUTSIDE the clamp (gap-fixer 2026-08-29). `clamp_risk_frac` floors at 3%, so
+    # the halved fraction `decay_monitor` wrote into data/sleeves.json was read straight back up
+    # and a FADED sleeve sized identically to a healthy one -- measured, 3.0 lots vs 3.0 lots.
+    # The flag is now the single source of truth and it is applied here, alongside `ramp`,
+    # which is the same shape for the same reason: authority and decay both scale RISK, not the
+    # lot after the fact. Reduce-only by construction; it can never raise a fraction.
+    q_eff = clamp_risk_frac(risk_frac) * ramp * decay_factor(decay_faded)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
@@ -1254,7 +1261,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             continue
         try:
             lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
-                               s.get("risk_frac"))
+                               s.get("risk_frac"), s.get("decay_faded"))
         except Exception as exc:                                  # noqa: BLE001
             log(f"[{name}] FAMILY-EXEC: cannot price risk ({exc}); skipped")
             continue
@@ -1389,7 +1396,8 @@ def main() -> None:
         if _s.get("lot") == "auto_ramp":
             _ramp = 0.25 if sleeve_live_n(_s["name"]) < 50 else (
                 0.5 if sleeve_live_n(_s["name"]) < 200 else 1.0)
-            _s["q_charge"] = clamp_risk_frac(_s.get("risk_frac")) * _ramp
+            _s["q_charge"] = (clamp_risk_frac(_s.get("risk_frac")) * _ramp
+                              * decay_factor(_s.get("decay_faded")))
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
@@ -1454,7 +1462,7 @@ def main() -> None:
             try:
                 lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
                     promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
-                                 s.get("risk_frac"))
+                                 s.get("risk_frac"), s.get("decay_faded"))
                     if s["lot"] == "auto_ramp" else float(s["lot"]))
                 q_real = realised_q(equity, dist, s["symbol"], sym, lot=lot)
             except Exception as exc:                              # noqa: BLE001

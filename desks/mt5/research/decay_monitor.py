@@ -174,21 +174,28 @@ def main() -> int:
         v, why = verdict(s)
         report[name] = {**s, "verdict": v, "why": why,
                         "risk_frac": row.get("risk_frac")}
+        # THE FLAG IS THE FADE (gap-fixer 2026-08-29). This block used to HALVE `risk_frac`
+        # in the row as well. `mt5desk.sizing.clamp_risk_frac` floors at BASE_RISK_FRAC=0.03,
+        # so 0.03 -> 0.015 was read straight back up to 0.03 and the gateway sized a FADED
+        # sleeve at 3.0 lots -- identical to a healthy one, measured on the real functions.
+        # The halving was not merely useless, it was WRONG in the one case it survived: a
+        # dynamic-up sleeve at 0.06 written to 0.03 and then multiplied by the fade would be
+        # cut 4x where the law orders 2x. `promoted_lot` now applies `decay_factor(decay_faded)`
+        # outside the clamp, so the flag alone carries the fade -- and UNFADE becomes exact,
+        # since deleting a flag is lossless where dividing by 0.5 is not.
         if v == "FADE" and not row.get("decay_faded"):
-            old = float(row.get("risk_frac") or 0.03)
-            row["risk_frac"] = round(old * FADE_FACTOR, 4)
+            eff = float(row.get("risk_frac") or 0.03)
             row["decay_faded"] = now
             actions.append({"at": now, "sleeve": name, "action": "FADE",
-                            "risk_frac": [old, row["risk_frac"]], "why": why})
+                            "risk_frac": [eff, round(eff * FADE_FACTOR, 4)], "why": why})
             changed = True
         elif v == "HEALTHY" and row.get("decay_faded"):
             # recovery from a fade is automatic -- the fade was a hedge on uncertainty, not a
             # sentence. RETIRE recovery is NOT automatic: that runs back through the forward window.
-            old = float(row.get("risk_frac") or 0.015)
-            row["risk_frac"] = round(old / FADE_FACTOR, 4)
+            eff = float(row.get("risk_frac") or 0.03)
             del row["decay_faded"]
             actions.append({"at": now, "sleeve": name, "action": "UNFADE",
-                            "risk_frac": [old, row["risk_frac"]], "why": why})
+                            "risk_frac": [round(eff * FADE_FACTOR, 4), eff], "why": why})
             changed = True
         elif v == "RETIRE":
             actions.append({"at": now, "sleeve": name, "action": "RETIRE", "why": why,

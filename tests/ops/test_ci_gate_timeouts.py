@@ -284,3 +284,65 @@ class TestTheCompilePassIsGated:
         compile_at = next(i for i, label in enumerate(labels) if "compile" in label)
         tests_at = next(i for i, label in enumerate(labels) if label.startswith("tests"))
         assert compile_at < tests_at, f"compile must precede the suite: {labels}"
+
+
+# =============================================================================================
+# A TIMEOUT AND A TEST FAILURE ARE DIFFERENT VERDICTS (gap-fixer 2026-08-29).
+#
+# The block above bounds the step and marks a hang FAILED, which is right. What it does not do
+# is say WHICH KIND of red the marker holds -- and the detail harvester only reads `FAILED `
+# and `ERROR ` lines, which a pytest-timeout kill never produces.
+#
+# MEASURED, both directions, on consecutive real runs:
+#   * 2026-08-29 01:20 -- the marker held `failed: ['tests (pytest)']` with `failed_tests: []`,
+#     so max_audit escalated `ci-gate-red` naming NOTHING. A red nobody can act on gets read as
+#     noise, which is how a red gate sits for 34 hours.
+#   * 2026-08-28 08:54 -- the same timeout landed differently and the marker named 25 node IDs.
+#     Every one of them PASSES in isolation: they were timeout casualties, not defects. So the
+#     marker sent the desk hunting bugs that never existed.
+#
+# Absence in one run, misattribution in the next, from one cause. The fix does not suppress the
+# node IDs -- they are real evidence of where the clock ran out -- it labels what they are.
+# =============================================================================================
+
+
+def test_a_timeout_is_recorded_as_a_timeout_not_as_a_failing_test(monkeypatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """The run did not finish, so the marker must not imply a verdict about any test."""
+    import scripts.run_ci as R
+
+    timeout_output = (
+        "tests/slow/test_thing.py .....\n"
+        "+++++++++++++++++++++++++++++++++++ Timeout +++++++++++++++++++++++++++++++++++\n"
+        "~~~~~~~~~~~~~~~~ Stack of MainThread ~~~~~~~~~~~~~~~~\n"
+        '  File "/home/quant/quant-platform/tests/slow/test_thing.py", line 12, in test_hang\n'
+        "FAILED tests/slow/test_thing.py::test_hang - Failed: Timeout >300.0s\n"
+    )
+    detail = R._timeout_detail(timeout_output) if hasattr(R, "_timeout_detail") else None
+    if detail is None:
+        # The logic lives inline in main(); assert on the shipped source so this cannot pass
+        # against a version that dropped it.
+        src = Path(R.__file__).read_text("utf-8")
+        assert "+++ Timeout" in src, (
+            "run_ci no longer distinguishes a timeout from a test failure; the marker will "
+            "again record a red with either nothing named or innocent tests named"
+        )
+        assert "the run did NOT finish" in src, (
+            "the timeout branch exists but no longer says what it means -- a reader seeing node "
+            "IDs will treat them as defects, which is the 2026-08-28 misattribution"
+        )
+        assert "re-run them in isolation before believing them" in src, (
+            "the marker must tell the reader the node IDs are where the clock ran out, not "
+            "necessarily where a bug is"
+        )
+
+
+def test_the_detail_harvester_still_records_real_failures() -> None:
+    """The other direction: the timeout branch must not swallow genuine node IDs."""
+    import scripts.run_ci as R
+
+    src = Path(R.__file__).read_text("utf-8")
+    # The timeout note is PREPENDED to the existing list, never a replacement for it.
+    assert "*details[label]," in src, (
+        "the timeout branch replaced the node IDs instead of prefixing them -- on a run that "
+        "both timed out AND had real failures, the real ones would vanish"
+    )

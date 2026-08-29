@@ -45,14 +45,17 @@ LEGACY_CONSTANT = 100 * 0.92
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT
-    from mt5desk.sizing import clamp_risk_frac
+    from mt5desk.sizing import clamp_risk_frac, decay_factor
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
           # gateway.py imports this from mt5desk.sizing; the AST extraction drops imports,
           # so promoted_lot needs it supplied here (same repair as test_stop_aware_sizing)
-          "clamp_risk_frac": clamp_risk_frac}
+          "clamp_risk_frac": clamp_risk_frac,
+          # Same repair, same reason (gap-fixer 2026-08-29): promoted_lot now
+          # multiplies by the L1.59 fade and the AST extraction drops imports.
+          "decay_factor": decay_factor}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
                  "min_lot_risk_eur"}

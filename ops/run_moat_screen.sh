@@ -1,4 +1,22 @@
 #!/usr/bin/env bash
+
+# ---------------------------------------------------------------------------------------------
+# MID-RUN REWRITE SEAL (gap-fixer 2026-08-29; same seal as ops/run_frontier_rotation.sh).
+#
+# bash reads a script INCREMENTALLY, BY BYTE OFFSET. This desk commits ~200x/day into the tree
+# this launcher executes from, and this one loops CONTINUOUSLY, so it is exposed for as long as
+# it lives. IT HAS HAPPENED: 63680c05 grew a comment in run_frontier_rotation.sh by ~120 bytes
+# mid-run and seat_frontier.log recorded comment text executed as a command, output from the
+# STALE version, then `syntax error near unexpected token 'fi'`. The dig died and it looked
+# like an ordinary non-zero exit.
+#
+# The seal is a COMPOUND COMMAND: bash must parse to the closing brace before executing any of
+# it, so the whole body is in memory before the first line runs. The `exit` must be INSIDE the
+# group -- measured, not assumed: a bare `{ ... }` still let bash read past the brace and RE-RUN
+# the script from the top. Only the exit inside the group ends the process before another byte
+# is read. The `}` must be the file's last line.
+# ---------------------------------------------------------------------------------------------
+{
 # THE DEDICATED 24/7 MOAT SURVIVOR HUNT.
 #
 # THE ASYMMETRY THIS FIXES. `run_moat_miner.sh` has mined the archive continuously for weeks --
@@ -25,3 +43,5 @@ mkdir -p "$(dirname "$LOG")"
 # budget once, and it never blocks the box for minutes at a time.
 exec python3 scripts/screen_moat.py --files "${MOAT_SCREEN_FILES:-24}" \
   --loop --interval "${MOAT_SCREEN_INTERVAL:-30}" >> "$LOG" 2>&1
+exit $?
+}
