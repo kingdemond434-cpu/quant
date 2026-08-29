@@ -306,6 +306,29 @@ def main() -> None:
                 # needs" -- the exact misreading that hid carry for the life of this desk.
                 slog(f"{key}: runtime inputs unavailable ({why}); no signals this pass, forward "
                      f"evidence NOT accruing -- this is a wiring gap, not a null result")
+                # RECORD THE ATTEMPT, OR THE ROW LIES FOREVER. This branch used to log and
+                # `continue` without touching `st`, so `last_attempt_at` stayed null and whatever
+                # `last_error` the row happened to carry survived every subsequent pass.
+                #
+                # Measured 2026-08-29T20:42: seven EURCHF.discovered rows still advertised
+                # `ModuleNotFoundError: mt5desk.family_inputs` stamped 13:46:59, hours after that
+                # module was shipped and verified importable on the box. The dashboard showed them
+                # BLOCKED, the healer re-shipped a correct module on every run and reported HEALED,
+                # and the actual cause -- this skip -- was invisible because a skip that writes
+                # nothing is indistinguishable from a pass that never happened.
+                #
+                # A row the engine reached must say so, and must say what it found NOW.
+                st["last_attempt_at"] = datetime.now(UTC).isoformat(timespec="seconds")
+                st["last_error"] = f"runtime inputs unavailable: {why}"
+                st["last_error_at"] = st["last_attempt_at"]
+                # NEVER OVERWRITE A VERDICT. A transient input gap must not turn a KILL back into
+                # an unevaluated row (it would re-enter the book) or cost a PROMOTION CANDIDATE a
+                # decision the desk already made -- the rule stated at _TERMINAL_STATUSES. The
+                # attempt and the reason are still recorded above, so the gap stays visible on a
+                # row whose verdict stands.
+                if st.get("status") not in _TERMINAL_STATUSES:
+                    st["status"] = "BLOCKED_INPUTS_UNAVAILABLE"
+                state[key] = st
                 continue
             call_params.update(extra)
             try:

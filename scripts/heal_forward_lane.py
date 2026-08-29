@@ -61,7 +61,12 @@ LEDGERS = ("shadow_state.json", "qquant_shadow_state.json",
 #: Statuses that mean "this sleeve is not gathering evidence and something broke". RETIRED_* are
 #: deliberately absent: a retired sleeve is a decision, not a fault, and healing it would be
 #: re-animating something the desk chose to stop.
-BLOCKED = ("BLOCKED_SLEEVE_ERROR", "BLOCKED_POWER_UNCURED", "BLOCKED_UNIVERSAL_GATES")
+BLOCKED = ("BLOCKED_SLEEVE_ERROR", "BLOCKED_POWER_UNCURED", "BLOCKED_UNIVERSAL_GATES",
+           # Written by the engine when a family's runtime inputs cannot be rebuilt. Distinct
+           # from BLOCKED_SLEEVE_ERROR on purpose: that means "this raised", while this means
+           # "this was reached and had nothing to run with" -- a wiring gap, and the two need
+           # different fixes.
+           "BLOCKED_INPUTS_UNAVAILABLE")
 
 #: `ModuleNotFoundError: No module named 'x.y'` -- the one root cause that is unambiguous enough
 #: to fix without a human, because the fix is "put the committed file where it belongs".
@@ -134,6 +139,32 @@ def _watchlist_gap(rels: set[str]) -> list[str]:
     except OSError:
         return sorted(rels)
     return sorted(r for r in rels if r not in watch)
+
+
+def _engine_last_run() -> datetime | None:
+    """Newest `last_attempt_at` anywhere -- when the forward engine last evaluated ANYTHING.
+
+    This is the clock a stale error is measured against. There is no single "engine ran at"
+    stamp, but any row it touched carries one, so the maximum across all rows is the engine's
+    own heartbeat and needs no new artifact to maintain.
+    """
+    newest: datetime | None = None
+    for name in LEDGERS:
+        f = SHADOW / name
+        if not f.exists():
+            continue
+        try:
+            data = json.loads(f.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        rows = data.get("sleeves", data) if isinstance(data, dict) else {}
+        for st in rows.values():
+            if not isinstance(st, dict):
+                continue
+            t = _parse_ts(st.get("last_attempt_at"))
+            if t and (newest is None or t > newest):
+                newest = t
+    return newest
 
 
 def _blocked_rows() -> list[dict]:
@@ -282,13 +313,40 @@ def main() -> int:
     rows = _blocked_rows()
     report: dict = {"checked_at": now.isoformat(timespec="seconds"),
                     "blocked_total": len(rows), "healed": [], "unfixable": [],
-                    "watchlist_gap": [], "idle": {}, "stalled": []}
+                    "watchlist_gap": [], "idle": {}, "stalled": [], "stale_errors": []}
 
     print(f"FORWARD LANE {now.isoformat(timespec='seconds')}")
     print(f"  blocked sleeves: {len(rows)}")
 
     # One missing module blocks every sleeve that needs it, so fix per CAUSE, not per sleeve --
     # 34 rows here were 34 copies of one defect, and shipping once clears all of them.
+    # A STALE ERROR IS NOT A LIVE CAUSE, and treating it as one is worse than ignoring it.
+    # Measured 2026-08-29T20:42: seven EURCHF.discovered rows carried
+    # `ModuleNotFoundError: mt5desk.family_inputs` stamped 13:46:59 with last_attempt_at NULL,
+    # while the module was verifiably importable on the box (`OK C:\opt\quant\...`). This healer
+    # re-shipped a correct module on every run for hours, reported HEALED each time, and the real
+    # cause -- the engine reaching those rows and skipping them without recording an attempt --
+    # stayed completely hidden behind a fixed-looking symptom.
+    #
+    # An error older than the engine's last pass describes a world that no longer exists.
+    engine_run = _engine_last_run()
+    live_rows, stale_rows = [], []
+    for r in rows:
+        err_at = _parse_ts(r.get("at"))
+        if engine_run and err_at and err_at < engine_run:
+            stale_rows.append({**r, "engine_ran_at": engine_run.isoformat(timespec="seconds")})
+        else:
+            live_rows.append(r)
+    report["stale_errors"] = stale_rows
+    if stale_rows:
+        print(f"  STALE ({len(stale_rows)}) -- error predates the engine's last pass "
+              f"({engine_run.isoformat(timespec='seconds') if engine_run else '?'}), so it does "
+              f"NOT describe the current cause. Not acted on; the row is being skipped without "
+              f"recording an attempt, which is the real defect:")
+        for r in stale_rows[:5]:
+            print(f"    {r['key'][:46]:48s} err@{str(r.get('at'))[:19]}")
+    rows = live_rows
+
     wanted: dict[str, list[str]] = {}
     for r in rows:
         m = _MISSING_MODULE.search(r["error"])
@@ -353,7 +411,8 @@ def main() -> int:
     print(f"\n  -> {OUT}")
     # Idle certificates are a real finding but not this script's to fix, so they do not fail it;
     # a sleeve still blocked after a heal attempt is, because it means the lane is still stopped.
-    return 1 if (report["unfixable"] or report["stalled"]) else 0
+    return 1 if (report["unfixable"] or report["stalled"]
+                 or report["stale_errors"]) else 0
 
 
 if __name__ == "__main__":
