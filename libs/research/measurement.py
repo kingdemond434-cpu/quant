@@ -135,18 +135,26 @@ GENERIC_CONTRACTS: dict[str, MeasurementContract] = {
     "positioning_extreme": MeasurementContract(
         mechanism="positioning_extreme",
         required_observable="COT/TFF net positioning versus its own history",
-        actual_observable="distance from a 60-bar mean",
-        measurement_class="HEURISTIC_PROXY",
-        justification=("the desk HAS COT data and this does not use it; price extension is not "
-                       "positioning, and using it here wastes the real observable")),
+        actual_observable=("net non-commercial positioning / open interest, z-scored over 52 "
+                           "weeks, lagged 4 days to publication (CotPositioningAdapter)"),
+        measurement_class="VALIDATED_PROXY",
+        data_source="desks/mt5/data/cot/*.parquet",
+        justification=("UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic "
+                       "family used price extension instead. The adapter reads the real series "
+                       "and lags it to publication so no bar sees a report before it was public. "
+                       "VALIDATED_PROXY rather than DIRECT because the release is weekly while "
+                       "the claim is intraday -- the level is real, its resolution is coarse.")),
     "cross_market_move": MeasurementContract(
         mechanism="cross_market_move",
         required_observable="a SECOND instrument's move leading this one",
-        actual_observable="this instrument's own 4-bar return",
-        measurement_class="UNMEASURABLE",
-        justification=("a single-instrument feature contains no cross-market information "
-                       "whatsoever; this is not a weak measure of the mechanism, it is a "
-                       "measure of a different thing")),
+        actual_observable="a named peer's return, lagged >=1 bar (CrossAssetAdapter)",
+        measurement_class="DIRECT",
+        data_source="desks/mt5/data/universe/<peer>_H1.parquet",
+        justification=("UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic "
+                       "family looked at one instrument's own return. The adapter takes a real "
+                       "peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an "
+                       "unnamed peer by shared currency -- NEVER by correlation, which would "
+                       "select on the outcome being tested.")),
     "macro_release": MeasurementContract(
         mechanism="macro_release",
         required_observable="a scheduled announcement's surprise versus consensus",
@@ -165,10 +173,15 @@ GENERIC_CONTRACTS: dict[str, MeasurementContract] = {
     "carry_change": MeasurementContract(
         mechanism="carry_change",
         required_observable="the swap/rate differential actually paid",
-        actual_observable="24-bar price return",
-        measurement_class="UNMEASURABLE",
-        justification=("the desk HAS recorded swap terms in carry_state; using price return "
-                       "instead measures momentum and calls it carry")),
+        actual_observable=("swap_money_per_lot_night, long minus short, from recorded contract "
+                           "terms (CarryAdapter)"),
+        measurement_class="VALIDATED_PROXY",
+        data_source="desks/mt5/data/carry_state.json",
+        justification=("UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the "
+                       "generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT "
+                       "because carry_state is a SNAPSHOT -- it gives today's level, not its "
+                       "history, so a cell measures cross-sectional carry rather than carry "
+                       "CHANGE. Recording a time series is what would make this DIRECT.")),
     "benchmark_flow": MeasurementContract(
         mechanism="benchmark_flow",
         required_observable="a fixing or rebalance window with its own timestamp",
