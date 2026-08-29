@@ -116,3 +116,47 @@ def test_the_artifact_records_the_emptying(mod: ModuleType, repo: Path) -> None:
     assert rec["status"] == "EMPTIED"
     assert rec["emptied"][0]["file"] == "docs/GAP_REGISTER.md"
     assert rec["emptied"][0]["outcome"] == "HEALED"
+
+
+def test_a_truncated_prefix_is_healed_too(mod: ModuleType, repo: Path) -> None:
+    """The empty rule alone was not enough, and the gap cost a second incident the same day.
+
+    Hours after the 0-byte wipe was fixed, the same register came back as a 114,688-byte PREFIX
+    holding 44 of 214 rows. Not empty, and its blob appears nowhere in history, so the
+    "somebody is editing" branch left it alone and the fence went quiet over a ledger missing 170
+    rows. A prefix is destruction wearing a plausible file size.
+    """
+    doc = repo / "docs" / "GAP_REGISTER.md"
+    full = [f"| {i} | row {i} |" for i in range(1, 51)]
+    doc.write_text("\n".join(full) + "\n", "utf-8")
+    _git(repo, "add", "docs/GAP_REGISTER.md")
+    _git(repo, "commit", "-m", "50 rows")
+    doc.write_text("\n".join(full[:10]) + "\n", "utf-8")     # a prefix, not empty
+    rc = mod.main()
+    assert rc == 1
+    assert len(doc.read_text("utf-8").splitlines()) == 50, "every row restored, not just the size"
+
+
+def test_rewriting_a_rows_text_is_not_destruction(mod: ModuleType, repo: Path) -> None:
+    """The invariant is the record's EXISTENCE. Ordinary editing must survive untouched."""
+    doc = repo / "docs" / "GAP_REGISTER.md"
+    doc.write_text("| 1 | original |\n| 2 | original |\n", "utf-8")
+    _git(repo, "add", "docs/GAP_REGISTER.md")
+    _git(repo, "commit", "-m", "two rows")
+    edited = "| 1 | rewritten at length, with much more detail |\n| 2 | original |\n"
+    doc.write_text(edited, "utf-8")
+    assert mod.main() == 0
+    assert doc.read_text("utf-8") == edited
+
+
+def test_adding_rows_is_not_destruction(mod: ModuleType, repo: Path) -> None:
+    """A session writing new rows must never be healed away -- that would be the fence causing
+    exactly the loss it exists to prevent."""
+    doc = repo / "docs" / "GAP_REGISTER.md"
+    doc.write_text("| 1 | a |\n", "utf-8")
+    _git(repo, "add", "docs/GAP_REGISTER.md")
+    _git(repo, "commit", "-m", "one row")
+    grown = "| 1 | a |\n| 2 | brand new, uncommitted |\n"
+    doc.write_text(grown, "utf-8")
+    assert mod.main() == 0
+    assert doc.read_text("utf-8") == grown

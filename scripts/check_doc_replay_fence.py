@@ -74,6 +74,44 @@ def check(rel: str) -> dict[str, str] | None:
     return None
 
 
+def _lost_records(rel: str) -> list[str]:
+    """Record ids present in HEAD and absent from the working copy, or [] when none are.
+
+    WHY THIS AND NOT A SIZE THRESHOLD (2026-08-29). The empty-file rule added earlier today
+    caught a working copy at 0 bytes. Hours later the same file came back at 114,688 bytes -- a
+    truncated PREFIX holding 44 of 214 rows -- and sailed through, because a prefix is not empty
+    and its blob appears nowhere in history, so the "somebody is editing" branch left it alone
+    and the fence went quiet over a register missing 170 rows.
+
+    A percentage threshold would be a guess. These files are LEDGERS and they have an exact
+    invariant, already implemented and tested for the commit boundary in
+    scripts/check_protected_records.py: a record that existed must still exist. Rewriting a row's
+    text is ordinary work and passes untouched; making a row VANISH is the failure. Reusing that
+    module rather than restating the rule is deliberate -- one definition of "record", enforced
+    at both boundaries.
+
+    Returns [] for any file whose shape that module cannot read, so an unknown format is governed
+    by the empty rule alone and never by an invented one.
+    """
+    try:
+        # THE SIBLING MODULE LIVES BESIDE THIS FILE, NOT BESIDE THE TREE BEING INSPECTED. ROOT is
+        # the repo under examination and tests point it at a fixture with no scripts/ directory;
+        # resolving the import through ROOT made the import fail there, `records` come back
+        # empty, and the fence report "being edited" over a truncated ledger -- the exact bug
+        # this function exists to fix, reintroduced by its own import line. Caught by its test.
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from check_protected_records import records
+    except Exception:
+        return []
+    head_txt = _git("show", f"HEAD:{rel}")
+    try:
+        work_txt = (ROOT / rel).read_text("utf-8", errors="replace")
+    except OSError:
+        return []
+    lost = records(rel, head_txt) - records(rel, work_txt)
+    return sorted(lost, key=lambda x: (len(x), x))
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     healed: list[dict[str, str]] = []
@@ -98,18 +136,28 @@ def main() -> int:
             # "2 clean, 1 being edited, 0 replayed" and exited 0. Destroyed and being-edited must
             # never render identically (L1.28a). Nobody edits a document by emptying it, and if
             # they do, HEAD still holds every byte.
-            if (ROOT / rel).stat().st_size == 0 and _git("cat-file", "-s", f"HEAD:{rel}") != "0":
+            lost_ids = _lost_records(rel)
+            if lost_ids or ((ROOT / rel).stat().st_size == 0
+                            and _git("cat-file", "-s", f"HEAD:{rel}") != "0"):
                 subprocess.run(["git", "checkout", "HEAD", "--", rel], cwd=ROOT,
                                capture_output=True, text=True, timeout=120)
                 emptied_ok = _git("hash-object", rel) == head
-                line = (f"{now} EMPTIED {rel}: working copy was 0 bytes against a non-empty HEAD "
-                        f"-- restored from HEAD ({'ok' if emptied_ok else 'HEAL FAILED'}). This "
-                        "is destruction, not an edit, and it is not a replay either: the blob "
-                        "appears nowhere in the file's history.")
+                what = (f"lost {len(lost_ids)} record(s) present in HEAD ("
+                        + ", ".join(lost_ids[:8])
+                        + (" ..." if len(lost_ids) > 8 else "") + ")") if lost_ids else \
+                    "was 0 bytes against a non-empty HEAD"
+                line = (f"{now} DESTROYED {rel}: working copy {what} -- restored from HEAD "
+                        f"({'ok' if emptied_ok else 'HEAL FAILED'}). This is destruction, not an "
+                        "edit, and it is not a replay either: the blob appears nowhere in the "
+                        "file's history.")
                 print(line)
                 with LOG.open("a", encoding="utf-8") as f:
                     f.write(line + "\n")
-                rec = {"file": rel, "reason": "empty working copy against non-empty HEAD",
+                rec = {"file": rel,
+                       "reason": (f"working copy lost {len(lost_ids)} record(s) from HEAD"
+                                  if lost_ids else
+                                  "empty working copy against non-empty HEAD"),
+                       "lost_records": lost_ids[:50],
                        "head_blob": head, "working_blob": work,
                        "outcome": "HEALED" if emptied_ok else "HEAL_FAILED"}
                 (emptied if emptied_ok else failed).append(rec)
