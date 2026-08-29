@@ -4494,3 +4494,110 @@ rather than after): at a **matched turnover reduction**, EWMA/geometric smoothin
 gross Sharpe than linear decay. If it loses the same or more, the kernel axis is closed and the
 family's cost problem is confirmed as kernel-independent — which would be the stronger and more
 useful result of the two.
+
+---
+
+## BRAIN HUNTER s31 (2026-08-29) — the eval kernel, not the AST: exact arithmetic for five operators s30 could only name
+
+s30 read `crates/qweave-core/src/expr.rs` and marked the artifact "AST fully enumerated". An AST
+node is a **name and an arity**; it is not semantics. s30's `Sma` entry therefore rested on one
+sentence of the repo's own Chinese documentation (`使用递归平滑系数 m/n`), which is a paraphrase of
+the GTJA report, not the code. This session read `crates/qweave-core/src/alpha_eval.rs` (86 KB,
+never opened by any session) and `crates/qweave-factors/src/qlib_alpha158.rs`, both MIT, both as
+TEXT. The shapes s30 named are confirmed; the arithmetic below is new, and two of the four calibers
+would have produced a wrong implementation if taken from the AST alone.
+
+### `Sma(x, n, m)` — EWMA at α = m/n, **and the state resets to NaN on any gap**
+
+```
+alpha = m / n                         # guard: NaN everywhere if n == 0 or m > n
+state = alpha*value + (1-alpha)*state   if value is finite and state is finite
+state = value                           if value is finite and state is NaN  (seeds on first obs)
+state = NaN                             if value is NOT finite               (RESETS)
+```
+
+**The caliber that matters on this desk and appears nowhere in the docs: a single non-finite input
+DESTROYS the accumulator, it does not skip the bar.** A conventional `ewm(adjust=False)` carries
+its state across a missing observation. On the desk's MT5 tape — holidays, per-symbol calendars,
+the union-index NaNs that silently ate 89% of the cross-section in s28 — those two conventions are
+materially different operators wearing one name, and the difference grows with window length.
+Any desk implementation must choose the convention **explicitly and say which**.
+
+### `Wma(x, n)` — geometric weights, and the direction is the opposite of the naive read
+
+```
+w_oldest = 0.9^(n-1) ... w_newest = 0.9^0 = 1     # weight /= 0.9 walking forward
+result   = sum(w_i * x_i) / sum(w_i)              # normalised, so it is a weighted MEAN
+```
+
+`0.9^i` is ambiguous until you see the loop: the **newest** bar carries the largest weight and the
+decay runs backwards in time. It is also **normalised**, where BRAIN's `ts_decay_linear` is
+conventionally a weighted sum. A desk implementation copying "0.9^i" from s30's note without the
+loop direction would build the time-reversed operator and get a result that is not wrong-looking.
+
+### `ConditionalBeta(y, x, cond, n)` — the conditioning shape with no BRAIN analogue, exactly
+
+```
+over the trailing n bars, keep index i iff cond[i] == 1.0 AND y[i], x[i] both finite
+if fewer than 2 survive -> NaN
+else -> OLS beta on the SURVIVING SUBSET
+```
+
+Note the two calibers: the condition is compared to `1.0` **exactly** (it is a boolean-valued
+expression, not a truthiness test), and the estimator uses a **variable sample size** — the window
+is n bars but the regression may be fit on 2. That is an unadvertised power problem, and any desk
+use needs a minimum-sample guard the source does not have.
+
+### `Slope(x, n)` / `Rsquare(x, n)` / `Resi(x, n)` — regression against the TIME INDEX
+
+Unary, so the regressor is the bar index, not another series. These are the rolling trend-strength
+diagnostics: slope of the fitted line, its R², and the residual of the newest bar. **The desk has
+no rolling-regression operator of any kind** — `libs/research/operators.py` and
+`libs/alpha_factory/wq_operators.py` between them expose eight public functions
+(`group_rank`, `group_zscore`, `vector_neut`, `trade_when`, `ts_backfill`, `ts_information_ratio`,
+`fitness`, `_as_panel`), and not one is a regression. `Rsquare` in particular is a **trend-quality**
+measure with no equivalent anywhere on this desk: it separates "moved a lot" from "moved
+monotonically", which is precisely the distinction every momentum feature in s28/s31 cannot make.
+
+### `Quantile(x, n, q)` — rolling quantile, and s30's list omitted it
+
+Also present, also absent from the desk. Named here for completeness; it is the cheapest of the
+six to implement and the one with the weakest mechanism story.
+
+### The corpus find: `qlib_alpha158.rs` — a FOURTH factor library on this ground, never named
+
+Twenty-three sessions of coverage on the BRAIN ground name alpha101, GTJA alpha191 and the BRAIN
+operator registry. The same repo carries **Microsoft Qlib's Alpha158** (9 kbar + 4 price + 29
+rolling groups × 5 windows ∈ {5,10,20,30,60}), and it is the only one of the three whose factors
+are **entirely per-symbol time-series with no cross-section at all** — which makes it the single
+most MT5-transferable of the three libraries, because it needs no grouping map, no universe and no
+peer set. Every blocker six sessions argued about (s24–s27, and s31's own bucket work) is
+irrelevant to it. The file's own header also documents two calibration divergences from upstream
+qlib (`min_periods=1` vs full-window; 0- vs 1-based `IdxMax`), which is a reimplementation telling
+you where it disagrees with its source — the highest-value kind of README line.
+
+**Routing:** Alpha158 is logged as the next-ground item, NOT as a claim. The prior on published
+factor libraries measured on this desk is bad and stated in `prospector_watchlist.md`
+(alpha101 median Sharpe 0.518 on independent audit, s28). What is different here is the *shape*,
+not the expected return: a library with no cross-sectional dependency is testable on the desk's
+tape without settling any of the grouping questions.
+
+### Boundary
+
+Public MIT source, `raw.githubusercontent.com` and the public contents API, no auth, no wall
+touched, nothing installed or executed (supply-chain rule: mined as TEXT).
+
+### Artifacts exhausted this session (do not re-surface-scan)
+
+`GaomingOrion/qweave`: `crates/qweave-core/src/alpha_eval.rs` — the six kernels above read in
+full; the remainder is the cross-sectional and arithmetic node set already covered by s28.
+`crates/qweave-core/src/alpha.rs` (constructor signatures, complete).
+`crates/qweave-factors/src/gtja_alpha191.rs` — **censused for OPERATORS, which was the assigned
+task, and it is now closed on that axis**: the 191 formulas use exactly the vocabulary
+{`delay` 294, `rank` 139, `ts_sum` 134, `abs`, `ts_mean`, `sma` 82, `where_` 77, `correlation` 55,
+`decay_linear` 33, `delta`, `ts_rank`, `ts_min`/`max`, `power`, `ts_std`, `wma` 2, `slope` 3,
+`ts_argmin`/`argmax`, `covariance`, plus the CN directional primitives `tr`/`hd`/`ld`/`dtm`/`dbm`}.
+**There is no conditioning shape in the 191 that is not already in alpha101 or in the six kernels
+above** — the library's distinctiveness is its *fields* (`amount`, `vwap`, `volume`) and its
+recursive smoother, not its operator algebra. That is a negative result and it closes item 4 of
+s30's next-ground list.

@@ -10344,3 +10344,50 @@ CN factor-mining lectures on Bilibili (`scripts/fetch_video_transcript.py --bili
 already exists and is unused by this seat), quant-conference talks, and university quant-finance
 lecture series. Until then, this seat's video line should read **UNSERVICED (roster gap)**, never
 `0 locked` — the second is a claim the desk cannot cash.
+
+---
+
+## BRAIN HUNTER s31 (2026-08-29) — a grouping axis the desk already owns, and one it does not
+
+### OWNED, and it dissolves the six-session blocker: `bucket()`-constructed groupings
+
+BRAIN's `bucket(rank(x), range=...)` turns a **continuous attribute into a discrete group label**,
+and that label is a legal input to `group_rank`/`group_zscore`. The consequence is the point:
+**a grouping needs one point-in-time scalar per symbol, not a taxonomy.** Since s11 the desk has
+treated the missing grouping map as a DATA gap — hunting for sector maps, CoinGecko categories,
+liquidity tiers it could not measure (s23/s24 found the universe spread field unusable) — and
+s24–s27 spent four sessions arguing about the k of a correlation clustering. None of that is
+necessary to have a grouping. The desk's own tape carries every scalar needed: trailing volatility,
+trailing bar count, trailing beta to XAUUSD, trailing beta to a USD-major basket. PIT by
+construction (attribute from year Y−1, applied in year Y), no external data, no licence, no vendor.
+
+**This is an owned-data axis that was never mined, which is the standing breach the sealed core
+names.** Measured this session in `data/brain_hunter_s31_bucket_groupings.json` against both the
+universe arm and s27's exact restrict-then-permute control; the verdict is in the session note.
+
+### NOT OWNED, and it is the cheapest of the three factor libraries to test
+
+**Microsoft Qlib `Alpha158`** (`GaomingOrion/qweave`, MIT, `crates/qweave-factors/src/qlib_alpha158.rs`):
+9 kbar + 4 price + 29 rolling groups × 5 windows {5,10,20,30,60}. Unlike alpha101 and GTJA
+alpha191, **every Alpha158 factor is per-symbol time-series with no cross-section**, so it needs no
+grouping map, no universe definition and no peer set. It is therefore the only one of the three
+that is testable on this desk's tape without settling any grouping question. Fields required:
+open/high/low/close/volume/vwap — all held. **Logged as ground, not as a claim:** the desk's
+independent audit of alpha101 returned a median Sharpe of 0.518 (s28), so the prior on published
+factor libraries here is bad; what is different is the shape, not the expected return.
+
+### The operator gap this exposes, ranked by mechanism strength
+
+The desk has **no rolling-regression operator of any kind** (eight public functions across
+`libs/research/operators.py` + `libs/alpha_factory/wq_operators.py`, none a regression). Exact
+arithmetic for all of these is now in `search_operator_library.md` §s31:
+
+1. **`Rsquare(x, n)`** — trend QUALITY. Separates "moved a lot" from "moved monotonically", a
+   distinction no momentum feature on this desk can currently make. Strongest mechanism of the six.
+2. **`ConditionalBeta(y, x, cond, n)`** — beta estimated only on bars where a state holds. The one
+   conditioning shape with no BRAIN analogue at all. Needs a minimum-sample guard the source lacks.
+3. **`Sma(x, n, m)`** — EWMA at α = m/n, with a NaN-resetting accumulator. The pre-registered
+   kernel follow-up to s30c's refutation of linear decay.
+4. **`Slope` / `Resi`** — trend slope and newest-bar residual against the time index.
+5. **`Wma(x, n)`** at geometric `0.9^i`, newest-weighted and normalised.
+6. **`Quantile(x, n, q)`** — cheapest to build, weakest story.
