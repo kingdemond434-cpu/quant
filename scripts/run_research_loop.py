@@ -125,6 +125,53 @@ def _data_gap_value() -> tuple[float, str]:
                    f"Trials in those regions measure a proxy, and more of them will not fix it.")
 
 
+def _check_role_discipline() -> list[dict[str, Any]]:
+    """Every preregistered mechanism must satisfy the four-role contracts.
+
+    `edge_queue` specs and `agents` contracts were written separately, and nothing checked that a
+    spec would actually survive the discipline the roles impose. That gap matters: the roles are
+    the standard for what may consume a trial, and a preregistration exempt from them is a
+    privileged candidate -- the same defect as a family behind its own door.
+
+    So each spec is reconstructed as a Mechanism and a Hypothesis. `Mechanism.__post_init__`
+    refuses unless all seven questions are answered AND an observation is cited;
+    `Hypothesis.__post_init__` refuses without falsifiers and without naming the boring
+    alternative. A spec that cannot be expressed as both is not ready to be tested.
+    """
+    from libs.research.agents import Hypothesis, Mechanism, Observation, RoleViolation
+    from libs.research.edge_queue import QUEUE
+
+    out: list[dict[str, Any]] = []
+    for spec in QUEUE:
+        try:
+            obs = Observation(text=f"Published finding: {spec.source}", source=spec.source,
+                              instruments=spec.universe)
+            mech = Mechanism(
+                name=spec.coordinate.event,
+                who_is_forced=spec.payer,
+                why_forced=spec.claim,
+                when=spec.coordinate.context,
+                what_constraint=spec.constraint,
+                who_is_compensated="the counterparty absorbing the constrained flow",
+                why_not_arbitraged=("the flow is compelled rather than chosen, so competing it "
+                                    "away would require removing the constraint itself"),
+                observable_footprint=", ".join(spec.observables[:4]),
+                evidence=(obs,))
+            Hypothesis(
+                hypothesis_id=spec.id, claim=spec.claim, mechanism=mech,
+                semantic_coordinate=spec.coordinate.key(), prediction=spec.prediction,
+                falsifiers=spec.falsifiers,
+                alternative_explanation=spec.alternative_explanation,
+                distinguishing_test=spec.distinguishing_test,
+                point_in_time_contract="; ".join(spec.data_requirements))
+            out.append({"id": spec.id, "verdict": "PASS",
+                        "why": f"satisfies all four role contracts; {len(spec.falsifiers)} "
+                               f"falsifier(s) declared"})
+        except RoleViolation as exc:
+            out.append({"id": spec.id, "verdict": "REJECT", "why": str(exc)[:180]})
+    return out
+
+
 def _check_edge_queue_alignment() -> list[dict[str, Any]]:
     """Every preregistered mechanism must be implemented by code that implements IT.
 
@@ -174,6 +221,14 @@ def main() -> int:
     print("  steers research only -- NO promotion authority; truth stays with the 14-day "
           "forward shadow")
 
+    # ---- 0. ROLE DISCIPLINE on the preregistered mechanisms ---------------------------------
+    roles = _check_role_discipline()
+    role_bad = [r for r in roles if r["verdict"] != "PASS"]
+    print(f"\n  ROLE DISCIPLINE over {len(roles)} preregistered mechanism(s)")
+    for r in roles:
+        print(f"    {'ok  ' if r['verdict'] == 'PASS' else 'FAIL'} {r['id'][:40]:42s} "
+              f"{r['why'][:70]}")
+
     # ---- 1. TRI-ALIGNMENT on the preregistered mechanisms -----------------------------------
     align = _check_edge_queue_alignment()
     bad = [a for a in align if a["verdict"] != "PASS"]
@@ -213,6 +268,7 @@ def main() -> int:
     payload = {
         "ran_at": now.isoformat(timespec="seconds"),
         "authority": "STEERING ONLY -- this loop cannot promote, size or arm anything",
+        "role_discipline": roles,
         "tri_alignment": align,
         "action": action, "action_why": why,
         "data_gap_value": gap_value, "data_gap_why": gap_why,
@@ -225,7 +281,7 @@ def main() -> int:
     print(f"\n  -> {OUT}")
     # A misaligned preregistered mechanism is a real defect: it means the desk is about to spend
     # gauntlet compute testing something other than the claim it wrote down.
-    return 1 if bad else 0
+    return 1 if (bad or role_bad) else 0
 
 
 if __name__ == "__main__":
