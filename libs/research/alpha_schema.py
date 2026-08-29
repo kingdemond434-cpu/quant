@@ -106,6 +106,46 @@ EVENTS: dict[str, dict[str, str]] = {
         "evidence": "realised-volatility structure on this desk's own bars",
         "falsifier": "the effect does not scale with the size of the volatility jump",
     },
+    "hedging_demand_close_flow": {
+        "payer": ("short-gamma dealers and leveraged-product issuers who MUST rebalance into the "
+                  "close, at whatever price the close offers"),
+        "mechanism": ("an intraday move builds a hedging requirement that is mechanically "
+                      "executed in the final window, extending the same direction; the pressure "
+                      "is temporary and unwinds over following days"),
+        "evidence": ("Journal of Financial Economics, 60+ futures across equities, bonds, "
+                     "commodities and currencies 1974-2020: return over the rest of the day "
+                     "predicts the final 30 minutes, tied to short-gamma hedging and leveraged "
+                     "product rebalancing, reversing over subsequent days"),
+        "falsifier": ("a randomly chosen pseudo-close shows the same effect, or effect strength "
+                      "is unrelated to volatility and gamma proxies, or it lives in one symbol "
+                      "only"),
+    },
+    "session_information_handoff": {
+        "payer": ("participants in the session that has not yet repriced the information the "
+                  "prior session absorbed"),
+        "mechanism": ("the market segment that first processes global information becomes the "
+                      "informative one; the opening window of that segment carries the signal "
+                      "and later sessions follow or fade it by regime"),
+        "evidence": ("Chinese gold and silver futures 2025: after night trading was introduced "
+                     "the FIRST HALF-HOUR OF THE NIGHT SESSION replaced the daytime opening as "
+                     "the predictor, with the relationship stronger when preceding COMEX "
+                     "volatility and absolute returns were larger"),
+        "falsifier": ("the informative window does not move when the session structure moves, or "
+                      "the effect is unrelated to the preceding session's information content"),
+    },
+    "gamma_hedging_state": {
+        "payer": ("option hedgers forced to trade with the move when short gamma, and against it "
+                  "when long"),
+        "mechanism": ("dealer gamma sign determines whether hedging flow amplifies or dampens a "
+                      "displacement, so the SAME price move implies continuation in one state "
+                      "and reversal in the other"),
+        "evidence": ("Chinese commodity futures and options, 1-minute data: significant intraday "
+                     "reversal linked to gamma exposure, vega hedging and liquidity, with "
+                     "stronger reversal in high-liquidity states and weaker trend in "
+                     "low-liquidity states"),
+        "falsifier": ("continuation and reversal do not separate by the hedging-state proxy, or "
+                      "the proxy carries no information beyond realised volatility"),
+    },
     "cross_market_lead": {
         "payer": "participants in the slower venue who have not yet repriced",
         "mechanism": "information arrives in one market first and propagates with a lag",
