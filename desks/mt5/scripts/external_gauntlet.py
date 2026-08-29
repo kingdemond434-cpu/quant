@@ -74,6 +74,46 @@ COST_SCENARIO = 3.0
 FRESH_BUILD_BUDGET_SEC = float(os.environ.get("GAUNTLET_FRESH_BUDGET_SEC", "1200"))
 
 
+
+#: The per-hour spread surface, loaded once. Absent -> every cell falls back to the pooled median
+#: and the basis is recorded, because a silent fallback here is a systematic undercharge on
+#: exactly the families that fill in thin books.
+_COST_SURFACE: dict | None = None
+_SURFACE_TRIED = False
+
+
+def _surface() -> dict | None:
+    global _COST_SURFACE, _SURFACE_TRIED
+    if not _SURFACE_TRIED:
+        _SURFACE_TRIED = True
+        try:
+            _COST_SURFACE = json.loads((DATA / "cost_surface.json").read_text("utf-8"))
+        except (OSError, ValueError):
+            _COST_SURFACE = None
+    return _COST_SURFACE
+
+
+def _modal_fill_hour(sigs) -> int | None:
+    """The broker hour this cell actually fills in, or None when it cannot be established.
+
+    A cell is charged the spread of the hour it TRADES, not the median of hours it does not. The
+    signal time plus `wait_bars` is the fill bar, and on H1 that is an hour offset.
+    """
+    hours: dict[int, int] = {}
+    for s in sigs or ():
+        ts = getattr(s, "time", None)
+        if ts is None:
+            continue
+        h = int(getattr(ts, "hour", -1))
+        if h < 0:
+            continue
+        h = (h + int(getattr(s, "wait_bars", 0) or 0)) % 24
+        hours[h] = hours.get(h, 0) + 1
+    if not hours:
+        return None
+    return max(hours.items(), key=lambda kv: kv[1])[0]
+
+
 def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
     """The gauntlet's cost model. `Costs.from_symbol` is the ONLY correct constructor.
 
@@ -256,8 +296,31 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             sigs = fn(h1, **call_params)
         except Exception:
             return None
-    costs = costs_for(sym, meta)
-    return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs, "costs": costs}
+    # CHARGE THE HOUR THIS CELL FILLS IN. `universe.json` carries ONE median spread per symbol,
+    # collapsed at ingest, so every gate has been dividing by a number that averages away the hour
+    # structure -- and the families that fill in thin books are exactly the ones that lose by it.
+    # Measured 2026-08-29: `overnight_gap_decay` fills at broker hour 01 (signal on the day's first
+    # bar, wait_bars=1), where EURZAR spreads measured 1,918 pts against the 310 pooled median. A
+    # 3x "stress" on the pooled number is still cheaper than the real fill.
+    # The surface is OPTIONAL: without it the pooled median still applies and the basis is
+    # recorded, so an undercharge stays visible instead of becoming the silent default.
+    hour = _modal_fill_hour(sigs)
+    surf = _surface()
+    spread_at_hour = None
+    cost_basis = "pooled_median_spread"
+    if surf is not None and hour is not None:
+        try:
+            from research.cost_surface import spread_pts as _sp
+
+            spread_at_hour = _sp(surf, sym, hour)
+        except Exception:
+            spread_at_hour = None
+        if spread_at_hour is not None:
+            cost_basis = f"fill_hour_{hour:02d}_spread"
+    costs = (Costs.from_symbol(meta, spread_pts=spread_at_hour)
+             if spread_at_hour is not None else costs_for(sym, meta))
+    return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs,
+            "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
 
 
 def partition_at_economic_prior(specs: list[dict]) -> tuple[list[dict], list[dict]]:

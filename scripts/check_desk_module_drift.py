@@ -53,6 +53,57 @@ MODULES = [
     # The admission door and the promoter: they decide what may gather forward evidence
     # and what may be promoted. Neither was watched, and both were just changed to open
     # the cure lane beyond one family -- a revert here silently re-closes it.
+    # The one forward verdict all three engines call, and the portfolio-contribution
+
+
+
+
+
+
+
+    # multiplier the gateway sizes with. Both are NEW modules, which is exactly the class
+
+
+
+
+
+
+
+    # the healer used to skip: absent on the box scored the same as an unreachable box.
+
+
+
+
+
+
+
+    "desks/mt5/research/forward_verdict.py",
+
+
+
+
+
+
+
+    "desks/mt5/mt5desk/portfolio_weight.py",
+
+
+
+
+
+
+
+    "desks/mt5/mt5desk/sizing.py",
+
+
+
+
+
+
+
+
+
+
     "desks/mt5/research/shadow_admission.py",
     "desks/mt5/research/promoter.py",
     "desks/mt5/side_channels/promoter_fixed.py",
