@@ -156,6 +156,87 @@ def _blocked_rows() -> list[dict]:
     return rows
 
 
+#: A sleeve the engine has not touched in this long is not "accumulating", it is stopped. Two
+#: hours spans the hourly cycle plus a slow sweep without flagging a merely late run.
+_STALE_ATTEMPT_H = 2.0
+
+#: An ACCUMULATING sleeve older than this with ZERO trades is not early, it is not firing.
+#: Sleeves on this desk average ~8 trades per 12 days, so three days with none is well outside
+#: the normal rate and worth naming rather than waiting out.
+_SILENT_DAYS = 3
+
+
+def _stalled_rows() -> list[dict]:
+    """Sleeves that LOOK alive and are not: stale, silent, or accruing nothing.
+
+    WHY THESE THREE, AND WHY THEY ARE NOT ERRORS. A blocked sleeve announces itself; these do
+    not. `ACCUMULATING` at day 0 with no trades reads exactly like a healthy new sleeve, which is
+    how three scalp rows sat at "day 0/14" for days while their clock was being restamped every
+    cycle. A status that is indistinguishable from health is the one that needs a watchdog most,
+    because nobody will ever go looking for it.
+
+      STALE_SOURCE / stale attempt -- the engine stopped evaluating this row at all.
+      SILENT        -- alive for days, zero fills: the signal is not firing or is being dropped.
+      CLOCK_AHEAD   -- forward_start later than its own first trade (see check_forward_clock).
+
+    Reported, never auto-reset. Each has a DIFFERENT cause -- a dead engine pass, a missing input,
+    a broken signal, a restamped clock -- and the one shared response ("set it back to ACTIVE")
+    would hide all four while fixing none.
+    """
+    now = datetime.now(tz=UTC)
+    out: list[dict] = []
+    for name in LEDGERS:
+        f = SHADOW / name
+        if not f.exists():
+            continue
+        try:
+            data = json.loads(f.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        rows = data.get("sleeves", data) if isinstance(data, dict) else {}
+        for key, st in rows.items():
+            if not isinstance(st, dict):
+                continue
+            status = str(st.get("status") or "")
+            if status.startswith("RETIRED") or status in ("KILL", "PROMOTED"):
+                continue
+            n = int(st.get("n") or 0)
+
+            if st.get("bar_source_stale"):
+                out.append({"ledger": name, "key": key, "kind": "STALE_SOURCE", "n": n,
+                            "why": f"bar source {st.get('bar_source')} is stale; the row cannot "
+                                   f"accrue honest forward evidence until it is fresh"})
+                continue
+
+            last = _parse_ts(st.get("last_attempt_at"))
+            if last is not None:
+                age_h = (now - last).total_seconds() / 3600.0
+                if age_h > _STALE_ATTEMPT_H:
+                    out.append({"ledger": name, "key": key, "kind": "STALE_ATTEMPT", "n": n,
+                                "why": f"engine last evaluated this row {age_h:.1f}h ago; the "
+                                       f"hourly cycle is not reaching it"})
+                    continue
+
+            start = _parse_ts(st.get("forward_start"))
+            if n == 0 and start is not None:
+                days = (now - start).days
+                if days >= _SILENT_DAYS:
+                    out.append({"ledger": name, "key": key, "kind": "SILENT", "n": 0,
+                                "why": f"{days} days enrolled and ZERO trades -- the signal is "
+                                       f"not firing or its fills are being dropped"})
+    return out
+
+
+def _parse_ts(v: object) -> datetime | None:
+    if not isinstance(v, str) or not v:
+        return None
+    try:
+        d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return d if d.tzinfo else d.replace(tzinfo=UTC)
+
+
 def _idle_certificates() -> dict:
     """Certificates that should have a forward clock and do not.
 
@@ -201,7 +282,7 @@ def main() -> int:
     rows = _blocked_rows()
     report: dict = {"checked_at": now.isoformat(timespec="seconds"),
                     "blocked_total": len(rows), "healed": [], "unfixable": [],
-                    "watchlist_gap": [], "idle": {}}
+                    "watchlist_gap": [], "idle": {}, "stalled": []}
 
     print(f"FORWARD LANE {now.isoformat(timespec='seconds')}")
     print(f"  blocked sleeves: {len(rows)}")
@@ -244,6 +325,16 @@ def main() -> int:
             for rel in gap:
                 print(f"    {rel}  -> add to MODULES in scripts/check_desk_module_drift.py")
 
+    stalled = _stalled_rows()
+    report["stalled"] = stalled
+    if stalled:
+        from collections import Counter
+        kinds = Counter(r["kind"] for r in stalled)
+        print(f"\n  STALLED ({len(stalled)}) -- alive-looking rows that are not accruing: "
+              f"{dict(kinds)}")
+        for r in stalled[:10]:
+            print(f"    {r['kind']:14s} {r['key'][:40]:42s} {r['why'][:70]}")
+
     report["idle"] = _idle_certificates()
     idle_n = report["idle"].get("idle_count")
     if idle_n is not None:
@@ -262,7 +353,7 @@ def main() -> int:
     print(f"\n  -> {OUT}")
     # Idle certificates are a real finding but not this script's to fix, so they do not fail it;
     # a sleeve still blocked after a heal attempt is, because it means the lane is still stopped.
-    return 1 if report["unfixable"] else 0
+    return 1 if (report["unfixable"] or report["stalled"]) else 0
 
 
 if __name__ == "__main__":

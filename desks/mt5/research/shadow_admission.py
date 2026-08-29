@@ -254,6 +254,31 @@ def authorized_runs(base: Path = BASE) -> list[dict]:
 
 
 def run_key(run: dict) -> str:
-    """Stable per-parameterization clock key: SYMBOL.selector#p1=v1_p2=v2 (sorted, so stable)."""
-    sig = "_".join(f"{k}={run['params'][k]}" for k in sorted(run["params"]))
-    return f"{run['symbol']}.{run['selector']}#{sig}"
+    """The clock key for an authorized run -- DELEGATED to the engine that writes the ledger.
+
+    THIS FUNCTION USED TO BUILD ITS OWN KEY, and it built a different one. It returned
+    `AUDCHF.asia#` where the forward engine's `sleeve_key` writes `AUDCHF.overnight_gap_decay.asia`
+    -- a different shape (family omitted), a different signature rule (every param, rather than
+    only those differing from the window default) and a trailing `#` on empty params. Two builders
+    for one identity, in the two modules that must agree about which clock is which.
+
+    It survived because NOTHING IN PRODUCTION CALLED IT. The disagreement was real from the day it
+    was written and cost nothing until something finally compared authorized runs against the
+    ledger, at which point it reported 34 of 35 certificates as having no clock -- every one of
+    them running. An orphaned function is not harmless; it is a wrong answer waiting for its first
+    caller, and this desk has now been given that wrong answer twice.
+
+    The engine's key is canonical because the engine writes the file. Imported lazily for the same
+    reason `shadow_forward` imports THIS module lazily: they need each other and neither may own
+    the other's import time.
+    """
+    # Reachable both ways: the box runs this with `desks/mt5/research` on sys.path, while checks
+    # on the VPS import it as `research.shadow_admission`. A single-form import works in whichever
+    # context its author happened to test and fails in the other.
+    try:
+        from shadow_forward import sleeve_key
+    except ImportError:
+        from research.shadow_forward import sleeve_key  # type: ignore[no-redef]
+
+    return sleeve_key(run["symbol"], run["selector"], run.get("params") or {},
+                      run.get("family") or "session_range_breakout")
