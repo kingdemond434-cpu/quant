@@ -9673,3 +9673,115 @@ edge-blocked to this box on BOTH HTTP/2 (INTERNAL_ERROR) and HTTP/1.1 (timeout) 
 5. **The Wayback CDX walk of `sr-sv.com`'s remaining 5,467 URLs** — 36 MT5-relevant titles were
    surfaced via the aggregator, but the aggregator only indexes what it chose to feature; the
    archive holds the whole blog, so the MT5 count there is a **floor, not a total**.
+
+---
+
+## BRAIN HUNTER — session 8 (2026-08-29, dedicated daily organ)
+
+**§33 first:** the gate reports **BACKLOG-CLEAR, all 26 carded finds disposed** — mining
+authorised, no dispositions owed by this seat at entry.
+
+**Ground entered from s7's own next-ground list, items 1 and 2** — which is the first time this
+seat has picked a dig from a *measured population* (`data/brain_repo_population.json`) rather
+than from whichever handoff happened to name a repo. That ordering change is s7's deliverable
+working.
+
+### Sources worked
+
+| Source | What lives there | How found | Verdict |
+|---|---|---|---|
+| `github.com/CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, **NO LICENCE**) | `alpha50.csv` — 50 mutually-independent alphas with full settings + performance | s7 next-ground #1 | **RICHEST NODE THIS SESSION — read for mechanism only → OP-102, and it re-pointed the whole seat** |
+| `efJerryYang/.../src/alpha_pool/expression.py` (GPL-3.0) | the fast-expression operator implementations | s7 next-ground #2 — **path corrected**, see below | **RICH → OP-104 (three documented defects)** |
+| The desk itself, measured with OP-102's ruler | `edge_search.resolve_inputs` / `edge_search_results.json` / 197 universe parquets | OP-103 (apply the mined operator here first) | **HIGHEST-VALUE OUTPUT OF THE RUN — R0715/R0716/R0717** |
+
+### What came back
+
+- **OP-102 — independence is bought with FIELD breadth, not operator breadth.** Measured over all
+  50 rows: **50 alphas, 50 distinct fields, 8 operators** (`rank` 28 + `ts_mean` 18 = 46/50),
+  median formula **20 characters**. The README's proprietary-sounding *"unique method"* that found
+  *"over 400"* such alphas is structurally *enumerate the field catalogue and rank each field*.
+  Two alphas over the same field cannot be independent however different their operators. **This
+  seat has attacked the desk's scarcest axis from the operator side for six sessions
+  (OP-093…OP-101); the one published artifact whose stated purpose is constructing an independent
+  set says the currency is the DATA FIELD.**
+
+- **OP-103 — and applying it to this desk was worth more than the alphas.** The desk's generic
+  search builds ~4,900 primitives per symbol from **one raw field family**. Running
+  `resolve_inputs` directly: `TypeError: Cannot join tz-naive with tz-aware DatetimeIndex` at
+  `edge_search.py:296`, on the first symbol. **173/197 universe parquets are tz-naive and 24 are
+  tz-aware UTC** — the partial-sync generation split — so the cross-section `pd.concat` always
+  mixes generations, the caller swallows the raise into a `print`, and the unwind discards the
+  peer keys built above it. **Verified from the OUTPUT, not the code: today's
+  `edge_search_results.json` (3,543 hypotheses, 05:55, the live nightly Contabo run) contains
+  ZERO features matching `ext_`.** Peers, cross-section, triangular residual, tick book, swap,
+  macro and COT are all absent from the desk's live generic discovery engine and have been
+  silently. **R0715.**
+
+- **Two more readers pointed at shapes that do not exist, and one of them is a class that was
+  fixed yesterday and not swept.** `edge_search.py:370` keeps top-level numerics from
+  `macro_state.json`, which is nested (`updated`/`series`/`states`/`differentials`) with **zero**
+  top-level numerics — the 22 FRED series sit one level down. `orthogonal_sweep.py:_macro_series`
+  **diagnosed and fixed this exact defect on 2026-08-28 and names it verbatim in its docstring**;
+  the sibling consumer of the same file was never checked. Same block: `list(macro.items())[:6]`
+  is a hardcoded cap on the exact axis OP-102 identifies as the bottleneck, and
+  `pd.Series(float(v), index=index)` would broadcast today's scalar across all history — zero
+  variance plus a look-ahead in the conditioning variable, which `orthogonal_sweep` itself records
+  as *"worse than the failure"*. And `edge_search.py:375` reads `cot_tff.json`/`cot.json`/
+  `cot_disagg.json` when the artifacts are **directories of per-currency parquet**. **R0716,
+  R0717.** Both axes are named first-class in `RESEARCH.md` §2.
+
+- **OP-104 — three documented defects in the alpha101 ancestor implementation**, one of which is
+  a live look-ahead class: `decay_linear` calls `fillna(method="bfill")` **inside the feature
+  transform**, filling a missing observation with a future one, under a comment asserting *"the
+  backtest engine should assure to be snooping bias free"* — the engine cannot repair a feature
+  built from the future before it ever sees it (the desk's own R0289 blind spot). *Checked against
+  this desk the same session: **no `bfill`/`fillna(method=)` in any feature builder under `libs/`
+  or `desks/mt5/` — the desk is clean on this class**, recorded as a verified negative rather than
+  assumed.* Also: `rank(df, rate=2)` **accepts `rate` and never reads it**, while the file's own
+  quoted official description says the platform's default rank is *approximate* (`rate=0` is the
+  precise one) — so the operator carrying 28 of OP-102's 50 alphas is quantised by default. That
+  is the **second** parsed-but-unconsumed settings key found in this one repo (s7 found
+  `neutralization` at `simulate.py:257`), and its README carries the open question *"results are
+  still different from the platform's"*.
+
+- **Trial-accounting fact recorded about their process, never imported (L1.6).** Sharpe across the
+  50 is min = median = **1.25** = the stated submission bar, max 1.29 — a mass point at a
+  threshold, not a distribution. Eleven singleton non-round `Decay` values (13, 18, 52, 55, 65,
+  70, 78, 90, 95) across a 4-axis settings grid make each published alpha the **argmax over an
+  unreported per-alpha settings search**. The performance column is informative about the filter
+  and uninformative about edge. **Base rate for OP-101: 48/50 carry a neutralization setting**
+  (Subindustry 19 · Market 17 · Sector 8 · Industry 4); only 2 run `None`.
+
+### Coverage bookkeeping
+
+- **EXHAUSTED (dated):** `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` — the whole repo is
+  `README.md` + `alpha50.csv` and both were read and fully tabulated, **2026-08-29**. Nothing
+  remains; no seat re-scans it. Statistics saved to `data/brain_hunter_s8_20260829.json`. ·
+  `efJerryYang/.../src/alpha_pool/expression.py`, **2026-08-29**.
+- **PATH CORRECTION for the next seat:** s7's handoff recorded the parser at
+  `src/simulator/alpha_pool/expression.py`, which **404s**. The tree listing gives
+  `src/alpha_pool/expression.py`. Remaining unmined in that repo: **`src/alpha_pool/alpha101.py`
+  (43KB)**, `src/datasource/database.py`, `src/simulator/util.py`.
+- **Video:** 0 fetched, 0 locked — no video route attempted; s5's finding that the BRAIN lecture
+  corpus is SOURCE-walled at 93.75% is unchanged and was not re-probed.
+- **§13:** every read was the public GitHub API and `raw.githubusercontent.com`. No
+  `api.worldquantbrain.com` call, no authenticated surface, no login, no platform-internal data.
+  **`CrisperX` carries NO LICENCE (all rights reserved)** — read for MECHANISM ONLY: the outputs
+  are *statistics computed over* the file (counts, distributions, settings histograms) and a
+  structural claim, and **not one expression is copied into this desk or proposed for copying**.
+  The simulator is GPL-3.0 and held to the same boundary.
+- **Freeze respected:** no `scripts/`, `libs/`, executor, rail or live-state file was modified.
+  Three defects found in `desks/mt5/research/edge_search.py` were **ledgered, not patched**.
+
+### NEXT UN-EXHAUSTED GROUND (for s9, in order)
+
+1. **`Miasyster/QuantGPT` (456★, MIT)** — the largest unmined artifact on the measured population
+   and cleanly licensed.
+2. **`src/alpha_pool/alpha101.py` (43KB)** — 101 reference alphas in executable form; per OP-102
+   the thing to extract is **the field vector, not the formulas**: which distinct input fields
+   the 101 span, and how many of those fields have an MT5 analogue. That count is a direct
+   estimate of this desk's reachable independence ceiling.
+3. **`QuantML-Research/wq-alpha-research` (369★)** and **`YHYYDS666/WorldQuant-Brain-Alpha`
+   (338★)** — next by stars, both untouched.
+4. **Re-run the population sweep paced** — s7's 97 repos is a floor (the unauthenticated search
+   API 403'd on query 8 of 10), and the ranking should be refreshed before it is spent again.

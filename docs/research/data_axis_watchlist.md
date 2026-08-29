@@ -7852,3 +7852,45 @@ smallest number in this run, `sd = 0.01 bp`, is the one that killed an indicator
 > **s14 CATALOGUE ENTRY (provenance, superseded by the s15 verdict on the heading):** **CATALOGUED, UNVERIFIED** (named honestly rather than claimed: discovered in the `jonathankinlay.com` blogroll and corroborated by Quantocracy pingbacks on two posts read this run, but its robots have NOT been read and its population has NOT been enumerated. The interest is that it is a **population enumerator**, not a blog — the OP-098 class that Wayback CDX was for track-record sites — and this seat's two capped hand-priorities are anti-consensus obscurity and ex/solo-quant long-form, which is exactly what it indexes. Alongside it, the same blogroll's dormant solo long-form: QUSMA (Alexander Pagonidis), Quant at Risk, QuantStrat TradeR, Systematic Investor, Trading the Odds, The Aleph Blog, Factor Wave, System Trader Success, EP Chan — era-archaeology class, several likely dead and reachable only via Wayback CDX. **First action is robots, then enumerate; do not browse.**) [§33: screened -> data/intelligence/quantocracy_blogosphere_index.json]
 
 > **VERIFIED AND EXHAUSTED 2026-08-28 (prospector s15) — the instruction above was followed exactly.** robots.txt is a single `User-agent: *` group with **ZERO directives** = fully allowed. `sitemap.xml` 301s to `sitemap_index.xml` (the silent-redirect trap s14 flagged). **Enumerated, never browsed:** 3 post-sitemaps -> **2,317 index pages**, all fetched, **0 errors** -> **6,908 dated items / 373 blogs / 369 hosts / 2015-04-09 -> 2026-08-27**, saved to `data/intelligence/quantocracy_blogosphere_index.json`. Naming convention changes end-2024 (`daily-wrap-for-` -> `recent-quant-links-...-as-of-`); both parsed. **NOTE the trap: `/feed/?paged=2` returns BYTE-IDENTICAL content to `/feed/` (md5 match) — the RSS route silently caps and would have understated the population by ~99%; the sitemap is the only honest enumerator.** `wp-json` is 404. **GRADE FOR THIS DESK'S MANDATE: THIN — measured, not felt.** Only **445/6,908 (6.4%)** of titles touch FX/metals/rates/commodities/index futures; the corpus is overwhelmingly US equity-factor and asset allocation. **358/369 hosts are absent from the desk's entire `docs/` corpus** (6 of the 11 'known' are generic: medium, t.co, youtube, arxiv, ssrn, substack), so the enumeration is real new ground — it is simply mostly off-mandate. Value is concentrated by MT5-hit density, not volume: **SR SV 36/161 (22.4%)**, Relative Value Arbitrage 16/89, Quantpedia 52/382, Flirting with Models 23/274 — while Alpha Architect, the largest contributor at 984 items, is 3.6%. **This source is now enumerated once and for all; no future run re-scans it — query the saved index.** [§33: screened -> data/intelligence/quantocracy_blogosphere_index.json]
+
+### 73. [dig 2026-08-29 (BRAIN hunter s8)] **THE FIELD-COUNT AXIS ITSELF — the desk's independence bottleneck is raw-field intake, and the live generic search currently consumes ZERO external fields** — grade: **MEASURED DEFECT, ledgered R0715/R0716/R0717**
+
+**Not a source card. An axis card, and it re-prices every source card above it.** OP-102, measured
+over `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon`: 50 mutually-independent alphas are
+built from **50 distinct data fields and 8 operators**, of which `rank` + `ts_mean` cover 46; the
+median formula is 20 characters. Independence is bought in the units of the **data catalogue**,
+not the expression grammar — two alphas over the same field cannot be independent however
+different their operators, and two ranks over different fields are near-independent by
+construction. **The number of mutually-independent alphas a research process can produce is
+bounded above by its count of weakly-correlated input FIELDS.**
+
+**Applied to this desk the same session, and the number is zero.** `edge_search.build_primitives`
+produces ~4,900 primitives per symbol from a raw intake of **one field family** (OHLCV + spread /
+tick volume). Every external family — peer residuals, lead-lag, cross-sectional state, triangular
+residual, tick-book spread/flow, broker swap, macro, COT — is supplied by `resolve_inputs`, and
+`resolve_inputs` **raises on every symbol**:
+
+- `TypeError: Cannot join tz-naive with tz-aware DatetimeIndex` at `edge_search.py:296`
+  (the cross-section `pd.concat`). **173 of 197 universe `_H1.parquet` files are tz-naive, 24 are
+  tz-aware UTC** — the partial-sync generation split of 2026-08-28 — so the concat always mixes
+  generations.
+- The caller (`edge_search.py:612`) catches it into a `print` and proceeds on pure OHLCV; the
+  unwind **discards the peer/lead/corr keys already built above the raise**.
+- **Proof from the output, not the code:** today's `edge_search_results.json` — 3,543 hypotheses,
+  written 05:55 on the nightly Contabo run — contains **ZERO** features matching `ext_`.
+
+**Two further faults that survive the tz repair**, both in readers pointed at shapes that do not
+exist: `macro_state.json` is read for **top-level numeric scalars** and has none (the 22 FRED
+series are nested one level down under `series`) — the identical defect was fixed in
+`orthogonal_sweep.py:_macro_series` on **2026-08-28** and the sibling reader of the same file was
+never swept; and the COT reader names `cot_tff.json` / `cot.json` / `cot_disagg.json` when the
+artifacts are **directories of per-currency parquet**. Both axes are named **first-class** in
+`RESEARCH.md` §2 and both contribute nothing.
+
+**CONSEQUENCE FOR THIS WATCHLIST.** Every source card above is worth more than it looked, and the
+marginal research unit belongs on **raw field intake** ahead of further operator or interaction
+expansion — the desk holds more operators than fields by two orders of magnitude. But the *first*
+unit belongs on R0715, because until it lands, a newly-acquired field cannot reach the generic
+search at all: it would be added to `resolve_inputs`, which raises. **A data axis wired into a
+function that always throws is an acquisition the desk has paid for and declined.**
+[§33: wired -> R0715/R0716/R0717 + data/brain_hunter_s8_20260829.json + OP-102/OP-103]

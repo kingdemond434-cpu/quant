@@ -3658,3 +3658,145 @@ Two consequences worth carrying forward:
   instrument cannot be demeaned within its class and would silently fall into whatever the
   grouping code's default bucket is. That is the WS-005 shape (absence read as a clean verdict);
   it should fail loud, not default. Named here, routed, not patched — research-only freeze.
+
+---
+
+## OP-102 — MUTUAL INDEPENDENCE IS BOUGHT WITH FIELD BREADTH, NOT OPERATOR BREADTH (BRAIN hunter s8, 2026-08-29)   [active]
+
+**Source.** `github.com/CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon` (85★, 2023-10, **no
+licence — all rights reserved, read for MECHANISM ONLY**, statistics computed over it, not one
+expression copied here). Its entire stated purpose is the desk's own scarcest axis: *"50 alphas
+that can pass the correlation test if they are submitted together."* s7 ranked it #1 on the
+measured population precisely because it is boring; that ranking was right.
+
+**WHAT IT COMPUTES — measured over all 50 rows of `alpha50.csv`, not read off the README:**
+
+| quantity | value |
+|---|---|
+| alphas | 50 |
+| **distinct data fields** | **50** |
+| distinct operators | **8** — `rank` 28, `ts_mean` 18, `ts_zscore` 2, `sum`/`delay`/`group_rank`/`ts_av_diff`/`ts_corr` 1 each |
+| median formula length | **20 characters** (min 13, max 137) |
+| field families | `mdf_*` model-derived 22 · `fnd6_*` fundamentals 18 · price/volume 6 · ratio/analyst/sector 5 |
+
+`rank` + `ts_mean` cover **46 of 50**. The median alpha is literally a field wrapped in one
+operator. The README's proprietary-sounding *"unique method"* that found *"over 400"* such alphas
+is, structurally, **enumerate the field catalogue and rank each field**.
+
+**THE MECHANISM, stated so it can be implemented without the source.** Two alphas over the same
+input field cannot be independent however different their operators — the operator is a monotone
+or near-monotone re-expression of one underlying quantity, so the cross-sectional orderings stay
+coupled. Two `rank()`s over *different* fields are close to independent **by construction**,
+because their correlation is inherited from the correlation of the raw fields and nothing else.
+**Operator variety re-describes one signal; field variety adds signals.** Independence is
+therefore purchased in the units of the DATA CATALOGUE, and the number of mutually-independent
+alphas a research process can produce is bounded above by its count of weakly-correlated input
+FIELDS, not by the size of its expression grammar.
+
+**MT5 ANALOGUE AND WHY IT MATTERS HERE.** The desk's marginal-independence problem (L1.18,
+L1.61 — *"selection optimises MARGINAL INDEPENDENCE directly, so a second copy of a held edge
+scores ~0"*) has been attacked from the OPERATOR side for six BRAIN sessions (OP-093…OP-101) and
+by the generic search's ~4,900 primitives per symbol. This artifact says the attack is on the
+wrong axis. `edge_search.build_primitives` derives **>130 named transforms and ~4,900 primitives
+including pairwise interactions from a raw intake of OHLCV + spread/volume** — one field family.
+An interaction `x_a__b` of two transforms of `close` is not a new field; it is a fourth
+re-description of the same field, and it is counted as a trial while contributing nothing to
+independence. **The desk is transform-rich and field-poor, which is the exact inverse of the one
+published artifact whose purpose is constructing an independent set.**
+
+**THE OPERATIONAL CONSEQUENCE, and it is a reallocation, not a note.** Marginal spend on the
+independence axis belongs on RAW FIELD INTAKE — the free-data seats, the macro/COT/curve/flow
+axes, the desk's own tape aggregates — ahead of further operator or interaction expansion. A new
+field is worth more than a new operator whenever the desk already holds more operators than
+fields, which it does by two orders of magnitude. This is the value-of-information argument
+behind the free-data mining seats, and it now has a measurement behind it rather than a prior.
+
+**AND IT IS WHY THIS SESSION WENT AND COUNTED — see OP-103.** Applying this operator to the desk
+itself was what surfaced R0715: the desk's live generic discovery engine consumes **zero**
+external fields, because the whole external axis raises and is swallowed.
+
+**Trial-accounting fact recorded about their process, NEVER imported as a gate (L1.6).** Sharpe
+across the 50 is min = median = **1.25** = the platform's stated submission bar, max 1.29 — a
+mass point at a threshold, not a distribution. The settings grid (Universe × Decay × Truncation ×
+Neutralization) carries eleven singleton non-round `Decay` values (13, 18, 52, 55, 65, 70, 78, 90,
+95), so each published alpha is the **argmax over an unreported per-alpha settings search**. The
+performance column is informative about the filter and uninformative about edge. Their bar is a
+fact about them; ours is 5.236 deflated and does not move.
+
+**Base rate for OP-101, measured here:** **48 of 50** alphas carry a neutralization setting
+(Subindustry 19 · Market 17 · Sector 8 · Industry 4); only 2 run `None`. Neutralization is the
+default in the reference process and is entirely absent from `wq_operators.py`.
+
+---
+
+## OP-103 — APPLY EVERY MINED OPERATOR TO THIS DESK BEFORE FILING IT: OP-102 POINTED AT R0715 IN ONE COUNT (BRAIN hunter s8, 2026-08-29)   [active]
+
+**The pattern, and it is a research method rather than a finding.** OP-102 says independence is
+bought in units of input FIELDS. The next action after extracting a mechanism is not to file it —
+it is to **run its measurement against this desk's own artifacts** and see what the number says
+here. That single step, costing one command, converted a mined observation about a stranger's
+equity alphas into a live defect in the desk's nightly discovery engine:
+
+- Count the desk's raw input fields → read `edge_search.resolve_inputs` → **run it** →
+  `TypeError: Cannot join tz-naive with tz-aware DatetimeIndex` at `edge_search.py:296`, on the
+  first symbol tried.
+- Verify from the OUTPUT rather than the code (the standing lesson): today's
+  `edge_search_results.json` — 3,543 hypotheses, written 05:55 — contains **ZERO** features
+  matching `ext_`. Not one peer residual, lead-lag, cross-sectional, triangular, tick-book, swap,
+  macro or COT feature has entered the desk's generic search.
+- Root cause, measured: **173 of 197 universe `_H1.parquet` files are tz-naive and 24 are
+  tz-aware UTC** — the partial-sync generation split recorded on 2026-08-28. The cross-section
+  `pd.concat` at line 296 therefore always mixes generations. The caller at line 612 catches the
+  raise into a `print` and continues on pure OHLCV, and because the raise unwinds the whole
+  function it **discards the peer/lead/corr keys already built above it** (one family's failure
+  destroys 1..N−1).
+
+**Ledgered R0715 (tz + per-family isolation), R0716 (macro reader reads the wrong nesting level
+and would broadcast a scalar), R0717 (COT reader names `.json` files that are parquet
+directories). Not patched — research-only freeze.**
+
+**The transferable rule:** a mined mechanism is a *measuring instrument*. File the mechanism, but
+point it at this desk first — the yield from measuring ourselves with a stranger's ruler beat the
+yield from the stranger's alphas by a wide margin this session, and it will usually do so, because
+nobody else has ever measured us.
+
+---
+
+## OP-104 — `bfill` INSIDE A FEATURE TRANSFORM IS A LOOK-AHEAD THE CAUSAL GUARD CANNOT SEE (BRAIN hunter s8, 2026-08-29)   [active]
+
+**Source.** `efJerryYang/worldquant-brain-simulator` → `src/alpha_pool/expression.py` (GPL-3.0,
+mechanism-only read; note the path — s7's handoff recorded `src/simulator/alpha_pool/…`, which
+**404s**; correct path is `src/alpha_pool/expression.py`). The file credits
+`yli188/WorldQuant_alpha101_code` as its origin, so this is the ancestor of a widely-forked
+alpha101 lineage rather than one author's slip.
+
+**Three documented defects in the reference implementation, all of them classes this desk knows:**
+
+1. **`decay_linear` calls `df.fillna(method="bfill")` before weighting.** Backfill inside a
+   feature transform fills a missing observation with a **future** one. It is a look-ahead in the
+   FEATURE, and it survives every guard that checks the alignment of signal to return — the
+   desk's own R0289 blind spot exactly (`check_causal` passes a full-sample `z(funding)`). The
+   function's own comment says *"The backtest engine should assure to be snooping bias free"*,
+   which is the assumption that lets the leak live: **the engine cannot repair a feature that was
+   built from the future before the engine ever saw it.**
+   *Verified against this desk the same session: `grep` for `bfill` / `fillna(method=` across
+   `libs/` and `desks/mt5/` returns **no hits in any feature builder** — the only matches are the
+   word "backfill" in `perishability.py` and friends. **The desk is clean on this class**, and
+   that is a verified negative worth recording rather than an assumption.*
+2. **`rank(df, rate=2)` accepts the `rate` parameter and never reads it.** The official operator
+   is documented *in the file's own quoted description* as approximate by default —
+   *"When rate is set to 0, the sorting is done precisely. The default value of rate is 2"* — so
+   the platform's canonical `rank`, the operator carrying 28 of OP-102's 50 independent alphas,
+   is a **quantised** rank unless explicitly told otherwise. The reimplementation silently does
+   an exact `df.rank()`.
+3. **`decay_linear` also calls `df.as_matrix()`**, removed from pandas in 1.0 (2020), and returns
+   `columns=["CLOSE"]` — collapsing a multi-symbol panel to one hardcoded column name. The
+   function cannot execute on any modern pandas.
+
+**THE TRANSFERABLE LESSON, now on its second instance in this one repo.** s7 found
+`simulate.py:257` parsing `neutralization` into a variable never read again. Here, `rank` parses
+`rate` and never reads it. **A settings key that is parsed but not consumed is indistinguishable,
+from the outside, from one that works** — and this repo's README carries the open question
+*"results are still different from the platform's"* with two such keys sitting unread in it. The
+desk's own version of this is the gap-wirer class: *a producer computes a distinction, the
+consumer collapses it.* Where a config key is accepted, assert it is consumed.
