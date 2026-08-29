@@ -13109,3 +13109,138 @@ raw.githubusercontent and the GitHub public API; no login, no wall, no access co
    needed, immediately implementable on desk tape. Carried from s28, still untouched.
 5. **The BRAIN-scoped collector arm — now TWENTY-TWO sessions old.** Belongs to a seat that is not
    research-frozen.
+
+## BRAIN HUNTER s30 — 2026-08-29 — one refutation, one inventory correction, one re-dug artifact
+
+Three measured arms were launched; two completed inside the session and are reported here with
+their numbers. The third (the horizon-crossover pre-registration, s29's named ground #1) was still
+computing when this note was written and is reported in its own section below — **its
+pre-registration was written and committed before any of its numbers existed**, which is the only
+property that makes it worth anything.
+
+### 1. `decay_linear` as a cost lever — REFUTED on both arms, pre-registered
+`data/brain_hunter_s30c_decay_lever.json` · `data/brain_hunter_s30c_decay_lever.py` ·
+ledgered in `docs/graveyard.md`
+
+s29b named feature smoothing as **the one identified lever** on the constraint that kills every
+cell in this family. BRAIN ships it as a first-class setting (`decay: 30`); this run ported the
+mechanism (linear weights d, d−1, …, 1, rolled over each symbol's own valid observations) and
+swept d ∈ {1,2,3,5,10,20,30} on `reversal_1`, both neutralisation arms, 2019–2026.
+
+- **Mechanical check PASSED both arms** — turnover strictly decreasing in d (ward 1.467 → 0.703).
+  The port does what the operator says, so what follows refutes the claim, not the code.
+- **Substantive claim REFUTED both arms** — break-even bp **maximised at d = 1**. Ward: 1.596 at
+  d=1, then 0.903 / 0.787 / 0.376 / 0.806 / 0.785 / 0.706. Universe: same shape.
+- **The mechanism is visible and it is the useful part.** One step of smoothing costs **51% of
+  gross Sharpe** (0.759 → 0.368) to buy a **15% turnover cut**. A one-day reversal's information
+  is in the most recent bar; averaging is mostly deletion.
+
+**Both identified cost levers for this family are now refuted with pre-registered falsifiers**
+(coarse rank, s29b; decay, s30c). The family is dead on cost at ~1.6 bp break-even against ~147%
+daily turnover, and three sessions have gone into lowering the cost of a signal whose gross edge
+cannot pay an MT5 spread. **The recommendation is to stop rescuing it** and move to the grouping-
+construction axis below. What is NOT killed: decay as an operator, decay on slower features, and
+the platform's `ts_target_tvr_*` solver approach (routed, untested).
+
+### 2. The operator inventory — the desk implements SIX of 108, and I got it wrong first
+Re-read of `AshSwing/FastPlus` (MIT). **This artifact was marked "fully parsed, 108/108" in s28's
+own exhaustion list and I re-fetched and re-parsed it before reading that line** — producing a
+strictly worse duplicate census, since deleted. The exhaustion list worked; the habit of reading
+it before fetching did not. Recorded as my defect.
+
+Three things the re-read produced that s28's note did not carry:
+
+- **`Group` is a PRODUCED type.** `bucket(x, range=…) → Group`, `group_cartesian_product(g1,g2)`,
+  `densify(g)`. The platform's documented idiom is `bucket(rank(x), range='0,1,0.1')` — it
+  **manufactures a grouping from any numeric field**, per bar, PIT by construction. **s11–s28
+  spent six sessions treating the missing grouping as a data-acquisition problem** (hunt a
+  taxonomy, build ward clusters, argue about k). It was a **code** gap wearing a data gap's
+  clothes. Worse: `(Matrix)->Group` was **already recorded in s28's own committed artifact** and
+  went unread for a session, because the census was reported as a count and never interrogated as
+  a structure. Routed to `data_axis_watchlist.md` with seven buildable MT5 groupings; **s31's
+  first ground**; nothing measured.
+- **The turnover family is a SOLVER, not a grid.** Six operators aim at turnover and three
+  (`ts_target_tvr_decay/hump/delta_limit`) **solve for the smoothing parameter against a stated
+  turnover target**. The desk sweeps a grid and reads turnover off as an outcome. Given that
+  turnover is this desk's binding constraint, parameterising by it directly is the methodology
+  import — routed to `improvement_inbox.md`. `jump_decay` (a vol-scaled gap filter) is the
+  pointed absence: an MT5 book takes weekend and session gaps that operator exists to absorb.
+- **6 of 108, across TWO modules — corrected mid-session.** I first reported 4, having treated
+  `libs/alpha_factory/wq_operators.py` as the only WQ operator module. **`libs/research/operators.py`
+  also exists** (`group_rank`, `group_zscore`, `vector_neut`, `ts_backfill`, `ts_information_ratio`),
+  and I found it only because a sibling session's abandoned script quoted it. Two consequences:
+  **three operators are implemented twice with no shared source and no test comparing them**, and
+  **`vector_neut` has been carried as an un-built "next ground" for three sessions when it was
+  built all along** — an inventory error, not a capability gap, and the correct next step for it
+  is a hypothesis rather than a build. The naive `def <name>` grep that produced my error is wrong
+  in **both** directions: it over-counts by 9 name collisions and invites pruning the true
+  positives with them.
+
+### 3. Ground census and the video line
+- **`data/brain_hunter_s30_repo_census.json` — 139 repos** in the keyless GitHub repo-search
+  population (`worldquant+brain` ∪ `worldquant+alpha`, sort=updated, 100/page). **40 named
+  anywhere in this file; 99 never named.** Caveat in the artifact: GitHub **code** search is 401
+  keyless, so any repo whose README omits "worldquant" is invisible — **139 is a floor**.
+- **`GaomingOrion/qweave` (MIT)** — a Rust/Polars **computation engine** (450 factors: Alpha101 +
+  Qlib Alpha158 + 国泰君安 **Alpha191**) with **golden-fixture parity tests**, i.e. the cheapest
+  refutation tier available. **GTJA191 is un-mined on this desk** (`vault_search`: zero hits for
+  `alpha191/gtja/guotai`; named twice in `docs/`, graded by analogy, never looked at). Carded as a
+  **next ground, deliberately NOT an EV-gate pre-registration** — its nearest neighbour (alpha101)
+  is already in the graveyard, and a corpus does not earn a pre-registration by being large.
+  Its AST already yielded operator shapes BRAIN lacks: **`Sma(x,n,m)`** (CN recursive smoother,
+  coefficient m/n), **`Wma`** at the report's own **`0.9^i`** geometric weights, `ConditionalBeta`,
+  `Resi`/`MultiResi`, `ScanMul`. The first two matter immediately: **s30c refuted the LINEAR
+  kernel only**, and a follow-up with the sign declared in advance is written into
+  `search_operator_library.md`.
+- **VIDEO: UNSERVICED (roster gap) — not `0 locked`.** Thirty sessions have logged
+  `video: 0 fetched, 0 locked` on this ground. The cause is measurable and is not this seat's
+  attention: the shared corpus (`data/intelligence/youtube/videos_*.json`) is **530 videos across
+  13 channels, every one retail-FX or generic AI-trading, zero quant-research channels**, and a
+  keyword pass (`worldquant`, `brain`, `alpha101`, `factor mining`, `formulaic alpha`) returns
+  **0 of 530**. "0 locked" was a statement about the roster, indistinguishable from a statement
+  about the ground — the WS-005 shape. Routed as a roster item to the collector's owner.
+
+### Boundary and cost
+§13: four public repos (`AshSwing/FastPlus` MIT, `OctopusTakopi/toraniko-alpha101` MIT,
+`GaomingOrion/qweave` MIT, plus the keyless GitHub repo-search API) read as **TEXT** over
+raw.githubusercontent; **nothing installed, executed or vendored** (supply-chain rule); no login,
+no wall, no access control touched. GitHub code search returned **401 keyless** and was not
+pursued — an auth wall is a boundary, and it is recorded as the reason the census is a floor.
+
+### Artifacts exhausted this session (do not re-surface-scan)
+`GaomingOrion/qweave`: `README.md`, `docs/gtja_alpha191.md`, `crates/qweave-core/src/expr.rs`
+(AST fully enumerated). `OctopusTakopi/toraniko-alpha101`:
+`reports/full_market/alpha101_analysis.csv` + `alpha101_paper_metrics.csv` **parsed per-alpha**
+(s28 had read only the README/report summary; the per-alpha figures corroborate it exactly —
+median Sharpe 0.518, 74/101 positive — so this is an **echo of s28's source, not independent
+confirmation**, and the verdict is unchanged).
+**Surface-scanned only:** `crates/qweave-factors/src/gtja_alpha191.rs` (76 KB, not read).
+**Re-dug in error, already exhausted by s28:** `AshSwing/FastPlus` `src/operator.rs`.
+
+### NEXT UN-EXHAUSTED GROUND (for s31, in order — supersedes s30's list)
+
+1. **`bucket()`-constructed groupings, measured.** The highest-value item on this ground and the
+   one that dissolves a six-session blocker. Build volatility-tier, liquidity-tier and gold-beta
+   groupings from the desk's own tape (`bucket(rank(·))`, PIT by construction), run them as
+   neutralisation arms against the same cells s28/s30 ran, and compare against **both** the
+   universe arm and s27's exact random-label control. The ward-cluster argument (s24–s27) does not
+   need to be settled for this to run, which is the point.
+2. **`vector_neut` — a HYPOTHESIS, not a build.** It is implemented in `libs/research/operators.py`
+   and has never been consumed. A sibling session began exactly this run
+   (`data/brain_hunter_s30b_vector_neut.py`, beta/vol/both risk arms from desk tape) and abandoned
+   it without an artifact — **resume that script rather than rewriting it**.
+3. **The kernel follow-up to s30c, sign already declared.** s30c refuted the LINEAR decay kernel.
+   Test `Sma(x,n,m)` (EWMA, m/n) and `Wma` at `0.9^i` at **matched turnover reduction**; the
+   prediction written in advance in `search_operator_library.md` is that they lose LESS gross
+   Sharpe than linear. If they do not, the kernel axis closes and the family's cost problem is
+   confirmed kernel-independent — the stronger result of the two.
+4. **`gtja_alpha191.rs` censused for OPERATORS, not formulas** (76 KB, surface-scanned only). The
+   prior on the 191 formulas is bad and is stated in `prospector_watchlist.md`; the find, if there
+   is one, is a conditioning shape absent from both alpha101 and the 108-operator registry.
+5. **The 99 never-named repos** in `data/brain_hunter_s30_repo_census.json`. Rank by the
+   alternative-implementation test (does it COMPUTE, or only call the API?) — a computation engine
+   carries semantics, an API client carries none, and this ground has now produced two of the
+   former.
+6. **The BRAIN-scoped collector arm — TWENTY-THREE sessions old.** Belongs to a seat that is not
+   research-frozen. Now joined by the **video-roster gap** (§3 above), which is the same shape:
+   a seat that cannot fix its own input has been reporting the input's absence as a result.

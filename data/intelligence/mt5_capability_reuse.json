@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-29T03:07:57.420457+00:00",
+  "generated_at": "2026-08-29T23:02:27.223765+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 66,
-    "UNWIRED_REVIEW": 538,
+    "UNWIRED_REVIEW": 552,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2185,6 +2185,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.agents",
+      "path": "libs/research/agents.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.alpha_economics",
       "path": "libs/research/alpha_economics.py",
       "status": "UNWIRED_REVIEW",
@@ -2213,6 +2220,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.alpha_schema",
+      "path": "libs/research/alpha_schema.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.alpha_state",
       "path": "libs/research/alpha_state.py",
       "status": "UNWIRED_REVIEW",
@@ -2229,6 +2243,13 @@
     {
       "module": "libs.research.anytime_valid",
       "path": "libs/research/anytime_valid.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.artifacts",
+      "path": "libs/research/artifacts.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2593,6 +2614,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.edge_queue",
+      "path": "libs/research/edge_queue.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.event_calendar",
       "path": "libs/research/event_calendar.py",
       "status": "UNWIRED_REVIEW",
@@ -2684,6 +2712,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.free_panel",
+      "path": "libs/research/free_panel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.frontier",
       "path": "libs/research/frontier.py",
       "status": "UNWIRED_REVIEW",
@@ -2714,6 +2749,13 @@
     {
       "module": "libs.research.funnel",
       "path": "libs/research/funnel.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.funnel_census",
+      "path": "libs/research/funnel_census.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2817,6 +2859,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.lineage_dag",
+      "path": "libs/research/lineage_dag.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.liq_heatmap",
       "path": "libs/research/liq_heatmap.py",
       "status": "UNWIRED_REVIEW",
@@ -2854,6 +2903,13 @@
     {
       "module": "libs.research.live_ladder",
       "path": "libs/research/live_ladder.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.lockbox",
+      "path": "libs/research/lockbox.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2931,6 +2987,13 @@
     {
       "module": "libs.research.near_survivor",
       "path": "libs/research/near_survivor.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.novelty_v2",
+      "path": "libs/research/novelty_v2.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -3139,6 +3202,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.residual_novelty",
+      "path": "libs/research/residual_novelty.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.return_claims",
       "path": "libs/research/return_claims.py",
       "status": "UNWIRED_REVIEW",
@@ -3174,6 +3244,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.search_controller",
+      "path": "libs/research/search_controller.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.search_strategy",
       "path": "libs/research/search_strategy.py",
       "status": "UNWIRED_REVIEW",
@@ -3183,6 +3260,13 @@
     {
       "module": "libs.research.second_family",
       "path": "libs/research/second_family.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.semantic_space",
+      "path": "libs/research/semantic_space.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -3286,6 +3370,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.successive_halving",
+      "path": "libs/research/successive_halving.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.survivor_panel",
       "path": "libs/research/survivor_panel.py",
       "status": "UNWIRED_REVIEW",
@@ -3302,6 +3393,13 @@
     {
       "module": "libs.research.transcript_candidates",
       "path": "libs/research/transcript_candidates.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.tri_alignment",
+      "path": "libs/research/tri_alignment.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
