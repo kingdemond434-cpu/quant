@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-28",
+ "updated": "2026-08-29",
  "posture": "FREE-FIRST. No paid data until the Discovery Bottleneck Detector proves a residual gap is the binding constraint on alpha discovery. ~$1.5k paid basket replaced at $0 + cents of S3 egress.",
  "grading_legend": "verified-clean = URL opened this session + mechanism/format directly confirmed | needs-monitoring = corroborated by >=1 independent source or opened in a prior session but not diffed vs ground truth this session | UNVERIFIED = found this session, not opened/confirmed first-party, DO NOT feed a live signal | destroyed-at-source = no free or paid path reconstructs this component",
  "sources": {
@@ -2705,6 +2705,69 @@
    ],
    "grade": "verified-clean",
    "yield": "a NEW SOURCE CLASS (supranational rather than national), broader than the national-CB class this seat has spent five runs on; plus one axis killed before it cost a screen"
+  },
+  "bis_ws_xru_daily_usd_fx_panel": {
+   "name": "BIS WS_XRU - daily US-dollar exchange rates, 61 currencies, keyless, 1945 ->",
+   "provides": "ONE keyless request returns 1,067,834 DAILY observations, 61 currencies vs USD, 1945-01-01 -> 2026-08-25 (CAD 1945; HUF/USD 1949; TRY 1950; GBP 1953-08-10; CHF/DKK/SEK/EUR-legacy 1953-09; NOK 1953-12; MXN 1954; KRW 1964; COP 1967; JPY 1969-12; ZAR 1970; AUD/NZD/MYR 1971; INR/LKR 1973; XDR 1974; ILS 1977; PHP 1978; CNY/HKD/SGD/THB/ISK 1981; CLP 1982; TWD 1983; PLN 1984-01; BRL 1984-12; IDR 1988; SAR 1988-12; PEN/RON 1990; ARS 1992; RUB 1992-07; CZK 1993; UYU 1993; AED/BHD/DZD/IRR/KWD/NPR/OMR/PKR/QAR/RSD/TTD/VEF 1994; MAD 1996; UAH 1996; BAM/BND/ALL 1998; MUR 2003; KZT 2006; TND 2010).",
+   "replaces": "a multi-decade daily FX reference subscription; and it CHALLENGES the desk's own adopted national-CB doors (NBP, ECB EXR, CBR, TCMB) as a *reference-rate panel* -- one call replaces five runs of country-by-country scraping",
+   "provenance": [
+    "https://data.bis.org/robots.txt (User-agent: * / Allow: / ; disallows only query-param patterns *filter= *sort= *q= *rows= *cols= *page_size= which the SDMX path does not use)",
+    "https://stats.bis.org/api/v2/structure/dataflow/BIS/all/latest  (Accept: application/vnd.sdmx.structure+json;version=2.0.0) -> 29 dataflows, the FULL BIS census",
+    "https://stats.bis.org/api/v1/data/WS_XRU/D...A/all?format=csv -> HTTP 200, 149,387,459 bytes, 1,067,834 rows",
+    "https://www.bis.org/terms_statistics.htm (Terms of permitted use of BIS statistics)"
+   ],
+   "method": "keyless GET, SDMX v1 CSV. Key order is FREQ.REF_AREA.CURRENCY.COLLECTION, so the daily slice is D...A (four positions) -- D..A sets CURRENCY=A and returns HTTP 404 'No data'. Cross rates for the desk's book are reconstructed as (USD-per-QUOTE)/(USD-per-BASE); both legs carry the same clock so the cross is internally consistent.",
+   "cadence": "daily, T-3-ish (last obs 2026-08-25 on a 2026-08-29 pull)",
+   "license": "GREEN, unambiguous. bis.org/terms_statistics.htm: 'The use of the statistics is unrestricted, provided that' the BIS is cited when REPRODUCED, translations are marked unofficial, use is not misleading, and a commercial publication including them adds no charge to subscribers. Own-account internal research and trading redistribute nothing and publish nothing -- squarely permitted. Contrast card 1 (Upbit), which is still awaiting a principal ruling: there is no equivalent ambiguity here.",
+   "verified": "2026-08-29 VERIFIED-CLEAN ON G10 by offset scan against the desk's own H1 tape. Best cell is h=14 on the broker-EET-labelled tape, UNANIMOUS across all 16 currencies tested and across both DST seasons (EURUSD 5.95 summer / 5.92 winter; USDJPY 4.46/5.00; GBPJPY 5.73/6.48 -- DST-stable, so the snapshot follows EUROPEAN LOCAL TIME, not UTC). Direct MAE at h=14: NZDUSD 3.52, SGD 3.22, AUDUSD 3.98, CHF 4.20, CAD 5.22, JPY 5.34, EUR 6.47, GBP 6.82 pips; range/bias 9.7-15.5, comfortably past the precondition run (s) established. CROSS RECONSTRUCTION verified too (this is new -- no prior run tested a computed cross): EURGBP 4.77, CHFJPY 6.47, NZDCAD 3.99, EURJPY 7.87, GBPJPY 8.43 pips, all with h=14 first and h=15 second.",
+   "grade": "verified-clean (G10 and G10 crosses) / needs-monitoring (EM legs)",
+   "coverage_for_this_desk": "85 of the desk's 118 FX-like universe symbols have BOTH legs live in WS_XRU and a local parquet, i.e. 85 symbols gain 25-80 years of daily history above a tape that starts 2018. The 33 uncovered legs are metals, crypto, indices and CNH (XAU XAG XPT XPD XCU XAL XNI XZN XPB XTI XBR XNG, BTC ETH SOL ADA DOT LTC BCH BNB EOS XLM TON LNK, index tickers, CNH) -- structurally outside an FX-rate panel, so nothing is owed there.",
+   "failure_modes": [
+    "THE TITLE LIES ABOUT THE STATISTIC. Every daily row is titled 'Average of observations through period' and carries COLLECTION=A ('average'). It is NOT an average: the mean of the day's hourly closes scores MAE 18.89 pips on GBPUSD against 6.82 for the single 14:00 cell. The COLLECTION=A label is inherited from the monthly series and is wrong at daily frequency. A reader who trusted the title would smear a point-in-time snapshot into a daily average and build a look-ahead-flavoured feature out of a clean one.",
+    "COLLECTION=A is the ONLY daily collection published (D.GB.. returns the A series alone) -- there is no end-of-period daily variant to fall back on.",
+    "EIGHT SERIES ARE DEAD, not zero: BHD (last 2019-01-25), IRR (2019-01-18), KZT (2019-03-29), NPR (2019-01-18), PKR (2019-03-29), TND (2019-01-18), VEF (2018-08-17), plus MAD thinning (2026-06-24). Withdrawn without an error; a liveness check must be max(observation_date) per CURRENCY, never per dataflow.",
+    "PRE-1970 IS CALENDAR-FILLED, not business-day: the 1960s carry 3,653 obs per decade (365/yr) against 2,609-2,718 (business days) from the 1970s on. Weekend rows in that era are carried values, not observations.",
+    "EM legs identify the clock far more weakly (range/bias EURTRY 3.2, EURPLN 4.7, USDZAR 5.3, USDMXN 5.6) -- the level is usable, the intraday cell is not established. These are national-fixing currencies, not the CET snapshot.",
+    "EUR carries 309,266 rows because many REF_AREAs report a EUR series; collapse by date before use or the join silently duplicates.",
+    "Redenominations are in the raw series (TRY back to 1950, VEF, etc.) and are NOT handled by the API.",
+    "BIS reserves the right to rate-limit or suspend any IP; the API terms forbid reverse-engineering the API (not the statistics)."
+   ],
+   "yield": "highest-yield single source this mission has found on the history axis: 85 desk symbols x 25-80 years, verified, keyless, one request, licence-green."
+  },
+  "bis_dataflow_census_2026_08_29": {
+   "name": "BIS SDMX dataflow census - the door is EXHAUSTED at 29, not ~40",
+   "provides": "the complete BIS dataflow list, so no future run re-enumerates it: BIS_REL_CAL, WS_CBPOL, WS_CBS_PUB, WS_CBTA, WS_CPMI_CASHLESS, WS_CPMI_CT1, WS_CPMI_CT2, WS_CPMI_DEVICES, WS_CPMI_INSTITUT, WS_CPMI_MACRO, WS_CPMI_PARTICIP, WS_CPMI_SYSTEMS, WS_CPP, WS_CREDIT_GAP, WS_DEBT_SEC2_PUB, WS_DER_OTC_TOV, WS_DPP, WS_DSR, WS_EER, WS_GLI, WS_LBS_D_PUB, WS_LONG_CPI, WS_NA_SEC_C3, WS_NA_SEC_DSS, WS_OTC_DERIV2, WS_SPP, WS_TC, WS_XRU, WS_XTD_DERIV.",
+   "provenance": [
+    "https://stats.bis.org/api/v2/structure/dataflow/BIS/BIS/all/latest via Accept: application/vnd.sdmx.structure+json;version=2.0.0"
+   ],
+   "method": "one structure call. NOTE the version trap: Accept ...;version=1.0 returns HTTP 406 'Unsupported sdmx-json version: 1.0. Supported versions are 1.0.0, 2.0.0'.",
+   "verified": "2026-08-29 verified-clean -- enumerated, and 4 of the 29 probed live to data (WS_XRU, WS_CBTA, WS_XTD_DERIV, BIS_REL_CAL all HTTP 200 with plausible dated rows).",
+   "grade": "verified-clean",
+   "mandate_grading": "MT5-relevant and unopened: WS_CBTA (53 central banks' total assets, monthly/quarterly/annual, the SNB-sight-deposit genre generalised), WS_XTD_DERIV (exchange-traded derivatives open interest by ISSUE_CUR and exchange, quarterly), WS_DER_OTC_TOV (OTC FX turnover by currency -- a CAPACITY reference, not a time series), WS_GLI, WS_LONG_CPI (long CPI -> real-rate construction), BIS_REL_CAL (BIS's own forward RELEASE DATES for all 20 statistic categories -- the only point-in-time vintage instrument on this door). Off-mandate: the 8 CPMI payment dataflows, WS_CPP/WS_DPP/WS_SPP property prices. Already carded: WS_CBPOL (card 71, adopted), WS_EER (killed as circular by run (s)).",
+   "failure_modes": [
+    "The ~40 figure carried by run (s) was an estimate, not a count -- it is 29. Do not re-enumerate."
+   ],
+   "yield": "closes the 'BIS remaining dataflows' item that has been the cheapest named breadth on the board for one run."
+  },
+  "supranational_keyless_sdmx_registry_family": {
+   "name": "SEARCH-SPACE EXPANSION: the supranational keyless SDMX registry family (BIS / IMF / OECD / Eurostat / World Bank)",
+   "provides": "9,828 enumerated dataflows on ONE schema across four keyless SDMX doors, plus a fifth keyless REST door: BIS 29, IMF 101, OECD 1,546, Eurostat 8,152; World Bank v2 REST lists 71 sources.",
+   "replaces": "the entire genre of country-by-country national-statistics scraping this mission has spent runs (m) through (s) doing -- and, prospectively, paid macro panels",
+   "provenance": [
+    "https://sdmxcentral.imf.org/ws/public/sdmxapi/rest/dataflow/IMF/all/latest?format=sdmx-json -> HTTP 200, 56,234 b, 101 dataflows",
+    "https://sdmx.oecd.org/public/rest/dataflow/all/all/latest -> HTTP 200, 8,894,078 b, 1,546 dataflows",
+    "https://ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/dataflow/ESTAT/all/latest -> HTTP 200, 37,211,395 b, 8,152 dataflows",
+    "https://api.worldbank.org/v2/sources?format=json -> HTTP 200, 71 sources",
+    "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ert_bil_eur_d?... -> HTTP 200, JSON-stat, 'Euro/ECU exchange rates - daily data', updated 2026-08-28T11:00:00+0200 (a live DAILY FX door on the Eurostat side, distinct from ECB EXR)"
+   ],
+   "method": "keyless GET; all four speak SDMX 2.1/3.0, so ONE reader serves all of them. Doors PROBED this run, contents NOT mined.",
+   "verified": "2026-08-29 UNVERIFIED as data -- the DOORS are verified live (all five HTTP 200 with parseable structure), the CONTENT is not diffed against anything. Stated as a door census, never as an adopted source.",
+   "grade": "UNVERIFIED (door-verified, content-unmined)",
+   "failure_modes": [
+    "Enumerating a dataflow is not finding a series: Eurostat's 8,152 flows are overwhelmingly off-mandate social/regional statistics, and the BIS lesson of this run is that 6.4%-style relevance rates are normal. Size the ground, then filter by mandate BEFORE pulling.",
+    "Eurostat's dataflow list is 37 MB -- do not fetch it in an agent context; fetch to disk and grep."
+   ],
+   "yield": "names the next ground for several runs at once and retires the country-by-country posture."
   }
  },
  "residual_gaps_unpurchasable": [

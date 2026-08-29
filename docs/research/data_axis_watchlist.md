@@ -7996,3 +7996,287 @@ query list imposes.
 a live registry of **197** universe parquets. A literal list that silently caps exploration is
 the WS-005 class — absence read as a clean verdict — and here it reads as "the BRAIN ground is
 thin" when what is actually true is "the BRAIN ground was never queried". **R0723.**
+
+---
+
+## SESSION 2026-08-29 (t) — FREE-DATA-ALTERNATIVES standing daily run — **WRITTEN FIRST**
+
+**Entry state (measured, not assumed):** `source_backlog_next.py --limit 6` → **77 catalogued, 52
+resolved, 0 pending verification, 0 pending legitimacy, 25 deferred** (next returns 2026-09-01).
+Backlog CLEAR on entry, so this run is authorised to open new ground rather than burn verifications.
+Handover read: run (s) SESSION CLOSE, "NEXT UN-EXHAUSTED GROUND".
+
+**ITEMS TAKEN THIS RUN (bounded per the completion contract; depth per item UNBOUNDED):**
+1. **BIS SDMX v2 — enumerate ALL dataflows on the proven-keyless door.** Run (s) probed 2 of ~40 and
+   named this "cheapest known breadth on the board". Enumerate the full dataflow list, grade each for
+   MT5-universe relevance, pull and verify the best one against something independent.
+2. **CBR (Russia) remaining ~60 currencies + the code directory** — carried from run (r), still
+   surface. USDRUB tape is live to 2026-08-26; the exotic legs are unmeasured.
+3. **SEARCH-SPACE EXPANSION** — one entirely new source CLASS (≥25% of effort), chosen from what
+   items 1–2 surface rather than pre-named.
+
+_Status: **CLOSED**. All 3 items resolved. See SESSION CLOSE — 2026-08-29 (t) below._
+
+
+### SESSION CLOSE — 2026-08-29 (t)
+
+**Backlog:** clear on entry and on exit (0 pending verification, 0 pending legitimacy, 25 deferred,
+next returns 2026-09-01). **Items taken: 3. Items closed: 3.**
+
+**Categories covered:** **1** (exchange-native/reference archives — reframed to the MT5 mandate as
+official FX reference archives), **5** (alternative/macro), **6** (vendor replacement, and this run's
+weight). **4 touched only as a door census. 2 and 3 remain VOID under the MT5 mandate as the spec
+writes them** (they name crypto-exchange and on-chain ground the standing order permanently bans).
+That is the honest coverage statement, not "all six dug".
+
+**Sources graded: 3.** verified-clean **2** (BIS `WS_XRU`; the BIS dataflow census) + 1 conditional
+(`WS_XRU` EM legs: clean as a level, UNMEASURED on their clock); UNVERIFIED **1** (the supranational
+SDMX door census — doors verified live, content deliberately unmined). **0 destroyed-at-source.**
+
+**Best vendor replacement, and it is the largest history find this mission has made:**
+**BIS `WS_XRU`** — **1,067,834 daily observations, 61 currencies vs USD, 1945-01-01 → 2026-08-25, in
+ONE keyless 149 MB request.** Verified against the desk's own H1 tape at **3.2–6.8 pips** on the G10
+legs and **4.0–8.4 pips on reconstructed crosses**, at a cell (h=14 broker-EET) that is **unanimous
+across all 16 currencies tested and stable across both DST seasons**. **85 of the desk's 118 FX-like
+universe symbols** have both legs live and gain **25–80 years** of daily history above a tape that
+starts in 2018. Licence is **unambiguously green** (`bis.org/terms_statistics.htm`: "the use of the
+statistics is unrestricted, provided that…" — citation on reproduction, nothing that touches
+own-account internal research).
+
+**Automatic replacement monitoring (pillar 6) — this run CHALLENGES four adopted sources.** NBP
+(run r), ECB EXR (run s), CBR (run r) and TCMB (run s) were each adopted as a *daily FX reference
+door*. `WS_XRU` covers all four jurisdictions' currencies, in one call, with 13–45 more years, at
+comparable accuracy. They are **not retired** — each keeps a role `WS_XRU` cannot fill: NBP and TCMB
+publish **bid/ask legs**, NBP/CBR publish under a **national effective-date convention** (the run (r)
+finding), and ECB EXR is the **cross-check that proved the 14:00-EET cell** independently. The
+posture change is: **`WS_XRU` becomes the default history spine; the national doors become
+convention-and-verification instruments, not primary pulls.**
+
+**Cross-source pairs (joint value > either alone):**
+1. **BIS `WS_XRU` × ECB EXR** — two independent pipelines landing on the *same* 14:00-EET cell.
+   Neither alone could distinguish "this source's clock" from "this tape's label"; agreeing at the
+   same cell from different institutions is what makes the cell a property of the FX day rather than
+   of one publisher.
+2. **`WS_XRU` × the desk's own `_H1` parquets** — the pair independently re-confirmed run (s)'s D1/H1
+   splice: `AUDNZD` yielded **n=17** overlapping 14:00 bars where `EURUSD` yielded 2,213 on the same
+   join. A source diff turned out to be a tape diagnostic.
+3. **`BIS_REL_CAL` × any BIS statistic** — the release calendar carries the *forward publication
+   date* for all 20 BIS statistic categories. It is the only point-in-time vintage instrument on this
+   door, and vintage-vs-reference dating is precisely what the five refuted macro→FX screens lacked.
+
+**NEW SOURCE CLASS DISCOVERED: the supranational keyless SDMX REGISTRY family.** Run (s) named the
+"supranational keyless API" as a class from a single instance. This run **enumerated the family**:
+**BIS 29 + IMF 101 + OECD 1,546 + Eurostat 8,152 = 9,828 dataflows on one schema, all keyless**, plus
+World Bank v2 REST (71 sources) and a live keyless Eurostat *daily* FX door
+(`ert_bil_eur_d`, updated 2026-08-28T11:00+0200). One reader serves all of them. This retires the
+country-by-country national-CB posture that runs (m)–(s) have been executing.
+
+**DEPTH LINE.**
+- **BIS dataflow enumeration: EXHAUSTED.** All 29 listed (the carried "~40" was an estimate, not a
+  count), each graded for mandate relevance, 4 probed live to data. No future run re-enumerates this.
+- **BIS `WS_XRU`: deep, near-exhausted.** Full 1945→ history pulled (1.07M rows), 61 currencies
+  characterised for range and liveness, 16-currency offset scan, DST split on 3 symbols, cross
+  reconstruction tested on 5 crosses, daily-average hypothesis tested and **refuted**, per-decade
+  observation density measured, licence read first-party. Not claimed exhausted only because the
+  pre-1970 era and the EM clocks are un-mined.
+- **CBR: surface, and RESOLVED BY SUPERSESSION rather than by exhaustion — say so plainly.** robots
+  read (`/scripts/` clean), `XML_valFull.asp` code directory pulled (HTTP 200, 17 KB, full ISO
+  mapping). I then found RUB live in `WS_XRU` from 1992-07-01 in the bulk call and **stopped**: 60
+  per-currency scrapes to obtain what one already-verified request contains is the padding this
+  mission's own spec forbids. The un-mined CBR residue is the **bid/ask and effective-date
+  conventions**, which is where it is genuinely not superseded.
+- **Supranational family: door-verified only** (5 doors probed, 0 dataflows mined) — named as next
+  ground, not claimed.
+
+**THE BLUNT PART.** The headline number is 1,067,834 rows and 80 years, and the honest caveat is that
+**none of it is a tradable price**: 4–7 pips of MAE is larger than the spread on every G10 pair in
+the book, so this source is a *history and regime* instrument, not an execution one. Anyone who joins
+it to a cost model without re-reading that sentence will manufacture an edge out of the residual.
+
+Two smaller things are worth more than the year count. **The dataflow's own TITLE is wrong on every
+one of a million rows** — "Average of observations through period" describes a statistic that scores
+**18.89 pips** against the **6.82** of the single 14:00 snapshot it actually is. The label is
+inherited from the monthly series and misapplied at daily frequency, and it fails in the one
+direction nothing here catches: a reader who believes it builds a smeared feature and never learns
+why it underperforms. **And eight currencies are dead without an error** — BHD, IRR, KZT, NPR, PKR,
+TND, VEF stop in 2018–2019 inside a dataflow whose last observation is 2026-08-25, so any liveness
+check keyed on the dataflow reads green over seven corpses. That is the same class as this desk's
+heartbeat lesson, arriving through a different door.
+
+I also did not run a screen this run, deliberately. `WS_CBTA` (53 central banks' total assets) is
+exactly the shape of axis run (s) refuted for the fifth time, and run (s) wrote the prior that this
+family should not consume another screen until someone can name why a published macro series is not
+already in the price at its own timestamp. Carding it and honouring that prior is the cheaper answer;
+overriding a prior written one run ago because a new door made it easy would be the sixth measurement
+of one result.
+
+**NEXT UN-EXHAUSTED GROUND** (each checked against what this run closed):
+1. **THE HISTORY-EXTENSION WIRING ITEM, now tripled and still unbuilt.** Run (r) left NBP (83 symbols
+   × 16 yrs), run (s) added ECB EXR (15 × 13–19 yrs), this run adds **BIS `WS_XRU` (85 symbols ×
+   25–80 yrs)**. Three runs, one unconverted item, and it is now the largest thing on this watchlist
+   by an order of magnitude. **Still an engine/wiring item outside this seat's freeze**, and still
+   sequenced behind the D1/H1 splice fix.
+2. **The `*_H1.parquet` D1/H1 splice** — re-confirmed independently this run (`AUDNZD` n=17). Inbox M5.
+3. **The supranational SDMX family, mandate-filtered** — 9,828 dataflows, keyless, unmined. Filter by
+   mandate on the saved structure files BEFORE pulling; do not repeat the Quantocracy shape of
+   enumerating 6,908 items to find 445 relevant ones without checking first.
+4. **`BIS_REL_CAL` full history** — the vintage/release-date instrument, and the only honest route
+   back into the macro→FX family that the prior does not already forbid.
+5. **`WS_XRU`'s pre-1970 era and its EM clocks** — dead-data archaeology (one-time-exhaustible) and
+   the 45 currencies whose 14:00 cell is unestablished.
+6. **CBR bid/ask + effective-date legs; CBRT `BanknoteBuying/Selling` + the 1997–2004 TRL era** —
+   the genuinely un-superseded residue of the national doors.
+7. Carried, unchanged: SSB 08428/10701; the 43 broken SCB datasets; Norwegian holiday calendar;
+   Riksbank weekly reserves; SAFE/BCB/SARB on DBnomics; the SNB/BFS two-doors test.
+
+---
+
+### 75. [dig 2026-08-29 (free-data t)] BIS `WS_XRU` — **daily USD exchange rates, 61 currencies, 1945-01-01 → 2026-08-25, 1,067,834 rows in ONE keyless request** — grade: **verified-clean** (G10 legs and G10 crosses; EM legs needs-monitoring on their clock only)
+
+**PROVENANCE (opened this run, nothing claimed unread).**
+`https://data.bis.org/robots.txt` — `User-agent: * / Allow: /`, disallows only query-param patterns
+(`*filter=`, `*sort=`, `*q=`, `*rows=`, `*cols=`, `*page_size=`) that the SDMX path does not use.
+`https://stats.bis.org/api/v1/data/WS_XRU/D...A/all?format=csv` → **HTTP 200, 149,387,459 bytes,
+1,067,834 rows.** Licence read first-party at `https://www.bis.org/terms_statistics.htm`.
+
+**THE KEY TRAP, and it costs a 404 to learn:** the dimension order is
+`FREQ.REF_AREA.CURRENCY.COLLECTION`, so the daily slice is **`D...A` (four positions)**. `D..A` puts
+`A` in the CURRENCY position and returns `HTTP 404 — No data for data query`, which reads exactly
+like an empty dataflow. Structure calls need `Accept: application/vnd.sdmx.structure+json;version=2.0.0`
+— `version=1.0` returns **HTTP 406** naming the supported versions.
+
+**VERIFY-DON'T-TRUST — the offset scan against the desk's own H1 tape, run (s)'s precondition checked
+first.** Mean intraday range on GBPUSD is 85.7 pips against a 6.82-pip bias, so range/bias = 12.6 ≫ 1
+and the surface is not flat: the scan is entitled to name a cell.
+
+| leg | best cell | MAE (pips) | runner-up | range/bias | n |
+|---|---|---|---|---|---|
+| NZDUSD | h=14 | **3.52** | 6.68 | 14.4 | 2213 |
+| USDSGD | h=14 | **3.22** | 5.99 | 6.4 | 1698 |
+| AUDUSD | h=14 | **3.98** | 7.25 | 13.7 | 2213 |
+| USDCHF | h=14 | **4.20** | 8.13 | 12.7 | 2213 |
+| USDCAD | h=14 | **5.22** | 9.94 | 12.9 | 2213 |
+| USDJPY | h=14 | **5.34** | 10.73 | 15.5 | 2213 |
+| EURUSD | h=14 | **6.47** | 10.08 | 9.7 | 2213 |
+| GBPUSD | h=14 | **6.82** | 13.67 | 12.6 | 2213 |
+| USDPLN / USDSEK / USDNOK / USDTRY / USDCZK / USDZAR / USDMXN / USDHUF | h=14 | 26.9 / 69.4 / 81.8 / 71.3 / 140.5 / 154.4 / 181.7 / 2845.9 | all ~2× | 3.2–8.6 | 1698 |
+
+**h=14 is UNANIMOUS across all 16 currencies** and the runner-up is ~2× in every single row — this is
+one publisher clock, not sixteen national fixings.
+
+**DST DISCRIMINATOR (the run (m)/(r) instrument, applied):** best cell is h=14 in **both** seasons —
+EURUSD 5.95 (Apr–Sep) / 5.92 (Nov–Feb), USDJPY 4.46 / 5.00, GBPJPY 5.73 / 6.48. The desk's tape is
+labelled `+00:00` but carries broker EET, which *shifts against UTC with DST*; a cell that does not
+move across the boundary therefore follows **European local time**, i.e. this is a CET/CEST-clock
+snapshot. That is the same cell ECB EXR landed on in run (s) from a completely different pipeline.
+
+**CROSS RECONSTRUCTION — verified, and no prior run tested one.** Crosses are
+`(USD-per-QUOTE)/(USD-per-BASE)`; both legs share the clock so the cross inherits it:
+EURGBP **4.77**, NZDCAD **3.99**, CHFJPY **6.47**, EURJPY **7.87**, GBPJPY **8.43** pips, h=14 first
+and h=15 second in every case. EM crosses degrade as their legs do (EURPLN 19.9, EURSEK 53.7,
+EURTRY 319.8 pips, range/bias 3.2–5.3 — level usable, cell unestablished).
+
+**COVERAGE FOR THIS DESK, counted not felt:** **85 of 118** FX-like universe symbols have both legs
+live in `WS_XRU` *and* a local parquet. The 33 that do not are metals, energy, crypto, index tickers
+and CNH — structurally outside an FX-rate panel, so **§38 owes no replacement hunt there**.
+
+**DATA GENEALOGY.** Source: BIS Data Portal SDMX (`stats.bis.org`), compiled from national central
+banks. Method: single keyless CSV GET, no auth, no pagination. Cadence: daily at ~T-3 (last obs
+2026-08-25 on a 2026-08-29 pull). Licence: `bis.org/terms_statistics.htm` — *"The use of the
+statistics is unrestricted, provided that"* the BIS is cited **on reproduction**, translations are
+marked unofficial, use is not misleading, and inclusion in a commercial publication adds no charge to
+subscribers. Own-account internal research redistributes nothing and publishes nothing: **green, and
+unlike card 1 there is no ambiguity to route to the principal.**
+
+**KNOWN FAILURE MODES (five, and the first is the dangerous one).**
+1. **THE TITLE IS WRONG ON ALL 1,067,834 ROWS.** Every daily row reads *"Average of observations
+   through period"* and carries `COLLECTION=A`. It is **not** an average: the mean of the day's hourly
+   closes scores **18.89 pips** on GBPUSD against **6.82** for the single 14:00 cell. The label is
+   inherited from the monthly series and misapplied at daily frequency. A reader who trusts it builds
+   a smeared, subtly forward-looking feature out of a clean point-in-time one — and nothing in the
+   payload contradicts the title.
+2. **`COLLECTION=A` is the only daily collection published** (`D.GB..` returns the A series alone);
+   there is no end-of-period daily variant.
+3. **EIGHT CURRENCIES ARE DEAD WITHOUT AN ERROR** — BHD 2019-01-25, IRR 2019-01-18, KZT 2019-03-29,
+   NPR 2019-01-18, PKR 2019-03-29, TND 2019-01-18, VEF 2018-08-17 (MAD thinning at 2026-06-24) —
+   inside a dataflow whose last observation is 2026-08-25. **Liveness must be `max(observation_date)`
+   per CURRENCY; a dataflow-level check reads green over seven corpses.**
+4. **Pre-1970 is calendar-filled, not business-day:** 3,653 obs/decade in the 1960s (365/yr) against
+   2,609–2,718 from the 1970s on. Those weekend rows are carried values, not observations.
+5. **EUR carries 309,266 rows** because many `REF_AREA`s publish a EUR series — collapse by date
+   before joining or the merge silently duplicates. Redenominations (TRY from 1950, VEF) are in the
+   raw series and are **not** handled by the API.
+
+**ROUTING.** No axis is proposed from this card and that is deliberate — it is a **history spine**,
+not a signal. It converts by *wiring* (next-ground item 1), which is outside this seat's freeze.
+The G10 half is adopted as verified-clean; the EM clocks stay UNMEASURED until someone runs the scan
+that this run did not.
+
+---
+
+### 76. [dig 2026-08-29 (free-data t)] BIS SDMX dataflow census — the door is **EXHAUSTED at 29**, and the carried "~40" was an estimate — grade: **verified-clean**
+
+`https://stats.bis.org/api/v2/structure/dataflow/BIS/all/latest` with
+`Accept: application/vnd.sdmx.structure+json;version=2.0.0` returns **29 dataflows**, the complete
+list: `BIS_REL_CAL, WS_CBPOL, WS_CBS_PUB, WS_CBTA, WS_CPMI_CASHLESS, WS_CPMI_CT1, WS_CPMI_CT2,
+WS_CPMI_DEVICES, WS_CPMI_INSTITUT, WS_CPMI_MACRO, WS_CPMI_PARTICIP, WS_CPMI_SYSTEMS, WS_CPP,
+WS_CREDIT_GAP, WS_DEBT_SEC2_PUB, WS_DER_OTC_TOV, WS_DPP, WS_DSR, WS_EER, WS_GLI, WS_LBS_D_PUB,
+WS_LONG_CPI, WS_NA_SEC_C3, WS_NA_SEC_DSS, WS_OTC_DERIV2, WS_SPP, WS_TC, WS_XRU, WS_XTD_DERIV`.
+**No future run re-enumerates this door.**
+
+**MANDATE GRADING (all 29, so nothing is silently skipped).**
+- *Adopted / already ruled:* `WS_CBPOL` (card 71, adopted), `WS_EER` (killed by run (s) as circular),
+  `WS_XRU` (card 75, adopted this run).
+- *MT5-relevant and UNOPENED, probed live to data this run:* **`WS_CBTA`** — central bank total
+  assets, **53 jurisdictions**, monthly/quarterly/annual, `UNIT_MEASURE` in XDC or USD with a
+  `TRANSFORMATION` flag; the SNB-sight-deposit genre generalised to the whole world.
+  **`WS_XTD_DERIV`** — exchange-traded derivatives by `ISSUE_CUR` × `XD_EXCHANGE`, quarterly and
+  annual, in USD millions (a positioning/OI reference across currencies).
+  **`BIS_REL_CAL`** — forward **release dates** for all 20 BIS statistic categories (`CBPOL`, `XRU`,
+  `EER`, `DER`, `LBS`, `CBS`, `GLI`, `CPI`, `DSR`, `TOTAL_CREDIT`, …), e.g. `M,CBPOL,DM2,2026-11 →
+  20261210`. **This is the only point-in-time vintage instrument on the door.**
+- *MT5-relevant, unopened, not probed:* `WS_DER_OTC_TOV` (OTC FX turnover by currency — a **capacity**
+  reference, not a time series), `WS_GLI`, `WS_LONG_CPI` (long CPI → real-rate construction),
+  `WS_TC`, `WS_DSR`, `WS_CREDIT_GAP`, `WS_LBS_D_PUB`, the two debt-securities flows.
+- *Off-mandate:* the eight `WS_CPMI_*` payment-system flows and `WS_CPP`/`WS_DPP`/`WS_SPP` property
+  prices.
+
+**NO AXIS PROPOSED FROM `WS_CBTA`, AND THE REASON IS A PRIOR, NOT A SHRUG.** Run (s) refuted the fifth
+consecutive macro→FX axis and wrote the standing prior that this family should stop consuming screens
+until someone names why a published macro series is not already in the price at its own timestamp.
+`WS_CBTA` is that family's exact shape. It is carded as a **source** so the ground is not lost;
+spending a screen on it one run after that prior was written would be the sixth measurement of one
+result. **`BIS_REL_CAL` is the honest re-entry route** — vintage dating is the specific thing the five
+refutations lacked.
+
+---
+
+### 77. [dig 2026-08-29 (free-data t)] SEARCH-SPACE EXPANSION — **the supranational keyless SDMX registry family: 9,828 dataflows on one schema, four doors, zero keys** — grade: **UNVERIFIED (doors verified live, content deliberately unmined)**
+
+Run (s) named "the supranational keyless API" as a new source *class* from one instance. This run
+**enumerated the family** and sized the ground:
+
+| door | endpoint opened this run | result |
+|---|---|---|
+| BIS | `stats.bis.org/api/v2/structure/dataflow/BIS/all/latest` | HTTP 200, **29** dataflows |
+| IMF | `sdmxcentral.imf.org/ws/public/sdmxapi/rest/dataflow/IMF/all/latest?format=sdmx-json` | HTTP 200, 56 KB, **101** dataflows |
+| OECD | `sdmx.oecd.org/public/rest/dataflow/all/all/latest` | HTTP 200, 8.9 MB, **1,546** dataflows |
+| Eurostat | `ec.europa.eu/eurostat/api/dissemination/sdmx/2.1/dataflow/ESTAT/all/latest` | HTTP 200, **37.2 MB**, **8,152** dataflows |
+| World Bank | `api.worldbank.org/v2/sources?format=json` | HTTP 200, **71** sources (REST, not SDMX) |
+
+Plus a **live keyless Eurostat daily FX door** distinct from ECB EXR:
+`ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ert_bil_eur_d` → JSON-stat,
+*"Euro/ECU exchange rates - daily data"*, `updated 2026-08-28T11:00:00+0200`.
+
+**ONE READER SERVES ALL OF THEM** — that is the point of the class, and it is what retires the
+country-by-country national-CB posture runs (m)–(s) have been executing one institution at a time.
+
+**GRADED HONESTLY AS UNVERIFIED.** Five doors returned parseable structure; **zero series were pulled
+and nothing was diffed against ground truth.** This is a door census, not an adoption, and it is
+carded that way so no future reader mistakes an enumeration for a verified source.
+
+**FAILURE MODE, learned one run ago and applied here:** enumerating a dataflow is not finding a
+series. Quantocracy's 6,908 items yielded **6.4%** on-mandate. Eurostat's 8,152 flows are
+overwhelmingly social and regional statistics. **Filter by mandate on the saved structure files
+before pulling anything** — and never fetch the 37 MB list into an agent context; write it to disk
+and grep it.
