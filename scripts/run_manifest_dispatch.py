@@ -145,16 +145,6 @@ ALLOWLIST: dict[str, str] = {
     # a fixed organ that nothing schedules is the defect this dispatcher exists to close
     # (III.16 -- built is not a status; name the caller).
     # ------------------------------------------------------------------------------------
-    "scripts/check_coverage_floors.py": "L1.50 money-path coverage ratchet. REPAIRED THIS CYCLE "
-                                        "and the repair is why it matters: its MONEY_PATH was "
-                                        "the five retired `binance_*` adapters, so the "
-                                        "'money path 89.44%' every session read described code "
-                                        "LAWS §1 forbids running. Now measures the live MT5 "
-                                        "order path; live rc=1 correctly reporting POPULATION "
-                                        "CHANGED and naming gateway.py unmeasurable on this "
-                                        "host. Its cron row (22 5 * * *) has been dead since "
-                                        "the 08-20 cron death -- which is why the floor last "
-                                        "rose 20 days ago",
     "scripts/check_prompt_ratchet.py": "the fence that verifies LAWS actually REACH organs; "
                                        "live rc=0 '31 governed prompts, 334 invariant assertions "
                                        "across 29 defined invariants ... every prompt still "
@@ -257,8 +247,22 @@ ALLOWLIST: dict[str, str] = {
     #                                  crypto vocabulary; the FINDING is real but the axes are
     #                                  retired ground, so it needs MT5 partitions first.
     #   scripts/check_coverage_floors.py  precondition unmet standalone: it needs coverage.json
-    #                                  from a --cov suite run, so hourly it would only ever print
-    #                                  FileNotFoundError. Belongs after the suite, not here.
+    #                                  from a --cov suite run, so on its own timer it would only
+    #                                  ever print FileNotFoundError. Belongs after the suite.
+    #                                  RE-EXCLUDED 2026-08-29 after being allowlisted at 01:21 the
+    #                                  same day on the note "live rc=1 correctly reporting
+    #                                  POPULATION CHANGED". That reading was taken while a --cov
+    #                                  run's coverage.json happened to be on disk. Fired from a
+    #                                  clean tree it printed `cannot read coverage.json
+    #                                  (FileNotFoundError)` -- so the entry would have produced a
+    #                                  permanent daily red at 05:22 that raises no floor and
+    #                                  trains readers to skim, which is how a real one gets
+    #                                  missed. VERIFY AN ORGAN FROM THE STATE ITS TIMER WILL FIND,
+    #                                  never from the one your own cycle just built. It is not
+    #                                  unscheduled: `quant-coverage-ratchet.timer` (Sun 01:00)
+    #                                  runs ops/gates.sh --full, which produces coverage.json and
+    #                                  then calls this script at ops/gates.sh:72-73 -- the only
+    #                                  order in which it can say anything.
     #   scripts/run_execution_economics.py  exits 1 while still writing its artifact; that
     #                                  disagreement needs diagnosing before it is scheduled.
     # ------------------------------------------------------------------------------------

@@ -406,3 +406,35 @@ def test_last_slot_at_or_before_finds_the_slot_and_bounds_its_scan() -> None:
     assert last_slot_at_or_before("22 5 * * *", now) == datetime(2026, 8, 28, 5, 22, tzinfo=UTC)
     assert last_slot_at_or_before("19 4 1 * *", now) == datetime(2026, 8, 1, 4, 19, tzinfo=UTC)
     assert last_slot_at_or_before("0 0 30 2 *", now) is None   # 30 February: never
+
+
+def test_no_script_is_both_allowlisted_and_documented_as_excluded() -> None:
+    """A row cannot be scheduled AND documented as deliberately unscheduled.
+
+    MEASURED 2026-08-29. `scripts/check_coverage_floors.py` was allowlisted at 01:21 on the note
+    "live rc=1 correctly reporting POPULATION CHANGED", 110 lines above a comment block that had
+    already ruled it out: "precondition unmet standalone: it needs coverage.json from a --cov
+    suite run, so it would only ever print FileNotFoundError." Fired from a clean tree it printed
+    exactly that. The two halves sat in ONE file, contradicting each other, and nothing compared
+    them -- so the entry would have produced a permanent daily red at 05:22 that raises no floor
+    and trains readers to skim, which is how a real one gets missed.
+
+    The exclusion prose is the desk's reasoning and cost real measurement to write; this makes it
+    load-bearing instead of decorative. Delete the comment to schedule the row -- deliberately, so
+    the reasoning is confronted rather than walked past.
+    """
+    import re
+    from pathlib import Path
+
+    from scripts.run_manifest_dispatch import ALLOWLIST
+
+    src = (Path(__file__).resolve().parents[2] / "scripts/run_manifest_dispatch.py").read_text(
+        encoding="utf-8")
+    excluded = {
+        f"scripts/{m.group(1)}" if not m.group(1).startswith("scripts/") else m.group(1)
+        for m in re.finditer(r"^\s*#\s{2,}((?:scripts/)?\w+\.py)\b", src, re.M)}
+    assert excluded, "the exclusion block vanished -- its reasoning is no longer being recorded"
+    clash = sorted(excluded & set(ALLOWLIST))
+    assert not clash, (
+        f"{clash} are ALLOWLISTED and also named in the deliberately-not-allowlisted comment "
+        f"block. One of the two is wrong; decide which and delete the other.")
