@@ -57,6 +57,10 @@ HEAVY = (
     "minimax/minimax-m3:free",
     "nvidia/nemotron-3-super-120b-a12b:free",
     "poolside/laguna-s-2.1:free",
+    # Transiently 429'd on the first probe rather than refusing. A rate limit is a moment, not a
+    # property, and excluding a model for one busy minute permanently shrinks the panel.
+    "z-ai/glm-5.2:free",
+    "google/gemma-4-31b-it:free",
 )
 LIGHT = (
     "nvidia/nemotron-3.5-lightning:free",
@@ -66,13 +70,38 @@ LIGHT = (
     "cohere/north-mini-code:free",
     "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
     "liquid/lfm-2.5-2.6b:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "poolside/laguna-xs-2.1:free",
     "openrouter/free",
+)
+
+#: MILLION-TOKEN CONTEXT, FREE. The largest under-exploitation found on 2026-08-29: these models
+#: accept ~1M tokens and the desk was sending them a few hundred. That is the difference between
+#: asking "propose a mechanism" and asking "here is the ENTIRE research state -- every
+#: certificate, the full graveyard, the measured funnel, the coverage map -- now tell me what
+#: this desk is systematically failing to see".
+#:
+#: A model that can hold the whole desk at once can answer questions no paginated prompt can:
+#: which mechanism is absent across every market, which failure repeats across unrelated
+#: families, where the search has a blind spot rather than a gap. Those are exactly the questions
+#: worth a free call.
+DEEP = (
+    "minimax/minimax-m3:free",                    # 1,048,576
+    "nvidia/nemotron-3.5-lightning:free",         # 1,000,000
+    "nvidia/nemotron-3-ultra-550b-a55b:free",     # 1,000,000
+    "thinkingmachines/inkling:free",              # 1,048,576 (agentic-gated; tried last)
+    "dots-studio/dots-3-note-preview:free",       # 512,000
 )
 
 #: Which tier each research role draws from. GENERATION and REVIEW are reasoning-heavy; an audit
 #: that only has to compare a claim against a list does not need a 550B model, and taking one
 #: starves generation of the shared rate limit.
 ROLE_TIER: dict[str, tuple[str, ...]] = {
+    # Roles that benefit from seeing the WHOLE desk at once get the million-token tier.
+    "deep_audit": DEEP,
+    "weakness": DEEP,
+    "survivor_hunt": DEEP,
+    "full_state": DEEP,
     "generation": HEAVY,
     "mechanism": HEAVY,
     "review": HEAVY,
