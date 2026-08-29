@@ -77,3 +77,29 @@ def test_coverage_separates_productive_from_barren() -> None:
 def test_yield_rate_is_safe_on_empty_regions() -> None:
     assert RegionStat("x").yield_rate == 0.0
     assert RegionStat("x", searched=4, survived=1).yield_rate == 0.25
+
+
+def test_the_bar_does_not_move_with_sweep_size() -> None:
+    """BOTH inputs to the deflated-Sharpe hurdle must be constants.
+
+    Pinning the trial count alone did NOT fix the bar: measured 2026-08-29 with trials already at
+    597, sr0 still rose to 2.4523 because the hurdle also scales with the Sharpe DISPERSION of
+    whatever else is in the batch (0.0149 at 460 cells, 0.6238 at 1,985). Same candidate, same
+    policy, a bar four times higher for being scheduled into a bigger sweep -- the same defect
+    through a second door.
+    """
+    from desks.mt5.research.gate_policy import (  # type: ignore[import-not-found]
+        FIXED_VARIANCE_OF_SHARPES,
+        charged_trial_count,
+    )
+
+    from libs.validation.dsr import expected_max_sharpe
+
+    trials, _basis = charged_trial_count(9999, None, "unmeasurable")
+    bar = expected_max_sharpe(trials, float(FIXED_VARIANCE_OF_SHARPES))
+    # identical for every sweep size, because neither input depends on the batch
+    for cells in (17, 146, 460, 1985, 8375, 99_999):
+        t2, _ = charged_trial_count(cells, float(cells) * 0.9,
+                                    "null_calibrated_participation_ratio")
+        assert expected_max_sharpe(t2, float(FIXED_VARIANCE_OF_SHARPES)) == bar
+    assert round(bar, 4) == 0.3786

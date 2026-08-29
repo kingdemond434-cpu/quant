@@ -428,7 +428,25 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     # unsanctioned bar I had just deleted from the searcher, moved INSIDE the gate where it was
     # less visible. The ten gates run exactly as defined.
     sharpes = np.array([sharpe_ratio(matrix[:, k]) for k in range(matrix.shape[1])])
-    sh_var = float(sharpes.var(ddof=1)) if len(sharpes) > 1 else 0.0
+    sh_var_measured = float(sharpes.var(ddof=1)) if len(sharpes) > 1 else 0.0
+    # THE SECOND DOOR THE BAR CAME THROUGH. The deflated-Sharpe hurdle is
+    # expected_max_sharpe(n_trials, variance_of_sharpes), and this used the variance ACROSS THE
+    # CURRENT SWEEP -- so pinning the trial count alone did not fix the bar. Measured 2026-08-29
+    # with trials already pinned at 597: sr0 still rose to 2.4523, because a wider and more
+    # diverse batch has wider Sharpe dispersion (0.0149 at 460 cells, 0.6238 at 1,985). Same
+    # candidate, same policy, a bar four times higher for being scheduled into a bigger sweep.
+    # Both inputs are constants now, so the bar is a property of the policy rather than of the
+    # hour. The MEASURED dispersion is still computed and still reported: hiding the input would
+    # make it impossible to check the constant was not chosen to suit a result.
+    sh_var = sh_var_measured
+    _var_basis = "measured_batch_dispersion"
+    try:
+        from research.gate_policy import FIXED_VARIANCE_OF_SHARPES
+        if isinstance(FIXED_VARIANCE_OF_SHARPES, (int, float)) and FIXED_VARIANCE_OF_SHARPES > 0:
+            sh_var = float(FIXED_VARIANCE_OF_SHARPES)
+            _var_basis = f"fixed_variance_of_sharpes({sh_var})"
+    except Exception as _exc:                      # policy unreadable: fail to the measured value
+        _var_basis = f"measured_batch_dispersion (policy unreadable: {type(_exc).__name__})"
     # THE SEALED TRIAL CHARGE, EXACTLY (gate_spec.yaml deflated_sharpe.params):
     #   trial_count_basis: ceil(null_calibrated_participation_ratio_effective_cells * 7)
     #   fail_closed_to:    raw_cells * 7
@@ -451,7 +469,8 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         _trial_basis = f"raw_cells_x7_fail_closed ({type(_exc).__name__})"
         _census = {"unavailable": str(_exc)[:120]}
 
-    print(f"  Matrix: {matrix.shape}, n_trials={n_trials} ({_trial_basis})")
+    print(f"  Matrix: {matrix.shape}, n_trials={n_trials} ({_trial_basis}), "
+          f"var_of_sharpes={sh_var} ({_var_basis}; measured this sweep {sh_var_measured:.6f})")
     t0 = time.time()
 
     if matrix.shape[1] < 2:
@@ -509,7 +528,10 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
                                     variance_of_sharpes=sh_var, threshold=DSR_THRESHOLD)
         stages["deflated_sharpe"] = {
             "passed": bool(dsr.passed), "dsr": round(float(dsr.dsr), 4),
-            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials
+            "sr0": round(float(dsr.sr0_threshold), 4), "n_trials": n_trials,
+            "variance_of_sharpes": round(sh_var, 6),
+            "variance_basis": _var_basis,
+            "variance_measured_this_sweep": round(sh_var_measured, 6),
         }
 
         # PBO + SPA (program-level)

@@ -31,6 +31,11 @@ VERSION = _SPEC["version"]
 _SPEC_FIXED_TRIALS = next(
     (g.get("params", {}).get("fixed_trial_count")
      for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
+#: The OTHER input to the deflated-Sharpe hurdle. Pinned for the same reason as the trial count:
+#: a candidate must not face a higher bar for having been scheduled into a wider sweep.
+FIXED_VARIANCE_OF_SHARPES = next(
+    (g.get("params", {}).get("fixed_variance_of_sharpes")
+     for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
 DONE_MARKER = "DONE_qquant_gates_original10_v2"
 GATES = tuple(g["name"] for g in _SPEC["gates"])
 
@@ -65,8 +70,9 @@ REGIME_CONTROL = (
 # and is_exact_policy is an exact dict match, so admission sees nothing until then. The gauntlet
 # republishes with the current attestation every sweep, and sweeps now finish in ~20 minutes.
 TRIAL_COUNT_BASIS = (
-    "fixed_campaign_trials(597): the same multiple-testing charge for every cell regardless of "
-    "how many others share its sweep"
+    "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863): BOTH inputs to the "
+    "deflated-Sharpe hurdle are constants, so the bar is identical for every cell regardless of "
+    "how many others share its sweep or how dispersed their Sharpes are"
 )
 
 ATTESTATION = {
