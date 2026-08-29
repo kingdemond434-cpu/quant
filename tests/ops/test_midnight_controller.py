@@ -112,7 +112,9 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
     wrapper = WRAPPER.read_text("utf-8")
     assert wrapper.index("--pipeline-start") < wrapper.index("build_mt5_midnight_state.py")
-    assert wrapper.index("run_midnight_completion.py") < wrapper.index("build_mt5_midnight_state.py")
+    assert wrapper.index("run_midnight_completion.py") < wrapper.index(
+        "build_mt5_midnight_state.py"
+    )
     assert "MT5/Fusion-only" in wrapper
     assert "legacy crypto-wide study registry" in wrapper
 
