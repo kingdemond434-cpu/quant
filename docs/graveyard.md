@@ -1940,3 +1940,67 @@ existing input rather than a missing one.
 test, 26 BIS rates with as-of dates). Derivation: `docs/research/prospector_coverage.md` s14 item 1.
 Related: **R0708** (the `execution_resolver` unit defect this test exposed), **R0709** (the BIS
 replacement source).
+
+### `fx_time_of_day_short_0900gmt_wed_thu_fri` — PROSPECTOR s18, 2026-08-29 — `confound_uncontrolled` (short-bias proxy) + `costs_killed_edge`   [universe: **MT5**, mandate-valid]
+
+**CLAIM (published, `quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html`,
+2017-09-07, VERIFIED — post body fetched, robots `Allow: /`):** "Short at GMT 09:15, on Wednesday,
+Thursday and Friday, close after 5 hours" on EURUSD. Author's own backtest 2007-01-01→2017-05-05 on
+M15. Companion claim (strategy 2): short USDJPY at 00:15 GMT, close after 5h, all weekdays.
+
+**WHY IT NEVER HAD A MECHANISM.** No forced participant is named anywhere in the post. The author's
+only causal gesture is a link to a Ranaldo PDF on intraday FX segmentation — a *descriptive* result
+about session structure, which does not imply a directional short. The rule is a clock and a
+direction with nothing between them.
+
+**THE MULTIPLICITY WAS PRINTED IN THE POST.** `bt.test_all(hypo,'ALL')` runs **15 pairs** and the
+pasted output accumulates the winners: strategy 1 → `['EURGBP','EURUSD','AUDUSD']` (**3/15**),
+strategy 2 → `['USDJPY']` (**1/15**). A later `EDIT Nov 5th, 2017` narrows strategy 1 to EURUSD
+alone — **1/15, selected after seeing the curves.** Uncorrected selection over 15 trials.
+
+**KILLED ON 8.6 YEARS FULLY OUT-OF-SAMPLE TO THE AUTHOR** (`EURUSD_H1.parquet`, 2018-01-01→
+2026-08-28, n=53,894; broker-EET stamps converted to GMT at +3 summer/+2 winter; cost taken from the
+**tape** at 12.0 pts / `digits=5` = **1.07bp round trip**, never from the registry, whose EURUSD
+`median_spread_pts` is the 0.0 defect of R0729):
+
+```
+S1 AS PUBLISHED  short 09GMT Wed/Thu/Fri   n= 1348  gross +0.72bp  net -0.35bp  t=-0.43
+CONTROL A  short 09GMT all weekdays        n= 2246  gross +0.50bp  net -0.56bp  t=-0.96
+CONTROL B  short every hour (short bias)   n=52689  gross +0.05bp  net -1.02bp  t=-11.25
+CONTROL C  LONG 09GMT Wed/Thu/Fri          n= 1348  gross -0.72bp  net -1.78bp  t=-2.20
+```
+
+**It does not clear its own spread**: gross +0.72bp against 1.07bp round trip. It dies at the L1.5
+money bar before significance is relevant. **Hour 09 is not special** — shorting every hour, all
+weekdays, hour 09 ranks **6th of 24** on net t, in a smooth session profile with no spike, and all
+24 hours are net-negative.
+
+**THE CONFOUND, NAMED BY A COMMENTER IN 2017 AND CONFIRMED HERE.** Top reply on the post: *"The
+EURUSD strategy is simply benefiting from the strong down trend since 2008 ... Try the same strategy
+from 2000 to 2007!"* Split by trend direction:
+
+| sub-period | EURUSD total move | S1 net | t |
+|---|---|---|---|
+| 2018–2021 | **−5.33%** | **+0.40bp** | +0.39 |
+| 2022–2026 | **+1.88%** | **−1.00bp** | −0.81 |
+
+**The sign of the strategy tracks the sign of the trend.** It is a short-bias proxy with a clock
+attached — precisely the confound the commenter specified, settled on data he did not have.
+
+**TAGS:** `confound_uncontrolled`, `costs_killed_edge`, `selection_over_15_trials`, `no_mechanism`.
+
+**L1.16a RE-ENTRY DOOR (named, and it is narrow).** The killed quantity is a *directional* time-of-
+day edge. What is NOT killed and was never tested here is the **non-directional** session structure
+the Ranaldo citation actually describes (range/volume/spread by hour), which the desk's
+`cost_surface.py` already builds from its own tape and uses as a *cost* input, not an alpha. Re-open
+only on a time-of-day claim that (a) names a forced participant, (b) is direction-neutral or
+justifies its direction mechanically, and (c) clears the tape-measured spread gross. More data is
+**not** an enabling change: 8.6 years of OOS is already the test.
+
+**RELATED / DO NOT RE-MINE:** the parent descriptive post `time-of-day-effects-in-fx` was already
+EV-rejected by PROSPECTOR s16 as `fx_time_of_day_session_handover_drift` (EV 0.00020). The host
+`quantsjourney.blogspot.com` is **EXHAUSTED** (6/6 posts, sitemap-enumerated, comment layer mined) —
+see `docs/research/prospector_coverage.md` s18 item 3.
+
+**EVIDENCE:** post body + 9 comments fetched 2026-08-29; sitemap `6 <loc>`; derivation and the full
+control table in `prospector_coverage.md` s18 item 3.

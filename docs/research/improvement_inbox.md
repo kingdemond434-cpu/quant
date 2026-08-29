@@ -4469,3 +4469,53 @@ means it cannot be repaired by clamping zeros.
 **Residual/UNMEASURED (not claimed as fixed):** for the 15 genuinely-sparse symbols the true spread
 is **UNMEASURED**, not zero and not the non-zero median; that gap stays open and should be graded,
 not filled with a plausible number.
+
+## 2026-08-29 (prospector s18) — `recommendations.py correct` cannot correct an OPEN row, which is the only kind worth correcting
+
+**Observed.** s17 ledgered R0728 with a specific named patch site. s18 disproved that site (see
+`prospector_coverage.md` s18 item 1) and tried to amend it in place:
+
+```
+$ .venv/bin/python scripts/recommendations.py correct --id R0728 --reason "..."
+R0728 is already open -- nothing to correct
+```
+
+**The verb only applies to rows that are already DISPOSED** — i.e. it can fix the record of a
+decision already taken, but cannot fix a *pending instruction* that is wrong. That is backwards:
+an open row is a work order someone is going to act on. A disposed row is history.
+
+**Why it costs something rather than being cosmetic.** The desk's stated conversion duty is that a
+ledger row names its own fix. R0728 named a fix that would not have worked (`expand_universe.py`'s
+fallback branch, which provably never fired). With `correct` refusing, the only routes are: (a)
+dispose R0728 falsely to unlock the verb, (b) leave a known-wrong instruction standing, or (c) raise
+a new row — I took (c), `R0729`. **(c) inflates the duplicate count on a defect that already had
+three open rows**, which is exactly the signal the backlog uses to rank work. A correction now reads
+as a fourth independent discovery.
+
+**Fix (small, one file).** Allow `correct` on `status == "open"`, appending to a
+`corrections: []` list on the row rather than overwriting `summary` (the original wrong diagnosis is
+itself evidence — it should be visible, not erased). Keep the current disposed-row behaviour
+unchanged. The fence that would have caught this: a test asserting `correct` succeeds on an open
+row.
+
+**Cross-ref:** R0729, R0728, R0695, R0664.
+
+## 2026-08-29 (prospector s18) — a 2017 hobbyist blog ran the null control this desk's graveyard shows it skips
+
+**Not an alpha — a method, logged because the desk keeps re-learning it.** In
+`quantsjourney.blogspot.com/2017/06/trading-decisions-of-your-stone-age.html` the author, testing a
+round-number/pricing filter on EURUSD M15, builds an explicit **control group before scoring the
+rule**: every 10th bar over the whole backtest window (**12,807 control entries**), scored first,
+with the filtered entries compared against *that baseline* rather than against zero.
+
+**Why it is worth an inbox line.** The desk's own recent record: `free-data d` (2026-08-28) —
+*"always run the sign(next-day-return) leak control or your null is a dead pipe"*; PROSPECTOR s9 —
+a 3.08x "excess reopen vol" that was entirely `sqrt(sessions spanned)` once controlled; s17 — a
+`p=0.0001` contrast that netted to Sharpe 0.039 on the level. **Every one of those was a missing
+baseline, not a missing statistic.** A structural-sample control (every Nth bar) is cheaper than
+any of the corrections the desk applies afterward and it is uniform across families.
+
+**Suggested (not a patch — outside a prospector's freeze):** where a screen scores a *conditioned*
+subset, emit the unconditional every-Nth-bar baseline over the identical window and cost model
+alongside it, so the conditioning's contribution is read directly rather than inferred. Cheapest
+place is wherever the ten-gate certificate already assembles the candidate's own return series.

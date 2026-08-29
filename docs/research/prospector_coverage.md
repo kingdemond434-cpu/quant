@@ -10518,3 +10518,167 @@ the 0.39 density on it. This is a *mandate* exclusion, not a quality one.
 4. **The 92 UNMEASURED carry sides** — still owed, still the MT5 desk's to implement (carried from
    s16 unchanged; outside this seat's freeze, so it stays a ledger row, not a patch).
 5. **The 694 macrosynergy PR bodies** — counted twice now, read zero times.
+
+### ITEM 3 — `Quant Journey` **EXHAUSTED** (2026-08-29). Whole host = 6 posts. **1 published strategy tested OOS and KILLED; the kill was predicted in the 2017 comment thread.**
+
+**§13 first:** `quantsjourney.blogspot.com/robots.txt` HTTP 200, `User-agent: *` → `Disallow: /search`,
+`Disallow: /share-widget`, **`Allow: /`**. Post paths allowed; I never touched `/search`. Honest
+`ClaudeBot (quant research desk)` UA, 2s between fetches, 6 requests total. No breach.
+
+**Population enumerated, not assumed** (the standing lesson: an index hands you submissions, not a
+host). `sitemap.xml` returns **6 `<loc>` entries — that is the entire blog.** Quantocracy indexed 4
+of 6; the density rank of 1.00 was computed over a 4-item sample of a 6-item host, so **"top-ranked
+host" was a sample-size artifact all along.** All 6 fetched and read to the body:
+
+| post | verdict |
+|---|---|
+| `struggling-quant-episode-1-how-i-lost` (19.5k) | **EXODUS GENRE, no mechanism.** The "USD 500,000" is not a loss — it is *opportunity cost* from the author's own model (1,000 ideas / 25yr × 5% hit rate × 20%/yr). A research-throughput model, not a trade. No card. |
+| `an-attempt-at-anti-rocketsurgery` (6.6k) | Kalman-filter explainer (cowboy analogy). No mechanism, no data. No card. |
+| `my-crpto-currency-portfolio` (1.2k) | **VOID BY MANDATE** — crypto-exchange ground, never hunted (LAWS §1). Filter named is "developers-to-days-on-market". Recorded so nobody re-opens it. |
+| `trading-decisions-of-your-stone-age` (6.0k) | Round-number/pricing-psychology *filter*, EURUSD M15 2009–2014, hand-optimised (`spread<1.1 and volume<300`). **Method worth keeping (below); claim not.** |
+| `time-of-day-effects-in-fx` (5.4k) | Descriptive: hourly range/volume/spread pivots. **Already EV-rejected by s16** as `fx_time_of_day_session_handover_drift` (EV 0.00020). Not re-logged. |
+| `two-strategies-you-can-start-trading` (2.9k) | **The only falsifiable trading claim on the host. TESTED AND KILLED — see below.** |
+
+**THE MULTIPLICITY IS PRINTED IN THE POST'S OWN OUTPUT, AND NOBODY READ IT.** The author runs
+`bt.test_all(hypo,'ALL')` over **15 pairs** and pastes the accumulating list of winners. Strategy 1
+ends at `['EURGBP','EURUSD','AUDUSD']` — **3 of 15.** Strategy 2 ends at `['USDJPY']` — **1 of 15.**
+Those are the *selected* survivors of 15 trials, presented as the finding. The author then adds
+`EDIT Nov 5th, 2017: Strategy one is only for EURUSD` — narrowing 3/15 to **1/15 after seeing the
+equity curves.** The trial count was never a hidden quantity here; it was in the output block.
+
+**THE COMMENT LAYER OUTRANKED THE POST — and it named the falsifier.** 9 comments. The top reply:
+
+> *"The EURUSD strategy is simply benefiting from the strong down trend since 2008. If you enter a
+> EURUSD short at 9am everyday then close after 5 hours the EURUSD will produce a nice equity curve.
+> **Try the same strategy from 2000 to 2007!**"*
+
+That is a **named, testable confound with the control specified**: an *unconditional* short at the
+same hour. If unconditional ≈ conditional, the Wed/Thu/Fri gate adds nothing and the strategy is a
+short-bias proxy. The thread then escalates (a challenger builds a 6-parameter GBPUSD short and the
+author concedes *"Despite 6 optimized parameters"*; a third: *"With as much parameters even I can
+make a backtest look like gold"*). **Nine years later the desk can settle it on data neither party
+had** — the author backtested to 2017-05-05, the challenger to 2017-04-11.
+
+**THE OOS TEST.** Desk's own `EURUSD_H1.parquet`, **2018-01-01 → 2026-08-28, n=53,894 bars — fully
+out-of-sample to both 2017 parties.** Stamps converted from broker EET to GMT (+3 summer / +2 winter
+— the desk's `+00:00` label is not its clock, standing fact) because the rule is stated in GMT.
+Entry 09:00 GMT close, exit 14:00 GMT close (H1 approximation of the published 09:15→14:15). Cost
+charged **from the tape, not the registry** — 12.0 points at `digits=5` = **1.07bp round trip**
+(the registry says 0.0, which is Item 1's defect; using it would have manufactured a survivor here).
+
+```
+S1 AS PUBLISHED  short 09GMT Wed/Thu/Fri   n= 1348  gross +0.72bp  net -0.35bp  t=-0.43  Sh=-0.41
+CONTROL A (the commenter's) 09GMT all wkdy n= 2246  gross +0.50bp  net -0.56bp  t=-0.96  Sh=-0.70
+CONTROL B  short every hour (short bias)   n=52689  gross +0.05bp  net -1.02bp  t=-11.25 Sh=-1.70
+CONTROL C  LONG 09GMT Wed/Thu/Fri          n= 1348  gross -0.72bp  net -1.78bp  t=-2.20  Sh=-2.08
+```
+
+**It does not clear its own spread.** Gross +0.72bp against a 1.07bp round trip — the entire claimed
+effect is smaller than the cost of harvesting it, so it dies at L1.5 before any statistics are
+needed. `t=-0.43` net.
+
+**Hour 09 is not special.** Shorting every hour, all weekdays: **hour 09 ranks 6th of 24** on net t,
+and the top hours (06, 07, 08, 10) are indistinguishable from it — a smooth session profile, not a
+spike. Every one of the 24 has negative net t.
+
+**And the commenter's confound is CONFIRMED, with the sign flipping exactly as predicted:**
+
+| sub-period | EURUSD total move | S1 net | t |
+|---|---|---|---|
+| 2018–2021 | **−5.33%** | **+0.40bp** | +0.39 |
+| 2022–2026 | **+1.88%** | **−1.00bp** | −0.81 |
+
+**The strategy makes money when EURUSD falls and loses when it rises.** It is a short-bias proxy
+wearing a clock, which is what an anonymous commenter said in 2017 with no data past 2017 and no
+way to prove it. **He was right.** Neither half is significant on its own — the point is the *sign
+flip tracks the trend*, which is the signature the commenter named.
+
+**VERDICT: KILLED. No card raised, nothing to the watchlist.** Routed as a graveyard entry with its
+mechanism of death (short-bias confound + fails the cost bar) so no future run re-enters it.
+**A free graveyard entry harvested from a debunking reply — exactly what the comment-layer mandate
+is for.**
+
+**THE ONE THING WORTH KEEPING FROM THIS HOST — a method, not an alpha.** In
+`trading-decisions-of-your-stone-age` the author builds an explicit **null control group before
+testing the rule**: every 10th bar over the backtest period (**12,807 control entries**), scored
+first, and the filtered entries compared *against that*, not against zero. That is the leak control
+this desk's own graveyard shows is skipped most often (`free-data d`, 2026-08-28: *"always run the
+control or your null is a dead pipe"*). A 2017 hobbyist blog ran it as routine. **Noted to
+`improvement_inbox.md`, not carded** — it is a discipline, not an edge.
+
+**HOST EXHAUSTED** — 6/6 posts read to the body, comment layer mined to 9 replies, sitemap
+enumerated, one strategy tested to a verdict on 8.6 years of OOS. Nothing remains here.
+
+### s18 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| **`docs/research/recommendation_ledger.json`** (chase, not catalogue) | ✅ | **TRIPLE-RAISE FOUND (R0664/R0695/R0728, all open, 3 seats, 4 days) + my own s17 diagnosis REFUTED.** True fix site located → **R0729** raised, rank 1 |
+| **`scripts/repair_universe_registry.py`** (code archaeology) | ✅ | **DEFECT: `parquet_facts()` reads `columns=["close"]`, dropping the `spread` column in the same open file — 2nd capability disabled by one selector** |
+| **`data/cboe_vol_term_structure.json`** (card 87, own prior run) | ✅ | **MEASURED NULL — shape arm KILLED in all 7 regimes, levels AND changes; the 2008 crisis is absent from VIX3M entirely** |
+| **`quantsjourney.blogspot.com`** (Quantocracy density rank 1) | ✅ | **EXHAUSTED 6/6 + comment layer. 1 published strategy KILLED on 8.6yr OOS → graveyard.** Density 1.00 was a 4-of-6 sample artifact |
+| `recommendations.py` (tooling) | ✅ | **GAP: `correct` refuses OPEN rows** → improvement_inbox |
+
+- **DEPTH.** Item 1: chase → ledger → **refuted my own prior card's named patch** → provenance →
+  7 producers → the actual last writer → its column selector → **cross-linked to a second seat's
+  independent finding on the same line**. Item 2: not a re-score but the *specific* rescue test s17
+  left open, cut 7 ways by regime **and** by VIX level **and** in changes as well as levels, plus
+  the span audit that found the premise missing. Item 3: **sitemap-enumerated population** (6, not
+  the 4 handed to me) → all 6 bodies → **comment layer, 9 replies, ≥2 levels deep** → the top reply
+  named a falsifier → **tested that exact falsifier on 8.6 years neither 2017 party had** → sign
+  flip confirmed → graveyard with a named re-entry door. **Honest depth gap:** I did **not** follow
+  the Ranaldo citation chain (`c.mql5.com/forextsd/forum/206/ranaldo_000.pdf`) — the directional
+  family is now graveyarded and the citation describes the *non-directional* structure the desk
+  already builds in `cost_surface.py`, so the chain leads to held ground. Named, not skipped
+  silently.
+- **§13.** Honest `ClaudeBot (quant research desk)` UA. `quantsjourney.blogspot.com` robots 200,
+  `Allow: /`, `Disallow: /search` respected (sitemap used for enumeration instead — the allowed
+  route). 6 requests, 2s apart. No UA switching, no evasion, no third-party tooling installed or run.
+  **No breach.**
+- **FREEZE respected.** Writes: `docs/research/*`, `docs/graveyard.md`, `docs/research/recommendation_ledger.json`
+  (via the sanctioned CLI), `data/cadence_state.json`. Nothing under `scripts/`, `libs/`, the
+  executor, a rail, or a live state file. `scripts/repair_universe_registry.py` and
+  `desks/mt5/**` were **read only** — both defects are **routed, not patched**.
+- **Video:** 0 fetched, 0 locked, none needed. Nothing added to `video_locked_log.md`.
+- **Cards raised: 0.** 1 ledger row (R0729), 2 inbox items, 1 graveyard entry, 1 host EXHAUSTED,
+  2 measured nulls. **0 fabricated survivors, and nothing reached the watchlist — correctly.**
+- **MY OWN RESULTS THAT DIED TO THEIR OWN CHECKS:**
+  (1) **My s17 ledger row R0728 named the wrong patch site.** One nonzero sibling field
+  (`spread_pts_at_collection=1.0`) disproves it. I found it only because I ran the routine
+  "is it already fixed and merely undisposed?" check instead of trusting yesterday's note.
+  (2) **s17's `r=+0.835` for the CBOE shape was a level-vs-level number** — the shape is
+  **−0.66**. s17's *conclusion* (downgrade) survived; its *evidence* did not, and the shape had
+  never actually been measured.
+  (3) My first OOS run returned `n=0` on all four arms — a broken index construction, not a data
+  absence. **An `n=0` that reads as "no data" is the WS-005 shape**; I debugged it rather than
+  logging "insufficient history".
+  (4) I nearly costed the OOS test from `universe.json`, which prices EURUSD at **0.0**. That would
+  have turned a −0.35bp loser into a +0.72bp "survivor". **Item 1's defect would have manufactured
+  Item 3's survivor in the same session** — the clearest demonstration yet of why R0729 is rank 1.
+
+### NEXT UN-EXHAUSTED GROUND (for s19, in order)
+
+1. **R0729 is a one-file fix inside an already-scheduled script and it pays twice** (spread repair +
+   the free-data seat's recency gap). It is the highest-leverage open row this seat has produced:
+   a zero-cost EURUSD makes every EURUSD candidate look free at the money bar, and s18 proved that
+   is not hypothetical by nearly doing it. **s19 must check whether R0729/R0728/R0695/R0664 have
+   been dispositioned; if all four are still open after a week, that is the finding to escalate,
+   not the defect.**
+2. **`Golden Compass` is EXHAUSTED (s17) and `Quant Journey` is EXHAUSTED (s18) — the density
+   ranking is now spent down to `Only VIX` (VOID BY MANDATE) and `Beyond Passive` (EV-rejected ×3
+   by s16).** The Quantocracy blogosphere index as a *ranked host list* is finished. **Do not
+   re-rank it; re-enumerate it** — s18 showed the density scores are computed over Quantocracy
+   *submissions*, not host populations, so every rank is a small-sample artifact. The next honest
+   step is sitemap-enumerating the remaining hosts to get true post counts before spending any
+   host budget.
+3. **The 92 UNMEASURED carry sides** — owed since s16, still the MT5 desk's to implement, still
+   outside this seat's freeze. Carried unchanged; it stays a ledger row, not a patch.
+4. **The 694 macrosynergy PR bodies** — counted three times now, read zero times. If s19 does not
+   read them, it should say plainly that the desk is *cataloguing* them rather than mining them.
+5. **The 2017 challenger's deliberate holdout.** In the `two-strategies` thread a commenter posted a
+   GBPUSD short rule and wrote *"(STOPPED HERE IN CASE YOU WANT SOME DATA FOR TRUE OOS)"* —
+   a **pre-registered out-of-sample boundary at 2017-04-11, set by someone with no stake in the
+   result.** That is a rare artifact. The rule itself is 6 parameters and the author conceded as
+   much, so EV is low and I did not spend the run on it — but the *genre* (public rules with
+   author-declared holdout dates) is worth a targeted search, because the holdout is the expensive
+   part and someone else already paid for it.
