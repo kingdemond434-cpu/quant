@@ -48,10 +48,12 @@ future observations. Every item ends IMPLEMENTED+TESTED, REJECTED with evidence,
 exact dependency and redirect, or DEFERRED_BY_DOMINANCE.
 
 NIGHTLY PRIORITY LOOP
-1. Run the fresh MT5 state builder and attack the measured binding transition first: source/data
-   utilisation, mechanism novelty, hypothesis conversion, meaningful trials, multiplicity/PBO/SPA/
-   CPCV/walk-forward/cost stress, failure and near-survivor recycling, shadow accrual, independence,
-   portfolio admission, real-fill attribution, financing/cost leakage, capacity and capital use.
+1. Read data/intelligence/midnight_completion.json and fresh MT5 state. Finish incomplete stages
+   left by any controller via canonical organs; never create another gauntlet, certifier or
+   forward engine. Attack the binding transition: data use, novelty, hypothesis conversion,
+   trials, multiplicity/PBO/SPA, CPCV/walk-forward/cost stress,
+   failure and near-survivor recycling, certificates, zero-capital shadow, independence,
+   real-fill attribution and capacity.
 2. Audit the whole Fusion catalogue across appropriate horizons/regimes and cross-asset relations.
    Treat the preregistered strategy-regime cell as the economic unit: test its unconditional arm
    as a separately counted control, validate positive net OOS expectancy only while the frozen

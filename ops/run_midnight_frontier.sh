@@ -25,6 +25,8 @@ bash ops/run_midnight_codex_controller.sh --pipeline-start || exit $?
 # Persistent MT5 workers collect and test continuously. Midnight snapshots their exact shared
 # state instead of launching the legacy crypto-wide study registry (which is outside the standing
 # MT5 venue mandate and previously OOM-killed this unit before the controller could start).
+"${PYTHON:-.venv/bin/python}" scripts/run_midnight_completion.py
+COMPLETION_RC=$?
 "${PYTHON:-.venv/bin/python}" scripts/audit_mt5_capability_reuse.py
 REUSE_RC=$?
 "${PYTHON:-.venv/bin/python}" scripts/build_mt5_midnight_state.py
@@ -51,7 +53,7 @@ then
     echo "midnight-state: snapshot PRODUCED (fresh artifact); its defects list is data for the fences, not a unit failure"
     STATE_RC=0
 fi
-PIPELINE_RC=$(( REUSE_RC != 0 ? REUSE_RC : STATE_RC ))
+PIPELINE_RC=$(( COMPLETION_RC != 0 ? COMPLETION_RC : (REUSE_RC != 0 ? REUSE_RC : STATE_RC) ))
 bash ops/run_midnight_codex_controller.sh "$PIPELINE_RC"
 CONTROLLER_RC=$?
 

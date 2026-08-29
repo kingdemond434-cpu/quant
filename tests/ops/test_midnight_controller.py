@@ -52,6 +52,7 @@ def test_overnight_contract_names_the_authority_and_collision_free_units() -> No
     assert contract["venue_scope"] == "MT5_FUSION_ONLY"
     assert contract["pipeline"] == [
         "ops/run_midnight_frontier.sh",
+        "scripts/run_midnight_completion.py",
         "scripts/build_mt5_midnight_state.py",
         "ops/run_midnight_codex_controller.sh",
     ]
@@ -111,6 +112,7 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
     wrapper = WRAPPER.read_text("utf-8")
     assert wrapper.index("--pipeline-start") < wrapper.index("build_mt5_midnight_state.py")
+    assert wrapper.index("run_midnight_completion.py") < wrapper.index("build_mt5_midnight_state.py")
     assert "MT5/Fusion-only" in wrapper
     assert "legacy crypto-wide study registry" in wrapper
 

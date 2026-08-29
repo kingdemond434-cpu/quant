@@ -17,6 +17,7 @@
                   },
     "pipeline":  [
                      "ops/run_midnight_frontier.sh",
+                     "scripts/run_midnight_completion.py",
                      "scripts/build_mt5_midnight_state.py",
                      "ops/run_midnight_codex_controller.sh"
                  ],
@@ -24,6 +25,7 @@
                                "docs/MASTER_QUANT_CONSTITUTION.md",
                                "data/constitution_core.lock",
                                "data/intelligence/mt5_midnight_state.json",
+                               "data/intelligence/midnight_completion.json",
                                "desks/mt5/data/universe/universe.json",
                                "desks/mt5/data/research_queue.json",
                                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",
