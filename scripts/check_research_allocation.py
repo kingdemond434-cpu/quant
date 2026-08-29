@@ -32,7 +32,15 @@ WHAT IT WATCHES FOR, beyond the ranking:
     credited to a family, and silently shrinks every denominator here.
   * NO_DENOMINATOR families -- certified through a generator that does not write to the shared
     docket, so their pass rate is unknown rather than small (LAWS L1.28a).
-  * CONFIDENTLY BARREN families -- 100+ attempts, zero certificates. Not a bug; a finding.
+  * UNCONFIRMED families -- 100+ attempts, zero certificates. NOT "barren": every one of those
+    attempts ran through a validator since found defective in four independent ways, so the zero
+    describes the test rather than the mechanism (LAWS L1.49). They keep their exploration floor.
+
+BREADTH IS THE OBJECTIVE, YIELD IS THE TIEBREAK. Every known mechanism receives a guaranteed
+share and no mechanism may exceed a cap. That is not a hedge against a good ranking -- it is the
+recognition that this desk's binding constraint is INDEPENDENCE (n_eff ~5.5 across 23
+certificates), so a search that narrows toward whatever certified last manufactures correlation
+and finds more of what the book already holds.
 """
 from __future__ import annotations
 
@@ -82,11 +90,17 @@ def main() -> int:
         print(f"  NO DENOMINATOR: {', '.join(rep['no_denominator'])} -- certified through a "
               f"generator that does not write the shared docket, so the pass rate is UNKNOWN "
               f"(not small) and they are excluded from the ranking rather than flattered by it.")
-    if rep.get("barren_confident"):
-        print(f"  CONFIDENTLY BARREN (100+ attempts, 0 certificates): "
-              f"{', '.join(rep['barren_confident'])}")
-    if rep.get("barren_unproven"):
-        print(f"  UNPROVEN (too few attempts to call): {', '.join(rep['barren_unproven'])}")
+    if rep.get("unconfirmed_high_attempts"):
+        print(f"  UNCONFIRMED (100+ attempts, 0 certificates -- but those attempts ran through a "
+              f"validator since found defective in four ways, so this describes the TEST, not "
+              f"the mechanism): {', '.join(rep['unconfirmed_high_attempts'])}")
+    if rep.get("barely_attempted"):
+        print(f"  BARELY ATTEMPTED (too few tries to say anything): "
+              f"{', '.join(rep['barely_attempted'])}")
+    zeroed = [f for f in alloc if alloc[f] == 0]
+    if zeroed:
+        print(f"  WARNING: {len(zeroed)} mechanism(s) allocated zero despite the "
+              f"MIN_FAMILY_SHARE floor -- that is a bug, not a decision: {', '.join(zeroed)}")
 
     payload = {"checked_at": now.isoformat(timespec="seconds"), "seed": SEED,
                "budget": BUDGET, "recommended_allocation": alloc, **rep}

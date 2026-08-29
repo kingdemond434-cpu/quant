@@ -22,11 +22,27 @@ trial it is 227x less productive than `session_range_breakout`. Nothing was meas
 nothing could act on it, and the allocation had never been anybody's decision -- it was the
 accumulated residue of which generator happened to emit the most rows.
 
-THE TRAP THIS MUST NOT FALL INTO. The obvious response -- pour the budget into the 15.87% family
--- would make the book WORSE. `session_range_breakout` is the most-mined ground on this desk, its
-certificates are the most correlated with each other, and the binding constraint here is not
-survivor count but INDEPENDENCE: n_eff ~5.5 across 23 certificates. Twenty more clones of the
-thing the desk already owns adds gross risk and no growth. Yield is one term, never the objective.
+THE TRAP THIS MUST NOT FALL INTO, and an early version of this module fell straight into it. The
+obvious response -- pour the budget into the 15.87% family -- would make the book WORSE, and the
+first draft did exactly that, allocating 980 of 1000 trials to it and ZERO to seven mechanisms it
+labelled "confidently barren".
+
+Both halves of that were wrong. Concentrating makes the book worse because
+`session_range_breakout` is the most-mined ground on this desk, its certificates are the most
+correlated with each other, and the binding constraint here is not survivor count but
+INDEPENDENCE: n_eff ~5.5 across 23 certificates. Twenty more clones of the thing the desk
+already owns adds gross risk and no growth.
+
+And zeroing the "barren" seven was worse. Those attempts ran through a validator this desk has
+since found defective in four independent ways -- pooled-median costs instead of the fill hour, a
+forward lane whose clocks reset every cycle, three verdict engines with three different bars, and
+a missing module that blocked every sleeve at once. A zero from a broken test is evidence about
+the test. Writing those mechanisms off would have made the defect permanent, because a mechanism
+that is never searched can never be proven.
+
+So: BREADTH IS THE OBJECTIVE AND YIELD IS THE TIEBREAK. Every known mechanism holds a guaranteed
+floor (MIN_FAMILY_SHARE) and none may exceed a cap (MAX_FAMILY_SHARE). Yield ranks what happens
+between those bounds; it never decides that something goes unsearched.
 
 So research value multiplies four things, and a zero in any of them is a zero overall:
 
@@ -93,7 +109,25 @@ PRIOR_STRENGTH = 4.0
 #: matter how reliably that mechanism certifies. Expressing that as a cap keeps it visible and
 #: auditable, where burying it in a fudged multiplier would leave the desk unable to say why it
 #: explored what it explored.
-MAX_FAMILY_SHARE = 0.35
+MAX_FAMILY_SHARE = 0.20
+
+#: EVERY known mechanism gets at least this share. Nothing is ever allocated zero.
+#:
+#: The first version zeroed seven families outright on "100+ attempts, zero certificates", and
+#: called them CONFIDENTLY BARREN. That label was wrong, and the way it was wrong matters: those
+#: attempts ran through a validator this desk has since found defective in at least four
+#: independent ways -- costs charged at a pooled median instead of the hour each cell actually
+#: fills, a forward lane whose clocks were restamped every cycle and could never reach day 14,
+#: three verdict engines applying three different bars, and a missing module that blocked every
+#: sleeve at once. A zero produced by a broken test is evidence about the test, not the
+#: mechanism. LAWS L1.49: a gate that never properly ran is a claim the desk cannot cash.
+#:
+#: The deeper reason is that this desk's binding constraint is not yield, it is INDEPENDENCE
+#: (n_eff ~5.5 across 23 certificates). Search that narrows toward whatever certified last
+#: manufactures correlation -- it finds more of what the book already holds, worth close to
+#: nothing, while the mechanisms that would actually diversify it go unvisited and therefore stay
+#: unproven forever. A floor makes that impossible by construction.
+MIN_FAMILY_SHARE = 0.02
 
 #: Fallback base rate before any funnel has been read. Set to the desk's measured overall yield
 #: so the module behaves identically on an empty artifact set rather than reverting to uniform.
@@ -368,25 +402,33 @@ def allocate(recs: dict[str, FamilyRecord], budget: int, *, seed: int,
                 best_f, best_v = f, v
         if best_f is not None:
             tally[best_f] += per_chunk
-    # APPLY THE BREADTH CAP, then give the overflow to the runners-up in their own proportion --
-    # never spread evenly, which would reward families the sampling already rejected.
+    # FLOOR FIRST, THEN CAP. The floor is reserved off the top so it cannot be competed away:
+    # taking it out of the leftovers would let a dominant family win it back through the sampling
+    # it already dominates, which is how a "guaranteed minimum" quietly becomes zero.
+    floor = budget * MIN_FAMILY_SHARE
+    reserved = floor * len(pool)
+    if reserved >= budget:
+        # More mechanisms than the floor can cover: spread the whole budget evenly. Breadth beats
+        # depth here deliberately -- with this many unexplored axes the desk does not yet know
+        # enough for depth to be the right call.
+        share = budget / len(pool)
+        return {f: round(share) for f, _ in pool if round(share) >= 1}
+
     cap = budget * MAX_FAMILY_SHARE
+    for f in tally:
+        tally[f] = floor + tally[f] * (budget - reserved) / budget
+
     overflow = 0.0
     for f, v in list(tally.items()):
         if v > cap:
             overflow += v - cap
             tally[f] = cap
     if overflow > 0:
-        uncapped = {f: v for f, v in tally.items() if v < cap and v > 0}
-        room = sum(cap - v for v in uncapped.values())
+        headroom = {f: cap - v for f, v in tally.items() if v < cap}
+        room = sum(headroom.values())
         if room > 0:
-            for f in uncapped:
-                tally[f] += min(cap - tally[f], overflow * (cap - uncapped[f]) / room)
-        else:
-            # Everyone is at the cap: the budget genuinely cannot be spent within the breadth
-            # constraint, so it is left unallocated rather than forced somewhere it does not
-            # belong. The caller sees a shortfall and can widen the family pool.
-            pass
+            for f, h in headroom.items():
+                tally[f] += overflow * h / room
 
     out = {f: round(v) for f, v in tally.items() if v >= 1}
     if not out:
@@ -416,12 +458,15 @@ def report(recs: dict[str, FamilyRecord], *, seed: int = 0) -> dict[str, Any]:
         "total_candidates": total_cand, "total_certified": total_cert,
         "overall_yield_pct": round(100.0 * total_cert / total_cand, 4) if total_cand else 0.0,
         "ranked": scored,
-        "barren_confident": [s["family"] for s in scored
-                             if s["counts"].get("candidates", 0) >= 100
-                             and s["counts"].get("certified", 0) == 0],
+        # NOT "barren". These were attempted many times through a validator since found
+        # defective in four independent ways; the zero describes the test, not the mechanism.
+        # They keep their exploration floor and get re-tested, never written off.
+        "unconfirmed_high_attempts": [s["family"] for s in scored
+                                      if s["counts"].get("candidates", 0) >= 100
+                                      and s["counts"].get("certified", 0) == 0],
         "no_denominator": sorted(f for f, r in recs.items()
                                  if f != "__UNATTRIBUTED__" and not r.denominator_known()),
-        "barren_unproven": [s["family"] for s in scored
+        "barely_attempted": [s["family"] for s in scored
                             if s["counts"].get("candidates", 0) < 100
                             and s["counts"].get("certified", 0) == 0],
     }

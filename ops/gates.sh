@@ -43,6 +43,25 @@ run() {
   fi
 }
 
+# WAIT FOR MEMORY, DO NOT RACE INTO AN OOM (2026-08-29). This box has 3814MB and NO SWAP, and
+# routinely sits under 1GB available -- over a gigabyte of it held by Claude Code sessions and a
+# separate live desk, against 224MB for the whole quant platform. mypy over ~700 files plus a
+# pytest collection needs several hundred MB, and this script was killed with signal 9 mid-run.
+# A gate run that dies on OOM has burned its full runtime and produced nothing; the same run
+# started ninety seconds later completes. So block for headroom rather than racing for it.
+#
+# Exit 75 (EX_TEMPFAIL) means "not started, box is short" -- a distinct outcome from a red gate,
+# and one a caller must not mistake for a passing tree.
+if [ -f scripts/memory_guard.py ] && [ -z "${QUANT_SKIP_MEMORY_GUARD:-}" ]; then
+  if ! $PY scripts/memory_guard.py --label gates --need-mb 700 --max-wait-s 600 -- true; then
+    echo "gates: NOT RUN -- insufficient memory (exit 75). This is not a green tree."
+    exit 75
+  fi
+fi
+# Cap glibc per-thread arenas for the gate processes themselves; the default 64MB-per-thread
+# arenas cost hundreds of MB of address space this workload never touches.
+export MALLOC_ARENA_MAX="${MALLOC_ARENA_MAX:-2}"
+
 echo "gates:"
 # ruff first: it is the cheapest and its failures are the least interesting, so getting them out
 # of the way keeps the expensive output readable.
