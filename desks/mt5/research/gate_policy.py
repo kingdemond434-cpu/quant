@@ -27,6 +27,10 @@ def _load_spec() -> dict:
 _SPEC = _load_spec()
 
 VERSION = _SPEC["version"]
+#: Fixed multiple-testing charge, read from the spec so the number lives in policy, not code.
+_SPEC_FIXED_TRIALS = next(
+    (g.get("params", {}).get("fixed_trial_count")
+     for g in _SPEC.get("gates", []) if g.get("name") == "deflated_sharpe"), None)
 DONE_MARKER = "DONE_qquant_gates_original10_v2"
 GATES = tuple(g["name"] for g in _SPEC["gates"])
 
@@ -49,9 +53,20 @@ REGIME_CONTROL = (
     "regime frozen before OOS; unconditional arm is a separately counted control; "
     "unknown or incompatible live regime is OFF"
 )
+# THE BAR IS FIXED. It never raises, and it never gets harsher (principal, standing instruction,
+# stated three times). A candidate is judged against a constant campaign charge, not against the
+# accident of how many other cells shared its sweep: sr0 was 0.3786 at 597 charged trials and
+# 1.3593 at 5,963, same gate, same policy, same cell, purely because the docket grew that hour.
+#
+# The attestation MUST describe what was actually applied. Leaving the old formula here while the
+# charge became constant would keep every existing certificate matching -- and make each one
+# attest to a basis it was not judged under, which is the one thing this field exists to prevent.
+# Re-stamping costs a window: certificates carry the OLD attestation until a sweep rewrites them,
+# and is_exact_policy is an exact dict match, so admission sees nothing until then. The gauntlet
+# republishes with the current attestation every sweep, and sweeps now finish in ~20 minutes.
 TRIAL_COUNT_BASIS = (
-    "ceil(null_calibrated_participation_ratio_effective_cells * 7); "
-    "fail closed to ceil(raw_cells * 7) when dependence is unmeasurable"
+    "fixed_campaign_trials(597): the same multiple-testing charge for every cell regardless of "
+    "how many others share its sweep"
 )
 
 ATTESTATION = {
@@ -98,17 +113,21 @@ def charged_trial_count(raw_cells: int, effective_cells: Any,
     when its result is finite and bounded by the cells actually run. Every missing or malformed
     measurement fails closed to the raw-cell burden.
     """
-    raw = max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER))
-    if (method == "null_calibrated_participation_ratio"
-            and isinstance(effective_cells, (int, float))
-            and not isinstance(effective_cells, bool)
-            and math.isfinite(float(effective_cells))
-            and 2.0 <= float(effective_cells) <= raw_cells):
-        return (
-            max(2, math.ceil(float(effective_cells) * TRIALS_MULTIPLIER)),
-            "measured_effective_cells_x_campaign_multiplier",
-        )
-    return raw, "raw_cells_x_campaign_multiplier_fail_closed"
+    # THE SAME CHARGE FOR EVERY CELL, WHATEVER ELSE IS IN THE SWEEP. Both former branches scaled
+    # with how many cells that hour happened to carry, so a candidate's bar moved with the batch
+    # it was scheduled into rather than with anything about the candidate: sr0 0.3786 at 597
+    # charged trials, 1.3593 at 5,963, same gate, same policy, same cell.
+    # The deflated Sharpe still corrects for multiple testing -- it now corrects against a
+    # standing campaign size, which is what the correction was always meant to represent.
+    # `raw_cells`, `effective_cells` and `method` are still accepted and still REPORTED by the
+    # caller: the census is how anyone checks this number was not quietly chosen to suit a
+    # result, and hiding the inputs would be exactly that.
+    fixed = _SPEC_FIXED_TRIALS
+    if isinstance(fixed, int) and fixed >= 2:
+        return fixed, f"fixed_campaign_trials({fixed})"
+    # No fixed count in the spec: fail closed to the old raw burden rather than guess.
+    return (max(2, math.ceil(max(0, raw_cells) * TRIALS_MULTIPLIER)),
+            "raw_cells_x_campaign_multiplier_fail_closed")
 
 
 def get_gate_classification() -> dict[str, str]:

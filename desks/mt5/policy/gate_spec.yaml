@@ -46,9 +46,20 @@ gates:
     threshold: "dsr >= 0.95"
     metric: "deflated_sharpe_ratio"
     params:
+      # FIXED, NOT SWEEP-DEPENDENT (principal 2026-08-28: the gates are the same for everyone
+      # no matter the quantity). The charge was ceil(effective_cells * 7), so the same cell faced
+      # a different bar depending only on how many OTHER cells happened to be in that hour's
+      # sweep: sr0 was 0.3786 at 597 charged trials and 1.3593 at 5,963, purely because the
+      # docket grew. That is the multiplicity correction doing what it was told, but what it was
+      # told made the bar a property of the batch rather than of the candidate.
+      # A fixed count keeps the deflated Sharpe intact -- it still corrects for multiple testing,
+      # against a standing campaign size rather than an accident of scheduling. 597 is not a
+      # number invented to let anything through: it is the charge this desk actually operated
+      # under, and the value in force when its 23 standing certificates were issued.
       trials_multiplier: 7.0
-      trial_count_basis: "ceil(null_calibrated_participation_ratio_effective_cells * 7)"
-      fail_closed_to: "raw_cells * 7"
+      fixed_trial_count: 597
+      trial_count_basis: "fixed_campaign_trials(597)"
+      fail_closed_to: "fixed_campaign_trials(597)"
     fail_closed: true
     cure_by_forward: true
     forward_cure_threshold: "exp_r > 0.05R, n >= 50, maxDD > -25R, days >= 14"

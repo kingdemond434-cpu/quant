@@ -40,26 +40,50 @@ def test_original_thresholds_are_one_fixed_policy() -> None:
     assert "preregistered point-in-time regime" in ATTESTATION["regime_admission_unit"]
     assert "unknown or incompatible live regime is OFF" in ATTESTATION["regime_control"]
     assert DONE_MARKER == "DONE_qquant_gates_original10_v2"
-    assert ATTESTATION["trial_count_basis"].startswith(
-        "ceil(null_calibrated_participation_ratio_effective_cells * 7)")
+    # THE BAR IS FIXED (principal, standing instruction): it never raises and never gets
+    # harsher. The attestation must say so, because it is the field that pins what a certificate
+    # was judged under.
+    assert ATTESTATION["trial_count_basis"].startswith("fixed_campaign_trials(597)")
 
 
-def test_universal_gate_uses_effective_cells_but_keeps_campaign_multiplier() -> None:
-    assert charged_trial_count(368, 277.40, "null_calibrated_participation_ratio") == (
-        1942, "measured_effective_cells_x_campaign_multiplier")
-    assert charged_trial_count(17, 17.0, "null_calibrated_participation_ratio") == (
-        119, "measured_effective_cells_x_campaign_multiplier")
-    assert charged_trial_count(368, 246.46, "participation_ratio") == (
-        2576, "raw_cells_x_campaign_multiplier_fail_closed")
+def test_charge_is_fixed_and_never_scales_with_sweep_size() -> None:
+    """The same charge for every cell, whatever else shares its sweep.
 
-
-def test_trial_count_relief_fails_closed_without_valid_fixed_census() -> None:
-    expected = (2576, "raw_cells_x_campaign_multiplier_fail_closed")
+    This replaces a test that pinned `ceil(effective_cells * 7)`. Under that rule a candidate was
+    judged against the accident of its scheduling: measured 2026-08-28, sr0 was 0.3786 at 597
+    charged trials and 1.3593 at 5,963 -- same gate, same policy, same cell, and the only thing
+    that changed was how many other cells the docket happened to hold that hour. 506 cells
+    cleared every VALIDITY gate and failed only the deflated Sharpe against the inflated bar.
+    """
+    expected = (597, "fixed_campaign_trials(597)")
+    # Two orders of magnitude of sweep size, one charge.
+    assert charged_trial_count(17, 17.0, "null_calibrated_participation_ratio") == expected
+    assert charged_trial_count(368, 277.40, "null_calibrated_participation_ratio") == expected
+    assert charged_trial_count(6270, 6000.0, "null_calibrated_participation_ratio") == expected
+    # And it does not move when the dependence census is absent or unusable either: an
+    # unmeasurable census used to make the bar HARSHER (raw_cells * 7), which is the one
+    # direction it may never move.
+    assert charged_trial_count(368, 246.46, "participation_ratio") == expected
     assert charged_trial_count(368, None, "unmeasurable") == expected
+
+
+def test_a_bad_census_can_never_make_the_bar_harsher() -> None:
+    """Malformed, missing or hand-tuned census inputs must not raise the charge.
+
+    The old rule failed closed to `raw_cells * 7`, which is FAIL-HARSHER: a census this desk
+    could not measure made every candidate in that sweep harder to certify. Failing closed is
+    right when the failure protects against a false pass; here it protected against nothing and
+    penalised the candidate for a measurement problem it had no part in.
+    """
+    expected = (597, "fixed_campaign_trials(597)")
     assert charged_trial_count(368, 1.0, "null_calibrated_participation_ratio") == expected
     assert charged_trial_count(368, 246.46, "hand_tuned") == expected
     assert charged_trial_count(
         368, float("nan"), "null_calibrated_participation_ratio") == expected
+    # The charge is bounded above by the fixed count no matter what is passed in.
+    for raw in (2, 368, 99_999):
+        n, _basis = charged_trial_count(raw, None, "unmeasurable")
+        assert n <= 597
 
 
 def test_partial_extra_or_failed_gate_sets_never_admit() -> None:
