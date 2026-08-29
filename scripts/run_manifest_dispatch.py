@@ -421,6 +421,27 @@ def due_times(spec: str, since: datetime, until: datetime) -> list[datetime]:
     return out
 
 
+#: How far back a missed slot is still worth making up. 35 days covers the monthly rows; past
+#: that a "catch-up" is archaeology, not scheduling.
+CATCHUP_LOOKBACK_DAYS = 35
+
+
+def last_slot_at_or_before(spec: str, now: datetime,
+                           max_days: int = CATCHUP_LOOKBACK_DAYS) -> datetime | None:
+    """The most recent time this spec was due, or None inside the lookback.
+
+    Walks BACKWARDS and stops at the first match, so a daily row costs at most 1440 steps and a
+    weekly one 10,080 -- and it is only ever called for a row that already looks overdue, so the
+    cost falls to zero as the backlog drains.
+    """
+    t = now.replace(second=0, microsecond=0)
+    for _ in range(max_days * 24 * 60):
+        if cron_matches(spec, t):
+            return t
+        t -= timedelta(minutes=1)
+    return None
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     state: dict[str, object] = {}
@@ -463,6 +484,43 @@ def main() -> int:
             continue  # malformed spec on an allowlisted row: never crash the whole dispatcher
         due.append((token, cmd, spec))
 
+    # PERSISTENT=TRUE, WHICH EVERY SYSTEMD TIMER ON THIS BOX HAS AND THIS DISPATCHER DID NOT.
+    # `due` only ever looks at the last few minutes (CATCHUP_CAP_MIN=20), so a slot missed while
+    # the dispatcher was down -- or missed because the row was not yet ALLOWLISTED -- is never
+    # made up: the organ simply waits a full period. For a weekly or monthly row that is the
+    # whole defect. MEASURED 2026-08-29: seven organs, dead 213-310h (one had NEVER run), were
+    # allowlisted on 08-26/08-27 specifically to resurrect them, and every one had had ZERO
+    # slots since, because their next slot was Sunday, Monday or September 1st. The allowlist
+    # entry LOOKED like the repair and the register recorded it as one, while the organ stayed
+    # dead for up to five more days. An allowlist entry is not a run (III.16, one level up).
+    #
+    # A row is overdue when its most recent slot has passed and it has not fired since. It is
+    # made up ONCE, behind everything genuinely due, and still under the burst cap and the
+    # memory governor -- so a long outage drains at 4 per tick instead of thundering.
+    fired_at: dict[str, str] = {
+        t: str(r.get("last_fired", "")) for t, r in (state.get("rows") or {}).items()
+        if isinstance(r, dict)}
+    overdue: list[tuple[str, str, str]] = []
+    for spec, cmd, token in rows:
+        if token in twins or token not in ALLOWLIST or token in {d[0] for d in due}:
+            continue
+        stamp = fired_at.get(token)
+        if stamp:
+            try:
+                if datetime.fromisoformat(stamp) >= now - timedelta(hours=25):
+                    continue          # fired recently: cheap filter before the backwards scan
+            except ValueError:
+                pass
+        slot = last_slot_at_or_before(spec, now)
+        if slot is None:
+            continue                  # no slot inside the lookback: nothing was missed
+        try:
+            if stamp and datetime.fromisoformat(stamp) >= slot:
+                continue              # already ran for that slot
+        except ValueError:
+            pass
+        overdue.append((token, cmd, spec))
+
     # Rows deferred by a previous tick's governor come first: they are already late, and the
     # whole point of the pending queue is that a governor delays work rather than losing it.
     pending: dict[str, dict[str, str]] = dict(state.get("pending") or {})
@@ -490,7 +548,8 @@ def main() -> int:
         if waited > PENDING_MAX_AGE_MIN:
             held.append(token)
         replay.append((token, str(row.get("cmd", "")), str(row.get("spec", ""))))
-    queue = replay + [d for d in due if d[0] not in pending]
+    queue = (replay + [d for d in due if d[0] not in pending]
+             + [o for o in overdue if o[0] not in pending])
 
     for token, cmd, spec in queue:
         if len(fired) >= MAX_FIRES_PER_TICK or _avail_mb() < MIN_AVAIL_MB:
@@ -523,6 +582,7 @@ def main() -> int:
     # back past PENDING_MAX_AGE_MIN and `starved` is rows it held past the bound -- the two
     # numbers whose absence let a nine-day fleet outage read as a healthy dispatcher.
     state["held_by_governor"] = sorted(held)
+    state["overdue_caught_up"] = sorted(o[0] for o in overdue)
     state["starved"] = starved
     state["allowlisted"] = len(ALLOWLIST)
     state["manifest_rows_seen"] = len(rows)

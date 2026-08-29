@@ -326,6 +326,83 @@ def test_reaching_the_safety_bound_is_recorded_never_swallowed(tmp_path, monkeyp
     monkeypatch.setattr(md, "due_times", lambda spec, since, until: [])
     md.main()
     st2 = json.loads(state_path.read_text("utf-8"))
-    assert st2["pending"] == {}
     assert "scripts/organ.py" in st2["starved"], "a dropped row left no trace at all"
     assert st2["starved"]["scripts/organ.py"] > 0
+    # ...and it is RE-ATTEMPTED, not abandoned: the row is still overdue, so the catch-up arm
+    # picks it straight back up. The bound exists to stop a stale `since` accumulating silently,
+    # never to give the dispatcher permission to forget an organ.
+    assert "scripts/organ.py" in st2["pending"]
+    assert st2["pending"]["scripts/organ.py"]["since"] != st["pending"][
+        "scripts/organ.py"]["since"], "the wait clock was not restarted"
+
+
+# ---------------------------------------------------------------------------------------------
+# REGRESSION, gap-fixer 2026-08-29 (second finding, and the one that actually explains the seven
+# stale organs). AN ALLOWLIST ENTRY IS NOT A RUN. `due` only looks back CATCHUP_CAP_MIN=20
+# minutes, so a slot missed while the dispatcher was down -- or missed because the row was not
+# yet allowlisted -- was never made up. Seven organs dead 213-310h (one had NEVER run) were
+# allowlisted on 08-26/08-27 to resurrect them and had had ZERO slots since: their next ones were
+# Sunday, Monday and September 1st. The register recorded the repair; the organs stayed dead.
+# ---------------------------------------------------------------------------------------------
+
+def test_a_row_allowlisted_after_its_slot_passed_is_made_up_not_left_for_a_week(
+        tmp_path, monkeypatch) -> None:
+    """THE DEFECT. `rerank_gaps` (0 9 * * 1, Monday) was allowlisted on a Wednesday. Under the
+    old rule its first run was the following Monday -- five more days dead after the 'fix'."""
+    import json
+
+    rows = "0 9 * * 1 cd /x && .venv/bin/python scripts/rerank_gaps.py >> t.log 2>&1\n"
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows,
+                         allow={"scripts/rerank_gaps.py": "weekly triage"})
+    md.main()                       # a Saturday tick: not due for two more days
+    assert fired and "rerank_gaps" in fired[0], (
+        "a row whose slot passed before it was allowlisted was left dead until its next period")
+    state = json.loads((tmp_path / "state.json").read_text("utf-8"))
+    assert state["overdue_caught_up"] == ["scripts/rerank_gaps.py"]
+
+
+def test_catch_up_fires_once_not_once_per_missed_slot(tmp_path, monkeypatch) -> None:
+    """Persistent, never a thundering backfill: a daily row down for a week runs ONCE."""
+    import json
+
+    rows = "0 7 * * * cd /x && .venv/bin/python scripts/organ.py >> t.log 2>&1\n"
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows, allow={"scripts/organ.py": "daily"})
+    md.main()
+    assert len(fired) == 1
+    md.main()                       # immediately again: already made up, stays quiet
+    assert len(fired) == 1, "catch-up re-fired a row it had already made up"
+    assert json.loads((tmp_path / "state.json").read_text("utf-8"))["overdue_caught_up"] == []
+
+
+def test_catch_up_respects_the_memory_governor(tmp_path, monkeypatch) -> None:
+    """A backlog drain must not be the thing that fires organs into an OOM-territory box."""
+    import json
+
+    rows = "".join(f"0 7 * * * cd /x && .venv/bin/python scripts/o{i}.py >> {i}.log 2>&1\n"
+                   for i in range(6))
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows,
+                         allow={f"scripts/o{i}.py": "daily" for i in range(6)}, avail=1.0)
+    md.main()
+    assert fired == []
+    assert len(json.loads((tmp_path / "state.json").read_text("utf-8"))["pending"]) == 6
+
+
+def test_catch_up_is_bounded_by_the_burst_cap(tmp_path, monkeypatch) -> None:
+    """A nine-day outage drains at MAX_FIRES_PER_TICK, never in one thunderclap."""
+    rows = "".join(f"0 7 * * * cd /x && .venv/bin/python scripts/o{i}.py >> {i}.log 2>&1\n"
+                   for i in range(20))
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows,
+                         allow={f"scripts/o{i}.py": "daily" for i in range(20)})
+    md.main()
+    assert len(fired) == md.MAX_FIRES_PER_TICK
+
+
+def test_last_slot_at_or_before_finds_the_slot_and_bounds_its_scan() -> None:
+    """The instrument. Walks backwards, stops at the first match, and returns None rather than
+    inventing a slot for a spec that has none inside the lookback."""
+    from scripts.run_manifest_dispatch import last_slot_at_or_before
+    now = datetime(2026, 8, 29, 2, 35, tzinfo=UTC)
+    assert last_slot_at_or_before("0 9 * * 1", now) == datetime(2026, 8, 24, 9, 0, tzinfo=UTC)
+    assert last_slot_at_or_before("22 5 * * *", now) == datetime(2026, 8, 28, 5, 22, tzinfo=UTC)
+    assert last_slot_at_or_before("19 4 1 * *", now) == datetime(2026, 8, 1, 4, 19, tzinfo=UTC)
+    assert last_slot_at_or_before("0 0 30 2 *", now) is None   # 30 February: never
