@@ -17232,5 +17232,237 @@
    "win_rate": null,
    "symbol": "S&PGlobal"
   }
+ },
+ {
+  "id": "ext-20260829-9655bb",
+  "geneology_id": "external:edge_search:ext_triangle_resid_NZD_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDJPY discovered params={'feature': 'ext_triangle_resid_NZD_z', 'band': [0.9, 1.0], 'horizon': 1, 'side': -1} screened at n=2285 exp=0.08445122920482478R t=4.036910094485678 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_triangle_resid_NZD_z",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2285,
+   "exp_r": 0.08445122920482478,
+   "t_stat": 4.036910094485678,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDJPY"
+  }
+ },
+ {
+  "id": "ext-20260829-675827",
+  "geneology_id": "external:edge_search:ext_lead_AUDUSD_6",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: Snowflake discovered params={'feature': 'ext_lead_AUDUSD_6', 'band': [0.1, 0.25], 'horizon': 1, 'side': -1} screened at n=429 exp=0.19488914179573774R t=4.036605329488897 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_AUDUSD_6",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 429,
+   "exp_r": 0.19488914179573774,
+   "t_stat": 4.036605329488897,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "Snowflake"
+  }
+ },
+ {
+  "id": "ext-20260829-443b9e",
+  "geneology_id": "external:edge_search:ext_triangle_resid_USD_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDCAD discovered params={'feature': 'ext_triangle_resid_USD_z', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=2191 exp=0.08623649136767617R t=4.036567946102897 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_triangle_resid_USD_z",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2191,
+   "exp_r": 0.08623649136767617,
+   "t_stat": 4.036567946102897,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "NZDCAD"
+  }
+ },
+ {
+  "id": "ext-20260829-9b70d4",
+  "geneology_id": "external:edge_search:ext_lead_CHFJPY_24_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: EURJPY discovered params={'feature': 'ext_lead_CHFJPY_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=2102 exp=0.08802520806090708R t=4.0357422004207475 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_CHFJPY_24_z",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2102,
+   "exp_r": 0.08802520806090708,
+   "t_stat": 4.0357422004207475,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "EURJPY"
+  }
+ },
+ {
+  "id": "ext-20260829-753850",
+  "geneology_id": "external:edge_search:ext_lead_SEKJPY_24_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD discovered params={'feature': 'ext_lead_SEKJPY_24_z', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=1625 exp=0.1000776753152886R t=4.034260066211961 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_SEKJPY_24_z",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1625,
+   "exp_r": 0.1000776753152886,
+   "t_stat": 4.034260066211961,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  }
+ },
+ {
+  "id": "ext-20260829-49d648",
+  "geneology_id": "external:edge_search:ext_lead_A_12_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: Target discovered params={'feature': 'ext_lead_A_12_z', 'band': [0.1, 0.25], 'horizon': 1, 'side': 1} screened at n=546 exp=0.17254865866510724R t=4.031882888365152 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_A_12_z",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 546,
+   "exp_r": 0.17254865866510724,
+   "t_stat": 4.031882888365152,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "Target"
+  }
+ },
+ {
+  "id": "ext-20260829-c4b3a4",
+  "geneology_id": "external:edge_search:x_dd_24__ext_resid_AUDCAD",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF discovered params={'feature': 'x_dd_24__ext_resid_AUDCAD', 'band': [0.9, 1.0], 'horizon': 1, 'side': -1} screened at n=2131 exp=0.08726581482625043R t=4.028430477725013 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_dd_24__ext_resid_AUDCAD",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2131,
+   "exp_r": 0.08726581482625043,
+   "t_stat": 4.028430477725013,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDCHF"
+  }
+ },
+ {
+  "id": "ext-20260829-890e40",
+  "geneology_id": "external:edge_search:ext_lead_GBPJPY_24",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: NZDCAD discovered params={'feature': 'ext_lead_GBPJPY_24', 'band': [0.1, 0.25], 'horizon': 1, 'side': 1} screened at n=2270 exp=0.0845130888632616R t=4.026585298923355 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_GBPJPY_24",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T01:50:01.910765+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2270,
+   "exp_r": 0.0845130888632616,
+   "t_stat": 4.026585298923355,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "NZDCAD"
+  }
  }
 ]

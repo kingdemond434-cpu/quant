@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-29T01:09:47+00:00",
+ "built_at": "2026-08-29T02:07:35+00:00",
  "tasks": [
   {
    "source": "github",
@@ -4167,6 +4167,78 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "url": "https://github.com/Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "vatsasr8846/PriceAction-EngulfingZone-EA",
+   "url": "https://github.com/vatsasr8846/PriceAction-EngulfingZone-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "lenardclimatical374/MT5-volume-profile-indicator",
    "url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
    "symbols": [],
@@ -4215,72 +4287,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "title": "manuelhorvey/EigenCapital",
+   "url": "https://github.com/manuelhorvey/EigenCapital",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "shazzadu1/Trade-Halting-Safeguard",
-   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "feliciien/workfusionapp3",
-   "url": "https://github.com/feliciien/workfusionapp3",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "title": "PNX89/QUOTEZ",
+   "url": "https://github.com/PNX89/QUOTEZ",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4311,22 +4327,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ArtemVeremienko/mt5kit",
-   "url": "https://github.com/ArtemVeremienko/mt5kit",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "PNX89/QUOTEZ",
-   "url": "https://github.com/PNX89/QUOTEZ",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
@@ -4343,16 +4343,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6664,6 +6656,17 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Renaissance has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Citadel has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -6675,7 +6678,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Point72 has recent 13F filing - check for position changes",
+   "title": "D.E. Shaw has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -6720,17 +6723,6 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Soros has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Appaloosa has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
