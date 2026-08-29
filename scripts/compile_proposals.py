@@ -122,6 +122,41 @@ _NEGATIVE_ROI: dict[str, tuple[str, ...]] = {
         "new execution venue", "requires a broker change"),
 }
 
+#: TIMIDITY: language admitting the proposal will not move E[log W] by any path.
+#:
+#: The constitution's sole objective is max E[log W_T]; realized CAGR and alpha are MEASURES, not
+#: goals. So a proposal earns a trial by claiming a path to geometric growth -- and the path may
+#: be indirect. A candidate that raises the book's INDEPENDENCE raises geometric growth at
+#: unchanged arithmetic return, and one that kills a live hypothesis frees the budget its
+#: successor needs. Both are growth paths.
+#:
+#: WHAT IS ACTUALLY REJECTED is a proposal that names no path at all: purely defensive, purely
+#: cosmetic, or self-described as marginal. "Reduce drawdown slightly" with no edge claim and no
+#: independence claim is a smaller version of the book the desk already has.
+_TIMID: dict[str, tuple[str, ...]] = {
+    "self_described_marginal": (
+        "marginal improvement", "slight improvement", "modest gain", "small tweak",
+        "incremental adjustment", "minor refinement", "fine-tune the existing",
+        "slightly better", "a small edge on top of"),
+    "purely_defensive": (
+        "reduce risk only", "risk reduction only", "purely defensive", "hedge only",
+        "no additional return", "without adding return", "capital preservation only",
+        "lower volatility only"),
+    "conservative_by_construction": (
+        "conservative approach", "play it safe", "avoid taking positions",
+        "trade less frequently to be safe", "sit out", "stay flat"),
+}
+
+#: Words that indicate a GROWTH PATH, direct or indirect. A proposal carrying any of these is not
+#: timid even if its claimed effect is small -- a 0.05R edge that is INDEPENDENT is worth more to
+#: geometric growth than a 0.20R clone, which is the whole n_eff argument, and rejecting it for
+#: modesty would invert the objective.
+_GROWTH_PATH = (
+    "independent", "uncorrelated", "orthogonal", "diversif", "new mechanism", "new payer",
+    "forced", "compelled", "constraint", "edge", "expectancy", "premium", "mispricing",
+    "kill condition", "falsif", "unexplored", "untested", "residual",
+)
+
 #: A coordinate this heavily attempted with nothing to show is saturated ground. Re-testing it is
 #: a trial spent to re-learn something measured. Deliberately generous -- the desk has been wrong
 #: about "barren" before, and this is a spending decision rather than a verdict on the mechanism.
@@ -204,6 +239,22 @@ def _roi_refusal(rec: dict[str, Any], text: str, coordinate: str,
                 "why": (f"{coordinate} is already carried by a CERTIFIED cell. Testing the same "
                         f"claim twice adds no information while charging the trial count every "
                         f"other candidate's bar is computed against.")}
+
+    # TIMIDITY: refuse only when the proposal admits it moves nothing AND names no growth path.
+    # Both conditions, because the first alone would reject a modestly-worded proposal carrying a
+    # genuinely new mechanism -- and a small INDEPENDENT edge is worth more to E[log W] than a
+    # large correlated one.
+    has_growth_path = any(w in t for w in _GROWTH_PATH)
+    for reason, words in _TIMID.items():
+        hit = next((w for w in words if w in t), None)
+        if hit and not has_growth_path:
+            return {"name": rec.get("name"), "compiled": False, "refused_for": reason,
+                    "trigger": hit,
+                    "why": (f"says {hit!r} and names no path to geometric growth -- no edge, no "
+                            f"independence claim, no information gain. The constitution's sole "
+                            f"objective is max E[log W_T]; a proposal that moves it by no path, "
+                            f"direct or indirect, is a smaller version of the book the desk "
+                            f"already owns and does not earn a trial.")}
 
     ev = coordinate.split("|")[0] if "|" in coordinate else ""
     attempts = saturation.get(ev, 0)
