@@ -313,7 +313,23 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
                         f"claim: guessing 'continuation' for a mechanism that never said so would "
                         f"test the opposite of the hypothesis half the time.")}
 
-    context = context or "asia"
+    # NO SILENT DEFAULT. `context = context or "asia"` turned an unresolved axis into a
+    # confident specification -- the desk's own law is that absence is never permission, and a
+    # compiler that fills in the missing half of a claim is deciding what the hypothesis says.
+    if not context:
+        return {"name": rec.get("name"), "compiled": False, "refused_for": "unresolved_context",
+                "why": ("could not resolve CONTEXT from the proposal text. Defaulting to 'asia' "
+                        "would run the experiment in a session the hypothesis never named, and "
+                        "the result would be recorded against a claim nobody made.")}
+
+    # MEASUREMENT CONTRACT. A mechanism whose implementation cannot see it does not compile.
+    from libs.research.measurement import contract_for
+
+    mc = contract_for(event)
+    if mc is not None and not mc.may_run:
+        return {"name": rec.get("name"), "compiled": False, "refused_for": "unmeasurable",
+                "why": mc.verdict()}
+
     if event not in supported["event"] or direction not in supported["direction"]:
         return {"name": rec.get("name"), "compiled": False,
                 "missing_capability": [f"event:{event}"],
@@ -330,6 +346,11 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
             "params": {"event": event, "context": context, "direction": direction,
                        "output": "1h", "quality_atr": 1.0},
             "coordinate": coordinate,
+            # Carried onto the cell so every downstream reader knows whether this result may be
+            # attributed to the mechanism, or is exploration under its own coordinate only.
+            "measurement_class": mc.measurement_class if mc else "UNKNOWN",
+            "attribution_allowed": bool(mc.attribution_allowed) if mc else False,
+            "measurement_note": mc.verdict() if mc else "no contract recorded for this event",
             "data_source": rec.get("data_source"), "kill": rec.get("kill"),
             "lens": rec.get("lens"),
             "promotion_authority": False}

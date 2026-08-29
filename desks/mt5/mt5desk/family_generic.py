@@ -129,6 +129,19 @@ def family_generic(
     """
     if df.empty or len(df) < vol_n * 6:
         return []
+    # MEASUREMENT CONTRACT FIRST. An event whose implementation cannot see the mechanism it is
+    # named after does not run at all: producing a result under that name is how a one-bar
+    # momentum rule becomes an "options hedging survivor" and poisons genealogy, mechanism
+    # fertility and every allocator prior downstream. See libs/research/measurement.py --
+    # macro_release and options_hedging were byte-identical implementations.
+    try:
+        from libs.research.measurement import contract_for
+        _c = contract_for(event)
+        if _c is not None and not _c.may_run:
+            return []
+    except ImportError:
+        pass
+
     ev_fn = _EVENTS.get(event)
     ctx_fn = _CONTEXTS.get(context)
     sign = _DIRECTIONS.get(direction)
