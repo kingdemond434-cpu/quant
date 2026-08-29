@@ -13244,3 +13244,127 @@ confirmation**, and the verdict is unchanged).
 6. **The BRAIN-scoped collector arm — TWENTY-THREE sessions old.** Belongs to a seat that is not
    research-frozen. Now joined by the **video-roster gap** (§3 above), which is the same shape:
    a seat that cannot fix its own input has been reporting the input's absence as a result.
+
+---
+
+## BRAIN HUNTER s31 — 2026-08-29 — the eval kernel over the AST, a fourth factor library, and a measurement still running
+
+Session note written before the measured arm returned, per the completion contract. The
+pre-registered predictions for that arm were committed in
+`data/brain_hunter_s31_bucket_groupings.py` **before any of its numbers existed** (e6149cd2),
+which is the only property that makes them worth anything.
+
+### 1. `alpha_eval.rs` — s30 exhausted the AST and called it the semantics
+
+s30 read `crates/qweave-core/src/expr.rs`, enumerated the node set, and marked the artifact
+"AST fully enumerated". **An AST node is a name and an arity.** s30's `Sma` entry consequently
+rested on one sentence of the repo's Chinese documentation, not on code. This session read
+`crates/qweave-core/src/alpha_eval.rs` — 86 KB, never opened by any of 30 prior sessions — and
+recovered exact arithmetic for seven kernels. Full text in `search_operator_library.md` §s31.
+
+**Two of them would have been implemented WRONG from the AST alone**, and both errors are the
+silent kind:
+- **`Sma(x, n, m)`** is an EWMA at α = m/n whose accumulator **resets to NaN on any non-finite
+  input** rather than carrying state across the gap. On this desk's tape — holidays, per-symbol
+  calendars, the union-index NaNs that ate 89% of s28's cross-section — that is a different
+  operator, and the divergence grows with window length.
+- **`Wma(x, n)`** at `0.9^i` weights the **newest** bar most and is **normalised**. "0.9^i" is
+  ambiguous until you read the loop direction; a copy from s30's note builds the time-reversed
+  operator, which does not look wrong in its output.
+
+`ConditionalBeta` is confirmed as the one conditioning shape with no BRAIN analogue, and it has an
+unadvertised power problem: the window is n bars but the regression is fit on however many satisfy
+the condition, with a floor of **two**. Any desk use needs a minimum-sample guard the source lacks.
+
+### 2. `gtja_alpha191.rs` censused for OPERATORS — s30's next-ground item 4, and it CLOSES NEGATIVE
+
+The assigned question was whether the 191 carry a conditioning shape absent from alpha101 and the
+operator registry. Censused by call-frequency over the whole 76 KB: `delay` 294, `rank` 139,
+`ts_sum` 134, `abs` 89, `ts_mean` 88, `sma` 82, `where_` 77, `correlation` 55, `decay_linear` 33,
+`delta` 32, `ts_rank` 31, `ts_min` 29, `power` 28, `ts_max` 26, `ts_std` 18, plus `wma` 2,
+`slope` 3, `covariance` 2, `ts_argmin`/`ts_argmax` 2 each and the CN directional primitives
+`tr`/`hd`/`ld`/`dtm`/`dbm`.
+
+**There is no conditioning shape in the 191 that is not already in alpha101 or in the seven kernels
+above.** The library's distinctiveness is its FIELDS (`amount`, `vwap`, `volume`) and its recursive
+smoother — not its operator algebra. That is a negative result, it is worth reporting, and it
+closes the item: nobody needs to re-open the 191 for operators. **It stays open on the FIELD axis**
+(`amount` — turnover in currency, which the desk does not hold for CFDs).
+
+### 3. A fourth factor library nobody named in 30 sessions — `qlib_alpha158.rs`
+
+Same repo, same MIT licence, 7.5 KB, sitting beside the two libraries every session has discussed.
+Microsoft Qlib's Alpha158: 9 kbar + 4 price + 29 rolling groups × 5 windows. **Every factor is
+per-symbol time-series with no cross-section whatsoever**, which makes it the only one of the three
+that is testable on this desk without settling any grouping question — the question s24–s31 have
+spent seven sessions on. Names extracted in full into `data_axis_watchlist.md` so it need not be
+re-fetched. Three of its families have no counterpart anywhere on this desk: the regression triple
+(BETA/RSQR/RESI), the sign-counting family (CNTP/CNTN/CNTD, SUMP/SUMN/SUMD — an unsmoothed RSI
+decomposition), and the argmax-POSITION family (IMAX/IMIN/IMXD — *where* in the window the extreme
+fell, a timing statistic rather than a level one).
+
+Logged as GROUND, not as a claim. The desk's independent audit put alpha101's median Sharpe at
+0.518 (s28), so the prior on published factor libraries here is bad; what differs is the shape.
+
+### 4. The 99 never-named repos, triaged — and 56 of them are UNMEASURED, not clean
+
+`data/brain_hunter_s31_repo_triage.json`. Ranked by the alternative-implementation test s30 named:
+does the repo COMPUTE (and therefore carry operator semantics a reader can extract), or does it
+only call the BRAIN HTTP API (and carry none, however many stars it has)?
+
+  COMPUTES 17 · MIXED 9 · CLIENT-ONLY 17 · **UNKNOWN (no description at all) 56**
+
+The 56 are the honest result. A description-based triage cannot see a repo with no description, and
+that is a majority of the population — the ranking is a **triage order, not a verdict**, and the
+population itself is a floor because GitHub code search is 401 keyless so any repo whose README
+never says "worldquant" is invisible to the census entirely. Top compute-carriers not yet dug:
+`kunboyao-Bo/WorldQuant-101-factors-backtest-Chinese-A-share` (64 MB, MIT — alpha101 measured on CN
+A-shares, i.e. an independent out-of-sample on a different market),
+`parthjn2709/worldquant-iqc-2026-alphas` (8.7 MB — *"each alpha includes its hypothesis"*, which is
+PROCESS material and the mandate's highest-value class), `openclaw-pza/alpha-gauntlet`
+(Rank-IC/ICIR/t-stat evaluation framework), `pengpengyi92/pengyi-quant-super-line` (operator
+reproduction).
+
+### Boundary and cost
+
+Public MIT source via `raw.githubusercontent.com` and the public contents API. No auth, no wall
+touched, no access control approached. Nothing installed or executed — the supply-chain rule holds
+and both files were mined as TEXT. Video: 0 fetched, 0 locked (no video route attempted this run).
+
+### Artifacts exhausted this session (do not re-surface-scan)
+
+`GaomingOrion/qweave`: `crates/qweave-core/src/alpha_eval.rs` (the seven kernels read in full; the
+remainder is the cross-sectional/arithmetic node set already covered by s28),
+`crates/qweave-core/src/alpha.rs` (constructor signatures, complete),
+`crates/qweave-factors/src/gtja_alpha191.rs` (**closed on the OPERATOR axis**, open on the field
+axis), `crates/qweave-factors/src/qlib_alpha158.rs` (factor names complete; the per-factor formulas
+are NOT read and remain open).
+
+### NEXT UN-EXHAUSTED GROUND (for s32, in order — supersedes s30's list)
+
+1. **Read the s31 bucket-grouping result before doing anything else.** If it had not returned when
+   this note was written it is in `data/brain_hunter_s31_bucket_groupings.json`; if that file is
+   absent, the run died and **the correct repair is to split it** — it rebuilds every PIT beta
+   five times over (once per k in the sweep), which is the whole of its cost and is pure
+   duplication. Cache `attributes_for_est_year` across k. Do not re-derive the predictions; they
+   are committed and must be read as written.
+2. **`Rsquare(x, n)` as a momentum CONDITIONER, sign declarable in advance.** The strongest
+   mechanism of the seven kernels and the cheapest to test: every momentum feature on this desk
+   confuses "moved a lot" with "moved monotonically". Predicted sign, stated here before any run:
+   conditioning `mom_20` on high trailing R² raises gross Sharpe relative to unconditional `mom_20`,
+   because a trend with a high R² is the one with a participant forced to keep trading it.
+   Falsifier: it must hold on both `mom_20` and `mom_60` or the conditioner is noise.
+3. **The `Sma`/`Wma` kernel follow-up to s30c** — unchanged from s30's list and still owed, but now
+   with EXACT arithmetic (including the NaN-reset caliber) instead of a paraphrase. The prediction
+   is already written in `search_operator_library.md` and must not be re-derived.
+4. **`vector_neut`, still never consumed.** `data/brain_hunter_s30b_vector_neut.py` is COMPLETE,
+   carries a 6/6 falsifier pre-registered in its docstring, and has never produced an artifact
+   through two sessions. It was not run here only because the box had 118 MB free with s31 holding
+   437 MB and a second pandas job would have OOM'd (R0676). **Run it first when the box is quiet;
+   do not rewrite it.**
+5. **Alpha158 per-factor formulas**, then the three no-counterpart families on desk tape.
+6. **`kunboyao-Bo/...Chinese-A-share`** — alpha101 measured on a different market is the closest
+   thing to an independent out-of-sample on s28's audit that this ground can supply for free.
+7. **The BRAIN-scoped collector arm — TWENTY-FOUR sessions old**, and the video-roster gap. Both
+   belong to a seat that is not research-frozen. A seat that cannot fix its own input has been
+   reporting the input's absence as a result for over three weeks.

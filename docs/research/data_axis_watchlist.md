@@ -10391,3 +10391,18 @@ arithmetic for all of these is now in `search_operator_library.md` §s31:
 4. **`Slope` / `Resi`** — trend slope and newest-bar residual against the time index.
 5. **`Wma(x, n)`** at geometric `0.9^i`, newest-weighted and normalised.
 6. **`Quantile(x, n, q)`** — cheapest to build, weakest story.
+
+#### The Alpha158 rolling-group names, extracted (so the next session need not re-fetch)
+
+`KMID KMID2 KLEN KLOW KLOW2 KUP KUP2 KSFT KSFT2` (9 kbar shape ratios, single-bar) ·
+`OPEN0 HIGH0 LOW0 VWAP0` (4 price, close-normalised) · then 29 groups each expanded over
+{5,10,20,30,60}: `ROC MA STD BETA RSQR RESI MAX MIN QTLU QTLD RANK RSV IMAX IMIN IMXD CORR CORD
+CNTP CNTN CNTD SUMP SUMN SUMD VMA VSTD WVMA VSUMP VSUMN VSUMD`.
+
+Three families here have **no counterpart anywhere on this desk**: the regression triple
+(`BETA`/`RSQR`/`RESI`), the sign-counting family (`CNTP`/`CNTN`/`CNTD` = fraction of up/down bars,
+and `SUMP`/`SUMN`/`SUMD` = gain/loss magnitude ratios — an unsmoothed RSI decomposition), and the
+argmax-position family (`IMAX`/`IMIN`/`IMXD` = *where in the window* the extreme fell, which is a
+timing statistic rather than a level one). `WVMA` (volume-weighted stdev of returns) and the
+volume mirrors `VSUMP`/`VSUMN`/`VSUMD` need MT5 tick-volume and carry the usual CFD caveat that
+broker tick volume is a quote-count, not traded size — flag it, do not assume it is unusable.
