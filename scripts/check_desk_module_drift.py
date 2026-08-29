@@ -111,6 +111,10 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    # The shared runtime-input reconstruction. Both the gauntlet and the forward engine
+    # depend on it; a stale copy on the box means 344 near-certificates silently stop
+    # accruing the forward evidence that is their only route to a certificate.
+    "desks/mt5/mt5desk/family_inputs.py",
     "desks/mt5/research/qquant_shadow.py",
     "desks/mt5/research/curve_strategy_screen.py",
     "desks/mt5/research/fetch_futures_curves.py",
