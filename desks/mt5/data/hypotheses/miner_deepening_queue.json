@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-29T14:07:50+00:00",
+ "built_at": "2026-08-29T15:10:29+00:00",
  "tasks": [
   {
    "source": "github",
@@ -2901,434 +2901,90 @@
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Baidu swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion COFARA swap long=3.2800000000000002 short=-10.93 diff=+14.2100",
-   "url": "mt5://symbol_info",
+   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion COFROB swap long=67.71 short=-178.13 diff=+245.8400",
-   "url": "mt5://symbol_info",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion CORN swap long=-28.15 short=8.92 diff=-37.0700",
-   "url": "mt5://symbol_info",
+   "title": "Gregorytestate3889/MT5-Forex-Session-indicator",
+   "url": "https://github.com/Gregorytestate3889/MT5-Forex-Session-indicator",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion COTTON swap long=-25.48 short=7.13 diff=-32.6100",
-   "url": "mt5://symbol_info",
+   "title": "Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Ford swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "jeanettecapital5730/MT5-Risk-Management-EA",
+   "url": "https://github.com/jeanettecapital5730/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion GeneralElectric swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+   "url": "https://github.com/Singni725/EUROUSD-EMA-Cross-MQL5-EA",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion GeneralMotors swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
+   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Intuit swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "Abhishek-97735/Equity-Line",
+   "url": "https://github.com/Abhishek-97735/Equity-Line",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion IntuitiveSurgical swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "mainpclab/metatrader5-websocket-tickers",
+   "url": "https://github.com/mainpclab/metatrader5-websocket-tickers",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "broker_swaps",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion LucidGroup swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Lyft swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Mastercard swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Medtronic swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion MicronTechnology swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion MorganStanley swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion NIO swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion NVIDIA swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion OJ swap long=1.28 short=-52.65 diff=+53.9300",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Oracle swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Pfizer swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion PhilipMorrisInternational swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Pinterest swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Qualcomm swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion RobinhoodMarkets swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Roku swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion S&PGlobal swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion SOYBEAN swap long=-26.09 short=3.45 diff=-29.5400",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion SUGAR swap long=-1.6099999999999999 short=-5.59 diff=+3.9800",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion SUGARRAW swap long=-8.0 short=2.98 diff=-10.9800",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion ServiceNow swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Shopify swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Snapchat swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Snowflake swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Spotify swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Starbucks swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion TMEGroup swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion TSMC swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Target swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion TexasInstruments swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion ThermoFisherScientific swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Toyota swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Twilio swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UKCOCOA swap long=-4.6899999999999995 short=-2.51 diff=-2.1800",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UKGILT swap long=1.92 short=-8.42 diff=+10.3400",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion US2000 swap long=-5.9 short=1.54 diff=-7.4400",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion USCOCOA swap long=-186.19 short=3.5 diff=-189.6900",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UST05Y swap long=-3.56 short=-2.74 diff=-0.8200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UST10Y swap long=-3.06 short=-3.24 diff=+0.1800",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion Uber swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UnionPacific swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion UnitedParcelService swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion WHEAT swap long=-20.88 short=5.9 diff=-26.7800",
-   "url": "mt5://symbol_info",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "broker_swaps",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "fusion WellsFargo swap long=-7.31 short=2.81 diff=-10.1200",
-   "url": "mt5://symbol_info",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3367,6 +3023,38 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "manuelhorvey/EigenCapital",
+   "url": "https://github.com/manuelhorvey/EigenCapital",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Eltano1985/tradememory-protocol",
+   "url": "https://github.com/Eltano1985/tradememory-protocol",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
    "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
    "symbols": [],
@@ -3391,112 +3079,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "7skooooo/mql5-systems-mirror",
-   "url": "https://github.com/7skooooo/mql5-systems-mirror",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "ZovraT/MT5-MT4-Close-Orders-Script",
    "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "shazzadu1/Trade-Halting-Safeguard",
-   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Confluence-Signal-Matrix",
-   "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "foxelabs/foxelabs.com",
-   "url": "https://github.com/foxelabs/foxelabs.com",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "manuelhorvey/EigenCapital",
-   "url": "https://github.com/manuelhorvey/EigenCapital",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "PNX89/QUOTEZ",
-   "url": "https://github.com/PNX89/QUOTEZ",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -3511,7 +3095,7 @@
   {
    "source": "propfirm_boards",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "HTTPSConnectionPool(host='ftmo.com', port=443): Max retries exceeded with url: /en/leaderboards/ (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of pr",
+   "title": "404 Client Error: Not Found for url: https://ftmo.com/en/leaderboards/",
    "url": "",
    "symbols": [],
    "mechanism_tags": []
@@ -5696,10 +5280,30 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Roku historically bullish in month 8 (avg 0.201%)",
+   "url": "",
+   "symbols": [
+    "ROKU"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Merck historically bullish in month 8 (avg 0.106%)",
    "url": "",
    "symbols": [
     "MERCK"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Baidu historically bearish in month 8 (avg -0.041%)",
+   "url": "",
+   "symbols": [
+    "BAIDU"
    ],
    "mechanism_tags": []
   },
@@ -5726,10 +5330,40 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "ThermoFisherScientific historically bullish in month 8 (avg 0.060%)",
+   "url": "",
+   "symbols": [
+    "THERMOFISHERSCIENTIFIC"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "CORN historically bullish in month 8 (avg 0.029%)",
+   "url": "",
+   "symbols": [
+    "CORN"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "EURPLN historically bullish in month 8 (avg 0.002%)",
    "url": "",
    "symbols": [
     "EURPLN"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Starbucks historically bullish in month 8 (avg 0.059%)",
+   "url": "",
+   "symbols": [
+    "STARBUCKS"
    ],
    "mechanism_tags": []
   },
@@ -5746,10 +5380,70 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "TexasInstruments historically bullish in month 8 (avg 0.095%)",
+   "url": "",
+   "symbols": [
+    "TEXASINSTRUMENTS"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Airbnb historically bullish in month 8 (avg 0.060%)",
    "url": "",
    "symbols": [
     "AIRBNB"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "UKGILT historically bearish in month 8 (avg -0.023%)",
+   "url": "",
+   "symbols": [
+    "UKGILT"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Target historically bullish in month 8 (avg 0.073%)",
+   "url": "",
+   "symbols": [
+    "TARGET"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Snowflake historically bullish in month 8 (avg 0.101%)",
+   "url": "",
+   "symbols": [
+    "SNOWFLAKE"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "WHEAT historically bullish in month 8 (avg 0.019%)",
+   "url": "",
+   "symbols": [
+    "WHEAT"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "SUGARRAW historically bullish in month 8 (avg 0.053%)",
+   "url": "",
+   "symbols": [
+    "SUGARRAW"
    ],
    "mechanism_tags": []
   },
@@ -5786,7 +5480,17 @@
   {
    "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "BTCUSD historically bullish in month 8 (avg 1.398%)",
+   "title": "UnionPacific historically bullish in month 8 (avg 0.069%)",
+   "url": "",
+   "symbols": [
+    "UNIONPACIFIC"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "BTCUSD historically bullish in month 8 (avg 1.396%)",
    "url": "",
    "symbols": [
     "BTCUSD"
@@ -5814,13 +5518,32 @@
    "mechanism_tags": []
   },
   {
-   "source": "sec_edgar",
+   "source": "seasonality",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Bridgewater has recent 13F filing - check for position changes",
+   "title": "Twilio historically bullish in month 8 (avg 0.161%)",
    "url": "",
    "symbols": [
-    "NAS100",
-    "US500"
+    "TWILIO"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "SUGAR historically bullish in month 8 (avg 0.021%)",
+   "url": "",
+   "symbols": [
+    "SUGAR"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "seasonality",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Lyft historically bullish in month 8 (avg 0.052%)",
+   "url": "",
+   "symbols": [
+    "LYFT"
    ],
    "mechanism_tags": []
   },

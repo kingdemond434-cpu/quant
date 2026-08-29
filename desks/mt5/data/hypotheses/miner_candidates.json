@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-29T14:07:50+00:00",
+ "compiled_at": "2026-08-29T15:10:29+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -412,6 +412,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "BAIDU",
+   "family": "carry",
+   "params": {
+    "input_symbol": "BAIDU"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Baidu swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "BANKOFAMERICACORP",
    "family": "carry",
    "params": {
@@ -588,6 +600,54 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion CHINAH swap long=-4.93 short=0.59 diff=-5.5200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "COFARA",
+   "family": "carry",
+   "params": {
+    "input_symbol": "COFARA"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion COFARA swap long=3.2800000000000002 short=-10.93 diff=+14.2100",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "COFROB",
+   "family": "carry",
+   "params": {
+    "input_symbol": "COFROB"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion COFROB swap long=67.71 short=-178.13 diff=+245.8400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "CORN",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CORN"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion CORN swap long=-28.15 short=8.92 diff=-37.0700",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "COTTON",
+   "family": "carry",
+   "params": {
+    "input_symbol": "COTTON"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion COTTON swap long=-25.48 short=7.13 diff=-32.6100",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1036,6 +1096,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "FORD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "FORD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Ford swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "GBPCAD",
    "family": "carry",
    "params": {
@@ -1192,6 +1264,30 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "GENERALELECTRIC",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GENERALELECTRIC"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion GeneralElectric swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "GENERALMOTORS",
+   "family": "carry",
+   "params": {
+    "input_symbol": "GENERALMOTORS"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion GeneralMotors swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "GILEADSCIENCES",
    "family": "carry",
    "params": {
@@ -1288,6 +1384,30 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "INTUIT",
+   "family": "carry",
+   "params": {
+    "input_symbol": "INTUIT"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Intuit swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "INTUITIVESURGICAL",
+   "family": "carry",
+   "params": {
+    "input_symbol": "INTUITIVESURGICAL"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion IntuitiveSurgical swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "JPMORGANCHASE",
    "family": "carry",
    "params": {
@@ -1348,6 +1468,30 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "LUCIDGROUP",
+   "family": "carry",
+   "params": {
+    "input_symbol": "LUCIDGROUP"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion LucidGroup swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "LYFT",
+   "family": "carry",
+   "params": {
+    "input_symbol": "LYFT"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Lyft swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "MATICUSD",
    "family": "carry",
    "params": {
@@ -1372,6 +1516,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "MASTERCARD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "MASTERCARD"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Mastercard swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "MCDONALDS",
    "family": "carry",
    "params": {
@@ -1380,6 +1536,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion McDonalds swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "MEDTRONIC",
+   "family": "carry",
+   "params": {
+    "input_symbol": "MEDTRONIC"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Medtronic swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1408,6 +1576,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "MICRONTECHNOLOGY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "MICRONTECHNOLOGY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion MicronTechnology swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "MICROSOFT",
    "family": "carry",
    "params": {
@@ -1416,6 +1596,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion Microsoft swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "MORGANSTANLEY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "MORGANSTANLEY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion MorganStanley swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1444,6 +1636,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "NIO",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NIO"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion NIO swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "NOKJPY",
    "family": "carry",
    "params": {
@@ -1464,6 +1668,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion NOKSEK swap long=2.95 short=-10.94 diff=+13.8900",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "NVIDIA",
+   "family": "carry",
+   "params": {
+    "input_symbol": "NVIDIA"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion NVIDIA swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1528,6 +1744,30 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "OJ",
+   "family": "carry",
+   "params": {
+    "input_symbol": "OJ"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion OJ swap long=1.28 short=-52.65 diff=+53.9300",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "ORACLE",
+   "family": "carry",
+   "params": {
+    "input_symbol": "ORACLE"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Oracle swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "PAYPAL",
    "family": "carry",
    "params": {
@@ -1552,6 +1792,42 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "PFIZER",
+   "family": "carry",
+   "params": {
+    "input_symbol": "PFIZER"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Pfizer swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "PHILIPMORRISINTERNATIONAL",
+   "family": "carry",
+   "params": {
+    "input_symbol": "PHILIPMORRISINTERNATIONAL"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion PhilipMorrisInternational swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "PINTEREST",
+   "family": "carry",
+   "params": {
+    "input_symbol": "PINTEREST"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Pinterest swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "PROCTER&GAMBLE",
    "family": "carry",
    "params": {
@@ -1560,6 +1836,54 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion Procter&Gamble swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "QUALCOMM",
+   "family": "carry",
+   "params": {
+    "input_symbol": "QUALCOMM"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Qualcomm swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "ROBINHOODMARKETS",
+   "family": "carry",
+   "params": {
+    "input_symbol": "ROBINHOODMARKETS"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion RobinhoodMarkets swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "ROKU",
+   "family": "carry",
+   "params": {
+    "input_symbol": "ROKU"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Roku swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "S&PGLOBAL",
+   "family": "carry",
+   "params": {
+    "input_symbol": "S&PGLOBAL"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion S&PGlobal swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1600,6 +1924,42 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "SOYBEAN",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SOYBEAN"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion SOYBEAN swap long=-26.09 short=3.45 diff=-29.5400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SUGAR",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SUGAR"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion SUGAR swap long=-1.6099999999999999 short=-5.59 diff=+3.9800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SUGARRAW",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SUGARRAW"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion SUGARRAW swap long=-8.0 short=2.98 diff=-10.9800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "SALESFORCE",
    "family": "carry",
    "params": {
@@ -1608,6 +1968,114 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion Salesforce swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SERVICENOW",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SERVICENOW"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion ServiceNow swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SHOPIFY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SHOPIFY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Shopify swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SNAPCHAT",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SNAPCHAT"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Snapchat swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SNOWFLAKE",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SNOWFLAKE"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Snowflake swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "SPOTIFY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "SPOTIFY"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Spotify swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "STARBUCKS",
+   "family": "carry",
+   "params": {
+    "input_symbol": "STARBUCKS"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Starbucks swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "TMEGROUP",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TMEGROUP"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion TMEGroup swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "TSMC",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TSMC"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion TSMC swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "TARGET",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TARGET"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Target swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1624,6 +2092,42 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "TEXASINSTRUMENTS",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TEXASINSTRUMENTS"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion TexasInstruments swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "THERMOFISHERSCIENTIFIC",
+   "family": "carry",
+   "params": {
+    "input_symbol": "THERMOFISHERSCIENTIFIC"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion ThermoFisherScientific swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "TOYOTA",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TOYOTA"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Toyota swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "TRAVELERS",
    "family": "carry",
    "params": {
@@ -1636,6 +2140,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "TWILIO",
+   "family": "carry",
+   "params": {
+    "input_symbol": "TWILIO"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Twilio swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "UK100",
    "family": "carry",
    "params": {
@@ -1644,6 +2160,42 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion UK100 swap long=-6.02 short=1.6400000000000001 diff=-7.6600",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UKCOCOA",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UKCOCOA"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UKCOCOA swap long=-4.6899999999999995 short=-2.51 diff=-2.1800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UKGILT",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UKGILT"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UKGILT swap long=1.92 short=-8.42 diff=+10.3400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "US2000",
+   "family": "carry",
+   "params": {
+    "input_symbol": "US2000"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion US2000 swap long=-5.9 short=1.54 diff=-7.4400",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1668,6 +2220,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion US500 swap long=-5.9 short=1.54 diff=-7.4400",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "USCOCOA",
+   "family": "carry",
+   "params": {
+    "input_symbol": "USCOCOA"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion USCOCOA swap long=-186.19 short=3.5 diff=-189.6900",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1912,6 +2476,54 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "UST05Y",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UST05Y"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UST05Y swap long=-3.56 short=-2.74 diff=-0.8200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UST10Y",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UST10Y"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UST10Y swap long=-3.06 short=-3.24 diff=+0.1800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UBER",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UBER"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion Uber swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UNIONPACIFIC",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UNIONPACIFIC"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UnionPacific swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "UNITEDHEALTH",
    "family": "carry",
    "params": {
@@ -1920,6 +2532,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion UnitedHealth swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "UNITEDPARCELSERVICE",
+   "family": "carry",
+   "params": {
+    "input_symbol": "UNITEDPARCELSERVICE"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion UnitedParcelService swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -1948,6 +2572,18 @@
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
   {
+   "symbol": "WHEAT",
+   "family": "carry",
+   "params": {
+    "input_symbol": "WHEAT"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion WHEAT swap long=-20.88 short=5.9 diff=-26.7800",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
    "symbol": "WALMART",
    "family": "carry",
    "params": {
@@ -1968,6 +2604,18 @@
    "source": "miner:broker_swaps",
    "source_url": "mt5://symbol_info",
    "source_title": "fusion WaltDisney swap long=-7.31 short=2.81 diff=-10.1200",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "broker-native swap differential is a directly measured carry premium"
+  },
+  {
+   "symbol": "WELLSFARGO",
+   "family": "carry",
+   "params": {
+    "input_symbol": "WELLSFARGO"
+   },
+   "source": "miner:broker_swaps",
+   "source_url": "mt5://symbol_info",
+   "source_title": "fusion WellsFargo swap long=-7.31 short=2.81 diff=-10.1200",
    "mechanism_status": "NAMED",
    "mechanism_note": "broker-native swap differential is a directly measured carry premium"
   },
@@ -2245,9 +2893,9 @@
    "deepening": 0
   },
   "seasonality": {
-   "rows": 23,
+   "rows": 38,
    "candidates": 2,
-   "deepening": 22
+   "deepening": 37
   },
   "shipping": {
    "rows": 1,
@@ -2311,8 +2959,8 @@
   },
   "broker_swaps": {
    "rows": 225,
-   "candidates": 171,
-   "deepening": 54
+   "candidates": 225,
+   "deepening": 0
   },
   "github_topics": {
    "rows": 45,
@@ -2365,13 +3013,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 8,
+   "rows": 7,
    "candidates": 0,
-   "deepening": 8
+   "deepening": 7
   }
  },
- "rows_accounted": 794,
- "executable_candidates": 183,
- "deepening_tasks": 567,
+ "rows_accounted": 808,
+ "executable_candidates": 237,
+ "deepening_tasks": 529,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
