@@ -4385,3 +4385,25 @@ row per digest-run while replay still resolves per-timestamp.
 dead EA forums); archived track-record corpora (FX Blue / Darwinex). Any consumer reasoning about
 DATES rather than only about CONTENT. Same family as the recorded lesson *"a Wayback CDX 200
 archived a soft-404"*: a CDX index row is a claim about the INDEX, never about the bytes returned.
+
+## 2026-08-29 — PROSPECTOR s16 (3 structural findings; evidence in prospector_coverage.md s16)
+
+1. **A 4xx on `robots.txt` is ALLOW-ALL under RFC 9309 §2.3.1.3, not a disallow — the desk has been
+   applying this asymmetrically and in the restrictive direction.** Only the 5xx half (§2.3.1.4,
+   complete disallow) is in the recorded lessons. s15 read `research.macrosynergy.com` robots → 403
+   and declared "full disallow, hard stop", abandoning a primary source (re-verified 2026-08-29:
+   still 403, i.e. still ALLOW). **Fix: state the rule once, both halves — 4xx ⇒ crawl permitted;
+   5xx/unreachable ⇒ full disallow; a 403 on CONTENT is a wall regardless.** Re-open candidates:
+   every host this desk has graded WALLED on a 4xx-robots reading alone.
+2. **`libs/risk/beta_neutralize` has exactly one caller and that caller is banned-universe.**
+   `scripts/run_overlay_backtest.py:87` hedges against `BTCUSDT`. Under the 2026-08-18 MT5 mandate
+   the residual-beta overlay therefore has **no valid consumer** (III.16). Not patched — `scripts/`
+   is outside this seat's freeze. Owner: MT5 desk. The capability is sound; only its market proxy
+   is void.
+3. **Sign conventions carried by an argument NAME rather than an assertion** — the class behind
+   `macrosynergy/macrosynergy` #2534, where two functions each assumed the other applied the `-1`
+   and hedge positions shipped with the wrong sign for weeks; the maintainer's fix was a *rename*.
+   The desk already defends this in one place (`carry_state.py::swap_per_lot` converts and negates
+   once, by explicit design) and `beta_neutralize` is structurally immune. **Recorded as a standing
+   review question, not a defect: for any new hedge/beta/ratio field, is the sign asserted by a
+   test, or only implied by the name?**

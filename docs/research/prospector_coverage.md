@@ -10118,3 +10118,196 @@ converted, in the builder (recorded lesson: the stamp is a label, converting wou
    exists because s15 enumerated it.
 
 Status: **OPEN**. Updated in place as each item resolves.
+
+### s16 — RESOLVED (all three items closed; status CLOSED)
+
+**HEADLINE, stated first because it is the honest one: ZERO CARDS RAISED. Three candidates
+EV-gated, all three REJECT, none fabricated to look productive.** The run's durable value is a
+new keyless data axis, three measured nulls, and two method corrections.
+
+**ITEM 1 — `macrosynergy/macrosynergy`: the fork half is a MEASURED NULL, the comment half paid.**
+- **33 forks, 0 divergent. Not one.** Compared every fork's default branch against upstream
+  `develop` via the GitHub compare API: **`ahead_by == 0` on 33/33**, zero API errors (spot-checked
+  `Aimin7` explicitly: `status=behind, ahead_by=0, behind_by=11`). s15's next-ground rationale was
+  *"third-party ports carry the failures the official repo does not"* — **on this repo that is
+  false, and now measured rather than assumed.** **A fork COUNT is not a divergence count**, and the
+  33 forks are pure mirrors (vanity/bookmark forks, all 0★). No seat re-walks this fork tree.
+- **The comment layer, which is why this item was taken (two consecutive runs had mined none):**
+  `has_discussions=False`, `has_issues=True` → **800 items pulled: 106 issues / 694 PRs, 27 issues
+  with comments.** Mined ≥2 levels on six. The find is **#2534, `ProxyPNL` — hedge positions carried
+  the WRONG SIGN in a maintained BSD-3 macro-quant package**, open 2026-01-08 → 2026-02-19.
+  **Ralph Sueppel's own reply names the root cause and it is terminological, not arithmetic:**
+  `hratios` was ambiguous between *"the beta of the position return to the basket return"* and
+  *"the position to take"*, so `_apply_hedge_ratios` and `_add_hedged_signals` **each assumed the
+  other applied the `-1`**. Fixed by *renaming* the argument (`hratios`→`hedge_xcat`, PR #2563).
+  **The transferable class: a hedge-ratio field whose sign convention lives in its NAME rather than
+  in an assertion.**
+- **Checked against the desk, and the desk is structurally immune — reported as a null, not a
+  save.** `libs/risk/beta_neutralize` returns the *residual* directly (`resid = a - beta*m`); it
+  never converts a ratio into a position, so there is no seam for the two-function sign
+  disagreement to open in. `tests/risk/test_overlays.py` asserts `mean(beta) > 0.5`. **No defect,
+  no patch owed.**
+
+**ITEM 2 — the density hosts, and the handoff's own ranking was wrong.**
+Re-measured MT5-keyword density over the saved 6,908-item index (never re-scanning quantocracy,
+which stays EXHAUSTED). s15 named `blog.harbourfronts.com` (Relative Value Arbitrage) as the next
+host; **on density it ranks 13th at 0.13.** The actual top of the list is **`Quant Journey`
+4/4 (1.00)**, **`Golden Compass` 4/7 (0.57)**, **`Only VIX` 9/23 (0.39)**, **`Beyond Passive`
+6/19 (0.32)**. Handoff corrected in place — s17 should not start at harbourfronts.
+- **Read to the mechanism (not the headline): `Beyond Passive`, two linked posts, 2026-03.**
+  **Mechanism, with a named forced participant that cannot stop because the constraint is a
+  mandate:** options desks delta-hedge into Friday close and risk managers add weekend tail
+  protection Thursday afternoon, because they cannot react during two closed days; gold is the
+  most liquid safe haven, so the precautionary flow concentrates there and **unwinds Monday**.
+  **Conditioned on the VIX/VIX3M term-structure decile read at Thursday close** — the claim is that
+  the premium lives in **D7–D9 only** (ratio 0.91–1.00, "elevated but not catastrophic"), fading in
+  calm (nothing to de-risk) *and* in full backwardation D10 (panic is not orderly). Author's
+  numbers: unconditional Friday mean +0.099% → D7–D9 mean **+0.267%**, Sharpe 0.57→0.90, maxDD
+  18%→4%, 15 trades/yr. Companion post: Tuesday equity reversal, D10, correlation of the two legs
+  **−0.003**.
+- **THE COMMENT LAYER EARNED ITS KEEP AGAIN, on the reader side this time.** A reader ("Max")
+  points out that the opening day-of-week chart annotates **~400 observations per weekday where the
+  stated timeframe implies ~880** — an unexplained ~2x discrepancy in the exhibit the entire
+  hypothesis is derived from, raised by a reader and **not answered in the visible thread**. Note
+  for §13: substack robots **`Disallow: /p/*/comment/*`** — the comment subpath must never be
+  fetched; these were read only where rendered inline in the allowed post body.
+- **COSTS MEASURED FROM THE DESK'S OWN CARRY ORGAN, not assumed — and they do NOT kill it.**
+  `carry_state.json`: **XAUUSD long `swap_money_per_lot_night = -57.58`** (`swap_raw -67.06`,
+  CARRY-ADVERSE). The trade is Thursday-close→Friday-close = **exactly one rollover night, and it
+  never touches the Wednesday triple**. Against gold at **4,458.52** (desk H1 tape, 2026-08-28) a
+  lot is ~$445.9k notional, so financing is **~0.0129%/night — 4.8% of the claimed +0.267% gross
+  edge**. *Stated honestly:* the swap figure is ACCOUNT-ccy (EUR) against a USD notional, a ≤17%
+  error on a quantity that is <5% of the edge — immaterial to the verdict, but it is an assumption
+  and is named rather than buried.
+- **VERDICT: EV-REJECT ×3, and the reject reason is specific.** Scored with
+  `libs/research/alpha_economics`:
+
+  | candidate | EV | verdict |
+  |---|---|---|
+  | `friday_gold_weekend_hedging_demand_vix_ts_gated` | **0.00020** | REJECT (thresh 0.002) |
+  | `tuesday_index_reversal_vix_backwardation_d10` | **0.00030** | REJECT |
+  | `fx_time_of_day_session_handover_drift` (Quant Journey, 2017) | **0.00020** | REJECT |
+
+  **It dies on ECONOMICS, not on mechanism and not on costs** — `crowded_known` (publicly published
+  Mar-2026, and the raw Friday-gold effect is decades old and named as such by the author) and
+  `narrow_breadth` (**3 instruments**: XAU, XAG, XPT). **Sensitivity run so the bar is legible and
+  so no future run re-derives it:** dropping `narrow_breadth` at breadth 10 → 0.00160 (still
+  REJECT); also dropping `crowded_known` → 0.00460 (PASS); plus the author's own est_sharpe 0.90 →
+  0.00930. **It takes TWO tag denials AND the author's unhaircut Sharpe to pass, so it does not
+  pass.** I did not widen breadth to clear the gate — that is the exact "only inflated est_sharpe
+  could pass" failure `alpha_economics` documents in its own recalibration note.
+- **RE-OPEN CONDITION (L1.16a), named now so the graveyard entry is actionable:** evidence that the
+  weekend-hedging premium extends beyond metals to the other MT5 safe havens (CHF and JPY crosses,
+  index CFDs) would retire `narrow_breadth` honestly. That is a *different, wider* hypothesis and it
+  is item 1 of the next-ground list — not a re-scoring of this one.
+- **CONTEXT THAT MAKES THIS FAMILY WORTH RE-ENTERING AT ALL:** `data/strategy_coverage.json` grades
+  **EVENT-AND-CALENDAR as THIN, n_tested=1** — and that single test (`era_inout_regime_rotation`) is
+  **banned-universe crypto**. On the MT5 mandate this family is effectively **n=0**.
+
+**ITEM 3 — the 190-blog long tail: worked, and it is THIN by measurement.**
+190 hosts at ≤3 items each carry **24 MT5-relevant titles between them**. Enumerated all 24. The
+layer is real but the density is ~0.5 hits/host and most are one-off equity/VIX posts. Two are
+worth a later look and neither is worth a card today: **`Mechanical Forex`** (2015, "why many
+academics are doing it all wrong" — FX ML methodology critique, debunk genre) and **`FX Macro Data`**
+(2025-12, policy-rate→GBP). **`Taiwan Quant`** ("Realistic Backtester for Perpetual Futures") is
+**VOID under the universe mandate**, discarded without a card.
+
+### s16 — THE RUN'S BEST DELIVERABLE: A NEW KEYLESS DATA AXIS (found while verifying a dependency)
+
+Verifying the card's conditioning variable — **the desk holds `VIXCLS` and NOT the 3-month leg, so
+the entire VIX/VIX3M ratio was unavailable** — opened a live free source:
+
+| series | rows | first | last | route |
+|---|---|---|---|---|
+| **VIX3M** | 4,263 | 2009-09-18 | **2026-08-28** | `cdn.cboe.com/api/global/us_indices/daily_prices/VIX3M_History.csv` |
+| **VIX9D** | 3,937 | 2011-01-04 | **2026-08-28** | same pattern |
+| **VVIX** | 5,094 | **2006-03-06** | **2026-08-28** | same pattern |
+| **VIX1D** | 1,078 | 2022-05-13 | **2026-08-28** | same pattern |
+
+**Keyless, no registration, OHLC daily, current to yesterday, one GET each.** `desks/mt5/data_registry.json`
+carries `VIXCLS` alone; **the whole volatility TERM STRUCTURE — the shape, not the level — is a
+regime axis the desk has never held.** Its value is explicitly *not* tied to the rejected card: it
+is a candidate regime conditioner for the L1.60/RESEARCH §6c regime work, where regimes must be
+preregistered and point-in-time — and these are daily settlement series, so they are.
+- **§13:** `www.cboe.com/robots.txt` = 200, `Disallow: /book/` and a volume-reports path only —
+  **the data path is not barred**. `cdn.cboe.com/robots.txt` returns **403**; see the method
+  correction below for why that is ALLOW and not a wall.
+
+### s16 — TWO METHOD CORRECTIONS (both change what future runs are allowed to do)
+
+**(1) A 403 ON `robots.txt` IS *ALLOW-ALL* UNDER RFC 9309, NOT A DISALLOW — and s15 got this
+backwards, at a cost.** RFC 9309 §2.3.1.3 ("Unavailable Status", **4xx**): the crawler **MAY access
+any resources**. §2.3.1.4 ("Unreachable Status", **5xx**): assume **complete disallow**. The desk's
+recorded lesson covers only the 5xx half and is correct there. **s15 read
+`research.macrosynergy.com`'s robots → 403 and declared "RFC 9309 full disallow, hard stop"** —
+re-verified today, **still 403, i.e. 4xx, i.e. ALLOW** — and on that misreading abandoned the
+primary source and fell back to Wayback CDX. **Under the constitution's own terms this is timidity:
+a restriction adopted without naming the risk it reduces.** The rule, stated once so it stops
+flip-flopping: **4xx on robots ⇒ crawl permitted; 5xx or unreachable ⇒ full disallow; a 403 on the
+CONTENT is a wall regardless of what robots says.** `cmegroup.com` (timeout/INTERNAL_ERROR,
+unreachable) remains correctly a hard stop.
+**(2) The desk's swap conversion is centralised and correct — I nearly filed a defect that is not
+one.** `universe.json` carries `swap_long`/`swap_short` on 248/251 symbols but **`swap_mode` on 0/251
+and `point` on only 3/251** — the two fields needed to turn a raw swap into money. That looks like
+248 uninterpretable numbers. **It is not:** `desks/mt5/research/carry_state.py::swap_per_lot` does
+the conversion **once**, keyed on the value rather than the label, negates to cost-positive at that
+single site (its docstring: *"a sign convention re-derived per caller is a sign error waiting for
+its first consumer"* — precisely macrosynergy #2534's bug, already defended against here), and
+returns **`None` for UNMEASURED rather than 0.0**. Artifact: 248 symbols, **404 sides MEASURED, 92
+UNMEASURED**. The residual gap is those **92 sides**, not the registry fields.
+
+### s16 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| `macrosynergy/macrosynergy` **fork tree** (33 compared via API) | ✅ | **MEASURED NULL — 0/33 divergent.** Fork count ≠ divergence count. Ground closed. |
+| `macrosynergy/macrosynergy` **Issues** (800 items, 6 read ≥2 levels) | ✅ | **#2534 sign-convention-in-a-name class** → checked against desk → **structurally immune, null** |
+| **Quantocracy saved index** (re-query, no re-scan) | ✅ | **Density ranking CORRECTED** (handoff's pick ranked 13th); 4 new top hosts named |
+| `beyondpassive.substack.com` (2 posts, full read) | ✅ | Mechanism + forced participant + conditioner; **reader-raised ~2x obs discrepancy**; **EV-REJECT ×2** |
+| `quantsjourney.blogspot.com` (FX time-of-day) | ✅ | **EV-REJECT ×1** |
+| **190-blog long tail** (24 hits enumerated) | ✅ | **THIN, measured** (~0.5 hits/host); 2 leads carried; 1 discarded VOID by mandate |
+| **`cdn.cboe.com` vol term structure** | ✅ | **4 keyless current series, 2006→2026-08-28** — the run's best find |
+| `desks/mt5` carry + universe registry (dependency check) | ✅ | XAUUSD financing = **4.8% of the edge**; **92 UNMEASURED sides** is the real residual |
+
+- **DEPTH.** Item 1 **EXHAUSTED** (fork tree compared exhaustively, not sampled; issue corpus
+  enumerated and the top comment-bearing threads read to the maintainer's reply and the fixing PR).
+  Item 2 dug **surface → mechanism → reader-comment layer → the desk's own cost artifact → EV gate
+  → sensitivity**. Item 3 **EXHAUSTED** (all 24 long-tail hits enumerated).
+  **The two-run comment-layer gap s15 named is CLOSED** — mined on both sides this run, maintainer
+  *and* reader, and the reader's was the sharper one.
+  **Honest depth gap:** citations were **not** chased this run (no paper sat under these leads);
+  the macrosynergy **PR** bodies (694) were counted but not read.
+- **§13.** Honest `ClaudeBot (quant research desk)` UA throughout. robots read in full before each
+  host: quantsjourney (open), beyondpassive/substack (**post path open, `/p/*/comment/*` barred —
+  respected**), www.cboe.com (open on the data path), cdn.cboe.com (**403 = 4xx = allow**),
+  api.github.com (public endpoints). **No breach.** No UA switching to evade anything. No third-party
+  tooling installed or run — macrosynergy was mined **as text via the API**, never cloned or executed.
+- **FREEZE.** Nothing under `scripts/`, `libs/`, the executor, a rail or a live-state file was
+  modified. `libs/risk/overlays.py` and `desks/mt5/**` were **read only**. Writes this run:
+  `docs/research/*` + `data/cadence_state.json` (the mandated cadence stamp).
+- **Video:** 0 fetched, 0 locked, none needed — nothing on this ground was video-origin. Nothing
+  added to `video_locked_log.md`.
+- **Cards: 0 raised. 3 EV-rejected. 0 fabricated.** Backlog was **clear on entry** (0 pending).
+- **MY OWN HYPOTHESES THAT DIED TO THEIR OWN CHECKS (reported because they are results):**
+  (1) I expected the 33 forks to carry divergence — **0/33**, and I measured it instead of sampling
+  two and assuming. (2) I expected macrosynergy's sign bug to transfer to the desk's `beta_neutralize`
+  — it **cannot**, structurally, and the null is the finding. (3) I was about to file "248 symbols
+  carry an uninterpretable swap number" — **`carry_state.py` already solves it properly**, and the
+  real gap is 92 UNMEASURED sides. (4) I inherited s15's harbourfronts pick and its
+  403-is-a-disallow rule; **both were wrong on measurement.**
+
+### NEXT UN-EXHAUSTED GROUND (for s17, in order)
+
+1. **The wider weekend-hedging hypothesis — the honest way to retire `narrow_breadth`.** Does the
+   Thursday→Friday precautionary-hedge premium appear in **CHF and JPY crosses and index CFDs**, not
+   just metals? The desk has the tape and now has the conditioner (VIX3M). This is the *only*
+   legitimate route to a passing EV score here, and it is a new hypothesis, not a re-score.
+2. **Adopt the CBOE term-structure series into the source backlog / data registry** — keyless,
+   current, and the first vol-SHAPE axis the desk would hold. Independent of item 1's outcome.
+3. **The 92 UNMEASURED carry sides** — named by the desk's own artifact, owner is the MT5 desk
+   (outside this seat's freeze); carry as a ledger row, not a patch.
+4. **Density hosts 2–4, in the CORRECTED order:** `Golden Compass` (0.57 — ML on Nikkei/HangSeng/
+   E-mini futures, and an order-book-imbalance post), `Only VIX` (0.39 — VIX futures term structure,
+   pairs with item 2), `Beyond Passive` remaining 13 items. **Not harbourfronts first.**
+5. **The 694 macrosynergy PR bodies** — counted, never read; the fork tree is dead ground but the PR
+   layer is where the fixes and their reasoning live.
