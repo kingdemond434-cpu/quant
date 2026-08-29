@@ -56,9 +56,18 @@ OUT = ROOT / "data" / "free_research.json"
 #: that a free model's context is spent on the task rather than on the list.
 GRAVEYARD_N = 40
 
-#: A proposal missing any of these is not a hypothesis. The desk holds 16,000 candidates that
-#: were never asked for a mechanism, and that is precisely why yield is 0.33%.
-_REQUIRED = ("name", "mechanism", "payer", "test", "kill")
+#: The PAID prompt's output contract, field for field:
+#:     NAME | MECHANISM (<=25 words) | DATA SOURCE | TEST | KILL CONDITION
+#:
+#: MUST MATCH THE PROMPT EXACTLY. A first version named field 3 `payer` while the prompt asked
+#: for DATA SOURCE, so every proposal was stored with a dataset in its payer field -- and the
+#: compiler, the docket and every later reader would have believed the desk had recorded who is
+#: compelled to trade when it had recorded a URL. A mislabelled field is worse than a missing one:
+#: it is confidently wrong and nothing downstream can tell.
+#:
+#: The PAYER lives inside `mechanism` -- the prompt's rule 1 requires a mechanism that survives
+#: "why has nobody arbitraged this?", which is the payer question asked the other way round.
+_REQUIRED = ("name", "mechanism", "data_source", "test", "kill")
 
 
 #: PARSE FOR STRUCTURE, DO NOT STRIP PROSE. A first version tried to detect reasoning traces by
@@ -129,24 +138,69 @@ def _parse_proposals(text: str) -> list[dict[str, str]]:
     return rows
 
 
+def _rich_prompt() -> tuple[str, list[tuple[str, str]]]:
+    """The PAID generator's own system prompt and causal lenses, reused for the free panel.
+
+    "use all previously proposed prompts for the paid, but for free now" -- and the paid
+    generator's prompt is genuinely better than anything written from scratch here. It leads with
+    the desk's constitution (a generator that does not know the objective optimises for what a
+    hypothesis LOOKS like), demands a mechanism that survives "why has nobody arbitraged this?",
+    requires a named public data source and an explicit kill condition, and tells the model that a
+    hypothesis whose likely outcome is a DISPROOF is a good hypothesis.
+
+    Imported rather than copied: two divergent copies of a prompt is the same drift disease as two
+    identity builders, and the paid path is where the prompt is maintained.
+    """
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "_hypgen", ROOT / "scripts" / "hypothesis_generator.py")
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load hypothesis_generator for its prompt")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["_hypgen"] = mod
+    spec.loader.exec_module(mod)
+    return mod.SYSTEM, list(mod.LENSES)
+
+
 def role_generate(panel: Any) -> dict[str, Any]:
+    """Generate through EVERY causal lens, on free models, with the graveyard in hand."""
     dead = _graveyard()
-    system = (
-        "You are a market microstructure researcher on an MT5/Fusion desk trading FX, metals, "
-        "indices, energy and share CFDs. You propose MECHANISMS, never strategies.\n"
-        "Every proposal must name a PAYER: a participant COMPELLED to trade for a reason that is "
-        "not a forecast (a hedger, an index tracker, a margin call, a benchmark clock). If nobody "
-        "is forced, arbitrage removes the edge and the proposal is worthless.\n"
-        "You must also give a KILL CONDITION -- the observation that would prove you wrong.")
-    user = (
-        "ALREADY DEAD OR ALREADY OWNED on this desk -- do not re-propose these:\n"
-        + "\n".join(f"  - {d}" for d in dead)
-        + "\n\nPropose 6 NEW mechanisms. One per line, EXACTLY this format, no preamble:\n"
-          "NAME | MECHANISM (<=25 words, name the payer) | PAYER | TEST | KILL CONDITION")
-    r = panel.ask("generation", system, user, max_tokens=1400, temperature=0.95)
-    props = _parse_proposals(r.text)
-    return {"role": "generate", "model": r.model, "proposals": props,
-            "raw_lines": len(r.text.splitlines()), "parsed": len(props)}
+    try:
+        system, lenses = _rich_prompt()
+        source = "hypothesis_generator.SYSTEM (paid prompt, free panel)"
+    except Exception as exc:
+        # FAIL LOUD, DO NOT SILENTLY DOWNGRADE. A weaker fallback prompt would still produce
+        # proposals, and nobody would ever notice the desk had stopped using its real one.
+        return {"role": "generate", "error": f"rich prompt unavailable: {type(exc).__name__}: "
+                                             f"{str(exc)[:120]} -- refusing to generate on an "
+                                             f"unnamed fallback prompt"}
+
+    props: list[dict[str, str]] = []
+    used: list[str] = []
+    per_lens: dict[str, int] = {}
+    for name, lens in lenses:
+        user = (
+            f"CAUSAL LENS -- {name}: {lens}\n\n"
+            "ALREADY DEAD OR ALREADY OWNED on this desk -- do not re-propose these:\n"
+            + "\n".join(f"  - {d}" for d in dead)
+            + "\n\nPropose 3 NEW hypotheses through THIS LENS ONLY. One per line, exactly:\n"
+              "NAME | MECHANISM (<=25 words) | DATA SOURCE | TEST | KILL CONDITION\n"
+              "No preamble, no reasoning, no headings. Any line without four '|' is discarded.")
+        try:
+            r = panel.ask("generation", system, user, max_tokens=1200, temperature=0.95)
+        except Exception:
+            # One lens failing is not the batch failing; the others still carry information.
+            continue
+        got = _parse_proposals(r.text)
+        for g in got:
+            g["lens"] = name
+        props.extend(got)
+        per_lens[name] = len(got)
+        used.append(r.model)
+    return {"role": "generate", "model": ",".join(sorted(set(used)))[:120],
+            "prompt_source": source, "lenses": len(lenses), "per_lens": per_lens,
+            "proposals": props, "raw_lines": sum(per_lens.values()), "parsed": len(props)}
 
 
 def role_feedback(panel: Any) -> dict[str, Any]:
@@ -232,7 +286,7 @@ def main() -> int:
         if res.get("proposals") is not None:
             print(f"    parsed {res['parsed']} of {res['raw_lines']} lines")
             for p in res["proposals"][:6]:
-                print(f"      {p['name'][:34]:36s} payer={p['payer'][:46]}")
+                print(f"      {p['name'][:34]:36s} {p['mechanism'][:52]}")
         for k in ("findings", "regions"):
             for row in res.get(k, []) or []:
                 vals = [*row.values(), "", ""]

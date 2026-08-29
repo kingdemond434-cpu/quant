@@ -97,6 +97,132 @@ _UNSUPPORTED: dict[str, tuple[str, ...]] = {
 }
 
 
+#: Language that means executing this proposal would COST the desk something beyond a trial.
+#: Each key is a distinct way a "good idea" is net-negative, and each is refused by name.
+#:
+#: WHY A TEXT CHECK IS LEGITIMATE HERE. These are not subtle properties inferred from data -- they
+#: are things a proposal SAYS about itself. A proposal that asks to relax a gate says so; one that
+#: introduces a cap says so. Catching them at intake costs microseconds; catching them after they
+#: are wired costs whatever they regressed.
+_NEGATIVE_ROI: dict[str, tuple[str, ...]] = {
+    "regresses_a_gate": (
+        "loosen", "relax", "lower the threshold", "reduce the bar", "weaken", "waive",
+        "skip validation", "bypass", "less strict", "ease the", "soften"),
+    "adds_a_quota": (
+        "quota", "cap the", "limit the number", "throttle", "restrict search", "only test the top",
+        "prune to", "budget cap", "max candidates"),
+    "names_a_tradeoff": (
+        "trade-off", "tradeoff", "at the cost of", "in exchange for", "sacrific",
+        "we would lose", "downside is", "requires giving up"),
+    "needs_paid_data": (
+        "subscription", "licensed data", "paid feed", "vendor data", "bloomberg", "refinitiv",
+        "purchase", "\\$ per month", "commercial licence", "commercial license"),
+    "needs_new_infrastructure": (
+        "new database", "rewrite the", "replace the engine", "migrate", "re-architect",
+        "new execution venue", "requires a broker change"),
+}
+
+#: A coordinate this heavily attempted with nothing to show is saturated ground. Re-testing it is
+#: a trial spent to re-learn something measured. Deliberately generous -- the desk has been wrong
+#: about "barren" before, and this is a spending decision rather than a verdict on the mechanism.
+_SATURATED_ATTEMPTS = 400
+
+
+def _saturation_map() -> dict[str, int]:
+    """Attempts per (event, direction) region, from the measured intake artifact."""
+    try:
+        intake = json.loads((ROOT / "data" / "research_intake.json").read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    # `coverage.never_touched` names regions with zero; the census carries the counts.
+    try:
+        alloc = json.loads((ROOT / "data" / "research_allocation.json").read_text("utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    out: dict[str, int] = {}
+    for row in alloc.get("ranked", []):
+        counts = row.get("counts") or {}
+        out[str(row.get("family"))] = int(counts.get("candidates", 0))
+    _ = intake
+    return out
+
+
+def _existing_coordinates() -> set[str]:
+    """Coordinates the desk has already CERTIFIED. Duplicating one adds no information.
+
+    READ CERTIFICATES, NOT THE COMPILER'S OWN LAST OUTPUT. A first version seeded this from
+    `compiled_proposals.json` -- the file this script writes -- so every coordinate it produced
+    minutes earlier counted as an incumbent and the next run refused ALL FIFTEEN proposals as
+    duplicates of itself. A check whose baseline is its own output rejects everything on the
+    second run and reports it as a finding.
+
+    An incumbent is something the desk OWNS: a survivor that passed the gauntlet. A cell merely
+    queued for testing is not evidence of anything and must not block a second look.
+    """
+    out: set[str] = set()
+    try:
+        surv = json.loads((DESK / "reports" / "UNIVERSAL_SURVIVORS.json")
+                          .read_text("utf-8")).get("survivors") or {}
+    except (OSError, json.JSONDecodeError):
+        return out
+    for row in surv.values():
+        spec = (row or {}).get("shadow_spec") or {}
+        fam = spec.get("family")
+        if fam:
+            # Certificates predate the coordinate system, so match on the EVENT they map to
+            # rather than on a full coordinate they never carried.
+            out.add(str(fam))
+    return out
+
+
+def _roi_refusal(rec: dict[str, Any], text: str, coordinate: str,
+                 saturation: dict[str, int], seen: set[str]) -> dict[str, Any] | None:
+    """Would executing this cost more than it returns? Returns a refusal, or None to proceed.
+
+    CRITICAL THINKING BEFORE AUTOMATIC EXECUTION (principal, 2026-08-29). Automatic execution is
+    right -- a proposal nobody runs is a proposal nobody made. But automatic execution WITHOUT
+    this check is how a research loop quietly spends its budget re-testing saturated ground,
+    duplicating cells it already owns, or wiring in a constraint that narrows every future search.
+    """
+    t = text.lower()
+    for reason, words in _NEGATIVE_ROI.items():
+        hit = next((w for w in words if w in t), None)
+        if hit:
+            return {"name": rec.get("name"), "compiled": False,
+                    "refused_for": reason, "trigger": hit,
+                    "why": (f"the proposal itself says {hit!r}, which means executing it "
+                            f"{'regresses an existing gate' if reason == 'regresses_a_gate' else ''}"
+                            f"{'narrows what the desk may search' if reason == 'adds_a_quota' else ''}"
+                            f"{'costs something it names' if reason == 'names_a_tradeoff' else ''}"
+                            f"{'needs data the desk cannot obtain free' if reason == 'needs_paid_data' else ''}"
+                            f"{'requires infrastructure work the trial does not pay for' if reason == 'needs_new_infrastructure' else ''}"
+                            f". Refused before any trial is spent.")}
+
+    if coordinate in seen:
+        return {"name": rec.get("name"), "compiled": False, "refused_for": "duplicate_coordinate",
+                "trigger": coordinate,
+                "why": (f"{coordinate} is already carried by a CERTIFIED cell. Testing the same "
+                        f"claim twice adds no information while charging the trial count every "
+                        f"other candidate's bar is computed against.")}
+
+    ev = coordinate.split("|")[0] if "|" in coordinate else ""
+    attempts = saturation.get(ev, 0)
+    if attempts >= _SATURATED_ATTEMPTS:
+        return {"name": rec.get("name"), "compiled": False, "refused_for": "saturated_ground",
+                "trigger": f"{ev}:{attempts}",
+                "why": (f"{ev} already carries {attempts} attempts on this desk. This is a "
+                        f"SPENDING decision, not a verdict on the mechanism -- the region may "
+                        f"well be real, but one more trial there buys less than the same trial "
+                        f"spent where nothing has been measured.")}
+    return None
+
+
+#: Populated by `main` before compiling. Module-level so `compile_proposal` stays a pure
+#: single-record function that a test can call directly.
+_SATURATION: dict[str, int] = {}
+_SEEN: set[str] = set()
+
+
 def _match(text: str, table: dict[str, tuple[str, ...]]) -> str | None:
     t = text.lower()
     best, best_hits = None, 0
@@ -114,7 +240,10 @@ def _unsupported(text: str) -> list[str]:
 
 def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> dict[str, Any]:
     """One proposal -> a runnable cell spec, or a refusal that names what is missing."""
-    text = " ".join(str(rec.get(f, "")) for f in ("name", "mechanism", "payer", "test", "kill"))
+    # Read EVERY field the proposal carries. A fixed list here silently ignored `data_source`
+    # and `lens` once the prompt contract changed, and the capability check reads the whole text.
+    text = " ".join(str(v) for k, v in rec.items()
+                    if k in ("name", "mechanism", "data_source", "payer", "test", "kill", "lens"))
     missing = _unsupported(text)
     if missing:
         return {"name": rec.get("name"), "compiled": False, "missing_capability": missing,
@@ -139,12 +268,19 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
                 "missing_capability": [f"event:{event}"],
                 "why": f"{event}/{direction} is outside family_generic's vocabulary"}
 
+    coordinate = f"{event}|{context}|magnitude|{direction}|1h"
+    veto = _roi_refusal(rec, text, coordinate, _SATURATION, _SEEN)
+    if veto is not None:
+        return veto
+    _SEEN.add(coordinate)
+
     return {"name": rec.get("name"), "compiled": True,
             "family": "generic",
             "params": {"event": event, "context": context, "direction": direction,
                        "output": "1h", "quality_atr": 1.0},
-            "coordinate": f"{event}|{context}|magnitude|{direction}|1h",
-            "payer": rec.get("payer"), "kill": rec.get("kill"),
+            "coordinate": coordinate,
+            "data_source": rec.get("data_source"), "kill": rec.get("kill"),
+            "lens": rec.get("lens"),
             "promotion_authority": False}
 
 
@@ -153,6 +289,10 @@ def main() -> int:
 
     now = datetime.now(tz=UTC)
     sup = generic_supported()
+
+    global _SATURATION, _SEEN
+    _SATURATION = _saturation_map()
+    _SEEN = _existing_coordinates()
 
     props: list[dict[str, Any]] = []
     if QUEUE.exists():
@@ -195,7 +335,9 @@ def main() -> int:
     for r in ok[:10]:
         print(f"    ok   {str(r.get('name'))[:34]:36s} {r['coordinate']}")
     for r in refused[:10]:
-        miss = ",".join(r.get("missing_capability") or []) or "axis unresolved"
+        miss = (r.get("refused_for")
+                or ",".join(r.get("missing_capability") or [])
+                or "axis unresolved")
         print(f"    --   {str(r.get('name'))[:34]:36s} [{miss}]")
         print(f"         {r['why'][:120]}")
 
