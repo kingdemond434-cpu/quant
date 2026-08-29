@@ -4988,3 +4988,30 @@ open. Re-graded `excluded-licensed` this run and the local archive deleted. **RU
 is never evidence of a licence. Before any source is graded adopted, its publisher's terms/licence
 page must be opened and quoted verbatim into the map entry — and "free to access" and "free to use"
 must be recorded as two separate fields.**
+
+## 2026-08-29 — BRAIN s19 — the denominator rule, paid for by this seat's own retracted prior
+
+**Origin:** `data/brain_hunter_s19_evaluation_axis.json`. s16 published "0 of 14 permissive BRAIN
+generator repos carry any multiplicity control" as a corpus-level prior. s19 measured the
+population that statement quantifies: **10 of the 13 authorships compute no factor metric at all**
+— every `sharpe` in them is `.get()` off the platform's simulation response or a literal. They
+cannot carry a multiplicity control because they have no evaluation stage. The prior's honest form
+is **n=3, not 13**.
+
+**THE TRANSFERABLE RULE, and it binds this desk's own censuses:** a vocabulary grep over a corpus
+measures *the corpus that could have used the vocabulary*. Before reporting "0 of N do X", measure
+how many of the N are even in a position to do X — otherwise the headline number is an absence
+statistic wearing the costume of a finding, and it inflates in exactly the direction that flatters
+the searcher (L1.57; WS-005 class). **Concretely: every `0 of N` line this desk publishes from a
+grep census should carry its eligible-N next to its N.** That is one extra measurement per census
+and it is what separates "they all overlooked it" from "they were never doing it".
+
+**And the second half — point the instrument where the exposure lives.** This class outsources its
+statistics AND its out-of-sample to WorldQuant's simulator, so its multiplicity exposure is not in
+its code at all: it is the count of simulations fired, which s16 tabulated one column away
+(`gen_scale_hits`) and never joined to the multiplicity column. A grep-shaped instrument was
+pointed at a scale-shaped quantity. Named for s20 as the one live question left on this ground.
+
+**Not a defect claim against the desk:** the desk's own `n_trials` accounting is a count of
+generated cells, i.e. already the scale-shaped instrument. This is a reporting-discipline item for
+census output, not an engine item, and it is stated as a rule to apply, not an investigation.

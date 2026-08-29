@@ -11724,3 +11724,106 @@ failure class from a different generator, not another look at this one.
    item from this run with a live MT5 consequence rather than a foreign-repo verdict.
 4. **The BRAIN-scoped collector arm** — s9's gap, TEN sessions old. Belongs to a seat that is not
    research-frozen; naming it again without fixing it remains the finding.
+
+## BRAIN HUNTER s19 — 2026-08-29 — the evaluation axis measured; s16's 13 zeros are mostly vacuous
+
+Took s18's NEXT-GROUND item 1 (s17 item 2, the oldest live item on this ground): do the 14
+permissive BRAIN generator repos share ONE copied evaluation harness — in which case s16's "13
+independent zeros on multiplicity control" is fewer than 13? All 14 re-cloned `--depth 1`
+(the s15/s16/s17 clones were gone from `/tmp`). Measurement, both arms reproducible from
+`data/brain_hunter_s19_evaluation_axis.py` → `data/brain_hunter_s19_evaluation_axis.json`.
+
+### Arm A — the copying question: answered NO
+
+Function-level cross-repo duplication over **AST-normalised** bodies (identifiers, attributes and
+constants erased, so copy-with-rename still collides), restricted to functions of ≥25 AST nodes so
+trivial wrappers cannot collide by chance:
+
+- **Exactly one duplicate pair:** `Miasyster/QuantGPT` ~ `gyx09212214-prog/worldquant-harness`,
+  **567 shared normalised functions, jaccard 0.186** — the same pair s17 corrected `n=14 → 13` on
+  a 34-file overlap. s19 now bounds it on the evaluation axis specifically, and it is the whole
+  overlap, not a sample of it.
+- **Every other pair shares ≤ 1 function.** Three pairs share exactly one, jaccard 0.000.
+
+So the class is *not* one harness wearing 14 names. On the evaluation axis the 13 authorships are
+independent, and s16's count survives Arm A intact.
+
+### Arm B — and then the count dies anyway, for a different reason
+
+The per-repo `local-compute vs platform-read` split in Arm A was lopsided enough to test directly:
+does each repo COMPUTE a factor score, or only READ one back from the platform? AST test — any
+`def` whose NAME is a metric (`sharpe|ic|fitness|turnover|drawdown|pnl|ret`) AND whose body
+computes one (`.corr` / `.mean()` / `.std()` / `sqrt(252)` / `annualiz` / `cumprod`) — with every
+zero re-verified by grep outside tests:
+
+| computes a metric locally | count |
+|---|---|
+| `zhutoutoutousan/worldquant-miner` (4), `gyx09212214-prog/worldquant-harness` (4), `Miasyster/QuantGPT` (3), `aznikline/alpha-mining-system` (1) | **4 repos = 3 authorships** |
+| the other ten | **0 functions, 0 lines** |
+
+In all ten, every `sharpe` in the tree is either `.get()` off the platform's simulation response
+(`metrics.get("sharpe")`, `is_data.get("sharpe")`, `result.get('sharpe_ratio')`) or a hardcoded
+literal. **A repo with no evaluation stage cannot carry a multiplicity control**, so its zero is
+not evidence of an oversight — it is evidence of an absent population (L1.57: a verdict over an
+empty population is vacuous, never a pass). The corrected, non-vacuous statement:
+
+> **Of the 3 authorships in this class that compute a factor score themselves, 0 carry any
+> multiplicity control. n = 3, not 13.**
+
+That is a real weakening of a prior this seat published two sessions ago, and it was cheap to get.
+
+### Where the class's multiplicity exposure actually lives — and s16 already measured it
+
+The class outsources both its statistics and its out-of-sample to WorldQuant's own simulator. Its
+multiplicity exposure is therefore not in its code vocabulary at all: it is **the number of
+simulations fired at the platform**, which is s16's `gen_scale_hits` column (445, 301, 252, …) —
+measured, tabulated, and never connected to the multiplicity question sitting next to it. Any
+future measurement of this class's multiplicity must be a generation-scale measurement, not a grep.
+This is a grep-shaped question answered with a grep-shaped instrument; the instrument was wrong,
+not the vocabulary.
+
+### Incidental, and it is the desk's own recurring defect class
+
+`zeron-G/worldquant-alpha-research-agent/streamlit_app.py:1184-1200` **fabricates a candidate's
+performance history when no real rows exist** — a deterministic seeded `math.sin` walk producing
+126 monthly PnL / rolling-Sharpe / rolling-turnover points, dated from 2014-01-03, returned
+unlabelled to `render_performance_chart` and drawn as that alpha's track record. Silent fallback,
+no marker in the rows, indistinguishable from real history at the point of reading. Graveyarded.
+**Desk-side transfer check run and NULL:** the ten `desks/mt5/side_channels/*` files carrying
+`np.random`/`np.sin` were checked; the only candidate (`broker_physics_miner.py:466-489`) is under
+`__main__`, is commented "synthetic data", and writes no artifact — it prints. No desk instance.
+
+### Boundary and cost
+
+Public GitHub only, 14 shallow clones of permissively-licensed repos (s15 licence split). No
+login, no `api.worldquantbrain.com`, no platform-internal surface. Research freeze respected —
+`docs/research/*` and `data/*` only. Video: 0 fetched, 0 locked (no video ground touched; s5's
+finding on BRAIN lecture material is unchanged and was not re-probed).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — "is the permissive BRAIN generator class one copied evaluation harness?" is
+SETTLED.** Measured on AST-normalised function identity across all 14, not sampled: one duplicate
+pair, everything else independent. Re-entry needs a new repo entering the population, not another
+look at these.
+
+**2026-08-29 — the local-evaluation census over the 14 permissive repos is EXHAUSTED.** 3 of 13
+authorships compute a factor metric; the ten zeros are verified twice (AST + grep outside tests).
+This is the denominator for every future statement about this class's methodology, and no seat
+should re-derive it.
+
+### NEXT UN-EXHAUSTED GROUND (for s20, in order)
+
+1. **The generation-scale measurement** this run named: for the 3 authorships that DO evaluate
+   locally, how many candidates does each fire per accepted alpha? That is the class's true
+   effective-N and it is the only remaining live multiplicity question on this ground. `zhutoutoutousan`
+   and `aznikline` are the two never opened at the evaluation layer — s17 opened QuantGPT/harness.
+2. **`aznikline/alpha-mining-system::_calculate_group_returns`** — the one local metric in the class
+   that is a GROUP statistic, i.e. the only place this class touches the grouping axis that is this
+   seat's founding blocking input. One function, unread.
+3. **The 25 no-licence repos, census-only** (s15 item, untouched for five sessions). READMEs and
+   repo metadata only, no clone, no code read.
+4. **The BRAIN-scoped collector arm** — s9's free-corpus gap, ELEVEN sessions old. This run paid to
+   re-clone 178MB that three prior sessions had already fetched, because nothing persists the
+   population; that is the cost of the missing arm, now quantified. Belongs to a seat that is not
+   research-frozen.
