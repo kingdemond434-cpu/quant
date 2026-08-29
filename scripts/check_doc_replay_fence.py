@@ -77,6 +77,7 @@ def check(rel: str) -> dict[str, str] | None:
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     healed: list[dict[str, str]] = []
+    emptied: list[dict[str, str]] = []
     edited: list[str] = []
     clean: list[str] = []
     failed: list[dict[str, str]] = []
@@ -87,7 +88,33 @@ def main() -> int:
         if finding is None:
             head = _git("rev-parse", f"HEAD:{rel}")
             work = _git("hash-object", rel)
-            (clean if head == work else edited).append(rel)
+            if head == work:
+                clean.append(rel)
+                continue
+            # AN EMPTY WORKING COPY IS NEVER AN EDIT (2026-08-29). The rule above -- "appears
+            # nowhere in history, so somebody is editing, leave it alone" -- is right for a real
+            # edit and catastrophically wrong for a zero-byte file. Measured live this cycle:
+            # docs/GAP_REGISTER.md sat at 0 bytes against a 495KB HEAD while this fence printed
+            # "2 clean, 1 being edited, 0 replayed" and exited 0. Destroyed and being-edited must
+            # never render identically (L1.28a). Nobody edits a document by emptying it, and if
+            # they do, HEAD still holds every byte.
+            if (ROOT / rel).stat().st_size == 0 and _git("cat-file", "-s", f"HEAD:{rel}") != "0":
+                subprocess.run(["git", "checkout", "HEAD", "--", rel], cwd=ROOT,
+                               capture_output=True, text=True, timeout=120)
+                emptied_ok = _git("hash-object", rel) == head
+                line = (f"{now} EMPTIED {rel}: working copy was 0 bytes against a non-empty HEAD "
+                        f"-- restored from HEAD ({'ok' if emptied_ok else 'HEAL FAILED'}). This "
+                        "is destruction, not an edit, and it is not a replay either: the blob "
+                        "appears nowhere in the file's history.")
+                print(line)
+                with LOG.open("a", encoding="utf-8") as f:
+                    f.write(line + "\n")
+                rec = {"file": rel, "reason": "empty working copy against non-empty HEAD",
+                       "head_blob": head, "working_blob": work,
+                       "outcome": "HEALED" if emptied_ok else "HEAL_FAILED"}
+                (emptied if emptied_ok else failed).append(rec)
+                continue
+            edited.append(rel)
             continue
         # HEAL: restore the working copy from HEAD. Nothing is lost -- the replayed content is a
         # historical blob, still reachable at the commit named in the finding.
@@ -112,13 +139,20 @@ def main() -> int:
     # log and the artifact, which is where a monitor should read it. Non-zero is reserved for a
     # replay this fence could NOT heal, which is a real problem needing a human.
     doc: dict[str, object] = {"checked_at": now, "healed": healed, "heal_failed": failed,
+                              "emptied": emptied,
                               "edited_by_someone": edited, "clean": clean,
                               "status": "HEAL_FAILED" if failed else
-                                        ("HEALED" if healed else "OK")}
+                                        ("EMPTIED" if emptied else
+                                         ("HEALED" if healed else "OK"))}
     OUT.write_text(json.dumps(doc, indent=1), "utf-8")
-    if not healed and not failed:
+    if not healed and not failed and not emptied:
         print(f"doc replay fence: {len(clean)} clean, {len(edited)} being edited, 0 replayed")
-    return 1 if failed else 0
+    # A REPLAY IS ROUTINE HERE AND AN EMPTYING IS NOT. The comment above is right that a healed
+    # replay must exit 0 -- a permanently-failed unit is a unit nobody reads. An emptied guarded
+    # document is a class this fence had never seen before 2026-08-29, it destroyed 87 register
+    # rows the same day by a neighbouring route, and it should reach a human even when the heal
+    # worked.
+    return 1 if (failed or emptied) else 0
 
 
 if __name__ == "__main__":
