@@ -82,11 +82,42 @@ def _skip_ledger() -> dict:
         return {}
 
 
+def _box_symbols() -> set[str] | None:
+    """What the BOX already holds. None if it could not be asked."""
+    rc, out = _run(["ssh", "-o", "ConnectTimeout=30", REMOTE,
+                    "powershell -c \"Get-ChildItem "
+                    "'C:\\opt\\quant\\desks\\mt5\\data\\universe\\*_H1.parquet' | "
+                    "ForEach-Object { $_.BaseName }\""], timeout=180)
+    if rc != 0:
+        return None
+    return {ln.strip().removesuffix("_H1") for ln in out.replace("\r", "").splitlines()
+            if ln.strip()}
+
+
+def _sync_from_box(symbols: list[str]) -> tuple[list[str], list[str]]:
+    """Copy parquets the box already has. Returns (synced, failed).
+
+    SYNC BEFORE FETCH, ALWAYS. Measured 2026-08-29: all 54 symbols this reported as missing were
+    sitting on the box -- 299 parquets there against 197 here. Nothing was unfetched and nothing
+    was unavailable; the two machines had simply drifted, and the VPS was analysing a universe
+    22% smaller than the one the box mines on. A fetch would have occupied the terminal for half
+    an hour to re-download data that was one scp away, and the first draft of this file did
+    exactly that.
+    """
+    synced, failed = [], []
+    for sym in symbols:
+        rc, _ = _run(["scp", "-o", "ConnectTimeout=30", "-q",
+                      f"{REMOTE}:C:/opt/quant/desks/mt5/data/universe/{sym}_H1.parquet",
+                      str(UNI / f"{sym}_H1.parquet")], timeout=180)
+        (synced if rc == 0 else failed).append(sym)
+    return synced, failed
+
+
 def _should_refetch(report: dict) -> tuple[bool, str]:
-    """Is there anything a fetch could actually change?"""
+    """Is there anything a TERMINAL-BOUND FETCH could change that a sync could not?"""
     if report["never_attempted"]:
-        return True, (f"{len(report['never_attempted'])} symbol(s) have no bars and no recorded "
-                      f"reason -- the fetcher never reached them")
+        return True, (f"{len(report['never_attempted'])} symbol(s) have no bars anywhere -- not "
+                      f"here, not on the box -- and no recorded reason")
     if report["insufficient_history"]:
         return True, (f"{len(report['insufficient_history'])} symbol(s) were too young to test; "
                       f"they age into eligibility on their own and only a re-fetch notices")
@@ -107,7 +138,7 @@ def main() -> int:
         "registry_symbols": len(registry), "with_bars": len(have), "missing": len(missing),
         "coverage_pct": round(100.0 * len(have) / len(registry), 1) if registry else 0.0,
         "not_offered": [], "insufficient_history": [], "never_attempted": [],
-        "skip_ledger_age": ledger.get("fetched_at"), "refetch": None,
+        "skip_ledger_age": ledger.get("fetched_at"), "refetch": None, "sync": None,
     }
 
     for sym in missing:
@@ -134,6 +165,36 @@ def main() -> int:
 
     for sym in report["never_attempted"][:12]:
         print(f"      NEVER_ATTEMPTED {sym}")
+
+    # SYNC FIRST. A gap the box can fill is a transfer, not a download.
+    if missing:
+        box = _box_symbols()
+        if box is None:
+            report["sync"] = {"ran": False, "why": "box unreachable; cannot compare holdings"}
+            print("\n  SYNC: box unreachable -- cannot tell a sync gap from a data gap")
+        else:
+            recoverable = sorted(set(missing) & box)
+            report["box_symbols"] = len(box)
+            if recoverable:
+                synced, failed = _sync_from_box(recoverable)
+                report["sync"] = {"ran": True, "synced": len(synced), "failed": failed}
+                print(f"\n  SYNCED {len(synced)} parquet(s) the box already had "
+                      f"(box holds {len(box)}, this machine held {len(have)})")
+                have |= set(synced)
+                missing = sorted(set(missing) - set(synced))
+                # Everything below must judge the state AFTER the sync, or it would fire a
+                # terminal-bound fetch for symbols that just arrived.
+                report["never_attempted"] = [x for x in report["never_attempted"]
+                                             if x not in set(synced)]
+                report["with_bars"] = len(have)
+                report["missing"] = len(missing)
+                report["coverage_pct"] = (round(100.0 * len(have) / len(registry), 1)
+                                          if registry else 0.0)
+                print(f"  coverage now {report['coverage_pct']}% "
+                      f"({len(have)}/{len(registry)})")
+            else:
+                report["sync"] = {"ran": False, "why": "the box has none of the missing symbols "
+                                                       "either; this is a real data gap"}
 
     want, why = _should_refetch(report)
     # RATE LIMIT, and it is not a nicety. The fetch is terminal-bound and takes tens of minutes
