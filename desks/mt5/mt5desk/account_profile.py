@@ -163,7 +163,94 @@ E8_ONE_8 = AccountProfile(
     why="E8 One 8% tier; roomier daily limit permits ~2x the per-trade size of Pro v2",
 )
 
-PROFILES = {p.name: p for p in (LIVE, E8_PRO, E8_ONE_8)}
+#: E8 ONE-PHASE 100K, ~$234 (checked 2026-08-29). 6% target, 4% STATIC total drawdown, no
+#: minimum trading days, NO TIME LIMIT, drawdown measured END OF DAY only.
+#:
+#: THE BEST STRUCTURAL FIT AVAILABLE, for three reasons unrelated to the price:
+#:
+#:   NO TIME LIMIT is the whole edge. The barrier math says smaller bets RAISE the probability of
+#:   reaching the target and merely take longer, so an account with no clock lets the desk take
+#:   the safe side of that trade for free. Every timed product forces the opposite choice.
+#:
+#:   END-OF-DAY DRAWDOWN forgives intraday excursion entirely. These sleeves are bracketed and
+#:   close within session, so they collect that concession fully.
+#:
+#:   ONE PHASE removes a second independent chance to fail.
+#:
+#: THE DANGER IS THE 4% STATIC DRAWDOWN -- HALF the Pro tier's -- and the ABSENCE of a daily
+#: limit, which reads as generous and is the opposite: nothing caps a single day's loss below the
+#: account-ending number. risk_frac is therefore derived from the TOTAL drawdown.
+E8_ONE_PHASE_100K = AccountProfile(
+    name="e8-one-phase-100k",
+    risk_frac=0.0018,
+    daily_loss_limit=None,
+    max_drawdown_limit=0.04,
+    daily_circuit_breaker=0.010,
+    profit_target=0.06,
+    consistency_cap=0.40,
+    retire_max_dd_r=-5.0,
+    why=("one phase, 6% target, 4% static DD, no time limit, end-of-day drawdown. Sized from the "
+         "TOTAL drawdown because there is no daily limit -- the absence of one is a hazard, not "
+         "a freedom"),
+)
+
+PROFILES = {p.name: p for p in (LIVE, E8_PRO, E8_ONE_8, E8_ONE_PHASE_100K)}
+
+
+#: Measured expectancy -> risk fraction. Computed by `scripts/optimise_prop_settings.py` as the
+#: FASTEST size still clearing a 90% pass probability, on the two-barrier model with 11 trades/day
+#: and n_eff 5.5 independent bets/day:
+#:
+#:      expectancy   risk    P(pass)   days
+#:          0.00R      --      0.400   never    no size passes; sizing cannot rescue no edge
+#:          0.02R    0.10%     0.900     273
+#:          0.05R    0.35%     0.901      31
+#:          0.08R    0.50%     0.924      14
+#:          0.12R    0.70%     0.90+       6
+#:
+#: A SCHEDULE RATHER THAN A NUMBER, because the input it depends on does not exist yet. P(pass)
+#: at 0.35% swings from 0.90 to 0.67 between 0.05R and 0.02R, so picking a size today bets the
+#: fee on an unmeasured quantity. Reading the size off the measurement sizes the account by
+#: evidence instead.
+_RISK_BY_EXPECTANCY: tuple[tuple[float, float], ...] = (
+    (0.12, 0.0070),
+    (0.08, 0.0050),
+    (0.05, 0.0035),
+    (0.02, 0.0010),
+)
+
+#: Below this measured expectancy NO size clears the probability floor, so the answer is not a
+#: smaller size -- it is DO NOT FUND. A driftless path passes at drawdown/(target+drawdown)
+#: whatever the risk, and shrinking only makes the eventual failure slower.
+MIN_VIABLE_EXPECTANCY = 0.02
+
+
+def risk_for_expectancy(exp_r: float | None,
+                        profile: "AccountProfile | None" = None) -> tuple[float, str]:
+    """Fastest safe risk fraction for a MEASURED expectancy. Returns (risk_frac, why).
+
+    Unmeasured expectancy returns the conservative default and says so. It never guesses upward:
+    on a prop account being too small costs time while being too large costs the account, and an
+    unmeasured input is exactly when that asymmetry should govern (LAWS L1.28a).
+    """
+    prof = profile or E8_ONE_PHASE_100K
+    if exp_r is None:
+        return prof.risk_frac, (
+            "expectancy is UNMEASURED -- no forward window has completed. Using the conservative "
+            "default: the slow-but-safe corner of the frontier, which is the correct place to "
+            "sit while the input is unknown")
+    if exp_r < MIN_VIABLE_EXPECTANCY:
+        floor = (prof.max_drawdown_limit or 0.0) / ((prof.profit_target or 0.0)
+                                                    + (prof.max_drawdown_limit or 1.0))
+        return 0.0, (
+            f"measured expectancy {exp_r:+.4f}R is below {MIN_VIABLE_EXPECTANCY}R. No size "
+            f"clears a 90% pass probability at this edge -- a driftless path passes at "
+            f"{floor:.0%} whatever the risk. The answer is DO NOT FUND, not a smaller size.")
+    for threshold, risk in _RISK_BY_EXPECTANCY:
+        if exp_r >= threshold:
+            return risk, (f"measured {exp_r:+.4f}R >= {threshold}R -> {risk:.2%} per trade, the "
+                          f"fastest size still clearing a 90% pass probability")
+    return prof.risk_frac, "below the schedule; conservative default"
 
 
 def profile_for(account: str | None) -> AccountProfile:
