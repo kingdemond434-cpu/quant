@@ -112,6 +112,59 @@ KEEP_PREFIXES = ("claude-", "systemd-private", ".X", "snap", "pytest-of-",
 #: 3.8GB no-swap box that had OOM-killed its research organs 221 times in three days.
 WORKTREE_STALE_HOURS = 12.0
 
+#: ---------------------------------------------------------------------------------------
+#: PRESSURE-ADAPTIVE RETENTION (gap-fixer 2026-08-29). The arm above was correct and still let
+#: the box die, because a retention window measured in ABSOLUTE HOURS cannot see whether the box
+#: can afford it. MEASURED THIS CYCLE: /tmp held 941MB against MemAvailable 261MB, and this
+#: reaper freed ZERO -- every one of the large holders was 8-14h old against the 24h window, and
+#: the 297MB orphaned law-gate checkout was 20 MINUTES old against the 12h one. It ran every 6h,
+#: declined everything, and was working exactly as designed. The desk generates more than 600MB
+#: of scratch a day, so occupancy grows monotonically between sweeps and the window never catches
+#: it. Cost of that arithmetic over 7 days: 141 oom-kills, 74 of them desk organs -- the hourly
+#: cadence 40x, the auto-push guard 19x (so commits never reached the remote), this repair organ
+#: itself 5x -- plus root `cron.service`, dead since 2026-08-20.
+#:
+#: THE INFERENCE THAT HID IT. When the reap freed little and the floor stayed breached, main()
+#: concluded "the pressure is coming from resident processes" and routed the reader to a root
+#: swapfile at the principal's console. That does not follow: a reap freeing little while tmpfs
+#: is LARGE means the scratch is YOUNG, not that the pressure is resident. The two states render
+#: identically in the old alert, which is how a fixable, in-scope defect sat for 16 days behind a
+#: console item nobody could action. `tmpfs_used_mb` now splits them and the alert names which.
+#:
+#: WHAT ESCALATION DOES AND DOES NOT RELAX. All four safety clauses above are UNCHANGED and are
+#: what make a deletion legitimate: regular files only, never a KEEP_PREFIX, never a file any
+#: process holds open, never inside a registered worktree; worktrees still go through `git
+#: worktree remove`, which refuses a dirty tree. Only the AGE heuristic adapts, and only while
+#: the box is under its own floor. Age is the weakest of the four -- it guards against a producer
+#: that closed a file and will reopen it later -- so it is the one that yields to measured
+#: scarcity. The floors are not comfort: 4h is far past any observed download-then-reuse gap
+#: here, and 1h on a checkout is past the law gate's own 35min ceiling on a live run (its own
+#: reaper calls 2h "3x the maximum"). A ladder that reaches the floor and still cannot clear the
+#: MemAvailable floor is the ONLY state in which "the pressure is resident" is a sound reading --
+#: and then the console note is correct and is what gets printed.
+TMP_RETAIN_LADDER = (TMP_RETAIN_HOURS, 12.0, 6.0, 4.0)
+WORKTREE_STALE_LADDER = (WORKTREE_STALE_HOURS, 6.0, 2.0, 1.0)
+
+
+def tmpfs_used_mb() -> float | None:
+    """RAM held by files under /tmp, or None when /tmp is not a tmpfs (a different fact).
+
+    Kept local and dependency-free on purpose: this guard must run when the box is already too
+    starved to import much, and `shutil.disk_usage` on a non-tmpfs /tmp would silently report
+    the ROOT filesystem's usage -- a wrong number that reads as plausible pressure.
+    """
+    try:
+        mounts = Path("/proc/mounts").read_text("utf-8").splitlines()
+    except OSError:
+        return None
+    if not any(len(f) > 2 and f[1] == str(TMP_DIR) and f[2] == "tmpfs"
+               for f in (line.split() for line in mounts)):
+        return None
+    try:
+        return shutil.disk_usage(TMP_DIR).used / 1e6
+    except OSError:
+        return None
+
 
 def free_gb() -> float:
     return shutil.disk_usage("/").free / 1e9
@@ -213,7 +266,8 @@ def _cwds() -> set[str]:
     return out
 
 
-def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str]) -> tuple[int, int]:
+def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str], *,
+                         stale_hours: float = WORKTREE_STALE_HOURS) -> tuple[int, int]:
     """Remove stale git worktrees checked out onto tmpfs. Returns (bytes_freed, n_removed).
 
     Every refusal is REPORTED rather than forced: a worktree that is dirty, holds untracked
@@ -234,7 +288,7 @@ def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str]) -> tuple
                           if f.is_file() and not f.is_symlink()), default=0.0)
         except OSError:
             continue
-        if now.timestamp() - newest < WORKTREE_STALE_HOURS * 3600.0:
+        if now.timestamp() - newest < stale_hours * 3600.0:
             continue
         if any(c == str(wt) or c.startswith(f"{wt}/") for c in cwds):
             actions.append(f"tmpfs-worktree: {wt} HELD by a live process -- not reclaimed")
@@ -267,7 +321,8 @@ def reap_tmpfs_worktrees(now: datetime, repo: Path, actions: list[str]) -> tuple
     return freed, removed
 
 
-def reap_tmpfs(now: datetime, actions: list[str]) -> tuple[int, int]:
+def reap_tmpfs(now: datetime, actions: list[str], *,
+               retain_hours: float = TMP_RETAIN_HOURS) -> tuple[int, int]:
     """Free RAM held by stale scratch under the /tmp tmpfs. Returns (bytes_freed, n_files)."""
     if not TMP_DIR.is_dir():
         return 0, 0
@@ -276,7 +331,7 @@ def reap_tmpfs(now: datetime, actions: list[str]) -> tuple[int, int]:
     # advertising a tree of phantom deletions; `reap_tmpfs_worktrees` removes it wholesale or
     # not at all.
     worktrees = tmpfs_worktrees(REPO)
-    cutoff = now.timestamp() - TMP_RETAIN_HOURS * 3600.0
+    cutoff = now.timestamp() - retain_hours * 3600.0
     freed = 0
     removed = 0
     for entry in TMP_DIR.iterdir():
@@ -304,7 +359,7 @@ def reap_tmpfs(now: datetime, actions: list[str]) -> tuple[int, int]:
             removed += 1
     if removed:
         actions.append(f"tmpfs: reclaimed {freed / 1e6:.1f}MB of RAM from {removed} stale "
-                       f"scratch file(s) older than {TMP_RETAIN_HOURS:.0f}h")
+                       f"scratch file(s) older than {retain_hours:.0f}h")
     return freed, removed
 
 
@@ -314,8 +369,26 @@ def main() -> int:
     mem_before = mem_available_mb()
     actions: list[str] = []
     big: list[str] = []
+    # THE LADDER. Rung 0 is the standing policy and is what runs on a healthy box. Each further
+    # rung is entered ONLY while MemAvailable sits under the floor, and stops the instant it
+    # clears -- so a box with headroom never reaps below the 24h/12h windows, and a starving one
+    # is not told to wait 24 hours for memory it needs now.
     wt_freed, wt_removed = reap_tmpfs_worktrees(now, REPO, actions)
     tmp_freed, tmp_files = reap_tmpfs(now, actions)
+    escalations: list[str] = []
+    for rung in range(1, len(TMP_RETAIN_LADDER)):
+        mem_now = mem_available_mb()
+        if not mem_now or mem_now >= MEM_FLOOR_MB:
+            break
+        retain, stale = TMP_RETAIN_LADDER[rung], WORKTREE_STALE_LADDER[rung]
+        w_f, w_n = reap_tmpfs_worktrees(now, REPO, actions, stale_hours=stale)
+        t_f, t_n = reap_tmpfs(now, actions, retain_hours=retain)
+        wt_freed += w_f
+        wt_removed += w_n
+        tmp_freed += t_f
+        tmp_files += t_n
+        escalations.append(f"{retain:.0f}h/{stale:.0f}h freed {(w_f + t_f) / 1e6:.1f}MB "
+                           f"at MemAvailable {mem_now:.0f}MB")
     tmp_freed += wt_freed
     cutoff = (now - timedelta(days=RETAIN_DAYS)).strftime("%Y%m%d")
     freed = 0
@@ -341,6 +414,9 @@ def main() -> int:
               "tmpfs_reclaimed_mb": round(tmp_freed / 1e6, 1),
               "tmpfs_files_removed": tmp_files,
               "tmp_retain_hours": TMP_RETAIN_HOURS,
+              "tmpfs_used_mb_after": (round(tmpfs_used_mb(), 1)
+                                      if tmpfs_used_mb() is not None else None),
+              "retention_escalations": escalations,
               "tmpfs_worktrees_removed": wt_removed,
               "tmpfs_worktrees_reclaimed_mb": round(wt_freed / 1e6, 1),
               "tmpfs_worktrees_remaining": [str(w) for w in tmpfs_worktrees(REPO)]}
@@ -349,12 +425,28 @@ def main() -> int:
     # evidence the pressure is coming from resident processes, and the honest next move is the
     # console (swapfile) or moving heavy state to the Contabo node, not another sweep.
     if mem_after and mem_after < MEM_FLOOR_MB:
+        # TWO DIFFERENT FACTS, NEVER AGAIN ONE MESSAGE. The old text asserted "the pressure is
+        # resident" whenever a reap came up short, and that inference is only sound once the
+        # tmpfs is actually EMPTY. While /tmp is still large the honest reading is that its
+        # scratch is younger than even the bottom rung -- an in-scope producer problem with a
+        # named owner, not a root swapfile the desk cannot install.
+        tmp_left = tmpfs_used_mb()
+        still_held = tmp_left is not None and tmp_left > MEM_FLOOR_MB / 2
+        cause = (
+            f"{tmp_left:.0f}MB of RAM is STILL held under /tmp after the ladder reached "
+            f"{TMP_RETAIN_LADDER[-1]:.0f}h -- that scratch is younger than the bottom rung, so "
+            f"this is a PRODUCER problem, not a resident-memory one. Find the writer "
+            f"(`du -sm /tmp/* | sort -rn | head`) and point it at disk; do NOT lower the rung."
+            if still_held else
+            f"/tmp holds only {0.0 if tmp_left is None else tmp_left:.0f}MB, so the pressure IS "  # noqa: S108
+            f"resident and the reader is out of in-scope moves. PRINCIPAL CONSOLE: a swapfile "
+            f"needs root. Meanwhile heavy state belongs on the Contabo node.")
         report["MEM_ALERT"] = (
             f"MemAvailable {mem_after:.0f}MB below the {MEM_FLOOR_MB:.0f}MB floor after "
-            f"reclaiming {tmp_freed / 1e6:.1f}MB of tmpfs -- the box is in OOM-killer "
-            f"territory and the killer does not choose the offender (it took root cron on "
-            f"2026-08-20 and the fleet lost its scheduler for six days). PRINCIPAL CONSOLE: "
-            f"a swapfile needs root. Meanwhile heavy state belongs on the Contabo node.")
+            f"reclaiming {tmp_freed / 1e6:.1f}MB of tmpfs across {len(escalations) + 1} "
+            f"retention rung(s) -- the box is in OOM-killer territory and the killer does not "
+            f"choose the offender (it took root cron on 2026-08-20 and the fleet lost its "
+            f"scheduler for six days). {cause}")
     elif not mem_after:
         report["MEM_ALERT"] = ("MemAvailable is UNREADABLE -- the memory arm is blind, which "
                                "is a defect, not a pass (L1.28a).")
