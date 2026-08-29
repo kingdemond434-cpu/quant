@@ -9213,6 +9213,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0714",
+   "source": "cycle",
+   "summary": "COST SURFACE FOLLOW-UP (capability hunt 20260829_s0): re-price the two LIVE ZAR forward clocks. check_cost_surface flags USDZAR.overnight_gap_decay.asia at 2.51x and EURZAR at 2.10x undercharged against their own fill bars; against the registry scalar the error is 6.2x, and at the desk's declared honest baseline (mult=2.0) BOTH sleeves are NEGATIVE (+0.2535R -> -0.1764R, +0.2926R -> -0.1120R). The fence reports; it does not retire a sleeve or edit sleeves.json (LAWS S4, promotion rule 12). The promoter owns the disposition. Evidence: data/cost_surface_report.json, docs/research/capability_hunt/20260829_s0_hunt.md",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T03:22:14.548437+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-28T04:30:06.550078+00:00",
+  "generated": "2026-08-29T03:50:13.811152+00:00",
   "master_objective": "maximize expected lifetime geometric growth (log wealth), survival-c",
   "deployed": {},
   "binding_constraint": "calendar-time data accumulation (not engineering throughput)",
@@ -10,17 +10,17 @@
       "evidence": [
         {
           "edge": "oi_divergence",
-          "have_days": 3,
+          "have_days": 4,
           "needs_days": 40
         },
         {
           "edge": "ls_contrarian",
-          "have_days": 3,
+          "have_days": 4,
           "needs_days": 40
         },
         {
           "edge": "liquidation_reversal",
-          "have_days": 3,
+          "have_days": 4,
           "needs_days": 40
         }
       ],
@@ -42,24 +42,16 @@
   "retirement_candidates": [
     {
       "sleeve": "taker_flow",
-      "marginal_sharpe": -0.15
-    },
-    {
-      "sleeve": "basis_carry",
-      "marginal_sharpe": -0.05
+      "marginal_sharpe": -0.06
     },
     {
       "sleeve": "ts_trend",
-      "marginal_sharpe": -0.04
-    },
-    {
-      "sleeve": "funding_momentum",
-      "marginal_sharpe": -0.02
+      "marginal_sharpe": -0.01
     }
   ],
   "retirement_note": "SIGNAL ONLY \u2014 marginal-Sharpe swings ~\u00b10.15 between runs, so a single negative sign is within noise. Retire only on PERSISTENT negative contribution across runs, with promotion-grade rigor. No whipsaw.",
-  "architecture_review_due": false,
-  "cycles_logged": 104,
+  "architecture_review_due": true,
+  "cycles_logged": 105,
   "completed_this_cycle": [
     "watchdog_run_logged_off",
     "honest_deployed_sharpe",
@@ -118,17 +110,17 @@
   "research_backlog": [
     {
       "edge": "oi_divergence",
-      "status": "data-blocked 3/40d",
+      "status": "data-blocked 4/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "ls_contrarian",
-      "status": "data-blocked 3/40d",
+      "status": "data-blocked 4/40d",
       "info_value": "positive but not yet actionable"
     },
     {
       "edge": "liquidation_reversal",
-      "status": "data-blocked 3/40d",
+      "status": "data-blocked 4/40d",
       "info_value": "positive but not yet actionable"
     }
   ],
@@ -140,7 +132,7 @@
   ],
   "forecast_calibration": {
     "n_resolved": 394,
-    "n_eligible": 514,
+    "n_eligible": 523,
     "n_excluded": {
       "retrospective": 30,
       "duplicate_claim": 1,

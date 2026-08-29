@@ -2789,3 +2789,23 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # A "D1" label claims a full day of market time; short-covering bars poison every gate that
 # consumes the series. Daily, after the fetchers and before the research day starts.
 53 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1
+
+# --------------------------------------------------------------------------------------------
+# COST-BASIS FENCE + COST SURFACE (added 2026-08-29, capability hunt s0)
+# EVIDENCE: desks/mt5/research/cost_surface.py -> desks/mt5/data/cost_surface.json
+#           scripts/check_cost_surface.py      -> data/cost_surface_report.json
+# WHAT WAS MISSING: `universe.json:median_spread_pts` is ONE scalar per symbol for all 24 hours,
+# collapsed at ingest, and it is the number every gate, certificate, stress scenario and forward
+# clock divides by. Nothing anywhere compared a cell's CHARGED cost against the spread its own
+# fill bars recorded. First run (2026-08-29) found both LIVE ZAR forward clocks undercharged --
+# USDZAR 2.51x, EURZAR 2.10x on their own fill bars -- and both go NEGATIVE when re-priced at the
+# desk's own declared honest baseline. 920 of 3,424 measured symbol-hour cells are material,
+# 244 of them OVERCHARGED, which is the false-null direction that raises no alert anywhere else.
+# CADENCE: surface first (it is a re-aggregation of the parquets the fetchers just wrote), fence
+# immediately after it, both before the research day and before shadow_forward's pass at 07:58.
+# CONFIDENCE: inferred slot; the ORDER is the load-bearing part, not the minute. The fence exits 2
+# on COST-BASIS-MISMATCH, SURFACE-MISSING, STALE and UNMEASURED, and never renders an unmeasured
+# cell as OK (L1.28a). NOT-READABLE-HERE is its own status so a box without the parquets cannot
+# report a clean verdict about the desk.
+20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/cost_surface.py >> data/cro_ai_logs/cost_surface.log 2>&1
+35 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cost_surface.py >> data/cro_ai_logs/cost_surface_fence.log 2>&1

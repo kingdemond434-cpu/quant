@@ -102,3 +102,109 @@ def test_successful_run_still_writes_state(tmp_path, monkeypatch):
                         lambda now, st, stage, fired: st.__setitem__("last_panel", "2026-08-05"))
     m.main()
     assert json.loads(state.read_text("utf-8"))["last_panel"] == "2026-08-05"
+
+
+# --------------------------------------------------------------------------------------------
+# THE `finally` NEVER COVERED THE FAILURE THAT ACTUALLY HAPPENS HERE (regression, 2026-08-28).
+#
+# main()'s docstring promises to bank completed duties through "an OOM kill". A Python `finally`
+# does not run on SIGTERM -- the default disposition terminates the process without unwinding --
+# so that promise was false for the only failure mode the box was producing. quant-cadence.service
+# was OOM-killed 35 times in 36 hours; each kill discarded the whole cycle's progress, the duties
+# re-fired next tick and hit the same wall, and their timestamps stayed frozen. Six duties were
+# owed, one 11.6x overdue and two never run. State now writes through on every stamp, which also
+# survives SIGKILL -- no in-process handler can.
+# --------------------------------------------------------------------------------------------
+
+def test_a_stamp_is_on_disk_before_the_next_duty_starts(tmp_path, monkeypatch):
+    """Write-through, not write-at-end: the guarantee the finally could not give."""
+    m = _mod()
+    state = _isolate(m, tmp_path, monkeypatch)
+    seen = {}
+
+    def _body(now, st, stage, fired):
+        st["last_meta_research"] = "2026-08-28T12:00:00+00:00"
+        # Read the FILE, mid-cycle, exactly as a kill would leave it.
+        seen["mid_cycle"] = json.loads(state.read_text("utf-8"))
+        raise RuntimeError("killed here")
+
+    monkeypatch.setattr(m, "_main_body", _body)
+    with pytest.raises(RuntimeError):
+        m.main()
+    assert seen["mid_cycle"].get("last_meta_research") == "2026-08-28T12:00:00+00:00", (
+        "the stamp must be durable the moment it is made; anything later is lost to SIGKILL")
+
+
+def test_the_state_write_is_atomic_and_leaves_no_partial_file(tmp_path, monkeypatch):
+    """A torn state file reads as unparseable, and _days_since reads unparseable as 'never ran'.
+
+    One kill mid-write would therefore re-fire EVERY duty at once -- strictly worse than the bug
+    being fixed. So the write goes through a temp file and os.replace.
+    """
+    m = _mod()
+    state = _isolate(m, tmp_path, monkeypatch)
+    st = m._DurableState(state, {"a": 1})
+    st["b"] = 2
+    assert json.loads(state.read_text("utf-8")) == {"a": 1, "b": 2}
+    assert not list(tmp_path.glob("*.tmp")), "the temp file must not survive the replace"
+
+
+def test_update_also_writes_through(tmp_path, monkeypatch):
+    """dict.update bypasses __setitem__; a stamp made that way must not be lost."""
+    m = _mod()
+    state = _isolate(m, tmp_path, monkeypatch)
+    st = m._DurableState(state, {})
+    st.update({"last_panel": "2026-08-28T00:00:00+00:00"})
+    assert json.loads(state.read_text("utf-8"))["last_panel"] == "2026-08-28T00:00:00+00:00"
+
+
+def test_a_real_sigterm_does_not_erase_a_completed_duty(tmp_path):
+    """END TO END, with a real signal, because the unit test cannot prove the claim.
+
+    This is the measured failure: systemd SIGTERMs the unit on the cgroup OOM event and on
+    TimeoutStartSec. A `finally` does not run; a write-through does not need to.
+    """
+    import os
+    import signal
+    import time
+
+    state = tmp_path / "cadence_state.json"
+    state.write_text("{}", "utf-8")
+    ready = tmp_path / "ready"
+    driver = tmp_path / "driver.py"
+    driver.write_text(f'''
+import importlib.util, sys, time
+from pathlib import Path
+sys.path.insert(0, {str(_ROOT)!r})
+spec = importlib.util.spec_from_file_location("_c", {str(_ROOT / "scripts" / "run_cadence.py")!r})
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+m._STATE = Path({str(state)!r})
+m._STAGE = Path({str(tmp_path / "stage.json")!r})
+m._law_guard = lambda *a, **k: None
+def body(now, st, stage, fired):
+    st["last_meta_research"] = "2026-08-28T12:00:00+00:00"
+    Path({str(ready)!r}).write_text("go", "utf-8")
+    time.sleep(120)                      # the long duty that gets killed
+m._main_body = body
+m.main()
+''', "utf-8")
+
+    proc = subprocess.Popen([sys.executable, str(driver)])
+    try:
+        for _ in range(300):                      # wait for the stamp, up to 30s
+            if ready.exists():
+                break
+            time.sleep(0.1)
+        assert ready.exists(), "driver never reached the stamp"
+        os.kill(proc.pid, signal.SIGTERM)
+        rc = proc.wait(timeout=30)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=10)
+
+    assert rc == -signal.SIGTERM or rc == 143, f"expected death by SIGTERM, got rc={rc}"
+    saved = json.loads(state.read_text("utf-8"))
+    assert saved.get("last_meta_research") == "2026-08-28T12:00:00+00:00", (
+        "a duty that completed before the SIGTERM must survive it -- this is the exact loss that "
+        "froze six deep-review duties for six weeks while the engine restarted every ten minutes")

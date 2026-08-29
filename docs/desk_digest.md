@@ -1,17 +1,17 @@
 # Desk digest (auto-generated daily -- do not hand-edit)
-_updated 2026-08-28T03:42Z · companion to [[institutional_knowledge]]_
+_updated 2026-08-29T02:47Z · companion to [[institutional_knowledge]]_
 
 ## Book
 - Molded net: **$None** | funding **$None** | run-rate APR None% | day None
 - Root cause: **expected_variance** (monitor_only) | tracking error $0.0
 
 ## Validation clocks
-- **carry (DEPLOYED)**: 63/90d | bt 3.72 fwd 7.49
-- **perp L/S**: 56/90d | bt 0.47 fwd 0.32
-- **trend**: 56/90d | bt 1.29 fwd 2.9
-- **trend regime-gated**: 51/90d | bt 1.31 fwd 5.49
-- **OI/LS data**: 3/40d
-- **stablecoin data**: 55/40d
+- **carry (DEPLOYED)**: 64/90d | bt 3.59 fwd 12.44
+- **perp L/S**: 57/90d | bt 0.72 fwd -1.86
+- **trend**: 57/90d | bt 1.34 fwd 0.59
+- **trend regime-gated**: 52/90d | bt 1.28 fwd 0.81
+- **OI/LS data**: 4/40d
+- **stablecoin data**: 56/40d
 
 ## Open decisions (ledger)
 - `2026-07-04-levered-lab-3x` -- review 2026-10-02: by day 90: sim vs real comparison decisively answers the leverage question

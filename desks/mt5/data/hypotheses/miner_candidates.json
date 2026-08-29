@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-29T02:07:35+00:00",
+ "compiled_at": "2026-08-29T04:15:35+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -2501,9 +2501,9 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 29,
+   "rows": 47,
    "candidates": 0,
-   "deepening": 29
+   "deepening": 47
   },
   "central_bank": {
    "rows": 1,
@@ -2511,7 +2511,7 @@
    "deepening": 13
   },
   "forexfactory": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 0,
    "deepening": 62
   },
@@ -2601,9 +2601,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 37,
+   "rows": 39,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 39
   },
   "litefinance": {
    "rows": 15,
@@ -2641,13 +2641,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 8,
+   "rows": 10,
    "candidates": 0,
-   "deepening": 8
+   "deepening": 10
   }
  },
- "rows_accounted": 920,
+ "rows_accounted": 943,
  "executable_candidates": 206,
- "deepening_tasks": 671,
+ "deepening_tasks": 687,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

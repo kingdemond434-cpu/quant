@@ -50,7 +50,7 @@
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-08-28T04:44:11Z",
+    "recorded": "2026-08-29T04:04:45Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {

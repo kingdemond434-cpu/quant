@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-26T04:02:55.827206+00:00",
+  "generated_at": "2026-08-29T03:07:57.420457+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
-    "REACHABLE_MT5_STATIC": 64,
-    "UNWIRED_REVIEW": 536,
+    "REACHABLE_MT5_STATIC": 66,
+    "UNWIRED_REVIEW": 538,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -969,6 +969,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.doctrine.corpus",
+      "path": "libs/doctrine/corpus.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.doctrine.enforcement",
       "path": "libs/doctrine/enforcement.py",
       "status": "UNWIRED_REVIEW",
@@ -1759,6 +1766,17 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.ops.forward_clock",
+      "path": "libs/ops/forward_clock.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/pipeline/shadow.py",
+        "desks/mt5/side_channels/promoter_fixed.py",
+        "desks/mt5/side_channels/shadow.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.ops.fresh",
       "path": "libs/ops/fresh.py",
       "status": "UNWIRED_REVIEW",
@@ -1859,6 +1877,13 @@
     {
       "module": "libs.ops.remediation",
       "path": "libs/ops/remediation.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.ops.repair_invoke",
+      "path": "libs/ops/repair_invoke.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -2225,8 +2250,10 @@
     {
       "module": "libs.research.bar_span",
       "path": "libs/research/bar_span.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/mt5desk/families.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
@@ -2995,6 +3022,13 @@
     {
       "module": "libs.research.pdf_text",
       "path": "libs/research/pdf_text.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.perishability",
+      "path": "libs/research/perishability.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"

@@ -323,12 +323,36 @@ def mine_arxiv_qfin() -> list[dict]:
 
 # ---------------------------------------------------------------- S21 BIS speeches
 def mine_bis_speeches() -> list[dict]:
+    """Central-bank speeches from BIS. RSS 1.0 (RDF), NOT RSS 2.0 -- the distinction is the bug.
+
+    WHAT WAS WRONG (gap-fixer 2026-08-28). The pattern opened on a literal `<item>`, but this
+    feed is RDF: every entry is `<item rdf:about="https://www.bis.org/review/...">`, so the
+    anchor never matched a single one. `fetch` returned a perfectly good 35,776-byte 200, the
+    regex found nothing, and the miner returned `[]` -- **75 sweeps in 7 days, 0 rows and 0
+    fetch_errors**, which reads in the facts pack exactly like a source that has nothing to say.
+    An empty artifact asserts absence; this one was asserting it about 25 live speeches.
+
+    Items are extracted per block rather than by one alternating mega-pattern: `.*?` spanning
+    field to field silently drops any entry missing a middle element, which is the same class of
+    silent shortfall wearing a different regex. `dc:creator` and `dc:date` are free in RDF and
+    carried through -- an undated speech cannot be point-in-time aligned to a bar, and this desk
+    has already paid for date-label confusion once (effective date vs observation date).
+    """
     xml = fetch("https://www.bis.org/doclist/cbspeeches.rss", timeout=30)
     out = []
-    for m in re.finditer(r"<item>.*?<title>([^<]+)</title>.*?<link>([^<]+)</link>.*?"
-                         r"<description>([^<]{0,600})", xml, re.DOTALL):
-        out.append(row("bis_speeches", "cb_speech", m.group(1).strip(), m.group(2).strip(),
-                       m.group(3).strip()))
+    # `<item\b` and not `<item[ >]`: the channel's own `<items><rdf:Seq>` index sits above the
+    # entries, and a word boundary excludes it where a character class would have matched it.
+    def field(block: str, tag: str, limit: int = 600) -> str:
+        m = re.search(rf"<{tag}>([^<]{{0,{limit}}})", block, re.DOTALL)
+        return m.group(1).strip() if m else ""
+
+    for block in re.split(r"<item\b", xml)[1:]:
+        title = field(block, "title", 300)
+        if not title:
+            continue
+        out.append(row("bis_speeches", "cb_speech", title, field(block, "link", 300),
+                       field(block, "description"), speaker=field(block, "dc:creator", 200),
+                       date=field(block, "dc:date", 40)))
     return out[:40]
 
 

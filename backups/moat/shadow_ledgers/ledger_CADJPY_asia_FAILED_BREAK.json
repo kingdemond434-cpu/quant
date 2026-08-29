@@ -1,17 +1,17 @@
 [
   {
     "entry_time": "2026-08-18 16:00:00+00:00",
-    "exit_time": "2026-08-18 21:00:00+00:00",
+    "exit_time": "2026-08-18 20:00:00+00:00",
     "side": 1,
-    "entry": 115.032,
-    "exit": 114.785,
-    "r_multiple": -1.121740890688259,
+    "entry": 115.039,
+    "exit": 114.822,
+    "r_multiple": -1.1384562211981575,
     "reason": "stop",
-    "bar_source": "MT5:VantageMarkets-Live 14",
-    "bars_fetched_utc": "2026-08-22T22:03:04+00:00",
-    "bars_freshest": "2026-08-21T23:00:00+00:00",
+    "bar_source": "MT5:FusionMarkets-Live",
+    "bars_fetched_utc": "2026-08-27T00:01:47+00:00",
+    "bars_freshest": "2026-08-27T00:00:00+00:00",
     "bars_stale": false,
-    "promotion_authority": false,
+    "promotion_authority": true,
     "h1_source_version": "h1src-2026-08-18-a"
   }
 ]

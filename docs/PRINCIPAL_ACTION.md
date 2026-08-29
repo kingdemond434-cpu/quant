@@ -57,3 +57,6 @@
 
 ## 2026-08-28T04:43:59.253641+00:00 POISONED DEPENDENCY
 - axis_shadow_state.json (live clocks) (DQS 0.3792) feeds ['A002'] -- THE running forward clocks: kimchi day 6/40 due 2026-09-01, stablecoin day 5/40 due 2026-09-02, cny not started
+
+## 2026-08-28T09:51:37.678843+00:00 POISONED DEPENDENCY
+- axis_shadow_state.json (live clocks) (DQS 0.1969) feeds ['A002'] -- THE running forward clocks: kimchi day 6/40 due 2026-09-01, stablecoin day 5/40 due 2026-09-02, cny not started

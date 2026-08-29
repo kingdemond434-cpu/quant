@@ -1,4 +1,4 @@
-# DESK BRIEF -- 2026-08-28 04:44Z
+# DESK BRIEF -- 2026-08-29 04:04Z
 
 Machine-generated from measured desk state. Every number traces to an artifact in
 `data/`. Nothing here is an argument. Respond to the evidence, not to another model.
@@ -13,17 +13,17 @@ Machine-generated from measured desk state. Every number traces to an artifact i
    forward clocks promote.
 
 ## Experiment record (45d, harvested from git -- one row per commit)
-- experiments: **2669**; decided: 1459
-- survival rate: **4.9%** (71 survived / 1276 refuted / 112 inconclusive)
-- unclassified commit decisions: 357 (commit-discipline defect)
+- experiments: **2811**; decided: 1554
+- survival rate: **4.6%** (72 survived / 1368 refuted / 114 inconclusive)
+- unclassified commit decisions: 376 (commit-discipline defect)
 
 | mechanism | tested | survived | rate |
 |---|---:|---:|---:|
-| M_UNMAPPED | 1213 | 60 | 5% |
-| M_ATTENTION_DELAY | 67 | 3 | 4% |
-| M_LIQUIDITY_WITHDRAWAL | 57 | 3 | 5% |
-| M_FORCED_DELEVERAGE | 55 | 3 | 5% |
-| M_STRUCTURAL_BARRIER | 52 | 0 | 0% |
+| M_UNMAPPED | 1302 | 61 | 5% |
+| M_ATTENTION_DELAY | 68 | 3 | 4% |
+| M_LIQUIDITY_WITHDRAWAL | 59 | 3 | 5% |
+| M_FORCED_DELEVERAGE | 57 | 3 | 5% |
+| M_STRUCTURAL_BARRIER | 53 | 0 | 0% |
 | M_FLOW_PRESSURE | 15 | 0 | 0% |
 | M_SKILL_PERSISTENCE | 15 | 0 | 0% |
 | M_FUNDAMENTAL_PROXY | 12 | 0 | 0% |
@@ -31,16 +31,16 @@ Machine-generated from measured desk state. Every number traces to an artifact i
 
 ### Why experiments died (45d)
 
-- `E_DATA_QUALITY` 686 (41%)
-- `B_WRONG_MEASUREMENT` 285 (17%)
-- `H_OVERFIT` 236 (14%)
-- `G_TOO_EXPENSIVE` 227 (13%)
-- `C_WRONG_TIMING` 127 (8%)
-- `F_REGIME_DEPENDENT` 101 (6%)
-- `D_ALREADY_ARBITRAGED` 18 (1%)
+- `E_DATA_QUALITY` 736 (41%)
+- `B_WRONG_MEASUREMENT` 296 (17%)
+- `H_OVERFIT` 246 (14%)
+- `G_TOO_EXPENSIVE` 233 (13%)
+- `C_WRONG_TIMING` 132 (7%)
+- `F_REGIME_DEPENDENT` 107 (6%)
+- `D_ALREADY_ARBITRAGED` 21 (1%)
 - `A_NO_MECHANISM` 9 (1%)
 
-**971/1689 = 57% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
+**1032/1780 = 58% of refutations are MEASUREMENT failures (data quality + wrong construction), not absent alpha.**
 
 ## FAMILY KILLS -- mechanisms closed by evidence
 

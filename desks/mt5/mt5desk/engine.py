@@ -86,7 +86,8 @@ class Costs:
 
     @classmethod
     def from_symbol(cls, meta: dict, mult: float = 1.0,
-                    commission_per_lot: float = 2.25) -> Costs:
+                    commission_per_lot: float = 2.25, *,
+                    spread_pts: float | None = None) -> Costs:
         """Costs for one symbol from its universe.json metadata.
 
         `mult` scales the SPREAD ONLY. Commission is contractual and does not
@@ -94,10 +95,34 @@ class Costs:
         honest baseline rather than a stress: a round trip crosses the spread on
         the way in and again on the way out, and a median is a median -- half of
         all fills are worse than it.
+
+        `spread_pts` OVERRIDES `median_spread_pts` with a spread the caller measured for the
+        state it is actually trading in -- in practice the fill hour, from
+        `desks/mt5/research/cost_surface.py`. The third unit trap, found 2026-08-29: that
+        registry field is the median over ALL hours, and spread is not a constant of a symbol.
+        Measured on this desk's own tape, `family_overnight_gap_decay` fills at broker hour 01
+        (its signal is the first bar of the day and `wait_bars=1` moves the fill on by one), a
+        book carrying ~3% of the day's peak tick volume: USDZAR's pooled 329 pts against 2,028
+        pts on its own fill bars, EURZAR's 310 against 1,918 -- 6.2x, with the p90 at 17-20x.
+        Re-priced at the fill-hour spread with `mult` held equal on both arms, both sleeves --
+        certified, and on live forward clocks -- go from +0.25R to NEGATIVE.
+
+        It defaults to None, which reproduces today's arithmetic exactly, so no existing call
+        site changes silently. That is the same discipline `quote_per_account` documents above,
+        and for the same reason: this class is on the money path and a default that moves an
+        existing number is a silent re-pricing of the live book.
+
+        None is also what the surface returns for a cell it has not MEASURED, and the fallback
+        to the pooled scalar there is deliberate and is the honest one -- it leaves the caller
+        exactly where it is today rather than inventing a number. `check_cost_surface.py` is
+        what stops that fallback becoming invisible: it reports the cell UNMEASURED rather than
+        OK (L1.28a), so an unpriced hour is a named gap and not a clean verdict.
         """
         cs = float(meta.get("contract_size", 1e5))
         ts = float(meta.get("tick_size", 0.0))
-        spread = float(meta.get("median_spread_pts", 0.0)) * ts * cs
+        pts = (float(spread_pts) if spread_pts is not None
+               else float(meta.get("median_spread_pts", 0.0)))
+        spread = pts * ts * cs
         # PRICE UNITS PER UNIT OF ACCOUNT CURRENCY. `tick_value` is one tick's worth in account
         # currency for one lot, so `cs * ts / tick_value` is how many price units one unit of
         # account currency buys -- 1.0 for a symbol quoted in the account's own currency, ~185

@@ -1,14 +1,18 @@
 {
-    "free_gb":  37.5,
-    "checked_at":  "2026-08-28T23:50:09.6689494Z",
+    "free_gb":  31.8,
+    "checked_at":  "2026-08-29T04:20:58.9086465Z",
     "actions":  [
-                    "RAM-FLOOR: only 309MB free -- shed ? (rss 2433MB), the largest non-money-path job; it resumes from cache on its next trigger"
+
                 ],
-    "low_mem_strikes":  2,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "external_gauntlet.2516":  {
-                                                 "cpu":  75.921875,
-                                                 "at":  "2026-08-29T01:50:03.3201588+02:00"
-                                             }
+                  "edge_search.4920":  {
+                                           "cpu":  6429.109375,
+                                           "at":  "2026-08-29T06:20:54.3608796+02:00"
+                                       },
+                  "orthogonal_sweep.3524":  {
+                                                "cpu":  285.40625,
+                                                "at":  "2026-08-29T06:20:54.3608796+02:00"
+                                            }
               }
 }

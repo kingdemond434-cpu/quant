@@ -132,6 +132,8 @@ MODULES = [
     # every run and 205 had never been mined at all.
     "desks/mt5/moat/moat_miner.py",
     "desks/mt5/moat/moat_silver.py",
+    # The task installer lives on the box beside the PowerShell it registers.
+    "desks/mt5/scripts/install_moat_miner_task.ps1",
 ]
 
 

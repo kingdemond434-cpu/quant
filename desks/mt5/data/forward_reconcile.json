@@ -1,9 +1,22 @@
 {
- "checked_at": "2026-08-28T23:36:10+00:00",
+ "checked_at": "2026-08-29T01:44:24+00:00",
  "enrolled": 24,
  "enrolment_readable": true,
  "certified_clocks": 17,
  "certified_pairs": 8,
  "identity_unfrozen": 0,
- "actions": []
+ "actions": [
+  {
+   "key": "xau_m5_anti_breakout_overlap",
+   "action": "AUTHORITY_REVOKED"
+  },
+  {
+   "key": "xau_m5_anti_momentum_ny",
+   "action": "AUTHORITY_REVOKED"
+  },
+  {
+   "key": "xau_m15_anti_breakout",
+   "action": "AUTHORITY_REVOKED"
+  }
+ ]
 }

@@ -57,8 +57,20 @@ _MAP: dict[str, list[str]] = {
     # the level the whole size was derived from. build_event_calendar.py supplies the windows the
     # conviction sleeve defers entries across. It DEFERS, never kills, so it costs no statistical
     # power and is not a bar.
+    # L1.5 is "no alpha is valid until it survives REALISTIC costs". Every fence here asks
+    # whether a cost was charged; `check_cost_surface` asks whether the cost charged is the one
+    # the cell's own fill bars recorded, which is the half nothing measured -- and it is
+    # deliberately NOT a new law number. An hour-conditioned cost model is an INSTRUMENT for
+    # L1.5, not a new duty, and minting a law for it would be the governance inflation LAWS
+    # section 0 forbids.
     "L1.5": ["run_cost_model.py", "check_carry_funding_measured", "run_execution_intel.py",
-             "scripts/build_event_calendar.py", "libs/execution/event_guard.py"],
+             "scripts/build_event_calendar.py", "libs/execution/event_guard.py",
+             # BY PATH, not by bare name. A bare `check_foo` ref is resolved as a max_audit
+             # FUNCTION; this fence is a standalone script, so the bare form lands in
+             # `broken_references` -- which is exactly what this generator's own output warns
+             # about and exactly what it caught when this line was first written.
+             "scripts/check_cost_surface.py", "desks/mt5/research/cost_surface.py",
+             "tests/costs/test_cost_surface.py"],
     "L1.6": ["libs/autodiscovery/validation.py", "check_welded_gates", "check_gate_optimality",
              "run_mutation.py"],
     "L1.7": ["check_rubberstamp_detector", "check_rubberstamp_enforcement", "deep_review.py"],

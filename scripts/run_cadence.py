@@ -35,12 +35,15 @@ if str(_P(__file__).resolve().parent.parent) not in _sys.path:
 import argparse
 import contextlib
 import json
+import os
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from libs.ops.host_resources import mem_available_mb
 from libs.ops.lawful import guard as _law_guard  # L1.42: no act exempt
 
 _STATE = Path("data/cadence_state.json")
@@ -80,6 +83,25 @@ _STATE_FLOORS_D = {"last_panel": 4.0, "last_tier1": 16.0, "last_prompt_review": 
                    "last_breadth_expansion": 3.0, "last_hypothesis_generation": 3.0,
                    "last_lit_deepdive": 35.0, "last_decision_scoring": 35.0,
                    "last_memory_consolidation": 100.0}
+
+
+def _srun(cmd: list[str], **kw: Any) -> subprocess.CompletedProcess[str]:
+    """Run a cadence child, NAMING IT FIRST so a kill cannot be anonymous.
+
+    Every duty in `_main_body` is a subprocess, output is captured, and the parent prints only
+    AFTER a child returns. So when the unit was OOM-killed -- 35 times in 36 hours -- the log held
+    exactly nothing: no duty name, no partial output, no clue which of the 25 children had been
+    running. "The cadence engine died" and "the cadence engine died in the panel" are different
+    findings with different repairs, and the log could not tell them apart (L1.46: a duty with no
+    instrument is a wish; L1.28a: unmeasured is its own answer, never a clean one).
+
+    One flushed line before each child costs nothing and converts a silent death into a named one.
+    It is printed, not logged, because systemd captures stdout and `print` to a redirected pipe is
+    BLOCK-BUFFERED -- an unflushed notice is exactly the outage message this desk has lost before.
+    """
+    label = next((c for c in cmd[1:] if not c.startswith("-")), cmd[0])
+    print(f"cadence: -> {label}", flush=True)
+    return subprocess.run(cmd, **kw)
 
 
 def _load(p: Path, default: dict[str, Any]) -> dict[str, Any]:
@@ -159,13 +181,66 @@ def due_report() -> dict[str, Any]:
             "note": "REPORT ONLY -- nothing was fired. Run without --report-only to fire."}
 
 
+#: What the panel duty actually costs. MEASURED 2026-08-28 from the unit's own cgroup
+#: accounting across four consecutive OOM kills: MemoryPeak 737M-936M, of which the cadence
+#: parent is ~150M. The number is the UNIT peak on purpose -- admission has to cover what the
+#: cgroup will actually be charged, not the child in isolation.
+_PANEL_NEED_MB = 700
+
+
+def _panel_fits() -> bool:
+    """Whether the box can hold the panel -- and if not, SKIP IT AND RUN THE OTHER 24 DUTIES.
+
+    THE PANEL IS DUTY #1 OF 25 AND IT WAS TAKING THE OTHER 24 DOWN WITH IT. `_main_body` runs its
+    duties in one process, in a fixed order, with the panel first. When the box cannot fit the
+    panel the whole unit is OOM-killed, so every duty ordered after it is unreachable -- not
+    delayed, unreachable, on every single tick. MEASURED 2026-08-28: 35 OOM kills in 36 hours,
+    and the named-child log shows all four of the last ones dying in `run_external_panel.py`
+    seconds after start. Downstream, `panel` stood 34.8 days overdue on a 3-day cadence, tier1
+    42.9d, decision scoring 41.4d, prompt review 42.5d, and two duties had never run at all.
+
+    Standing down is not timidity and it relaxes nothing: the duty stays OWED (the caller only
+    stamps on True), no floor moves, and the `--report` row keeps showing it overdue, so a
+    chronically starved panel stays visible rather than being marked done. What changes is that
+    0 of 25 duties per tick becomes 24 of 25. Starting a job that does not fit is strictly worse
+    than not starting it -- it destroys its own run AND every neighbour -- which is the argument
+    `job_lock.exclusive_job` already makes for the sweeps; this wires the same admission rule
+    into the one duty that was demonstrably killing the engine.
+
+    MEDIAN OF THREE, NOT ONE SAMPLE, for the reason the desk already measured on this box: free
+    memory here is a sawtooth, and a single reading once said 55MB while readings seconds either
+    side said 1,605MB. A duty whose start depends on a coin flip is not scheduled, it is gambled.
+
+    UNMEASURED ADMITS (L1.28a). If /proc cannot be read, admission must not invent a number --
+    the caller runs the duty rather than blocking real work on ignorance.
+    """
+    readings = [r for r in (_sample_mem(i) for i in range(3)) if r is not None]
+    if not readings:
+        return True
+    avail = sorted(readings)[len(readings) // 2]
+    if avail >= _PANEL_NEED_MB:
+        return True
+    print(f"cadence: panel STOOD DOWN -- needs ~{_PANEL_NEED_MB}MB, box has {avail}MB available. "
+          f"Duty stays OWED and the remaining duties now run; admitting it here is what killed "
+          f"the whole cycle 35 times in 36 hours.", flush=True)
+    return False
+
+
+def _sample_mem(i: int) -> int | None:
+    if i:
+        time.sleep(3)
+    return mem_available_mb()
+
+
 def _run_panel(mission: str | None) -> bool:
     """Regenerate the dossier, then fire the panel (optionally with a forced mission)."""
+    if not _panel_fits():
+        return False
     env = None
     if mission:
         import os
         env = {**os.environ, "PANEL_MISSION": mission}
-    r1 = subprocess.run([sys.executable, "scripts/generate_external_review_doc.py"],
+    r1 = _srun([sys.executable, "scripts/generate_external_review_doc.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     if r1.returncode != 0:
         print(f"cadence: dossier regen failed rc={r1.returncode} -- panel skipped")
@@ -199,7 +274,7 @@ def _run_panel(mission: str | None) -> bool:
     # the duty OWED exactly as an unproductive one does. This makes cadence stricter, never
     # looser, and touches no floor.
     try:
-        r2 = subprocess.run([sys.executable, "scripts/run_external_panel.py"],
+        r2 = _srun([sys.executable, "scripts/run_external_panel.py"],
                             capture_output=True, text=True, timeout=720, check=False, env=env)
     except subprocess.TimeoutExpired:
         print("cadence: panel TIMED OUT after 720s -- duty stays OWED. This is the unfunded-API "
@@ -264,13 +339,13 @@ def _run_model_upgrade() -> bool:
     signal is a FRESH `checked` timestamp in the engine's own state file: only a run that
     genuinely evaluated the catalog writes one, so a skipped run correctly leaves the duty OWED.
     """
-    subprocess.run([sys.executable, "scripts/model_upgrade.py", "--rollback", "--apply"],
+    _srun([sys.executable, "scripts/model_upgrade.py", "--rollback", "--apply"],
                    capture_output=True, text=True, timeout=300, check=False)
     produced = 0
     for script, state_file in (("scripts/model_upgrade.py", "data/model_upgrade.json"),
                                ("scripts/brain_model_upgrade.py",
                                 "data/brain_model_upgrade.json")):
-        r = subprocess.run([sys.executable, script, "--apply"],
+        r = _srun([sys.executable, script, "--apply"],
                            capture_output=True, text=True, timeout=1800, check=False)
         tail = (r.stdout or r.stderr or "").strip().splitlines()[-1:] or [""]
         fresh = False
@@ -399,6 +474,48 @@ def _freeze_exit_met() -> tuple[bool, str]:
     return met, ", ".join(f"{k}={v}" for k, v in checks.items())
 
 
+class _DurableState(dict):                       # type: ignore[type-arg]
+    """Cadence state that persists THE INSTANT a duty stamps itself.
+
+    THE `finally` IN `main` DOES NOT COVER THE FAILURE THAT ACTUALLY HAPPENS HERE. Its docstring
+    promises to bank completed duties through "an OOM kill", and a Python `finally` does not run
+    on SIGTERM at all -- the default disposition terminates the process without unwinding.
+    MEASURED 2026-08-28 on this interpreter: a process that SIGTERMs itself inside a `try` exits
+    143 and the `finally` never executes. So every one of the 35 OOM kills in the preceding 36
+    hours discarded the whole cycle's progress, the duties re-fired next tick, hit the same wall
+    at the same place, and their timestamps stayed frozen -- which is exactly the cadence
+    starvation the `finally` was added to end, still running, wearing the one costume it could
+    not see. Six duties were owed, one 11.6x overdue and two never run.
+
+    Writing on each stamp instead of once at the end also survives SIGKILL, which no in-process
+    handler can catch, so this covers the kernel OOM killer as well as systemd's SIGTERM and the
+    unit's own TimeoutStartSec. The write is atomic (tmp + os.replace): a state file torn by a
+    kill mid-write would be unparseable, and `_days_since` reads unparseable as "never ran" --
+    turning one kill into a permanent re-fire of every duty at once.
+
+    This makes progress durable without making failure quiet. Nothing is skipped, no floor moves,
+    and `_assert_floors` still raises: it only changes whether work that ALREADY happened is
+    remembered.
+    """
+
+    def __init__(self, path: Path, initial: dict[str, Any]) -> None:
+        super().__init__(initial)
+        self._path = path
+
+    def flush(self) -> None:
+        tmp = self._path.with_suffix(self._path.suffix + ".tmp")
+        tmp.write_text(json.dumps(self, indent=2), "utf-8")
+        os.replace(tmp, self._path)
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        super().__setitem__(key, value)
+        self.flush()
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        super().update(*args, **kwargs)
+        self.flush()
+
+
 def main() -> None:
     """Run every due cadence duty, and BANK WHAT COMPLETED even if a later one raises.
 
@@ -417,13 +534,13 @@ def main() -> None:
     """
     _law_guard()                     # L1.42: no act exempt -- every entry point passes the laws
     now = datetime.now(tz=UTC)
-    state = _load(_STATE, {})
+    state = _DurableState(_STATE, _load(_STATE, {}))
     stage = str(_load(_STAGE, {"stage": "S0"}).get("stage", "S0"))
     fired: list[str] = []
     try:
         _main_body(now, state, stage, fired)
     finally:
-        _STATE.write_text(json.dumps(state, indent=2), "utf-8")
+        state.flush()          # belt and braces; every stamp already wrote through
     print(f"cadence[{stage}]: fired={fired or 'nothing due'} | "
           f"panel due in {max(0.0, _PANEL_EVERY_D - _days_since(state, 'last_panel')):.1f}d | "
           f"tier1 due in {max(0.0, _TIER1_EVERY_D - _days_since(state, 'last_tier1')):.1f}d")
@@ -445,7 +562,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # EVERY cycle: it is seconds, no LLM, no context cost, and a prompt-only duty would be
     # skipped on a busy cycle exactly as this desk's own record predicts.
     if _days_since(state, "last_meta_research") >= _META_RESEARCH_D:
-        _r = subprocess.run([sys.executable, "scripts/meta_research_review.py"],
+        _r = _srun([sys.executable, "scripts/meta_research_review.py"],
                             capture_output=True, text=True, timeout=300, check=False)
         if Path("data/meta_research_review.json").exists():
             state["last_meta_research"] = now.isoformat()
@@ -478,7 +595,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             _before = _p.stat().st_size
         except OSError:
             _before = -1
-        _r = subprocess.run([sys.executable, _script],
+        _r = _srun([sys.executable, _script],
                             capture_output=True, text=True, timeout=900, check=False)
         try:
             _after = _p.stat().st_size
@@ -497,7 +614,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # patient-opens fix; that order never became code, so the fix has been unverified since it
     # shipped. Cheap, read-only, no keys.
     if _days_since(state, "last_fill_quality") >= 7:
-        subprocess.run([sys.executable, "scripts/fill_quality_monitor.py"],
+        _srun([sys.executable, "scripts/fill_quality_monitor.py"],
                        capture_output=True, text=True, timeout=120, check=False)
         if Path("data/fill_quality.json").exists():
             state["last_fill_quality"] = now.isoformat()
@@ -506,7 +623,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # DESK METRICS (every cycle). Durable trend, not a snapshot -- libs/monitoring persists
     # each value and raises a real Alert on threshold breach. Runs AFTER meta-research so it
     # records that cycle's freshly computed numbers, not the previous one's.
-    _r = subprocess.run([sys.executable, "scripts/record_desk_metrics.py"],
+    _r = _srun([sys.executable, "scripts/record_desk_metrics.py"],
                         capture_output=True, text=True, timeout=180, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/desk_metrics.sqlite").exists():
@@ -520,7 +637,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # PORTFOLIO RISK (every cycle, self-arming). Dormant below 3 sleeves and load-bearing at
     # or above -- the gate is a DATA condition read from the shadow registry, so nobody has to
     # notice the third sleeve landing for correlation-shock control to start running.
-    _r = subprocess.run([sys.executable, "scripts/run_portfolio_risk.py"],
+    _r = _srun([sys.executable, "scripts/run_portfolio_risk.py"],
                         capture_output=True, text=True, timeout=180, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/portfolio_risk.json").exists():
@@ -543,7 +660,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # that died last week would otherwise still read as this cycle's work.
     _pg = Path("data/promotion_gate_verdicts.json")
     _pg_before = _pg.stat().st_mtime if _pg.exists() else -1.0
-    _r = subprocess.run([sys.executable, "scripts/promotion_gate.py"],
+    _r = _srun([sys.executable, "scripts/promotion_gate.py"],
                         capture_output=True, text=True, timeout=180, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not _pg.exists() or _pg.stat().st_mtime <= _pg_before:
@@ -561,7 +678,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # so the gauntlet receives screened candidates and the desk can SEE its conversion rate.
     # No bar is moved: the screen rejects only on cheap unambiguous evidence and escalates
     # everything else, and no statistics are ever asked of a model.
-    _r = subprocess.run([sys.executable, "scripts/hypothesis_screen.py"],
+    _r = _srun([sys.executable, "scripts/hypothesis_screen.py"],
                         capture_output=True, text=True, timeout=300, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0:
@@ -604,7 +721,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # converges on 100% exploration instead of re-grinding the same convenient symbol. Runs every
     # cycle deliberately -- the archive only grows, so any cycle that skips it is coverage the
     # desk permanently ran late on.
-    _r = subprocess.run([sys.executable, "scripts/mine_moat.py"],
+    _r = _srun([sys.executable, "scripts/mine_moat.py"],
                         capture_output=True, text=True, timeout=420, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/moat_mine.json").exists():
@@ -650,7 +767,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
             # kill criteria are pre-registered and binding before it ever sees data.
             ("failed-breakout", "scripts/run_failed_breakout_study.py",
              "data/failed_breakout_study.json")):
-        _r = subprocess.run([sys.executable, _script],
+        _r = _srun([sys.executable, _script],
                             capture_output=True, text=True, timeout=420, check=False)
         _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
         if _r.returncode != 0 or not Path(_artifact).exists():
@@ -666,7 +783,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # produces is the desk's one progress metric that cannot be gamed: hypothesis count rises by
     # generating more and survivor count rises by lowering the bar, but the floor moves only when
     # the desk genuinely gets better at finding weak edges.
-    _r = subprocess.run([sys.executable, "scripts/calibrate_gauntlet.py"],
+    _r = _srun([sys.executable, "scripts/calibrate_gauntlet.py"],
                         capture_output=True, text=True, timeout=420, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/gauntlet_calibration.json").exists():
@@ -681,7 +798,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # "built but never runs" class this desk keeps finding in itself -- and a library wired six
     # weeks late meets a codebase that moved underneath it. Runs on the graveyard's 42 real
     # specimens today and reports honestly where that data cannot support a conclusion.
-    _r = subprocess.run([sys.executable, "scripts/run_ancestors.py"],
+    _r = _srun([sys.executable, "scripts/run_ancestors.py"],
                         capture_output=True, text=True, timeout=300, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/ancestors.json").exists():
@@ -696,7 +813,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # so the ICT family reported NO BARS while 8.2GB of its input sat on disk in the wrong shape.
     # Ordered before screen_ict deliberately: screening last cycle's bars would silently evaluate
     # a stale window and report it as current.
-    _r = subprocess.run([sys.executable, "scripts/build_bars.py"],
+    _r = _srun([sys.executable, "scripts/build_bars.py"],
                         capture_output=True, text=True, timeout=900, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
     if Path("data/build_bars.json").exists():
@@ -709,7 +826,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # CALLER -- the desk's own "built but never runs" class, committed while fixing instances of it
     # elsewhere. Cheap (seconds, no network) and it refuses to synthesise bars when there are none,
     # so a fresh checkout reports NO BARS rather than screening a generator.
-    _r = subprocess.run([sys.executable, "scripts/screen_ict.py"],
+    _r = _srun([sys.executable, "scripts/screen_ict.py"],
                         capture_output=True, text=True, timeout=300, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
     if Path("data/ict_screen.json").exists():
@@ -722,7 +839,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # the file was seeded 2026-07-19 with placeholder baselines and never executed, so no shift was
     # detectable in principle for two weeks. Cheap -- nine HTTP calls, seconds -- and the one that
     # matters (C9) guards a LIVE data path rather than merely informing a digger.
-    _r = subprocess.run([sys.executable, "scripts/run_canaries.py"],
+    _r = _srun([sys.executable, "scripts/run_canaries.py"],
                         capture_output=True, text=True, timeout=300, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
     if Path("data/canary_run.json").exists():
@@ -736,7 +853,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # advantage table -- the adaptive term is the ontology's own attempts/survivors record, so a
     # class of data this desk has worked to exhaustion falls from EVIDENCE. Ranks only; it spends
     # nothing and starts no collector.
-    _r = subprocess.run([sys.executable, "scripts/acquire_data.py"],
+    _r = _srun([sys.executable, "scripts/acquire_data.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[:1] or [""]
     if Path("data/acquisition_plan.json").exists():
@@ -755,7 +872,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # `Re-ranked` regex, so it cannot discharge the judgment duty -- an organ that cleared a check
     # it had not satisfied would stop the defect being reported and the work being done at the
     # same moment, and only the first of those is visible.
-    _r = subprocess.run([sys.executable, "scripts/rerank_gaps.py"],
+    _r = _srun([sys.executable, "scripts/rerank_gaps.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/gap_rerank.json").exists():
@@ -772,7 +889,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # NEVER_EXECUTED for the rest, so absence stays ranked and costed rather than being silently
     # read as zero. Ordered before the allocator deliberately: the allocator consumes its output,
     # and a stale contributions file would rank this cycle on last cycle's evidence.
-    _r = subprocess.run([sys.executable, "scripts/estimate_contributions.py"],
+    _r = _srun([sys.executable, "scripts/estimate_contributions.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/contributions.json").exists():
@@ -789,7 +906,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # deliberately produces NO ranking -- it reports the instrumentation gap, which is what P11
     # mandates when evidence is insufficient. The day the first real estimate lands, the allocator
     # is already running and already correct rather than written six weeks late.
-    _r = subprocess.run([sys.executable, "scripts/run_allocator.py"],
+    _r = _srun([sys.executable, "scripts/run_allocator.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/allocator.json").exists():
@@ -804,7 +921,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # was visible only if somebody opened the file. A loss nobody looks at compounds exactly the
     # way the objective says wealth compounds, downward. This makes "why are we down?" a question
     # the desk asks itself rather than one a human has to think to ask.
-    _r = subprocess.run([sys.executable, "scripts/watch_pnl.py"],
+    _r = _srun([sys.executable, "scripts/watch_pnl.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/pnl_watch.json").exists():
@@ -820,7 +937,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # exact edit, chased) or BLOCKED-by-design (the ratchet, where silent repair would destroy
     # the mechanism while appearing to defend it), and ages every one so a standing breach cannot
     # read as a fresh finding each morning.
-    _r = subprocess.run([sys.executable, "scripts/enforce_constitution.py"],
+    _r = _srun([sys.executable, "scripts/enforce_constitution.py"],
                         capture_output=True, text=True, timeout=240, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/constitution_enforcement.json").exists():
@@ -834,7 +951,7 @@ def _main_body(now: datetime, state: dict[str, Any], stage: str, fired: list[str
     # every one expands to its own maximum. Dormant until two families have a record -- MC_i is
     # undefined with one -- but the ORDER it enforces (orthogonality before retirement) binds
     # immediately and needs no data at all.
-    _r = subprocess.run([sys.executable, "scripts/run_coexistence.py"],
+    _r = _srun([sys.executable, "scripts/run_coexistence.py"],
                         capture_output=True, text=True, timeout=120, check=False)
     _tail = (_r.stdout or _r.stderr or "").strip().splitlines()[-1:] or [""]
     if _r.returncode != 0 or not Path("data/coexistence.json").exists():

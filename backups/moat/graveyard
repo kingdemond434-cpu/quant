@@ -1763,3 +1763,180 @@ A human reading the site in a browser is NOT a re-open trigger and does not beco
 ground the desk already holds — the Forex-TSD CDX attachment corpus (OP-096b), MQL5's own surface
 (card 41), and the FX Blue track-record layer opened the same day (card 53). Nothing about this
 kill withdraws the search space; it withdraws one route into it.
+
+---
+
+## `crypto_exchange_universe_banned_2026_08_18` — eight verified free-data sources retired by the universe mandate, not by any defect of their own
+
+**Date:** 2026-08-28 (free-data-alternatives miner). **Verdict: KILLED as huntable ground. Tier 3.**
+
+**Cards retired:** 2 (OKX official historical-data portal), 4 (Bithumb spot+futures), 5 (Coincheck),
+6 (Tardis vendor-replacement), 9 (stablecoin mint/burn self-computation), 10 (AWS Public Blockchain
+Data), 11 (eth-labels), 12 (cex-list) in `docs/research/data_axis_watchlist.md`.
+
+**Mechanism of death — and it is important that it is not a data-quality verdict.** Every one of
+these was graded **verified-clean** on its own merits, several after full first-party
+reconstruction. None of them broke. They are retired because the **principal's standing order of
+2026-08-18 (LAWS §1)** makes the crypto-exchange-native universe permanently un-huntable: *"No
+crypto-exchange-native universe (Binance/Bybit/OKX/Hyperliquid/Deribit or any successor) may ever
+be hunted again."* A source that may not be hunted cannot carry an axis, however clean it is. They
+sat untagged in the §33 backlog for weeks precisely because nothing was *wrong* with them — the
+backlog had no verb for "correct, and now out of scope."
+
+**§16a re-open condition (a NAMED enabling change, per L1.16a):** only a principal order restoring
+crypto-exchange ground. No data improvement, no new route and no regime shift re-opens these — the
+death is jurisdictional, so only the jurisdiction can reverse it. **Crypto reference data remains
+admissible where it measurably informs an MT5 instrument** (LAWS §1), which is a different use and
+is not killed here.
+
+**§38 — what replaces them.** The capability these eight carried was *forced-participant flow and
+venue microstructure observable for free*. Its MT5-universe successor is the **official-sector-flow
+class**, opened 2026-08-28 and now at three verified members: **Japan MoF intervention operations**
+(card 67), **SNB weekly sight deposits** (card 68), **CNB open API — forward points + open market
+operations** (card 69). The mechanism transfers exactly: a participant who is forced to transact,
+publishes the fact, and cannot stop. The replacement hunt is open, not closed — Banxico, RBI, CBRT,
+MNB and NBP are named and unopened.
+
+### exotic_fx_halt_reopen_gap_vol (PROSPECTOR s9, 2026-08-28) — `mechanism_refuted`, and refuted on the desk's own data
+
+**THE HYPOTHESIS.** MT5 exotic FX crosses (USDIDR, USDINR, USDBRL, USDKRW) are halted at the broker
+on their home-country holidays — 10.4–11.4% of all weekday sessions — while USD-side and global risk
+keeps trading. A position held across the halt cannot be exited and stops cannot fill; at reopen the
+price should gap to absorb accumulated global information, giving excess reopen volatility that a
+direction-agnostic vol strategy could harvest. Direction-agnostic by construction, which is the
+class the desk's own lessons say to prefer.
+
+**THE HALTS ARE REAL — that part verified, and it survives the kill.** The broker's published dated
+calendar predicts the desk's tape exactly: 5 of 5 spot-checked halt dates have **zero bars** in
+`desks/mt5/data/universe/USDIDR_H1.parquet` (2025-06-06 Eid al-Adha, 2025-06-19 Juneteenth,
+2025-06-27 Islamic New Year, 2026-01-01, 2026-01-16 Ascension of the Prophet). The refutation is of
+the *edge*, not of the *calendar*.
+
+**FIRST PASS LOOKED STRONG, AND IT WAS AN ARTIFACT.** Uncontrolled, post-halt daily return dispersion
+runs **1.34x–3.08x** normal with Levene p < 0.01 on all four symbols — the kind of result that ships
+if nobody asks what else changed. What else changed is that a post-halt return **spans more calendar
+time**, so variance scales with it mechanically. Controlling by dividing each return by
+√(weekday-sessions spanned):
+
+| symbol | n halts | raw ratio | mechanical √(sessions) | ratio AFTER control | Levene p |
+|---|---|---|---|---|---|
+| USDIDR | 56 | 1.967 | 1.923 | **0.933** | 0.913 |
+| USDINR | 73 | 1.380 | 1.712 | **0.916** | 0.529 |
+| USDBRL | 71 | 1.345 | 1.728 | **0.911** | 0.232 |
+| USDKRW | 56 | 3.080 | 1.861 | **1.052** | 0.946 |
+
+**The excess vanishes completely.** Every controlled ratio sits at or below 1.0 and every p is
+0.23–0.95 — not "weaker than hoped", but *indistinguishable from ordinary time-scaled volatility*,
+in all four symbols independently. Two of the four (USDINR, USDBRL) had raw ratios *below* their own
+mechanical expectation, i.e. reopen returns were **quieter** than √t predicts. There is no
+halt-reopen premium here.
+
+**THE EV GATE AGREED INDEPENDENTLY**, which is worth recording as a gate-calibration data point:
+scored pre-registration, `exotic_fx_halt_reopen_gap_vol` returns **ev 0.0001, p_survive 0.0112,
+"REJECT (hard economic kill)"** on `price_only + narrow_breadth` — breadth is 4 symbols, and the
+mechanism as specified was price-only. The gate and the data killed it for the same reason from
+opposite directions.
+
+**DO NOT REOPEN** by swapping the vol estimator, the horizon, or the symbol set: all three vary the
+measurement, none changes the mechanism, and the breadth ceiling (four halt-heavy exotics, ~56–73
+episodes each) is structural. The nearest live-again condition would be a genuinely different
+quantity — e.g. *spread* or *fill quality* at reopen rather than return dispersion — which is a
+different mechanism and would need its own card.
+
+**WHAT SURVIVES AND IS THE ACTUAL DELIVERABLE.** The √t model fitting almost exactly is precisely
+what makes the desk's *accounting* defect measurable: since variance really does scale with sessions
+spanned, treating a multi-session gap as one period overstates realised vol by 1.01x–1.18x and
+therefore under-sizes. That, the unwired/hardcoded/empirically-wrong `operational_calendar_miner`,
+and the working PNG-plus-Wayback-CDX route to the broker's dated halt calendar are all filed in
+`docs/research/improvement_inbox.md` (PROSPECTOR s9).
+
+**RELATION TO `hijri_ramadan_calendar_axis` (2026-08-12, `unmeasurable_by_construction`).** Different
+quantity and different universe — a broker halt/reopen event on MT5 exotics, not a seasonal return
+dummy on crypto — so this is not a re-litigation of that row. But that row's kill reason (episode-level
+n too small) applies here too and is now joined by a measured null: this one is **refuted**, not
+merely unmeasurable, and it retires the mechanism rather than a method.
+
+### `lazarus_easter_conditional_reversion_sp500` — PROSPECTOR s12, 2026-08-28 — `post_hoc_conditioning` + `n_too_small` + calendar-class match
+
+_Source: jonathankinlay.com/lazarus-trade-easter-mean-reversion-sp500-index (VERIFIED, robots
+`Allow: /`, read under an honest UA). S&P 500 weekly data from 1950._
+
+**CLAIM:** the week AFTER Easter, *conditional on the index having sold off in the week before
+Easter*, delivers a mean return more than 2x the unconditional post-Easter week and ~4x the
+average week, with less than half the standard deviation — an information ratio ~10x larger,
+an 85% win rate (22/26) against 57% unconditional, and a 58bp difference "statistically
+significant at the 0.2% level".
+
+**DISCARDED — not screened, not carded, and the author's own narrative is the reason.** He tests
+the unconditional post-Easter week FIRST, reports the t-test (unequal variances) as **not
+significant**, and only then conditions on a prior-week selloff to obtain the significant result.
+That is a second hypothesis tested after the first failed, reported as one finding: the
+garden-of-forking-paths this desk's multiplicity law names explicitly ("EVERY TRIAL IS REPORTED";
+selective reporting is indistinguishable from a real result at the point of reading, and it is the
+failure that retracted this desk's flagship signal). The published p is uncorrected for the
+conditioning choice, and the cut — "sold off in the prior week" — is itself a free parameter with
+an unreported set of alternatives (magnitude threshold, window length, index vs ETF).
+
+**And the n forecloses it regardless of the multiplicity argument: 26 events in 65 years.** No
+correction, and no amount of patience, brings a once-a-year event to the canonical ten gates'
+sufficiency bar — 65 more years buys 26 more observations. MT5-tradability is not the binding
+constraint (US500 is in the Fusion universe); the sample is.
+
+**Calendar-class graveyard match** — consistent with `TDOM` (discarded, calendar-class) and with
+`hijri_ramadan_calendar_axis` (`unmeasurable_by_construction`). Per WS-006 the significance of a
+calendar **dummy** is a different quantity from the mechanism, and no forced flow is named here:
+the post offers no answer to *who* is obliged to trade against this and why they cannot stop.
+
+**TAG:** `post_hoc_conditioning` / `n_too_small` / `no_economics`.
+**RE-OPEN CONDITION (L1.16a):** only on a named forced-flow mechanism for the Easter week
+(a settlement, hedging or mandated-rebalance obligation), tested pre-registered across MANY
+indices to buy breadth the calendar cannot buy in time — never on a re-run of this conditioning.
+
+### mt5_broker_swap_markup_asymmetry — the administered MT5 swap IS the policy differential (PROSPECTOR s14, 2026-08-28)   [universe: **MT5**, mandate-valid]
+
+**CARDED s13 2026-08-28, KILLED s14 2026-08-28 by its own pre-committed first test.** One day of
+life, which is the pipeline working: the card wrote the crowdedness decomposition as step 1 and
+declared it allowed to kill the card, and it did.
+
+**MECHANISM OF DEATH — pass-through, not residual.** The claim was that an MT5 broker's swap is an
+*administered* rate that drifts from the true rate differential, leaving a broker-specific,
+staleness-and-markup residual only this desk can see. Measured on the 29 Forex majors/crosses
+against BIS `WS_CBPOL` daily central-bank policy rates:
+**`carry_ann = 0.038 + 1.002 × (r_base − r_quote)`, R² = 0.9781, residual sd = 0.258 pp/yr.**
+A unit slope is a pass-through. The administered swap *is* the policy differential to within 26
+bp/yr, so the object the card was built on does not exist on the majors. `crowded_known` applies
+→ EV **0.0013** → REJECT, the exact branch the card pre-registered as killing.
+
+**AND THE EXOTICS' APPARENT RESIDUAL IS A COST, NOT A MISPRICING.** All-FX R² is only 0.36, which
+looks like structure until conditioned: `corr(|resid|, markup)` = **0.943** across 79 symbols and
+**−0.005** within the markup<5pp subsample. The entire exotic residual is the broker's both-sides
+wedge (USDINR **100 pp/yr**, USDBRL 36, USDIDR 33) leaking into the mid. **A markup is paid on
+either side; there is no leg that earns it.** The family dies on both halves of the universe for
+two different reasons.
+
+**TWO CARD CLAIMS ALSO FALSIFIED, recorded so they are not re-inherited:** (1) the lake does NOT
+hold `fred_ECBDFR` — and FRED's OECD-MEI international rate series are withdrawn entirely (HTTP
+400, 27/27 currencies), so the stated data route was dead as well as absent; (2) `swap_long` /
+`swap_short` are **POINTS, not currency-per-lot** — held-out test fitting 22 non-JPY majors (where
+`tick_size × contract_size` = 1 and the conventions coincide) and predicting the 7 JPY majors
+(factor 100): RMSE **0.232** vs **207.499** pp/yr, an 894× separation.
+
+**TAGS:** `crowded` + `no_economics` (on the majors) / `costs_killed_edge` (on the exotics).
+
+**L1.16a RE-ENTRY DOOR (named, narrow).** The pass-through is a property of how this broker *sets*
+the rate, not of the sample, so more data is NOT an enabling change and neither is another symbol
+set. Re-open ONLY on: a demonstrated **time-series** lag — the swap table updating on a slower
+clock than a *policy change*, measured across an actual rate decision with ≥3 months of the
+hourly `broker_swaps` panel (73 snapshots over 3 days is not a sample). That is a different
+quantity from the cross-sectional residual killed here, and it is the only version left alive.
+
+**WHAT SURVIVED AS A COST FACT, not an alpha:** the majors' markup runs **0.55 pp/yr (GBPUSD) to
+2.43 (GBPCHF)**, a 4.4× spread ordered by quote currency (CHF > JPY > commodity dollars),
+correlated 0.316 with |rate differential|. Useful for choosing where to express a carry-holding
+view; `execution_resolver` already reads the per-symbol field, so it is a measurement of an
+existing input rather than a missing one.
+
+**EVIDENCE:** `data/research/s14_swap_decomposition.json` (79 symbols, four fits, the convention
+test, 26 BIS rates with as-of dates). Derivation: `docs/research/prospector_coverage.md` s14 item 1.
+Related: **R0708** (the `execution_resolver` unit defect this test exposed), **R0709** (the BIS
+replacement source).

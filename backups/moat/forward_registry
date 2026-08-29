@@ -333,7 +333,12 @@
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "USDJPY.asia": {
    "identity": {
@@ -364,7 +369,12 @@
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "USDJPY.asia#rr=2.5": {
    "identity": {
@@ -395,7 +405,12 @@
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "USDZAR.overnight_gap_decay.asia": {
    "identity": {
@@ -548,7 +563,7 @@
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
   }
  },
- "updated_at": "2026-08-28T03:17:23+00:00",
+ "updated_at": "2026-08-28T22:06:04+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",
