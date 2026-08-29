@@ -4,8 +4,8 @@ from __future__ import annotations
 import json
 import os
 import socket
-import time
 import sys
+import time
 import uuid
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
@@ -70,10 +70,22 @@ def _owner_state(path: Path) -> str:
 
 
 def free_mb() -> int | None:
-    """Physical memory actually available right now, or None where it cannot be read.
+    """The BINDING memory headroom -- min(available physical, available COMMIT) -- or None.
 
-    UNMEASURED is a real answer (L1.28a): if this cannot be determined, admission must not
-    invent a number, and the caller admits the job rather than blocking work on ignorance.
+    COMMIT, NOT JUST PHYSICAL. This returned available physical memory only, and on this box that
+    is the wrong number: measured 2026-08-29, the desk had 2,705MB of physical RAM free and
+    234MB of virtual memory, because the page file was full at 12,756MB. Every guard built on
+    this function therefore read "healthy" while the machine could not satisfy an allocation --
+    the sweep died on `MemoryError` importing pandas, before a single line of its own code ran.
+    Windows fails an allocation when COMMIT is exhausted regardless of how much RAM is free, so
+    the commit limit is what admission must respect.
+
+    The culprit was this desk's own cache warmer: three Pool workers, each a full re-import under
+    Windows spawn, holding 12.9GB of commit between them with working sets of 8-23MB. Entirely
+    paged out, doing nothing, and invisible to a physical-memory check.
+
+    UNMEASURED is a real answer (L1.28a): if this cannot be determined, admission must not invent
+    a number, and the caller admits the job rather than blocking work on ignorance.
     """
     if sys.platform == "win32":
         import ctypes
@@ -95,7 +107,13 @@ def free_mb() -> int | None:
                 return None
         except (AttributeError, OSError):
             return None
-        return int(st.ullAvailPhys // (1024 * 1024))
+        # ullAvailPageFile is the process-visible COMMIT headroom; ullAvailPhys is RAM. The
+        # smaller of the two is what an allocation actually has to fit inside.
+        avail_phys = int(st.ullAvailPhys // (1024 * 1024))
+        avail_commit = int(st.ullAvailPageFile // (1024 * 1024))
+        return min(avail_phys, avail_commit)
+    # Linux has no separate commit ceiling in the Windows sense; MemAvailable already accounts
+    # for reclaimable memory, and swap is counted by the OOM killer rather than by admission.
     try:
         for line in Path("/proc/meminfo").read_text("utf-8").splitlines():
             if line.startswith("MemAvailable:"):

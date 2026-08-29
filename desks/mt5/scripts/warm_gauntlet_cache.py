@@ -53,7 +53,9 @@ sys.path.insert(0, str(DESK / "scripts"))
 #: Stop warming below this much free memory. Higher than the sweep's own admission floor on
 #: purpose: this job is entirely optional, so it should yield the box long before anything that
 #: produces verdicts has to.
-FLOOR_MB = 1200
+# Raised, and now measured against the BINDING constraint (min of physical and commit) rather
+# than physical alone -- which read 2,705MB free on a box with 234MB of usable virtual memory.
+FLOOR_MB = 2500
 
 #: Report progress this often. Cheap, and it makes the log a live progress signal rather than a
 #: single line at exit -- the blind spot that cost 87 minutes tonight.
@@ -66,7 +68,12 @@ REPORT_EVERY = 25
 #: whole cells and writes them to the same content-addressed cache the sweep reads.
 #: Three, not four: one core stays for the sweep itself and the live terminal. A warmer that
 #: starves the thing it is trying to help is not help.
-WORKERS = int(os.environ.get("WARM_WORKERS", "3"))
+# TWO, not three. Under Windows spawn each worker is a FULL re-import of pandas, numpy and the
+# gauntlet module, and each reserves commit accordingly. Measured 2026-08-29: three workers held
+# 12.9GB of COMMIT between them -- with working sets of 8-23MB, entirely paged out -- and
+# exhausted a 12,756MB page file, after which nothing on the box could allocate at all and the
+# sweep died importing pandas. The cores were never the scarce resource here; commit was.
+WORKERS = int(os.environ.get("WARM_WORKERS", "2"))
 
 #: Warm from the END of the eligible list backwards. The sweep walks it forwards, so the two meet
 #: in the middle instead of recomputing the same cells in the same order. The cache makes overlap

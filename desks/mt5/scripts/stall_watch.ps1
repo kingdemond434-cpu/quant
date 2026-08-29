@@ -145,7 +145,14 @@ foreach ($tn in $researchTasks) {
 # The largest offender goes first, and NOTHING on the money path is ever a candidate.
 try {
   $os = Get-CimInstance Win32_OperatingSystem
-  $freeMB = [math]::Round($os.FreePhysicalMemory / 1KB)
+  # THE BINDING CONSTRAINT IS THE SMALLER OF RAM AND COMMIT. Physical free memory alone said
+  # 2,705MB while the box had 234MB of usable virtual memory (page file full at 12,756MB), so
+  # this floor read healthy at the exact moment nothing could allocate and the sweep was dying
+  # on MemoryError importing pandas. Windows fails an allocation when COMMIT is exhausted no
+  # matter how much RAM is free, so the shed must trigger on whichever is scarcer.
+  $freePhysMB = [math]::Round($os.FreePhysicalMemory / 1KB)
+  $freeVirtMB = [math]::Round($os.FreeVirtualMemory / 1KB)
+  $freeMB = [math]::Min($freePhysMB, $freeVirtMB)
   # SUSTAINED, NOT INSTANTANEOUS. edge_search runs a sawtooth by design -- it builds primitives
   # for one symbol (peaking near 3.7GB), emits, releases, and starts the next. Measured
   # 2026-08-28: free RAM cycled 3329 -> 448 -> 3329MB on a ~12 minute period. A single sample
@@ -160,7 +167,7 @@ try {
   try { $strikes = [int]((Get-Content $stateFile -Raw | ConvertFrom-Json).low_mem_strikes) } catch { $strikes = 0 }
   if ($freeMB -lt 500) { $strikes = $strikes + 1 } else { $strikes = 0 }
   if ($freeMB -lt 500 -and $strikes -lt 2) {
-    $actions += "RAM-LOW: ${freeMB}MB free (strike $strikes of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
+    $actions += "RAM-LOW: ${freeMB}MB free (phys ${freePhysMB}MB / virt ${freeVirtMB}MB, strike $strikes of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
   }
   if ($freeMB -lt 500 -and $strikes -ge 2) {
     $MONEY = @('run_gateway_loop', 'run_deadman_switch', 'terminal64')
@@ -174,7 +181,7 @@ try {
       if ($victim.CommandLine -match '([\w_]+\.py)') { $name = $matches[1] }
       $rss = [math]::Round($victim.WorkingSetSize / 1MB)
       Stop-Process -Id $victim.ProcessId -Force -ErrorAction SilentlyContinue
-      $actions += "RAM-FLOOR: only ${freeMB}MB free -- shed $name (rss ${rss}MB), the largest non-money-path job; it resumes from cache on its next trigger"
+      $actions += "RAM-FLOOR: only ${freeMB}MB free (phys ${freePhysMB}MB / virt ${freeVirtMB}MB) -- shed $name (rss ${rss}MB, commit is what runs out here, not RSS); it resumes from cache on its next trigger"
     } else {
       $actions += "RAM-FLOOR: only ${freeMB}MB free and NOTHING sheddable -- every remaining process is money-path; needs a human"
     }
