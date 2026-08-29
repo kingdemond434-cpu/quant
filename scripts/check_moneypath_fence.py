@@ -108,10 +108,17 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     # desk simply being slow, which is how it would survive.
     "desks/mt5/mt5desk/families_orthogonal.py": (
         "_PRIM_CACHE", "family_discovered", "ORTHOGONAL_FAMILIES"),
+    # POWER_CURE_CANDIDATES and FRESH_BUILD_BUDGET_SEC are here because both were written,
+    # applied, and reverted by the replayer BEFORE their own commit ran -- so `git log -S` found
+    # them in no commit at all, while the desk box hashed identical to HEAD because HEAD was
+    # equally empty. Verifying a deployment against HEAD cannot catch a capability that never
+    # reached HEAD; only a marker naming the property can.
     "desks/mt5/scripts/external_gauntlet.py": ("ATTESTATION", "_H1_CACHE", "_h1_for",
                                                "CACHE SAVE FAILING",
                                                "REFUSING to write an EMPTY canon",
-                                               "HALT: 0 candidates"),
+                                               "HALT: 0 candidates",
+                                               "POWER_CURE_CANDIDATES",
+                                               "FRESH_BUILD_BUDGET_SEC"),
     # grandfathering is over: SLEEVES must stay empty and enrolment must stay certificate-driven
     "desks/mt5/research/forward_reconcile.py": "RETIRED_ORPHAN",
     # 2026-08-26 (gap-wirer): five more unification-reverted properties re-applied and fenced.
