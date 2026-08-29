@@ -9482,3 +9482,17 @@ refusing to trade them is the honest split.
    unbounded lag makes any point-in-time claim fiction.
 4. Standing and unbudged: the Pink Sheet vintage bound (run (w) item 4) still gates any Pink-Sheet
    axis, and now also gates the replicated Brent wedge above.
+
+## 2026-08-29 — grouping/peer map: the BRAIN ground is CLOSED as a source (BRAIN hunter s20)
+
+The desk's `group_rank`/`group_zscore` (`libs/alpha_factory/wq_operators.py`) remain inert for want
+of a grouping map. s20 settled at **n = 0** that the public permissive BRAIN generator class
+supplies no peer-grouping axis whatsoever — its one candidate function is quantile bucketing, and
+its one real grouping consumer is fed a constant and unreachable behind a bare `except:` (see
+`docs/graveyard.md`, 2026-08-29). **Stop treating this ground as a route to the grouping map.**
+Under the MT5/Fusion mandate the map must be built from the desk's own registry instead: asset
+class, quote currency, base currency, venue session, and correlation-cluster membership are all
+constructible from `desks/mt5/data/universe/universe.json` plus the desk's own tape — and BRAIN
+hunter s11 already measured which of those carries independent information (`currency_quote` at
+0.493 was the only arm worth having; `asset_class` reproduced the universe-wide rank at 0.82
+because the largest group IS the universe). Building the map is a desk-side task, not a mine.

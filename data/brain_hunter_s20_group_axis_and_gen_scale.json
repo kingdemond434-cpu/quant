@@ -1,0 +1,44 @@
+{
+  "session": "brain-hunter-s20",
+  "date": "2026-08-29",
+  "ground": "public WorldQuant BRAIN generator class (s15 permissive cohort), evaluation + grouping layer",
+  "boundary": "public GitHub only; 4 shallow clones; no login; no api.worldquantbrain.com; research freeze respected (docs/research/*, data/* only)",
+  "clones": {
+    "zhutoutoutousan/worldquant-miner": "6a0c943",
+    "aznikline/alpha-mining-system": "7b149c2",
+    "Miasyster/QuantGPT": "db5dc44",
+    "gyx09212214-prog/worldquant-harness": "c48cd4e"
+  },
+  "arm_A_grouping_axis": {
+    "question": "s19 next-ground item 2: is aznikline::_calculate_group_returns the class's one touch of the peer-grouping axis?",
+    "verdict": "REFUTED — vocabulary collision, not a grouping axis",
+    "evidence": "alpha_mining/evaluator.py:119-145 — the 'group' is pd.qcut(group['factor'], n_groups): a QUANTILE PORTFOLIO of the factor's own values, not a peer group. ls_return = top quantile - bottom quantile. No peer identity enters anywhere.",
+    "where_a_real_grouping_would_live": "evaluator.py:_neutralize_factor, which builds pd.get_dummies(df['group'])",
+    "and_it_is_inert_twice": [
+      "PRODUCER: the only writer of that column is data_hub.py:279 `df['group'] = 'unknown'` — a single constant, so get_dummies(drop_first=True) returns shape (n, 0). Verified empirically.",
+      "CONSUMER: X_list is seeded with np.ones_like(y), a 1-D (n,) array, then hstacked with 2-D (n,1) regressors. np.hstack RAISES ValueError('all the input arrays must have same number of dimensions') on EVERY call where any regressor is present — and log_cap is always present (close-log fallback at evaluator.py:59). The bare `except:` at line 86 returns df['factor'] - df['factor'].mean().",
+      "NET: the repo's advertised 'industry/size neutralization' (README_EN.md:190) is a plain cross-sectional demean 100% of the time, silently, whether or not the user ticks the box."
+    ],
+    "class_level_conclusion": "n = 0. No repo in the permissive BRAIN generator class touches the peer-grouping axis at all. This seat's founding blocking input gets NO help from this ground; a grouping map must be built, not mined here."
+  },
+  "arm_B_generation_scale": {
+    "question": "s19 next-ground item 1: candidates fired per accepted alpha for the two repos never opened at the evaluation layer",
+    "zhutoutoutousan/worldquant-miner": {
+      "stone_age/python/gui/alpha_mining.py:11-12": "population_size=100, max_iterations=1000 => 100,000 evaluations, no multiplicity control (consistent with s16/s19)"
+    },
+    "aznikline/alpha-mining-system": {
+      "config.yaml:47-48 / factor_engine.py:132-133": "gplearn SymbolicTransformer population_size=200, generations=20 => 4,000 programs",
+      "selection": "cli.py:106 sorts on 'Rank ICIR_train' — train-side selection with test reported separately. Honest split; credit where due.",
+      "THE KILL": "factor_engine.py:179 `y = np.random.randn(X.shape[0])` with the comment 'random y, will be overridden when fitness uses IC'. It is NEVER overridden — gp.fit(X, y) runs at line 209 with metric='pearson' against that exact random vector. The entire genetic-programming generator (mode 2, the repo's headline capability) evolves 4,000 programs to maximise correlation with PURE NOISE, and returns the top_n as named factors gp_alpha_01..NN.",
+      "quantified_selection_illusion": {
+        "n=2000": "E[max|pearson| over 4000 noise programs] = 0.0846 vs single-program sd 0.0224 — 3.79x",
+        "n=10000": "0.0381 vs 0.0100 — 3.81x",
+        "reading": "the hall-of-fame IC is ~3.8 sd of pure selection, on a target with zero information by construction. Not merely uncontrolled multiplicity: the objective itself is noise."
+      }
+    }
+  },
+  "desk_transfer_checks": {
+    "placeholder_or_random_TARGET_in_a_desk_generator": "NULL — the only randn in libs/alpha_factory, libs/research, desks/mt5/research is desks/mt5/research/admission.py:343,373, a labelled synthetic-sleeve correlation sensitivity study that prints and writes no artifact. No desk generator fits a placeholder target.",
+    "bare_except_swallowing_a_neutralization_regression": "NULL — zero matches for lstsq/resid/polyfit under a bare `except:` across libs/alpha_factory and desks/mt5/research."
+  }
+}

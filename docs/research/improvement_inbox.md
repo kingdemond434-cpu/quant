@@ -5067,3 +5067,23 @@ census output, not an engine item, and it is stated as a rule to apply, not an i
    in-place edit, and diff against `git show HEAD:<path>` BEFORE writing so a working-tree
    difference is seen rather than overwritten.** A reformat is indistinguishable from a revert at
    the point of reading — which is precisely why it passes review.
+
+## 2026-08-29 — BRAIN hunter s20: the "advertised capability, silently inert" pattern, with a desk-shaped test
+
+Two independent defects in one function made `aznikline/alpha-mining-system`'s neutralization a
+plain demean 100% of the time while its README advertised industry/size neutralization: a producer
+writing a **constant** into the grouping column (so the dummies are shape `(n,0)`), and a consumer
+whose `np.hstack` **always raises** on a 1-D intercept, caught by a bare `except:` returning a
+fallback that is a plausible-looking number. Neither half is visible from the output — the returned
+Series has the right index, the right dtype and a sane distribution.
+
+**The transferable test, and it is cheap:** for every desk transform that has a *fallback path*,
+assert that the PRIMARY path actually executed — not that the output is well-formed. A fallback
+that fires on 100% of calls and a fallback that never fires produce identical-looking artifacts,
+which is the WS-005 shape (absence read as a clean verdict) wearing a `try/except`.
+
+Desk transfer check for the specific instance was run this session and is NULL (zero
+`lstsq`/`resid`/`polyfit` under a bare `except:` in `libs/alpha_factory` or `desks/mt5/research`).
+The GENERAL instrument — a fallback-taken counter on transforms that have one — is not built and
+is proposed here; it belongs to a seat that is not research-frozen.
+Evidence: `data/brain_hunter_s20_group_axis_and_gen_scale.json`.

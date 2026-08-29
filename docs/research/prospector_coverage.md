@@ -11827,3 +11827,104 @@ should re-derive it.
    re-clone 178MB that three prior sessions had already fetched, because nothing persists the
    population; that is the cost of the missing arm, now quantified. Belongs to a seat that is not
    research-frozen.
+
+## BRAIN HUNTER s20 — 2026-08-29 — the grouping axis is a vocabulary collision; and a generator that evolves 4,000 programs against a random target
+
+Took s19's NEXT-GROUND items 2 and 1. Four repos re-cloned `--depth 1` (shas in
+`data/brain_hunter_s20_group_axis_and_gen_scale.json`, which carries every measurement below).
+
+### Arm A — s19 item 2 REFUTED, and it settles this seat's founding question
+
+`aznikline/alpha-mining-system::_calculate_group_returns` (evaluator.py:119-145) is **not a
+grouping-axis function**. Its "group" is `pd.qcut(group['factor'], n_groups)` — a quantile
+portfolio of the factor's own values, `ls_return = top − bottom`. No peer identity enters. The
+name collides with the grouping vocabulary; the semantics are decile buckets. s19 flagged it as
+"the only place this class touches the grouping axis"; that was a grep-shaped inference and it is
+wrong.
+
+The one place a real grouping *would* live is `_neutralize_factor`, which builds
+`pd.get_dummies(df['group'])`. It is **inert twice over**, and each half is independently fatal:
+
+- **Producer.** The only writer of that column is `data_hub.py:279` — `df['group'] = 'unknown'`,
+  a single constant. `get_dummies(..., drop_first=True)` therefore returns shape `(n, 0)`.
+  Verified empirically, not read off.
+- **Consumer.** `X_list` is seeded with `np.ones_like(y)` — a **1-D `(n,)`** array — then
+  `np.hstack`ed with 2-D `(n,1)` regressors. That raises `ValueError: all the input arrays must
+  have same number of dimensions` on *every* call in which any regressor is present, and `log_cap`
+  always is (the `np.log(close)` fallback at evaluator.py:59). The bare `except:` at line 86
+  returns `df['factor'] - df['factor'].mean()`.
+
+So the repo's advertised "industry/size neutralization" (`README_EN.md:190`) is a plain
+cross-sectional demean **100% of the time, silently, whether or not the user enables it**. Two
+independent defects stacked; either alone would have hidden the other.
+
+**Class-level conclusion: n = 0.** No repo in the permissive BRAIN generator class touches the
+peer-grouping axis at all. This seat's founding blocking input — the desk has no grouping map —
+gets NO help from this ground. It must be BUILT, not mined here. That is a negative result over a
+population, which is the kind this ground has now produced three sessions running.
+
+### Arm B — s19 item 1: the generation scale, and one repo's objective is noise
+
+- `zhutoutoutousan/worldquant-miner` (`stone_age/python/gui/alpha_mining.py:11-12`):
+  `population_size=100 × max_iterations=1000` = **100,000 evaluations**, no multiplicity control.
+- `aznikline/alpha-mining-system` (`config.yaml:47-48`): gplearn `SymbolicTransformer`,
+  `population_size=200 × generations=20` = **4,000 programs**. Selection is on
+  `Rank ICIR_train` (`cli.py:106`) with test reported separately — an honest split, credited.
+
+And then: `factor_engine.py:179` sets `y = np.random.randn(X.shape[0])` under the comment "random
+y, will be overridden when fitness uses IC". **It is never overridden.** `gp.fit(X, y)` runs at
+line 209 with `metric='pearson'` against that exact random vector. The repo's headline capability
+evolves 4,000 programs to maximise correlation with **pure noise** and returns the hall-of-fame as
+named factors `gp_alpha_01..NN`, which downstream `compute()`s and evaluates like any other.
+
+Bounded, so it is a number rather than an adjective — E[max |pearson|] over 4,000 independent
+noise programs:
+
+| n | E[max·|r|] | single-program sd | ratio |
+|---|---|---|---|
+| 2,000 | 0.0846 | 0.0224 | **3.79x** |
+| 10,000 | 0.0381 | 0.0100 | **3.81x** |
+
+~3.8 sd of pure selection on a target with zero information by construction. This is a category
+worse than the uncontrolled multiplicity s16/s17/s19 measured across this class: there, the search
+was uncontrolled over a real target; here the **objective itself is noise**, so no amount of
+multiplicity control downstream could rescue it. Graveyarded.
+
+### Desk-side transfer checks — BOTH NULL, and run rather than assumed
+
+- **Placeholder/random TARGET in a desk generator:** NULL. The only `randn` under
+  `libs/alpha_factory`, `libs/research`, `desks/mt5/research` is
+  `desks/mt5/research/admission.py:343,373` — a labelled synthetic-sleeve correlation sensitivity
+  study that prints and writes no artifact. No desk generator fits a placeholder target.
+- **Bare `except:` swallowing a neutralization regression:** NULL. Zero matches for
+  `lstsq`/`resid`/`polyfit` under a bare `except:` across `libs/alpha_factory` and
+  `desks/mt5/research`.
+
+### Boundary and cost
+
+Public GitHub only, 4 shallow clones of permissively-licensed repos. No login, no
+`api.worldquantbrain.com`, no platform-internal surface. Research freeze respected — `docs/research/*`
+and `data/*` only. Video: 0 fetched, 0 locked (no video ground touched; s5's finding on BRAIN
+lecture material is unchanged and was not re-probed).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — "does the permissive BRAIN generator class supply a peer-grouping axis?" is SETTLED
+at n = 0.** Measured at both the producer and consumer of the only candidate function in the class.
+Re-entry needs a new repo entering the population, not another look at these.
+
+**2026-08-29 — the generation-scale census over the 3 locally-evaluating authorships is
+EXHAUSTED:** 100,000 (zhutoutoutousan), 4,000 (aznikline), and s17's figures for
+QuantGPT/harness. This is the class's effective-N and closes the multiplicity thread s16 opened.
+
+### NEXT UN-EXHAUSTED GROUND (for s21, in order)
+
+1. **`zhutoutoutousan/worldquant-miner`'s 100,000-evaluation GA at the FITNESS layer** — Arm B
+   measured its scale but not its objective. Given aznikline's objective turned out to be noise,
+   "what is the fitness function actually correlated against" is now a *tested* question on this
+   ground, not a speculative one. One file, unread.
+2. **The 25 no-licence repos, census-only** (s15 item, untouched for six sessions). READMEs and
+   repo metadata only, no clone, no code read.
+3. **The BRAIN-scoped collector arm** — s9's free-corpus gap, TWELVE sessions old. This run again
+   paid to re-clone repos that four prior sessions had fetched, because nothing persists the
+   population. Belongs to a seat that is not research-frozen.

@@ -2216,3 +2216,33 @@ gap instead of showing one.
 payload, or removes the fallback. Then the repo's UI becomes readable again; the technique never does.
 **Desk-side transfer check: NULL** — see `prospector_coverage.md` s19; the only `np.sin`+`np.random`
 candidate in `desks/mt5/side_channels/` is a `__main__` demo that writes nothing.
+
+## 2026-08-29 — aznikline/alpha-mining-system genetic-programming factor generator (BRAIN hunter s20)
+
+**Class:** generator whose objective is noise by construction.
+`alpha_mining/factor_engine.py:179` sets `y = np.random.randn(X.shape[0])` under the comment
+"random y, will be overridden when fitness uses IC"; it is never overridden, and `gp.fit(X, y)`
+(line 209, `metric='pearson'`) evolves `population_size=200 × generations=20` = 4,000 programs to
+maximise correlation with that random vector. The hall-of-fame is returned as named factors
+`gp_alpha_01..NN` and evaluated downstream like any other candidate.
+Bounded: E[max |pearson|] over 4,000 noise programs = 0.0846 at n=2,000 and 0.0381 at n=10,000 —
+**3.8x the single-program sd in both cases**, i.e. ~3.8 sd of pure selection on a target carrying
+zero information. Worse than uncontrolled multiplicity over a real target: no downstream control
+can rescue an objective that is noise.
+**Nothing from this generator is importable.** Desk transfer check RUN and NULL — no desk
+generator fits a placeholder or random target (only `desks/mt5/research/admission.py:343,373`, a
+labelled synthetic sensitivity study that writes no artifact).
+Evidence: `data/brain_hunter_s20_group_axis_and_gen_scale.json`; sha `7b149c2`.
+
+## 2026-08-29 — "the BRAIN generator class supplies a peer-grouping axis" (BRAIN hunter s20)
+
+**REFUTED at n = 0**, and the near-miss is instructive. `aznikline::_calculate_group_returns` is a
+quantile-portfolio function (`pd.qcut` on the factor's own values), not a peer grouping — a
+vocabulary collision that s19 read as a grouping-axis touch. The class's only real grouping
+consumer, `_neutralize_factor`, is inert twice: its producer writes the constant
+`df['group'] = 'unknown'` (`data_hub.py:279`, so `get_dummies` yields shape `(n,0)`), and its
+consumer seeds `X_list` with a 1-D `np.ones_like(y)` that makes `np.hstack` raise on every call
+with any regressor present, caught by a bare `except:` that returns a plain demean. The advertised
+"industry/size neutralization" never runs, silently, 100% of the time.
+**Consequence for this desk:** the founding blocking input — no grouping map — gets no help from
+this ground. A grouping map must be BUILT. Re-entry only on a new repo entering the population.
