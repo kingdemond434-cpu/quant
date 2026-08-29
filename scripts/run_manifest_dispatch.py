@@ -138,6 +138,31 @@ ALLOWLIST: dict[str, str] = {
     "scripts/check_panel_breadth.py": "L1.62; live rc=0 -- 53/53 panel cells, 0 over-claimed",
     "scripts/check_citation_integrity.py": "L2.3/s42; live rc=0 -- 0 unresolvable of 298 citations",
     # ------------------------------------------------------------------------------------
+    # FIFTH WAVE, gap-fixer 2026-08-29. Same standard as the third and fourth: each was RUN BY
+    # HAND this cycle and the reason quotes what it actually printed.
+    #
+    # Both of these were REPAIRED this cycle, and that is precisely why they are listed here:
+    # a fixed organ that nothing schedules is the defect this dispatcher exists to close
+    # (III.16 -- built is not a status; name the caller).
+    # ------------------------------------------------------------------------------------
+    "scripts/check_coverage_floors.py": "L1.50 money-path coverage ratchet. REPAIRED THIS CYCLE "
+                                        "and the repair is why it matters: its MONEY_PATH was "
+                                        "the five retired `binance_*` adapters, so the "
+                                        "'money path 89.44%' every session read described code "
+                                        "LAWS §1 forbids running. Now measures the live MT5 "
+                                        "order path; live rc=1 correctly reporting POPULATION "
+                                        "CHANGED and naming gateway.py unmeasurable on this "
+                                        "host. Its cron row (22 5 * * *) has been dead since "
+                                        "the 08-20 cron death -- which is why the floor last "
+                                        "rose 20 days ago",
+    "scripts/check_prompt_ratchet.py": "the fence that verifies LAWS actually REACH organs; "
+                                       "live rc=0 '31 governed prompts, 334 invariant assertions "
+                                       "across 29 defined invariants ... every prompt still "
+                                       "asserts every rule it used to'. LAWS.md itself records "
+                                       "that five load-bearing rules of the sealed core stopped "
+                                       "reaching ANY organ on 2026-08-25 and that this ratchet "
+                                       "named all five -- while its own scheduler was dead",
+    # ------------------------------------------------------------------------------------
     # FOURTH WAVE, gap-fixer 2026-08-27. Same standard as the third: every token below was RUN
     # BY HAND this cycle and the reason quotes WHAT IT ACTUALLY PRINTED. rc=2 on a fence is
     # correct behaviour. Twelve more candidates were run and DELIBERATELY LEFT OUT -- see the

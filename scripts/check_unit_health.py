@@ -21,6 +21,7 @@ a human, because auto-restarting live-order machinery is how accounts die.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 import urllib.request
@@ -218,6 +219,60 @@ def check_unit_files() -> list[str]:
     return actions
 
 
+def check_memory_ceilings() -> list[str]:
+    """A DECLARED CEILING ABOVE PHYSICAL RAM IS WORSE THAN NO CEILING (gap-fixer 2026-08-29).
+
+    `MemoryMax=` exists so a leaking service is killed inside its OWN cgroup instead of letting
+    the kernel pick a victim from the whole machine. Set above physical memory it can never
+    bind, so it does the opposite of its purpose while reading, in `systemctl show`, exactly
+    like protection.
+
+    MEASURED: `memecoin-shadow.service` carried `MemoryMax=4G` on a 3815 MB box with ZERO swap,
+    its own comment stating the intent "a ceiling so a leak takes the desk down rather than the
+    machine". Over 7 days it recorded 62 oom-kills, and 73% of the 73 desk-organ oom-kills in
+    data/cro_ai_logs/unit_deaths.jsonl landed within 3 minutes of one of its deaths --
+    quant-cadence 40 times, the auto-push guard 19, the gap-wirer 4. The desk read those as
+    eight separate unit bugs for a week.
+
+    NO SWAP is what makes this sharp here: with swap the kernel has somewhere to go first. This
+    reports and names the fix; it does not edit limits, because a resource ceiling on a unit
+    this repo does not own is a decision, not a repair.
+    """
+    findings: list[str] = []
+    try:
+        meminfo = Path("/proc/meminfo").read_text("utf-8")
+        total_kb = int(re.search(r"MemTotal:\s+(\d+)", meminfo).group(1))  # type: ignore[union-attr]
+        swap_kb = int(re.search(r"SwapTotal:\s+(\d+)", meminfo).group(1))  # type: ignore[union-attr]
+    except (OSError, AttributeError, ValueError):
+        return ["MEM-CEILING: /proc/meminfo unreadable -- ceilings UNMEASURED, not clean"]
+    budget = (total_kb + swap_kb) * 1024
+    rc, out = _run(["systemctl", "--user", "list-unit-files", "--type=service",
+                    "--no-pager", "--plain"], timeout=60)
+    if rc != 0:
+        return ["MEM-CEILING: could not list user services -- UNMEASURED"]
+    for line in out.splitlines():
+        parts = line.split()
+        if not parts or not parts[0].endswith(".service"):
+            continue
+        unit = parts[0]
+        rc2, shown = _run(["systemctl", "--user", "show", unit, "-p", "MemoryMax"], timeout=30)
+        if rc2 != 0 or "=" not in shown:
+            continue
+        raw = shown.split("=", 1)[1].strip()
+        if not raw.isdigit():
+            continue  # `infinity` is honest: no ceiling claimed, none implied
+        if int(raw) > budget:
+            findings.append(
+                f"MEM-CEILING {unit}: MemoryMax={int(raw) / 2**20:.0f}MB exceeds the "
+                f"{budget / 2**20:.0f}MB this box can supply (RAM+swap), so the limit can "
+                "never bind and the GLOBAL oom-killer chooses the victim instead -- which is "
+                "how one leaking service kills eight healthy ones. Set it below the budget "
+                "(a drop-in under ~/.config/systemd/user/<unit>.d/ leaves the owner's unit "
+                "file untouched), or remove it and claim no ceiling at all."
+            )
+    return findings
+
+
 def main() -> int:
     now = datetime.now(tz=UTC).isoformat(timespec="seconds")
     actions: list[str] = []
@@ -233,6 +288,12 @@ def main() -> int:
         actions.append(f"{'RESTARTED' if rc == 0 else 'RESTART FAILED'} {unit}"
                        + ("" if rc == 0 else f": {out[:120]}"))
         print(f"  {actions[-1]}")
+
+    # A ceiling that cannot bind reads as protection and provides none -- reported before the
+    # dashboard probe, because this is the class that kills the organs the probe would restart.
+    for finding in check_memory_ceilings():
+        actions.append(finding)
+        print(f"  {finding}")
 
     dash_ok = probe_dashboard()
     if not dash_ok:

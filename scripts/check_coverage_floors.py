@@ -42,6 +42,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -52,12 +53,49 @@ RECORD = ROOT / "docs/research/COVERAGE_RATCHET.json"
 #: The files that can PLACE ORDERS or MOVE FUNDS. Kept explicit rather than globbed: a new venue
 #: adapter must be added here deliberately, because the alternative is a money-path file that
 #: silently escapes the floor by not matching a pattern.
+#:
+#: POINTED AT THE LIVE UNIVERSE 2026-08-29 (gap-fixer). Until this edit all five entries were
+#: `libs/execution/binance_*` -- the RETIRED crypto adapters, which LAWS §1 forbids ever running
+#: again. So the number every session read at the top of its context, "money path 89.44%", was
+#: measured entirely over code that can never execute, while `desks/mt5/mt5desk/gateway.py`
+#: (1510 lines, FOUR `mt5.order_send` call sites, `close_positions`, `manage_open_positions`)
+#: and `libs/execution/broker.py` (`place_order`/`cancel_order`) were in no floor at all.
+#: The explicit-not-globbed reasoning above was right and still is; what nobody did was update
+#: the list when the principal changed the universe on 2026-08-18. A guard aimed at retired
+#: ground reads healthy forever -- the WS-005 class, on the money path.
 MONEY_PATH = (
+    "libs/execution/broker.py",
+    "libs/execution/staging.py",
+)
+
+#: LIVE money path that CANNOT BE EXECUTED ON THIS HOST, path -> the structural reason.
+#:
+#: These are reported as UNMEASURABLE by name every run and are NEVER folded into the
+#: percentage (L1.28a: unmeasured is a real answer, and it must not render as either a pass or
+#: a zero). They are also not a breach: a fence that is red from day one with no action that
+#: could ever clear it gets ignored and then deleted (L1.43), and an unclosable red is how a
+#: real one stops being read. The verdict is "unmeasurable HERE", which names the host where it
+#: could be measured -- that is a build request, not a failure.
+MONEY_PATH_UNMEASURABLE_HERE = {
+    "desks/mt5/mt5desk/gateway.py": (
+        "imports MetaTrader5 at module scope and that package is Windows-only, so no line of it "
+        "executes on this Linux box. The desk's own tests know: desks/mt5/tests/test_risk_units.py "
+        "does `_SRC = (_DESK / 'mt5desk' / 'gateway.py').read_text()` and AST-extracts the pure "
+        "helpers, commenting 'gateway.py imports MetaTrader5'. That is a sound adaptation and the "
+        "tests are real, but it means STATEMENT coverage of the live order path is 0% here and "
+        "structurally so. Measurable only on the Windows terminal host."
+    ),
+}
+
+#: RETIRED universe (LAWS §1, principal 2026-08-18/2026-08-25). Kept, never deleted: its
+#: high-water mark is a real ratchet the desk earned and deleting the population would be the
+#: denominator trick. Measured and reported SEPARATELY so a healthy retired number can never
+#: stand in for the live one again -- which is exactly what it had been doing.
+MONEY_PATH_RETIRED = (
     "libs/execution/binance_live.py",
     "libs/execution/binance_testnet.py",
     "libs/execution/binance_spot_live.py",
     "libs/execution/binance_spot_testnet.py",
-    "libs/execution/staging.py",
 )
 
 #: Slack below the measured high-water mark, in percentage points. Coverage moves a little with
@@ -93,7 +131,7 @@ def days_since(iso: str | None) -> float | None:
     return max(0.0, (datetime.now(tz=UTC) - then).total_seconds() / 86400.0)
 
 
-def stall_report(rec: dict) -> str:
+def stall_report(rec: dict[str, Any]) -> str:
     """L1.50: a floor that has not risen is a ratchet that has stopped.
 
     REPORTS, NEVER FAILS. A check that exits non-zero on a quiet day gets deleted, and a deleted
@@ -116,18 +154,32 @@ def stall_report(rec: dict) -> str:
     return f"  L1.50: last raise {age:.1f}d ago -- ratchet moving."
 
 
-def gap_to_target(now: dict[str, float]) -> str:
+def gap_to_target(now: dict[str, Any]) -> str:
     """Distance to 100%, printed every run. A floor is a MINIMUM; the target is the ceiling, and
     reporting only the floor lets a permanently-green desk read as a finished one."""
+    # NEVER CLAIM COMPLETENESS OVER A PARTIAL POPULATION (gap-fixer 2026-08-29). At 100% of the
+    # measurable files this printed "~0 uncovered statements on the code that can move funds"
+    # while `desks/mt5/mt5desk/gateway.py` -- 1510 lines and four `mt5.order_send` call sites --
+    # sat in MONEY_PATH_UNMEASURABLE_HERE, executed by nothing. A gap-to-target that silently
+    # omits the biggest order-placing file in the repo is the same false green this whole
+    # module was just repointed to stop telling.
+    unmeasurable = sorted(MONEY_PATH_UNMEASURABLE_HERE)
+    tail = (
+        f" -- and {len(unmeasurable)} live money-path file(s) are NOT in that count at all "
+        f"({', '.join(unmeasurable)}): unmeasurable on this host, so the true remaining gap is "
+        "strictly larger than the number above and is UNKNOWN, not zero"
+        if unmeasurable
+        else ""
+    )
     return (
         f"  to 100%: repo needs +{100.0 - now['repo_pct']:.2f}pp, "
         f"money path +{100.0 - now['money_path_pct']:.2f}pp "
         f"(~{round((100.0 - now['money_path_pct']) / 100.0 * now['money_path_statements'])} "
-        "uncovered statements on the code that can move funds)"
+        f"uncovered statements on the measurable part of the code that can move funds){tail}"
     )
 
 
-def measure(report: dict) -> dict[str, float]:
+def measure(report: dict[str, Any]) -> dict[str, Any]:
     """(repo %, money-path %) from a coverage.py JSON report."""
     raw_files = report.get("files", {})
     files = (
@@ -152,6 +204,18 @@ def measure(report: dict) -> dict[str, float]:
             continue
         stmts += int(s["num_statements"])
         covered += int(s["covered_lines"])
+    # The RETIRED population, measured on its own so its (earned, real) number can never be
+    # printed as though it described the live order path.
+    r_stmts = r_covered = 0
+    r_missing: list[str] = []
+    for rel in MONEY_PATH_RETIRED:
+        s = files.get(rel, {}).get("summary")
+        if not s:
+            r_missing.append(rel)
+            continue
+        r_stmts += int(s["num_statements"])
+        r_covered += int(s["covered_lines"])
+
     return {
         "repo_pct": round(float(report["totals"]["percent_covered"]), 2),
         "money_path_pct": round(100.0 * covered / stmts, 2) if stmts else 0.0,
@@ -159,10 +223,16 @@ def measure(report: dict) -> dict[str, float]:
         "money_path_attempted": attempted,
         "money_path_measured": attempted - len(missing),
         "money_path_missing": missing,
+        "money_path_unmeasurable_here": sorted(MONEY_PATH_UNMEASURABLE_HERE),
+        "money_path_retired_pct": (
+            round(100.0 * r_covered / r_stmts, 2) if r_stmts else None
+        ),
+        "money_path_retired_statements": r_stmts,
+        "money_path_retired_missing": r_missing,
     }
 
 
-def load_record() -> dict:
+def load_record() -> dict[str, Any]:
     try:
         return dict(json.loads(RECORD.read_text("utf-8")))
     except (OSError, json.JSONDecodeError):
@@ -202,8 +272,40 @@ def main() -> int:
         f"money path {now['money_path_pct']}% over {now['money_path_statements']} stmts "
         f"(floor {money_floor}%)"
     )
+    # SAID EVERY RUN, NEVER FOLDED INTO THE PERCENTAGE. A live money-path file the host cannot
+    # execute is UNMEASURED, and unmeasured must not render as a pass or as a zero (L1.28a).
+    for rel in now["money_path_unmeasurable_here"]:
+        print(f"  UNMEASURABLE HERE: {rel} -- {MONEY_PATH_UNMEASURABLE_HERE[rel]}")
+    if now["money_path_retired_pct"] is not None:
+        print(
+            f"  retired (LAWS §1, cannot execute): {now['money_path_retired_pct']}% over "
+            f"{now['money_path_retired_statements']} stmts -- reported apart from the live "
+            "figure on purpose; until 2026-08-29 this WAS the figure"
+        )
     print(gap_to_target(now))
     print(stall_report(rec))
+
+    # A FLOOR IS ONLY COMPARABLE AGAINST THE POPULATION THAT EARNED IT (gap-fixer 2026-08-29).
+    # This is the general form of the bug found today: MONEY_PATH was changed by the principal's
+    # universe order on 2026-08-18 in every sense except the list, and nothing anywhere compared
+    # the list the floor was earned over against the list being measured. Silently comparing a
+    # NEW population to an OLD floor is meaningless in both directions -- it invents a breach if
+    # the new set is younger, and it certifies a pass if the new set is easier. Neither is a
+    # measurement. So: detect the change, refuse to treat the inherited floor as binding, and
+    # make the migration an explicit act with the old population recorded beside its number.
+    recorded_pop = list(rec.get("money_path_files", []))
+    population_changed = bool(recorded_pop) and recorded_pop != list(MONEY_PATH)
+    if population_changed:
+        gone = [f for f in recorded_pop if f not in MONEY_PATH]
+        added = [f for f in MONEY_PATH if f not in recorded_pop]
+        print(
+            f"  POPULATION CHANGED: the {money_floor}% floor was earned over "
+            f"{len(recorded_pop)} file(s), this run measured {len(MONEY_PATH)}. "
+            f"Left: {', '.join(gone) or 'none'}. Joined: {', '.join(added) or 'none'}. "
+            "The inherited floor is NOT binding on a different population and is not being "
+            "compared; --update migrates it, preserving the old number with the files that "
+            "earned it. Nothing is lowered -- the old floor keeps its own key."
+        )
 
     breaches = []
     if now["money_path_missing"]:
@@ -220,7 +322,7 @@ def main() -> int:
         )
     if now["repo_pct"] < repo_floor - SLACK:
         breaches.append(f"repo coverage {now['repo_pct']}% fell below its {repo_floor}% mark")
-    if now["money_path_pct"] < money_floor - SLACK:
+    if not population_changed and now["money_path_pct"] < money_floor - SLACK:
         breaches.append(
             f"MONEY PATH coverage {now['money_path_pct']}% fell below its {money_floor}% mark -- "
             "this is the code that places orders, and it is the one number a repo-wide average "
@@ -237,12 +339,34 @@ def main() -> int:
 
     if a.update:
         floors["repo_pct"] = max(repo_floor, now["repo_pct"])
-        floors["money_path_pct"] = max(money_floor, now["money_path_pct"])
+        if population_changed:
+            # PRESERVE, THEN ESTABLISH. The old number is archived beside the exact files that
+            # earned it -- deleting it would be the denominator trick -- and the new population
+            # is floored on its FIRST measurement (L2.0), which is what a first measurement is
+            # for. `max()` across populations is the one thing that must not happen: it would
+            # pin an unrelated set to a bar it never ran against.
+            floors["superseded_money_path"] = {
+                "pct": money_floor,
+                "files": recorded_pop,
+                "retired_on": datetime.now(tz=UTC).isoformat(),
+                "why": (
+                    "LAWS §1 (principal 2026-08-18/25) retired this universe; these files cannot "
+                    "execute again, so their coverage cannot describe the live order path."
+                ),
+            }
+            floors["money_path_pct"] = now["money_path_pct"]
+        else:
+            floors["money_path_pct"] = max(money_floor, now["money_path_pct"])
         # L1.50: `last_raised` moves ONLY when a floor actually rose. Stamping it on every
         # --update would make running the updater look identical to improving coverage, which is
         # GAP #85's error exactly -- an `n` that counts READINGS OF THE WORLD rather than events
         # in it, so diligence in running the audit becomes the mechanism by which it goes wrong.
-        rose = (floors["repo_pct"] > repo_floor) or (floors["money_path_pct"] > money_floor)
+        # A MIGRATION IS NOT A RAISE. Stamping `last_raised` because a new population happened
+        # to measure higher than the old one would restart the L1.50 stall clock on an
+        # accounting change -- the ratchet would read as "moving" while nothing improved.
+        rose = (floors["repo_pct"] > repo_floor) or (
+            not population_changed and floors["money_path_pct"] > money_floor
+        )
         last_raised = datetime.now(tz=UTC).isoformat() if rose else rec.get("last_raised")
         RECORD.write_text(
             json.dumps(
