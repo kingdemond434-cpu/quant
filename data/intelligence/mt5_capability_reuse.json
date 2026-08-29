@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-29T23:02:27.223765+00:00",
+  "generated_at": "2026-08-29T23:49:34.314661+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
-    "REACHABLE_MT5_STATIC": 66,
-    "UNWIRED_REVIEW": 552,
+    "REACHABLE_MT5_STATIC": 67,
+    "UNWIRED_REVIEW": 555,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2929,6 +2929,15 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.measurement",
+      "path": "libs/research/measurement.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/mt5desk/family_generic.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.mechanism_census",
       "path": "libs/research/mechanism_census.py",
       "status": "REACHABLE_MT5_STATIC",
@@ -3505,6 +3514,27 @@
     {
       "module": "libs.research.volatility_signals",
       "path": "libs/research/volatility_signals.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.adapters.base",
+      "path": "libs/research_os/adapters/base.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.adapters.fetched_data",
+      "path": "libs/research_os/adapters/fetched_data.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.adapters.owned_data",
+      "path": "libs/research_os/adapters/owned_data.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"

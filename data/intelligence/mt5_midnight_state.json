@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-29T23:02:27.309277+00:00",
+  "generated_at": "2026-08-29T23:49:34.572033+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
@@ -11,22 +11,23 @@
   },
   "conversion": {
     "research_queue": {
+      "AWAITING_CANONICAL_GAUNTLET": 724,
       "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
       "DONE": 10,
       "GAUNTLET_PASSED": 16,
       "GAUNTLET_REJECTED": 16054,
       "PENDING": 17
     },
-    "universal_survivors": 41,
+    "universal_survivors": 42,
     "shadow_sleeves": 68,
     "shadow_observations": 214,
     "shadow_last_run": "2026-08-29"
   },
   "freshness": {
     "research_loop": "2026-08-29T22:31:05.070281+00:00",
-    "research_pipeline": "2026-08-29T23:00:17+00:00",
-    "external_gauntlet": "2026-08-29T22:56:12+00:00",
-    "universal_gate": "2026-08-29T23:00:17+00:00",
+    "research_pipeline": "2026-08-29T23:48:18+00:00",
+    "external_gauntlet": "2026-08-29T23:48:18+00:00",
+    "universal_gate": "2026-08-29T23:48:18+00:00",
     "allocation": "2026-08-29T22:30:45.125757+00:00",
     "markout": "2026-08-28T23:03:00+00:00",
     "markout_usable": false,
@@ -34,12 +35,12 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-08-29T23:02:27.223765+00:00",
+    "generated_at": "2026-08-29T23:49:34.314661+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 7,
       "DISPOSED_SUPERSEDED": 10,
-      "REACHABLE_MT5_STATIC": 66,
-      "UNWIRED_REVIEW": 552,
+      "REACHABLE_MT5_STATIC": 67,
+      "UNWIRED_REVIEW": 555,
       "VENUE_SPECIFIC_REVIEW": 11
     },
     "proof_level": "STATIC_REACHABILITY_ONLY"

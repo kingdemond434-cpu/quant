@@ -19,8 +19,8 @@
   "USDZAR.overnight_gap_decay.asia": "2026-08-27T01:00:00+00:00",
   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00"
  },
- "max_clock_age_days": 6.383,
- "measured_at": "2026-08-29T23:02:19+00:00",
+ "max_clock_age_days": 6.415,
+ "measured_at": "2026-08-29T23:48:59+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

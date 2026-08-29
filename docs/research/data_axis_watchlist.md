@@ -10415,3 +10415,122 @@ argmax-position family (`IMAX`/`IMIN`/`IMXD` = *where in the window* the extreme
 timing statistic rather than a level one). `WVMA` (volume-weighted stdev of returns) and the
 volume mirrors `VSUMP`/`VSUMN`/`VSUMD` need MT5 tick-volume and carry the usual CFD caveat that
 broker tick volume is a quote-count, not traded size — flag it, do not assume it is unusable.
+
+---
+
+## FREE-DATA z — 2026-08-29 — SESSION NOTE (written at start, updated as items resolve)
+
+Backlog: `source_backlog_next.py` = **0 pending verification** (99 catalogued, 71 resolved, 28
+deferred to 2026-09-01→15). No verification debt; this run goes to the ground run (y) named.
+
+**Items taken this run (bounded per completion contract, depth unbounded):**
+1. **HKEX's moved daily-report path** — run (y)'s #1 next ground. `dayrpt/cus.htm` and
+   `dayrpt/hsif.htm` both 404 = moved, not dead. The prize is **USD/CNH futures open interest**,
+   which is half of the cross-source pair (y) flagged (× the CNH–CNY basis, deferred 2026-09-05).
+2. **Eurex + ICE data endpoints** — robots already cleared by (y); no data ever fetched. Convert
+   two UNVERIFIED cards to a grade with evidence.
+3. **JPX pre-2026 HTML route** (`OLD_SYSTEM_BOUNDARY = 202601`) — the HISTORY leg of the one
+   source (y) adopted. An adopted source with 8 months of history is a thin adoption.
+4. **SEARCH-SPACE EXPANSION (>=25%)** — a source CLASS never named by this desk; target chosen
+   from what items 1-3 reveal.
+
+Status: IN PROGRESS.
+
+### RESOLVED — item 2 (Eurex) — **verified-clean, ADOPTED**, and it is the biggest find of the run
+
+#### CARD — Eurex / Deutsche Börse public GraphQL API — **verified-clean** (ADOPTED)
+
+Keyless-to-the-public **settlement prices, exchange holidays, expiration calendar, contract
+specs and tick values** for **3,007 Eurex products**. This is a materially larger find than the
+"reference data" name on the door suggests.
+
+- **Endpoint:** `POST https://api.developer.deutsche-boerse.com/eurex-prod-graphql/` with header
+  `X-DBP-APIKEY: 68cdafd2-c5c1-49be-8558-37244ab4f513`.
+- **LICENCE / §13 — clean, and the key is not a leak.** Eurex publishes this exact key on its own
+  public page `https://www.eurex.com/ex-en/data/free-reference-data-api`, stating the API "is
+  available to customers anonymously" and that "everyone is able to call the API by using the API
+  URL … and a shared API key". It is a published anonymous credential, rate-limited by design.
+  This is adoption of a source **as its owner offers it** — not circumvention. (A dedicated key
+  via the DB developer portal raises throughput; not needed at this volume.)
+- **THE ROUTE FINDING, and it is the reason this was still unmined:** the URL Eurex itself
+  publishes **404s**. `…/eurex-prod-graphql` returns `Not Found`; `…/eurex-prod-graphql/` — the
+  same URL with a **trailing slash** — returns `200 {"data":{"__typename":"Query"}}`. A vendor's
+  own documented endpoint returning 404 is *not* evidence the service is dead. This is the same
+  class as the MNB WSDL (a live descriptor in front of a dead service) run **inverted**: here the
+  descriptor is subtly *wrong* and the service is alive. **Normalise the path before grading a
+  documented endpoint dead.**
+- **Query shape** (not obvious, cost two failed attempts): filters are typed objects, not
+  scalars — `filter:{Product:{eq:"FDAX"}}`, operators `eq/ne/lt/le/gt/ge/contains/beginsWith/has`.
+  Every table returns `{date, data[], pageInfo}`, so fields must be nested under `data`.
+  Pagination is `page:{first:Int, after:String}` (**not** `size`). `SettlementPrices` **refuses**
+  an unfiltered query — it demands an `eq` on `Product` unless `page` is supplied, which is a
+  server-side guard against exactly the bulk pull a naive collector would attempt.
+- **Tables:** `SettlementPrices` `Holidays` `Expirations` `Contracts` `ProductInfos` `TickRules`
+  `DeliverableBonds` `TradingHours` `VendorCodes` `Changelog` `TESProfiles` `FlexibleContracts`
+  `Enlight` `EnlightResponders`.
+- **VERIFIED — three independent checks, not one.**
+  1. **Against the desk's own tape.** FDAX front-month settlement vs the desk's `GER40_H1` close,
+     same date: `2026-08-24` 26,172 vs 26,115.94 (**+56.1 pts, +0.215%**); `2026-08-25` 26,332 vs
+     26,281.85 (**+50.2 pts, +0.191%**). A small, stable, positive basis — exactly right for a
+     futures contract on a **total-return** index. (The `2026-08-26` cell reads +100 pts and is
+     **not** evidence of drift: the desk's GER40 parquet ends at `2026-08-26 08:00`, so that
+     "close" is an 08:00 bar, not a close. Named rather than averaged in.)
+  2. **Internal coherence across three tables.** `SettlementPrices` returns 12 distinct
+     `ContractID`s for FDAX on 2026-08-28; `Contracts`/`Expirations` independently return 12 FDAX
+     expiries running 2026-09-18 → 2029-06-15. The count and the join both close.
+  3. **The curve is economically sane.** Joining settlement × expiry against the API's own
+     `underlyingClosingPrice` (26,569.99) gives an implied financing curve of **2.87% → 3.64%**
+     across 0.06y → 2.80y, smooth and monotone past the front. A corrupted or mis-scaled feed does
+     not produce a clean term structure by accident.
+- **Failure modes:** (a) `SettlementPrices` returns a **rolling ~5 trading days** per query — this
+  is a *live* feed, **not a history archive**; deep history must be accumulated by daily capture
+  into the Bronze archive starting now, and every day not captured is lost permanently. (b) The
+  shared key is explicitly rate-limited and is a single point of failure Eurex can rotate without
+  notice. (c) `overallstatistics` product IDs are **not** the IDs in product-page URLs (`160088`
+  from the EURO STOXX 50 URL 404s on the API) — two disjoint ID spaces, do not cross them.
+  (d) `underlyingClosingPrice` was `0.0` for product 70050, so it is not populated for every
+  product; never assume it.
+- **What it replaces:** the settlement/expiry/contract-spec leg of a listed-derivatives reference
+  vendor, and the **exchange holiday calendar** — which matters specifically because this desk's
+  own broker holiday calendar publishes **only as a PNG** (prospector s9). `Holidays` returns
+  machine-readable dates out to 2028 **with an `ExchangeHoliday` flag** separating full closures
+  from partial days.
+
+#### CARD — Eurex `overallstatistics` positioning endpoint — **verified-clean** (ADOPTED)
+
+`GET https://www.eurex.com/api/v1/overallstatistics/{productId}`, keyless, no header at all.
+Returns per-day **call/put volume, call/put open interest, put-call ratio and contract type** over
+a rolling **21 trading days**, plus a header carrying total volume, total OI and the underlying
+close. Confirmed on product `70044` (DAX options: volume 33,970, **OI 852,298**, P/C 1.115) and
+`70050`. An unknown ID returns a clean JSON error, so the ID space is cheaply enumerable.
+**Why it ranks:** DAX/GER40 is a live MT5 symbol and this is free **options positioning** on it —
+the product class positioning vendors sell. **Failure mode:** rolling 21 days only (same
+accumulate-or-lose-it problem), and per-row `callOpenInterest` was `0.0` on a weekly row while the
+header total was populated — **do not sum the rows to get OI**; read the header.
+
+#### CROSS-SOURCE PAIR — Eurex single-stock **dividend futures** × the desk's price-only CFD defect
+
+`ProductInfos` returns **350 SINGLE STOCK DIVIDEND FUTURES** and 19 index dividend futures.
+Prospector s8 established that this desk's returns are close-to-close on **122/251 dividend-paying
+symbols** (R0691) and that the desk diagnosed the dividend drag correctly and then graveyarded the
+axis by blaming the instrument. A dividend future is the **market's forward-looking expected
+dividend**, free and dated. That is the missing quantity in that diagnosis, and it is the pair
+worth building: dividend-future term structure × the price-only CFD return series. Neither is a
+drag correction alone. **Named, not claimed** — no dividend-future price has been pulled yet.
+
+#### CARD — ICE / theice.com — **destroyed-at-source (§13 licence)**, and run (y)'s prediction was right
+
+Run (y) graded ICE UNVERIFIED and predicted that "the disallowed prefixes are *exactly* the
+report-discovery surface". **Confirmed empirically and the card is now closed.** `robots.txt`
+(identical on `ice.com` and `theice.com`) disallows `/report-center/category/`, `/report-partial/`
+and `/report-center-folio`. `/report-center` and `/report/{id}` themselves are allowed and return
+200 — but they are **JS shells**, and the shell's own markup routes every data category through
+the disallowed prefix: `/report-center/category/end-of-day`, `…/commitment-of-trader`,
+`…/deliveries`, `…/commodity`, `…/indices`. The end-of-day settlement and COT data therefore cannot
+be reached without breaching robots. **A hard stop, not a hurdle.**
+Separately, `DelayedMarkets.shtml?getContractsAsJson` returns **403** while ordinary pages return
+200 — so ICE is *not* broadly edge-blocked like CME; only that endpoint is. Recorded so no future
+run re-opens ICE as a User-Agent problem: **the block here is the licence, not the edge.**
+**§38 replacement hunt:** the ICE products this desk cares about are Brent, gasoil and the ICE
+FX/index complex. Eurex (adopted above) does not carry Brent. **Open, unresolved:** no free
+adopted route to ICE-listed energy settlement on this box. Stated with the search attached.
