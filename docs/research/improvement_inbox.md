@@ -5087,3 +5087,47 @@ Desk transfer check for the specific instance was run this session and is NULL (
 The GENERAL instrument — a fallback-taken counter on transforms that have one — is not built and
 is proposed here; it belongs to a seat that is not research-frozen.
 Evidence: `data/brain_hunter_s20_group_axis_and_gen_scale.json`.
+
+---
+
+## THE SCALE-HOMOGENEITY SCREEN — a one-line falsifier for every scoring function on this desk
+**Raised: 2026-08-29, BRAIN HUNTER s21. Evidence: `data/brain_hunter_s21_fitness_layer.json`.**
+
+**The mechanism.** A composite ranking objective is well-posed only if **every term has the same
+degree of homogeneity in position scale**. Mix a scale-FREE reward (Sharpe, IC, correlation,
+hit-rate, t-stat) with a scale-DEPENDENT penalty (turnover in price units, notional traded,
+absolute P&L, drawdown in currency) and the objective's optimum is *trade nothing* — while every
+component metric still prints a plausible value and the optimiser reports steady progress.
+
+**Why it is not hypothetical.** Measured on `zhutoutoutousan/worldquant-miner`'s 100,000-evaluation
+GA (`0.4·sharpe + 0.4·ic − 0.2·mean(|diff|)`): fitness falls monotonically −0.2598 → −9.8873 as the
+exposure multiplier goes 1e-6 → 100 while Sharpe and IC stay constant to 1e-15, and the GA
+converges on `rank` at |weight| ≈ 0.013 **identically on pure noise and on real EURUSD H1** — with
++0.0% improvement over 1,500 evaluations on the real arm. The objective's shape, not the data,
+produced the answer.
+
+**The falsifier, and it costs one line:**
+```
+assert score(k * signal) == score(signal)   for all k > 0
+```
+A score that fails this is a scale test wearing a performance name. (The dual check: a score that
+is invariant under `signal → -signal` cannot learn direction — the same GA's Sharpe and turnover
+terms are sign-blind, leaving an |IC| ≤ 0.03 term to decide long vs short.)
+
+**What is asked.** Enumerate every ranking/scoring/selection function on the money path — the
+gauntlet composites, promoter slot ordering, `edge_search`'s objective, generator selection
+pressure — and run both checks. **Not a proposed rewrite: a proposed measurement**, with UNMEASURED
+counted as zero (L1.28a).
+
+**Desk exposure already checked (1 of N):** `libs/alpha_factory/wq_operators.fitness()` PASSES —
+`sharpe · sqrt(|annual_return| / max(turnover, floor))` is a ratio and the floor bounds the
+degenerate corner. It also has **zero callers outside tests**, so it is one of the 227
+TESTED-but-unwired capabilities (III.16). Named by a research-frozen seat, not fixed.
+
+**A second, narrower defect from the same read, worth its own check:** the source's selection test
+is `if fitness > best_fitness`, which is False for NaN forever — so a NaN-producing branch is
+*silently deleted from the search space* rather than scored badly. On real 5-digit FX prices that
+silently removed 25% of its operator set (`delta` → `diff` hits exact zeros → `pct_change` → inf →
+NaN) while working perfectly on the author's random test data. **Any desk selector that compares
+with `>` against a running best should count its NaNs and report them, or an entire arm can vanish
+with no error and no log line.**

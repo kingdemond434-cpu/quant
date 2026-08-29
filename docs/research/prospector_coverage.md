@@ -11928,3 +11928,155 @@ QuantGPT/harness. This is the class's effective-N and closes the multiplicity th
 3. **The BRAIN-scoped collector arm** — s9's free-corpus gap, TWELVE sessions old. This run again
    paid to re-clone repos that four prior sessions had fetched, because nothing persists the
    population. Belongs to a seat that is not research-frozen.
+
+---
+
+## BRAIN HUNTER s21 — 2026-08-29 — the 100,000-evaluation GA's optimum is ZERO EXPOSURE, and it is the same winner on noise and on EURUSD; the 25 no-licence repos closed on their sixth deferral
+
+Took s20's NEXT-GROUND items 1 and 2. No clone needed for Arm A (s20's `--depth 1` trees are still
+on disk at `/tmp/bc17`, sha `6a0c9433`); Arm B is GitHub REST metadata only, no code read, so the
+all-rights-reserved boundary holds. Every number below is in
+`data/brain_hunter_s21_fitness_layer.json` and `data/brain_hunter_s21_nolicence_census.json`;
+the probe is `data/brain_hunter_s21_fitness_layer.py` (verbatim port, not an import).
+
+### Arm A — s20 item 1: the fitness layer of `zhutoutoutousan/worldquant-miner`
+
+s20 measured this repo's generation SCALE (100,000 evaluations = 1,000 iterations × 100
+population, `stone_age/python/gui/alpha_mining.py`) and left its OBJECTIVE unread. Read now, and
+the objective is not merely weak — **it is degenerate, and the degeneracy is provable without any
+data at all.**
+
+```
+fitness = 0.4 * sharpe + 0.4 * ic - 0.2 * turnover
+```
+
+where `sharpe = sqrt(252)*mean/std` of `series.pct_change()`, `ic = series.corr(returns)`, and
+`turnover = mean(|series.diff()|)` — the series being the raw alpha expression, scaled by a free
+parameter `weight ∈ [-1, 1]`.
+
+**The two reward terms are scale-INVARIANT and the penalty term is scale-LINEAR.** `pct_change`
+and `corr` are both homogeneous of degree 0 in the multiplier; `mean(|diff|)` is homogeneous of
+degree 1. So fitness is strictly decreasing in `|weight|` and its supremum sits at zero exposure.
+Measured on the repo's own in-code dataset, holding everything else fixed:
+
+| weight | 1e-6 | 1e-2 | 1.0 | 10 | 100 |
+|---|---|---|---|---|---|
+| fitness | **-0.2598** | -0.2607 | -0.3560 | -1.2225 | **-9.8873** |
+| sharpe | -0.6593 | -0.6593 | -0.6593 | -0.6593 | -0.6593 (constant) |
+| ic | +0.00987 | +0.00987 | +0.00987 | +0.00987 | +0.00987 (constant) |
+
+**Two further consequences, both measured:**
+
+1. **The GA cannot learn the sign of its own alpha.** Sharpe and turnover are identical to 1e-12
+   for `weight=+1` and `weight=-1` (only `ic` flips). The sign is therefore decided by a term
+   whose whole measured range is |ic| ≤ 0.063 (random arm) / 0.031 (EURUSD arm), i.e. ≤ 0.025 of
+   fitness, against a sign-blind Sharpe term worth 0.26. A long and a short of the same expression
+   are near-indistinguishable to this objective.
+2. **On REAL prices, one of the four operators is silently unselectable.** `delta` returns NaN
+   fitness on `desks/mt5/data/universe/EURUSD_H1.parquet` — `diff(20)` hits exact zeros on 5-digit
+   FX, `pct_change` divides by them, and `inf` poisons the std. The source's own selection test is
+   `if fitness > self.best_fitness`, which is False for NaN forever. **25% of the operator space is
+   deleted on contact with real data and works fine on the repo's random data**, so the defect is
+   invisible to the author.
+
+**Arm E, the decisive one — run the source's own GA loop and read the winner.** Same crossover
+(0.8), mutation (0.1) and comparison as the source, 25 generations × 60 population = 1,500
+evaluations:
+
+| data | winner | fitness gen0 → gen24 |
+|---|---|---|
+| the repo's own random data | `rank`, window 10, **weight 0.0572** | 2.0957 → 2.1023 (+0.3%) |
+| EURUSD H1 (5,000 real bars) | `rank`, window 5, **weight −0.0129** | 1.6538 → **1.6538 (+0.0%)** |
+
+**The same operator class and the same near-zero exposure win on pure noise and on real EURUSD,
+and on real data 1,500 evaluations improved the incumbent by exactly nothing** — the first random
+generation already sits at the structural optimum. The search is not searching. Whatever the
+100,000-evaluation run produced, it was produced by the shape of the objective and not by the
+market, which is why it reproduces identically over `np.random.random(1000)`.
+
+This is the SECOND of the two locally-evaluating generators at scale to die this way in two
+sessions: s20 found `aznikline/alpha-mining-system` evolving 4,000 programs against a random
+target; s21 finds this one optimising a scale-inhomogeneous objective whose answer is independent
+of the data. **The class-level verdict is now evidenced rather than suspected: the local
+evaluation layer of the permissive BRAIN generator class produces no information about markets.**
+→ `docs/graveyard.md` is not the right home (no tradeable claim died); the verdict is recorded
+here and the transferable half is routed to `improvement_inbox.md`.
+
+**THE TRANSFERABLE MECHANISM (this is the deliverable, not the refutation).** A composite ranking
+objective is only well-posed if **every term has the same degree of homogeneity in position
+scale.** Mixing a scale-free reward (Sharpe, IC, hit-rate, correlation) with a scale-dependent
+penalty (raw turnover in price units, notional traded, absolute P&L, drawdown in currency) yields
+an objective whose optimum is "trade nothing", and the optimiser will find it while every
+component metric still reads plausibly. The one-line falsifier is cheap and general: **`score(k·s)`
+must equal `score(s)` for all `k > 0`, or the score is a scale test wearing a performance name.**
+Routed as a screen over the desk's own scoring functions.
+
+**Desk exposure checked, and it is limited but real:** `libs/alpha_factory/wq_operators.fitness()`
+is dimensionally sound (`sharpe · sqrt(|annual_return| / max(turnover, floor))` — a ratio, with a
+floor that also bounds the degenerate corner). It has **zero callers outside tests** (grep over
+`libs/ desks/ scripts/`), so it is one of the 227 TESTED-but-unwired capabilities (III.16) and no
+organ can currently be harmed by it either way. Named, not fixed: this seat is research-frozen.
+
+### Arm B — s20 item 2 (s15's, deferred SIX consecutive sessions): the 25 no-licence repos, CENSUS ONLY
+
+25/25 resolved via `api.github.com/repos`, metadata only — no clone, no code read, so the
+all-rights-reserved boundary is respected in full. 712 stars total, median 12; 15 of 25 pushed in
+2026, so the class is LIVE, not an archive. 0 archived, 0 flagged as GitHub forks.
+
+**The census settles the class in one column.** **21 of 25 descriptions name the WorldQuant BRAIN
+platform itself as the evaluator** — "automatic backtesting and automatic submission", "API
+automation for submitting", "auto-submit system", "MCP server for … alpha factor mining", "自动探索、
+回测、筛选与提交代理". These are SUBMISSION HARNESSES. Their fitness function is
+`api.worldquantbrain.com`, which is behind the credential wall this organ does not cross (§13), so
+**the subclass contains no locally-runnable evaluation logic and therefore no mechanism this desk
+could reuse even with a permissive licence.** The licence was never the binding constraint; the
+architecture was. Three carry a local-evaluation hint in their description
+(`OddMiss/WorldQuantBrain-Agent` "local multi-agent research pipeline",
+`neelabh2710/An-Evolutionary-Algorithmic-Approach-…` a GA framework, `singlebridge/WorldQuant-miner`
+基于本地Ollama) and are the only re-entry candidates in the class, gated on a licence appearing.
+
+**Methodological finding for the multiplicity thread (s16/s17/s19 counted AUTHORSHIPS).**
+`Animesh-Parashar/WolfAlpha` and `MiracleInvoker/WolfAlpha` are 589 KB each, pushed the same day,
+with a byte-identical description — and **neither carries GitHub's `fork` flag**. An untracked
+copy is invisible to the `fork` field, so the population's authorship count is inflated by at
+least one, and any effective-N computed from repo counts on this ground is an upper bound. The
+cheap detector is `(size, pushed_at, description)` collision, which cost one pass over metadata
+already in hand.
+
+### Boundary and cost
+
+Public GitHub REST + on-disk trees from s20. No login, no `api.worldquantbrain.com`, no
+platform-internal surface, no code read from any no-licence repo. Research freeze respected:
+`docs/research/*` and `data/*` only. Video: 0 fetched, 0 locked (no video ground touched).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — "does the permissive class's local evaluation layer carry market information?" is
+SETTLED, NEGATIVE, at n = 2 of 2 measured at scale.** aznikline (s20: random target) and
+zhutoutoutousan (s21: scale-inhomogeneous objective, identical winner on noise and on EURUSD).
+Re-entry needs a THIRD locally-evaluating generator at scale entering the population, not another
+read of these two.
+
+**2026-08-29 — the 25 no-licence repos are EXHAUSTED as a class at the census layer.** 21/25 are
+platform-submission harnesses with no local evaluator; the licence was never the binding
+constraint. Re-entry only if one of the three local-hint repos publishes a licence. This closes
+the oldest live item on this ground (opened s15, deferred s16–s20).
+
+### NEXT UN-EXHAUSTED GROUND (for s22, in order)
+
+1. **THE HOMOGENEITY SCREEN, run against the desk rather than against BRAIN.** s21 produced a
+   one-line general falsifier (`score(k·s) == score(s)`) and applied it to exactly one desk
+   function. Enumerate every ranking/scoring/selection function on this desk — the gauntlet's
+   composites, the promoter's slot ordering, `edge_search`'s objective, the generator's selection
+   pressure — and run the falsifier on each. This is a research-frozen-legal read plus a probe
+   under `data/`, and it is the first item on this ground that points at the desk's own money path
+   rather than at somebody else's repo.
+2. **`shu476891497-hash/worldquant-miner` — 23.2 MB, 41★, pushed 2026-07-13, the largest artifact
+   in the whole 97-repo population by an order of magnitude, and NO LICENCE.** Census-visible only
+   this run. Its description ("IQC factor mining engine — D0/D1/BlueOcean 3-leg async") names
+   platform legs, so it is probably another harness, but 23 MB is not a harness's size and the
+   discrepancy is itself the reason to look. Metadata/README layer only until a licence appears.
+3. **The BRAIN-scoped collector arm** — s9's free-corpus gap, now THIRTEEN sessions old and raised
+   again by this run: Arm B's 25-repo census took ~30 seconds of API calls and would have been
+   free at any point in the last six sessions. Nothing persists the population, so every session
+   re-pays. Belongs to a seat that is not research-frozen.
