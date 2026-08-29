@@ -277,6 +277,40 @@ def fix_queues() -> tuple[bool, str]:
 
 FIXERS["QUEUES"] = fix_queues
 
+#: class -> the artifact that must ADVANCE for the fix to have actually worked.
+#:
+#: WHY THIS EXISTS (gap-fixer 2026-08-29). `fix_sweep` runs
+#: `ssh ... 'cmd /c "... start /b py -3 orthogonal_sweep.py"'` and returns `rc == 0`. `start /b`
+#: returns the moment the LAUNCH is accepted, so that rc reports that cmd.exe parsed a command
+#: line -- not that python was found, not that the script ran, not that anything was written. It
+#: is a launch acknowledgement being recorded as a repair, and it is this desk's most expensive
+#: standing lesson: an exit code proves a process ended, never that it produced.
+#:
+#: MEASURED: `orthogonal_candidates.json` last advanced 2026-08-28T20:05. SWEEP was fixed at
+#: 01:33, 02:33 and 03:13 on 08-29, each journaled `ATTEMPTED  lock cleared; direct_rc=0`, and
+#: the artifact never moved. The outcome vocabulary was ATTEMPTED / FAILED / COOLDOWN, so a
+#: fixer that repairs nothing is indistinguishable -- in the journal AND on the dashboard -- from
+#: one that works, and `check_research_health` kept printing the breach beside its own successful
+#: first aid every five minutes.
+#:
+#: A class with NO witness is reported UNWITNESSED, never as success: not knowing whether a
+#: repair landed is a different fact from knowing it did (L1.28a), and folding them together is
+#: the whole defect one level up.
+WITNESS: dict[str, Path] = {
+    "SWEEP": DESK / "data" / "hypotheses" / "orthogonal_candidates.json",
+}
+
+
+def _witness_stamp(cls: str) -> float | None:
+    """mtime of the class's witness artifact, or None when there is no witness / no file."""
+    path = WITNESS.get(cls)
+    if path is None:
+        return None
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0     # absent is a real reading: it can still ADVANCE into existence
+
 
 def apply(breaches: list[str]) -> list[dict]:
     """Run the fixer for each breached class, rate-limited; return the action journal rows."""
@@ -284,6 +318,7 @@ def apply(breaches: list[str]) -> list[dict]:
     state = _read_state()
     last: dict = state.get("last_attempt", {})
     journal: list[dict] = state.get("journal", [])
+    witness: dict = state.get("witness", {})
     actions: list[dict] = []
 
     classes: list[str] = []
@@ -306,17 +341,40 @@ def apply(breaches: list[str]) -> list[dict]:
                     continue
             except ValueError:
                 pass
+        # Did the PREVIOUS attempt on this class actually move anything? Asked now, because the
+        # remote job is asynchronous -- `start /b` returns immediately, so the only honest place
+        # to judge a launch is the next tick, against the artifact it was supposed to advance.
+        before = _witness_stamp(cls)
+        prior = witness.get(cls)
+        ineffective = 0
+        if prior is not None and before is not None and before <= float(prior.get("stamp", 0)):
+            ineffective = int(prior.get("ineffective", 0)) + 1
+
         ok, detail = FIXERS[cls]()
         last[cls] = now.isoformat(timespec="seconds")
+        if before is None:
+            outcome = "ATTEMPTED" if ok else "FAILED"
+            note = " [UNWITNESSED: no artifact declared for this class, so whether it repaired "
+            note += "anything is UNMEASURED, not confirmed]"
+        elif not ok:
+            outcome, note = "FAILED", ""
+        elif ineffective:
+            outcome = "INEFFECTIVE"
+            note = (f" [artifact {WITNESS[cls].name} has not advanced across {ineffective} "
+                    f"consecutive attempt(s) -- first aid is NOT working on this class; it needs "
+                    f"deep repair, not another launch]")
+        else:
+            outcome, note = "ATTEMPTED", ""
+        witness[cls] = {"stamp": before or 0.0, "ineffective": ineffective}
         row = {"at": now.isoformat(timespec="seconds"), "class": cls,
-               "outcome": "ATTEMPTED" if ok else "FAILED", "detail": detail}
+               "outcome": outcome, "detail": detail + note}
         actions.append(row)
         journal.append(row)
-        print(f"  FIXER {cls}: {'attempted' if ok else 'FAILED'} -- {detail[:140]}")
+        print(f"  FIXER {cls}: {outcome.lower()} -- {(detail + note)[:200]}")
 
     STATE.parent.mkdir(parents=True, exist_ok=True)
-    STATE.write_text(json.dumps({"last_attempt": last, "journal": journal[-400:]},
-                                indent=1), "utf-8")
+    STATE.write_text(json.dumps({"last_attempt": last, "journal": journal[-400:],
+                                 "witness": witness}, indent=1), "utf-8")
     return actions
 
 
