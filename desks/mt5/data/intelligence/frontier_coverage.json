@@ -67,10 +67,10 @@
   "id": {
    "region": "Indonesia",
    "open_frontier": true,
-   "queries_exercised": 24,
+   "queries_exercised": 27,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-28T15:22:01+00:00",
+   "last_swept": "2026-08-29T03:22:02+00:00",
    "native_terms_available": 9
   },
   "ko": {

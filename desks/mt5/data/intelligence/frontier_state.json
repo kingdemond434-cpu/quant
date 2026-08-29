@@ -1,5 +1,5 @@
 {
-"cursor": 79,
+"cursor": 80,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -136,6 +136,9 @@
 "penurunan maksimum MT4",
 "penurunan maksimum MT5",
 "penurunan maksimum ranking",
+"penyalin MT4",
+"penyalin MT5",
+"penyalin ranking",
 "robot trading MT4",
 "robot trading MT5",
 "robot trading ranking",
