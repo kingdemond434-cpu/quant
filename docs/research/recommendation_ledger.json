@@ -9563,6 +9563,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0739",
+   "source": "brain-hunter-s14",
+   "summary": "UNIT COLLAPSE: edge_search writes a unitless Sharpe under the key exp_r -- 10,624 of 12,535 docket rows (84.8%), and promote_external_to_queue.py:68 prints it with an 'R' suffix. MEASURED exact on 1945/1945 rows: exp_r == t_stat*sqrt(horizon)/sqrt(n) to 4.4e-16. Cause: edge_search.py:826 and backfill_coverage.py:124 write row['sharpe_like'] (edge_search.py:569 = abs(edge)/sd, unitless per-observation Sharpe) into a key that decay_monitor.py:107, orthogonal_sweep.py:514, regime_monitor.py:55, meta_desk.py:292, trade_path.py:108 and swap_exposure.py:173 all define as mean R-multiple. merge_hypotheses.py collapses both into external_survivors.json (10,410 edge_search + 214 backfill = Sharpes; 1,451 orthogonal_sweep = genuine R). Medians hide it (0.1123 vs 0.0916); tails do not (max 1.43 vs 37.6). NOT a gate breach: external_gauntlet.py never reads exp_r and re-simulates from params, so the money bar is intact. PATCH: (1) edge_search.py:826 + backfill_coverage.py:124 emit 'sharpe_like' under its own key and OMIT exp_r -- absent is a real answer (L1.28a), a wrong unit is not; (2) promote_external_to_queue.py:68 print the field by its own name, no R suffix; (3) fence on the PRODUCER, since the value alone is indistinguishable. Evidence: data/brain_hunter_s14_exp_r_unit_collapse.json",
+   "roi_bps": 0.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-29T11:27:11.862793+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0740",
+   "source": "brain-hunter-s14",
+   "summary": "ALPHA101 PRIOR CORRECTION: the paper's own Table 1 reports a MAXIMUM pair-wise correlation of 87.33% against the abstract's advertised 15.9% mean -- so a ported alpha101 library is not 101 independent bets and must not be counted as 101 toward orthogonality or toward a trial count. Two further corpus-level priors from the now-recovered Sections 1-3 (arXiv:1601.00991, s14 GID recovery): (a) THE TURNOVER PREMIUM IS A VOLATILITY PROXY -- Table 5 gives ln(sigma) ~ 0.368*ln(T) (R2 0.228) and Table 2 gives ln(R) ~ 0.761*ln(sigma), which composes to an apparent R ~ T^0.28; run together (Table 3) turnover collapses to t = -0.57 while volatility holds at t = 14.84. Any desk sizing on a turnover/holding-period return relationship without a volatility control double-counts volatility. (b) Return dispersion across the 101 is 8.7x while Sharpe dispersion is only 3.4x -- most cross-alpha return dispersion IS volatility dispersion, so ranking ported alphas by return ranks them by instrument volatility. Also recorded as a fact about THEIR process, never a gate for ours: the corpus's median holding period is 2.1 days at a median 0.397 cents-per-share, economics that assume a thousands-of-names cross-section an MT5 CFD book does not have. Evidence: data/brain_hunter_s14_alpha101_empirical.json",
+   "roi_bps": 0.0,
+   "rank": null,
+   "roi_basis": "measured",
+   "raised": "2026-08-29T11:27:23.664182+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

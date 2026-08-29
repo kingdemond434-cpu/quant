@@ -4125,3 +4125,39 @@ table never defines a binary min/max.** It defines `min(x,d) = ts_min(x,d)`. Und
 definitions, `max(rank(...), Ts_Rank(...))` parses as a time-series window whose *length is an
 expression*. The canonical source is internally inconsistent here — the ambiguity is upstream of
 every port, which is why no two ports agree.
+
+## OP-102 — GID-BLOCK RECOVERY: reading a PDF whose font subset stripped every Unicode channel
+
+**Provenance:** BRAIN HUNTER s14, 2026-08-29, on `arXiv:1601.00991`. **SOURCE:** the file itself.
+**DERIVES-FROM:** s13's per-font `/ToUnicode` binding extractor (`brain_hunter_s13_pdf_cmap_extract.py`),
+whose proposed successor route (AGL glyph names) was refuted here.
+**Tool:** `data/brain_hunter_s14_gid_recover.py` (pure stdlib; `--diagnose` prints the channel audit).
+
+**WHAT IT COMPUTES.** When a PDF's embedded subset font offers no usable Unicode mapping, recover
+text from the *glyph index*, which is a POSITION in the original font's glyph order and therefore
+contiguous across an alphabet. Derive each block's base GID from the codes that DO carry a
+`/ToUnicode` entry, requiring **≥2 mutually consistent observations** per block (one point fits any
+offset). Anything still unmapped renders as a visible `<gNNNN>`.
+
+**THE FOUR CHANNELS TO AUDIT BEFORE CONCLUDING A PDF IS UNREADABLE** — check all four, because
+three of them can return a clean-looking answer that is meaningless:
+1. `/ToUnicode` — may be present but PARTIAL. Count entries against `/FirstChar…/LastChar`.
+2. `/Encoding /Differences` — may carry AGL names (recoverable) or `/gNNNN` glyph indices (not).
+3. embedded `post` table — format 2.0 carries names; **format 3.0 carries none by design**.
+4. embedded `cmap` — may be a **synthetic PUA identity** (code C → U+F000+C), which re-encodes the
+   code rather than mapping it. *This is the trap*: the lookup succeeds and the answer is fiction.
+
+**THE TWO RULES THAT MADE IT WORK, and they are not PDF-specific:**
+- **NEVER RENDER A MISSING GLYPH AS `""`.** A silent drop is indistinguishable from "this cell has
+  no label", so a solvable extraction gets written up as an unsolvable one. A visible placeholder
+  makes the gap named, countable and anchorable (412 → 307 resolved, 105 enumerable residual).
+- **WHEN THE FONT HAS NO ANCHORS, THE DOCUMENT DOES.** Prose names its own symbols immediately
+  before showing them ("the annualized Sharpe ratio `<g1845>`"). Harvest anchors from captions and
+  definitions, record the originating sentence as evidence, and refuse to extend a block that the
+  anchors do not support — italic Greek was left un-guessed here for exactly that reason.
+
+**MT5 ANALOGUE:** none needed — this is an extraction capability, not a market operator. It applies
+to every PDF ground the desk mines: central-bank annexes, exchange contract specs, CFTC/regulator
+filings, theses and conference decks, which are disproportionately the ones with subset math fonts.
+
+**DATA THE DESK LACKS:** nothing. Pure stdlib, no install, works under the research freeze.

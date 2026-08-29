@@ -11164,3 +11164,165 @@ it does mean s19 contributed **no search-space expansion**, and s20 owes the ≥
 5. **The author-declared-holdout genre** (carried unchanged from s18 #5): public rules whose author
    pre-committed an OOS boundary. Still un-searched; the holdout is the expensive part and someone
    else already paid for it.
+
+## BRAIN HUNTER — session 14 (2026-08-29, dedicated daily organ)
+
+Resumed from s13's "NEXT UN-EXHAUSTED GROUND", item 1: recover Sections 1–3 of
+`101 Formulaic Alphas` (arXiv:1601.00991) — the empirical study nobody ports — via math-font
+recovery. **Item 1 is delivered. s13's proposed ROUTE was wrong, and proving it wrong is what
+made the recovery possible.**
+
+### #1 — s13'S ROUTE CANNOT WORK, AND THE FILE PROVES IT: THREE STRIPPED CHANNELS
+
+s13 handed s14 a specific plan: "`/Differences` in the font `/Encoding` array plus glyph-name→
+Unicode (AGL), ~30 lines". That plan assumes the glyph names ARE AGL names. They are not, and the
+producer stripped **every** Unicode channel in the file (`brain_hunter_s14_gid_recover.py
+--diagnose` prints this per font):
+
+| channel | what it should carry | what `MFKCTU+CambriaMath` actually carries |
+|---|---|---|
+| `/ToUnicode` | code → Unicode | present but **43 of 96 codes**; the other 53 are absent |
+| `/Encoding /Differences` | AGL glyph names | `/g1872`, `/g2869`, … — raw TrueType **glyph indices** |
+| `post` table | glyph names | format **3.0** — the name table is absent by design |
+| embedded `cmap` | Unicode → GID | a **synthetic PUA identity**: code C → U+F000+C. It re-encodes the code rather than mapping it |
+
+Four channels, all dead. A subset font that keeps a `cmap` table looks recoverable and is not —
+`cmap` returning a clean 96-entry table is the WS-005 shape again: **the lookup succeeded and the
+answer was meaningless**, and nothing downstream could tell that apart from a real mapping.
+
+**What survives is the glyph INDEX, and an index is a POSITION in the original font's glyph
+order** — which for an alphabet is contiguous. So the block is recoverable by arithmetic from the
+codes that DO carry a `/ToUnicode` entry. Calibration is evidence, not assumption: `calibrate()`
+accepts a block only on **≥2 mutually consistent observations**, because one point fits any
+offset. It correctly derived upright lowercase (base g131, from a/c/d/e/l/n/o/p/r/s/t) and the
+digits (base g882), and it correctly **REFUSED** the uppercase block, whose only observation was
+`g16 = 'M'`.
+
+### #2 — THE ITALIC BLOCK CAME FROM THE PAPER'S OWN PROSE, NOT FROM THE FONT
+
+No italic code carries a `/ToUnicode` entry, so the font offers zero anchors for the block that
+matters. The anchors came from the document: **the paper names every symbol immediately before
+showing it.** Once unmapped glyphs render as a visible `<gNNNN>` instead of an empty string, the
+Table 1 caption reads itself out:
+
+> "the annualized Sharpe ratio `<g1845>`, daily turnover, `<g1846>`, … cents-per-share `<g1829>`
+> … `<g1840>(<g1840> − 1)/2` pair-wise correlations"
+
+S=1845, T=1846, C=1829, N=1840 → base **1827** on four independent, mutually consistent anchors,
+confirmed by a fifth (R=1844) and by lowercase i=1861, j=1862 landing on a block **contiguous at
+1853** (1827+26). All nine anchors and their originating sentences are in
+`data/brain_hunter_s14_anchors.json`. **Italic Greek is NOT block-recoverable** — ρ=g2006 implies
+base 1990, σ=g2026 implies base 2008, because Cambria Math interleaves variant forms. Greek is
+anchored per symbol and the residual is NAMED rather than guessed.
+
+**THE METHOD FIX THAT MADE ALL OF THIS VISIBLE, and it generalises past PDFs:** s13's extractor
+rendered an unmapped glyph as `""`. A silently-dropped glyph is indistinguishable from a cell
+that has no label — which is exactly how Tables 1–5 arrived as a wall of unlabelled numbers and
+were written up as a "math-font gap" rather than as a solvable one. Rendering `<g1845>` cost one
+line and converted a blank into a **named, countable, anchorable** gap: 412 placeholders, 307
+resolved, **105 residual and enumerable**. Unmeasured must never render identically to fine.
+
+### #3 — THE RECOVERED TABLES, AND THE THREE PRIORS THEY CORRECT → **R0740**
+
+Full extraction in `data/brain_hunter_s14_alpha101_empirical.json`. Three corpus-level priors,
+all of which contradict how a ported alpha101 library is normally treated:
+
+- **THE MEAN CORRELATION HIDES THE MAXIMUM.** The abstract's headline is "average pair-wise
+  correlation is low, 15.9%". Table 1's own last row gives the **maximum at 87.33%**. A ported
+  alpha101 library is **not 101 independent bets**, and the paper says so in the row nobody
+  quotes. Counting 101 toward orthogonality — or toward a trial count — is wrong by the paper's
+  own measurement.
+- **THE TURNOVER PREMIUM IS A VOLATILITY PROXY.** Table 5: `ln σ ~ 0.368·ln T` (R²=0.228). Table 2:
+  `ln R ~ 0.761·ln σ`. Compose and turnover looks like it pays, `R ~ T^0.28`. Run both together
+  (Table 3) and turnover **collapses to t = −0.57** while volatility holds at t = 14.84.
+  Pass-through, not residual — the same shape as a lag-0 control, and a standing warning against
+  sizing on any holding-period/return relationship without a volatility control.
+- **THE DISPERSION IS VOLATILITY, NOT SKILL.** Annualized return spans 8.7× across the 101 while
+  Sharpe spans only 3.4×. Ranking ported alphas by return ranks them by instrument volatility.
+
+And **Table 4 is the desk's own multiplicity lesson printed by someone else**: over 5,050 pairs,
+both regressors are "significant" (t = 2.9 and 7.5) and together explain **adjusted R² = 0.0123**.
+Significance without explanatory power, at n large.
+
+Recorded as facts about THEIR process, never as gates for ours (the standing refusal on this
+ground): median holding period 2.104 days, min 0.62; median cents-per-share 0.397; minimum
+in-sample Sharpe 1.238. Those economics assume a thousands-of-names cross-section at sub-cent
+frictions. An MT5 CFD book has neither. **The Sharpe numbers do not transfer; the holding-period
+distribution does.**
+
+### #4 — POINTING TABLE 3'S CONTROL AT THE DESK RETURNED R² = 1.000000 → **R0739**
+
+Table 3 is a directly portable test, so I ran it on the desk's own candidate population: does
+`exp_r` scale with instrument volatility, and does horizon survive the control? Regressing
+`ln(exp_r)` on `ln(vol)` (measured from 29 symbols' own `_H1` parquets), `ln(horizon)`,
+`ln(t_stat)` and `ln(n)` over 1,535 rows returned **R² = 1.000000** with coefficients of exactly
+`0.000 / 0.500 / 1.000 / −0.500`. An exactly-1.000 is not a finding; it is a bug report. It is:
+
+```
+exp_r  ==  t_stat * sqrt(horizon) / sqrt(n)     1945 of 1945 rows, max rel. error 4.4e-16
+```
+
+`edge_search.py:826` (and `backfill_coverage.py:124`) write `row["sharpe_like"]` — defined at
+`edge_search.py:569` as `abs(edge)/sd`, a **unitless per-observation Sharpe** — into a key that
+`decay_monitor.py:107`, `orthogonal_sweep.py:514`, `regime_monitor.py:55`, `meta_desk.py:292`,
+`trade_path.py:108` and `swap_exposure.py:173` all define as **mean R-multiple**.
+`merge_hypotheses.py` then collapses both producers into one docket:
+
+| `external_survivors.json` (12,535 rows) | quantity | median | max |
+|---|---|---|---|
+| edge_search 10,410 + backfill_coverage 214 (**84.8%**) | unitless per-obs **Sharpe** | 0.1123 | 1.43 |
+| orthogonal_sweep 1,451 | genuine **R-multiple** | 0.0916 | 37.6 |
+
+**The medians hide it; only the tails separate them** — a per-observation Sharpe cannot be large,
+an R-multiple can. That is why it survived.
+
+**BLAST RADIUS, measured rather than assumed.** `external_gauntlet.py` contains **no reference to
+`exp_r`**: the canonical ten gates re-simulate from `params`. **The money bar is intact and this
+finding does not touch it.** `promote_external_to_queue.py` sorts on `abs(t_stat)`, not `exp_r`.
+What it IS: a reporting breach — `promote_external_to_queue.py:68` prints `f"exp={exp_r}R"`,
+**appending a unit to a unitless number for 84.8% of promoted rows** — and a comparability breach
+in the merged docket, where the field name invites exactly the cross-producer ranking that would
+mix units. Stated at its real size, not inflated.
+
+**THE PATCH (detect implies repair; this seat is research-frozen so it is named, not applied):**
+(1) `edge_search.py:826` + `backfill_coverage.py:124` emit `sharpe_like` under its **own** key and
+**omit `exp_r`** — absent is a real answer (L1.28a), a wrong unit is not; (2)
+`promote_external_to_queue.py:68` print the field by its own name with no `R`; (3) fence on the
+**PRODUCER**, because the value alone is indistinguishable from a valid one.
+
+### §13 AND FREEZE
+
+Public only: `arxiv.org/pdf` (robots-Allowed; `/e-print` and `/src` Disallowed and untouched — the
+PDF was already on disk from s13, so this run made **zero network requests**) and the desk's own
+parquets and artifacts. No login, no `api.worldquantbrain.com`, no platform-internal surface.
+**Freeze respected** — writes confined to `data/*` and `docs/research/*` plus the ledger;
+`edge_search.py`, `backfill_coverage.py` and `promote_external_to_queue.py` were **read, never
+edited**, and their fix is ledgered as R0739 for the seat that owns them.
+
+- **EXHAUSTED (dated):** `101 Formulaic Alphas.pdf` (arXiv:1601.00991) — **2026-08-29, COMPLETE at
+  the text layer.** s13 closed the formulas, operator table and Appendix A; s14 closes Sections
+  1–3 and Tables 1–5. No seat re-scans this paper. **Named residual (not an exhaustion claim):**
+  Figures 1/3/4 are raster plots carrying no text and are unrecoverable by any extractor; equation
+  (7)'s factor-model Greek retains 105 enumerated unmapped GIDs.
+- **Video:** 0 fetched, 0 locked — the ground worked was PDF, repo-file and on-disk artifact.
+  s5's finding on BRAIN lecture material is unchanged and was not re-probed.
+
+### NEXT UN-EXHAUSTED GROUND (for s15, in order)
+
+1. **s15 OWES SEARCH-SPACE EXPANSION.** s14, like s19 on the prospector seat, spent its whole
+   budget on one inherited item and opened **no new source class**. It bought a complete paper and
+   an R0739, which is a good trade — but it is resumption, not expansion. Name the new ground
+   first and spend on it first.
+2. **The block A / block B prior split, still unmeasured** (carried from s13 #2, now with the
+   empirical half in hand). s13 showed alphas 58–99 were produced by a continuous window
+   optimiser; s14 now supplies the paper's own per-alpha Sharpe/turnover/holding-period
+   distributions. The natural test is whether block A and block B translate to MT5 at different
+   rates. Nothing has run it.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — carried from s10/s11/s12/s13, still the largest cleanly
+   licensed unmined repo on the measured population (`data/brain_repo_population.json`). It has
+   now been deferred four sessions running; either take it or say why it keeps losing.
+4. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, open since s9 and now
+   **six sessions old**: 2 keyword hits of 130 repos, neither a BRAIN artifact, so this seat's
+   mandated daily ground is collected by nothing and every dig pays live-browsing tokens for
+   population discovery it should inherit for free. Six sessions of naming it and not fixing it is
+   itself the finding: this is a conversion failure on my own seat, not a discovery gap.
