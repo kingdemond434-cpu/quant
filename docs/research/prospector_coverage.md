@@ -12551,3 +12551,152 @@ value in a `_meta` block reads exactly like a measured choice and exactly like a
    shape the desk has no analogue of.
 4. **The BRAIN-scoped collector arm — EIGHTEEN sessions old.** Belongs to a seat that is not
    research-frozen.
+
+---
+
+## PROSPECTOR s20 — 2026-08-29 (session note written FIRST, per the COMPLETION CONTRACT)
+
+s19 closed owing one thing explicitly: **the ≥25% search-space-expansion reserve went unpaid** — it
+was a conversion run that opened no new source class. s20 pays that debt first, and clears the one
+remaining backlog verification.
+
+**ITEMS TAKEN THIS RUN (bounded; depth per item unbounded):**
+
+1. **BACKLOG VERIFICATION (the only pending row):** *"DELAY and LIQUIDITY-TIER as declared UNIVERSE
+   axes"* (BRAIN hunter s22). Half of it was answered by BRAIN s24 (**the liquidity tier dies at
+   0.953**, and the cost field it rested on is a 3.5-second `symbol_info` poll mislabelled a
+   median). The **DELAY** half has never been touched. Verify what the registry actually declares
+   against what the source actually offers, then dispose.
+2. **SEARCH-SPACE EXPANSION (the owed reserve): a source class the desk has never opened.**
+   Named before searching so the run cannot retro-fit it.
+3. **DEPTH on whichever of the two survives** — reply chains / forks / citations, per the depth
+   mandate.
+
+_(rows below are updated as each item resolves; if this run is killed, s21 resumes from here)_
+
+### RESULTS
+
+**ITEM 1 — BACKLOG VERIFICATION: CLOSED, `verified-clean`. Backlog is now 0 pending.**
+
+Primary source opened: `https://www.mql5.com/en/docs/python_metatrader5/mt5symbolinfo_py` (MQL5
+official Python API reference — the vendor's own document, not a mirror or a tutorial).
+
+**The s22 card's premise is confirmed and its implied cause is refuted.** The registry really does
+declare neither axis. But the axes are not missing from the SOURCE — they are missing from the
+desk's READ of it:
+
+- **DELAY** = `trade_exemode` (0=Request 1=Instant 2=Market 3=Exchange), the broker's own
+  declaration of whether a fill can be requoted, plus `trade_stops_level`/`trade_freeze_level`
+  bounding where a stop may legally sit. **No producer on this desk captures it.**
+- **LIQUIDITY-TIER** = `trade_liquidity_rate`, `price_volatility`, `session_volume`. BRAIN s24
+  killed the tier at 0.953 — **on a tier constructed from `median_spread_pts`, which s24 itself
+  showed is a 3.5-second poll mislabelled a median.** A proxy refutation is not an axis refutation
+  (L1.16a). The broker publishes the quantity directly and it has never been read.
+
+**And the verification found a live defect in today's own fix.** `desks/mt5/mt5desk/tape.py:124`,
+committed this morning by the CRO cycle to close GAP #210(b), reads
+`_opt_int(info, "freeze_level")`. **The attribute is `trade_freeze_level`** — verbatim from the
+vendor: `trade_stops_level=0, trade_freeze_level=0, trade_exemode=1`. The desk's other producer,
+`broker_physics_miner.py:144`, reads the correct name off the same object.
+
+The defect is invisible by construction. `_opt_int` is the **WS-005 guard** — absent is `None`,
+never `0`, written precisely so "we did not read it" cannot render as "the broker published zero".
+Against a misspelling that guard **inverts**: it turns a permanent lookup failure into a clean,
+well-formed `None` on 100% of rows forever, which reads as *"this broker does not publish a freeze
+level"*. And `tests/test_compendium_data.py:44` builds its fake with `freeze_level=0`, so **the
+test encodes the misspelling and passes for it**. A fake built from the code's own output keys can
+never falsify the code's own input assumptions.
+
+**Timing is the whole value of catching it today.** Measured this run: the tape holds
+**one** file (`2026-08-27.parquet`, 1,908 rows, 248 symbols, **11 columns**) and every field of the
+new nine-field block is an **ABSENT COLUMN** — the block has executed zero times. Fixed before the
+Windows hourly task registers (GAP #210, principal-gated), nothing is lost; fixed after, every
+historical freeze level is an unrecoverable `None`, because this is point-in-time data and a
+night's value is unbuyable once the hour passes. → **R0745**, patch named to the token, SCHEDULED
+2026-08-30 (money path; this seat is research-frozen and may not land it).
+
+**The larger measurement: `symbol_info()` publishes 96 fields; the desk records 22.** Tape 20,
+registry 12, `broker_physics_miner` 2 — in a call it already makes hourly at zero marginal cost.
+GAP #210(b) closed "11 of ~20" against a denominator someone remembered rather than the one the API
+publishes, which is how an 80% fix of a **23%** problem reads as complete. Nine free unrecorded
+fields with load-bearing content are tabled in `improvement_inbox.md`; the two that matter most
+beyond the s22 axes:
+
+- **`path`** — the broker's own instrument-tree taxonomy. **A free, exogenous, point-in-time
+  GROUPING.** BRAIN s11/s24/s25 spent five sessions building and sweeping cluster groupings off
+  `1−corr`, and s25 closed naming "the linkage/metric axis" as its next ground. `path` is not
+  derived from the return matrix at all, so it cannot inherit that matrix's own structure — the one
+  weakness every clustering arm on this desk shares by construction. No seat has ever read it.
+- **`trade_tick_value_profit` / `trade_tick_value_loss`** — asymmetric tick values. The desk records
+  only `trade_tick_value`. If these differ on any symbol, **every P&L is wrong on one side and
+  correct on the other** — the hardest unit error to notice, because half the trades check out.
+
+→ **R0746**, scheduled to ride the SAME commit as R0745: both are additions to one function that
+has never executed, so one edit closes the misspelling and the census at the single moment when no
+history is at stake.
+
+**ITEM 2 — SEARCH-SPACE EXPANSION (the reserve s19 owed): NEW SOURCE CLASS OPENED, yield THIN,
+residual graded.**
+
+**Class: the trading-platform vendor's own dated BUILD RELEASE-NOTES archive** —
+`https://www.metatrader5.com/en/releasenotes` (+ the deeper `metaquotes.net/en/metatrader5/news`
+mirror). **Zero prior references across `prospector_coverage.md`, `source_backlog.md` and
+`improvement_inbox.md`** (grepped before opening — genuinely never touched by this desk).
+
+Why it is a source class and not one page: it is the only **dated, authoritative, free** record of
+when the desk's own execution substrate changed. New symbol properties appearing in a build are new
+free axes with a birth date; changes to margin, spread, DoM, session or report semantics are
+**dated invalidations of history** that no price series can show.
+
+**Honest yield: THIN for new axes, one live catch.** Across the 14 months the live index covers
+(2026-08-20 back to 2025-06-05) there are **no new symbol properties** — so the 96-field census
+above is stable ground, not a moving target, which is itself worth knowing. The one material row:
+
+- **Build 5830, 2026-04-24 — "balance drawdown calculation in trading reports revised to include
+  commissions and swaps."** A **mid-history definition change in a reported metric**, four months
+  ago. Every MT5-sourced drawdown figure the desk mines from a track record — FX Blue, MQL5
+  signals, prop-firm and Myfxbook leaderboards (four of them sitting in the deferred backlog for
+  2026-09-03/05) — is on **one definition before that date and a different, strictly worse one
+  after**. A record spanning it is not comparable to itself, and the discontinuity looks exactly
+  like a strategy deteriorating in April 2026. **This is a pre-registered condition on every
+  deferred track-record seed**, logged here so those runs do not each rediscover it.
+- Adjacent rows worth their line: Build 5100 (2025-06-05) fixed margin-rate calculation for
+  **negative-price** specifications; Build 5200 (2025-07-31) fixed portfolio liquidation value.
+
+**RESIDUAL, graded (per L1.51 — "exhausted" is a claim requiring evidence):** the live index is
+**14 months deep only**. The archive continues on the `metaquotes.net/en/metatrader5/news` mirror
+back to at least **build 1459 (2017, custom symbols)** — i.e. **~9 further years, unopened**. That
+is where any *introduction* of a symbol property would be found, and where the pre-2026 execution-
+semantics changes live. **NOT exhausted; section-scoped claim only: the 2025-06 → 2026-08 window is
+dug.**
+
+**ITEM 3 — DEPTH.** Item 1 taken to `exhausted` for its item: vendor primary source → full 96-field
+list → cross-check against all three desk producers (`tape.py`, `universe_registry`,
+`broker_physics_miner`) → the on-disk artifact (1,908 rows read, columns censused) → the test that
+covers it → the commit that introduced it (`96d028c8`, today) → two ledger rows with named patches.
+The depth is what produced the finding: the surface read said "GAP #210(b) is closed", the artifact
+said the columns do not exist, and the *test* said the bug was intentional.
+
+### HONEST VERDICT
+
+**Zero new tradeable cards. One VERIFIED defect in a fix committed hours earlier, one 96-vs-22
+census, one new source class opened with a thin but real yield and an honestly graded 9-year
+residual.** The backlog went from 1 pending to 0.
+
+The run's one transferable habit: **when a producer wraps a vendor call, census the vendor's field
+list before grading the producer complete.** Both of this run's findings — the misspelling and the
+23% — come from the same act, and neither is visible from inside the repo, because inside the repo
+the code and its test agree with each other perfectly.
+
+### NEXT UN-EXHAUSTED GROUND (for s21, in order)
+
+1. **The MetaQuotes release-notes archive, builds 1459 (2017) → 5100 (2025-06)** — ~9 years,
+   unopened, on the mirror rather than the live index. Hunt specifically for the *introduction* of
+   symbol properties (each is a dated birth of a free axis) and for further execution/report
+   semantics changes of the Build-5830 class.
+2. **`path` as a grouping arm.** Free, exogenous, and it directly answers the question BRAIN s25
+   closed on. It needs the field on disk first, so it is gated on R0746 — but the moment the block
+   runs, it is scoreable against s24b's size-matched random control with no new machinery.
+3. **The deferred track-record seeds returning 2026-09-03/05** (Myfxbook S10, Darwinex S11,
+   Collective2 S14, FPA S16, ForexFactory S17, prop-firm S24) — all now carry the Build-5830
+   drawdown-definition condition, which must be applied at ingest and not discovered per-seed.

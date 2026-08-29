@@ -9847,7 +9847,25 @@ step in the whole pipeline. Second blunt point: I extracted a 20-year analyst pa
 **none of its numbers**, because the parse that got every row count right got every value wrong.
 Verified small beats unverified impressive.
 
-### 94. [dig 2026-08-29 (BRAIN hunter s22)] **DELAY and LIQUIDITY-TIER as declared UNIVERSE axes — the desk's 251-symbol MT5 registry declares neither, and every screen therefore runs one undifferentiated pool** — grade: **mechanism extracted (from filenames only); desk-side gap named, not yet measured** [§33: screened -> data/brain_hunter_s22_homogeneity_screen.json `brain_hunter_s22`]
+### 94. [dig 2026-08-29 (BRAIN hunter s22)] **DELAY and LIQUIDITY-TIER as declared UNIVERSE axes — the desk's 251-symbol MT5 registry declares neither, and every screen therefore runs one undifferentiated pool** — grade: **VERIFIED-CLEAN 2026-08-29 (PROSPECTOR s20) — both axes exist, are PUBLISHED BY THE BROKER in a call the desk already makes hourly, and are discarded by every producer** [§33: verified-clean -> docs/research/improvement_inbox.md 2026-08-29 "PROSPECTOR s20" + R0745/R0746 `prospector_s20`]
+
+**VERIFICATION (PROSPECTOR s20, 2026-08-29).** Primary source opened:
+`https://www.mql5.com/en/docs/python_metatrader5/mt5symbolinfo_py` (MQL5 official Python API
+reference). `symbol_info()` publishes **96 fields**; the desk's three producers record **22**.
+- **DELAY** → **`trade_exemode`** (0=Request 1=Instant 2=Market 3=Exchange) — the broker's own
+  declaration of whether a fill may be requoted/delayed — plus `trade_stops_level` /
+  `trade_freeze_level`, which bound where a stop may legally sit. Captured by **no producer**.
+- **LIQUIDITY-TIER** → **`trade_liquidity_rate`**, `price_volatility`, `session_volume`. BRAIN s24
+  killed the tier at 0.953, but built it out of `median_spread_pts` — itself a **3.5-second
+  `symbol_info` poll mislabelled a median** (s24, same seat). **A refutation of a proxy is not a
+  refutation of the axis (L1.16a);** the broker's own liquidity fields have never been read, and
+  that is the named enabling change for re-entry.
+So the s22 card's premise — "the registry declares neither" — is confirmed, and its implied cause
+is refuted: the axes were never missing from the source, only from the desk's read of it. Both
+resolve to the same one-line patch surface, the nine-field block in
+`desks/mt5/mt5desk/tape.py::contract_terms_row`, which is **already written and has executed zero
+times** (measured: the tape holds one file, 1,908 rows, **11 columns**, and every field of that
+block is an ABSENT COLUMN). See R0745 for the misspelled `freeze_level` in that same block.
 
 **PROVENANCE.** SOURCE: the seven cache filenames in `shu476891497-hash/worldquant-miner`'s git
 tree, read from the GitHub recursive-trees API (paths and byte sizes, **no content fetched** — the

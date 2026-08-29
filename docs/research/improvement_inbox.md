@@ -5242,3 +5242,106 @@ reader's own logs cannot distinguish them. The cheap standing test is structural
 statistical — **assert that no two directories in the tree hold the same bar filename** — and it
 costs a `find | basename | sort | uniq -d`. Whoever is not research-frozen should wire it beside the
 existing artifact fences; a grep for `mt5/universe` outside `data/` is the same check in one line.
+
+---
+
+## 2026-08-29 — PROSPECTOR s20: the fix that closed GAP #210(b) reads a field name that does not exist, and the test encodes the same wrong name
+
+**Provenance: VERIFIED.** Primary source opened this run:
+`https://www.mql5.com/en/docs/python_metatrader5/mt5symbolinfo_py` (MQL5 official Python API
+reference, the vendor's own document). Corroborated in-repo by a second, independent desk producer.
+
+### 1. THE DEFECT — one wrong attribute name, and every guard built to catch it points the other way
+
+`desks/mt5/mt5desk/tape.py:124` (added **today**, commit `96d028c8`, the CRO cycle that closed
+GAP #210(b)):
+
+```python
+"freeze_level": _opt_int(info, "freeze_level"),
+```
+
+**`symbol_info()` has no attribute `freeze_level`. The field is `trade_freeze_level`.** Verbatim
+from the vendor's own example output: `trade_stops_level=0, trade_freeze_level=0, trade_exemode=1`.
+
+The desk already knew this. `desks/mt5/side_channels/broker_physics_miner.py:144` reads
+`info.trade_freeze_level` off the same object. **Two producers, same call, two names, one wrong** —
+and the wrong one is the one that just entered the money path.
+
+**WHY IT WILL NEVER BE CAUGHT BY THE DEFENCE BUILT FOR IT.** `_opt_int` is the WS-005 guard: absent
+is `None`, never `0`, precisely so *"we did not read it"* cannot render as *"the broker published
+zero"*. Against a misspelled name that guard **inverts**: it converts a permanent lookup failure
+into a clean, well-formed, doctrinally-correct `None` on 100% of rows, forever. The column will
+read as *"this broker does not publish a freeze level"* — the exact collapse the comment three
+lines above it was written to prevent.
+
+**AND THE TEST ENCODES THE BUG.** `desks/mt5/tests/test_compendium_data.py:44` builds its fake
+`symbol_info` with `freeze_level=0` and asserts `row["freeze_level"] == 0` (line 53). The test
+passes, will always pass, and tests the misspelling rather than the API. A test can encode a wrong
+convention and a guard-test can pass without ever reaching the guard.
+
+### 2. THE EXACT PATCH (named, not applied — this seat is research-frozen; money path)
+
+```
+desks/mt5/mt5desk/tape.py:124
+-        "freeze_level": _opt_int(info, "freeze_level"),
++        "freeze_level": _opt_int(info, "trade_freeze_level"),
+
+desks/mt5/tests/test_compendium_data.py:44   fake field  freeze_level=0  -> trade_freeze_level=0
+   (line 53's assertion on row["freeze_level"] is CORRECT and stays: the output key is the desk's,
+    the input key is the vendor's. That distinction is what the current test erases.)
+```
+The regression test that would have caught it, and should land in the same commit: **assert the
+producer reads only names present in the vendor's namedtuple** — construct the fake from the
+documented field list, not from the desk's output keys. A fake built out of the code's own
+expectations can never falsify the code's own expectations.
+
+**Costs nothing to verify when it runs:** the tape has one file on disk
+(`2026-08-27.parquet`) and it predates the whole nine-field block — `trade_mode`,
+`margin_initial`, `trade_stops_level`, `freeze_level`, `volume_max`, `volume_limit` and `spread`
+are **ABSENT COLUMNS**, not null ones (measured this run: 1,908 rows, 248 symbols, 11 columns).
+So the fix lands before a single row is written with the broken name, if it lands before the
+Windows task is registered. After that, every historical row is unrecoverable — this is
+point-in-time data, and a night's freeze level is unbuyable once the hour passes.
+
+### 3. THE LARGER FINDING — `symbol_info()` publishes **96 fields**; the desk records **22**
+
+Full field list read from the vendor reference this run. The desk's producers (tape 20, registry
+12, broker_physics_miner 2) touch **22 distinct fields of 96, in a call it already makes hourly at
+zero marginal cost**. GAP #210(b) closed "11 of ~20"; the real denominator is 96. The nine highest-
+value unrecorded fields, each free in the same call:
+
+| field | what it is | why the desk's absence of it is load-bearing |
+|---|---|---|
+| **`trade_exemode`** | 0=Request 1=Instant 2=Market 3=Exchange | **This is the DELAY axis** the open backlog row asked for — the broker's own declaration of whether a fill can be requoted/delayed. Recorded nowhere. See §4. |
+| **`path`** | the broker's own instrument-tree taxonomy string | **A free, exogenous, point-in-time GROUPING.** BRAIN s11/s24/s25 spent five sessions building and sweeping cluster groupings off `1−corr`; the broker publishes its own partition and no seat has ever read it. It is not derived from returns, so it cannot inherit the return matrix's own structure — the one weakness every clustering arm on this desk shares. |
+| **`spread_float`** | fixed vs floating spread (bool) | The cost surface applies one spread regime to all 251 symbols. A fixed-spread symbol has **no spread-widening tail**; a floating one does. This is a per-symbol cost-model switch, published, unread. |
+| **`trade_tick_value_profit` / `trade_tick_value_loss`** | ASYMMETRIC tick values | The desk records only `trade_tick_value`. If these differ on any symbol, **every P&L the desk computes is wrong on one side** and correct on the other — the hardest class of unit error to notice, because half the trades check out. |
+| **`start_time` / `expiration_time`** | contract start / expiry | Energy and softs CFDs **expire and roll**. A backtest spanning a roll it cannot see is a backtest on a discontinuous series. Unmeasured, so currently reads as "no symbol expires". |
+| **`trade_liquidity_rate` / `price_volatility`** | broker-published liquidity and vol | The **LIQUIDITY-TIER** half of the same backlog row — which BRAIN s24 killed at 0.953 *using a 3.5-second spread poll as its proxy*. The broker publishes the quantity directly. The tier was refuted on a proxy, never on this. |
+| **`filling_mode` / `order_mode` / `expiration_mode`** | which order types/fills the symbol permits | The execution model assumes every order type is available on every symbol. Published per-symbol, unread. |
+| **`margin_hedged` / `margin_hedged_use_leg`** | hedged-position margin | Sizing input for any two-legged sleeve; the desk has none of it. |
+| **`session_deals` / `session_volume` / `session_turnover`** | venue activity | The only activity measure the broker gives on a CFD book that has no public tape. |
+
+**The habit this adds:** when a producer wraps a vendor call, census the vendor's field list against
+what the producer writes *before* grading the producer complete. GAP #210(b) was closed against the
+count of fields someone remembered, not against the count the API publishes — which is why "11 of
+20" read as an 80% fix of a 23% problem.
+
+### 4. THE BACKLOG ROW THIS RESOLVES
+
+*"DELAY and LIQUIDITY-TIER as declared UNIVERSE axes"* (BRAIN hunter s22) — the last pending
+verification in `source_backlog`. **VERIFIED, and the answer is that both axes are PUBLISHED BY THE
+BROKER AND DISCARDED BY THE DESK**, not absent:
+- **DELAY** → `trade_exemode` (+ `trade_stops_level`/`trade_freeze_level` bounding where a stop may
+  legally sit). Captured by no producer.
+- **LIQUIDITY-TIER** → `trade_liquidity_rate`, `price_volatility`, `session_volume`. BRAIN s24
+  killed the tier at 0.953 built out of `median_spread_pts` — which is itself a **3.5-second
+  `symbol_info` poll mislabelled a median** (s24, same seat). **A refutation of a proxy is not a
+  refutation of the axis** (L1.16a): the kill stands on the constructed tier, and the broker's own
+  liquidity fields have never been read. Re-entry is gated on the named enabling change — the
+  fields landing on disk.
+
+Both halves route to the same one-line patch surface: the nine-field block in
+`contract_terms_row`, which is **already written, already correct in shape, and inert until the
+Windows task is registered** (GAP #210, principal-gated, `data/PRINCIPAL_ACTION.md`). Every field
+in §3 is a one-line addition to a block that has not yet run — the cheapest moment in its life.

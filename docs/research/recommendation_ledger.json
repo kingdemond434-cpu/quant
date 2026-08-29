@@ -9647,6 +9647,34 @@
    "commit": null,
    "due": "2026-09-01",
    "disposed": "2026-08-29T17:00:14.005934+00:00"
+  },
+  {
+   "id": "R0745",
+   "source": "cycle",
+   "summary": "PROSPECTOR s20 (VERIFIED vs MQL5 official Python API ref): desks/mt5/mt5desk/tape.py:124 reads _opt_int(info,'freeze_level') but symbol_info's attribute is 'trade_freeze_level' (broker_physics_miner.py:144 uses the correct name on the same object). The WS-005 _opt_int guard INVERTS on a misspelling -- it renders a permanent lookup failure as a clean None on 100% of rows, reading as 'broker publishes no freeze level'. tests/test_compendium_data.py:44 builds its fake with freeze_level=0 so the test encodes the bug and always passes. PATCH: tape.py:124 'freeze_level' -> 'trade_freeze_level'; test fake field renamed (output key row['freeze_level'] stays). Land it BEFORE the Windows hourly task is registered (GAP #210) -- the tape has 1 file, 11 cols, and the nine-field block has never written a row, so no history is lost if fixed now and none is recoverable after.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T18:04:15.489478+00:00",
+   "status": "scheduled",
+   "reason": "Producer-side, money path (desks/mt5/mt5desk/tape.py + its test); this PROSPECTOR seat is research-frozen and may write only to docs/research/* and data/* catalogs, so it cannot land the edit. The patch is fully named and is two token substitutions with no logic change. Due 2026-08-30 and NOT later: it must land before the Windows hourly task in GAP #210 is registered -- once rows start writing, every historical freeze_level is an unrecoverable None (point-in-time data, unbuyable once the hour passes), whereas today the nine-field block has written zero rows and nothing is lost.",
+   "commit": null,
+   "due": "2026-08-30",
+   "disposed": "2026-08-29T18:04:46.819825+00:00"
+  },
+  {
+   "id": "R0746",
+   "source": "cycle",
+   "summary": "PROSPECTOR s20 field census (VERIFIED, MQL5 official Python API ref): symbol_info() publishes 96 fields; the desk's three producers (tape 20, universe registry 12, broker_physics_miner 2) record 22 distinct, in a call already made hourly at zero marginal cost. GAP #210(b) closed '11 of ~20' against a remembered denominator, not the published one. Nine free unrecorded fields with load-bearing content: trade_exemode (THE DELAY AXIS the s22 backlog row asked for); path (the broker's own instrument taxonomy -- a free EXOGENOUS grouping, not derived from the return matrix, which is the one weakness every BRAIN s11/s24/s25 clustering arm shares); spread_float (fixed vs floating -- the cost surface applies one regime to 251 symbols); trade_tick_value_profit/_loss (asymmetric tick value: if they differ anywhere, every P&L is wrong on ONE side only); start_time/expiration_time (energy+softs CFDs roll; unmeasured currently reads as 'nothing expires'); trade_liquidity_rate/price_volatility (the LIQUIDITY-TIER axis BRAIN s24 killed at 0.953 using a 3.5-second spread poll as proxy -- a proxy refutation is not an axis refutation, L1.16a); filling_mode/order_mode/expiration_mode (the execution model assumes all order types everywhere); margin_hedged; session_volume/turnover/deals (the only activity measure on a CFD book with no public tape). PATCH: each is a one-line addition to contract_terms_row's nine-field block, which is already written and INERT until the Windows task registers -- the cheapest moment in its life.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T18:04:28.236417+00:00",
+   "status": "scheduled",
+   "reason": "Same freeze: the nine-field block lives in the money-path producer and this seat may not edit it. Scheduled to ride the SAME commit as R0745 rather than a separate pass -- both are additions to one function that has never executed, so one edit closes the misspelling and the census together at the one moment when no history is at stake. Evidence and the per-field rationale are written up in full at docs/research/improvement_inbox.md (2026-08-29, PROSPECTOR s20).",
+   "commit": null,
+   "due": "2026-08-30",
+   "disposed": "2026-08-29T18:04:49.798618+00:00"
   }
  ]
 }
