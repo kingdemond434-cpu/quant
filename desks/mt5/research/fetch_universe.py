@@ -57,6 +57,12 @@ SEED_CANDIDATES = [
     "BTCUSD", "ETHUSD",
 ]
 
+#: A walk-forward split needs enough history to have an out-of-sample half worth
+#: measuring; below this a symbol is not testable yet rather than broken. Recorded on
+#: every skip so a symbol that is merely YOUNG is never mistaken for one the broker
+#: refuses to quote.
+MIN_BARS = 1000
+
 START = datetime(2018, 1, 1, tzinfo=timezone.utc)
 
 
@@ -86,14 +92,28 @@ def main() -> None:
           f"{prior_n} already in the registry")
 
     summary = {}
+    # WHY A SYMBOL HAS NO BARS IS ITSELF DATA. Both skips below used to print a line and vanish,
+    # so 54 symbols in the registry had no H1 parquet and NOTHING recorded whether the broker
+    # refuses to quote them, they are too young to test, or the fetch was simply never attempted.
+    # Those three need completely different responses -- retire the symbol, wait, or re-run --
+    # and with no artifact they were indistinguishable from each other and from a silent bug.
+    # "UNMEASURED is a real answer" (LAWS L1.28a): record it as one.
+    skipped: dict[str, dict] = {}
     for sym in candidates:
         info = mt5.symbol_info(sym)
         if info is None:
             print(f"{sym:8s} not offered")
+            skipped[sym] = {"reason": "NOT_OFFERED",
+                            "detail": "the broker does not quote this symbol on this account"}
             continue
         rates = mt5.copy_rates_range(sym, mt5.TIMEFRAME_H1, START, datetime.now(timezone.utc))
-        if rates is None or len(rates) < 1000:
-            print(f"{sym:8s} insufficient history ({0 if rates is None else len(rates)} bars)")
+        n_bars = 0 if rates is None else len(rates)
+        if rates is None or n_bars < MIN_BARS:
+            print(f"{sym:8s} insufficient history ({n_bars} bars)")
+            skipped[sym] = {"reason": "INSUFFICIENT_HISTORY", "bars": n_bars,
+                            "min_bars": MIN_BARS,
+                            "detail": f"{n_bars} H1 bars is below the {MIN_BARS} a walk-forward "
+                                      f"split needs; retry as the symbol ages"}
             continue
         df = pd.DataFrame(rates)
         df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
@@ -121,6 +141,14 @@ def main() -> None:
         print(f"REFUSING to write: registry would shrink {prior_n} -> {len(registry)}")
         return
     (OUT / "universe.json").write_text(json.dumps(registry, indent=2), encoding="utf-8")
+    # The skip ledger is written EVERY run, including an empty one, because "nothing was skipped
+    # this pass" and "this pass never reported" are different facts and a stale file would make
+    # them look identical to the coverage watchdog.
+    (OUT / "bar_coverage_skips.json").write_text(json.dumps({
+        "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "attempted": len(candidates), "written": len(summary), "skipped": len(skipped),
+        "reasons": skipped}, indent=1), encoding="utf-8")
+    print(f"skip ledger: {len(skipped)} symbol(s) recorded with a reason")
     print(f"\n{len(summary)} symbol(s) refreshed this run, merged into {len(registry)} "
           f"registry row(s) -> {OUT}")
 
