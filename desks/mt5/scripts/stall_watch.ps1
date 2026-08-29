@@ -174,14 +174,20 @@ try {
     $hogs = @(Get-CimInstance Win32_Process -Filter "Name like 'py%'" |
               Where-Object { $cl = $_.CommandLine
                              $cl -and -not ($MONEY | Where-Object { $cl -match $_ }) } |
-              Sort-Object -Property WorkingSetSize -Descending)
+              Sort-Object -Property PageFileUsage -Descending)
     if ($hogs.Count -gt 0) {
       $victim = $hogs[0]
       $name = '?'
       if ($victim.CommandLine -match '([\w_]+\.py)') { $name = $matches[1] }
-      $rss = [math]::Round($victim.WorkingSetSize / 1MB)
+      # SHED BY COMMIT, NOT BY RSS. The floor was taught to measure commit and then still chose
+      # its victim by working set -- so on its first real firing it killed moat_recorder.py at
+      # 14MB RSS while three paged-out workers holding 4GB of COMMIT each survived untouched.
+      # A process that has reserved commit and been paged out has a TINY resident set by
+      # definition: that is exactly what makes it invisible, and exactly what makes it the thing
+      # worth shedding. Sort by what is scarce.
+      $rss = [math]::Round($victim.PageFileUsage / 1KB)
       Stop-Process -Id $victim.ProcessId -Force -ErrorAction SilentlyContinue
-      $actions += "RAM-FLOOR: only ${freeMB}MB free (phys ${freePhysMB}MB / virt ${freeVirtMB}MB) -- shed $name (rss ${rss}MB, commit is what runs out here, not RSS); it resumes from cache on its next trigger"
+      $actions += "RAM-FLOOR: only ${freeMB}MB free (phys ${freePhysMB}MB / virt ${freeVirtMB}MB) -- shed $name (commit ${rss}MB); it resumes from cache on its next trigger"
     } else {
       $actions += "RAM-FLOOR: only ${freeMB}MB free and NOTHING sheddable -- every remaining process is money-path; needs a human"
     }
