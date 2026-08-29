@@ -5433,3 +5433,58 @@ Also imported from the same repo: `keep_for_learning`-style honesty — the auth
 TODO admits *"Truncation correctness (current not necessarily working)"* and that results differ
 from the platform. **A source that documents its own brokenness is more usable than a confident
 one**, and the admission is what stopped the truncation semantics being imported as a spec.
+
+## 2026-08-29 (free-data y) — `libs/research/pdf_text.py` hangs forever on a class of real PDFs (catastrophic backtracking)
+
+**Symptom:** `extract()` never returns on JPX daily-report PDFs. An **84 KB** file did not finish
+in 55 s; a 4 MB one did not finish in 120 s. It does not error, it does not warn — it hangs, so a
+caller with no timeout stalls indefinitely and a caller with a timeout records "extraction failed"
+for a file that is perfectly extractable.
+
+**Cause** (`faulthandler` stack → `_stream_text`, line 89, i.e. `_SHOW_RE.finditer`): the `arr`
+branch of `_SHOW_RE` is
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"
+```
+
+`\\.` and `[^\]]` **overlap** — a backslash matches both — so every backslash in a stream doubles
+the backtracking paths whenever the `]` … `TJ` tail fails. The `lit` branch is written correctly
+(`[^\\()]` excludes the backslash and is unambiguous); the `arr` branch just lost the `\\` from
+its negated class.
+
+**Measured, isolated from the PDFs** (`n` = trailing backslash-pairs, no match possible):
+
+| n | current regex | with the fix |
+|---|---|---|
+| 18 | 0.053 s | 0.000 s |
+| 20 | 0.194 s | 0.000 s |
+| 22 | 0.821 s | 0.000 s |
+| 24 | 3.139 s | 0.000 s |
+
+Clean doubling per character — exponential. 40 such characters is ~36 days.
+
+**THE EXACT PATCH** (one character class, `libs/research/pdf_text.py` line ~52):
+
+```diff
+-    rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"             # [ .. ] TJ
++    rb"|\[(?P<arr>(?:\\.|[^\\\]])*)\]\s*TJ"           # [ .. ] TJ
+```
+
+**Verified**: with that one substitution monkey-patched in, the three JPX PDFs that previously hung
+extracted in **0.1 s / 0.4 s / 0.4 s** (`{'streams': 68, 'decoded': 68, 'failed': 0}`, 91,385
+chars) and the output decodes to correct text. NOT APPLIED — this dig runs under the research
+freeze (docs/research/* and data/* only). It is a two-minute change for whoever owns `libs/`.
+
+**Same-commit test** (the desk's own rule): the fixtures could not show this — the file's own
+comment records that an identical quadratic blowup in the stream-finder was caught by a positive
+control, not by fixtures. Add a **timing** control: assert `_SHOW_RE.search(b'[' + b'a\\\\'*40)`
+returns in < 0.1 s. A correctness fixture will pass either way.
+
+**Second, smaller finding in the same file:** `extract()` has no cmap support at all. JPX's Latin
+glyphs and digits come back CID-encoded and decode with a uniform `+29` codepoint shift, which the
+caller must know to apply; the Japanese glyphs use a per-font cmap the shift does not touch. The
+file carries 7 `/ToUnicode` streams and 14 `/BaseFont` entries that `extract()` never reads. Also,
+because it emits text in stream order with no positional information, table columns concatenate
+(`64,01065,66063,67065,510`) — a positional parse off the `Td`/`TD` operands is needed before any
+JPX table can be read as a table.

@@ -3083,7 +3083,108 @@
    "cross_source_pair": "worldbank_pink_sheet_cmo_monthly (realised, monthly, 1960-01 -> 2026-07) x worldbank_cmo_price_forecasts (predicted, semi-annual, vintage-archived via Wayback). Neither half is a forecast-vs-realised scoreboard alone; together they are one, on ~62 commodities, under ONE licence and ONE unit convention because the same institution produces both. Estimated population if vintages reach ~2010: ~900+ forecast-year cells, vs n=16 for the LBMA panel.",
    "not_claimed": "ONE vintage collected this run. The scoreboard does not exist until vintages are collected and joined to realised Pink Sheet outcomes. Sized and named, NOT a result.",
    "session": "free-data run (x) 2026-08-29"
-  }
+  },
+  "exchange_native_mt5_analogue_futures": [
+   {
+    "name": "JPX / OSE + TOCOM daily derivatives reports",
+    "type": "daily settlement price, trading volume, trading value, open interest per contract month -- Nikkei225 (+mini/Micro), TOPIX, JGB futures, and FX futures USD/JPY, EUR/JPY, CNH/JPY; TOCOM gold/platinum/rubber/energy",
+    "cost": "free",
+    "auth": "none",
+    "status": "verified",
+    "grade": "needs-monitoring",
+    "url": "https://www.jpx.co.jp/english/markets/statistics-derivatives/daily/index.html",
+    "endpoint": "https://www.jpx.co.jp/automation/markets/statistics-derivatives/daily/json/daily_report_monthlylist.json -> daily_report_YYYYMM.json -> /automation/markets/statistics-derivatives/daily/files/YYYYMM/Daily_Report_{OSE,TOCOM}_YYYYMMDD.zip",
+    "method": "keyless JSON index (found in the page's own JS: BASE_PATH const) -> per-month JSON -> ZIP of PDFs. Note the page renders via jQuery, so the HTML carries NO file links; the JSON index is the machine route.",
+    "license": "JPX site terms -- free public statistics, no registration, no API key. Not re-distributable in bulk; derived features are fine.",
+    "update_cadence": "T+1 (monthlylist UpdateDate 2026/08/28 16:31 read on 2026-08-29; 202601..202608 present)",
+    "verification": "downloaded Daily_Report_OSE_20260805.zip (4.40MB, 11 PDFs) + TOCOM (683KB, 3 PDFs); decoded sif_dyr_20260805.pdf; header reads 'Wednesday, August 5, 2026' matching the requested trade date (independent confirmation the CID offset is real, not a synthetic cmap); lead-month (202609) Nikkei block 65,720/66,350/65,500 settlement 66,340.00 vs the desk's own JPN225_H1 tape for 2026-08-05 O 65502.97 H 66742.97 L 65437.97 C 65732.97 -- SAME instrument at the SAME scale, agreement ~1%.",
+    "known_failure_modes": [
+     "PDF-ONLY: there is no CSV/XLS daily route. Every number must come through a PDF text layer.",
+     "CID-encoded text: Latin glyphs and DIGITS decode with a uniform +29 codepoint shift, but the Japanese contract-name glyphs use a DIFFERENT per-font cmap that the shift does NOT decode. Column separators are lost, so table cells concatenate ('64,01065,66063,67065,510') -- a positional (Td/TD operand) parse is required, not a text-order parse.",
+     "SESSION BOUNDARY UNRESOLVED: an OSE trade date bundles the previous evening's night session, while the desk's H1 tape is broker-EET and stops at 23:00. The ~1% residual against JPN225 is unexplained until that convention is worked out. Do NOT join these on date until it is.",
+     "monthlylist exposes only 202601-> ; OLD_SYSTEM_BOUNDARY=202601 in the page JS means pre-2026 uses a different (HTML) route that was NOT tested this run."
+    ],
+    "why_it_matters": "free exchange-native VOLUME and OPEN INTEREST for instruments the desk trades as OTC CFDs with no real_volume. Directly answers the s29 named gap (per-symbol notional turnover / true VWAP). The FX futures leg (USD/JPY, EUR/JPY, CNH/JPY) is positioning data on three live MT5 symbols.",
+    "replaces": "the volume/OI fields of a paid futures data vendor for the JP-listed analogues",
+    "next": "positional PDF parse; resolve the session-boundary convention; then pre-register OI-change -> next-day return on USDJPY/EURJPY/JPN225"
+   },
+   {
+    "name": "CME Group (www.cmegroup.com)",
+    "type": "daily settlement/volume/OI for the futures analogues of gold, indices, energy, FX majors",
+    "cost": "free (public pages)",
+    "status": "blocked",
+    "grade": "destroyed-at-source (for this box)",
+    "url": "https://www.cmegroup.com/robots.txt",
+    "verification": "HTTP 403 (602-byte Akamai edge page) on robots.txt ITSELF with a Chrome UA, over both HTTP/2 (stream INTERNAL_ERROR) and HTTP/1.1; apex cmegroup.com identical 403; ftp.cmegroup.com and datamine.cmegroup.com do not resolve/connect (code 000). Checked 2026-08-29.",
+    "known_failure_modes": [
+     "This is an EDGE/TCU block, NOT a robots verdict. RFC 9309 would read a 4xx robots as allow-all, but every content path returns the same 403, so there is nothing to allow. Do not re-litigate as a UA problem: a full browser UA was used."
+    ],
+    "replacement_hunt": "OPEN (SS38). Legs tried this run: stooq (robots Disallow: / -- walled), MOEX ISS (robots Disallow: / -- walled), JPX/OSE+TOCOM (OPEN, adopted above), HKEX (robots allows derivatives paths; the legacy /eng/stat/dmstat/dayrpt/*.htm endpoints now 404 -- current path NOT yet found, next run). Residual after JPX: US-listed contracts (COMEX gold, WTI, ES, 6E) have NO free adopted route on this box; the JP-listed analogues do."
+   },
+   {
+    "name": "stooq.com",
+    "type": "free daily OHLCV CSV incl. futures (gc.f, cl.f, es.f, 6e.f)",
+    "cost": "free",
+    "status": "excluded",
+    "grade": "destroyed-at-source",
+    "url": "https://stooq.com/robots.txt",
+    "verification": "robots.txt read 2026-08-29: 'User-agent: * / Disallow: /' with Allow only for Bingbot and Googlebot. HARD SS13 wall for this desk.",
+    "known_failure_modes": [
+     "NEW FAILURE-MODE CLASS -- a 200 THAT IS A PROOF-OF-WORK CHALLENGE: every /q/d/l/ CSV request returned HTTP 200, content-type text/html, 796 bytes, carrying a SHA-256 proof-of-work interstitial that reloads only after the client brute-forces a 4-nibble prefix. A collector checking status code and byte count reads this as a live source with data. Solving it would be circumvention and was NOT attempted -- but the detection lesson generalises: any collector must assert the CONTENT SHAPE (parsed rows), never the 200.",
+     "stooq is widely recommended as 'the' free futures CSV source; it is NOT adoptable by this desk."
+    ]
+   },
+   {
+    "name": "iss.moex.com (MOEX ISS API)",
+    "type": "keyless JSON/CSV: FX, index and commodity futures with volume/OI, long history",
+    "cost": "free",
+    "status": "excluded",
+    "grade": "destroyed-at-source",
+    "url": "https://iss.moex.com/robots.txt",
+    "verification": "robots.txt read 2026-08-29, 25 bytes, in full: 'User-Agent: * / Disallow: /'. The API host itself bars all crawlers.",
+    "known_failure_modes": [
+     "Worth recording precisely because MOEX ISS is documented as an open public API and is repeatedly recommended as such -- the API DOCS invite use while the host's robots forbids automated retrieval. Documentation-says-open is not a licence; the robots file is."
+    ]
+   },
+   {
+    "name": "Eurex (www.eurex.com)",
+    "type": "daily settlement/volume/OI, EURO STOXX 50 and DAX futures (MT5 analogues STOXX50/GER40)",
+    "cost": "free",
+    "status": "queued",
+    "grade": "UNVERIFIED",
+    "url": "https://www.eurex.com/robots.txt",
+    "verification": "robots.txt read 2026-08-29: wildcard group is ALLOW with Crawl-delay: 30; disallows cover /search, some sapContentPage.js and two named contract-spec PDFs only. Data paths are open. NO data endpoint fetched this run -- UNVERIFIED, next run.",
+    "known_failure_modes": [
+     "Crawl-delay 30 is explicit; any collector must honour it.",
+     "Named UA groups exist for GPTBot/ChatGPT-User/OAI-Searchbot/PerplexityBot -- re-read the group that matches the UA actually used, do not assume the wildcard."
+    ]
+   },
+   {
+    "name": "ICE (www.ice.com)",
+    "type": "daily settlement/volume/OI (Brent, ICE FX, softs)",
+    "cost": "free",
+    "status": "queued",
+    "grade": "UNVERIFIED",
+    "url": "https://www.ice.com/robots.txt",
+    "verification": "robots.txt read 2026-08-29 (11 lines, wildcard group only). Allowed generally; DISALLOWS /report-center/category/, /report-partial/, /report-center-folio -- i.e. the report-centre browse paths are barred. Whether the underlying data files sit outside those prefixes is UNTESTED. Next run.",
+    "known_failure_modes": [
+     "The disallowed prefixes are exactly the report-discovery surface; a naive crawl would breach robots on the first useful click."
+    ]
+   },
+   {
+    "name": "HKEX (www.hkex.com.hk)",
+    "type": "daily derivatives reports incl. USD/CNH futures, HSI futures (MT5 analogues USDCNH, HK50)",
+    "cost": "free",
+    "status": "queued",
+    "grade": "UNVERIFIED",
+    "url": "https://www.hkex.com.hk/robots.txt",
+    "verification": "robots.txt read 2026-08-29: disallows only four Listing-Rules-contingency prefixes; all market-data paths allowed. Legacy daily-report endpoints /eng/stat/dmstat/dayrpt/cus.htm and /hsif.htm both return 404 (2,914-byte error page) -- the site has moved them. Current path NOT located this run.",
+    "why_it_matters": "HKEX USD/CNH futures is the only free exchange-native positioning series on a currency the desk trades, and it feeds the CNH-CNY basis axis already deferred to 2026-09-05.",
+    "known_failure_modes": [
+     "A 404 here is a MOVED path, not a dead source -- do not grade it destroyed without finding the current route."
+    ]
+   }
+  ]
  },
  "residual_gaps_unpurchasable": [
   "tick-level Binance L2 diffs BEFORE the recorder start date (destroyed at source; recorder solves forward)",

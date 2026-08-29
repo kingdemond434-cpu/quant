@@ -1,22 +1,22 @@
 {
-    "free_gb":  32.7,
-    "checked_at":  "2026-08-29T14:10:10.3410876Z",
+    "free_gb":  32.6,
+    "checked_at":  "2026-08-29T20:48:37.2668535Z",
     "actions":  [
-
+                    "UNIVERSE: registry shrank to 23 rows (canon 251) -- restored from canon"
                 ],
     "low_mem_strikes":  0,
     "procs":  {
-                  "external_gauntlet.8388":  {
-                                                 "cpu":  251.46875,
-                                                 "at":  "2026-08-29T16:10:05.1582535+02:00"
-                                             },
-                  "orthogonal_sweep.8176":  {
-                                                "cpu":  109.328125,
-                                                "at":  "2026-08-29T16:10:05.1582535+02:00"
+                  "orthogonal_sweep.6556":  {
+                                                "cpu":  534.875,
+                                                "at":  "2026-08-29T22:00:36.5089255+02:00"
                                             },
-                  "fail.MT5-Shadow":  {
-                                          "cpu":  1,
-                                          "at":  "2026-08-29T16:10:05.1582535+02:00"
-                                      }
+                  "edge_search.8740":  {
+                                           "cpu":  2490.765625,
+                                           "at":  "2026-08-29T22:00:36.5089255+02:00"
+                                       },
+                  "shadow_cycle.6176":  {
+                                            "cpu":  4.09375,
+                                            "at":  "2026-08-29T22:00:36.5089255+02:00"
+                                        }
               }
 }

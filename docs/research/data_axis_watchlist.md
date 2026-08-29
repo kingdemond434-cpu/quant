@@ -10139,3 +10139,144 @@ author himself records as containing errors (vwap mismatches). Logged as a **che
 **The standing data gap from s28 is unchanged and is restated because it did not close:** the 8
 `(Vector) -> Matrix` operators in the FastPlus type algebra have no MT5 analogue, and the desk's
 `mt5_grouping_map` still feeds only 2 of 14 group-consuming operators. Nothing in s29 touched either.
+
+---
+
+## FREE-DATA y — 2026-08-29 — SESSION NOTE (written at start, updated as items resolve)
+
+Backlog: `source_backlog_next.py` returns **0 pending verification** (99 catalogued, 71 resolved,
+28 deferred to dates 2026-09-01→15). Nothing workable to verify, so this run opens new ground.
+
+**Items taken this run (bounded per completion contract, depth unbounded):**
+1. **CME Group public daily settlement/volume/OI files** — the highest-yield untried leg named by
+   my own s29 note: free notional turnover + true settlement for the futures analogues of MT5
+   symbols (gold, indices, energy, FX majors). Verify keyless access, cadence, licence.
+2. **ICE / Eurex public settlement + the CFTC's own bulk files** — the second leg of the same
+   axis, and the §38 replacement hunt if CME is walled.
+3. **SEARCH-SPACE EXPANSION (>=25%)**: a source CLASS the desk has never named. Target picked
+   after items 1-2 resolve, from whatever the fetch layer reveals.
+
+Status: IN PROGRESS.
+
+### RESOLVED — FREE-DATA y results
+
+**Session summary.** Categories touched: 1 (exchange-native archives) and 3 (non-English/regional
+— JP, HK, RU) primarily, 6 (vendor-replacement: the futures volume/OI product) throughout.
+**7 sources graded: 1 adopted (needs-monitoring), 3 destroyed-at-source, 3 UNVERIFIED-queued.**
+Best vendor-replacement: **JPX OSE+TOCOM daily reports**. New source classes discovered: **two** —
+(a) exchange-native daily derivative reports as a free volume/OI substitute for OTC CFDs, (b) the
+**proof-of-work interstitial** as a failure mode. Cross-source pair flagged below.
+
+**DEPTH line.** CME → *exhausted for this box* (4 hosts × 2 HTTP versions × 2 UAs, all 403/000).
+JPX → *exhausted to the data*: page → its own JS constants → JSON index → per-month JSON → ZIP →
+PDF → text layer → CID decode → numbers → **diffed against the desk's own JPN225 tape**. That is
+the depth that mattered: at the surface JPX is "a page with no download links" (the HTML carries
+zero file hrefs — it renders via jQuery), and at one layer down it is a clean keyless JSON API.
+stooq/MOEX → *exhausted at the licence gate* (robots is terminal, so depth would be a breach).
+HKEX/ICE/Eurex → *surface only, robots read, honestly UNVERIFIED*.
+
+**Next un-exhausted ground (named, per L1.35):** (1) HKEX's current daily-report path — the legacy
+`/eng/stat/dmstat/dayrpt/*.htm` 404s and USD/CNH futures is the prize; (2) Eurex + ICE data
+endpoints, robots already cleared; (3) JPX's pre-2026 HTML route (`OLD_SYSTEM_BOUNDARY = 202601`),
+which is the history leg and is untested.
+
+---
+
+#### CARD — JPX / OSE + TOCOM daily derivatives reports — **needs-monitoring** (ADOPTED)
+
+Free, keyless, T+1 daily **settlement price, volume, trading value and open interest** per contract
+month for Nikkei 225 (+mini/Micro), TOPIX, JGB futures, TOCOM gold/platinum/energy — **and FX
+futures on USD/JPY, EUR/JPY and CNH/JPY.** Three of those are live MT5 symbols.
+
+- **Route** (the find is the route; the HTML has no links): the page's own JS holds
+  `BASE_PATH = '/automation/markets/statistics-derivatives/daily/json/'` →
+  `daily_report_monthlylist.json` → `daily_report_YYYYMM.json` → `…/files/YYYYMM/Daily_Report_{OSE,TOCOM}_YYYYMMDD.zip`.
+- **Verified this run**, not asserted: pulled the 2026-08-05 OSE zip (4.40 MB, 11 PDFs) and TOCOM
+  zip (683 KB, 3 PDFs). Decoded header reads **"Wednesday, August 5, 2026"** — matching the
+  requested trade date, which is the independent check that the CID offset is real and not the
+  synthetic-cmap fiction that burned s14. Lead-month Nikkei block **65,720 / 66,350 / 65,500,
+  settlement 66,340.00** against the desk's own `JPN225_H1` for the same date **O 65,502.97 /
+  H 66,742.97 / L 65,437.97 / C 65,732.97**.
+- **Why it is NOT verified-clean:** the ~1% residual is unexplained. An OSE trade date bundles the
+  previous evening's night session; the desk's tape is broker-EET and stops at 23:00. **Do not join
+  these on date until that convention is resolved.** Same instrument, same scale — that is all
+  today's evidence supports, and saying more would be the thing this desk retracts flagship signals
+  for.
+- **Failure modes:** PDF-only (no CSV route exists); digits need the +29 CID shift while the
+  Japanese contract names need per-font cmaps; column separators are lost so cells concatenate
+  (`64,01065,66063,67065,510`) and a positional `Td`-operand parse is required; the JSON index
+  exposes only 202601→ (pre-2026 is a different HTML route, untested).
+- **Why it ranks:** it answers the gap my own s29 note named — the MT5 book has `tick_volume` (a
+  count of quote updates) and essentially no `real_volume`, because Fusion CFDs are OTC and there
+  is no turnover to report. This is exchange-native volume and **open interest** on the analogue
+  contract, free.
+
+#### CARD — CME Group — **destroyed-at-source (for this box)** + §38 replacement hunt OPEN
+
+403 from the Akamai edge on **`robots.txt` itself** (602-byte error page), with a full Chrome UA,
+over HTTP/2 (stream INTERNAL_ERROR) *and* HTTP/1.1; apex identical; `ftp.` and `datamine.` do not
+connect. This is a **TCU/edge block, not a robots verdict** — RFC 9309 would read a 4xx robots as
+allow-all, but every content path returns the same 403, so there is nothing to allow. Recorded
+explicitly so no future run re-opens it as a User-Agent problem.
+**§38 replacement:** JPX adopted (above) covers the JP-listed analogues. **Honest residual: the
+US-listed contracts — COMEX gold, WTI, ES, 6E — have no free adopted route on this box.** That is a
+finding with its search attached, not a default.
+
+#### CARD — stooq.com — **destroyed-at-source** (and a NEW failure-mode class)
+
+`robots.txt`: `User-agent: * / Disallow: /`, with `Allow: /` for Bingbot and Googlebot only. Hard
+§13 wall. Worth flagging loudly because stooq is the most commonly recommended free futures-CSV
+source on the internet and **it is not adoptable by this desk.**
+
+**The new class — a 200 that is a proof-of-work challenge.** Every `/q/d/l/` CSV request returned
+**HTTP 200, `text/html`, 796 bytes**, carrying a SHA-256 proof-of-work interstitial that brute-forces
+a 4-nibble prefix and reloads. Solving it is circumvention and was not attempted. But the detection
+lesson generalises past this host and past this gate: this is the *third* distinct shape the desk
+has now seen of "a 200 with a byte count that is not content" (after the JS-challenge page and the
+soft-404). **A collector must assert parsed row shape, never the status code and never the size.**
+
+#### CARD — MOEX ISS — **destroyed-at-source**
+
+`https://iss.moex.com/robots.txt`, 25 bytes, in full: `User-Agent: * / Disallow: /`. The API host
+bars all automated retrieval. Recorded precisely because MOEX ISS is *documented* as an open public
+API and is widely recommended as one: **the docs invite use while robots forbids it, and the robots
+file is the licence.** Documentation-says-open is not a permission.
+
+#### CARDS — Eurex / ICE / HKEX — **UNVERIFIED** (robots cleared, no data fetched)
+
+- **Eurex**: wildcard group is ALLOW with an explicit `Crawl-delay: 30`; disallows cover `/search`,
+  a few `sapContentPage.js` and two named PDFs. Named groups exist for GPTBot/ChatGPT-User/
+  OAI-Searchbot/PerplexityBot — re-read the group matching the UA actually used.
+- **ICE**: allowed, but the disallowed prefixes (`/report-center/category/`, `/report-partial/`,
+  `/report-center-folio`) are *exactly the report-discovery surface* — a naive crawl breaches on
+  the first useful click.
+- **HKEX**: only four Listing-Rules-contingency prefixes disallowed; market data open. Legacy
+  `dayrpt/cus.htm` and `dayrpt/hsif.htm` both 404 — **moved, not dead**; do not grade destroyed.
+
+**CROSS-SOURCE PAIR (joint value > either alone):** HKEX **USD/CNH futures** open interest ×
+the **CNH–CNY basis** axis already deferred to 2026-09-05. The basis says *how far offshore CNH has
+drifted from the onshore fix*; exchange OI says *how much positioning is behind the drift and
+whether it is building or unwinding*. Neither is a positioning-pressure signal on its own. This is
+the pair worth building next, and it makes finding HKEX's moved path the highest-yield next item.
+
+**ROUTED:** the PDF-extractor hang → `docs/research/improvement_inbox.md` (exact one-character
+patch named and its fix measured). **No EV-gate pre-registration this run** — the JPX axis does not
+earn one until the session-boundary convention is resolved, and pre-registering on a join I have
+just said not to make would be exactly the timidity-in-reverse this desk punishes.
+
+Status: **CLOSED.**
+
+#### INCIDENT (same run, not part of the dig) — the 23-symbol seed was staged over the live 251-symbol registry
+
+Committing this session's output was blocked by the protected-artifact guard reporting **3,612
+records lost from `desks/mt5/data/universe/universe.json`** — a file this dig never touched. Cause:
+the file was `MM`, and the **shared index** held a 6,980-byte / **23-key** version while HEAD and
+the working tree both held the intact 135,352-byte / **251-key** one. A sibling session had staged
+the dead 23-symbol bootstrap seed (the registry BRAIN s6 recorded as having zero readers) over the
+live universe; the next commit by *any* session in this worktree would have shipped it.
+
+This is the anti-hardcode law's exact failure shape — a bootstrap SEED acting as a boundary — and
+the R0423 shared-worktree hazard producing it. **Repaired**: `git restore --staged` on that path
+only. The working tree was already correct and was not touched. The guard did its job; worth noting
+that it fired on a *staged* file for a session that had staged something else entirely, which is
+the only reason it was seen at all.
