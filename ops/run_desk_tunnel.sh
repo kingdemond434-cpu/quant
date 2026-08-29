@@ -39,13 +39,25 @@ LOG=data/desk_tunnel.log
 # QUIC rides UDP, which this path evidently will not keep open; http2 rides TCP and does not
 # have that failure mode. Losing a little throughput on a dashboard is not a cost worth
 # defending.
-/usr/local/bin/cloudflared --no-autoupdate --config /home/quant/.cloudflared/quick.yml \
-    --protocol http2 \
-    tunnel --url http://localhost:8788 --logfile "$LOG" --loglevel info &
+# THE NAMED TUNNEL, so the address never changes. This ran a QUICK tunnel, which mints a random
+# trycloudflare.com name on EVERY restart -- so each restart silently invalidated the principal's
+# bookmark and cost a round trip to hand over a new link. Meanwhile dash.quanttt.xyz, configured
+# in ~/.cloudflared/config.yml with credentials present since July, was never the thing running,
+# so it returned 404 to anyone who tried it (verified 2026-08-29).
+# Tested before switching: the named tunnel registers four connections (hel01, hel02, dme05 x2)
+# over http2 and dash.quanttt.xyz answers 200. Stable name, no manual step, ever again.
+# FLAG ORDER MATTERS: --logfile and --loglevel are GLOBAL flags and must precede the `tunnel`
+# subcommand. Placed after `run`, cloudflared prints its help text and exits, which systemd
+# reports as the unit "activating" forever while the dashboard stays 404.
+/usr/local/bin/cloudflared --no-autoupdate --config /home/quant/.cloudflared/config.yml \
+    --protocol http2 --logfile "$LOG" --loglevel info \
+    tunnel run &
 CF_PID=$!
 
 for _ in $(seq 1 40); do
-  URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOG" 2>/dev/null | head -1)
+  # A named tunnel prints no URL -- its hostname is the config's, and it is FIXED.
+  URL=$(grep -oE 'hostname: *[a-z0-9.-]+' /home/quant/.cloudflared/config.yml 2>/dev/null \
+        | head -1 | awk '{print "https://"$2}')
   if [ -n "${URL:-}" ]; then
     printf '%s\n' "$URL" > "$URL_FILE"
     echo "desk dashboard public at: $URL/desk.html?k=<key from data/secrets/dashboard_token.txt>"

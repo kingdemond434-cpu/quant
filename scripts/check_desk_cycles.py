@@ -26,12 +26,14 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DESK = ROOT / "desks" / "mt5"
 OUT = ROOT / "data" / "desk_cycles.json"
+REMOTE = "contabo-mt5"
 
 #: The canonical ten, in canonical order. Hardcoded ON PURPOSE: this is the invariant being
 #: checked, so reading it from the same file it validates would make the check vacuous.
@@ -213,6 +215,70 @@ def check_cure_lane(now: datetime) -> tuple[list[str], list[str]]:
     return breaches, fixes
 
 
+
+def check_hourly_coverage(now: datetime) -> tuple[list[str], list[str]]:
+    """EVERY HOUR: every gate run, every hypothesis tested, the bar unmoved.
+
+    Standing instruction from the principal (2026-08-29): all gates tested, all hypotheses
+    tested, certificates flowing, every hour -- and the bar is FIXED. It never raises and it
+    never gets harsher. This is the organ that makes that a rule rather than an intention.
+
+    Each breach here has a fixer, because a report that waits for a human is how the desk lost
+    three days to a paused gateway nobody read.
+    """
+    breaches: list[str] = []
+    fixes: list[str] = []
+    rep = _read(DESK / "reports" / "universal_gates_external.json")
+    if not rep:
+        return breaches, fixes
+
+    # ---- THE BAR IS FIXED. Checked first: everything below is meaningless if the bar moved.
+    basis = str(rep.get("trial_count_basis") or "")
+    trials = rep.get("n_trials")
+    if not basis.startswith("fixed_campaign_trials"):
+        breaches.append(
+            f"BAR MOVED: the last sweep charged trials on basis '{basis[:70]}' with "
+            f"n_trials={trials}. The bar is fixed and never gets harsher -- a sweep-scaled "
+            f"charge means a candidate is judged against how many others shared its hour. "
+            f"The desk box is running a gate_policy that is not canon.")
+        rc, out = _run([sys.executable, str(ROOT / "scripts" / "check_desk_module_drift.py")], 600)
+        detail = out.splitlines()[-1][:90] if out else ""
+        fixes.append(f"BAR: re-shipped canonical gate policy (rc={rc}) {detail}")
+
+    # ---- EVERY HOUR. A sweep older than 90 minutes has missed its slot.
+    age_h = None
+    with suppress(TypeError, ValueError):
+        age_h = (now - datetime.fromisoformat(str(rep.get("swept_at")))).total_seconds() / 3600.0
+    if age_h is not None and age_h > 1.5:
+        rc, _ = _run(["ssh", "-o", "ConnectTimeout=25", REMOTE,
+                      'powershell -Command "schtasks /Run /TN MT5-Gauntlet"'], 90)
+        fixes.append(f"HOURLY: last sweep {age_h:.1f}h old -- triggered MT5-Gauntlet (rc={rc})")
+
+    # ---- EVERY HYPOTHESIS TESTED. Cells deferred by the build budget are work not yet done,
+    # and the cure is a warmer cache, not a longer sweep: a cached cell costs nothing to judge,
+    # so once the cache is full EVERY hypothesis is tested every hour at cache-hit speed.
+    deferred = int(rep.get("n_cells_deferred_build_budget") or 0)
+    if deferred:
+        rc, _ = _run(["ssh", "-o", "ConnectTimeout=25", REMOTE,
+                      'powershell -Command "schtasks /Run /TN MT5-CacheWarm"'], 90)
+        fixes.append(f"COVERAGE: {deferred} hypothesis(es) deferred by the build budget -- "
+                     f"triggered MT5-CacheWarm (rc={rc}); a cached cell is judged for free, so "
+                     f"filling the cache is what makes 'every hypothesis, every hour' true")
+
+    # ---- EVERY GATE RUN. A judged cell must carry all ten stages. A subset is not a verdict
+    # under this policy, and a cell judged on nine gates has passed nothing.
+    judged = [v for v in (rep.get("verdicts") or []) if (v.get("stages") or {})]
+    partial = [v for v in judged if not set(CANONICAL_GATES) <= set(v.get("stages") or {})]
+    if partial:
+        example = partial[0]
+        missing = sorted(set(CANONICAL_GATES) - set(example.get("stages") or {}))
+        breaches.append(
+            f"PARTIAL GATE SET: {len(partial)} of {len(judged)} judged cell(s) carry fewer than "
+            f"ten stages (e.g. {example.get('sym')} missing {missing}). A subset is not a verdict "
+            f"under this policy.")
+    return breaches, fixes
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     breaches: list[str] = []
@@ -228,6 +294,9 @@ def main() -> int:
     lb, lf = check_cure_lane(now)
     breaches += lb
     fixes += lf
+    hb, hf = check_hourly_coverage(now)
+    breaches += hb
+    fixes += hf
 
     report = {
         "checked_at": now.isoformat(timespec="seconds"),
