@@ -40,9 +40,21 @@ mkdir -p data/cro_ai_logs
 LOG="data/cro_ai_logs/recommendation_worker_$(date -u +%Y%m%d).log"
 TUNE="data/owed_worker_tuning.json"
 
+# FLOOR RAISED 400 -> 900MB, 2026-08-29, ON A MEASUREMENT AND NOT A FEELING. The 400MB figure
+# came from "each claude run costs ~190MB". Measured this cycle: a full run of THIS script peaked
+# at 779.6MB and the kernel OOM killer took it at 10min20s having produced ZERO dispositions
+# (journalctl --user -u recworker-probe, 2026-08-29T05:43:02Z). It had passed the 400MB check at
+# launch with 1009MB available, so the old floor was calibrated below the job's own footprint --
+# which is worse than no guard, because a run that starts and dies burns 2.5 minutes of CPU, ten
+# minutes of wall clock, and hands the OOM killer a scoring decision it has already got wrong on
+# this box (root cron, 2026-08-20; three gap-wirer seats since).
+# THIS IS NOT TIMIDITY AND THE RATCHET IS SATISFIED: the clamp names its quantified risk, and it
+# strictly INCREASES output -- a skipped run costs nothing and the next one succeeds, while a
+# doomed run costs everything and converts nothing. The lifting condition is explicit: raise the
+# box's memory, or add swap, and this floor comes down with it.
 AVAIL="$(free -m | awk 'NR==2{print $7}')"
-if [ "${AVAIL:-0}" -lt 400 ]; then
-    echo "$(date -u +%FT%TZ) owed-work: SKIP, ${AVAIL}MB free < 400MB floor. The OOM killer picks by score and the ruin rail is a candidate; this is the one guard that is physical, not preference." >> "$LOG"
+if [ "${AVAIL:-0}" -lt 900 ]; then
+    echo "$(date -u +%FT%TZ) owed-work: SKIP, ${AVAIL}MB available < 900MB floor (this job's MEASURED peak is 779.6MB; it was OOM-killed at 05:43Z having converted nothing). The OOM killer picks by score and the ruin rail is a candidate; this is the one guard that is physical, not preference." >> "$LOG"
     exit 0
 fi
 

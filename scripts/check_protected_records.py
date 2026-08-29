@@ -98,6 +98,18 @@ def records(rel: str, text: str) -> set[str]:
         except json.JSONDecodeError:
             return set()
         if isinstance(d, dict):
+            # A REGISTRY LOSES FIELDS, NOT KEYS. If every value is itself a record, the identity
+            # that matters is key.FIELD -- otherwise a commit that strips one column from all 251
+            # rows passes with every key intact. Measured 2026-08-29: the same snapshot commit
+            # that deleted 87 gap rows also dropped `currency_profit` from all 251 symbols in
+            # desks/mt5/data/universe/universe.json. It is MetaTrader5's own answer to "what
+            # currency is this denominated in", the only correct route for a share or index CFD
+            # whose name carries no denomination, and this desk has already paid once for a cost
+            # field silently vanishing from this exact file (tick_value: 0/197 costable and a
+            # 184x JPY commission undercharge).
+            vals = list(d.values())
+            if vals and all(isinstance(v, dict) for v in vals):
+                return {f"{k}.{f}" for k, v in d.items() for f in v}
             return set(map(str, d))
         if isinstance(d, list):
             return {_ident(x, f"idx{i}") for i, x in enumerate(d)}

@@ -125,21 +125,55 @@ _UT=desks/mt5/data/universe/universe.json.tmp
 if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/universe/universe.json" "$_UT" 2>/dev/null; then
   if python3 - "$_UT" desks/mt5/data/universe/universe.json <<'PY'
 import json, sys
-def n(p):
+
+# NEVER-SHRINKING IN BOTH DIMENSIONS (fields added 2026-08-29). The row-count half of this guard
+# came from a 23-row stump that a sync propagated. The COLUMN half comes from the same class one
+# level down: on 2026-08-29 a desk copy with all 251 symbols intact -- so it sailed past the row
+# count -- had dropped `currency_profit` from every one of them, and this pull reinstalled the
+# lossy copy every two minutes, defeating three restores by hand. currency_profit is MetaTrader5's
+# OWN answer to what currency a symbol is denominated in, and it is the only correct route for a
+# share or index CFD whose name ("3M", "AUS200") carries no denomination to parse; without it
+# quote_currency() returns None and every cost downstream becomes UNMEASURED. This desk has
+# already paid once for a column silently vanishing from this exact file (tick_value: 0/197
+# costable, and a 184x JPY commission undercharge).
+#
+# The test is deliberately blunt in the safe direction: a field carried by at least a quarter of
+# the LOCAL rows and by NONE of the incoming ones is a dropped column, not a schema change. A
+# genuinely retired field is retired on the desk box and lands here the moment one row keeps it,
+# and a NEW field on the desk copy is not restricted at all -- this can only ever refuse.
+def load(p):
     try:
         d = json.load(open(p))
-        return len(d) if isinstance(d, dict) else 0
+        return d if isinstance(d, dict) else {}
     except Exception:
-        return 0
-new, cur = n(sys.argv[1]), n(sys.argv[2])
+        return {}
+
+def fields(d):
+    out = {}
+    for row in d.values():
+        if isinstance(row, dict):
+            for k in row:
+                out[k] = out.get(k, 0) + 1
+    return out
+
+new_d, cur_d = load(sys.argv[1]), load(sys.argv[2])
+new, cur = len(new_d), len(cur_d)
 print(f"universe pull: desk={new} local={cur}")
-sys.exit(0 if new and new >= cur else 1)
+if not new or new < cur:
+    sys.exit(1)
+nf, cf = fields(new_d), fields(cur_d)
+dropped = sorted(k for k, c in cf.items() if c * 4 >= cur and nf.get(k, 0) == 0)
+if dropped:
+    print("universe pull: desk copy DROPS column(s) the local registry carries: "
+          + ", ".join(f"{k} (on {cf[k]}/{cur} local rows, 0 incoming)" for k in dropped))
+    sys.exit(2)
+sys.exit(0)
 PY
   then
     mv "$_UT" desks/mt5/data/universe/universe.json
     echo "universe registry installed from the desk"
   else
-    echo "universe pull REFUSED: desk copy is smaller than the local registry -- keeping local"
+    echo "universe pull REFUSED: desk copy shrinks the local registry (rows or columns) -- keeping local"
   fi
 fi
 rm -f "$_UT" 2>/dev/null || true
