@@ -8682,7 +8682,21 @@ it is *inspired-by*, never a replication, and the proxy label must travel with i
 mandated universe, where market cap is a real, free, point-in-time-recoverable field. Low leverage
 on alpha101; noted because it is the only missing field with a genuinely easy door.
 
-### 87. [dig 2026-08-29 (prospector s17)] **CBOE keyless vol term structure — VIX3M / VIX9D / VVIX / VIX1D** — grade: **VERIFIED, ADOPTED, PERSISTED** `[§33: wired -> data/cboe_vol_term_structure.json]`
+### 87. [dig 2026-08-29 (prospector s17)] **CBOE keyless vol term structure — VIX3M / VIX9D / VVIX / VIX1D** — grade: **verified-clean** (VERIFIED, ADOPTED-NARROW, PERSISTED; s19 measured — alpha refuted, short-end vol axis adopted) `[§33: wired -> data/cboe_vol_term_structure.json]`
+
+> **s19 RESOLUTION (2026-08-29) — THE BACKLOG VERIFICATION IS CLOSED. The card is SPLIT: refuted
+> as alpha, adopted as a sizing axis.** s17 adopted on `r=+0.835`; s18 showed that was
+> level-vs-level; **s19 measured it against an actual MT5 target** — 8 FX majors, 3,881–4,202 daily
+> obs, 2011→2026, spanning 2011/2015/2018/2020.
+> - **DIRECTION — REFUTED.** Pre-registered, all trials reported: **0/16** tradable `t+1` cells past
+>   the Šidák bar and **0/16** in the high-VIX subsample, while **9/16 contemporaneous controls
+>   fire, max |t|=6.06.** All directional information is same-bar and untradable.
+> - **VOLATILITY — ADOPTED, short end only.** `log(VIX30/VIX9D)` forecasts next-day |return|
+>   incrementally over `log(VIX)` **and** the pair's own trailing 20d realized vol: **8/8 negative
+>   sign, 6/8 past Newey–West(21)**. The long end `log(VIX3M/VIX30)` gives **2/8** — it earns
+>   nothing. VIX1D earned nothing; **VVIX remains UNTESTED and is the only series reaching 2008.**
+> - **STATUS IS ADOPTED-BUT-UNWIRED (III.16 defect, not a status)** — nothing on this desk reads it.
+>   Consumer owed: **R0737**. Evidence: `prospector_coverage.md` s19 ITEM 1.
 
 **Routes (all tested live this run, 2026-08-29, UA `ClaudeBot (quant research desk)`):**
 `https://cdn.cboe.com/api/global/us_indices/daily_prices/{VIX3M,VIX9D,VVIX,VIX1D}_History.csv`

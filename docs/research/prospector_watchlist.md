@@ -1251,3 +1251,42 @@ Different universe, different conditioning class. It is the gauntlet's call, not
 (SR SV, "Inventory scores and metal futures returns", 2024-05-05) — **EV 0.00040, REJECT**,
 killed by `narrow_breadth`: the desk's metals ground is ~8 instruments and breadth starves the IR
 before the mechanism gets a chance.
+
+---
+
+## SESSION SUMMARY — 2026-08-29 (s19)
+
+**Zero new cards raised. One three-session-old card RESOLVED on measurement, one ground EXHAUSTED,
+two measured nulls, one handed escalation refuted.** Full evidence in `prospector_coverage.md`.
+
+- **CARD 87 (CBOE vol term structure) — RESOLVED, and split.** Adopted twice before on a
+  correlation that never named a target. Measured this run over 3,881–4,202 daily obs (2011→2026,
+  8 MT5 FX majors via FRED fixings, spanning 2011/2015/2018/2020):
+  - **DIRECTIONAL alpha: REFUTED.** 0/16 tradable `t+1` cells past the Šidák bar, 0/16 in the
+    high-VIX subsample — while **9/16 contemporaneous controls fire up to |t|=6.06.** The
+    information is real and arrives *with* the bar, not before it. Pre-registered failure mode,
+    landed exactly as written. **→ graveyard, with a number behind it.**
+  - **VOLATILITY / SIZING axis: ADOPTED, narrow.** `log(VIX30/VIX9D)` predicts next-day |return|
+    incrementally over both `log(VIX)` **and the pair's own trailing 20d realized vol**:
+    **8/8 negative sign, 6/8 past Newey–West(21)** — USDJPY −4.59, USDCHF −4.42, NZDUSD −3.78,
+    EURUSD −3.67, AUDUSD −3.62, GBPUSD −3.43, USDCAD −2.87, USDCNH −1.69. **The long end
+    (`VIX3M/VIX30`) carries almost nothing: 2/8.** The edge is in the *short* end only.
+  - **PROMOTION TRIGGER:** this is a sizing input, not a signal — it does not enter the alpha
+    gauntlet. It is promoted when a **named consumer on the vol-target/position-sizing path reads
+    it and leaves an artifact.** Until then it is ADOPTED-BUT-UNWIRED, which under III.16 is a
+    defect, not a status.
+
+- **`macrosynergy/macrosynergy` — EXHAUSTED (all three layers closed).** 2,363 PRs enumerated
+  (the "694" carried by s16/s17/s18 was low by 3.4x); 72% have empty bodies; ~12 substantive.
+  Three sessions deferred this as expensive. **It cost 25 API calls.** One find (#2708
+  frequency-aware annualization) screened to a **measured zero-population null** on the desk's 35
+  lake series and recorded instead as a pre-registered condition on the queued SDMX ingest.
+
+- **s18's escalation trigger DID NOT FIRE** — three of the four rows were <1 day old. Checking the
+  timestamps instead of trusting the sentence surfaced the better finding: the zero-spread defect
+  on 24/251 symbols (incl. EURUSD) was **re-written by a scheduled producer the same day**, so it
+  is a live daily recurrence, not a stale row.
+
+**HONEST VERDICT:** a conversion run, not a discovery run. It closed the backlog to zero pending
+verifications and paid down three sessions of deferred work — but it opened **no new source class**,
+so the ≥25% search-space-expansion reserve went unpaid and s20 owes it first.

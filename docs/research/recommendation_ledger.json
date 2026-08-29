@@ -9535,6 +9535,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0737",
+   "source": "cycle",
+   "summary": "PROSPECTOR s19: the VIX9D short-end vol-term-structure axis is ADOPTED but has NO CONSUMER (III.16 defect, not a status). log(VIX30/VIX9D) predicts next-day |return| on MT5 FX majors INCREMENTALLY over both log(VIX) and the pair's own trailing 20d realized vol: 8/8 negative sign, 6/8 past Newey-West(21) t>2.95 (USDJPY -4.59, USDCHF -4.42, NZDUSD -3.78, EURUSD -3.67, AUDUSD -3.62, GBPUSD -3.43, USDCAD -2.87), n=3881 over 2011-2026 incl 4 crisis regimes. The LONG end (VIX3M/VIX30) carries nothing (2/8) -- adopt the short end ONLY. This is a SIZING input, not a signal: it does not enter the alpha gauntlet (direction was refuted 0/32 cells). MT5 desk owns: name the consumer on the vol-target/position-sizing path and have it read data/cboe_vol_term_structure.json, leaving an artifact. Evidence: docs/research/prospector_coverage.md s19 ITEM 1.",
+   "roi_bps": null,
+   "rank": 60.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T11:12:57.667573+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0738",
+   "source": "cycle",
+   "summary": "PROSPECTOR s19: R0664/R0695/R0728 are ONE defect raised three times in four days by three seats, and the repair site is the PRODUCER, not the ledger. Verified live 2026-08-29: 24/251 universe.json symbols still carry median_spread_pts=0.0 including EURUSD/GBPUSD/AUDUSD/USDJPY/USDCAD/USDCHF/EURGBP/NZDUSD, AND the EURUSD row's own _provenance is stamped 2026-08-29T11:03:00+00:00 source=broker_reported/refresh_cost_fields -- i.e. a SCHEDULED PRODUCER RE-WROTE THE ZERO THE SAME DAY. Dispositioning the three rows would therefore close the paperwork and leave the defect fully live, and a fourth seat would raise it again. MT5 desk owns: (a) merge R0664/R0695/R0728 into one row against the producer, (b) fix expand_universe.py's float(getattr(info,'spread',0) or 0) fallback which renders UNMEASURED and FREE identically (WS-005), (c) add a POST-WRITE fence asserting no traded FX major carries a zero spread -- a defect a daily producer recreates needs a daily check, not a one-time fix. Evidence: docs/research/prospector_coverage.md s19 ITEM 2.",
+   "roi_bps": null,
+   "rank": 75.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T11:13:10.554002+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

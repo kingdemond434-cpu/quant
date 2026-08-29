@@ -10919,3 +10919,248 @@ edited. Parquet `+00:00` stamps stripped, not converted.
 4. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, open since s9 and now
    five sessions old: this seat's mandated daily ground is collected by nothing, so every dig
    spends live browsing on population discovery.
+
+## s19 — 2026-08-29 (SESSION NOTE, written FIRST per the COMPLETION CONTRACT)
+
+Resumed from s18's "NEXT UN-EXHAUSTED GROUND". Backlog first (`source_backlog_next.py`): **1**
+pending technical verification, 0 pending legitimacy, 28 deferred (next returns 2026-09-01).
+The desk's catalogue is not the bottleneck this cycle; the verification queue is nearly drained.
+
+**ITEMS TAKEN THIS RUN (3, bounded per the contract; depth per item unbounded):**
+
+1. **CLOSE the one pending backlog verification — CBOE keyless vol term structure (card 87,
+   VIX3M / VIX9D / VVIX / VIX1D).** Not a re-fetch: the data is already on disk
+   (`data/cboe_vol_term_structure.json`, 4 series, VVIX back to 2006-03-06). s17 adopted it on a
+   `r=+0.835` argument; **s18 showed that number was level-vs-level and re-graded it down.** So the
+   verification owed is the one nobody has run: does the *shape* carry information the *level*
+   (VIXCLS, already held) does not — measured against MT5 instruments, across crisis regimes the
+   desk's own 848-day vol history does not contain. Verdict either adopts card 87 on evidence or
+   excludes it. A third run inheriting "best find of the run" unmeasured is the failure mode.
+2. **Chase R0729 / R0728 / R0695 / R0664 to disposition** — s18 named the escalation condition
+   in advance: *"if all four are still open after a week, that is the finding to escalate."*
+3. **The 694 macrosynergy PR bodies** — counted in s16, s17 and s18; read zero times. This run
+   either reads them or states plainly that the desk is cataloguing them, not mining them.
+
+_(status: IN PROGRESS — this note is updated as each item resolves, never held in context)_
+
+### s19 ITEM 1 — PRE-REGISTRATION (written BEFORE any number was computed)
+
+**Claim under test (card 87, inherited unmeasured through s17 → s18):** the CBOE vol *term
+structure* carries information for MT5 instruments that the VIX *level* — which the desk already
+holds as `fred_VIXCLS.parquet`, 9,250 obs back to 1990 — does not.
+
+**Why it needs a real test rather than another adoption note:** s17 adopted the series on
+`r=+0.835`; s18 established that number was **level-vs-level**, i.e. it measured that VIX3M
+tracks VIX, which is not a claim about incremental information. Nothing since has measured the
+shape. Under L1.49 an unrun gate is a claim the desk cannot cash, so the backlog row cannot be
+resolved either way without this.
+
+**Design, fixed in advance:**
+- **Level arm (control, the incumbent):** `A_t = log(VIX_t)`.
+- **Shape arm (the candidate):** `B_t = log(VIX3M_t / VIX_t)` and `C_t = log(VIX_t / VIX9D_t)`.
+  Both are scale-free by construction, so neither can smuggle the level back in.
+- **Target:** next-day log return `r_{t+1}` of each FRED daily FX series. FRED DEX* are the
+  ~16:00 ET NY fixing and VIX closes 16:15 ET, so **only `t+1` is tradable** and same-day is not.
+- **Test:** OLS `r_{t+1} ~ A + B` (and `~ A + C`); the deliverable is the **t-stat on the shape
+  term with the level already in the regression** — incremental information, not correlation.
+- **MANDATORY LEAK CONTROL (the free-data-q lesson):** run the identical regression at **lag 0**
+  (`r_t` on same-day predictors). If lag 0 is strongly significant and `t+1` is not, the series is
+  *contemporaneous and untradable* and card 87 dies — that is the expected failure mode, and
+  naming it in advance is what makes the null trustworthy.
+- **TRIALS COUNTED HONESTLY:** 8 FX symbols x 2 shape definitions = **16 tradable cells**, plus 16
+  lag-0 controls. Every cell is reported, winners and losers, per the every-trial-is-reported law.
+  With 16 cells the Šidák-adjusted 5% two-sided bar is |t| ~ 2.95; a |t| of 2 means nothing here.
+
+### s19 ITEM 1 — RESULT: **card 87 is REFUTED as alpha and ADOPTED as a sizing axis.** The information is real, it is in the SHORT end, and it is entirely about volatility — never direction.
+
+**Sample:** 3,881–4,202 daily obs, 2011-01-04 → 2026-08-07, 8 FRED daily FX fixings mapped to MT5
+majors. Spans 2011, 2015, 2018 and 2020 — the crisis regimes s17 correctly noted the desk's own
+848-day vol history does not contain.
+
+**(a) DIRECTION IS DEAD, and the leak control is why we know.** Pre-registered, 32 cells reported:
+
+| arm | cells past Šidák |t|>2.95 | max |t| on SHAPE |
+|---|---|---|
+| `t+1` **tradable** | **0 / 16** | 2.80 |
+| `t+0` contemporaneous control | **9 / 16** | **6.06** |
+| `t+1`, high-VIX regime only (VIX≥24.18, n≈553–655) | **0 / 16** | 2.40 |
+
+This is the pre-registered failure mode landing exactly as written: **all of the shape's
+directional information is contemporaneous.** It moves *with* the FX bar, not before it, so it is
+untradable as a directional signal — and the crisis subsample does not rescue it, which retires
+s17's "it may only earn its keep where the desk has no data" hypothesis on evidence rather than
+on opinion. Note the shape *dominates the level* at lag 0 (6.06 vs 2.77): the shape genuinely is
+the informative variable. It just arrives too late to trade directionally.
+
+**(b) THE REAL FIND — the SHORT end forecasts next-day FX volatility, incrementally.** Regressing
+next-day **|return|** on `log(VIX)` + the symbol's **own trailing 20d realized vol** + the shape,
+so the shape is only credited for what the desk does *not* already have for free:
+
+| arm | definition | survives full controls |
+|---|---|---|
+| **C — short end** | `log(VIX30 / VIX9D)` | **7 / 8 at OLS, 6 / 8 Newey–West(21), sign negative 8 / 8** |
+| B — long end | `log(VIX3M / VIX30)` | 2 / 8 — **the long end carries almost nothing** |
+
+Newey–West t-stats on arm C (autocorrelation-robust, because vol residuals are persistent and raw
+OLS overstates): USDJPY −4.59, USDCHF −4.42, NZDUSD −3.78, EURUSD −3.67, AUDUSD −3.62, GBPUSD
+−3.43, USDCAD −2.87, USDCNH −1.69. **Own trailing RV is the strongest term everywhere (t 6.6–14.5)
+and the shape is incremental to it** — that control is what makes this worth keeping.
+
+**Sign and mechanism:** VIX9D is *shorter* than VIX30, so a high `C` means the 9-day is depressed
+relative to the month — a calm front end. The coefficient is negative in all 8: **a depressed
+front end predicts a quiet next day**, beyond what the level and the pair's own realized vol
+already say. That is a coherent vol-term-structure statement, not a curve-fit: one sign, one
+mechanism, eight instruments.
+
+**DISPOSITION — the backlog row resolves ADOPT, on a narrower claim than it was catalogued under.**
+Under the objective, `W = W(alpha, R, X, C, L, S)` makes risk allocation a first-class lever and a
+better vol forecast is worth what a better alpha is worth — so this is a real deliverable. But it
+is **not** an alpha axis and must never be catalogued as one: card 87's directional reading is now
+in the graveyard with a measured null behind it, and only the **VIX9D short-end arm** is adopted,
+for **sizing/regime conditioning**. VIX3M and VIX1D earned nothing here; VVIX untested.
+
+**What this corrects for the third time in a row:** s17 adopted on `r=+0.835` (level-vs-level),
+s18 re-graded it, s19 measured it. **A correlation between two vol indices was never evidence
+about an MT5 book, and it took three sessions to get a number.** The lesson is cheap to state and
+was expensive to learn: an adoption argument that never names the *target* is not an argument.
+
+### s19 ITEM 2 — s18's escalation **does not fire**, and checking that first surfaced a sharper defect than the one it asked me to escalate.
+
+**s18 wrote the trigger in advance:** *"if all four are still open after a week, that is the
+finding to escalate."* Measured before acting, per the standing "re-measure before acting on any
+handed queue" lesson:
+
+| row | status | raised | **age** |
+|---|---|---|---|
+| R0664 | open | 2026-08-26 | **3.1 d** |
+| R0695 | open | 2026-08-28 | **0.7 d** |
+| R0728 | open | 2026-08-29 | **0.0 d** |
+| R0729 | open | 2026-08-29 | **0.0 d** |
+
+**Three of the four are hours old.** The escalation condition is not met and firing it would have
+been a false alarm against seats that have had no chance to act. s18's premise — that these rows
+were already aging — was simply wrong, and the only reason this run did not inherit that error is
+that it read the timestamps instead of the sentence. **A handed escalation trigger is a claim
+requiring evidence exactly like any other.**
+
+**But the check found the real thing.** R0664 / R0695 / R0728 are **the same defect raised three
+times in four days by three different seats** (`cro-cycle`, `free-data-alternatives`, `cycle`) —
+`universe.json median_spread_pts = 0.0` on major FX. Verified live this run:
+
+- **24 of 251 symbols still price at zero spread**, including **EURUSD, GBPUSD, AUDUSD, USDJPY,
+  USDCAD, USDCHF, EURGBP, NZDUSD** — and NVIDIA, Walmart, Broadcom.
+- **The EURUSD row's own provenance is stamped `2026-08-29T11:03:00+00:00`, source
+  `broker_reported` / `refresh_cost_fields` — i.e. hours ago, this same day.**
+
+**That changes the disposition entirely.** This is not a stale row waiting for someone to notice;
+**a scheduled producer ran today and wrote the zero again.** Dispositioning the ledger rows would
+therefore close the paperwork and leave the defect fully live — and the next seat would raise it a
+fourth time. The re-raise rate *is* the symptom: three independent seats spending a dig each to
+rediscover a defect that a daily job keeps recreating. Under WS-005 the underlying fault is the
+familiar one — `expand_universe.py` falls back to `float(getattr(info,'spread',0) or 0)`, so
+**UNMEASURED and FREE render identically**, and the downstream `max(pts*tick_size*contract_size, 0.05)`
+floor makes the result look deliberate rather than missing.
+
+**Routed, not patched** (this seat is RESEARCH-ONLY and `desks/mt5` is outside its freeze): the
+finding is that **the producer, not the ledger, is the repair site**, and that the correct fence is
+a post-write assertion that no traded FX major carries a zero spread — a defect a daily producer
+recreates needs a daily check, not a one-time fix. R0664/R0695/R0728 should be **merged into one
+row against the producer** rather than dispositioned separately; three rows for one defect is how
+the same dig gets paid for three times.
+
+### s19 ITEM 3 — the macrosynergy PR corpus is READ. **The count was wrong in both directions, and 72% of it is empty.**
+
+Counted in s16, s17 and s18 as "694 PR bodies"; never opened. Enumerated to exhaustion this run
+via the REST list endpoint (7 → 25 pages, `state=all&per_page=100`, stopped on the first empty
+page), persisted to `data/intelligence/macrosynergy_prs.json`:
+
+| | |
+|---|---|
+| PRs, **actual** | **2,363** (2021-04-27 → 2026-08-28), 2,078 merged |
+| the number carried three sessions | 694 — **wrong, and low by 3.4x** |
+| bodies non-empty | **652 (28%)** — *72% of the corpus is an empty body* |
+| bodies >200 chars | **186** |
+| of those, matching any desk-relevant term | **41** |
+| of those 41, actually substantive | **~12** — the rest are `dependabot` dependency bumps whose bodies are upstream changelogs, not authored text |
+
+**So the mineable corpus was never 694 items; it was about a dozen.** Three sessions deferred it as
+a large expensive job. It cost 25 API calls. **The cost of the deferral exceeded the cost of the
+work** — and the estimate that justified the deferral was never checked, which is the actual lesson.
+
+**WHAT THE DOZEN CONTAIN** (three carry real methodology; the rest are plotting/HTML/ASCII chores):
+
+1. **PR #2708 "frequency-aware annualization"** — replaces *"a static, ticker-name-derived
+   `sqrt(1/freq)` weighting that cannot represent an intra-series release-frequency change (e.g.
+   Australia CPI going quarterly → monthly in the same quantamental series)."* A real hazard: a
+   macro series scaled by an assumed cadence is silently mis-scaled after the publisher changes it.
+2. **PR #2698 (MAP p-value)** notes `panel/category_relations.py` *still runs its own
+   `MixedLM(reml=False)`* — **plain ML, which omits the dof correction and therefore overstates
+   significance.** Two parallel implementations of one test, the duplicate being the less
+   conservative one. This is the desk's own "import the number, never restate it" rule, found in
+   the wild with the failure attached.
+3. **PR #2707 `panel_ewm_sum`** reindexes sparse panels to a dense business-day grid and
+   **zero-fills interior gaps.** Missing rendered as zero — the WS-005 class exactly.
+
+**SCREENED ON DISCOVERY, and #2708 does not apply here — measured, not assumed.** Before routing it
+as a desk defect I checked (a) the desk is already defended on annualization mismatch —
+`forward_ladder.py` explicitly refuses to divide a `sqrt(365/horizon)` Sharpe by a `sqrt(365)` one
+and names the 4.47x artifact; and (b) **the bug needs a population**. Across all 35 lake series with
+n≥200, comparing median inter-observation gap in the first vs second half: **0 series show a >1.5x
+cadence change.** The desk holds no series with a mid-series frequency change, so the defect has
+**no population here** — the "a published null has no population" discipline, applied in the
+direction that prevents a phantom defect entering the inbox.
+
+**BUT IT IS A PRE-REGISTERED HAZARD FOR WORK ALREADY QUEUED.** The zero-population verdict holds
+only over today's 35 series. The source backlog carries **"the residual 9,827 un-mined
+supranational SDMX dataflows (BIS/IMF/OECD/Eurostat)"** (returns 2026-09-05) — national-statistics
+panels, which is precisely where publishers change cadence and where this desk has *already* been
+bitten by a related discontinuity (the SSB 09468 −92.5% reclassification cliff at 2013M08). So
+#2708 is recorded now as a **condition on that ingest**, not as a defect today: any SDMX series
+adopted must have its release cadence inferred from its own observation dates rather than assumed
+from its identifier. Cheap to state in advance; expensive to discover after adoption.
+
+**GROUND STATUS: `macrosynergy/macrosynergy` is EXHAUSTED (2026-08-29).** Forks — measured null,
+0/33 divergent (s16). Issues — 800 items, mined (s16). **PRs — 2,363 enumerated and read (s19).**
+All three layers are closed. Do not re-open without a named enabling change (L1.16a).
+
+### s19 SOURCE-FAMILY YIELD (for source-yield learning)
+
+| family / ground | visited | yield |
+|---|---|---|
+| **CBOE vol term structure** (`data/cboe_vol_term_structure.json`, on disk) | ✅ | **CARD 87 RESOLVED after 3 sessions: direction REFUTED 0/32 cells; VIX9D short-end ADOPTED as a next-day FX vol/sizing axis, 8/8 sign-consistent, 6/8 Newey–West** |
+| **FRED daily FX fixings + VIXCLS** (desk's own lake, free) | ✅ | the test asset that made the above possible — 3,881 obs over 4 crisis regimes the MT5 tape lacks |
+| **`macrosynergy/macrosynergy` PRs** (REST, 25 pages) | ✅ | **2,363 PRs enumerated — ground EXHAUSTED. 3 methodology finds; 1 screened to a measured zero-population null; 1 pre-registered as a condition on the queued SDMX ingest** |
+| **recommendation ledger** (R0664/R0695/R0728/R0729) | ✅ | **s18's escalation refuted on timestamps; found instead that a scheduled producer re-wrote the zero-spread defect the same day** |
+| desk lake cadence audit (35 parquets) | ✅ | **measured null, 0/35** — and the null is the deliverable |
+
+**Cards: 1 RESOLVED (card 87 — split into a refuted directional half and an adopted vol half).
+0 new cards raised. 1 ground EXHAUSTED. 2 measured nulls. 1 handed escalation refuted.**
+
+**DEPTH LINE (per the depth mandate):** CBOE — *exhausted* (32 pre-registered cells + 16 vol cells
++ 16 crisis-subsample cells + a Newey–West robustness pass + an own-realized-vol control; every
+trial reported). macrosynergy PRs — *exhausted* (full pagination to the empty page, not a sample;
+bodies read, not counted). Ledger — *depth 2* (status → age → the producer's own provenance stamp,
+which is where the finding was). **This run mined 0 new hosts by choice**: three items were owed
+from prior runs and the contract says finish those first. That is resumption, not narrowness — but
+it does mean s19 contributed **no search-space expansion**, and s20 owes the ≥25% expansion share.
+
+### NEXT UN-EXHAUSTED GROUND (for s20, in order)
+
+1. **s20 OWES SEARCH-SPACE EXPANSION.** s19 spent 100% of its budget on inherited items and opened
+   no new source class. The reserve is ≥25% and it was not paid this run. Name it first, spend it
+   first.
+2. **The adopted VIX9D vol axis needs a consumer, or the adoption is a lie (III.16).** "Adopted"
+   is not a status. It is a sizing input with 6/8 Newey–West support and **nothing on this desk
+   reads it.** The next step is not more measurement — it is naming the consumer (the vol-target /
+   position-sizing path) and the artifact. If s20 cannot name one, it should say so plainly rather
+   than re-measure the axis a fourth time.
+3. **VVIX is untested and it is the one series that reaches 2008** (5,082 obs from 2006-03-06,
+   vs VIX3M's 2009-09). The whole crisis-regime argument that motivated card 87 applies *most* to
+   the series nobody has touched. Same design, already written above — it is a re-run, not a rebuild.
+4. **The zero-spread producer.** Not this seat's to patch, but s20 should re-read the EURUSD
+   `_provenance` stamp: if it has advanced again with `median_spread_pts` still 0.0, that is a
+   daily-recurring corruption of the money bar and belongs at the top of the register, not in three
+   separate undisposed rows.
+5. **The author-declared-holdout genre** (carried unchanged from s18 #5): public rules whose author
+   pre-committed an OOS boundary. Still un-searched; the holdout is the expensive part and someone
+   else already paid for it.

@@ -4519,3 +4519,36 @@ any of the corrections the desk applies afterward and it is uniform across famil
 subset, emit the unconditional every-Nth-bar baseline over the identical window and cost model
 alongside it, so the conditioning's contribution is read directly rather than inferred. Cheapest
 place is wherever the ten-gate certificate already assembles the candidate's own return series.
+
+## prospector s19 — 2026-08-29 — an ADOPTED card sat in the "pending verification" queue because the desk's own two vocabularies do not match
+
+**Found while closing the last pending backlog row.** Card 87 was graded
+`**VERIFIED, ADOPTED, PERSISTED**` by s17 and still counted as **pending verification** on every
+subsequent run. `libs/research/source_backlog.py:_classify` resolves a card on exactly three
+things — a `[§33: killed]` marker, `verified-clean`, or `destroyed-at-source` — and its final line
+is `return "verification", None  # unrecognized grade text -- fail open, never silently drop`.
+
+**Fail-open is the right default and is not the defect.** The defect is that the *writing* seats
+and the *reading* parser were never given one vocabulary, so the most confident possible grade a
+digger can write — "VERIFIED, ADOPTED, PERSISTED" — is **unrecognized**, and an adopted card is
+therefore indistinguishable from an unexamined one. It re-presents forever as work owed.
+
+**Why this is worth a row rather than a shrug:** the queue is the desk's measure of whether
+cataloguing is outrunning verification, and this makes that measure read high for a reason that
+has nothing to do with verification. It is the same class as the two §33 tag grammars that failed
+silently (recorded 2026-08-28) — **a producer and a consumer that agree on the concept and
+disagree on the token.** Three prospector sessions read "1 pending verification" and none of them
+found it was already done.
+
+**Fixed here for card 87** (regraded to `verified-clean`, backlog now reports **0 pending, clear**).
+**Not fixed generally, and that is the routed item:** either (a) `_classify` should also accept the
+grades the diggers actually write (`verified`, `adopted`, `persisted`) as terminal, or (b) the card
+template should state the three terminal tokens inline so a writer cannot miss them. (a) is the
+better fix — the parser is one file and the writers are every future seat. **Not this seat's to
+patch: `libs/` is outside the research freeze.** Worth checking whether other cards graded in
+digger-vocabulary are sitting in the same queue for the same reason.
+
+**CHECKED, not left as a suggestion:** re-parsed the whole watchlist through `parse_watchlist`
+after the regrade — **0 cards remain in the verification queue**, so card 87 was the only one
+stuck on vocabulary. The general fix is still worth making (the next digger will write the same
+words card 87 did), but the blast radius today is one card, measured rather than assumed.
