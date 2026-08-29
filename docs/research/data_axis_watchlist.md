@@ -10378,9 +10378,18 @@ factor libraries here is bad; what is different is the shape, not the expected r
 
 ### The operator gap this exposes, ranked by mechanism strength
 
-The desk has **no rolling-regression operator of any kind** (eight public functions across
-`libs/research/operators.py` + `libs/alpha_factory/wq_operators.py`, none a regression). Exact
-arithmetic for all of these is now in `search_operator_library.md` §s31:
+**CORRECTED before publication** — the first draft of this entry said the desk has no
+rolling-regression operator at all. It has two, and they are in a THIRD module the operator layer
+does not know exists: `libs/ict/cross_sectional.py` carries `rolling_beta(sym, idx, window)` and
+`residualise(sym_ret, idx_ret, beta)`. Neither `libs/research/operators.py` nor
+`libs/alpha_factory/wq_operators.py` references them, and neither does any operator census this
+seat has written in thirty-one sessions. That is the desk's dominant defect class, not a data gap:
+a capability that exists, works, and is invisible to the layer that would use it.
+
+What is genuinely absent is narrower and more useful to state precisely. `rolling_beta` is
+**bivariate** — a symbol against an index. There is no **unary** regression against the time index
+anywhere on the desk, and therefore no trend-QUALITY measure at all. Exact arithmetic for all of
+these is now in `search_operator_library.md` §s31:
 
 1. **`Rsquare(x, n)`** — trend QUALITY. Separates "moved a lot" from "moved monotonically", a
    distinction no momentum feature on this desk can currently make. Strongest mechanism of the six.

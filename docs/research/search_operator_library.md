@@ -4551,13 +4551,26 @@ use needs a minimum-sample guard the source does not have.
 ### `Slope(x, n)` / `Rsquare(x, n)` / `Resi(x, n)` — regression against the TIME INDEX
 
 Unary, so the regressor is the bar index, not another series. These are the rolling trend-strength
-diagnostics: slope of the fitted line, its R², and the residual of the newest bar. **The desk has
-no rolling-regression operator of any kind** — `libs/research/operators.py` and
-`libs/alpha_factory/wq_operators.py` between them expose eight public functions
-(`group_rank`, `group_zscore`, `vector_neut`, `trade_when`, `ts_backfill`, `ts_information_ratio`,
-`fitness`, `_as_panel`), and not one is a regression. `Rsquare` in particular is a **trend-quality**
-measure with no equivalent anywhere on this desk: it separates "moved a lot" from "moved
-monotonically", which is precisely the distinction every momentum feature in s28/s31 cannot make.
+diagnostics: slope of the fitted line, its R², and the residual of the newest bar.
+
+**A CORRECTION TO THIS SESSION'S OWN FIRST DRAFT, and the correction is the better finding.** The
+draft said the desk has no rolling-regression operator of any kind, on the evidence that
+`libs/research/operators.py` and `libs/alpha_factory/wq_operators.py` expose eight public functions
+between them (`group_rank`, `group_zscore`, `vector_neut`, `trade_when`, `ts_backfill`,
+`ts_information_ratio`, `fitness`, `_as_panel`) and not one is a regression. That is true of those
+two files and false of the desk. **`libs/ict/cross_sectional.py` has carried
+`rolling_beta(sym, idx, window)` and `residualise(sym_ret, idx_ret, beta)` the whole time**, and
+neither operator module references either, nor did any of the thirty-one operator censuses this
+seat has written. Searching the operator layer and reporting its emptiness as the desk's inventory
+is the same defect shape as an empty collector artifact asserting absence: **I searched where the
+answer was supposed to live, not where it was.** The standing repair is one grep across `libs/`
+rather than across the two files whose names contain "operator".
+
+The precise gap, restated: `rolling_beta` is **bivariate** (a symbol against an index). There is no
+**unary** regression against the time index anywhere on the desk, hence no trend-QUALITY measure of
+any kind. `Rsquare` remains the highest-value item of the seven — it separates "moved a lot" from
+"moved monotonically", precisely the distinction every momentum feature in s28/s31 cannot make —
+and its absence is now established against the whole tree, not against two files.
 
 ### `Quantile(x, n, q)` — rolling quantile, and s30's list omitted it
 

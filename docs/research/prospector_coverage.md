@@ -13325,6 +13325,28 @@ PROCESS material and the mandate's highest-value class), `openclaw-pza/alpha-gau
 (Rank-IC/ICIR/t-stat evaluation framework), `pengpengyi92/pengyi-quant-super-line` (operator
 reproduction).
 
+### 5. I got the desk's own inventory wrong, and the correction is worth more than the census
+
+The first draft of this session's operator write-up stated that the desk has no rolling-regression
+operator of any kind. Evidence: `libs/research/operators.py` and `libs/alpha_factory/wq_operators.py`
+expose eight public functions between them and none is a regression. That is true of those two
+files and **false of the desk** — `libs/ict/cross_sectional.py` has carried `rolling_beta()` and
+`residualise()` the whole time, and neither operator module references either. Nor did any of the
+thirty-one operator censuses this seat has written, including s30's, which reported the desk as
+implementing "SIX of 108".
+
+**The defect is the search, not the count.** I searched the two files whose names contain
+"operator" and reported their emptiness as the desk's inventory — the same shape as an empty
+collector artifact asserting absence (s11), and the same shape as s23's live screen running green
+off a stale tape because there were two directories with the same name. Standing repair, applied
+to both write-ups: one grep across `libs/`, never across the modules where the answer is supposed
+to live. Both documents now carry the correction inline rather than a quiet edit.
+
+The corrected gap is narrower and more useful: `rolling_beta` is **bivariate** (symbol against
+index); there is **no unary regression against the time index anywhere on the desk**, hence no
+trend-QUALITY measure of any kind. `Rsquare` stays the top kernel and its absence is now
+established against the whole tree.
+
 ### Boundary and cost
 
 Public MIT source via `raw.githubusercontent.com` and the public contents API. No auth, no wall
