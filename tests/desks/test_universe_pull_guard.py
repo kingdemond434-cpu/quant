@@ -105,7 +105,10 @@ def test_a_rare_local_field_does_not_block_the_pull(tmp_path: Path) -> None:
 
 
 def test_a_field_kept_by_even_one_incoming_row_passes(tmp_path: Path) -> None:
-    """A genuine retirement lands the moment the desk box keeps one; this is not a veto on change."""
+    """A genuine retirement lands the moment the desk box keeps one row carrying the field.
+
+    This guard is not a veto on schema change; it is a veto on losing one silently.
+    """
     incoming = _reg(251, ccy=False)
     first = next(iter(incoming))
     incoming[first]["currency_profit"] = "USD"     # type: ignore[index]
