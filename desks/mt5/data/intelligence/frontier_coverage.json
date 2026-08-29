@@ -85,19 +85,19 @@
   "tr": {
    "region": "Turkey",
    "open_frontier": true,
-   "queries_exercised": 24,
+   "queries_exercised": 27,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-28T17:22:01+00:00",
+   "last_swept": "2026-08-29T05:22:03+00:00",
    "native_terms_available": 11
   },
   "de": {
    "region": "DACH",
    "open_frontier": true,
-   "queries_exercised": 24,
+   "queries_exercised": 27,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-28T18:22:01+00:00",
+   "last_swept": "2026-08-29T06:22:01+00:00",
    "native_terms_available": 10
   },
   "fr": {
