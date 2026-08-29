@@ -56,7 +56,14 @@ from typing import Any, Optional, Protocol, Sequence
 import numpy as np
 import pandas as pd
 
-from .trendday import atr, read as trend_read
+# DUAL-CONTEXT: `mt5desk` is on sys.path directly on the trading box, so __package__ is "" there
+# and a bare relative import raises ModuleNotFoundError -- passing every test here and failing
+# only where it matters. Same fix as edge_search/family_inputs; fenced by
+# scripts/check_dual_context_imports.py so this class cannot recur silently.
+try:
+    from .trendday import atr, read as trend_read
+except ImportError:  # pragma: no cover -- exercised on the box, not in CI
+    from trendday import atr, read as trend_read  # type: ignore[no-redef]
 
 __all__ = ["InstrumentState", "RankBrief", "Pick", "RankRead", "Ranker",
            "BaselineRanker", "ClaudeCodeRanker", "build_brief", "RankError"]

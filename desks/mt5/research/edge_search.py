@@ -359,7 +359,20 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     # defect exactly: a symbol with no recorded swap read as a symbol with no carry.
     terms_dir = BASE / "data" / "tape" / "contract_terms"
     if terms_dir.exists():
-        from .carry_state import money_per_lot_night
+        # DUAL-CONTEXT IMPORT. This module is imported BOTH ways: as `research.edge_search`
+        # from the VPS checks, and as a top-level `edge_search` by the box's forward engine,
+        # which puts `desks/mt5/research` directly on sys.path. In the second case __package__
+        # is "" and a relative import has no parent to resolve against, so `from .carry_state`
+        # raised ModuleNotFoundError -- which `family_inputs.resolve` caught and reported as
+        # "runtime inputs unavailable", blocking all SEVEN EURCHF discovered sleeves from
+        # gathering any forward evidence at all.
+        #
+        # Third time this desk has been bitten by a single-form import in a dual-context module
+        # (family_inputs, shadow_admission.run_key, now this). The pattern is the fix.
+        try:
+            from .carry_state import money_per_lot_night
+        except ImportError:
+            from carry_state import money_per_lot_night  # type: ignore[no-redef]
         vals = []
         for f in sorted(terms_dir.glob("*.parquet"))[-60:]:
             try:
