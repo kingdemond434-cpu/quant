@@ -10534,3 +10534,150 @@ run re-opens ICE as a User-Agent problem: **the block here is the licence, not t
 **§38 replacement hunt:** the ICE products this desk cares about are Brent, gasoil and the ICE
 FX/index complex. Eurex (adopted above) does not carry Brent. **Open, unresolved:** no free
 adopted route to ICE-listed energy settlement on this box. Stated with the search attached.
+
+### RESOLVED — item 1 (HKEX) — **verified-clean, ADOPTED**, and it closes run (y)'s open convention question
+
+#### CARD — HKEX daily derivatives market reports (RMB currency futures et al.) — **verified-clean**
+
+Free, keyless, T+1 **per-contract-month settlement price, day + after-hours volume, open interest
+and change in open interest**, plus a full calendar-spread table, for **80 derivative products** —
+including the prize run (y) named: **USD/CNH Futures**, Mini USD/CNH, CNH/USD, EUR/CNH, and
+**USD Gold / CNH Gold / CNH Silver futures**.
+
+- **THE ROUTE — this is the find, and it is why (y) could not reach it.** (y) graded HKEX
+  "moved, not dead" on a 404 from `dayrpt/cus.htm`. Correct, and the move is smaller than it
+  looked: **the legacy `/eng/stat/dmstat/dayrpt/` directory is fully alive; only the filenames
+  changed.** The chain, every hop verified:
+  1. `robots.txt` — only four Listing-Rules-contingency prefixes disallowed. Market data **open**.
+  2. Nav (reachable only by following a **301**; an un-`-L` probe returns a 203-byte stub and
+     reads as dead) → `/Market-Data/Statistics/Derivatives-Market/Daily-Market-Report-(Latest)`.
+  3. That page carries the numbered product index: `dayrpt/dmreport{N}.htm`, **N is the product**.
+     `dmreport26` = USD/CNH Futures, `23` = Mini USD/CNH, `34` = EUR/CNH, `35` = CNH/USD,
+     `36` = USD Gold, `37` = CNH Gold, `39` = CNH Silver, `1` = HSI Futures.
+  4. Each product page links the **dated data file**: `dayrpt/cusf{YYMMDD}.htm` (+ a `.zip`).
+     **That is the machine route** — dated, directly addressable, no session, no key.
+- **History: a rolling ~11 months, and the boundary is not where it looks.** Pulled every weekday
+  from 2025-09-01: **236 trading days returned data, 2025-10-01 → 2026-08-28**; September 2025 and
+  earlier are gone (`250829` 404s). The 24 weekday misses are **HK exchange holidays** — so this
+  route incidentally yields a free, verified **HK trading-day calendar**, which is worth more to
+  this desk than it sounds given the broker calendar publishes only as a PNG (prospector s9).
+  **Correction to my own first reading:** I initially inferred a calendar-year boundary from a
+  `260102`-works / `250630`-fails probe, matching JPX's `OLD_SYSTEM_BOUNDARY = 202601`. That was
+  wrong — it is a **rolling window**, not a year reset. The probe was too coarse; the full pull
+  settled it.
+- **VERIFIED — and the first answer was wrong, which is the point.** Joined the front-month
+  settlement to the desk's own `USDCNH_H1` tape, 176 overlapping days.
+  - Naive join on the **daily close**: return correlation **0.4956**, basis sd 0.0090. Far too low
+    for the same underlying — and a lazier run would have graded this "needs-monitoring, residual
+    unexplained" and moved on, exactly as run (y) had to for JPX.
+  - **Offset scan over all 24 tape-hours** (the desk's own established technique) resolves it
+    decisively: correlation **peaks at 0.9257 at tape-hour 13** (12: 0.9255, 11: 0.9095) and
+    **decays monotonically in both directions** to 0.4274 at hour 23. The basis sd **halves** at
+    the same point (0.00483 at hr 12 vs 0.00906 at hr 23) — a second, independent statistic
+    peaking at the same hour, which is what separates a real clock identification from a fit.
+  - **The clock:** the desk's parquets are stamped `+00:00` but carry **broker EET** (+3 summer /
+    +2 winter — free-data i). Tape-hour 11–13 is therefore **08:30–10:30 UTC ≈ 16:30–18:30 HKT**,
+    and the HKEX USD/CNH day session closes **16:30 HKT**. The three-hour plateau rather than a
+    single spike is exactly what a DST change inside a 2025-10 → 2026-08 sample must produce.
+  - **Settled basis at the correct hour: −0.0063 CNH (−9.4 bp), sd 0.0051** — a small stable
+    forward discount, the right sign and size for CNH rates above USD.
+- **THIS CLOSES THE OPEN QUESTION FROM RUN (y).** (y) adopted JPX only as *needs-monitoring*
+  because a ~1% residual against the desk's JPN225 tape was unexplained, and correctly refused to
+  join on date until the session convention was resolved. The mechanism is now demonstrated on a
+  sister source: **the residual was a clock, not a data fault, and an offset scan identifies it.**
+  The same scan should be run on JPX before its grade is revisited — named as next ground, not
+  claimed here, because it has not been run.
+- **Failure modes:** (a) rolling ~11-month window — deep history must be accumulated daily into
+  Bronze from now on or it is lost permanently; (b) fixed-width text inside HTML with `|` column
+  separators — a positional parse, and inactive months emit `0.0000` rather than blanks, so
+  **filter `settle > 0` or the front-month pick is corrupted**; (c) the front month must be chosen
+  by **parsed contract month**, never by row order — my first pass used row order and got
+  correlation 0.118 against 0.926, an eight-fold understatement of the source's quality from a
+  one-line sort bug; (d) the archive page `dmrarchive.asp` is a **JavaScript-only redirect** to
+  `dmararchive.asp` (one extra `a`) that `curl -L` cannot follow — a constant 696-byte 200 that is
+  not content, the same class run (y) logged at stooq; (e) an Akamai bot-manager sensor script is
+  present on these pages — courteous rates only.
+- **What it replaces:** the exchange-listed CNH positioning leg of a derivatives-data vendor
+  (Coinglass/CFTC-style OI products), free.
+
+**CROSS-SOURCE PAIR — now buildable.** Run (y) flagged HKEX USD/CNH **open interest** × the
+**CNH–CNY basis** (deferred to 2026-09-05) as the pair worth building. Both legs are now in hand:
+this run delivers 236 days of per-contract OI *and change in OI* on a verified clock. The
+mechanism is nameable in the form the gauntlet requires — the basis says how far offshore CNH has
+drifted from the onshore fix; OI change says whether positioning is **building into** that drift
+or **unwinding out of** it, and those two states have opposite forward implications for a mean
+reversion that a basis-only signal cannot distinguish.
+
+**NO EV-GATE PRE-REGISTRATION THIS RUN, and the reason is not timidity.** The CNH pair needs its
+second leg (the CNH–CNY basis) to actually exist as a series; it is a deferred backlog item that
+returns 2026-09-05, and pre-registering a hypothesis on a series the desk has not yet built would
+put a clock on evidence that cannot accrue. The Eurex financing curve is likewise one verified
+snapshot, not a series — it becomes pre-registrable once daily capture has run. Both are named
+with their enabling condition rather than deferred silently.
+
+### SESSION CLOSE — free-data run (z)
+
+**Categories covered.** 1 (exchange-native archives) and 3 (non-English/regional — HK, DE) to
+depth; 6 (vendor-replacement: listed settlement/OI/positioning/reference) throughout; 4 touched
+via the developer-portal class. Categories 2 and 5 not advanced this run — stated plainly rather
+than padded, because the completion contract bounds breadth-per-run and depth was spent where the
+handover pointed.
+
+**Counts. 5 sources graded: 3 verified-clean and ADOPTED, 1 destroyed-at-source (licence),
+1 new source CLASS opened UNVERIFIED.** Zero UNVERIFIED link-dumps added. Both of run (y)'s
+UNVERIFIED cards that this run took (Eurex, ICE) are now resolved to a grade with evidence; the
+third (HKEX) went from a 404 to verified-clean with 236 days pulled.
+
+**Best vendor-replacement:** the **Eurex public GraphQL API** — settlement prices, a
+machine-readable exchange holiday calendar, the full roll calendar and contract specs incl. tick
+values for 3,007 products, on a key the exchange itself publishes for anonymous use.
+
+**Cross-source pairs flagged (2).** (a) HKEX USD/CNH **open interest and change in OI** × the
+CNH–CNY basis — both legs now in hand or dated, mechanism nameable, buildable after 2026-09-05.
+(b) Eurex **350 single-stock dividend futures** × the desk's price-only-CFD dividend drag on
+122/251 symbols (R0691) — the market's forward-looking expected dividend is the quantity missing
+from a diagnosis the desk made correctly and then graveyarded.
+
+**New source classes discovered (1, and it is real):** **exchange-operator developer portals that
+publish a shared anonymous API key.** Owner-sanctioned, free, and doubly invisible — licence-
+cautious miners skip it because it looks like a credential, and key-less crawlers never send the
+header. Eurex is the proof instance. Carded as a class with its next ground.
+
+**DEPTH line (per the depth mandate).**
+- **HKEX → EXHAUSTED to the data.** robots → 301-only nav → numbered product index (80 products
+  mapped to names) → dated data file → 236-day pull → positional parse → front-month join →
+  **24-hour offset scan** → clock identified → basis settled. Depth surfaced what the surface
+  could not: at the surface HKEX is "the legacy path 404s, the report is gone"; one layer down the
+  legacy **directory** is fully alive and only the filenames moved; four layers down the source is
+  a 0.926-correlation verified feed whose apparent 0.496 residual was a clock.
+- **Eurex → EXHAUSTED to the schema.** statistics page → JSON API → published-key page → the
+  trailing-slash repair → GraphQL introspection → per-table field introspection → filter/pagination
+  type introspection → three verification joins → 3,007-product enumeration. Depth surfaced the
+  whole point: the door is labelled "reference data" and actually serves **settlement prices**.
+- **ICE → EXHAUSTED at the licence gate.** robots → allowed shell pages → the shell's own routing
+  → the disallowed prefix. Going deeper would be the breach, so the depth stopped where §13 says.
+- **Deutsche Börse developer portal → SURFACE ONLY, honestly.** Endpoint-name guessing failed;
+  the catalogue is an SPA I did not crack. Named as next ground, not claimed.
+- **Not breadth-theater, and here is the check:** 3 sources touched, 3 driven to a verdict with
+  numbers; 236 files pulled and parsed; two of my own readings refuted by my own controls (the
+  row-order front month, the calendar-year boundary).
+
+**Two corrections to my own work this run, recorded because a silent fix is the defect:**
+(1) I inferred a calendar-year history boundary for HKEX from a coarse probe and it is a rolling
+~11-month window; the full pull refuted me. (2) My first front-month join gave correlation 0.118
+and I nearly graded a verified-clean source as poor — the fault was a one-line sort, not the feed.
+
+**NEXT UN-EXHAUSTED GROUND (named, per L1.35):**
+1. **Run the offset scan on JPX** and revisit its needs-monitoring grade — the method is now
+   demonstrated, the source is already adopted, and this is the cheapest quality upgrade available.
+2. **Bronze daily capture for all three adopted sources.** Every one is a ROLLING window (Eurex
+   ~5d, Eurex-stats 21d, HKEX ~11mo). Uncaptured days are lost permanently. This is the highest-
+   value follow-up in the run and it is a collector/wiring item, not a dig — it belongs to the
+   seat that owns the collectors, and it should not sit here unowned.
+3. **Enumerate the Deutsche Börse developer portal** via the SPA's `_next` build manifest, then
+   apply the developer-portal class to SIX, Nasdaq Nordic, B3, SGX, ASX.
+4. **Pull Eurex dividend-futures prices** to make cross-source pair (b) real.
+5. **HKEX's other 79 products** — this run verified `dmreport26` only; USD Gold (`36`), CNH Gold
+   (`37`), CNH Silver (`39`) and HSI futures (`1`) are mapped and unpulled.
+
+Status: **CLOSED.**

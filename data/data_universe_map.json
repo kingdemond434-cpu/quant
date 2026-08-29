@@ -3184,7 +3184,75 @@
      "A 404 here is a MOVED path, not a dead source -- do not grade it destroyed without finding the current route."
     ]
    }
-  ]
+  ],
+  "eurex_db_public_graphql_api": {
+   "name": "Eurex / Deutsche Boerse public GraphQL API",
+   "type": "daily SettlementPrices, Holidays (exchange calendar, incl. ExchangeHoliday flag), Expirations (roll calendar + DaysToExpiration), Contracts, ProductInfos (ContractSize/TickSize/TickValue/PositionLimit/Currency), TickRules, TradingHours, DeliverableBonds, VendorCodes, Changelog -- 3,007 products",
+   "cost": "free",
+   "auth": "published shared anonymous API key (rate-limited by design)",
+   "status": "verified",
+   "grade": "verified-clean",
+   "url": "https://www.eurex.com/ex-en/data/free-reference-data-api",
+   "endpoint": "POST https://api.developer.deutsche-boerse.com/eurex-prod-graphql/  header X-DBP-APIKEY: 68cdafd2-c5c1-49be-8558-37244ab4f513",
+   "method": "GraphQL. Filters are typed objects: filter:{Product:{eq:\"FDAX\"}} (ops eq/ne/lt/le/gt/ge/contains/beginsWith/has). Every table returns {date,data[],pageInfo}; fields nest under data. Pagination page:{first:Int,after:String} -- NOT size. SettlementPrices REFUSES an unfiltered query (demands eq on Product unless page supplied).",
+   "license": "Eurex publishes this exact key on its own public page and states the API 'is available to customers anonymously' / 'everyone is able to call the API by using the API URL and a shared API key'. Adoption as the owner offers it -- NOT circumvention. Dedicated keys available free via the DB developer portal.",
+   "update_cadence": "daily; SettlementPrices returns a rolling ~5 trading days per query",
+   "verification": "THREE independent checks (2026-08-29). (1) FDAX front settlement vs desk GER40_H1 close same date: 2026-08-24 26172 vs 26115.94 (+56.1pt/+0.215%), 2026-08-25 26332 vs 26281.85 (+50.2pt/+0.191%) -- small stable positive basis, correct for a TOTAL-RETURN index future. (2) Cross-table coherence: 12 distinct ContractIDs in SettlementPrices vs 12 FDAX expiries 2026-09-18..2029-06-15 in Contracts/Expirations; count and join both close. (3) Settlement x expiry vs the API's own underlyingClosingPrice 26569.99 gives a smooth monotone implied financing curve 2.87%->3.64% over 0.06y->2.80y.",
+   "failure_modes": "ROLLING ~5d window on SettlementPrices -- a LIVE feed, not a history archive; uncaptured days are lost permanently (Bronze capture must start now). Shared key is rate-limited and rotatable without notice. overallstatistics productIds are a DISJOINT id space from product-page URL ids (160088 from the EURO STOXX 50 URL 404s on the API). underlyingClosingPrice is 0.0 for some products -- never assume populated.",
+   "route_finding": "THE PUBLISHED URL 404s. .../eurex-prod-graphql -> 'Not Found'; .../eurex-prod-graphql/ (trailing slash) -> 200. A vendor's own documented endpoint returning 404 is NOT evidence of death -- normalise the path before grading it dead. Inverse of the MNB-WSDL class (live descriptor, dead service).",
+   "replaces": "settlement/expiry/contract-spec leg of a listed-derivatives reference vendor; and the exchange HOLIDAY CALENDAR, which matters because this desk's broker holiday calendar publishes ONLY as a PNG (prospector s9).",
+   "discovered": "2026-08-29"
+  },
+  "eurex_overallstatistics_positioning": {
+   "name": "Eurex overallstatistics (options positioning)",
+   "type": "per-day call/put volume, call/put open interest, put-call ratio, contract type; header carries total volume, total OI, underlying close. Rolling 21 trading days.",
+   "cost": "free",
+   "auth": "none (no header at all)",
+   "status": "verified",
+   "grade": "verified-clean",
+   "endpoint": "GET https://www.eurex.com/api/v1/overallstatistics/{productId}",
+   "verification": "productId 70044 (DAX options): volume 33,970, openInterest 852,298, putCallRatio 1.115, 21 tradingDates 2026-07-31..2026-08-28; 70050 also live. Unknown ids return a clean JSON error, so the id space is cheaply enumerable.",
+   "failure_modes": "rolling 21 days only (accumulate or lose). Per-row callOpenInterest was 0.0 on a weekly-contract row while the header total was populated -- DO NOT SUM ROWS FOR OI, read the header.",
+   "why_it_ranks": "DAX/GER40 is a live MT5 symbol; this is free OPTIONS POSITIONING on it -- the product class positioning vendors sell.",
+   "discovered": "2026-08-29"
+  },
+  "hkex_daily_derivatives_reports": {
+   "name": "HKEX daily derivatives market reports (dayrpt)",
+   "type": "T+1 per-contract-month settlement price, day + after-hours volume, OPEN INTEREST and CHANGE IN OI, plus full calendar-spread table, for 80 products -- incl. USD/CNH Futures, Mini USD/CNH, CNH/USD, EUR/CNH, USD Gold, CNH Gold, CNH Silver, HSI futures/options",
+   "cost": "free",
+   "auth": "none",
+   "status": "verified",
+   "grade": "verified-clean",
+   "url": "https://www.hkex.com.hk/Market-Data/Statistics/Derivatives-Market/Daily-Market-Report-(Latest)?sc_lang=en",
+   "endpoint": "https://www.hkex.com.hk/eng/stat/dmstat/dayrpt/cusf{YYMMDD}.htm (dated, directly addressable; .zip also served). Product index: dayrpt/dmreport{N}.htm -- 26=USD/CNH, 23=Mini USD/CNH, 34=EUR/CNH, 35=CNH/USD, 36=USD Gold, 37=CNH Gold, 39=CNH Silver, 1=HSI Futures.",
+   "method": "robots allows market data (only 4 Listing-Rules-contingency prefixes disallowed). Nav reachable ONLY by following a 301 (an un--L probe returns a 203-byte stub that reads as dead). The legacy dayrpt/ DIRECTORY is fully alive; only the filenames changed from cus.htm to the numbered/dated scheme.",
+   "license": "HKEX public market statistics, no registration, no key. Derived features fine; not for bulk redistribution.",
+   "update_cadence": "T+1 daily; ROLLING ~11-month window (236 trading days returned 2025-10-01..2026-08-28; 250829 404s)",
+   "verification": "Front-month settlement joined to desk USDCNH_H1, 176 overlapping days. Naive daily-close join: return corr 0.4956, basis sd 0.0090 -- too low for the same underlying. 24-hour OFFSET SCAN resolves it: corr PEAKS 0.9257 at tape-hour 13 (12: 0.9255, 11: 0.9095) and decays monotonically both directions to 0.4274 at hour 23; basis sd HALVES at the same hour (0.00483 vs 0.00906) -- a second independent statistic peaking at the same point. Tape is broker EET (+3 summer/+2 winter), so hr 11-13 = 16:30-18:30 HKT and the HKEX USD/CNH day session closes 16:30 HKT. The 3-hour plateau is the DST change inside a 2025-10..2026-08 sample. Settled basis at the correct hour: -0.0063 CNH (-9.4bp), sd 0.0051 -- correct sign/size for CNH rates above USD.",
+   "failure_modes": "Rolling ~11mo window: accumulate to Bronze daily or history is lost. Fixed-width text in HTML with '|' separators, positional parse; inactive months emit 0.0000 not blanks -- FILTER settle>0 or the front-month pick is corrupted. Front month MUST be chosen by parsed contract month, never row order (row order gave corr 0.118 vs 0.926 -- an 8x understatement of source quality from a one-line sort bug). dmrarchive.asp is a JAVASCRIPT-ONLY redirect to dmararchive.asp (one extra 'a') that curl -L cannot follow -- a constant 696-byte 200 that is not content. Akamai bot-manager sensor present; courteous rates only.",
+   "incidental": "the 24 weekday misses are HK exchange holidays -- this route yields a free verified HK TRADING-DAY CALENDAR (the broker calendar publishes only as a PNG, prospector s9).",
+   "corrected_this_run": "I first inferred a calendar-year history boundary from a 260102-works/250630-fails probe, matching JPX's OLD_SYSTEM_BOUNDARY=202601. WRONG -- it is a ROLLING window. The probe was too coarse; the full pull settled it.",
+   "discovered": "2026-08-29"
+  },
+  "ice_theice_com_VERDICT": {
+   "name": "ICE / theice.com report center",
+   "cost": "free",
+   "status": "resolved",
+   "grade": "destroyed-at-source (licence/robots -- NOT an edge block)",
+   "verification": "robots.txt (identical on ice.com and theice.com) disallows /report-center/category/, /report-partial/, /report-center-folio. /report-center and /report/{id} are ALLOWED and return 200 -- but are JS shells whose own markup routes every data category through the disallowed prefix: /report-center/category/end-of-day, .../commitment-of-trader, .../deliveries, .../commodity, .../indices. EOD settlement and COT cannot be reached without breaching robots. HARD STOP.",
+   "note": "DelayedMarkets.shtml?getContractsAsJson returns 403 while ordinary pages return 200 -- ICE is NOT broadly edge-blocked like CME; only that endpoint is. Recorded so no future run re-opens ICE as a User-Agent problem: the block here is the LICENCE, not the edge. Confirms run (y)'s prediction exactly.",
+   "replacement_hunt_OPEN": "ICE products this desk cares about are Brent, gasoil and the ICE FX/index complex. Eurex does not carry Brent. NO free adopted route to ICE-listed energy settlement on this box. Stated with the search attached, not defaulted.",
+   "discovered": "2026-08-29"
+  },
+  "exchange_operator_developer_portals_CLASS": {
+   "name": "NEW SOURCE CLASS -- exchange-operator developer portals with published anonymous API keys",
+   "type": "source class, not a single source",
+   "status": "opened this run, NOT exhausted",
+   "grade": "UNVERIFIED (class-level)",
+   "thesis": "Exchange operators increasingly run developer portals that publish a SHARED ANONYMOUS API KEY for public use. This is a legitimate, owner-sanctioned free tier that looks like a credential and is therefore skipped by licence-cautious miners AND invisible to key-less crawlers. Deutsche Boerse's eurex-prod-graphql (adopted this run, verified-clean) is the proof instance.",
+   "next_ground": "api.developer.deutsche-boerse.com hosts at least one more service than Eurex, but the catalogue is a Next.js SPA (console.developer.deutsche-boerse.com; robots.txt itself returns a 404 SPA page, so allow-all under RFC 9309) and endpoint-name guessing failed (xetra-/clearstream-/boerse-frankfurt- prod-graphql all 404). Enumerate via the SPA's own _next build manifest / JSON chunks rather than by guessing. Then apply the class to other operators: SIX, Nasdaq Nordic, B3, JPX, SGX, ASX.",
+   "discovered": "2026-08-29"
+  }
  },
  "residual_gaps_unpurchasable": [
   "tick-level Binance L2 diffs BEFORE the recorder start date (destroyed at source; recorder solves forward)",

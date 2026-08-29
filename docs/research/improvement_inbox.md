@@ -5532,3 +5532,40 @@ seat that receives it cannot fix it and the seat that could never sees it. Recom
 schema carry a required `blocker_kind: data | code | licence | compute` field, and that
 `data_axis_watchlist.md` entries whose blocker is `code` be mirrored to the build queue rather
 than living only where miners read.
+
+## 2026-08-29 — free-data run (z) — three collector-layer method findings
+
+**1. Normalise the path before grading a documented endpoint dead (NEW, generalises).**
+Eurex's own public page documents `https://api.developer.deutsche-boerse.com/eurex-prod-graphql`,
+which returns `404 Not Found`. The **same URL with a trailing slash** returns `200`. A whole
+verified-clean source (3,007 products, settlement prices, holiday calendar) sat one character away
+from being graded destroyed-at-source. This is the inverse of the MNB-WSDL class the desk already
+logged (*a live descriptor in front of a dead service*): here the **descriptor is wrong and the
+service is alive**. **Fix:** any probe that grades a documented endpoint dead on a 404 must first
+retry with/without trailing slash before the verdict is recorded.
+
+**2. `curl -L` does not follow a JavaScript redirect — and the result is a constant-size 200.**
+HKEX's `dmrarchive.asp?YYMMDD=` returns a **696-byte 200 for every date ever requested**, which
+reads as "the archive exists but holds nothing". It is a `window.location` redirect to
+`dmararchive.asp` (one extra `a`). This is now the **fourth** distinct shape of "a 200 whose byte
+count is not content" the desk has catalogued (JS-challenge page, soft-404, stooq proof-of-work
+interstitial, and now the JS-only redirect). **Fix:** the existing rule already covers it — a
+collector must assert **parsed row shape**, never status code and never size. What is new is that
+a *constant size across all inputs* is itself a positive detector: if every distinct query returns
+byte-identical length, the response is a shell, not data. Cheap to assert, and it would have
+caught this immediately.
+
+**3. Identify the clock with an offset scan before grading a residual "unexplained".**
+Run (y) adopted JPX only as *needs-monitoring* because a ~1% residual against the desk's JPN225
+tape could not be explained, correctly refusing to join on date. This run hit the identical
+situation on HKEX — naive daily-close join gave return correlation **0.4956** — and resolved it:
+a 24-hour offset scan peaked at **0.9257** with the basis sd simultaneously halving, identifying
+the desk's broker-EET stamp against the HKEX 16:30 HKT session close. **The residual was a clock,
+not a data fault.** Two independent statistics peaking at the same hour is what separates a clock
+identification from a curve fit. **Action:** run the same scan on JPX before its grade is
+revisited — it is the named next ground, and the method is now demonstrated on a sister source.
+
+**4. Sort-order bug worth naming because it understates source quality 8x.** Picking the front
+contract by *row order* instead of by *parsed contract month* gave correlation 0.118 against the
+correct 0.926. A source-quality verdict is only as good as the join key; a bad join reads exactly
+like a bad source, and the bad source gets graded and abandoned.
