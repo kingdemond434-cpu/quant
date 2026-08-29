@@ -1353,3 +1353,22 @@ for _eq_name in EDGE_QUEUE_FAMILIES:
     # have returned [] on every symbol and read as a data gap. The session clock comes from the
     # bar index, so these genuinely need nothing beyond price.
     FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
+
+
+# THE GENERIC COORDINATE FAMILY (2026-08-29). One parameterised function that executes any
+# semantic coordinate: when EVENT happens, in CONTEXT, if QUALITY exceeds a threshold, trade
+# DIRECTION for OUTPUT.
+#
+# WHY IT IS REGISTERED HERE. `scripts/compile_proposals.py` turns a model's mechanism proposal
+# into a choice of five axis values rather than into code, and this is the function that runs
+# them. Without it every proposal after the four hand-written edge-queue families would have sat
+# in `hypothesis_queue.jsonl` forever -- the same dead end as the queue never existing.
+#
+# NO MODEL-GENERATED CODE IS EXECUTED. The compiler picks axis values from a fixed vocabulary;
+# the family was written by hand and reviewed once. That is the whole point of expressing
+# mechanisms as coordinates instead of as programs: the search space is bounded by construction
+# and every cell is inspectable as five names.
+from mt5desk.family_generic import family_generic  # noqa: E402
+
+ORTHOGONAL_FAMILIES["generic"] = family_generic
+FAMILY_INPUTS["generic"] = ("price only", "data/universe/*_H1.parquet")
