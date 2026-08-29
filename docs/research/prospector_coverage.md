@@ -12793,3 +12793,107 @@ entirely desk-owned tape.
    one touched. `i9880612/alpha-garden` (MIT) carries an operator/field COMPATIBILITY matrix.
 4. **The BRAIN-scoped collector arm — NINETEEN sessions old.** Belongs to a seat that is not
    research-frozen.
+
+---
+
+## BRAIN HUNTER s27 (2026-08-29) — the control was measuring itself, and five sessions of k-optimisation were measuring the population
+
+**s26 handed s27 one gating item: build a control that survives a singleton-heavy size profile,
+because 26 of 55 cells (and s25's k=128/160) were voided UNMEASURED when the size-matched
+label-shuffle failed the population guard. That prescription was wrong, my own first fix was
+wrong too, and the thing underneath both is the finding.**
+
+**MY FIRST HYPOTHESIS, STATED AND REFUTED BY ITS OWN RUN.** I read s26's control and concluded
+the defect was ORDERING: it permutes the cluster map (built on year Y−1's members) and only then
+hands it to the ruler, which restricts to year Y's members. Restrict first, permute second, and
+the control is exactly size-matched by construction. `data/brain_hunter_s27_exact_control.py`
+implements both orderings side by side. **The fix changed nothing** — every voided cell voided
+identically (ward k=128: 1/8 held under the old ordering, 1/8 under the new), and `content_pre`
+tracked `content_post` to ≤0.0013 at every cell that measured. The ordering was not the cause.
+
+**WHAT THE REFUTATION EXPOSED, because the run was instrumented to record drift rather than just
+a verdict.** The population drift is **positive in 144 of 144 draws** and rises monotonically
+with k (+1.2% at k=24 → +38% at k=192). A guard failing in one direction only, never once
+negative, is not a sampling problem. Auditing the ruler's drop reasons split it in one step:
+
+```
+ward k=128   per-year retained   union   intersection
+real         179 / 180            207         152
+shuffled     179 / 180            229–235     124–130
+```
+
+**Per-year retention is EXACT — identical in every draw, as a permutation guarantees. The union
+across eval years is not.** The real grouping's singletons are *the same symbols every year*: a
+genuinely independent symbol is a loner in 2024 and again in 2025. A shuffle re-rolls which
+symbols land alone, so its union inflates while its per-year count cannot. **The guard compared
+unions, so it reported a property of ITSELF as an UNMEASURED verdict about the grouping** — and
+in doing so it silently deleted the entire high-k half of the sweep from two sessions' evidence.
+The stability that triggered the void is itself a positive fact about the grouping (IoU 0.734 vs
+~0.55 for the shuffle) and had never been measured.
+
+**THE CURVE, ONCE THE GUARD CANNOT FIRE** (`brain_hunter_s27b_kcurve_fixed.json`, guard `EXACT`
+at all 21 cells, k extended to 224 — the range s25 and s26 could not report). Scored on each
+arm's own all-year retained set, **content turns over at k=128 and falls**, while the OLD union
+ruler rises monotonically to k=224 (+0.3061) and never turns over at all. **The monotone rise
+that motivated five sessions of k-raising was the artifact.**
+
+**THE VERDICT, ON ONE POPULATION** (`brain_hunter_s27c_common_population.json`). s27b's `n_fixed`
+still moves with both axes (240 symbols at ward k=24, 28 at k=224), so its cross-cell comparisons
+were themselves population comparisons — the same defect one level up, and the one s25 was
+corrected for. Re-scored with every arm and every control on the **101 symbols non-singleton in
+all 15 cells and both eval years**:
+
+| cell | real | control | content | z | control n |
+|---|---|---|---|---|---|
+| **ward k=24** | 0.5273 | 0.8457 | **+0.3184** | −38.6 | 101.0 |
+| ward k=48 | 0.4254 | 0.7280 | +0.3026 | −41.7 | 101.0 |
+| complete k=48 | 0.4725 | 0.7574 | +0.2849 | −28.3 | 101.0 |
+| complete k=24 | 0.5838 | 0.8487 | +0.2649 | −46.4 | 101.0 |
+| average k=48 | 0.5463 | 0.8169 | +0.2707 | −33.8 | 100.5 |
+| average k=24 | 0.6793 | 0.8930 | +0.2137 | −22.2 | 100.9 |
+| ward k=96 / 128 / 160 | — | — | +0.2698 / +0.2580 / +0.2612 | — | 99.5 / 95.1 / 81.0 |
+
+**Ward's k-curve is monotone DECREASING. k=24 is the best cell in the grid**, and at k=24/48 real
+and control are scored on the identical 101 symbols, so those four rows are the only fully
+population-matched cells and ward wins both. **s25's "the desk left 0.145 of 0.318 on the table at
+k=24" and s26's k48/k96 Ward adoption are both REFUTED**: the extra content at high k was the
+evaluated population shrinking onto the symbols that cluster most easily. Read honestly, the
+k≥96 rows still carry a residual bias — the CONTROL's n falls (101 → 81) while the real arm holds
+101 — so they are directionally sound but not clean, and they are not needed for the verdict.
+
+**CONVERTED, not carded.** `data/brain_hunter_s27d_build_ward_k24.py` writes
+**`ward_cluster_by_year.k24` (15 years) into `data/mt5_grouping_map.json`** — the arm the
+corrected ruler recommends and the one arm the map did not carry. **No arm removed**: k48/k96 stay
+available, `_meta.recommended_arm` now points at k24, and `_meta.k_selection_caveat` records that
+k>24 must not be preferred on the s25/s26 evidence. `data/` and `docs/research/` only; research
+freeze respected.
+
+**THE HABIT, and it is the third turn of the same screw.** s25: a parameter set once and never
+swept is not a measured choice. s26: the parameter nobody named (`method="average"`) defined the
+frontier. s27: **the RULER'S POPULATION is a parameter too, and it was never held.** Every one of
+these five sessions compared numbers computed on different symbol sets and called the difference
+a finding. The tell is available and cheap: **a guard that fails in one direction only is never
+measuring what it claims to measure**, and `n` printed beside every score would have caught all
+three. Both new artifacts print their population next to every number.
+
+Video: 0 fetched, 0 locked (no video ground touched). §13: no external fetch; entirely desk-owned tape.
+
+### NEXT UN-EXHAUSTED GROUND (for s28, in order)
+
+1. **Run the cross-sectional cells on `ward_cluster_by_year.k24`.** Third session this has been
+   named and first session the recommended arm is both wired and correctly evidenced. **No
+   hypothesis has ever consumed any cluster arm** — the independence gain is still measured only
+   on the ruler and never on a survivor. This is the conversion the whole six-session line owes,
+   and it is now unblocked.
+2. **Re-score s24/s24b/s11's grouping comparisons on a held population.** `currency_quote 0.493`,
+   `asset_class 0.82` and the six-grouping z-table all come from the same union ruler. The
+   *ordering* of those arms may survive; the numbers as published do not, and one of them is
+   quoted in the memory index.
+3. **The licensed BRAIN subclass, SEVENTH raise, still never censused.** Now enumerated:
+   **26 licensed repos of 97** in `data/brain_repo_population.json`. Highest-yield untouched
+   nodes are the alternative implementations (per the brief's recursive-expansion rule):
+   `AshSwing/FastPlus` (MIT, Fast Expression Language reimplementation),
+   `efJerryYang/worldquant-brain-simulator` (GPL-3.0 — mine as TEXT for operator semantics,
+   never vendor), `i9880612/alpha-garden` (MIT, operator/field compatibility matrix).
+4. **The BRAIN-scoped collector arm — TWENTY sessions old.** Belongs to a seat that is not
+   research-frozen.

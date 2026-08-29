@@ -2287,3 +2287,25 @@ the four-metal per-analyst tables in the text layer (`lbma_2008forecast`, `lbma_
 X-coordinates rather than the flattened string, validated against the document's OWN printed
 aggregate (gold 1073.54 high / 721.46 low / 880.74 average) as a built-in control. Any re-extraction
 that cannot reproduce that printed average is wrong regardless of how right its row count looks.
+
+### 2026-08-29 — REFUTED: "correlation-cluster content keeps rising with k" (BRAIN HUNTER s25/s26, killed by s27)
+
+**Claim:** the desk's grouping map should move to higher cluster counts — s25 measured content
+rising from 0.145 at k=24 to 0.318 at k=128 and called k=24 "0.145 left on the table"; s26 adopted
+Ward k48/k96 on the same reasoning.
+
+**Mechanism of death:** the ruler's evaluated population SHRANK with k (240 symbols at ward k=24,
+28 at k=224), so rising "content" was the measurement contracting onto the symbols that cluster
+most easily, not the grouping improving. Re-scored on one held population of 101 symbols
+(`data/brain_hunter_s27c_common_population.json`), ward's k-curve is monotone DECREASING and
+k=24 is the best cell in the grid (+0.3184, z=−38.6, control and real on the identical 101).
+
+**Compounding cause:** the size-matched control's population guard compared the UNION of symbols
+retained across eval years. Real singletons are the same symbols every year; a shuffle re-rolls
+them, so the union always inflates — drift positive in 144/144 draws — and 26 of s26's 55 cells
+were voided UNMEASURED by a property of the guard.
+
+**Reopen condition (L1.16a):** a named enabling change that makes high-k groupings evaluable on
+the FULL universe rather than on their own retained subset — e.g. a peer assignment that gives
+singletons a nearest-cluster fallback instead of dropping them. Until then, k>24 must not be
+preferred on the s25/s26 evidence.
