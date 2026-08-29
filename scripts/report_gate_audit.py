@@ -160,8 +160,10 @@ def main() -> int:
         # studies.power_curve). gate_power_audit.json belongs to the retired ALL-GATES path and
         # nothing on the desk writes it any more. Naming the wrong producer is worse than naming
         # none: it sends the next reader to spend 41 minutes of CPU on a file this cannot read.
-        print(f"gate-power audit: NO PRODUCER -- {src} belongs to the retired all-gates path and "
-              "nothing writes it. The live measurement is reports/admission_power.json "
+        print(f"gate-power audit: NO PRODUCER ({type(e).__name__}) -- {src} belongs to the "
+              "retired all-gates path and nothing writes it. The exception type is kept because "
+              "an ABSENT input and a CORRUPT one are different problems with different owners. "
+              "The live measurement is reports/admission_power.json "
               "(scripts/measure_admission_power.py, weekly), which has a different schema and "
               "prints its own verdict. This reader has no input and is not scheduled.")
         return 2
