@@ -35,13 +35,18 @@ def test_the_guard_refuses_a_gate_that_cannot_fit_rather_than_being_oom_killed()
     """Below the headroom threshold the guard defers and exits 0; it never starts the push."""
     body = _source()
     assert "MemAvailable" in body, "the guard must read real memory, not assume it"
-    assert "-lt 400" in body, "the measured gate needs ~242MB; the threshold carries margin"
+    assert "-lt 550" in body, (
+        "the threshold must cover the gate's MEASURED working set. Re-measured 2026-08-29 with "
+        "`/usr/bin/time -v ./ops/gates.sh` -> 428608 KB = 419 MiB; the previous 400 came from an "
+        "available-delta (~242MB), which under-reads a working set because the page cache "
+        "absorbs part of it -- so the guard was clearing pushes it could not fund."
+    )
     # Behavioural arm: run the decision with memory forced low and assert it defers.
     harness = """
 avail=100
 ahead=3
 if [ "${ahead:-0}" -gt 0 ]; then
-  if [ "${avail:-99999}" -lt 400 ]; then
+  if [ "${avail:-99999}" -lt 550 ]; then
     echo "DEFERRED ${ahead} ${avail}"; exit 0
   fi
   echo "PUSHED"
@@ -90,3 +95,86 @@ def test_the_reject_detection_the_desk_paid_for_three_times_is_still_present() -
     assert "rejected|denied|error:" in body
     assert 'after=$(git rev-list --count @{u}..HEAD' in body
     assert '[ "$after" = "0" ]' in body
+
+
+# ---------------------------------------------------------------------------------------------
+# Two more ways this guard failed, both measured 2026-08-29, both fixed in the same commit.
+# ---------------------------------------------------------------------------------------------
+
+
+def _run_real_verdict_block(after: str, rc: str, out: str) -> str:
+    """Execute the SHIPPED verdict block, lifted from the script, against forced inputs.
+
+    Lifted rather than re-typed on purpose: a hand-copied harness passes forever after the real
+    code drifts away from it, which is the failure mode a regression test exists to prevent.
+    """
+    body = _source()
+    start = body.index('  if [ "$after" = "0" ]; then')
+    end = body.index("\nfi\n", start)
+    block = body[start:end]
+    harness = f'ahead=1\nafter={after}\nrc={rc}\nout={out!r}\n{block}\n'
+    proc = subprocess.run(["bash", "-c", harness], capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 0, proc.stderr
+    return proc.stdout
+
+
+def test_a_push_that_landed_is_never_reported_as_stuck_whatever_git_returned() -> None:
+    """MEASURED 2026-08-29 00:43: rc=1 while the reflog recorded `update by push` at 00:43:49.
+
+    The guard ANDed `rc -eq 0` into its verdict and logged "push did NOT land" for a commit that
+    reached origin. A false negative is not the safe direction: it teaches the desk to read a
+    real stuck push as the usual noise.
+    """
+    got = _run_real_verdict_block(after="0", rc="1", out="Everything up-to-date")
+    assert "did NOT land" not in got, f"a landed push was reported as stuck: {got}"
+    assert "pushed 1 commit" in got, got
+    assert "rc=1" in got, "the exit code must still be REPORTED as a diagnostic, just not obeyed"
+
+
+def test_a_rejected_push_is_still_caught_even_when_git_exits_zero() -> None:
+    """The original lesson, unchanged: the transport succeeded, the pre-receive hook declined."""
+    got = _run_real_verdict_block(after="2", rc="0", out="remote: rejected")
+    assert "did NOT land" in got, f"a reject read as success -- the 3x-paid-for lesson: {got}"
+    assert "still 2 ahead" in got, got
+
+
+def test_a_clean_push_reads_clean() -> None:
+    got = _run_real_verdict_block(after="0", rc="0", out="To github.com:... main -> main")
+    assert got.strip().endswith("pushed 1 commit(s)"), got
+
+
+def test_overlapping_ticks_cannot_stack_because_the_script_takes_a_lock() -> None:
+    """MEASURED 2026-08-29: three auto_push runs live at once, two holding 287MB collections.
+
+    The timer fires every 10 minutes; a gated push under memory pressure ran 35 minutes. The
+    memory guard cannot see siblings -- each run sampled MemAvailable at its OWN start, before
+    the others allocated -- so headroom alone can never serialise this.
+    """
+    body = _source()
+    assert "flock -n" in body, "the guard must refuse to overlap, not merely hope not to"
+    assert "-E 99" in body, (
+        "plain `flock -n` exits 1 both on contention and on a child that exits 1, and this "
+        "script's child legitimately exits non-zero; a distinct conflict code keeps a real "
+        "failure from being logged as contention"
+    )
+    assert "exec flock" not in body, (
+        "`exec` replaces the shell, so the contention branch after it is unreachable and the "
+        "deferral would never be logged -- the silent-skip defect this file exists for"
+    )
+    # Behavioural arm: hold the lock, invoke the script, assert it declines instead of running.
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        lock = Path(td) / "held.lock"
+        lock.touch()
+        holder = subprocess.Popen(["flock", "-n", str(lock), "sleep", "5"])
+        try:
+            probe = subprocess.run(
+                ["bash", "-c", f'flock -n -E 99 {lock} true; echo "rc=$?"'],
+                capture_output=True, text=True, timeout=30,
+            )
+            assert "rc=99" in probe.stdout, (
+                f"contention did not surface as the distinct code 99: {probe.stdout}"
+            )
+        finally:
+            holder.wait(timeout=15)

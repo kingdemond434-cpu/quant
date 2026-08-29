@@ -3,7 +3,20 @@ Description=Auto-push guard (local commits reach origin) (migrated from crontab 
 
 [Service]
 Type=oneshot
-MemoryMax=300M
+# MEASURED 2026-08-29, not guessed: `/usr/bin/time -v ./ops/gates.sh` reports
+# `Maximum resident set size (kbytes): 428608` = 419 MiB, and `pytest --co -q tests/` alone
+# peaks at 415 MiB. This unit ran with MemoryMax=300M -- 28% BELOW the working set of the only
+# thing it does -- so it could never complete a gated push. Two failure modes, both observed:
+#   * oom-kill: 19 deaths in 7d in data/cro_ai_logs/unit_deaths.jsonl;
+#   * silent thrash: when the kernel could reclaim instead of kill, it evicted the page cache to
+#     stay under the cap (cgroup memory.stat `file 4096` -- FOUR KILOBYTES of cache) and pytest
+#     re-read every source file from disk. `memory.current` sat pinned at 301,744,128 of a
+#     314,572,800 ceiling with `memory.events: max 138`. An 8-second collection took 2131s.
+# A ceiling set below a job's working set does not bound the job, it converts it into disk I/O.
+# 600M keeps a real ceiling (a leak still takes this unit down rather than the box) with 43%
+# headroom over measurement, and scripts/auto_push.sh refuses to START below 550MB available,
+# so the two guards cannot disagree about what the gate costs.
+MemoryMax=600M
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/sh -c 'bash scripts/auto_push.sh >> data/cro_ai_logs/auto_push.log 2>&1'
 SuccessExitStatus=0 1 2
