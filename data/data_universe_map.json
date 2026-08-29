@@ -1228,8 +1228,8 @@
    ],
    "method": "keyless GET, JSON array of {d, v:[USD,GBP,EUR]}; no auth, no rate limit encountered.",
    "cadence": "daily, fresh to T-1 (2026-08-26 present on 2026-08-27; re-confirmed live this run for gold_pm, gold_am, silver, platinum_*, palladium_*).",
-   "license": "LBMA publishes benchmark prices free for reference; IBA administers. Non-commercial reference use only - re-distribution NOT adopted.",
-   "verified": "2026-08-26 VERIFIED against the desk's own Fusion XAUUSD H1 tape: 667 obs since 2024-01-01, best-fit bar median +1.5bps, sd 21bps (and this diff is what EXPOSED the EET/EEST clock mislabel, R0660). | 2026-08-27 PLATINUM VERIFIED INDEPENDENTLY against the desk's own XPTUSD H1 tape: PM auction (14:00 London) vs bar-label 15, n=609 since 2024-01-01, sd 26.3 bps in summer and 34.9 bps in winter against 60-115 bps for every adjacent hour. This is a SECOND metal, on a tz-NAIVE parquet, independently reproducing R0660's EET/EEST offset -- the 08-26 finding was measured only on the tz-aware 24.",
+   "license": "CONTRADICTED 2026-08-29. The prior entry read 'LBMA publishes benchmark prices free for reference ... non-commercial reference use only' -- that was an ASSUMPTION and the publisher's own page states the opposite. Read verbatim from https://www.lbma.org.uk/prices-and-data/lbma-precious-metal-prices (HTTP 200, 281,671B): 'The LBMA Gold, Silver, Platinum and Palladium Price benchmarks ... are administered by ICE Benchmark Administration Limited (IBA). A licence from IBA is required in order to obtain, use or redistribute real-time or historical benchmark data from that date, INCLUDING FOR PRICING AND VALUATION ACTIVITIES and in transactions and financial products.' The same page states the historical tables were MOVED behind the MyLBMA Portal and require an IBA licence to view ('Not got a licence? Visit ICE to see your options to purchase one'). The /json/*.json chart endpoints remain keyless and open, but 'technically reachable' is not 'licensed', and using the chart's backing JSON as a feed routes around the wall the publisher deliberately erected. DIGGING_CHARTER 13 is a HARD STOP, not a hurdle: NOT ADOPTED.",
+   "verified": "2026-08-26 VERIFIED against the desk's own Fusion XAUUSD H1 tape: 667 obs since 2024-01-01, best-fit bar median +1.5bps, sd 21bps (and this diff is what EXPOSED the EET/EEST clock mislabel, R0660). | 2026-08-27 PLATINUM VERIFIED INDEPENDENTLY against the desk's own XPTUSD H1 tape: PM auction (14:00 London) vs bar-label 15, n=609 since 2024-01-01, sd 26.3 bps in summer and 34.9 bps in winter against 60-115 bps for every adjacent hour. This is a SECOND metal, on a tz-NAIVE parquet, independently reproducing R0660's EET/EEST offset -- the 08-26 finding was measured only on the tz-aware 24. | 2026-08-29 (free-data run w) RE-VERIFIED technically and then EXCLUDED ON LICENCE. All seven series re-pulled (81,996 rows, gold/silver 1968-01-02->2026-08-28, Pt/Pd 1990-04-02->2026-08-28, zero nulls, column map [USD,GBP,EUR] proven twice: EUR null on all 7,836 pre-1999 rows and non-null on all 6,987 post-1999 rows; implied v[0]/v[1] and v[0]/v[2] 2024 medians = 1.2722 (GBPUSD) and 1.0837 (EURUSD)). Offset scan vs desk MT5 H1 tape returned each series' OWN auction hour with correct RELATIVE ordering: gold_am bar-h12 MAE 1.905 (7.38x worst), gold_pm h16 2.493 (5.99x), silver h13 0.032 (11.01x), platinum_am h11 2.151 (6.43x), platinum_pm h15 2.728 (4.84x), palladium_am h11 5.492 (5.06x), palladium_pm h15 7.67 (3.62x). LOCAL ARCHIVE (data/bronze/lbma, 4.8MB) WAS CREATED AND THEN DELETED on discovering the licence terms; the desk holds no copy.",
    "failure_modes": [
     "auction is a discrete 15:00 London event, not a spot close - a spot-vs-auction basis of ~10-20bps is structural, not error",
     "v[2] (EUR) is null pre-1999",
@@ -1238,11 +1238,16 @@
     "NAMING IS NOT GUESSABLE (2026-08-27): /json/platinum.json and /json/palladium.json BOTH 404; only the _am/_pm suffixed files exist. A collector probing the bare metal name records a live source as dead -- the silent-null class again.",
     "platinum/palladium AM and PM row counts DIFFER (9198 vs 9129/9132): never zip AM to PM by position, join on date.",
     "silver carries 19 null USD rows out of 14833 -- filter, do not forward-fill blindly.",
-    "administration of the Pt/Pd benchmarks transferred to IBA on 2026-07-01; a methodology or format change at that seam is a live schema-drift risk, which is why this source is re-read every run."
+    "administration of the Pt/Pd benchmarks transferred to IBA on 2026-07-01; a methodology or format change at that seam is a live schema-drift risk, which is why this source is re-read every run.",
+    "LICENCE (2026-08-29, the binding one): IBA requires a purchased licence to OBTAIN, USE or REDISTRIBUTE historical benchmark data, explicitly including pricing and valuation activities. The open JSON endpoints are NOT a grant of licence.",
+    "METHODOLOGY SPLICE: the 1968-> series is one NAME over several mechanisms (London Gold Fixing -> LBMA Gold Price, 2015). Any long-history study must condition on the 2015 break. Same class as the desk's own *_H1 D1/H1 splice.",
+    "OFFSET-SCAN METHOD DEFECT found 2026-08-29: an argmin over bar-hours with UNEQUAL n can be won by a partial bar existing on only a subset of days (palladium_pm hour 00, n=959 vs modal n=1686, beat the true hour 15). Require n-parity before accepting an argmin."
    ],
-   "grade": "verified-clean (gold+silver 2026-08-26; platinum re-verified vs desk tape 2026-08-27)",
+   "grade": "excluded-licensed (RE-GRADED 2026-08-29 by free-data run w -- WAS verified-clean/ADOPTED. The technical verification stands and is unchanged; the ADOPTION is WITHDRAWN on the publisher's own stated licence terms.)",
    "yield": "closes card 39 open end (a) data leg: a PIT, 58-year benchmark-window series for XAUUSD/XAGUSD auction-window studies; also a permanent independent CLOCK ORACLE for any MT5 metals feed.",
-   "why_it_matters_2026_08_27": "XPTUSD and XPDUSD are BOTH in the MT5 registry AND both have H1 parquets on disk, so this is 36 years of point-in-time benchmark history for two already-traded desk symbols at zero cost and zero auth."
+   "why_it_matters_2026_08_27": "XPTUSD and XPDUSD are BOTH in the MT5 registry AND both have H1 parquets on disk, so this is 36 years of point-in-time benchmark history for two already-traded desk symbols at zero cost and zero auth.",
+   "what_survives_the_exclusion": "The desk's OWN measurement of its OWN tape is licence-free and is the §38 reconstruction: the MT5 metals tape's London-auction bar hours are now identified -- XAUUSD 12 (AM) / 16 (PM), XAGUSD 13, XPTUSD & XPDUSD 11 / 15 -- so the desk can mark its own auction bars without holding anyone's benchmark. RESIDUAL, graded honestly: there appears to be NO free, clearly-licensed, DAILY official precious-metals fixing. The benchmark is a licensed product by construction. The free replacement is MONTHLY (worldbank_pink_sheet_cmo, CC BY 4.0).",
+   "replacement_hunt": "worldbank_pink_sheet_cmo (CC BY 4.0, verified-clean 2026-08-29) -- monthly, covers the metals AND energy AND softs."
   },
   "frankfurter_ecb_fx": {
    "provides": "ECB daily reference rates, all published currencies incl. CNY, keyless range queries.",
@@ -2823,6 +2828,75 @@
    "next_ground_unexhausted": "lppm.com/data (platinum/palladium sister administrator, linked and untouched); LBMA value-dates; the LBMA annual forecast-survey (a dated public falsifiable CONSENSUS panel with a built-in scoreboard); the /cn/ Chinese sitemap; and the administrator class beyond metals -- energy, softs and index benchmark administrators, where the desk holds NO reference source at all.",
    "yield": "HIGH as a class-opener (first non-FX reference source; an entire un-hunted administrator class named), MEDIUM as an axis (monthly, thin, vintage unmeasured).",
    "session": "free-data run (v) 2026-08-29"
+  },
+  "lppm_data_backend_DEAD": {
+   "provides": "NOTHING. Was: LPPM platinum/palladium historical price tables + charts (the sister benchmark administrator to LBMA).",
+   "replaces": "n/a -- this is a DEATH record.",
+   "provenance": [
+    "https://lppm.com/robots.txt (HTTP 200, 'Disallow: /cgi-bin/' only -- allow-all otherwise)",
+    "https://lppm.com/data (HTTP 200, 22,363B -- a full, healthy-looking data page)",
+    "https://lppm.com/js/data/data.js (HTTP 200, 4,182B -- the endpoints were read out of the site's own JS)",
+    "https://lppm.com/js/charts/fullCharts.js (HTTP 200, 9,641B)"
+   ],
+   "method": "read the site's JS for its real endpoints, then probe each one directly.",
+   "license": "clean (robots allow-all outside /cgi-bin/) -- irrelevant, there is no data.",
+   "cadence": "none.",
+   "grade": "destroyed-at-source",
+   "verified": "2026-08-29. THREE DOORS, THREE DIFFERENT FAILURES, which is why the page still reads healthy: POST /_dta/dataP.ashx -> HTTP 403 IIS 'Access is denied' (also 403 on www., and 403 with browser UA + Referer + X-Requested-With); GET /_dta/data.ashx?c=&d=&ampm=&fx=&start-date=&end-date= -> HTTP 403 same; GET /data-csv/?c=pt&y=2025&t=1 -> HTTP 200, Content-Type text/csv, 2 BYTES -- the file is 0d0a, a bare CRLF with no header and no rows. Swept t in {0..4} x y in {2024,2025} x c in {pt,pd} and with the site's own lppm_data_cookie set: EVERY combination returns 200 and two bytes. The year and type <option> lists are EMPTY in the delivered HTML; only the commodity dropdown is populated.",
+   "failure_modes": [
+    "A LIVE 200 PAGE IN FRONT OF A DEAD SERVICE -- the 'descriptor outlives the service' class (cf. MNB WSDL, free-data run s) meeting the 'empty artifact asserts absence' class (prospector s11). An HTTP-200 two-byte CSV is indistinguishable from 'there is no platinum data' unless the BYTES are checked.",
+    "Stopping at the HTTP 200 would have carded this as a live platinum/palladium door."
+   ],
+   "replacement_hunt": "SS38 answered same-run: the LPPM page's own body links to https://www.ice.com/iba/lbma-precious-metals -- ICE Benchmark Administration now operates the LBMA Platinum and Palladium Prices and auctions, so the primary source MOVED and lppm.com is the abandoned shell of the previous arrangement. The successor data is LICENCE-BARRED (see lbma_auction_prices_json); the licence-free replacement is worldbank_pink_sheet_cmo (monthly Platinum, CC BY 4.0).",
+   "yield": "a death record + a §38 chain that ended in the run's best find."
+  },
+  "worldbank_pink_sheet_cmo": {
+   "provides": "World Bank Commodity Markets Outlook 'Pink Sheet': 70 commodity benchmark price series, MONTHLY, 1960M01 -> 2026M07 (799 periods). Energy (Brent/Dubai/WTI crude, Australian & South African coal, US/Europe gas, Japan LNG, gas index); metals (Gold, Silver, Platinum, Aluminum, Copper, Lead, Tin, Nickel, Zinc, iron ore cfr spot); ~45 softs/agriculture (cocoa, Arabica & Robusta coffee, 4 teas, sugar EU/US/world, cotton A-index, rubber TSR20 & RSS3, wheat SRW & HRW, maize, barley, sorghum, 4 rices, soybeans/oil/meal, palm & palm-kernel & coconut & rapeseed & sunflower oil, groundnuts, bananas, orange, beef/chicken/lamb/shrimp, tobacco, logs, sawnwood, plywood, fish meal); fertilizers (phosphate rock, DAP, TSP, urea, potassium chloride).",
+   "replaces": "The licence-barred LBMA/IBA metals benchmark (at monthly resolution) AND -- more importantly -- it is the desk's FIRST reference price source of ANY kind for ENERGY and SOFTS. Closes the blind spot run (v) named: every source this mission adopted across runs (m)-(u) was an FX door, while the mandated universe is metals, energy, softs, indices and share CFDs too.",
+   "provenance": [
+    "https://www.worldbank.org/en/research/commodity-markets (HTTP 200, 55,953B) -- the file link is GREPPED from here, never guessed",
+    "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (HTTP 200, 577,979B)",
+    "https://datacatalog.worldbank.org/public-licenses (HTTP 200) -- licence read verbatim"
+   ],
+   "method": "single unauthenticated GET of the xlsx; parsed STDLIB-ONLY (zipfile + regex over sheet XML) because openpyxl is absent and the run is under a research freeze -- no install was made.",
+   "license": "CC BY 4.0. Verbatim from datacatalog.worldbank.org/public-licenses: 'The World Bank Group makes data publicly available according to open data standards and licenses datasets under the Creative Commons Attribution 4.0 International license (CC-BY 4.0).' Attribution-only; redistribution permitted; commercial use permitted. The strongest licence position of anything this mission has adopted, and the exact inverse of lbma_auction_prices_json.",
+   "cadence": "monthly, first week of the following month (OBSERVED 2026-08-29: data through 2026M07, file stamped 'Updated as of: August 4, 2026'). NOT an established release date -- see failure_modes.",
+   "grade": "verified-clean",
+   "verified": "2026-08-29 DIFFED against the desk's own MT5 H1 tape, monthly means both sides, 5 overlapping instruments -- units ($/troy oz, $/bbl) proven out of the diff rather than read off a header: Gold vs XAUUSD n=101 level_corr 0.999989 logret_corr 0.9982 median_ratio 0.9998 sd 0.0015; Silver vs XAGUSD n=101 0.999861 / 0.9963 / 1.0012 / 0.0049; Platinum vs XPTUSD n=133 0.998364 / 0.9848 / 0.9999 / 0.0094; Crude oil Brent vs XBRUSD n=143 0.995936 / 0.9743 / 0.9944 / 0.0277; Crude oil WTI vs XTIUSD n=192 0.999415 / 0.9718 / 0.9990 / 0.0204. The three metals land within 0.12% of the desk's own tape.",
+   "failure_modes": [
+    "THE URL IS A VERSIONED DOC PATH AND A HARDCODED ONE SERVES A FROZEN VINTAGE AT HTTP 200 FOREVER. The prior '...-0050012025/...' path still returns HTTP 200, 778,415B, a VALID xlsx that parses cleanly -- 792 periods ending 2025M12, internal stamp 'Updated on January 06, 2025'. A collector hardcoding it would be EIGHT MONTHS STALE and would never raise an error. This is 'empty artifact asserts absence' INVERTED: a full, valid, wrong-vintage artifact asserts currency. MITIGATION: re-grep the link from the landing page every pull AND check the file's own 'Updated as of' string against max(period).",
+    "MONTHLY ONLY. No daily door here. Monthly-average benchmark vs continuously-quoted CFD: align monthly means on BOTH sides.",
+    "PUBLICATION VINTAGE UNMEASURED -- the card-83 blocking measurement. Observed availability is NOT an established release date (the run-(q) error). Bound it from archived vintages, and per card 84 compare the SERVED Wayback capture stamp against the REQUESTED one or the reconstruction fabricates lookahead. NO EV-gate pre-registration until this is done.",
+    "REVISIONS: '**' marks South African coal, groundnut oil, beef, chicken, lamb, rubber TSR20, potassium chloride in the header -- meaning UNREAD this run, flagged not assumed. A point-in-time study needs the vintage file, not today's.",
+    "MISSING VALUES ARE THE LITERAL STRING '...' (unicode ellipsis), not blank and not NaN. A naive float cast throws; a naive errors='coerce' silently zeroes."
+   ],
+   "cross_source_pair": "Pink Sheet physical benchmark x the desk's own MT5 energy CFD tape. Neither alone measures the desk's ROLL COST. Together: a free monthly ~12-year series of the wedge between the physical commodity and the instrument the desk actually holds -- Brent median ratio 0.9944 (benchmark 0.56% BELOW the XBRUSD CFD, sd 2.8%) vs WTI 0.9990, against metals at ~0.0%. The metals legs are the CONTROL: a non-zero energy wedge is not a methodology artifact. This reads a COST term in W(alpha,R,X,C,L,S) directly, which under the bottleneck law is usually where the marginal resource belongs. Recorded as an OBSERVATION, not pre-registered -- the vintage gate binds first.",
+   "next_ground": "the Monthly Indices / Index Weights / Description sheets are UNREAD; the annual and quarterly CMO files and the CMO FORECAST tables were not fetched; IMF Primary Commodity Prices is the obvious second-institution cross-check (what BIS x Eurostat is for FX).",
+   "yield": "closes the mission's own named FX-only blind spot; first energy/softs reference source the desk has ever held; CC BY 4.0."
+  },
+  "lbma_annual_forecast_survey_panel": {
+   "provides": "LBMA Annual Precious Metals Forecast Survey: 121 analyst-years x 4 metals (Gold/Silver/Platinum/Palladium), each with low/high/average point forecasts AND free-text mechanism commentary, for 2023/2024/2025/2026. 19 named analysts appear in ALL four years. The administrator also publishes an 'Actuals Vs Forecasts' scoreboard (a 2010-2023-performance page implies the survey runs back to 2010).",
+   "replaces": "No paid product directly -- the desk holds NOTHING of this shape. Every other sentiment source in this map is a scraped-crowd or news-tone proxy; this is a NAMED professional's numeric point forecast, published in advance, with a horizon, on an instrument the desk trades, and graded by the publisher.",
+   "provenance": [
+    "https://www.lbma.org.uk/robots.txt (Disallow: /cache/ only, browser UA; 403 to ClaudeBot -- UA-keyed edge rule)",
+    "https://www.lbma.org.uk/sitemaps-1-sitemap.xml -> https://www.lbma.org.uk/sitemaps-1-section-forecastSurvey-1-sitemap.xml (HTTP 200, 32,527B, 121 analyst URLs)",
+    "https://www.lbma.org.uk/forecast-survey-{2023..2026}/analysts-forecasts/<slug> (121 x HTTP 200)"
+   ],
+   "method": "/forecast-survey is a 404; the section sitemap is the enumerator. Pages look JS-shelled (300kB of nav) but the FORECAST NUMBERS ARE IN THE DELIVERED HTML -- regex over stripped text, no browser. Crawled at 0.6s/request, 121 requests, ZERO errors. Written append-per-item with explicit flush + resume-from-file guard (the first attempt lost everything at record 22).",
+   "license": "NOT READ this run. The survey pages carry no visible terms, and the LBMA's PRICE data is licence-barred (see lbma_auction_prices_json), so the prudent position is RESEARCH USE ONLY, NO REDISTRIBUTION -- stated, not assumed. Reading the survey's own terms is the one outstanding item.",
+   "cadence": "annual, published each January.",
+   "grade": "verified-clean (SOURCE). The AXIS is UNDERPOWERED and is deliberately NOT pre-registered -- see failure_modes.",
+   "verified": "2026-08-29. n_blocks == 4 on ALL 121 pages. Persisted to data/lbma_forecast_survey_panel.json (65kB). Correctly computed (average>0 only) consensus / n / dispersion CV: 2023 Gold 1859.92/24/.0467, 2024 2058.96/25/.0295, 2025 2735.33/27/.0403, 2026 4741.96/28/.1003.",
+   "finding": "ANALYST DISPERSION IS AT A FOUR-YEAR EXTREME ON ALL FOUR METALS SIMULTANEOUSLY in 2026: gold CV 2.5x its 2025 value, silver 4.0x, platinum 3.6x, palladium 3.6x; mean gold forecast-range width 600 -> 1509. Consensus LEVELS drifting up after a price move is unsurprising; the SECOND MOMENT moving 2.5-4x on four metals at once is not the mechanical shadow of the first. Shape of an uncertainty/vol axis, not a direction one. REPORTED AS A FINDING, NOT TRADED.",
+   "failure_modes": [
+    "THE BINDING ONE -- SILENT ZERO ENCODING. An analyst who does not cover a metal is published as 'Range $0 - $0, Average $0': a NON-PARTICIPATION rendered identically to a forecast of zero, 3-11 cells per year per metal. Naive inclusion gives 2026 Gold consensus 4283.06 (vs correct 4741.96, -9.7%) and CV 0.3439 (vs 0.1003, 3.4x wrong) with no exception and a plausible-looking output. This is L1.28a 'UNMEASURED COUNTS AS ZERO' inverted, inside a source's encoding. The persisted artifact carries an encoding_warning field.",
+    "AXIS POWER: FOUR ANNUAL OBSERVATIONS. Against the ten gates that is vacuous, not thin (L1.57). Source verified; axis NOT proposed. The 2010-2023-performance page implies the survey reaches 2010 = 16 annual obs + ~19 persistent named analysts -- that extension is the only thing that could make it a candidate.",
+    "POSITIONAL METAL MAPPING: the 4 blocks are ordered in the HTML with no metal label adjacent to the numbers. Verified by magnitude and by n_blocks==4 on all 121, but a future year dropping a metal would SILENTLY SHIFT the mapping. A parser must assert the metal name near each block, never trust order.",
+    "SURVIVORSHIP: rosters change (30/29/31/31). An analyst who stops being invited after bad years leaves the panel, so aggregate accuracy over the published roster is biased UPWARD -- the standard track-record survivorship, and it applies to the publisher's own scoreboard page.",
+    "Forecasts are for the CALENDAR-YEAR AVERAGE, not year-end. Mixing the two compares different objects."
+   ],
+   "next_ground": "the 2010-2023 scoreboard/back-years (16 annual obs); the per-year at-a-glance pages (fetched, unparsed); the per-analyst COMMENTARY TEXT -- a free dated corpus of stated mechanisms from named professionals, entirely unmined.",
+   "yield": "first named-professional numeric forecast panel in the map; one measured cross-metal dispersion extreme; one encoding-trap lesson."
   }
  },
  "residual_gaps_unpurchasable": [

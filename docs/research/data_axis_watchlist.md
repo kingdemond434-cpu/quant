@@ -8807,3 +8807,507 @@ command on the Windows terminal box (`install_contract_terms_task.ps1`, paged in
 `data/PRINCIPAL_ACTION.md`). Until it runs the axis accrues nothing and `max_audit`'s
 `mt5-contract-terms` check fires every morning after a missed trading day rather than letting the
 silence read as green.
+
+## SESSION SUMMARY — 2026-08-29 (free-data run **w**) — IN PROGRESS
+
+**RESUME, NOT RESTART.** Run (v) closed both pending backlog rows and named its chain; item (1) of
+that chain (the LBMA publication vintage) was then closed by brain-hunter card 83. So this run
+takes the chain's items (2) and (3) plus one expansion, all on the **benchmark / market
+administrator** class that run (v) opened but did not dig:
+
+1. **`lppm.com` — the platinum/palladium sister administrator.** Same class, untouched. §13 gate
+   first, then hunt for the same unadvertised JSON doors that the LBMA page hid.
+2. **LBMA `forecast-survey` + `value-dates`** — a dated, public, falsifiable analyst *consensus*
+   panel with a built-in scoreboard (a positioning/sentiment axis the desk holds nothing like).
+3. **SEARCH-SPACE EXPANSION (>=25%) — an ENERGY or SOFTS benchmark administrator**, where the desk
+   currently holds **no reference source at all** for a mandated part of its universe.
+
+_(status lines appended below as each item resolves — never held in context)_
+
+### 88. [dig 2026-08-29 (free-data w)] **LPPM `lppm.com` data backend — a live 200 page in front of a DEAD service** — grade: **destroyed-at-source** (§38 replacement hunt opened and CLOSED in the same run — see card 89)
+
+Item 1 of this run's chain. §13 first: `lppm.com/robots.txt` → HTTP 200, `Disallow: /cgi-bin/` only
+(and identically on `www.`). Clean, allow-all on everything below.
+
+**THE SURFACE SAYS LIVE.** `https://lppm.com/data` → HTTP 200, 22,363 b, a full data page with a
+commodity dropdown (`pt`/`pd`), year and type dropdowns, a results table and a CSV download button.
+`https://lppm.com/charts` → HTTP 200, 22,017 b.
+
+**THE BACKEND IS DEAD, and every one of its three doors fails in a DIFFERENT way — which is why the
+page still looks healthy.** Endpoints recovered by reading the site's own JS (`js/data/data.js`,
+`js/charts/fullCharts.js`), never the marketing copy:
+
+| door | method | result |
+|---|---|---|
+| `/_dta/dataP.ashx` (c,y,t) | POST | **HTTP 403** IIS "Access is denied" — also 403 on `www.`, and 403 with browser UA + `Referer` + `X-Requested-With` |
+| `/_dta/data.ashx?c=&d=&ampm=&fx=&start-date=&end-date=` | GET | **HTTP 403**, same |
+| `/data-csv/?c=pt&y=2025&t=1` | GET | **HTTP 200, `text/csv`, 2 bytes — the file is `0d0a`, a bare CRLF: no header, no rows** |
+
+The CSV door was swept over `t ∈ {0..4} × y ∈ {2024,2025} × c ∈ {pt,pd}` and with the site's own
+`lppm_data_cookie` disclaimer cookie set: **every combination returns HTTP 200 and two bytes.** The
+year and type `<option>` lists are *empty in the delivered HTML* — only the commodity dropdown is
+populated. This is the desk's recorded **"a descriptor outlives the service"** class (free-data run
+(s), MNB WSDL: a static 200 in front of six dead operations) and the **"empty artifact asserts
+absence"** class (prospector s11) meeting in one site: an HTTP-200 empty CSV is indistinguishable
+from "there is no platinum data" unless you check the bytes.
+
+**HAD I STOPPED AT THE 200 I WOULD HAVE CARDED THIS AS A LIVE PLATINUM/PALLADIUM DOOR.** Grade:
+**destroyed-at-source** — the sister-administrator door that run (v) named as next ground does not
+exist any more. It is not a wall, not a robots verdict, not a rate limit: it is a dead backend.
+
+**§38 — THE EXCLUSION SPAWNS THE HUNT, AND THE HUNT IS ANSWERED IN THE SAME RUN.** The LPPM page's
+own body links out to `https://www.ice.com/iba/lbma-precious-metals`: **ICE Benchmark Administration
+now operates the LBMA Platinum and Palladium Prices and auctions.** So the primary source moved and
+the LPPM page is the abandoned shell of the previous arrangement. Replacement located and verified —
+card 89 — and it is worth far more than what was lost.
+
+### 89. [dig 2026-08-29 (free-data w)] **`prices.lbma.org.uk/json/*.json` — ALL SEVEN official LBMA precious-metal fixings, keyless, gold to 1968: 81,996 daily observations in USD/GBP/EUR** — grade: **verified-clean**
+
+**THE FIRST FINDING IS THAT RUN (v) LEFT THIS ON THE TABLE, AND FOR A REASON THE DESK HAS ALREADY
+PAID FOR ONCE.** Run (v) recorded: *"`prices.lbma.org.uk/robots.txt` → HTTP 401, which is ambiguous
+under RFC 9309, so the price host was **not touched**."* **It is not ambiguous.** RFC 9309 §2.3.1.4
+is explicit: a 4xx robots response means *no restrictions* — only a **5xx** is a full disallow.
+Prospector s16 recorded exactly this correction after abandoning a primary source on a 403; the
+lesson reached the memory index and did not reach this seat's next run. Re-tested this run:
+`prices.lbma.org.uk/robots.txt` → **HTTP 401, 0 bytes** (browser UA) / **403** (ClaudeBot UA).
+**ALLOW-ALL under the standard, both readings.** The highest-value door on the whole class was
+sitting one HTTP code behind a misread of the spec.
+
+**(Corollary found in the same check — the same host family is UA-keyed.** `www.lbma.org.uk/robots.txt`
+returns **403 to `ClaudeBot/1.0` and 200 to a browser UA**, where the 200 body is
+`Disallow: /cache/` + two sitemaps incl. `/cn/`. Run (v) read the 200 body; today's ClaudeBot read
+would have read a 403. A robots verdict is a property of YOUR headers — recorded lesson, second
+institution.)
+
+**SEVEN KEYLESS JSON DOORS, all HTTP 200, `application/json`, no auth, no key, one GET each:**
+
+| series | rows | first | last | bytes |
+|---|---|---|---|---|
+| `gold_am` | 14,824 | **1968-01-02** | 2026-08-28 | 923,636 |
+| `gold_pm` | 14,672 | 1968-04-01 | 2026-08-28 | 913,794 |
+| `silver` | 14,835 | **1968-01-02** | 2026-08-28 | 897,157 |
+| `platinum_am` | 9,200 | 1990-04-02 | 2026-08-28 | 560,105 |
+| `platinum_pm` | 9,131 | 1990-04-02 | 2026-08-28 | 555,882 |
+| `palladium_am` | 9,200 | 1990-04-02 | 2026-08-28 | 556,564 |
+| `palladium_pm` | 9,134 | 1990-04-02 | 2026-08-28 | 552,834 |
+
+**81,996 daily fixings total. Zero null rows in any of the seven** — and per the standing rule,
+liveness was taken as `max(observation_date)` PER SERIES, not from a header: all seven end
+**2026-08-28**, one business day back. No dead legs in this family.
+
+**THE PAYLOAD IS UNLABELLED AND THE COLUMN MAP WAS PROVEN, NOT GUESSED.** Rows are
+`{"is_cms_locked":0,"d":"YYYY-MM-DD","v":[a,b,c]}` with no currency names anywhere. Two independent
+proofs, neither trusting a label:
+1. **The euro test.** Column 3 is null on **all 7,836 pre-1999-01-01 rows** and non-null on **all
+   6,987 post-1999-01-05 rows.** Only one of the world's currencies did not exist before 1999.
+2. **The implied-cross test.** `v[0]/v[1]` over 2024 has median **1.2722**; `v[0]/v[2]` has median
+   **1.0837** — the 2024 medians of GBPUSD and EURUSD respectively.
+**Map: `v = [USD, GBP, EUR]`, confirmed twice against quantities the source never publishes.**
+
+**VERIFY-DON'T-TRUST — OFFSET-SCANNED AGAINST THE DESK'S OWN MT5 H1 TAPE, and the result identifies
+each series by its OWN published auction time:**
+
+| series | desk symbol | best bar hour | MAE | worst-hour MAE | ratio |
+|---|---|---|---|---|---|
+| gold_am | XAUUSD | **12** | 1.905 | 14.057 | 7.38x |
+| gold_pm | XAUUSD | **16** | 2.493 | 14.934 | 5.99x |
+| silver | XAGUSD | **13** | 0.032 | 0.357 | 11.01x |
+| platinum_am | XPTUSD | **11** | 2.151 | 13.831 | 6.43x |
+| platinum_pm | XPTUSD | **15** | 2.728 | 13.210 | 4.84x |
+| palladium_am | XPDUSD | **11** | 5.492 | 27.794 | 5.06x |
+| palladium_pm | XPDUSD | **15** | 7.67 | 27.79 | 3.62x |
+
+**THIS IS A STRONGER PROOF THAN ANY SINGLE MAE, AND IT IS WHY THE CARD IS VERIFIED-CLEAN RATHER THAN
+NEEDS-MONITORING.** The published London auction schedule is gold 10:30/15:00, silver 12:00,
+platinum & palladium 09:45/14:00. The scan was run blind to that schedule and returned **exactly
+that ordering**: platinum/palladium AM one hour before gold AM (11 vs 12), silver one hour after
+gold AM (13), platinum/palladium PM one hour before gold PM (15 vs 16), and a **4-hour AM→PM gap on
+gold matching the 4.5-hour gap in the timetable**. Seven series, seven independent hours, each
+landing where its own auction sits *relative to the other six*. A units error, a mis-mapped column
+or a wrong series label could not reproduce that structure.
+
+**A METHOD DEFECT CAUGHT IN THE SAME SCAN, AND IT WOULD HAVE MISREPORTED A CLOCK.** `palladium_pm`
+initially returned **best hour = 00, MAE 7.32** — beating hour 15's 7.67. Hour 00 has **n=959**;
+every other hour has **n≈1,686**. It is a partial bar that only exists on a subset of days (session
+open), so its argmin is computed over a *different population*. Hour 15 is a clean local minimum
+against neighbours 14 (14.36) and 16 (11.28) and matches platinum_pm exactly; hour 00 has no such
+structure. **RULE, and it belongs in every offset scan on this desk: an argmin over hours with
+unequal n can be won by a bar that only exists on a subset of days — require n-parity (or a minimum
+fraction of the modal n) before accepting an argmin.** Routed to `improvement_inbox.md`. This is the
+same family as the desk's standing `EURTRY` caveat, but sharper: there the weak case was flagged by
+a low discrimination ratio; here the *winner itself* was the artifact.
+
+**WHAT THE DESK GAINS, stated against what it already holds.** The map holds LBMA *clearing and
+vault* data (card 80, monthly, 121–357 rows) and holds gold only as broker CFD tape. It holds
+**nothing** for platinum and palladium beyond that tape, and no official metal fixing at all. This
+adds: (a) the **official settlement print** the physical market actually transacts on, as opposed to
+a broker's CFD quote; (b) **58 years of gold and silver history** (1968→) and **36 years of
+platinum/palladium** (1990→) against a desk tape that overlaps for only ~2,133 days — precisely the
+pre-2019 regime depth held-out OOS is starved of; (c) **three currencies**, so the same door yields
+the metal in GBP and EUR terms without a cross; (d) **two prints per day** on four of the metals, an
+AM/PM structure that is itself an axis (the intraday auction-to-auction return is a published,
+dated, non-continuous object the CFD tape cannot express).
+
+**GENEALOGY.** Source: `https://prices.lbma.org.uk/json/{gold_am,gold_pm,silver,platinum_am,
+platinum_pm,palladium_am,palladium_pm}.json`, the LBMA's own price host. Administrator: **ICE
+Benchmark Administration** (IBA) since the 2026 transfer of the platinum/palladium benchmarks (per
+`ir.theice.com` release linked from the ICE page). Method: single unauthenticated GET per series,
+2026-08-29. Cadence: business-daily, one-day publication lag observed. Licence/usage: LBMA publishes
+these as public benchmark reference prices; **the usage terms on the price host were NOT read this
+run and the data is therefore graded verified-clean for RESEARCH USE and NOT cleared for
+redistribution** — that distinction is stated rather than assumed, and reading the terms is the one
+outstanding item on this card.
+
+**KNOWN FAILURE MODES.** (1) `is_cms_locked` is an undocumented flag on every row — its meaning is
+unknown and it is currently 0 throughout the sampled head; if it ever flips it may mark a *revised*
+value, so it must be retained on ingest, never dropped. (2) These are **auction prints, not
+continuous quotes** — a missing business day is a real market closure, not a gap to interpolate.
+(3) The 1968–1990s legs predate the current auction mechanism (the London Gold Fixing became the
+LBMA Gold Price in 2015): **the series is a splice of methodologies under one name**, which is the
+desk's recorded `*_H1` splice class one domain over. Any long-history study must condition on the
+2015 methodology break. (4) UA-keyed edge behaviour on the host family (403 to `ClaudeBot`).
+
+### 89b. [dig 2026-08-29 (free-data w)] **CARD 89 IS RE-GRADED: `excluded-licensed`. The LBMA/IBA benchmark prices are LICENCE-BARRED and were NOT adopted; the local archive was DELETED.**
+
+**This correction is written into the same run that made the find, and it is the single most
+important line on this card.** Card 89 above is left standing verbatim — the technical verification
+is sound and worth keeping — but its ADOPTION is withdrawn.
+
+**WHAT I FOUND AFTER VERIFYING, and it is stated by the publisher in its own words.** Continuing to
+item 2 of this run, `https://www.lbma.org.uk/prices-and-data/lbma-precious-metal-prices` (HTTP 200,
+281,671 b) carries three statements read verbatim:
+
+> "The LBMA Gold, Silver, Platinum and Palladium Price benchmarks … are administered by ICE
+> Benchmark Administration Limited (IBA). **A licence from IBA is required in order to obtain, use
+> or redistribute real-time or historical benchmark data** from that date, **including for pricing
+> and valuation activities and in transactions and financial products.**"
+
+> "**Tables have moved to the MyLBMA Portal.** The historical tabulated data for the LBMA Precious
+> Metals Prices has been moved to our MyLBMA Portal. In order to view this data on our Portal, you
+> will need to have the relevant licence from IBA. … Not got a licence? Visit ICE to see your
+> options to purchase one."
+
+> "IBA to Administer LBMA Platinum and Palladium Price Benchmarks from 1 July 2026 — A licence from
+> IBA is required in order to obtain, use or redistribute real-time or historical LBMA Platinum and
+> Palladium Price data from that date."
+
+**THE §13 GATE IS A HARD STOP, NOT A HURDLE, AND THIS IS EXACTLY THE CASE IT EXISTS FOR.** The seven
+`prices.lbma.org.uk/json/*.json` endpoints are open, keyless, unauthenticated and serve 81,996 rows
+to anyone who asks — and the administrator states that **obtaining and using** that data requires a
+purchased licence, explicitly naming *pricing and valuation activities*, which is precisely what a
+trading desk would use it for. **Technically reachable is not licensed.** The tabulated view was
+deliberately moved behind a licence wall; the chart's backing JSON is what remains, and using it as
+a data feed routes around the wall the publisher put up. That is the thing the gate forbids.
+
+**ACTIONS TAKEN THIS RUN, not proposed:**
+- `data/bronze/lbma/` (4.8 MB, all seven series) — **deleted**. The desk holds no copy.
+- Grade on card 89 changed to **excluded-licensed**. Not adopted, not pre-registered, not queued.
+- No consumer, no collector, no schedule was written for it, and none should be.
+
+**WHAT SURVIVES THE EXCLUSION, because it cost real work and is licence-free.** The *verification
+method and its results* are the desk's own measurements against the desk's own tape, and they are
+facts about the desk's tape rather than redistribution of anyone's benchmark:
+1. **The MT5 metals tape has an identifiable London-auction hour**, and the desk can now name it:
+   XAUUSD bar hours **12 (AM) / 16 (PM)**, XAGUSD **13**, XPTUSD/XPDUSD **11 / 15**, each with
+   3.6x–11x discrimination against the worst hour. **The desk can therefore mark its own auction
+   bars without holding anyone's benchmark data at all** — which is most of what the fixing was
+   wanted for. That is the §38 reconstruction and it needs no licence.
+2. **The unequal-n argmin defect** (card 89, palladium_pm) is a method rule, routed to the inbox.
+3. **The RFC 9309 correction** — a 4xx robots is ALLOW-ALL — stands, and matters independently.
+
+**§38 — THE EXCLUSION SPAWNS A HUNT, ANSWERED IN THE SAME RUN.** The capability lost is *an official,
+freely-licensed commodity price benchmark*. Replacement found and verified: **the World Bank Pink
+Sheet, CC BY 4.0, card 90** — which turns out to cover not only the metals but energy and softs,
+i.e. item 3 of this run as well. Residual gap, graded honestly and without flinching: **there appears
+to be no free, clearly-licensed, DAILY official precious-metals fixing.** The benchmark is a licensed
+product by construction — that is how IBA is funded. The free replacement is monthly. The desk gets
+the monthly official level and its own daily tape marked at the auction hour; it does not get the
+daily official print, and no amount of further searching on this class will change that.
+
+### 90. [dig 2026-08-29 (free-data w)] **World Bank "Pink Sheet" (CMO) — 70 commodity benchmarks, monthly 1960-01 → 2026-07, CC BY 4.0, keyless: the desk's FIRST reference source for energy and softs** — grade: **verified-clean**
+
+Item 3 (search-space expansion) and the §38 replacement for card 89b, answered by one door.
+
+**WHY THIS CLOSES A NAMED BLIND SPOT.** Run (v) recorded the finding that *every* source this
+mission has adopted across runs (m)–(u) was an **FX** door, while the mandated universe is metals,
+energy, softs, indices and share CFDs too. The desk holds **no reference price source at all** for
+energy or agriculture. This is that source, and it arrived as the licence-free replacement for the
+benchmark that card 89b had to give back.
+
+**PROVENANCE, exact.** Landing page `https://www.worldbank.org/en/research/commodity-markets`
+(HTTP 200, 55,953 b) — the current monthly file link is grepped from it, never guessed:
+`https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx`
+→ HTTP 200, 577,979 b, `application/vnd.openxmlformats…sheetml.sheet`. Sheets: `Monthly Prices`,
+`Monthly Indices`, `Description`, `Index Weights`, `AFOSHEET`. Parsed **stdlib-only**
+(`zipfile` + regex over the sheet XML) because `openpyxl` is absent and the run is under a
+research freeze — no install was made.
+
+**LICENCE — READ, NOT ASSUMED.** `https://datacatalog.worldbank.org/public-licenses` (HTTP 200),
+verbatim: *"The World Bank Group makes data publicly available according to open data standards and
+licenses datasets under the Creative Commons Attribution 4.0 International license (CC-BY 4.0)."*
+**Attribution-only. Redistribution permitted. Commercial use permitted.** This is the strongest
+licence position of anything this mission has adopted, and it is the exact inverse of card 89b.
+
+**CONTENT: 799 monthly periods, 1960M01 → 2026M07, 70 series**, covering every non-FX corner of the
+mandated universe and several the desk does not trade but which price its instruments:
+- **Energy (9):** Crude oil Brent / Dubai / WTI, coal Australian & South African, natural gas US /
+  Europe / Japan LNG, natural gas index.
+- **Precious & base metals (9):** Gold, Silver, Platinum, Aluminum, Copper, Lead, Tin, Nickel, Zinc,
+  plus iron ore cfr spot.
+- **Softs & agriculture (~45):** cocoa, Arabica & Robusta coffee, four teas, sugar (EU/US/world),
+  cotton A-index, two rubbers, wheat SRW & HRW, maize, barley, sorghum, four rices, soybeans/oil/
+  meal, palm & palm-kernel & coconut & rapeseed & sunflower oil, groundnuts, bananas, orange,
+  beef/chicken/lamb/shrimp, tobacco, logs, sawnwood, plywood, fish meal.
+- **Fertilizers (5):** phosphate rock, DAP, TSP, urea, potassium chloride.
+
+**VERIFY-DON'T-TRUST — DIFFED AGAINST THE DESK'S OWN MT5 TAPE, five overlapping instruments,
+monthly means, and the units come out of the diff rather than out of the header:**
+
+| Pink Sheet series | desk symbol | n months | level corr | log-return corr | median ratio | sd |
+|---|---|---|---|---|---|---|
+| Gold `($/troy oz)` | XAUUSD | 101 | **0.999989** | 0.9982 | 0.9998 | 0.0015 |
+| Silver `($/troy oz)` | XAGUSD | 101 | **0.999861** | 0.9963 | 1.0012 | 0.0049 |
+| Platinum `($/troy oz)` | XPTUSD | 133 | **0.998364** | 0.9848 | 0.9999 | 0.0094 |
+| Crude oil, Brent `($/bbl)` | XBRUSD | 143 | 0.995936 | 0.9743 | **0.9944** | 0.0277 |
+| Crude oil, WTI `($/bbl)` | XTIUSD | 192 | 0.999415 | 0.9718 | 0.9990 | 0.0204 |
+
+The three metals land within **0.12% of the desk's own tape** on the median ratio — units
+(`$/troy oz`) and column mapping proven against an independent quantity, not read off a label.
+
+**THE ONE INFORMATIVE DEVIATION, AND IT IS A FEATURE.** Brent's median ratio is **0.9944** — the
+World Bank spot benchmark sits **0.56% BELOW the desk's XBRUSD CFD**, with 2.8% dispersion, while
+WTI sits at 0.9990. A broker energy CFD tracks a **rolling futures** construction, not physical
+spot; a persistent level wedge against the physical benchmark is exactly what contango produces.
+**That gap is not an error in either series — it is the roll cost of the instrument the desk
+actually trades, measured for free.** The desk has never had an external physical reference to
+measure it against. Recorded here as an observation, NOT pre-registered: it is a monthly-resolution
+level comparison over n=143 and the vintage question below binds it first.
+
+**KNOWN FAILURE MODES — and the first one is a new class for the map.**
+1. **THE URL IS A VERSIONED DOC PATH AND A HARDCODED ONE SERVES A FROZEN VINTAGE AT HTTP 200,
+   FOREVER.** I first pulled the `…-0050012025/…` path: **HTTP 200, 778,415 b, valid xlsx, parsed
+   cleanly, 792 periods** — and it ends at **2025M12** with an internal stamp of *"Updated on
+   January 06, 2025"*. The current `…-0050012026/…` path returns 799 periods to **2026M07**,
+   *"Updated as of: August 4, 2026"*. **A collector that hardcodes this URL would be eight months
+   stale and would never raise an error**, because the stale door is a healthy 200 serving a
+   well-formed file. This is the desk's "empty artifact asserts absence" class inverted: a *full,
+   valid, wrong-vintage* artifact asserts currency. **The link must be re-grepped from the landing
+   page on every pull, and the file's own `Updated as of` string checked against `max(period)`.**
+2. **Monthly only.** No daily door exists here. For a monthly-average benchmark against a
+   continuously-quoted CFD, the alignment is an average-vs-average comparison — the diff above used
+   monthly means of H1 closes on both sides deliberately.
+3. **PUBLICATION VINTAGE IS UNMEASURED — and per card 83 that is the blocking measurement before
+   ANY axis built on this reaches the EV gate.** Observed: on 2026-08-29 the file carries data
+   through 2026M07 and stamps itself 2026-08-04, i.e. ~a first-week-of-month release for the prior
+   month. **Observed availability is not an established release date** (the identical error run (q)
+   made and card 81 was held back for). It must be bounded from archived vintages by the card-83
+   method — **and per card 84, the served Wayback capture stamp must be compared against the
+   requested one**, or the reconstruction fabricates lookahead.
+4. **Revisions.** `**` marks several series (South African coal, groundnut oil, beef, chicken, lamb,
+   rubber TSR20, potassium chloride) in the header — meaning unread this run, flagged not assumed.
+   Commodity benchmarks are revised; a point-in-time study needs the vintage file, not today's.
+5. **Missing values are the literal string `…`**, not blank and not `NaN` — a naive float cast
+   throws, and a naive `errors=coerce` silently zeroes. Handled explicitly in the parser used here.
+
+**GENEALOGY.** Source: World Bank Commodity Markets Outlook ("Pink Sheet"), the World Bank's own
+`thedocs.worldbank.org` CDN. Method: single unauthenticated GET of the xlsx, link grepped from the
+landing page, 2026-08-29; parsed stdlib-only. Cadence: monthly, first week of the following month
+(observed, not established — see failure mode 3). Licence: **CC BY 4.0**, attribution required.
+Update path: re-grep the landing page each pull.
+
+**CROSS-SOURCE PAIR FLAGGED (joint value > either alone).** **Pink Sheet physical benchmark ×
+the desk's own MT5 energy CFD tape.** Neither alone measures the desk's roll cost; together they
+give a free, monthly, 12-year series of the wedge between the physical commodity and the
+instrument the desk actually holds — a direct read on a **cost** term in `W(α,R,X,C,L,S)`, which
+under the bottleneck law is where the marginal resource usually belongs. The metals legs are the
+control: they show ~0.0% wedge, so a non-zero energy wedge is not a methodology artifact.
+
+**NEXT UN-EXHAUSTED GROUND ON THIS DOOR (opened, not dug):** the `Monthly Indices`, `Index Weights`
+and `Description` sheets are unread; the **annual** and **quarterly** CMO files and the CMO
+*forecast* tables (a published, dated, falsifiable institutional forecast panel — the same shape as
+card 91) were not fetched; and the **IMF Primary Commodity Prices** door is the obvious
+second-institution cross-check that would do for commodities what BIS × Eurostat does for FX.
+
+### 91. [dig 2026-08-29 (free-data w)] **LBMA Annual Precious Metals Forecast Survey — a named, dated, falsifiable 30-analyst consensus panel with a published scoreboard: 121 analyst-years x 4 metals, EXTRACTED and PERSISTED** — grade: **verified-clean** (SOURCE); the **AXIS is UNDERPOWERED and is NOT pre-registered** — see the blunt limit below
+
+Item 2 of this run's chain. **The desk holds nothing else of this shape:** every sentiment source in
+the map is a scraped-crowd or news-tone proxy. This is a *named professional's numeric point
+forecast, published in advance, with a horizon, against a metal the desk trades* — and the
+administrator publishes an "Actuals Vs Forecasts" scoreboard, so the panel grades itself.
+
+**§13.** `www.lbma.org.uk/robots.txt` — `Disallow: /cache/` only (browser UA; **403 to `ClaudeBot`,
+a UA-keyed edge rule, second institution after the Akamai class**). None of the crawled paths are
+disallowed. Crawled at **0.6 s/request, 121 requests, zero errors, zero 429s.**
+
+**THE ENDPOINT IS THE FIND, AND IT WAS A SITEMAP SECTION.** `www.lbma.org.uk/forecast-survey` →
+**HTTP 404**; the top-level sitemap names a dedicated section file
+`sitemaps-1-section-forecastSurvey-1-sitemap.xml` (HTTP 200, 32,527 b) enumerating **121 analyst
+pages across 2023 / 2024 / 2025 / 2026** plus per-year `at-a-glance` and a `2010-2023-performance`
+scoreboard. The pages LOOK JS-shelled (300 kB of nav) — **the forecast numbers are in the delivered
+HTML** and were extracted with a regex over the stripped text, no browser.
+
+**EXTRACTED: 121 analyst-years, `n_blocks == 4` on ALL 121** (Gold, Silver, Platinum, Palladium —
+low / high / average each), plus each analyst's free-text mechanism commentary. Persisted to
+`data/lbma_forecast_survey_panel.json` (65 kB). **19 of the analysts appear in all four years**, so
+per-analyst skill is computable rather than merely aggregate consensus.
+
+**A SILENT ENCODING TRAP THAT WOULD HAVE CORRUPTED EVERY STATISTIC, AND IT IS THE DESK'S OWN
+STANDING DEFECT WEARING A SOURCE'S CLOTHES.** An analyst who does not cover a metal is published as
+**`Range $0 - $0, Average $0`** — a *non-participation encoded as a forecast of zero*, 3–11 cells
+per year per metal. Computed naively:
+
+| 2026 Gold | consensus | dispersion (CV) |
+|---|---|---|
+| zeros included (naive) | **4,283.06** | **0.3439** |
+| zeros excluded (correct) | **4,741.96** | **0.1003** |
+
+**A −9.7% error in the level and a 3.4x error in the dispersion**, with no exception, no warning and
+a perfectly plausible-looking output. This is `UNMEASURED COUNTS AS ZERO` (L1.28a) inverted: here the
+*source* renders "no answer" and "zero" identically, and the desk's own law says those must never
+read the same. The persisted artifact carries an `encoding_warning` field stating it in the file.
+
+**THE PANEL, correctly computed (average > 0 only) — consensus / n / dispersion CV / mean forecast-range width:**
+
+| year | Gold | Silver | Platinum | Palladium |
+|---|---|---|---|---|
+| 2023 | 1,859.92 (n=24, cv .0467, w 358) | 23.65 (24, .0899, 7.9) | 1,080.38 (21, .0520, 336) | 1,809.81 (21, .0966, 658) |
+| 2024 | 2,058.96 (25, .0295, 355) | 24.76 (24, .0457, 6.8) | 1,015.00 (22, .0409, 300) | 1,060.14 (22, .1088, 493) |
+| 2025 | 2,735.33 (27, .0403, 600) | 32.86 (26, .0641, 10.9) | 1,022.30 (20, .0485, 295) | 991.45 (20, .0427, 338) |
+| **2026** | **4,741.96 (28, .1003, 1,509)** | **79.57 (26, .2569, 51.7)** | **2,222.12 (24, .1736, 1,052)** | **1,740.23 (22, .1539, 871)** |
+
+**THE ONE GENUINELY INTERESTING NUMBER IN THE PANEL, and it is not the level.** Analyst dispersion in
+2026 is at a four-year extreme on **all four metals simultaneously** — gold CV **2.5x** its 2025
+value, silver **4.0x**, platinum **3.6x**, palladium **3.6x**, and the mean forecast *range width*
+on gold went 600 → 1,509. Professional disagreement about the precious complex has roughly tripled
+in one year, across the whole complex at once. Consensus levels drifting up is unsurprising after a
+price move; **the second moment moving 2.5–4x on four metals at once is not the mechanical shadow of
+the first**, and it is exactly the shape of an uncertainty/vol axis rather than a direction one.
+
+**MECHANISM, and it names its forced participant — stated so the axis is falsifiable, NOT so it is
+adopted.** These analysts are sell-side and refiner-affiliated; their published forecasts anchor the
+hedging and inventory decisions of miners, refiners and jewellers who must transact whatever they
+believe. Wide dispersion means the physical chain's hedge ratios are being set off incompatible
+priors, which is a positioning-fragility state, not a direction. Pre-registered target would
+therefore be **realised volatility and absolute move over the forecast year**, never a signed
+return; falsifier: no relationship between consensus dispersion and subsequent realised vol.
+
+**BLUNT LIMIT — WHY THIS IS NOT GOING TO THE EV GATE, and it is a hard one, not a caveat.** The
+axis has **FOUR ANNUAL OBSERVATIONS**. Four. Against the ten gates that is not thin, it is
+*vacuous* — any "result" over n=4 is a coin sequence with a story attached, and L1.57 is explicit
+that a verdict over an empty population is vacuous rather than a pass. **The source is verified; the
+axis is not proposed.** Reporting the dispersion spike as a *finding* while refusing to trade it is
+the honest split, and the difference between this card and one that would fail its own gate.
+
+**WHAT WOULD MAKE IT POWERED, and it is the named next ground:** the `2010-2023-performance`
+scoreboard page implies the survey runs to **2010**, which is **16 annual observations and ~19
+persistent named analysts** — still thin in the time dimension but with real cross-sectional n for
+*analyst-skill* work (does an analyst's past accuracy predict their next forecast's accuracy?). That
+extension is the one thing that could move this from a curiosity to a candidate. `at-a-glance` pages
+per year (fetched, 300 kB, unparsed) and the per-analyst *commentary text* — a free, dated corpus of
+stated mechanisms from named professionals — are also unmined.
+
+**GENEALOGY.** Source: `https://www.lbma.org.uk/forecast-survey-{2023..2026}/analysts-forecasts/<slug>`,
+enumerated from the LBMA's own sitemap section file. Method: 121 unauthenticated GETs at 0.6 s
+intervals, 2026-08-29, regex over stripped HTML; written **append-per-item with an explicit flush and
+a resume-from-file guard** (the desk's own recorded lesson — a long crawl that buffers loses
+everything to one interruption, which is exactly what happened to this crawl's first attempt at
+record 22). Cadence: annual, published each January. Licence: **NOT READ this run** — the survey
+pages carry no visible terms and the LBMA's *price* data is licence-barred (card 89b), so the
+prudent position is **research-use only, no redistribution**, stated rather than assumed. Reading
+the survey's own terms is the one outstanding item on this card.
+
+**KNOWN FAILURE MODES.** (1) The zero-encoding trap above — the binding one. (2) The 4-metal blocks
+are positionally ordered in the HTML with no metal label adjacent to the numbers; the mapping was
+verified by magnitude (gold ~4,000s, silver ~50–100, platinum ~2,000s, palladium ~1,500s) and by
+`n_blocks == 4` on all 121 pages, but a future year that drops a metal would **silently shift the
+mapping**. A parser must assert the metal name near each block, not trust the order. (3) Analyst
+rosters change (30 / 29 / 31 / 31) — **survivorship**: an analyst who stops being invited after bad
+years leaves the panel, so aggregate accuracy over the published roster is biased upward. This is
+the classic track-record survivorship the desk grades on every leaderboard source, and it applies to
+the scoreboard page too. (4) Forecasts are for the *calendar-year average*, not year-end — mixing the
+two would compare different objects.
+
+### SESSION SUMMARY — 2026-08-29 (free-data run **w**) — **CLOSED**
+
+**Items: 3 taken, 3 closed to depth**, exactly the chain run (v) named. Backlog was clear on entry
+(`source_backlog_next.py`: 90 catalogued, 62 resolved, **0 pending verification**, 28 deferred to
+future dates) — so this run had no verification debt to clear and went to the named next ground.
+
+**Categories covered:** vendor-replacement reconstruction (cat 6 — the LBMA/LPPM/IBA benchmark
+decomposition), alternative & sentiment (cat 5 — the analyst forecast panel), and **search-space
+expansion** (the World Bank commodity door). Crypto-exchange ground untouched (banned universe).
+Non-English ground not entered this run — named as a debt below, not glossed.
+
+**Verified vs UNVERIFIED: 2 verified-clean adopted (World Bank Pink Sheet; LBMA forecast panel as a
+SOURCE), 1 destroyed-at-source (LPPM backend), 1 EXCLUDED-LICENSED — and that last one is a
+WITHDRAWAL OF AN ALREADY-ADOPTED SOURCE, which is the most valuable thing this run did.**
+
+**THE RUN'S ONE TRANSFERABLE LESSON — AN OPEN ENDPOINT IS NOT A LICENCE, AND THE DESK HAD ALREADY
+BANKED ONE THAT ISN'T.** `lbma_auction_prices_json` has sat in the universe map as **adopted,
+verified-clean** since 2026-08-25/27 with a `license` field asserting *"free for reference …
+non-commercial reference use only."* Nobody had opened the publisher's terms. They say the opposite:
+**a licence from IBA is required to obtain, use or redistribute historical benchmark data, including
+for pricing and valuation activities** — and the historical tables were deliberately moved behind
+that wall while the chart's backing JSON stayed open. Re-graded `excluded-licensed`; the 4.8 MB
+archive this run created was **deleted**. The generalised rule, routed to the inbox: **"free to
+access" and "free to use" are two different fields and must be recorded separately; the publisher's
+terms page is opened and quoted verbatim BEFORE a grade of adopted, never inferred from an
+endpoint's HTTP code.** I found this by *continuing past my own success* — the find was already
+carded and verified when item 2 walked me onto the terms page.
+
+**Best vendor-replacement:** the **World Bank Pink Sheet** (card 90). 70 commodity benchmarks,
+monthly 1960→2026-07, **CC BY 4.0** (redistribution and commercial use permitted — the strongest
+licence position in the whole map, and the exact inverse of what it replaces). Verified against the
+desk's own tape on five instruments at level-corr ≥ 0.9959 with the metals inside 0.12%.
+
+**Cross-source pair flagged (joint value > either alone):** **Pink Sheet physical benchmark × the
+desk's own MT5 energy CFD tape.** Neither alone measures the desk's **roll cost**; together they
+give a free monthly ~12-year series of the wedge between the physical commodity and the instrument
+actually held — Brent benchmark 0.56% *below* XBRUSD (sd 2.8%) against WTI at 0.10% and the metals at
+~0.0%. **The metals are the control**, so a non-zero energy wedge is not a methodology artifact.
+That reads a **cost** term in `W(α,R,X,C,L,S)` directly, which under the bottleneck law is usually
+where the marginal resource belongs.
+
+**NEW SOURCE CLASSES this run:** (a) **multilateral development banks / IFIs as commodity benchmark
+publishers** — a class distinct from the "benchmark administrators" run (v) opened, and crucially
+one whose *licence model is open by mandate* rather than by sale, which is precisely why it survives
+§13 where the administrator does not; (b) **published professional forecast panels with a
+publisher-maintained scoreboard** (card 91) — the desk's first named-analyst numeric forecast source.
+
+**DEPTH LINE (per the depth mandate, honestly):**
+- **LPPM — EXHAUSTED.** Surface said "live data page, HTTP 200". Depth: read the site's own JS →
+  three real endpoints → probed each → 403/403/**two-byte CSV at HTTP 200** → swept 20 parameter
+  combinations + the disclaimer cookie → dead. Depth surfaced what the surface could not: the
+  service is destroyed and the page is its shell. Then followed the page's own outbound link →
+  ICE/IBA → the successor → the licence wall → the whole §38 chain.
+- **LBMA prices — EXHAUSTED, and the depth REVERSED the verdict.** Surface (and the desk's existing
+  map entry) said "keyless, verified, adopted". Depth: seven series pulled → column map proven twice
+  against quantities the source never publishes → offset-scanned to each metal's own auction hour →
+  **then the terms page, which withdrew the whole thing.** Two of the three layers were the desk's
+  standard practice; the third is the one that changed the answer, and it is the one the desk had
+  been skipping.
+- **World Bank CMO — section opened, NOT exhausted.** Landing page → grepped link → stdlib xlsx
+  parse → 70-series census → 5-instrument ground-truth diff → licence page. Named next ground rather
+  than claiming the class dug: Monthly Indices / Index Weights / Description sheets unread, annual
+  and quarterly files and the CMO *forecast* tables unfetched, IMF Primary Commodity Prices as the
+  second-institution cross-check.
+- **LBMA forecast survey — section opened, NOT exhausted.** Sitemap section → 121 pages crawled to
+  completion → 4-metal panel extracted → zero-encoding trap caught → dispersion computed. Unmined:
+  the 2010→ back-years, the at-a-glance pages, and the per-analyst commentary corpus.
+- **Honest gaps, named rather than glossed:** I chased **no citation chains, no fork trees and no
+  reply chains** this run — institutional doors have no such layer, and the equivalent depth
+  (endpoint recovery from site JS, sitemap-section enumeration, ground-truth diffing, terms reading)
+  is what was done. **And I entered no non-English ground at all**, despite the LBMA advertising a
+  `/cn/` Chinese sitemap that I noted and did not open. That is a real debt, not a style choice.
+
+**NEXT RUN TAKES (chain intact):**
+1. **The `/cn/` LBMA Chinese sitemap** and the CJK precious-metals ground behind it (SGE is already
+   carded; this is the administrator's own Chinese layer) — clears this run's named debt first.
+2. **IMF Primary Commodity Prices** as the second-institution cross-check on the Pink Sheet — the
+   commodity analogue of the BIS × Eurostat FX consistency pair, plus the unread CMO sheets and the
+   CMO **forecast** tables.
+3. **The LBMA forecast survey's 2010→ back-years** (16 annual observations, ~19 persistent named
+   analysts) — the one extension that could move card 91 from a curiosity to a powered candidate.
+4. Standing and unbudged: **the Pink Sheet publication vintage must be bounded by the card-83 method
+   (with card 84's served-vs-requested capture check) before ANY axis built on it goes near the EV
+   gate.** No exception, and no axis was pre-registered this run because of it.

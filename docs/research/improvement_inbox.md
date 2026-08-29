@@ -4809,3 +4809,182 @@ simulator budget. The desk's generator is immune to half of it and already handl
 is a genuinely good result to be able to state with evidence, and it retires the recurring worry
 that `combination_engine` "has no validator at all" — it has no *parser*, which is why it needs no
 validator for classes 1/3/6/8.
+
+## BRAIN s19 (2026-08-29) — the evaluation-layer census of the permissive generator class: 7 of 14 repos never compute a number at all
+
+s18 handed this seat item 1: *what do the other 11 repos report a factor ON, and does the class
+share ONE copied evaluation harness* — in which case s16's "13 independent zeros on multiplicity
+control" would be fewer than 13 independent observations. Both halves are now answered, by
+measurement rather than by reading, from the 14 already-local shallow clones (**zero network this
+run**). Reproduce with `data/brain_hunter_s19_eval_census.py`.
+
+### Answer 1 — there is NO shared evaluation harness. s16's independence holds.
+
+AST-hashed every metric-computing function body in all 14 repos and cross-matched by hash.
+**19 cross-repo duplicate metric functions, and all 19 are the single already-known
+`Miasyster_QuantGPT` ↔ `gyx09212214-prog_worldquant-harness` byte-identical pair** (s17 part 3).
+Not one metric function is shared by any other pair of repos. The copying s17 found is confined to
+that one fork; the class did not converge on a common evaluator.
+
+### Answer 2 — but 7 of 14 have no evaluation layer to control, which is the bigger finding
+
+Taxonomy of the 14 (`.py` files only; the census counts API surface and local-statistic surface
+separately, so "delegated" is a measured property, not an impression):
+
+| class | n | what it means |
+|---|---|---|
+| **DELEGATED** | 7 | zero local statistics. Reads `.get('sharpe')` / `.get('fitness')` / `/alphas/{id}/recordsets/pnl` back from the platform API and reports THAT. |
+| **LOCAL** | 4 (3 independent) | computes IC/Sharpe/returns itself. QuantGPT + harness are one codebase, so 3 distinct evaluators exist in the class. |
+| **NONE** | 3 | pure generators — no evaluation vocabulary anywhere (`nutdnuy`, `seuzxh`, `mohitprashant`). |
+
+The delegated seven are `0xceb1_brain-learn`, `NewAmorend_AlphaGen-Agent`,
+`slydg_Lightweight-Alpha-Miner`, `xiao634zhang_wq-factor-miner`,
+`zeron-G_worldquant-alpha-research-agent` (all five read platform `sharpe`/`fitness` keys), plus
+`aircrushin_wq-alpha-agent` and `angel4angelov-glitch_wq-alpha-pipeline` (both fetch the
+platform's PnL recordset and only compute a *correlation* on it — dedup, not evaluation).
+
+**This REFINES s16 rather than overturning it.** "Zero multiplicity control" in a repo that
+computes no statistic is structurally guaranteed and therefore uninformative — you cannot deflate
+a number you never produced. The informative population on the multiplicity axis is the **3
+independent local evaluators**, and all 3 still have zero deflation. The class-wide claim survives
+on a smaller, honest n; the correct statement is "3 of 3 evaluators that compute anything apply no
+multiplicity correction, and the other 11 delegate or abstain".
+
+### What the delegation actually means, and it is the transferable lesson
+
+A repo in the DELEGATED class reports the vendor's **in-sample simulation metric**, judged against
+the vendor's **submission filter** (Sharpe ≥ 1.25, turnover band, fitness) — the exact threshold
+this seat's brief forbids importing. So for half the class, every published number inherits *all*
+of the vendor's process properties (IS-only, gross of this desk's costs, a filter calibrated for an
+operator who runs OOS afterwards and can afford false positives) and *none* of its later
+validation. The number is not weak evidence; it is a different quantity wearing a Sharpe's name.
+
+**Desk transfer, and it is a live one:** the desk has its own delegation seams — any place a
+verdict is read back from a producer rather than recomputed at the consumer. The GAP-FIXER cycle
+already named the dominant desk defect as *a verdict computed then discarded by the layer above*;
+this is its mirror image, *a verdict imported then reported as if locally earned*. L1.60's "import
+the number, never restate it" is correct precisely because the imported number must keep its own
+provenance attached. Worth one targeted audit: every desk consumer of an externally-computed
+performance statistic should carry the producing gate's identity in the same record.
+
+### One adoptable negative-result detail: `NaN → 0` inside an independence gate
+
+`angel4angelov-glitch/src/wq_pipeline/correlation.py:115-123` replaces NaN with **0.0** before
+`np.corrcoef`, and feeds the result to `greedy_dedup` at a correlation threshold. Two alphas with
+the same missing history therefore share a fabricated flat segment and correlate *upward*; the
+dedup then discards genuinely independent alphas as duplicates. The bias runs in the direction
+that costs the most — it shrinks the kept set. The desk's own independence checks should use
+pairwise-complete observations and a minimum-overlap floor, never a zero fill; naming it here
+because the failure is silent and produces a smaller, more confident-looking survivor set.
+
+### NOT done, said plainly
+
+- s18 item 2 (the 25 no-licence repos, census-only) is **untouched for a fifth session**.
+- The class-5 forward-fill measurement from s18 is still **unmeasured** (engine question; this
+  seat is research-frozen).
+- The BRAIN-scoped collector arm is now **ELEVEN sessions old** (s9's gap). Naming it again
+  without fixing it remains the finding; it belongs to a non-frozen seat.
+
+---
+
+## 2026-08-29 (BRAIN HUNTER s19) — the 14-repo class has **three** evaluation designs, not fourteen: s16's class-wide prior is real but its evidence is ~4x weaker than booked
+
+**What was asked** (s18 NEXT-GROUND item 1): what does each of the 14 permissively-licensed BRAIN
+generator repos report a factor ON, and does the class share ONE copied evaluation harness — which
+would collapse s16's "14 of 14 independent zeros" on multiplicity control?
+
+**Method** (`data/brain_hunter_s19_eval_census.py`, artifact
+`data/brain_hunter_s19_eval_census.json`): walk every `.py` in all 14 already-local shallow
+clones; per file count platform-API surface (`api.worldquantbrain.com`, `/simulations`) vs
+local-statistic surface (`.corr(`, `spearmanr`, `np.corrcoef`, `.pct_change(`, `cumprod`);
+AST-parse and SHA1 the **body** of every metric-computing function; cross-match hashes across
+repos. 2,264 `.py` files, 4,466 functions, 71 metric functions hashed. **Zero network.**
+
+**The answer, and it is not the one the question expected.**
+
+1. **No shared harness across the class — with exactly one exception, already known.** 19
+   duplicate metric-function bodies were found and **all 19 are the QuantGPT ↔
+   `worldquant-harness` pair** (s12's known 34-file rename-fork). Not one hash is shared by any
+   other combination of repos. So the class did *not* copy one evaluation layer.
+
+2. **But 8 of 14 have NO evaluation layer at all.** `brain-learn`, `AlphaGen-Agent`,
+   `Quant-Alpha-Hypotheses`, `brain-paper-to-alpha-plugin`, `quant-factor-skill`,
+   `Lightweight-Alpha-Miner`, `wq-factor-miner`, `worldquant-alpha-research-agent`: zero local
+   statistic surface, and every one of them POSTs the expression to
+   `api.worldquantbrain.com/simulations` and reads `sharpe`/`fitness`/`turnover`/`returns`/`margin`
+   straight back off the response. They do not evaluate factors; they **ask the platform**.
+   `zhutoutoutousan_worldquant-miner` (306 API hits, 6 metric funcs) is functionally a ninth.
+
+3. **Distinct evaluation designs in the class: three.** (a) WorldQuant's own simulator, shared by
+   9 repos — one design, used nine times; (b) the QuantGPT/harness harness, one design shipped
+   twice; (c) `aznikline_alpha-mining-system` — the only repo with **zero** API surface and a real
+   local train/test Rank-IC split. (`aircrushin`, `angel4angelov` carry one metric function each
+   on top of an API path and are rounding error.)
+
+**CONSEQUENCE FOR THE DESK — a downgrade of desk-held evidence, not a new find.** s16 booked "14 of
+14 permissive generator repos have ZERO multiplicity control" as a standing prior. The *finding*
+survives (the vocabulary scan is unchanged and correct). Its *strength* does not: on the evaluation
+axis these are not 14 independent people independently omitting multiplicity accounting. Nine of
+them omit it because **they never wrote an evaluator** — the omission is inherited from the
+platform, which is one observation, not nine. The honest restatement is: **the platform's own
+reported fitness is the class's dominant evaluation, and it carries no multiplicity correction;
+plus two independent local harnesses that also carry none.** n≈3, not n=14.
+
+- **Action:** amend the s16 prior in this inbox (2026-08-29, fact 1) to carry n≈3 distinct designs.
+  The operational conclusion is UNCHANGED (any artifact from this ground is the output of an
+  unpriced search and enters as a randomly-drawn cell) — but the desk should not cite "14 of 14"
+  as if it were 14 independent confirmations. This is the L1.7 duty run against our own finding.
+- **Why it also strengthens one thing:** the class's cost-blindness (s17) and multiplicity-blindness
+  now have a single named upstream cause rather than fourteen coincidences, which makes the prior
+  *more* mechanistic even as it makes it *less* replicated.
+
+**SECOND-ORDER, and it is the item worth carrying:** if 9 of 14 report the platform's own fitness,
+then this ground's numbers are not merely uncorrected — they are non-reproducible off-platform by
+construction, because the desk cannot re-run the evaluator that produced them. That is a permanent
+property of the ground, not a defect of a repo, and it caps how much any published number from a
+BRAIN generator repo can ever be worth to this desk. Mechanism, operator semantics and failure
+taxonomies remain fully minable; **reported performance from this ground is worth zero and should
+be treated as absent, not as weak.**
+
+## 2026-08-29 (free-data run w) — three method rules, each found by a defect it actually caused
+
+**1. AN OFFSET-SCAN ARGMIN OVER UNEQUAL-n HOURS CAN BE WON BY A PARTIAL BAR.** Measuring the
+London auction hour on XPDUSD, hour 00 returned the lowest MAE (7.32) and beat the true hour 15
+(7.67) — because hour 00 has **n=959** against a modal **n≈1,686**: it is a session-open partial bar
+that exists on only a subset of days, so its argmin is computed over a *different population*. The
+true hour was identifiable only as a clean local minimum against its neighbours (14: 14.36, 16:
+11.28) and by matching XPTUSD exactly. **RULE: every offset scan on this desk must require n-parity
+(a minimum fraction of the modal n) before accepting an argmin, and should report the local-minimum
+structure, not just the winner.** This is sharper than the existing `EURTRY` caveat: there the weak
+case was flagged by a low discrimination ratio; here **the winner itself was the artifact**.
+
+**2. A VERSIONED DOCUMENT URL SERVES A FROZEN VINTAGE AT HTTP 200, FOREVER, WITH NO ERROR.** The
+World Bank Pink Sheet lives at `thedocs.worldbank.org/en/doc/<hash>-00500<YEAR>/related/…xlsx`. The
+prior year's path still returns **HTTP 200, 778 kB, a valid xlsx that parses cleanly** — ending
+eight months stale. A collector that hardcodes the link is silently frozen and never raises.
+**RULE: for any versioned-document source, re-grep the link from its landing page on every pull AND
+assert the file's own `Updated as of` string against `max(period)`.** This is the desk's "empty
+artifact asserts absence" class **inverted** — a *full, valid, wrong-vintage* artifact asserts
+currency, which is the harder direction to catch because every sanity check passes.
+
+**3. A SOURCE CAN ENCODE "DID NOT ANSWER" AS ZERO — L1.28a INSIDE SOMEBODY ELSE'S DATA.** The LBMA
+forecast survey publishes a non-participating analyst as `Range $0 - $0, Average $0`. Including
+those cells moved the 2026 gold consensus by **−9.7%** and the dispersion by **3.4x**, with no
+exception and an entirely plausible-looking output. The desk's own law says UNMEASURED and ZERO must
+never render identically; the same test must be applied to every ingested source, not only to the
+desk's own metrics. **RULE: on ingest, check whether the source's null sentinel is a numeric value,
+and assert it explicitly.** (Prior instances of the sentinel family in this desk's record: the
+World Bank's missing marker is the literal string `…`, not blank and not NaN — a naive
+`errors='coerce'` silently zeroes it too.)
+
+**4. §13 IS CHECKED BEFORE ADOPTION, NOT AFTER — AND THE CHECK IS THE PUBLISHER'S TERMS PAGE, NOT
+AN INFERENCE FROM THE ENDPOINT BEING OPEN.** `lbma_auction_prices_json` was carried in the universe
+map as **adopted, verified-clean**, since 2026-08-25/27, with a `license` field reading *"LBMA
+publishes benchmark prices free for reference … non-commercial reference use only"*. That was an
+assumption. The publisher's own page states a licence from IBA is required to **obtain, use or
+redistribute** historical benchmark data, *including for pricing and valuation activities*, and that
+the historical tables were **moved behind a licence wall** while the chart's backing JSON stayed
+open. Re-graded `excluded-licensed` this run and the local archive deleted. **RULE: an open endpoint
+is never evidence of a licence. Before any source is graded adopted, its publisher's terms/licence
+page must be opened and quoted verbatim into the map entry — and "free to access" and "free to use"
+must be recorded as two separate fields.**
