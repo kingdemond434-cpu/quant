@@ -1,5 +1,5 @@
 {
-"cursor": 87,
+"cursor": 88,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -206,6 +206,9 @@
 "sinyal MT4",
 "sinyal MT5",
 "sinyal ranking",
+"takip\u00e7iler MT4",
+"takip\u00e7iler MT5",
+"takip\u00e7iler ranking",
 "uzman dan\u0131\u015fman MT4",
 "uzman dan\u0131\u015fman MT5",
 "uzman dan\u0131\u015fman ranking"

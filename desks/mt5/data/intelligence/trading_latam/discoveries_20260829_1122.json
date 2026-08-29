@@ -1,0 +1,708 @@
+[
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Nosotros",
+  "url": "https://trading-latam.com/nosotros-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Nuestros Eventos",
+  "url": "https://trading-latam.com/eventos-capacitacion-entrenamiento/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "return": 9662.0
+  },
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Elecci\u00f3n de broker",
+  "url": "https://trading-latam.com/eleccion-de-broker/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "return": 9662.0
+  },
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Cursos",
+  "url": "https://trading-latam.com/educacion-financiera/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "return": 9662.0
+  },
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Blog",
+  "url": "https://trading-latam.com/blog-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "return": 9662.0
+  },
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Blog de Trading Latam",
+  "url": "https://trading-latam.com/blog-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "return": 9662.0
+  },
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Scanner Pro",
+  "url": "https://trading-latam.com/scanner/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Terminal de Inversi\u00f3n",
+  "url": "https://trading-latam.com/terminal/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Calculadora de trading",
+  "url": "https://trading-latam.com/calculadora-de-trading/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Sal\u00f3n de la Fama",
+  "url": "https://trading-latam.com/ranking-toptraders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Ranking de Traders",
+  "url": "https://trading-latam.com/ranking-toptraders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Audita tu Cuenta",
+  "url": "https://trading-latam.com/auditor/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Iniciar sesi\u00f3n",
+  "url": "https://trading-latam.com/iniciar-sesion/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Escritorio",
+  "url": "https://trading-latam.com/escritorio/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Nosotros",
+  "url": "https://trading-latam.com/nosotros-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Nuestros Eventos",
+  "url": "https://trading-latam.com/eventos-capacitacion-entrenamiento/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Elecci\u00f3n de broker",
+  "url": "https://trading-latam.com/eleccion-de-broker/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Cursos",
+  "url": "https://trading-latam.com/educacion-financiera/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Blog de Trading Latam",
+  "url": "https://trading-latam.com/blog-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Scanner Pro",
+  "url": "https://trading-latam.com/scanner/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Terminal de Inversi\u00f3n",
+  "url": "https://trading-latam.com/terminal/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Calculadora de trading",
+  "url": "https://trading-latam.com/calculadora-de-trading/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Sal\u00f3n de la Fama",
+  "url": "https://trading-latam.com/ranking-toptraders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Audita tu Cuenta",
+  "url": "https://trading-latam.com/auditor/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Iniciar sesi\u00f3n",
+  "url": "https://trading-latam.com/iniciar-sesion/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Escritorio",
+  "url": "https://trading-latam.com/escritorio/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 2026.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Quiero entrar al ranking",
+  "url": "https://trading-latam.com/auditor/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [
+   "100",
+   "100",
+   "100",
+   "100"
+  ],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Conoce m\u00e1s sobre nosotros \u2192",
+  "url": "https://trading-latam.com/nosotros-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {
+   "age": 1778285455.0
+  },
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Scanner Pro",
+  "url": "https://trading-latam.com/scanner/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Terminal de Inversi\u00f3n",
+  "url": "https://trading-latam.com/terminal/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:27+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Calculadora",
+  "url": "https://trading-latam.com/calculadora-de-trading/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Auditor de Cuentas",
+  "url": "https://trading-latam.com/auditor/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Sal\u00f3n de la Fama",
+  "url": "https://trading-latam.com/ranking-toptraders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Brokers",
+  "url": "https://trading-latam.com/eleccion-de-broker/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Cursos",
+  "url": "https://trading-latam.com/educacion-financiera/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Blog",
+  "url": "https://trading-latam.com/blog-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Pulso semanal",
+  "url": "https://trading-latam.com/pulso-ranking-traders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Nosotros",
+  "url": "https://trading-latam.com/nosotros-trading-latam/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "ea_robot",
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ },
+ {
+  "source": "trading_latam",
+  "kind": "track_record",
+  "title": "Consultar metodolog\u00eda",
+  "url": "https://trading-latam.com/metodologia-ranking-traders/",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T11:22:28+00:00",
+  "region": "LATAM",
+  "nearby_pcts": [],
+  "stats": {},
+  "mechanism_tags": [
+   "gold"
+  ],
+  "evidence_grade": "B",
+  "lang": "es"
+ }
+]

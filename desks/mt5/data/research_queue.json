@@ -20000,5 +20000,237 @@
    "win_rate": null,
    "symbol": "USDCHF"
   }
+ },
+ {
+  "id": "ext-20260829-71fe08",
+  "geneology_id": "external:edge_search:pos_12",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY discovered params={'feature': 'pos_12', 'band': [0.1, 0.25], 'horizon': 1, 'side': 1} screened at n=2116 exp=0.08404918050746879R t=3.8662623033435644 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "pos_12",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2116,
+   "exp_r": 0.08404918050746879,
+   "t_stat": 3.8662623033435644,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFJPY"
+  }
+ },
+ {
+  "id": "ext-20260829-ca103c",
+  "geneology_id": "external:edge_search:ext_lead_LNKUSD_6_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: Toyota discovered params={'feature': 'ext_lead_LNKUSD_6_z', 'band': [0.75, 0.9], 'horizon': 1, 'side': -1} screened at n=491 exp=0.1744164651262033R t=3.864810697019449 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_LNKUSD_6_z",
+   "band": [
+    0.75,
+    0.9
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 491,
+   "exp_r": 0.1744164651262033,
+   "t_stat": 3.864810697019449,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "Toyota"
+  }
+ },
+ {
+  "id": "ext-20260829-c24095",
+  "geneology_id": "external:edge_search:ext_lead_XAUAUD_1_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: Travelers discovered params={'feature': 'ext_lead_XAUAUD_1_z', 'band': [0.1, 0.25], 'horizon': 1, 'side': -1} screened at n=521 exp=0.16916377006619712R t=3.861234848421914 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_XAUAUD_1_z",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 521,
+   "exp_r": 0.16916377006619712,
+   "t_stat": 3.861234848421914,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "Travelers"
+  }
+ },
+ {
+  "id": "ext-20260829-56680c",
+  "geneology_id": "external:edge_search:ext_residz_Booking_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDUSD discovered params={'feature': 'ext_residz_Booking_z', 'band': [0.9, 1.0], 'horizon': 1, 'side': -1} screened at n=1833 exp=0.09007997705169944R t=3.856643534591757 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_residz_Booking_z",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1833,
+   "exp_r": 0.09007997705169944,
+   "t_stat": 3.856643534591757,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDUSD"
+  }
+ },
+ {
+  "id": "ext-20260829-85d2d3",
+  "geneology_id": "external:edge_search:ext_lead_EURILS_6",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: BankofAmericaCorp discovered params={'feature': 'ext_lead_EURILS_6', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=323 exp=0.2145853662782603R t=3.8565712819693054 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_EURILS_6",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 323,
+   "exp_r": 0.2145853662782603,
+   "t_stat": 3.8565712819693054,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "BankofAmericaCorp"
+  }
+ },
+ {
+  "id": "ext-20260829-75224b",
+  "geneology_id": "external:edge_search:ext_lead_NZDCAD_12_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: BankofAmericaCorp discovered params={'feature': 'ext_lead_NZDCAD_12_z', 'band': [0.1, 0.25], 'horizon': 1, 'side': 1} screened at n=514 exp=0.17010322071673672R t=3.8565067520851457 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_NZDCAD_12_z",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 514,
+   "exp_r": 0.17010322071673672,
+   "t_stat": 3.8565067520851457,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "BankofAmericaCorp"
+  }
+ },
+ {
+  "id": "ext-20260829-60fa4c",
+  "geneology_id": "external:edge_search:ext_corr_GER40",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: US500 discovered params={'feature': 'ext_corr_GER40', 'band': [0.0, 0.1], 'horizon': 24, 'side': -1} screened at n=4697 exp=0.27554350531865585R t=3.8547377610194573 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_corr_GER40",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 24,
+   "side": -1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 4697,
+   "exp_r": 0.27554350531865585,
+   "t_stat": 3.8547377610194573,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "US500"
+  }
+ },
+ {
+  "id": "ext-20260829-d43d28",
+  "geneology_id": "external:edge_search:ext_lead_GBPPLN_1_z",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDNZD discovered params={'feature': 'ext_lead_GBPPLN_1_z', 'band': [0.1, 0.25], 'horizon': 1, 'side': 1} screened at n=2661 exp=0.07466533635166314R t=3.8516025283148174 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "ext_lead_GBPPLN_1_z",
+   "band": [
+    0.1,
+    0.25
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T10:50:02.996388+00:00",
+  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2661,
+   "exp_r": 0.07466533635166314,
+   "t_stat": 3.8516025283148174,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDNZD"
+  }
  }
 ]
