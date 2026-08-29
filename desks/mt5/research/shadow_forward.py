@@ -104,12 +104,20 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             # ran it; a family needing runtime inputs beyond bars is skipped BY NAME, because a
             # silent skip is indistinguishable from enrolment that works.
             fn = _family_fn(fam)
-            needs = _family_needs(fam)
-            if fn is None or needs:
-                why = "no constructor found" if fn is None else f"needs {needs}"
-                slog(f"ENROL-GAP: certified {run['symbol']}.{fam} cannot enrol here -- {why}; "
-                     f"certificate stands, forward evidence is NOT accruing")
+            if fn is None:
+                slog(f"ENROL-GAP: certified {run['symbol']}.{fam} cannot enrol here -- no "
+                     f"constructor found; certificate stands, forward evidence is NOT accruing")
                 continue
+            # A FAMILY NEEDING RUNTIME INPUTS IS NO LONGER A DEAD END. The gauntlet rebuilds swap
+            # terms, peer bars, factor bars, macro and COT series from the candidate's own params;
+            # `mt5desk.family_inputs` is that same reconstruction, shared so the two cannot drift.
+            # Measured 2026-08-29: this branch was blocking 344 of 615 validity-passing candidates
+            # -- cross_asset_residual 140, relative_value 73, carry 72, correlation_regime 30 --
+            # every one of them failing ONLY deflated_sharpe, a gate the policy marks curable by
+            # forward evidence they were structurally unable to gather. Carry mattered most: it is
+            # the desk's only non-directional mechanism and the book's constraint is orthogonality.
+            # Whether the inputs actually rebuild is decided per pass, at signal time, where the
+            # bars exist -- not guessed here.
             rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
@@ -286,10 +294,24 @@ def main() -> None:
             if fam_fn is None:
                 slog(f"{key}: constructor for family {fam} vanished; skipping this pass")
                 continue
+            # Rebuild whatever this family needs beyond bars, from its own stored params. A
+            # family that needs nothing gets an empty dict and is unaffected.
+            from mt5desk.family_inputs import resolve, strip_identity_keys
+
+            call_params = strip_identity_keys(fam, params)
+            extra, why = resolve(sym, fam, params, h1)
+            if extra is None:
+                # SKIP LOUDLY, NEVER RUN SHORT. `family_carry` returns [] without its swap terms,
+                # which reads as "this mechanism never fires" rather than "nobody gave it what it
+                # needs" -- the exact misreading that hid carry for the life of this desk.
+                slog(f"{key}: runtime inputs unavailable ({why}); no signals this pass, forward "
+                     f"evidence NOT accruing -- this is a wiring gap, not a null result")
+                continue
+            call_params.update(extra)
             try:
-                sigs = fam_fn(h1, **params)
+                sigs = fam_fn(h1, **call_params)
             except TypeError:
-                sigs = fam_fn(h1, side=1, **params)
+                sigs = fam_fn(h1, side=1, **call_params)
             # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
             # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
