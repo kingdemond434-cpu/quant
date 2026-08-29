@@ -859,6 +859,29 @@ def main():
                 return name
         return None
 
+
+    def _cure_selector(family: str, params: dict) -> str | None:
+        """A truthful selector: the SESSION for window families, "continuous" for the rest.
+
+        `_selector` answers "which trading window do these params describe" and falls back to "asia"
+        when they describe none. That fallback is correct for a session family whose params omit the
+        default window, and a LIE for every family that has no window at all: carry earns a nightly
+        rollover, turn_of_month is a calendar effect, cross_asset_residual is a relationship between
+        instruments. Measured 2026-08-29 -- all 615 power-cure candidates were stamped `asia`, 344 of
+        them from families with no session semantics whatsoever.
+
+        It is currently cosmetic, because the forward engine enrols non-session families on their own
+        params and only looks the selector up in WINDOWS for session_range_breakout. It stops being
+        cosmetic the moment anything keys on it -- a dedupe by (family, selector, symbol), a coverage
+        count by session, a sleeve identity. A false label that is harmless today is a defect waiting
+        for its first consumer, and this desk has already been bitten by exactly that with params.
+        """
+        session_families = {"session_range_breakout", "asia_momentum", "lvc_asia_london"}
+        if family in session_families:
+            return _selector(params)
+        # No window semantics: say so, rather than borrowing a session this mechanism never uses.
+        return "continuous"
+
     _params_by_cell = {cell_id(c): dict(c.get("params") or {}) for c in cell_objs}
     for v in result.get("verdicts", []):
         if not v.get("passed"):
@@ -930,7 +953,7 @@ def main():
         if not failed_power:
             continue
         params = _params_by_cell.get(v["cell"], {})
-        sel = _selector(params or {})
+        sel = _cure_selector(str(v.get("family") or ""), params or {})
         if sel is None:
             continue          # never guess a selector; an unnamed window cannot be enrolled
         cure_rows[f"external.{v['cell']}"] = {
