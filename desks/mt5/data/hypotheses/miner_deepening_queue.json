@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-29T00:07:25+00:00",
+ "built_at": "2026-08-29T01:09:47+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3533,6 +3533,206 @@
    "mechanism_tags": []
   },
   {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Lesetja Kganyago: Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
+   "url": "https://www.bis.org/review/r260813i.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Lesetja Kganyago: Overview of the South African economy",
+   "url": "https://www.bis.org/review/r260813j.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Lisa D Cook: Outlook for the US and Alaskan economies",
+   "url": "https://www.bis.org/review/r260813h.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Yannis Stournaras: The global economy in 2026 and beyond - financing Europe and Greece's future",
+   "url": "https://www.bis.org/review/r260813g.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Burkhard Balz: 40 years of the Deutsche Bundesbank's Representative Office in New York",
+   "url": "https://www.bis.org/review/r260813f.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Philip R Lane: AI and monetary policy",
+   "url": "https://www.bis.org/review/r260813c.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Rohit Jain: Building deep and resilient financial markets for a Viksit Bharat",
+   "url": "https://www.bis.org/review/r260813b.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Chia Der Jiun: Remarks on the MAS Annual Report 2025/2026",
+   "url": "https://www.bis.org/review/r260813l.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Michele Bullock: Monetary policy in an era of shocks",
+   "url": "https://www.bis.org/review/r260813a.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Denis Beau: Opportunities and risks for CCPs and their overseers in a changing environment",
+   "url": "https://www.bis.org/review/r260813e.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Piero Cipollone: The cooperative spirit at the heart of the digital euro",
+   "url": "https://www.bis.org/review/r260813d.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Mary-Elizabeth McMunn: Reinforcing the foundations - openness through resilience in the face of change",
+   "url": "https://www.bis.org/review/r260805g.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Joachim Nagel: Acting together for a sovereign and competitive Europe",
+   "url": "https://www.bis.org/review/r260805f.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Swaminathan J: Strengthening customer grievance redress - the role of the internal ombudsman",
+   "url": "https://www.bis.org/review/r260805e.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Phil Mnisi: Opening remarks - CMA Governors Meeting",
+   "url": "https://www.bis.org/review/r260805d.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Michelle W Bowman: Opening remarks on Sound Practices for Artificial Intelligence",
+   "url": "https://www.bis.org/review/r260805c.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Fabio Panetta: Playing the long game - how should monetary policy adapt to the Great Reconfiguration?",
+   "url": "https://www.bis.org/review/r260805b.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Arthur Yuen: Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
+   "url": "https://www.bis.org/review/r260805a.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Andriy Pyshnyy: National Bank of Ukraine press briefing - monetary policy decisions",
+   "url": "https://www.bis.org/review/r260813k.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Michelle W Bowman: Responsible innovation and financial inclusion",
+   "url": "https://www.bis.org/review/r260730o.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Philip N Jefferson: Navigating economic shocks - a monetary policymaker's perspective",
+   "url": "https://www.bis.org/review/r260731b.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "John C Williams: Stability of Thy Times",
+   "url": "https://www.bis.org/review/r260731a.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Michelle W Bowman: Modernizing financial regulation",
+   "url": "https://www.bis.org/review/r260730j.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Andrew Bailey: Growth and regulation",
+   "url": "https://www.bis.org/review/r260730s.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Lisa D Cook: Economic outlook",
+   "url": "https://www.bis.org/review/r260730r.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
    "source": "broker_swaps",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "fusion Baidu swap long=-7.31 short=2.81 diff=-10.1200",
@@ -3967,6 +4167,30 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "lenardclimatical374/MT5-volume-profile-indicator",
+   "url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "7skooooo/mql5-systems-mirror",
+   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-MT4-Close-Orders-Script",
+   "url": "https://github.com/ZovraT/MT5-MT4-Close-Orders-Script",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Quorvathz/Confluence-Signal-Matrix",
    "url": "https://github.com/Quorvathz/Confluence-Signal-Matrix",
    "symbols": [],
@@ -4063,24 +4287,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "DaggerConsole/metatrader-4-boost",
-   "url": "https://github.com/DaggerConsole/metatrader-4-boost",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "avangardistic/MQL5-Knowledge-Graph-System",
-   "url": "https://github.com/avangardistic/MQL5-Knowledge-Graph-System",
+   "title": "Rick12357/python-expert-agent",
+   "url": "https://github.com/Rick12357/python-expert-agent",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4089,6 +4297,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
    "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "youcefito/mt5-quiet-automata",
+   "url": "https://github.com/youcefito/mt5-quiet-automata",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4111,16 +4327,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "nodalytics/till_infinity",
-   "url": "https://github.com/nodalytics/till_infinity",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ajayprabhuraj/institutional-orderflow-mt5",
-   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
+   "title": "ashikscreativemath-commits/Paldo-ALM",
+   "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4135,24 +4351,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
-   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
+   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6055,11 +6255,8 @@
    "source": "mql5_survivors",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2329290",
+   "url": "https://www.mql5.com/en/signals/2265877",
    "symbols": [
-    "AUDUSD",
-    "EURUSD",
-    "XAUEUR",
     "XAUUSD"
    ],
    "mechanism_tags": []
@@ -6068,8 +6265,11 @@
    "source": "mql5_survivors",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2265877",
+   "url": "https://www.mql5.com/en/signals/2329290",
    "symbols": [
+    "AUDUSD",
+    "EURUSD",
+    "XAUEUR",
     "XAUUSD"
    ],
    "mechanism_tags": []
@@ -6182,6 +6382,14 @@
     "EURCAD",
     "EURCHF"
    ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "High-order stabilized matrix-free simulation of rotating mixing devices using the Mortar Element Method",
+   "url": "https://arxiv.org/abs/2608.27423v1",
+   "symbols": [],
    "mechanism_tags": []
   },
   {
@@ -6456,17 +6664,6 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Renaissance has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Citadel has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -6479,17 +6676,6 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Point72 has recent 13F filing - check for position changes",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "sec_edgar",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "D.E. Shaw has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -6523,6 +6709,17 @@
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Baupost has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Soros has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",

@@ -49,10 +49,10 @@
   "pt": {
    "region": "Brazil/Portugal",
    "open_frontier": false,
-   "queries_exercised": 12,
+   "queries_exercised": 15,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-28T07:22:00+00:00",
+   "last_swept": "2026-08-29T01:22:01+00:00",
    "native_terms_available": 11
   },
   "vi": {
