@@ -267,15 +267,31 @@ def check_hourly_coverage(now: datetime) -> tuple[list[str], list[str]]:
 
     # ---- EVERY GATE RUN. A judged cell must carry all ten stages. A subset is not a verdict
     # under this policy, and a cell judged on nine gates has passed nothing.
+    # TERMINAL STATES ARE EXEMPT, and getting this wrong is how a watchdog cries wolf. The gates
+    # are SEQUENTIAL: a cell rejected at the economic prior carries that one stage and no others,
+    # deliberately, because the policy reserves downstream compute for candidates still capable of
+    # passing. A cell that never reached 60 daily observations carries only `observations` and is
+    # UNMEASURED, which this desk's law calls a real answer rather than a failure.
+    # Measured 2026-08-29 on the first run of this check: 1,116 of 3,101 flagged, and every one
+    # was one of those two states -- 816 gate-1 rejects and 300 unmeasured. Nothing was wrong.
+    # The real defect this looks for is a cell that ADVANCED into the battery and came back with
+    # a subset: that would be a verdict built on gates nobody ran.
     judged = [v for v in (rep.get("verdicts") or []) if (v.get("stages") or {})]
-    partial = [v for v in judged if not set(CANONICAL_GATES) <= set(v.get("stages") or {})]
+    reached_battery = [
+        v for v in judged
+        if (v.get("stages") or {}).get("economic_prior", {}).get("passed") is True
+        and (v.get("stages") or {}).get("observations", {}).get("passed") is not False
+        and len(v.get("stages") or {}) > 1
+    ]
+    partial = [v for v in reached_battery
+               if not set(CANONICAL_GATES) <= set(v.get("stages") or {})]
     if partial:
         example = partial[0]
         missing = sorted(set(CANONICAL_GATES) - set(example.get("stages") or {}))
         breaches.append(
-            f"PARTIAL GATE SET: {len(partial)} of {len(judged)} judged cell(s) carry fewer than "
-            f"ten stages (e.g. {example.get('sym')} missing {missing}). A subset is not a verdict "
-            f"under this policy.")
+            f"PARTIAL GATE SET: {len(partial)} of {len(reached_battery)} cell(s) that ADVANCED "
+            f"into the battery carry fewer than ten stages (e.g. {example.get('sym')} missing "
+            f"{missing}). A verdict built on gates nobody ran is not a verdict.")
     return breaches, fixes
 
 
