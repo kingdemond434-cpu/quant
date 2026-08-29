@@ -10682,3 +10682,94 @@ enumerated, one strategy tested to a verdict on 8.6 years of OOS. Nothing remain
    much, so EV is low and I did not spend the run on it — but the *genre* (public rules with
    author-declared holdout dates) is worth a targeted search, because the holdout is the expensive
    part and someone else already paid for it.
+
+## BRAIN HUNTER — session 12 (2026-08-29, dedicated daily organ)
+
+**§33 backlog CLEAR on entry** (30 carded finds disposed; mining authorised). Went to s11's
+next-ground **#3** — the largest unmined bytes on this ground — and it turned out not to be "more of
+`code_1`" at all: `101Alpha_code_2.py` is a **machine-transpiled** Quantopian `CustomFactor`
+implementation, a categorically different artifact from the hand-written port s11 exhausted. A
+generated file is worth more than a hand-written one on this ground precisely because its errors are
+*systematic*, so they are provable rather than anecdotal.
+
+### #1 — THE MOST-COPIED PUBLIC ALPHA101 IMPLEMENTATION COMPUTES THE OTHER OPERATOR
+
+45 `correlation(` in the expressions → **45 `.rolling(d).cov(`** in the code. 2 `covariance(` →
+**2 `.corr(`**. Zero exceptions in either direction across **47/47 call sites**, affecting **35 of
+the 77 alphas** the file implements. A symbol-table inversion in the code generator, in a repo with
+851★. `correlation` is the single most-used binary operator in the canonical corpus, so anyone who
+lifted a formula from this file lifted the wrong operator on 45% of it.
+
+### #2 — AND IT MATTERS, MEASURED ON THE DESK'S OWN TAPE (the deliverable, not the bug)
+
+`cov = corr · sd_x · sd_y`, and that multiplier survives the cross-sectional `rank` wrapped around
+it. Mean daily Spearman between the two orderings, 24 Fusion symbols, D1 from `_H1`, 2018-01-02 →
+2026-08-17, ~2,230 days: **0.920** on rank-transformed inputs at d=5 (23.6% of days below 0.90) and
+**0.775** on raw inputs (p05 **0.597**). Rank inputs are the best case — bounded ranks compress the
+multiplier — and even there a quarter of days disagree. **Two operators, not one with a scaling
+quirk, and the desk has NEITHER**: `wq_operators.py` exposes five functions and no pairwise operator;
+`edge_search.py` uses `.rolling().corr()` only as a feature against a fixed peer list, never as an
+operator over arbitrary field pairs; `.cov(` appears nowhere. → **R0729**.
+
+My own prediction failed its control and is recorded as such: I expected the raw-input cov ordering
+to collapse into the price-level ordering, since this panel spans **109,119×** in price (0.59 →
+64,382). Mean |Spearman| against the price-level rank is only **0.33** — the divergence is driven by
+the *volume* standard deviation, not the price scale. The plausible version of that claim is the one
+a reader would have assumed, so the refutation is the useful half.
+
+### #3 — THE SECOND MISSING PARTITION IS AN OPERATOR GAP, NOT A DATA GAP
+
+`code_2` implements 77 and skips 24 — six *more* than `code_1`'s 18, and the split is exact and
+mutually exclusive. The **18** all carry `IndNeutralize(..., IndClass.*)`: the s10/s11 wall, a
+**data** gap, the one s11 closed for MT5. The **6** — `{71,73,77,88,92,96}` — contain **no
+`IndClass` at all**; every one is `min`/`max` over *two composite branches*, and **0 of the 77
+implemented alphas use that form**. 6/6 and 0/77. Alpha73 proves the driver: no `correlation`, no
+`IndClass`, only `max(rank(decay_linear(...)), Ts_Rank(decay_linear(...)))`, and it is dropped.
+
+The **shape** is the find, not the six formulas. `min`/`max` over two branches is a **disjunctive**
+hypothesis — fire on whichever of two distinct mechanisms is stronger today — against the
+product/sum forms that dominate the desk's combination engine, which are conjunctive and average
+away a branch that is silent. It is regime specialisation expressed *inside one expression* rather
+than across sleeves. `np.minimum`/`np.maximum` appear **0 times** in `edge_search.py` or
+`libs/alpha_factory/`: the desk cannot express a disjunctive candidate at all. → **R0730**.
+
+### §13 AND FREEZE
+
+Public only: `raw.githubusercontent.com` + `api.github.com` (public repo contents) and the desk's own
+on-disk parquets. `raw.githubusercontent.com/robots.txt` returns **404 = ALLOW-ALL under RFC 9309**
+(s16's lesson, applied). No login, no `api.worldquantbrain.com`, no platform-internal surface.
+**Freeze respected** — nothing under `scripts/`, `libs/`, the executor, a rail or a live-state file
+was written; `wq_operators` was read, never edited. Parquet `+00:00` stamps are **stripped, not
+converted** (the stamp is a broker-EET label; converting would add 3h).
+
+**POPULATION STATED, NOT ASSUMED:** only **24 of 251** registry symbols are present on disk (the
+known partial parquet sync). Every number above is measured on those 24 (FX majors/crosses, XAUUSD,
+XAGUSD, BTCUSD, ETHUSD) and is reported as such. It is not a universe-wide measurement and must not
+be cited as one.
+
+- **EXHAUSTED (dated):** `yli188/WorldQuant_alpha101_code` `101Alpha_code_2.py` — **2026-08-29,
+  implemented-set / emitted-operator level.** Its 77 classes, the 24-alpha missing set, the two
+  causes of that set, and the corr/cov inversion at all 47 call sites are extracted to
+  `data/brain_hunter_s12_alpha101_code2.json`. No seat re-scans it for *what it implements or which
+  operator it emits*. Its per-alpha window lengths and `decay_linear` weightings remain unmined.
+- **`101 Formulaic Alphas.pdf` — EXTRACTABLE-BUT-BLOCKED, never `locked`.** The *original paper*.
+  Streams decompress cleanly; text is font-subsetted. 96 `ToUnicode` CMap entries harvested, but
+  multiple subset fonts share one code space so a single merged CMap collides (`a`→`^`). Route:
+  per-font CMap binding via the page resource dict / `Tf` operator, ~40 lines. No PDF tooling on the
+  box (`pdftotext`, `pdfminer`, `fitz`, `PyPDF2`, `pypdf` all absent) and the freeze forbids installs.
+- **Video:** 0 fetched, 0 locked — no video route attempted; the ground worked was repo-file and
+  on-disk tape. s5's finding on BRAIN lecture material is unchanged.
+
+### NEXT UN-EXHAUSTED GROUND (for s13, in order)
+
+1. **Finish the PDF with per-font CMap binding** — diagnosed above, bounded at ~40 lines, and it is
+   the *original paper* rather than a port. The highest-value unmined bytes on this ground and now
+   the only one with a known route.
+2. **`code_2`'s per-alpha window lengths and `decay_linear` weightings** — the transpiler resolved
+   every fractional window (`17.8256`, `4.20501`) to an integer, and *which way it rounded* is the
+   kind of undocumented semantics an open-source reimplementation exposes and the official docs elide.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — carried from s10/s11, still the largest cleanly-licensed
+   unmined repo on the measured population (`data/brain_repo_population.json`).
+4. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, open since s9: 2 keyword
+   hits of 130 repos, neither a BRAIN artifact, so this seat's mandated daily ground is collected by
+   nothing and every dig spends live browsing on population discovery.

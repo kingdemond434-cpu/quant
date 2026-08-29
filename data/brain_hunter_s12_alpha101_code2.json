@@ -1,0 +1,751 @@
+{
+ "source": {
+  "repo": "yli188/WorldQuant_alpha101_code",
+  "files": [
+   "101Alpha_code_2.py (111,340 b)",
+   "101Alpha_code_1.py",
+   "101 Formulaic Alphas.pdf (244,416 b)"
+  ],
+  "route": "raw.githubusercontent.com + api.github.com, public, robots 404 = ALLOW-ALL under RFC 9309",
+  "date": "2026-08-29",
+  "seat": "brain_hunter_s12"
+ },
+ "code_2_implemented": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29,
+  30,
+  31,
+  32,
+  33,
+  34,
+  35,
+  36,
+  37,
+  38,
+  39,
+  40,
+  41,
+  42,
+  43,
+  44,
+  45,
+  46,
+  47,
+  49,
+  50,
+  51,
+  52,
+  53,
+  54,
+  55,
+  56,
+  57,
+  60,
+  61,
+  62,
+  64,
+  65,
+  66,
+  68,
+  72,
+  74,
+  75,
+  78,
+  81,
+  83,
+  84,
+  85,
+  86,
+  94,
+  95,
+  98,
+  99,
+  101
+ ],
+ "code_2_n_implemented": 77,
+ "code_2_missing": [
+  48,
+  58,
+  59,
+  63,
+  67,
+  69,
+  70,
+  71,
+  73,
+  76,
+  77,
+  79,
+  80,
+  82,
+  87,
+  88,
+  89,
+  90,
+  91,
+  92,
+  93,
+  96,
+  97,
+  100
+ ],
+ "missing_partition": {
+  "indclass_18": [
+   48,
+   58,
+   59,
+   63,
+   67,
+   69,
+   70,
+   76,
+   79,
+   80,
+   82,
+   87,
+   89,
+   90,
+   91,
+   93,
+   97,
+   100
+  ],
+  "binary_minmax_6": [
+   71,
+   73,
+   77,
+   88,
+   92,
+   96
+  ],
+  "implemented_using_binary_minmax": []
+ },
+ "operator_inversion": {
+  "expr_correlation_total": 45,
+  "expr_covariance_total": 2,
+  "code_corr_total": 2,
+  "code_cov_total": 45,
+  "alphas_affected": 35,
+  "call_sites": 47,
+  "inversion": "exact, both directions"
+ },
+ "per_alpha": [
+  {
+   "alpha": 1,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 2,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 3,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 4,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 5,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 6,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 7,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 8,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 9,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 10,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 11,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 12,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 13,
+   "expr_correlation": 0,
+   "expr_covariance": 1,
+   "code_corr": 1,
+   "code_cov": 0
+  },
+  {
+   "alpha": 14,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 15,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 16,
+   "expr_correlation": 0,
+   "expr_covariance": 1,
+   "code_corr": 1,
+   "code_cov": 0
+  },
+  {
+   "alpha": 17,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 18,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 19,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 20,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 21,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 22,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 23,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 24,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 25,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 26,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 27,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 28,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 29,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 30,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 31,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 32,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 33,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 34,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 35,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 36,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 37,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 38,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 39,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 40,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 41,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 42,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 43,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 44,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 45,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 46,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 47,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 49,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 50,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 51,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 52,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 53,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 54,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 55,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 56,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 57,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 60,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 61,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 62,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 64,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 65,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 66,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 68,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 72,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 74,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 75,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 78,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 81,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 83,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 84,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  },
+  {
+   "alpha": 85,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 86,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 94,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 95,
+   "expr_correlation": 1,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 1
+  },
+  {
+   "alpha": 98,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 99,
+   "expr_correlation": 2,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 2
+  },
+  {
+   "alpha": 101,
+   "expr_correlation": 0,
+   "expr_covariance": 0,
+   "code_corr": 0,
+   "code_cov": 0
+  }
+ ],
+ "desk_measurement": {
+  "panel": "24 Fusion symbols (FX majors/crosses, XAUUSD, XAGUSD, BTCUSD, ETHUSD), D1 resampled from _H1, 2018-01-02..2026-08-17, 2237 days",
+  "caveat": "24 of 251 registry symbols are present on disk (partial parquet sync); population stated, not assumed complete",
+  "rank_inputs_alpha2_shape": {
+   "d5": {
+    "n_days": 2231,
+    "mean_spearman": 0.920461956885135,
+    "median": 0.9295652173913044,
+    "p05": 0.8403087727105176,
+    "frac_below_0.9": 0.23621694307485433
+   },
+   "d6": {
+    "n_days": 2230,
+    "mean_spearman": 0.933224182820012,
+    "median": 0.9408695652173911,
+    "p05": 0.8656086956521739,
+    "frac_below_0.9": 0.14887892376681613
+   },
+   "d10": {
+    "n_days": 2226,
+    "mean_spearman": 0.9515144761016453,
+    "median": 0.957391304347826,
+    "p05": 0.9008695652173913,
+    "frac_below_0.9": 0.04986522911051213
+   }
+  },
+  "raw_inputs_close_vs_tickvolume": {
+   "d5": {
+    "n": 2233,
+    "mean_spearman_corr_vs_cov": 0.7747557895870751,
+    "p05": 0.5973913043478261,
+    "mean_abs_spearman_cov_vs_pricelevel": 0.32859784946029585
+   },
+   "d6": {
+    "n": 2232,
+    "mean_spearman_corr_vs_cov": 0.780745199945761,
+    "p05": 0.5973913043478261,
+    "mean_abs_spearman_cov_vs_pricelevel": 0.3317391432997432
+   },
+   "d10": {
+    "n": 2228,
+    "mean_spearman_corr_vs_cov": 0.7864535423595996,
+    "p05": 0.5927826086956521,
+    "mean_abs_spearman_cov_vs_pricelevel": 0.3392052976448772
+   }
+  }
+ },
+ "pdf": {
+  "status": "EXTRACTABLE-BUT-BLOCKED",
+  "diagnosis": "font-subsetted; 96 ToUnicode CMap entries harvested but multiple subset fonts share the code space, so a single merged CMap collides (a->^). Needs per-font CMap binding via the page resource dict / Tf operator. No tooling on box: pdftotext, pdfminer, fitz, PyPDF2, pypdf all absent."
+ }
+}

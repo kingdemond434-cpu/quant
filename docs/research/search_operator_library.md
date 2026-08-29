@@ -3962,3 +3962,92 @@ solved this; it has routed around it twice.** That makes the map above the diffe
 this ground rather than a catch-up item — and it is why the independence table matters more than the
 map's existence: the desk can now ask the question, and only one of its five ways of asking it is
 worth a search arm.
+
+---
+
+## `correlation` / `covariance` and binary `min`/`max` — BRAIN hunter s12 (2026-08-29)
+
+Source: `yli188/WorldQuant_alpha101_code` (851★) `101Alpha_code_2.py` (111,340 b) — a
+**machine-transpiled** Quantopian `CustomFactor` implementation, a different artifact from the
+hand-written `101Alpha_code_1.py` s11 exhausted. Public route only (`raw.githubusercontent.com`,
+`api.github.com`; robots 404 = ALLOW-ALL under RFC 9309). Raw:
+`data/brain_hunter_s12_alpha101_code2.json`.
+
+### 1. THE TRANSPILER COMPUTES THE OTHER OPERATOR — 47/47 call sites, exactly inverted
+
+| | in the expression comment | in the emitted code |
+|---|---|---|
+| `correlation(...)` | 45 | `.rolling(d).cov(...)` ×45, `.corr(` ×0 |
+| `covariance(...)`  | 2  | `.rolling(d).corr(...)` ×2, `.cov(` ×0 |
+
+Not a rounding of intent — a **symbol-table inversion in the code generator**, both directions,
+zero exceptions, affecting **35 of the 77 alphas it implements**. `correlation` is the most-used
+binary operator in the canonical corpus, so the single most-copied public alpha101 implementation
+silently ships the wrong one on 45% of its output. Anyone who lifted a formula from this file
+lifted `cov` where the paper says `corr`.
+
+### 2. AND THE DISTINCTION IS LOAD-BEARING — measured on the desk's own tape
+
+`cov = corr · sd_x · sd_y`, so the swap injects a volatility tilt that survives the cross-sectional
+`rank` wrapped around it. Measured as mean daily Spearman between the two cross-sectional orderings,
+24 Fusion symbols (FX majors/crosses, XAUUSD, XAGUSD, BTCUSD, ETHUSD), D1 from `_H1`, 2018-01-02 →
+2026-08-17, ~2,230 days:
+
+| input shape | d | mean Spearman(corr-order, cov-order) | p05 | days < 0.90 |
+|---|---|---|---|---|
+| rank-transformed (alpha2 shape) | 5 | **0.920** | 0.840 | 23.6% |
+| rank-transformed | 6 | 0.933 | 0.866 | 14.9% |
+| rank-transformed | 10 | 0.952 | 0.901 | 5.0% |
+| **raw** (`close`, `tick_volume`) | 5 | **0.775** | **0.597** | — |
+| raw | 10 | 0.786 | 0.593 | — |
+
+Rank inputs are the *best* case: bounded [0,1] ranks compress the `sd_x·sd_y` multiplier, and even
+there the orderings disagree on a quarter of days at d=5. On raw inputs they are plainly different
+operators. **They are two operators, not one with a scaling quirk — and this desk has NEITHER.**
+`libs/alpha_factory/wq_operators.py` exposes five functions (`group_rank`, `group_zscore`,
+`ts_backfill`, `trade_when`, `fitness`) and no pairwise operator at all; `edge_search.py` uses
+`.rolling().corr()` only as a *feature* against a fixed peer list (line 283), never as an operator
+over arbitrary field pairs, and `.cov(` appears nowhere in either.
+
+One hypothesis of mine did **not** survive its own control: I expected the cov ordering on raw
+inputs to collapse into the price-level ordering, since the panel spans 109,119× in price
+(0.59 → 64,382). It does not — mean |Spearman| against the price-level rank is only **0.33**. The
+divergence is driven by the *volume* standard deviation, not the price scale. Recorded because the
+plausible version of this claim is the one a reader would assume.
+
+**MT5 analogue:** direct, no equity dependency — `ts_correlation(x, y, d)` and `ts_covariance(x, y, d)`
+over any two per-symbol series (price, return, range, `tick_volume`, spread, swap), then a
+cross-sectional wrapper. `translate_to_mt5` needs no new mapping; this is a pure operator gap.
+
+### 3. THE SECOND MISSING PARTITION IS AN OPERATOR GAP, NOT A DATA GAP
+
+`code_2` implements 77 and skips 24 — six *more* than `code_1`'s 18. The partition is exact and
+mutually exclusive:
+
+- **18** (`{48,58,59,63,67,69,70,76,79,80,82,87,89,90,91,93,97,100}`) — every one carries
+  `IndNeutralize(..., IndClass.*)`. The s10/s11 wall, a **data** gap, and the one s11 closed for
+  MT5 with `data/mt5_grouping_map.json`.
+- **6** (`{71,73,77,88,92,96}`) — **not one contains `IndClass`**. All six are
+  `min(...)`/`max(...)` of *two composite branches*, and **zero of the 77 implemented alphas use
+  that form**. 6/6 and 0/77: a clean split. The transpiler handles the unary time-series
+  `ts_min/ts_max` and cannot emit a binary elementwise combinator over two full sub-expressions.
+
+Alpha73 is the proof the driver is min/max rather than anything else — it has no `correlation` and
+no `IndClass`, only `max(rank(decay_linear(...)), Ts_Rank(decay_linear(...)))`, and it is skipped.
+
+**The mechanism worth extracting is the SHAPE, not the formulas.** `min`/`max` over two independent
+branches is a *disjunctive* hypothesis — "fire on whichever of two distinct mechanisms is stronger
+today" — as opposed to the product/sum forms that dominate the desk's combination engine, which are
+conjunctive and average away a branch that is silent. This is regime-specialisation expressed inside
+a single expression (LAWS §5, the regime specialization law) rather than across sleeves.
+`np.minimum`/`np.maximum` appear **0 times** in `edge_search.py` or `libs/alpha_factory/`: the desk
+cannot currently express a disjunctive candidate at all.
+
+### 4. THE PDF IS NOT LOCKED, IT IS DIAGNOSED
+
+`101 Formulaic Alphas.pdf` (244,416 b) is the *original paper*, not a port. Streams decompress
+cleanly; the text is font-subsetted. I harvested 96 `ToUnicode` CMap entries, but the file carries
+multiple subset fonts sharing one code space, so a single merged CMap collides (`a`→`^`). The route
+is **per-font CMap binding via the page resource dict / `Tf` operator** — ~40 more lines. No PDF
+tooling exists on the box (`pdftotext`, `pdfminer`, `fitz`, `PyPDF2`, `pypdf` all absent) and the
+freeze forbids installs. Graded EXTRACTABLE-BUT-BLOCKED with the exact cause, never `locked`.

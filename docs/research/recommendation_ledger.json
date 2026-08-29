@@ -9423,6 +9423,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0729",
+   "source": "cycle",
+   "summary": "MT5 desk owns: add ts_correlation(x,y,d) and ts_covariance(x,y,d) to libs/alpha_factory/wq_operators.py and wire both into edge_search's transform arm. BRAIN s12 measured them as DISTINCT operators on the desk's own 24-symbol D1 tape: mean Spearman between their cross-sectional orderings is 0.775 on raw inputs (p05 0.60) and 0.920 on rank inputs at d=5 (23.6% of days below 0.90). correlation is the most-used binary operator in alpha101 (45 of 47 pair call sites) and the desk has NEITHER function. Evidence: docs/research/search_operator_library.md s12 section, data/brain_hunter_s12_alpha101_code2.json.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T10:38:50.912614+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0730",
+   "source": "cycle",
+   "summary": "MT5 desk owns: add a binary elementwise min/max combinator to the candidate grammar. BRAIN s12: the 6 alpha101 formulas {71,73,77,88,92,96} that the most-starred public transpiler drops for a NON-IndClass reason are exactly the 6 using min/max over two composite branches, and 0 of its 77 implemented alphas use that form. np.minimum/np.maximum appear 0 times in desks/mt5/research/edge_search.py and libs/alpha_factory/, so the desk cannot express a DISJUNCTIVE candidate (fire on whichever of two mechanisms is stronger today) at all -- only conjunctive product/sum forms, which average away a silent branch. Evidence: docs/research/search_operator_library.md s12 section.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T10:38:53.197899+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0731",
+   "source": "cycle",
+   "summary": "MT5 desk owns (carried from BRAIN s11 next-ground #1/#2, still unwired): nothing consumes data/mt5_grouping_map.json -- a built capability with no caller (III.16). Give currency_quote (mean |corr| 0.493 vs universe-wide rank) the first group_rank arm in edge_search; deny asset_class (0.819) and corr_cluster k8 (0.852) an arm on that measurement. Guard real_volume first: it is all-zero on 195/197 symbols, so a cross-sectional rank over it is a degenerate ordering by construction.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T10:38:55.424566+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
