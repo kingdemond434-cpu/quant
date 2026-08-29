@@ -11,14 +11,22 @@ from libs.research_os.adapters.base import (
     MeasurementResult,
     ResearchAdapter,
 )
+from libs.research_os.adapters.fetched_data import (
+    GammaExposureAdapter,
+    ImpliedVolAdapter,
+    MacroCalendarAdapter,
+)
 from libs.research_os.adapters.owned_data import (
     CarryAdapter,
     CotPositioningAdapter,
     CrossAssetAdapter,
 )
 
-for _a in (CotPositioningAdapter(), CarryAdapter(), CrossAssetAdapter()):
+for _a in (CotPositioningAdapter(), CarryAdapter(), CrossAssetAdapter(),
+           ImpliedVolAdapter(), GammaExposureAdapter(), MacroCalendarAdapter()):
     REGISTRY.register(_a)
 
 __all__ = ["MIN_COMPATIBILITY", "REGISTRY", "AdapterRegistry", "CarryAdapter",
-           "CotPositioningAdapter", "CrossAssetAdapter", "MeasurementResult", "ResearchAdapter"]
+           "CotPositioningAdapter", "CrossAssetAdapter", "GammaExposureAdapter",
+           "ImpliedVolAdapter", "MacroCalendarAdapter", "MeasurementResult",
+           "ResearchAdapter"]
