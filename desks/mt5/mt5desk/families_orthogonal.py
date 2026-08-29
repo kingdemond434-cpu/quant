@@ -1326,3 +1326,30 @@ def family_pca_residual(
 ORTHOGONAL_FAMILIES["pca_residual"] = family_pca_residual
 FAMILY_INPUTS["pca_residual"] = ("4+ factor instruments' H1 (the more of the universe, the "
                                  "better the latent factors)", "data/universe/*_H1.parquet")
+
+
+# THE EDGE QUEUE, REGISTERED THROUGH THE SAME DOOR AS EVERYTHING ELSE (2026-08-29).
+#
+# These four are the preregistered mechanisms in `libs/research/edge_queue.py` -- hedging-demand
+# close flow, FX fixing reversal, gold session handoff, and liquidity/gamma reversal. Each names a
+# PAYER: a participant who must trade for a reason that is not a forecast, which is the property
+# arbitrage cannot compete away.
+#
+# REGISTERED HERE RATHER THAN BEHIND THEIR OWN ENTRY POINT, and that is the whole point. A family
+# reachable only through a special path is a family with its own bar; this desk needed three
+# verdict engines before anyone noticed two of them required no significance test at all. Coming
+# through ORTHOGONAL_FAMILIES means the sweep enumerates them, admission authorises them, the
+# gauntlet judges them and the forward engine clocks them -- with no special case anywhere.
+#
+# They need nothing beyond bars, so FAMILY_INPUTS records that explicitly. An absent entry would
+# read as "nobody checked" rather than "nothing required".
+from mt5desk.families_edge_queue import EDGE_QUEUE_FAMILIES  # noqa: E402
+
+ORTHOGONAL_FAMILIES.update(EDGE_QUEUE_FAMILIES)
+for _eq_name in EDGE_QUEUE_FAMILIES:
+    # "price only" is the SENTINEL the sweep's wiring test reads, not a description. Writing
+    # prose here declared a non-price input the sweep never passes, which
+    # `test_every_family_needing_an_input_is_wired_to_one` correctly flagged: the family would
+    # have returned [] on every symbol and read as a data gap. The session clock comes from the
+    # bar index, so these genuinely need nothing beyond price.
+    FAMILY_INPUTS[_eq_name] = ("price only", "data/universe/*_H1.parquet")
