@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-29T10:16:00+00:00",
+ "compiled_at": "2026-08-29T11:32:20+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -2511,7 +2511,7 @@
    "deepening": 13
   },
   "forexfactory": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 0,
    "deepening": 62
   },
@@ -2616,9 +2616,9 @@
    "deepening": 4
   },
   "amarkets": {
-   "rows": 114,
+   "rows": 113,
    "candidates": 0,
-   "deepening": 114
+   "deepening": 113
   },
   "fbs_tape": {
    "rows": 1,
@@ -2641,18 +2641,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 7,
    "candidates": 0,
-   "deepening": 10
-  },
-  "youtube": {
-   "rows": 3,
-   "candidates": 0,
-   "deepening": 3
+   "deepening": 7
   }
  },
- "rows_accounted": 824,
+ "rows_accounted": 818,
  "executable_candidates": 206,
- "deepening_tasks": 569,
+ "deepening_tasks": 564,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
