@@ -4407,3 +4407,65 @@ archived a soft-404"*: a CDX index row is a claim about the INDEX, never about t
    once, by explicit design) and `beta_neutralize` is structurally immune. **Recorded as a standing
    review question, not a defect: for any new hedge/beta/ratio field, is the sign asserted by a
    test, or only implied by the name?**
+
+---
+
+## 2026-08-29 (prospector s17) — 24 of 251 registry rows price the desk's most-traded symbols at **ZERO SPREAD**, including EURUSD and GBPUSD
+
+**VERIFIED, cited path + value.** `desks/mt5/data/universe/universe.json` carries
+`"median_spread_pts": 0.0` on **24 of 251** rows. The list is not exotics — it includes
+**EURUSD, GBPUSD, AUDUSD, USDCAD, EURGBP, NZDUSD, EURCHF, GBPCAD, AUDCAD, EURAUD, NVIDIA,
+Broadcom**. Reproduce:
+
+```
+python -c "import json;u=json.load(open('desks/mt5/data/universe/universe.json'));print(sum(1 for d in u.values() if d.get('median_spread_pts')==0))"
+```
+
+**It is wrong, and by how much:** the parquet the value is supposed to summarise disagrees.
+`EURUSD_H1.parquet` has a spread median of **12.0 points** (zero-fraction 0.005 — i.e. the tape is
+fine, the registry row is not). At `digits=5` that is **~1.07bp one-way / 2.13bp round-trip**, not
+zero. GBPUSD 13.0pts, AUDUSD 14.0pts, USDCAD 13.0pts, EURGBP 13.0pts — all present in the tape,
+all recorded as 0.0 in the registry.
+
+**Two distinct bugs, not one:**
+1. **The registry row is not being written from the tape.** `fetch_universe.py:103` computes
+   `med_spread = float(df["spread"].median())` **correctly** (it would yield 12.0 for EURUSD), so
+   whatever produced these 24 rows is not that path. `expand_universe.py:136-137` has a
+   `float(getattr(info, "spread", 0) or 0)` fallback that resolves to **0** when the terminal
+   attribute is absent — a fallback that renders "unmeasured" and "free" identically (WS-005).
+   This is the **same multi-producer-on-one-`universe.json` class** the desk fixed for
+   `tick_value` on 2026-08-26; it has **recurred on `median_spread_pts`**.
+2. **15 of 197 parquets genuinely carry a >50%-zero spread column** (AUDCHF 0.618, CADCHF 0.622,
+   NZDCHF 0.583, HKDJPY 0.836, USDHKD 0.625, EURCAD 0.604, USDSGD 0.513, ExxonMobil 0.627,
+   Broadcom 0.614, Walmart 0.541, AT&T 0.549, BankofAmericaCorp 0.537, CVSHealth 0.545,
+   CharlesSchwab 0.512, EURRUB 0.547). For these a plain `.median()` returns **0.0 legitimately**
+   and is still the wrong cost. `median_of_nonzero` is the honest statistic; **UNMEASURED is the
+   honest answer where the non-zero sample is too thin.**
+
+**Why it matters — it corrupts the one gate that matters.** `cost_surface.py:143/234/244` and
+`expand_universe.py` read this field, and L1.5 says no alpha is valid until it survives realistic
+costs. **A zero-cost EURUSD makes every EURUSD candidate look free at the money bar.** In this very
+session the cost number was the difference between "8 of 12 instruments clear" and a Sharpe of
+0.039 — the money bar is doing the deciding on this desk, and 24 symbols are currently feeding it
+a zero.
+
+**Also observed, opposite direction:** `NZDJPY` registry `median_spread_pts = 147.0` against a tape
+median of **15.0** — a ~10x **over**charge. So the field is unreliable in both directions, which
+means it cannot be repaired by clamping zeros.
+
+**NAMED FIX (this seat is research-frozen; routed, not applied):**
+1. In the registry writer, **never** default a missing spread to `0`. Write `null` and let
+   `carry_state.py`'s already-correct `None`-for-UNMEASURED convention propagate (s16 verified that
+   module returns `None` rather than `0.0` — the pattern to copy is already in the tree).
+2. Compute from **non-zero bars only** (`df.spread[df.spread>0].median()`), and emit
+   `spread_zero_frac` alongside so a consumer can see the sample was thin instead of inferring it.
+3. **Single writer.** Same remedy as the 2026-08-26 `tick_value` incident — the recurrence is the
+   evidence that the earlier fix addressed the symptom on one field rather than the multi-producer
+   cause.
+4. Add the fence that would have caught this: assert **no** `median_spread_pts == 0` for any symbol
+   whose tape has `zero_frac < 0.5`. That single assertion catches all 24 rows today and is the
+   test that belongs in the same commit as the fix.
+
+**Residual/UNMEASURED (not claimed as fixed):** for the 15 genuinely-sparse symbols the true spread
+is **UNMEASURED**, not zero and not the non-zero median; that gap stays open and should be graded,
+not filled with a plausible number.

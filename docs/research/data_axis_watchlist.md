@@ -8681,3 +8681,43 @@ it is *inspired-by*, never a replication, and the proxy label must travel with i
 **SECOND, CHEAPER HALF — `cap`.** Blocks only 1 alpha, but the desk carries **US share CFDs** in its
 mandated universe, where market cap is a real, free, point-in-time-recoverable field. Low leverage
 on alpha101; noted because it is the only missing field with a genuinely easy door.
+
+### 87. [dig 2026-08-29 (prospector s17)] **CBOE keyless vol term structure — VIX3M / VIX9D / VVIX / VIX1D** — grade: **VERIFIED, ADOPTED, PERSISTED** `[§33: wired -> data/cboe_vol_term_structure.json]`
+
+**Routes (all tested live this run, 2026-08-29, UA `ClaudeBot (quant research desk)`):**
+`https://cdn.cboe.com/api/global/us_indices/daily_prices/{VIX3M,VIX9D,VVIX,VIX1D}_History.csv`
+— **HTTP 200, keyless, no registration, all current to 2026-08-28.**
+`cdn.cboe.com/robots.txt` returns **403**; under RFC 9309 a **4xx is ALLOW-ALL** (the desk had this
+backwards until s16 — a 403 on robots is not a wall). §13 clean.
+
+**Persisted artifact:** `data/cboe_vol_term_structure.json` — VIX3M 4,262 obs (**2009-09-18**→),
+VVIX 5,093 (**2006-03-06**→), VIX9D 3,936 (2011-01-04→), VIX1D 1,077 (2022-05-13→).
+This card is adopted, not merely catalogued: the data is on disk. **HONEST LIMIT ON THAT CLAIM:** `data/` is **gitignored**, so the artifact exists on **this box only** and is NOT reproducible from the repo by another seat or another machine. The card is therefore ADOPTED-ON-BOX, not ADOPTED-IN-TREE; the four URLs above are the durable part and are keyless, so any seat can re-pull in one curl each.
+
+**THE HONEST RE-GRADE — s16 called this "the run's best find" for being a vol-SHAPE axis. Measured,
+the shape is NOT an independent axis.** On the 823-day overlap with the desk's `VIXCLS`:
+
+| quantity | corr vs desk's VIX level |
+|---|---|
+| shape `VIX/VIX3M` (level) | **+0.835** |
+| shape `VIX/VIX3M` (first differences) | **+0.868** |
+| VIX9D | **+0.965** (essentially redundant) |
+| VIX1D | +0.876 |
+| VVIX | +0.868 |
+
+A conditioner at r = 0.84–0.97 with a series the desk already holds buys **very little** new
+information. Anyone reaching for "gate it on the term structure" should know it is ~the VIX again.
+
+**WHAT IS ACTUALLY WORTH HAVING, and it is not the shape — it is HISTORY.** The desk's `VIXCLS`
+holding starts **2023-05-17 (848 obs)**. These series start **2006** (VVIX) and **2009** (VIX3M).
+That is a **~17-year extension** of the desk's only volatility axis, covering the GFC tail, 2011,
+2015, 2018 and the 2020 crash — none of which are in the desk's current vol history at all. For any
+regime-conditional work (LAWS regime-specialisation law: regimes must be preregistered and
+point-in-time), an 848-day vol history cannot identify a crisis regime because it **contains none**.
+That is the adoption argument, and it is a stronger one than the shape argument it replaces.
+
+**Residual/UNMEASURED:** the correlations above are measured only on the 823-day overlap, which is a
+comparatively calm sample; the level/shape relationship is likely to **decouple precisely in the
+stress regimes the desk does not yet hold data for**. That is not a reason to trust the shape axis —
+it is a reason to re-measure the correlation once the extended history is used, and it is exactly
+the sample where a term-structure gate could still earn its keep. Graded UNMEASURED, not assumed.

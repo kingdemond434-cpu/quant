@@ -9409,6 +9409,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0728",
+   "source": "cycle",
+   "summary": "universe.json prices 24/251 symbols at median_spread_pts=0.0 INCLUDING EURUSD/GBPUSD/AUDUSD/USDCAD/EURGBP -- tape says EURUSD=12.0pts (~1.07bp one-way, zero_frac 0.005), so the registry row is not written from the tape. Recurrence of the 2026-08-26 multi-producer universe.json tick_value defect, now on median_spread_pts. expand_universe.py:136-137 falls back to float(getattr(info,'spread',0) or 0) which renders UNMEASURED and FREE identically (WS-005). cost_surface.py:143/234/244 consumes this field, so a zero-cost EURUSD makes every EURUSD candidate look free at the L1.5 money bar. NZDJPY is wrong the other way (147.0 vs tape 15.0), so clamping zeros does not fix it. FIX: (1) write null never 0 for missing spread, copying carry_state.py's None-for-UNMEASURED convention; (2) compute from non-zero bars only and emit spread_zero_frac; (3) single writer; (4) fence asserting no median_spread_pts==0 where tape zero_frac<0.5 -- catches all 24 rows today. Full evidence: docs/research/improvement_inbox.md 2026-08-29 prospector s17.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T10:01:21.629867+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

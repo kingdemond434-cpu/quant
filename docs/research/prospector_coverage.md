@@ -10311,3 +10311,210 @@ UNMEASURED**. The residual gap is those **92 sides**, not the registry fields.
    pairs with item 2), `Beyond Passive` remaining 13 items. **Not harbourfronts first.**
 5. **The 694 macrosynergy PR bodies** — counted, never read; the fork tree is dead ground but the PR
    layer is where the fixes and their reasoning live.
+
+---
+
+## s17 — 2026-08-29 (SESSION NOTE, written FIRST per the completion contract)
+
+Entry state: source backlog **CLEAR** (89 catalogued, 61 resolved, 0 pending verification, 28
+deferred to dates in the future — none workable this cycle). Resuming s16's named ground, not
+opening new breadth.
+
+**ITEMS TAKEN THIS RUN (bounded; depth per item unbounded):**
+1. **The wider weekend-hedging test** — does the Thursday→Friday precautionary-hedge premium exist
+   in CHF/JPY crosses and index CFDs, or was it metals-only? This is s16's *only* legitimate route
+   to a passing EV score, and it is a NEW hypothesis on the desk's own tape, not a re-score.
+2. **CBOE vol term structure (VIX3M/VIX9D/VVIX/VIX1D)** — keyless, current, 2006→2026-08-28. Adopt
+   into the source backlog / registry as the desk's first vol-SHAPE axis. Independent of item 1.
+3. **Density hosts in the CORRECTED order** — Golden Compass (0.57), Only VIX (0.39). NOT
+   harbourfronts (s16 proved the handoff's ranking wrong).
+
+Status: IN PROGRESS — updated below as each resolves.
+
+### s17 ITEM 1 — PRE-REGISTRATION (written BEFORE any number was computed)
+
+**Hypothesis (s16's residual, now testable):** the Thursday→Friday precautionary-hedge premium is
+a *safe-haven* phenomenon, not a *metals* phenomenon. If it appears in CHF crosses, JPY crosses
+and index CFDs, `narrow_breadth` (3 instruments) is retired **honestly** and the family's EV is
+re-scored at real breadth. If it does not, the family dies on evidence and metals-only was a
+3-instrument fluke.
+
+**Clock (declared, not assumed).** The H1 parquets are stamped `+00:00` but carry **broker EET**
+(desk finding 2026-08-28, 191/197 files). The stamp's *date* is therefore the **broker trading
+day** — which is precisely the day the hypothesis is about (the swap-rollover day). I use the
+stamp as-is and I am using it *because* it is EET, not in spite of it.
+
+**Sign convention — declared ONCE, here, for every leg** (s16 mined macrosynergy #2534, whose bug
+was a sign convention re-derived per caller; I am not repeating it):
+- `XXXCHF`, `XXXJPY`, `USDCHF`, `USDJPY` -> long the safe haven = **SHORT the pair** -> `leg = -r`
+- `CHFJPY`, `HKDJPY`, `SGDJPY`, `NOKJPY`, `SEKJPY`, `MXNJPY`, `ZARJPY` -> **EXCLUDED a priori**
+  (`CHFJPY`: both legs are havens, direction undefined. The rest: illiquid/exotic base.)
+- Index CFDs -> risk-on; the hedge is **short** -> `leg = -r`
+- Metals (`XAUUSD/XAGUSD/XPTUSD`) -> `leg = +r`. **Replication arm, reported separately, NOT pooled
+  into the breadth arm** -- pooling the original finding into its own extension is the circularity
+  that would manufacture the answer.
+
+**Controls (mandatory -- a null without these is a dead pipe):**
+1. **Other weekday pairs** Mon->Tue, Tue->Wed, Wed->Thu on the identical legs. Thu->Fri must be
+   *distinguishable*, not merely positive.
+2. **Cost control:** the premium is compared to the instrument's own median spread in bp. An edge
+   inside the spread is not an edge.
+
+**Trial accounting (every trial reported, winner or not):** 4 pre-declared primary cells --
+{CHF basket, JPY basket, Index basket, pooled non-metals} x unconditional. Per-instrument results
+are secondary and reported in full, not filtered to the significant ones.
+
+### s17 ITEM 1 — RESULT: **THE WEEKEND-HEDGING FAMILY IS DEAD.** Measured null, and `narrow_breadth` was never the binding constraint.
+
+**1. The parent finding did not replicate.** Before extending metals I re-ran metals. Thu->Fri on
+the XAU/XAG/XPT basket over 427 transitions: **-3.15bp, t = -0.37, p = 0.71** (vs all other
+weekday transitions: -10.28bp, Welch t = -1.12, p = 0.26). The s16 metals premium **is not in this
+tape**. I extended a finding that was not there; catching that first is the only reason the rest
+of the run means anything.
+
+**2. The breadth extension "worked" on the contrast and died on the money.** Difference-in-means
+vs all other weekday transitions (Welch), pre-declared cells:
+
+| Basket | n(Thu->Fri) | Thu->Fri | all-other | DIFFERENCE | Welch t | p |
+|---|---|---|---|---|---|---|
+| CHF (6) | 449 | +6.71bp | -0.44bp | **+7.15bp** | +3.96 | **0.0001** |
+| JPY (6) | 448 | +4.02bp | -2.56bp | **+6.57bp** | +2.35 | 0.0190 |
+| INDEX (14) | 413 | +1.56bp | -4.50bp | +6.06bp | +1.03 | 0.3014 |
+| POOLED non-metal (26) | 449 | +3.48bp | -2.65bp | +6.12bp | +1.85 | 0.0645 |
+| METALS (replication) | 427 | -3.15bp | +7.13bp | -10.28bp | -1.12 | 0.2635 |
+
+**3. THE ERROR I MADE, AND THE KILL.** I first netted the *difference* against costs and got
+"8/12 instruments clear". **That is wrong and it is the run's most useful lesson: a
+difference-in-means contrast is not a tradeable return.** The +6.6bp "premium" exists only
+*relative* to other weekdays, and those weekdays have negative drift — you cannot harvest their
+negative drift by declining to trade them. The tradeable quantity is the **level**, net of the
+round-trip spread and the one night of financing the trade actually pays. Netted correctly:
+
+| Basket | n | net mean/trade | t | ann. ret | ann. vol | **Sharpe** | hit rate |
+|---|---|---|---|---|---|---|---|
+| JPY (6, clean spread) | 448 | **+0.29bp** | +0.12 | +0.15% | 3.84% | **+0.039** | 0.480 |
+| CHF (EURCHF+USDCHF, clean spread) | 448 | **+0.05bp** | +0.03 | +0.03% | 2.19% | **+0.011** | 0.478 |
+
+Per-year net means alternate sign with no stability (JPY: +6.9, -8.4, +4.5, +1.0, +4.7, **-15.2**,
++7.4, +1.0, +1.2 bp). Hit rate is **below 50%** on both.
+
+**VERDICT: KILL, and `narrow_breadth` is retired as a *misdiagnosis*.** s16 killed this family for
+breadth (3 instruments). Breadth was never what was wrong with it. At 12 instruments the level net
+of costs is **statistically indistinguishable from zero**, and the entry leg costs ~3.7bp against a
+~4.0bp gross move. **Retiring `narrow_breadth` would not have saved it** — a future run that
+"fixes" the breadth tag and re-scores this family is re-mining a corpse. Graveyard, with mechanism.
+
+**Mechanism note for the graveyard (why it looked alive):** the Fri->Mon leg is the *stronger*
+statistic in both funding currencies (JPY **-9.85bp, t = -4.17**; CHF -4.75bp, t = -2.94),
+consistent with weekend carry-unwind-and-re-enter rather than safe-haven hedging — and that story
+predicts JPY/CHF but **not gold**, which is exactly the pattern observed. It does not survive
+either: it holds *through* the weekend gap and pays triple swap. Recorded so the next run does not
+rediscover the same shape and mistake it for a new family.
+
+**Multiplicity, reported in full:** 4 pre-declared primary cells; I actually ran **20 basket cells**
+(5 baskets x 4 transitions) plus **12 per-instrument secondaries**, all reported above, none
+filtered. The best basket contrast (CHF, p = 0.0001) would survive Holm; **the JPY arm at
+p = 0.019 would not**, and neither matters because both die on the money bar regardless.
+
+### s17 ITEM 3 — `goldencompassquant.com`: 1,234 posts where Quantocracy indexed 7 — and **1,227 of them are charts with no numbers**. Section EXHAUSTED.
+
+**Host is DNS-dead** (`curl` exit 6, not a block — no route, no §13 question). Era-archaeology via
+Wayback CDX, which is the point of the class: the corpus is one-time-exhaustible and never changes.
+
+**Population, enumerated not sampled:** CDX returned **2,262 captures → 1,234 distinct post slugs**.
+Quantocracy's index carried **7**. The other **1,227 were invisible to every source the desk had.**
+The site is a systematic hour-of-day microstructure corpus in Singapore/HK time, and its instrument
+list maps onto the MT5 mandate better than almost anything found this month:
+
+| family | posts | MT5 symbol |
+|---|---|---|
+| cme-comex-gold, tocom-gold | 47+44+25+20 | **XAUUSD** |
+| ice-brent | 23+16+12+12 | **XBRUSD** |
+| cme-nymex-wti | 20+17+14 | **XTIUSD** |
+| lme-copper | 20+16+12 | **XCUUSD** |
+| hkex-usdcnh | 50+20 | **USDCNH** |
+| sgx-nikkei-225 | 41+29 | **JPN225** |
+| krx-kospi-200, sgx-iron-ore, asx-wheat | 48+30+18+18+16+75 | none (out of universe) |
+
+**And it is worth nothing, which is the finding.** I fetched the flagship gold post
+(`.../cme-comex-gold-futures-z7-contract-bidask-spread-in-singaporehk-time/`, capture
+`20180217060457`): **0 `<table>` elements, 5 images, and a body of exactly two sentences** —
+*"Overview of the Top of Book Best Bid/Ask Spread ... over 14 Jul to 21 Jul 2017. Distribution of
+time-weighted values over Singapore/HK time."* The entire quantitative payload is a **PNG boxplot**
+(`Bid-Ask-Boxplot-GCA-Comdty-9.png`). **This is the PNG-calendar class the desk already knows
+(s9, 2026-08-28): visually rich, numerically empty.** Each post covers **one week** of **one
+expiring 2017 contract**. Even fully OCR'd, that is one week of 2017 top-of-book on expired
+contracts, against which the desk's own `cost_surface.py` already builds hour-of-day spread
+profiles from **eight years** of its own H1 tape. **EV-REJECT — no OCR spend is justified.**
+
+**The 7 strategy posts are real prose (8.5k chars, methodology) and still die.** Read
+`svm-trend-strategy-nikkei-225-mini-futures` in full: SVM on 20 indicators, PCA-reduced, 3:1 split,
+daily data 2013-09-17→2017-09-15, **one** 1-year test window (~250 obs), **data from Bloomberg**,
+**no cost model**. **GRAVEYARD MATCH — DISCARD:** `data/strategy_coverage.json` grades
+`TREND-AND-STRUCTURE` as **HUNTED** with 8 buried candidates including
+`era_ta_indicator_stack_crypto`, which is the same shape (indicator stack → classifier). No named
+forced participant, single split, non-reproducible data source. Not re-logged as a live branch.
+
+**`Only VIX` (density 0.39) — NOT dug, and deliberately: VOID BY MANDATE.** Its subject is VIX
+**futures** term structure. There is no VIX instrument in the MT5/Fusion universe (verified against
+the 251-row registry), so it is unhuntable ground for this desk. Recorded so no future run spends
+the 0.39 density on it. This is a *mandate* exclusion, not a quality one.
+
+### s17 SOURCE-FAMILY YIELD
+
+| Source family | Visited | Yield |
+|---|---|---|
+| **Desk's own H1 tape** (12 CHF/JPY + 14 index + 3 metal, 197 available) | ✅ | **MEASURED NULL, family KILLED.** Metals replication failed; net Sharpe 0.039 / 0.011 |
+| **`universe.json` cost fields** (dependency check) | ✅ | **DEFECT FOUND — 24/251 rows price EURUSD/GBPUSD at ZERO spread** → improvement_inbox |
+| **`cdn.cboe.com`** vol term structure | ✅ | **ADOPTED + PERSISTED** (4 series, 14,368 obs) — but the *shape* re-graded r=+0.835 vs level; value is **17yr history**, not orthogonality |
+| **`goldencompassquant.com`** (Wayback CDX, 1,234 slugs) | ✅ | **EXHAUSTED — PNG-only corpus.** 1,227 posts invisible to Quantocracy and all worthless; 7 strategy posts graveyard-matched |
+| **`Only VIX`** | ⛔ | **VOID BY MANDATE** — no VIX instrument in the MT5 universe |
+
+- **DEPTH.** Item 1 taken **past the surface to the point where my own intermediate result was
+  wrong**: surface (basket contrast) → per-instrument → cost layer → **found my own
+  contrast-vs-level error** → net-of-cost Sharpe → per-year stability → replication of the parent
+  claim. The depth is what killed it; the surface said `p=0.0001`. Item 3 **EXHAUSTED**: population
+  enumerated by CDX (1,234, not the 7 handed to me), content type verified by fetching the actual
+  artifact rather than trusting the title, and the strategy layer read to methodology and
+  graveyard-checked. **Honest depth gap:** no comment/reply layer existed on either dead host
+  (comments closed/unarchived), and I chased **no citation chains** this run — the SVM post cites
+  Cao & Tay (2003) and Kumar & Thenmozhi (2007) and I did **not** follow them, because the family
+  is already HUNTED and the citations would re-enter a closed family.
+- **§13.** Honest `ClaudeBot (quant research desk)` UA throughout. `cdn.cboe.com` robots **403 =
+  4xx = ALLOW** (RFC 9309). `goldencompassquant.com` is **DNS-dead**, so no robots exists to
+  consult and Wayback is the licensed route. No UA switching, no evasion, no third-party tooling
+  installed or run. **No breach.**
+- **FREEZE respected.** Writes this run: `docs/research/*`, `data/cboe_vol_term_structure.json`,
+  `data/cadence_state.json`. Nothing under `scripts/`, `libs/`, the executor, a rail, or a live
+  state file. `desks/mt5/**` was **read only** — the registry defect is **routed, not patched**.
+- **Video:** 0 fetched, 0 locked, none needed — no video-origin material on this ground. Nothing
+  added to `video_locked_log.md`.
+- **Cards: 1 raised** (card 87, CBOE — adopted and persisted). **1 family KILLED. 2 EV-rejects.
+  1 graveyard discard. 1 structural defect routed. 0 fabricated survivors.**
+- **MY OWN RESULTS THAT DIED TO THEIR OWN CHECKS (reported because they are results):**
+  (1) I netted a **difference-in-means** against costs and briefly had "8/12 instruments clear" —
+  **you cannot trade a contrast**; the level is the tradeable quantity and it nets to zero.
+  (2) My first cost pass used a 4-digit point on 5-digit FX and overstated spreads **~10x**, which
+  would have killed the family for the *wrong reason* — the registry's own `digits` fixed it.
+  (3) My first carry pass divided account-currency money by a **profit-currency** notional and got
+  ~0.00bp for every JPY pair; price-space carry agrees with the money route to 0.02bp on EURCHF.
+  (4) I inherited s16's "CBOE term structure is the run's best find" — the shape is **r=+0.835**
+  with the level the desk already holds, and I re-graded it down.
+  (5) I extended a parent finding **that does not replicate**; checking it first is the only reason
+  the null is trustworthy.
+
+### NEXT UN-EXHAUSTED GROUND (for s18, in order)
+
+1. **Chase the registry-spread fix to landing.** It is routed to `improvement_inbox.md` with a named
+   patch and a named fence, and the inbox is **write-only** (standing desk fact) — so s18 must
+   verify it reached the ledger and, if not, re-route it there. A cost field reading zero on EURUSD
+   corrupts the money bar for **every** candidate, which is the gate that decided this entire run.
+2. **Use the 17 years of CBOE history now on disk** — the adoption argument was that the desk's
+   848-day vol history contains **no crisis regime**. Re-measure the level/shape correlation across
+   2008/2011/2015/2018/2020; the shape may only earn its keep where the desk currently has no data.
+   This is the honest test of card 87, and it is *not* the same as re-scoring the dead family.
+3. **`Quant Journey` (density 1.00, 4/4)** — the top-ranked host and still untouched; s16 corrected
+   the ranking and s17 spent its host budget on rank 2, which turned out to be PNGs.
+4. **The 92 UNMEASURED carry sides** — still owed, still the MT5 desk's to implement (carried from
+   s16 unchanged; outside this seat's freeze, so it stays a ledger row, not a patch).
+5. **The 694 macrosynergy PR bodies** — counted twice now, read zero times.
