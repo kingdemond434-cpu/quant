@@ -40,6 +40,12 @@ PROTECTED: dict[str, str | tuple[str, ...]] = {
     # function the forward engine enrols through) vanished from the desk copy twice on
     # 2026-08-27, and each time enrolment silently fell back to zero certificate clocks. A door
     # that decides what may reach live capital belongs in this registry more than most.
+    # THE COST GUARD. `usable` must require a POSITIVE spread: a recorded 0.0 means the spread
+    # was never measured, and an uncosted instrument backtests as though trading were free. This
+    # exact fix was applied and REVERTED by the replayer before it could be committed (2026-08-29,
+    # the sixth such loss), while 24 symbols -- EURUSD, AUDUSD, USDJPY among them -- were marked
+    # usable and had already reached 4 certificates and 3 LIVE forward clocks.
+    "desks/mt5/mt5desk/universe.py": ("median_spread_pts > 0", "MIN_BARS", "asset_class"),
     "desks/mt5/research/shadow_admission.py": ("authorized_runs", "authorized_specs",
                                                "all_ten_pass", "is_exact_policy"),
     # THE DISCOVERY ENGINE. Not money-path in the order sense, but it decides what the desk
