@@ -9642,11 +9642,11 @@
    "rank": 90.0,
    "roi_basis": "rank",
    "raised": "2026-08-29T16:52:17.696567+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "The fix is in desks/mt5 producer code (expand_universe.py, validate_fusion.py, Costs.from_symbol) and this seat is research-frozen to docs/research/* and data/*, so implementing it here would be the freeze breach the freeze exists to prevent. Scheduled to the MT5 desk seat with the evidence complete and the patch fully named: add a trailing_spread_pts field (last full year, zeros excluded) with its own _provenance entry, leave the 3.5-second poll in spread_pts_at_collection where it already belongs, stop both producers writing median_spread_pts, and repoint Costs.from_symbol. Per-symbol table with every ratio is in data/brain_hunter_s24_liquidity_tier_axis.json so the implementing seat re-measures nothing.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-01",
+   "disposed": "2026-08-29T17:00:14.005934+00:00"
   }
  ]
 }
