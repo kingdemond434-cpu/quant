@@ -1,5 +1,5 @@
 {
-"cursor": 94,
+"cursor": 95,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -88,6 +88,9 @@
 "cuentas gestionadas MT4",
 "cuentas gestionadas MT5",
 "cuentas gestionadas ranking",
+"ganancia MT4",
+"ganancia MT5",
+"ganancia ranking",
 "rentabilidad MT4",
 "rentabilidad MT5",
 "rentabilidad ranking",

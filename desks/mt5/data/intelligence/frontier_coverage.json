@@ -40,10 +40,10 @@
   "es": {
    "region": "LATAM/Spain",
    "open_frontier": false,
-   "queries_exercised": 15,
+   "queries_exercised": 18,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-29T00:22:02+00:00",
+   "last_swept": "2026-08-29T18:22:00+00:00",
    "native_terms_available": 15
   },
   "pt": {

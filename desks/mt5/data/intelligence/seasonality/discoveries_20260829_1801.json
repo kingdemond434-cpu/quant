@@ -1,0 +1,477 @@
+[
+  {
+    "source": "seasonality",
+    "type": "known_pattern",
+    "pattern": "sell_in_may",
+    "month": 8,
+    "direction": "down",
+    "symbols": [
+      "US500",
+      "NAS100"
+    ],
+    "confidence": 0.4,
+    "description": "Seasonal pattern 'sell_in_may' active (month 8)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "USDTHB",
+    "month": 8,
+    "avg_return": 0.0036,
+    "overall_avg": 0.0024,
+    "direction": "bullish",
+    "symbols": [
+      "USDTHB"
+    ],
+    "confidence": 0.4590842446601568,
+    "description": "USDTHB historically bullish in month 8 (avg 0.004%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EOSUSD",
+    "month": 8,
+    "avg_return": 0.066,
+    "overall_avg": 0.0219,
+    "direction": "bullish",
+    "symbols": [
+      "EOSUSD"
+    ],
+    "confidence": 0.6,
+    "description": "EOSUSD historically bullish in month 8 (avg 0.066%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Roku",
+    "month": 8,
+    "avg_return": 0.2012,
+    "overall_avg": 0.0208,
+    "direction": "bullish",
+    "symbols": [
+      "Roku"
+    ],
+    "confidence": 0.6,
+    "description": "Roku historically bullish in month 8 (avg 0.201%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Merck",
+    "month": 8,
+    "avg_return": 0.1057,
+    "overall_avg": 0.0643,
+    "direction": "bullish",
+    "symbols": [
+      "Merck"
+    ],
+    "confidence": 0.49341843926013174,
+    "description": "Merck historically bullish in month 8 (avg 0.106%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Baidu",
+    "month": 8,
+    "avg_return": -0.0413,
+    "overall_avg": 0.0047,
+    "direction": "bearish",
+    "symbols": [
+      "Baidu"
+    ],
+    "confidence": 0.6,
+    "description": "Baidu historically bearish in month 8 (avg -0.041%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURGBP",
+    "month": 8,
+    "avg_return": -0.0008,
+    "overall_avg": -0.0003,
+    "direction": "bearish",
+    "symbols": [
+      "EURGBP"
+    ],
+    "confidence": 0.6,
+    "description": "EURGBP historically bearish in month 8 (avg -0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURSGD",
+    "month": 8,
+    "avg_return": -0.0033,
+    "overall_avg": -0.0017,
+    "direction": "bearish",
+    "symbols": [
+      "EURSGD"
+    ],
+    "confidence": 0.5766450393930156,
+    "description": "EURSGD historically bearish in month 8 (avg -0.003%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "GBPUSD",
+    "month": 8,
+    "avg_return": 0.0011,
+    "overall_avg": 0.0006,
+    "direction": "bullish",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "confidence": 0.5813167293134947,
+    "description": "GBPUSD historically bullish in month 8 (avg 0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "UnitedHealth",
+    "month": 8,
+    "avg_return": 0.0418,
+    "overall_avg": 0.0039,
+    "direction": "bullish",
+    "symbols": [
+      "UnitedHealth"
+    ],
+    "confidence": 0.6,
+    "description": "UnitedHealth historically bullish in month 8 (avg 0.042%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "ThermoFisherScientific",
+    "month": 8,
+    "avg_return": 0.0596,
+    "overall_avg": 0.0348,
+    "direction": "bullish",
+    "symbols": [
+      "ThermoFisherScientific"
+    ],
+    "confidence": 0.513438931061041,
+    "description": "ThermoFisherScientific historically bullish in month 8 (avg 0.060%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "CORN",
+    "month": 8,
+    "avg_return": 0.0295,
+    "overall_avg": 0.0009,
+    "direction": "bullish",
+    "symbols": [
+      "CORN"
+    ],
+    "confidence": 0.6,
+    "description": "CORN historically bullish in month 8 (avg 0.029%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURPLN",
+    "month": 8,
+    "avg_return": 0.0016,
+    "overall_avg": 0.0008,
+    "direction": "bullish",
+    "symbols": [
+      "EURPLN"
+    ],
+    "confidence": 0.6,
+    "description": "EURPLN historically bullish in month 8 (avg 0.002%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Starbucks",
+    "month": 8,
+    "avg_return": 0.0592,
+    "overall_avg": 0.009,
+    "direction": "bullish",
+    "symbols": [
+      "Starbucks"
+    ],
+    "confidence": 0.6,
+    "description": "Starbucks historically bullish in month 8 (avg 0.059%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "CHINAH",
+    "month": 8,
+    "avg_return": -0.0054,
+    "overall_avg": -0.0032,
+    "direction": "bearish",
+    "symbols": [
+      "CHINAH"
+    ],
+    "confidence": 0.5033671156504741,
+    "description": "CHINAH historically bearish in month 8 (avg -0.005%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "TexasInstruments",
+    "month": 8,
+    "avg_return": 0.0949,
+    "overall_avg": 0.0565,
+    "direction": "bullish",
+    "symbols": [
+      "TexasInstruments"
+    ],
+    "confidence": 0.5038104517354488,
+    "description": "TexasInstruments historically bullish in month 8 (avg 0.095%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Airbnb",
+    "month": 8,
+    "avg_return": 0.0604,
+    "overall_avg": -0.0003,
+    "direction": "bullish",
+    "symbols": [
+      "Airbnb"
+    ],
+    "confidence": 0.6,
+    "description": "Airbnb historically bullish in month 8 (avg 0.060%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "UKGILT",
+    "month": 8,
+    "avg_return": -0.023,
+    "overall_avg": -0.0126,
+    "direction": "bearish",
+    "symbols": [
+      "UKGILT"
+    ],
+    "confidence": 0.548457389361718,
+    "description": "UKGILT historically bearish in month 8 (avg -0.023%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "EURUSD",
+    "month": 8,
+    "avg_return": 0.0002,
+    "overall_avg": 0.0001,
+    "direction": "bullish",
+    "symbols": [
+      "EURUSD"
+    ],
+    "confidence": 0.6,
+    "description": "EURUSD historically bullish in month 8 (avg 0.000%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Target",
+    "month": 8,
+    "avg_return": 0.0729,
+    "overall_avg": -0.0295,
+    "direction": "bullish",
+    "symbols": [
+      "Target"
+    ],
+    "confidence": 0.6,
+    "description": "Target historically bullish in month 8 (avg 0.073%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Snowflake",
+    "month": 8,
+    "avg_return": 0.1005,
+    "overall_avg": 0.038,
+    "direction": "bullish",
+    "symbols": [
+      "Snowflake"
+    ],
+    "confidence": 0.6,
+    "description": "Snowflake historically bullish in month 8 (avg 0.101%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "WHEAT",
+    "month": 8,
+    "avg_return": 0.0188,
+    "overall_avg": 0.0034,
+    "direction": "bullish",
+    "symbols": [
+      "WHEAT"
+    ],
+    "confidence": 0.6,
+    "description": "WHEAT historically bullish in month 8 (avg 0.019%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "SUGARRAW",
+    "month": 8,
+    "avg_return": 0.0535,
+    "overall_avg": 0.0013,
+    "direction": "bullish",
+    "symbols": [
+      "SUGARRAW"
+    ],
+    "confidence": 0.6,
+    "description": "SUGARRAW historically bullish in month 8 (avg 0.053%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Pepsi",
+    "month": 8,
+    "avg_return": -0.0057,
+    "overall_avg": 0.0027,
+    "direction": "bearish",
+    "symbols": [
+      "Pepsi"
+    ],
+    "confidence": 0.6,
+    "description": "Pepsi historically bearish in month 8 (avg -0.006%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "USDHKD",
+    "month": 8,
+    "avg_return": 0.0003,
+    "overall_avg": 0.0002,
+    "direction": "bullish",
+    "symbols": [
+      "USDHKD"
+    ],
+    "confidence": 0.4976420116159781,
+    "description": "USDHKD historically bullish in month 8 (avg 0.000%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "AUDCAD",
+    "month": 8,
+    "avg_return": 0.0009,
+    "overall_avg": -0.0,
+    "direction": "bullish",
+    "symbols": [
+      "AUDCAD"
+    ],
+    "confidence": 0.6,
+    "description": "AUDCAD historically bullish in month 8 (avg 0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "USDSGD",
+    "month": 8,
+    "avg_return": -0.0013,
+    "overall_avg": 0.0004,
+    "direction": "bearish",
+    "symbols": [
+      "USDSGD"
+    ],
+    "confidence": 0.6,
+    "description": "USDSGD historically bearish in month 8 (avg -0.001%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "UnionPacific",
+    "month": 8,
+    "avg_return": 0.069,
+    "overall_avg": 0.0404,
+    "direction": "bullish",
+    "symbols": [
+      "UnionPacific"
+    ],
+    "confidence": 0.5115670985833117,
+    "description": "UnionPacific historically bullish in month 8 (avg 0.069%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "BTCUSD",
+    "month": 8,
+    "avg_return": 1.3959,
+    "overall_avg": 0.2149,
+    "direction": "bullish",
+    "symbols": [
+      "BTCUSD"
+    ],
+    "confidence": 0.6,
+    "description": "BTCUSD historically bullish in month 8 (avg 1.396%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "NOKJPY",
+    "month": 8,
+    "avg_return": 0.0094,
+    "overall_avg": 0.004,
+    "direction": "bullish",
+    "symbols": [
+      "NOKJPY"
+    ],
+    "confidence": 0.6,
+    "description": "NOKJPY historically bullish in month 8 (avg 0.009%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "USDILS",
+    "month": 8,
+    "avg_return": -0.0073,
+    "overall_avg": -0.0044,
+    "direction": "bearish",
+    "symbols": [
+      "USDILS"
+    ],
+    "confidence": 0.49977274080164674,
+    "description": "USDILS historically bearish in month 8 (avg -0.007%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Twilio",
+    "month": 8,
+    "avg_return": 0.161,
+    "overall_avg": 0.0321,
+    "direction": "bullish",
+    "symbols": [
+      "Twilio"
+    ],
+    "confidence": 0.6,
+    "description": "Twilio historically bullish in month 8 (avg 0.161%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "SUGAR",
+    "month": 8,
+    "avg_return": 0.0214,
+    "overall_avg": 0.0115,
+    "direction": "bullish",
+    "symbols": [
+      "SUGAR"
+    ],
+    "confidence": 0.5560340071965704,
+    "description": "SUGAR historically bullish in month 8 (avg 0.021%)"
+  },
+  {
+    "source": "seasonality",
+    "type": "historical_pattern",
+    "symbol": "Lyft",
+    "month": 8,
+    "avg_return": 0.0523,
+    "overall_avg": -0.0096,
+    "direction": "bullish",
+    "symbols": [
+      "Lyft"
+    ],
+    "confidence": 0.6,
+    "description": "Lyft historically bullish in month 8 (avg 0.052%)"
+  }
+]
