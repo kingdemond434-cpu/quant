@@ -67,6 +67,36 @@ def _age_h(stamp) -> float | None:
         return None
 
 
+def project_eligibility(live_rows: dict[str, dict[str, object]],
+                        now: datetime) -> list[dict[str, object]]:
+    """Per-clock distance to BOTH halves of the forward gate, and the day it clears them.
+
+    Eligibility needs ``n >= MIN_FORWARD_TRADES`` AND ``days >= MIN_FORWARD_DAYS``. Until
+    2026-08-29 only the DAYS half was published, so the desk read "day 2/14" and understood
+    twelve days to go while the observation count was the half that actually bound. Measured the
+    day this shipped: 17 active clocks at almost exactly 1.00 observation per clock-day (a
+    session-scoped sleeve gets one session a day), so a clock holds n=14 on the day it reaches
+    day 14 and the count binds for about another week.
+
+    ``eligible_day`` is ``None`` where the rate cannot be measured -- a clock with no elapsed
+    time or no observations has no evidenced arrival date, and projecting an optimistic one from
+    nothing is exactly the failure this function exists to end (L1.28a). It never reports a day
+    earlier than ``MIN_FORWARD_DAYS``: satisfying one half early does not satisfy the other.
+
+    Reporting only. No threshold here is this organ's to move (LAWS s4).
+    """
+    rows: list[dict[str, object]] = []
+    for key, v in live_rows.items():
+        days, n = forward_days(v, now) or 0, int(v.get("n") or 0)
+        rate = (n / days) if days > 0 and n > 0 else None
+        day_n = None if rate is None else days + max(0.0, (MIN_FORWARD_TRADES - n) / rate)
+        rows.append({"clock": key, "days": days, "n": n,
+                     "rate_per_day": None if rate is None else round(rate, 2),
+                     "eligible_day": None if day_n is None
+                     else round(max(float(MIN_FORWARD_DAYS), day_n), 1)})
+    return rows
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     reasons: list[str] = []
@@ -176,14 +206,41 @@ def main() -> int:
                 if int(v.get("n") or 0) >= MIN_FORWARD_TRADES
                 and served_window(v, MIN_FORWARD_DAYS, now)
                 and float(v.get("exp_r") or 0) > 0.05]
+    # BOTH HALVES OF THE GATE, AND THE BINDING ONE NAMED (2026-08-29). Eligibility has always
+    # required n>=MIN_FORWARD_TRADES *and* days>=MIN_FORWARD_DAYS, but the published progress
+    # tracked DAYS alone -- so the desk read "day 2/14" and understood "twelve days to go" while
+    # the actually-binding half went unreported. Measured on this box the day it was fixed: all
+    # 17 active clocks accrue almost exactly 1.00 observation per clock-day, because a
+    # session-scoped sleeve gets one session a day. At that rate a clock holds n=14 when it
+    # reaches day 14 and the observation count binds for roughly another week. A two-part gate
+    # reported by its non-binding part is a progress bar pointing at the wrong wall.
+    #
+    # NOTHING HERE CHANGES A THRESHOLD. The bars are untouched and are not this organ's to move
+    # (LAWS s4); only what the desk is told about its distance from them changes.
+    eta_rows = project_eligibility(live_rows, now)
+    etas = [float(r["eligible_day"]) for r in eta_rows if r["eligible_day"] is not None]
     checks["forward_evidence"] = {"pass": bool(eligible), "eligible_sleeves": eligible,
                                   "requires": f"n>={MIN_FORWARD_TRADES} and "
-                                              f"days>={MIN_FORWARD_DAYS} and exp>0.05R"}
+                                              f"days>={MIN_FORWARD_DAYS} and exp>0.05R",
+                                  "clocks": eta_rows,
+                                  "soonest_eligible_day": min(etas) if etas else None}
     if not eligible:
         soonest = max((forward_days(v, now) or 0 for v in live_rows.values()), default=0)
+        best_n = max((int(v.get("n") or 0) for v in live_rows.values()), default=0)
+        rates = [float(r["rate_per_day"]) for r in eta_rows if r["rate_per_day"] is not None]
+        rate_txt = (f"{sum(rates) / len(rates):.2f} obs/clock-day measured" if rates
+                    else "observation rate UNMEASURED")
+        eta = min(etas) if etas else None
+        binding = ("OBSERVATIONS" if eta is not None and eta > MIN_FORWARD_DAYS
+                   else "TIME" if eta is not None else "UNMEASURED")
+        eta_txt = (f"earliest eligibility ~day {eta:.0f} at the current rate"
+                   if eta is not None else
+                   "no clock has produced enough to project an arrival day")
         reasons.append(f"forward evidence: no sleeve has cleared the forward window "
-                       f"(best clock is day {soonest}/{MIN_FORWARD_DAYS}); the market has not yet "
-                       f"supplied the unseen observations, and nothing can substitute for them")
+                       f"(best clock is day {soonest}/{MIN_FORWARD_DAYS} on TIME and "
+                       f"{best_n}/{MIN_FORWARD_TRADES} on OBSERVATIONS; {rate_txt}; binding "
+                       f"constraint is {binding}, {eta_txt}); the market has not yet supplied "
+                       f"the unseen observations, and nothing can substitute for them")
 
     hard_pass = all(c.get("pass") for c in checks.values())
     if hard_pass:

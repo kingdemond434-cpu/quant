@@ -144,7 +144,19 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", default=str(_DEFAULT))
     args = ap.parse_args()
-    d = json.loads(Path(args.json).read_text("utf-8"))
+    src = Path(args.json)
+    try:
+        d = json.loads(src.read_text("utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        # UNMEASURED, said in one readable line (L1.28a). This crashed with a raw
+        # FileNotFoundError traceback whenever its producer had not run -- which on this box was
+        # every run since the 2026-08-20 cron death, because scripts/measure_admission_power.py
+        # is the only thing that writes this file. A traceback and a real finding are the same
+        # rc=1 to systemd, so the audit's absence was indistinguishable from its failure.
+        print(f"gate-power audit: NO INPUT -- cannot read {src} ({type(e).__name__}). "
+              "Run scripts/measure_admission_power.py first; it is the only producer. "
+              "This reports nothing rather than fabricating a power curve.")
+        return 2
     studies = d["studies"]
     pc = studies.get("power_curve") or []
     if pc:
