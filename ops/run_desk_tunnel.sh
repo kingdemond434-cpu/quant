@@ -30,7 +30,17 @@ LOG=data/desk_tunnel.log
 # hostname. So `--url` was being overridden: the connector registered happily, logged zero
 # incoming requests, and every request 404'd at the edge because the hostname belonged to the
 # other tunnel. Pointing at an isolated config is what makes --url actually take effect.
+# --protocol http2, NOT the QUIC default. Measured 2026-08-29: the connector registered
+# happily at hel01 and then dropped every connection with
+# "failed to accept QUIC stream: timeout: no recent network activity", reconnecting every ~20
+# seconds for hours. systemd reported active (running) for three days throughout, so every
+# health check passed while the dashboard served 404 to the outside world -- alive and useless,
+# the same shape as the sweep that breathed without computing.
+# QUIC rides UDP, which this path evidently will not keep open; http2 rides TCP and does not
+# have that failure mode. Losing a little throughput on a dashboard is not a cost worth
+# defending.
 /usr/local/bin/cloudflared --no-autoupdate --config /home/quant/.cloudflared/quick.yml \
+    --protocol http2 \
     tunnel --url http://localhost:8788 --logfile "$LOG" --loglevel info &
 CF_PID=$!
 

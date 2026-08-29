@@ -8758,3 +8758,52 @@ CONSTRAINT (this is the whole point, see coverage s15): these enter as a **fixed
 extension**, multiplying `FusionPlan.effective_n_trials` by a declared constant before compute.
 They must NEVER enter as adaptive allocation — the source's own bandit is refused for exactly that
 reason.
+
+## 2026-08-29 — CRO cycle — the broker's OWN forced-trade announcements become an owned axis (3 pre-registered hypotheses)
+
+SOURCE: `desks/mt5/data/tape/contract_terms/*.parquet`, first-party, zero marginal cost — the fields
+come from a `mt5.symbol_info()` call the recorder was already paying for and were being dropped.
+DERIVES-FROM: improvement_inbox #3 (2026-08-28); the recorder half is GAP_REGISTER row 210.
+
+**AXIS STATUS: NEWLY INSTRUMENTED, DEPTH 1 DAY, UNSCREENABLE TODAY.** These are pre-registered ON
+ARRIVAL per the generator checklist and are recorded here rather than in
+`desks/mt5/data/research_queue.json` deliberately: that queue is run by a searcher over implemented
+price-pattern families, and queueing a row nothing can execute is the same defect this cycle just
+fixed one layer up. Each carries its own arrival condition, its target/horizon choice with the
+reason, and its falsifier. **Every cell listed is a DSR-counted trial when it runs** — including the
+ones that fail — and the count travels with them.
+
+**H-CT-1 — `trade_mode` → CLOSEONLY is a dated forced-exit window.** MECHANISM: a symbol flipping to
+`trade_mode == 3` is the broker instructing every holder to exit by a deadline, published by
+behaviour rather than by announcement. That is the cleanest "who is forced to trade and cannot stop"
+this venue offers, and it is direction-agnostic by construction — the forced side is whichever side
+the crowd holds, so the pre-registered target is **absolute move and realised-vol expansion**, never
+a signed return, and the horizons are 1d / 5d from the first observation of the flip.
+FALSIFIER: no vol expansion vs the symbol's own trailing distribution at either horizon.
+ARRIVAL: ≥1 observed transition. **RISK, STATED NOW SO IT CANNOT BE DISCOVERED LATER AS A RESULT:**
+CLOSEONLY also means the desk cannot open — so a confirmed effect is tradable only by *holders*, and
+if the desk holds nothing the finding is information, not alpha. Graded that way in advance.
+
+**H-CT-2 — `margin_initial` increases are announced deleveraging in a named symbol.** MECHANISM: a
+margin rise forces gross reduction inside a dated window among leveraged holders; a fall permits
+expansion. TARGET: cross-sectional RELATIVE return vs the symbol's asset-class peers — this is an
+asset-selection signal, not a timing one, and defaulting it to an absolute next-day return is the
+dev-momentum error the target/horizon sweep duty exists to prevent. HORIZONS: 1d / 5d / 20d.
+FALSIFIER: no relative-return separation at any horizon, or the sign inverts between the increase
+and decrease arms (which would make it a proxy for realised vol, not for forced flow).
+ARRIVAL: ≥30 changes across the 251-symbol registry.
+
+**H-CT-3 — `trade_stops_level` / `freeze_level` bound the desk's OWN executable stop, and the
+execution model assumes they are zero.** This is not an alpha hypothesis and is listed as one
+anyway, because it is the higher-EV of the three under the bottleneck law: a 20% gain in execution
+is worth what a 20% better alpha is worth and is far cheaper to obtain. CLAIM: some Fusion symbols
+carry a non-zero minimum stop distance, so backtested stops tighter than it were never placeable and
+the sleeve's measured expectancy is optimistic by exactly that gap. FALSIFIER: `trade_stops_level`
+is 0 across the whole registry, in which case the assumption was right and the field costs nothing
+to keep recording. ARRIVAL: **the first full day of tape** — this one is answerable immediately.
+
+**BLOCKED ON THE SAME THING, AND SAYING SO:** all three need the recorder scheduled, which needs one
+command on the Windows terminal box (`install_contract_terms_task.ps1`, paged in
+`data/PRINCIPAL_ACTION.md`). Until it runs the axis accrues nothing and `max_audit`'s
+`mt5-contract-terms` check fires every morning after a missed trading day rather than letting the
+silence read as green.
