@@ -20313,7 +20313,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20324,7 +20324,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "NZDCAD"
-  }
+  },
+  "canonical_cell": "NZDCAD.discovered.p=3907155cd80fa369",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-becc79",
@@ -20342,7 +20346,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20353,7 +20357,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "AUDCAD"
-  }
+  },
+  "canonical_cell": "AUDCAD.discovered.p=3907155cd80fa369",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-092a9e",
@@ -20371,7 +20379,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20382,7 +20390,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "GBPAUD"
-  }
+  },
+  "canonical_cell": "GBPAUD.discovered.p=7092fe9e6aa75a95",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-849b1d",
@@ -20400,7 +20412,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20411,7 +20423,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "AUDNZD"
-  }
+  },
+  "canonical_cell": "AUDNZD.discovered.p=cc317030055c6a06",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-283166",
@@ -20429,7 +20445,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20440,7 +20456,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "AUDCAD"
-  }
+  },
+  "canonical_cell": "AUDCAD.discovered.p=c243c72090b7c02a",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-0715a8",
@@ -20458,7 +20478,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20469,7 +20489,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "NZDUSD"
-  }
+  },
+  "canonical_cell": "NZDUSD.discovered.p=3907155cd80fa369",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-7ce703",
@@ -20487,7 +20511,7 @@
    "side": -1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20498,7 +20522,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "CHFJPY"
-  }
+  },
+  "canonical_cell": "CHFJPY.discovered.p=62a0ad65e8b7e315",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-372693",
@@ -20516,7 +20544,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T11:50:01.574906+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20527,7 +20555,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "CADCHF"
-  }
+  },
+  "canonical_cell": "CADCHF.discovered.p=c243c72090b7c02a",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-6ff0f8",
@@ -20545,7 +20577,7 @@
    "side": -1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20556,7 +20588,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "NZDCAD"
-  }
+  },
+  "canonical_cell": "NZDCAD.discovered.p=1bfe13b1dda2c0b1",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-d84319",
@@ -20574,7 +20610,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20585,7 +20621,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "USDCHF"
-  }
+  },
+  "canonical_cell": "USDCHF.discovered.p=3d2fa60cd2dd760c",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-e50c26",
@@ -20603,7 +20643,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20614,7 +20654,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "AUDCAD"
-  }
+  },
+  "canonical_cell": "AUDCAD.discovered.p=e2538527e059e127",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-22b245",
@@ -20632,7 +20676,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20643,7 +20687,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "CADCHF"
-  }
+  },
+  "canonical_cell": "CADCHF.discovered.p=157c5dbd03d25b74",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-887cad",
@@ -20661,7 +20709,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20672,7 +20720,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "CHFJPY"
-  }
+  },
+  "canonical_cell": "CHFJPY.discovered.p=1d74c43d77782074",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-a8ac63",
@@ -20690,7 +20742,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20701,7 +20753,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "CADCHF"
-  }
+  },
+  "canonical_cell": "CADCHF.discovered.p=2a89261b8233638e",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-04f205",
@@ -20719,7 +20775,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20730,7 +20786,11 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "GBPAUD"
-  }
+  },
+  "canonical_cell": "GBPAUD.discovered.p=d0a0180df2b5a8b4",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  },
  {
   "id": "ext-20260829-ca14d9",
@@ -20748,7 +20808,7 @@
    "side": 1
   },
   "created_at": "2026-08-29T12:50:01.578900+00:00",
-  "status": "QUEUED_CANONICAL_GAUNTLET",
+  "status": "GAUNTLET_REJECTED",
   "route": "external_gauntlet",
   "promotion_authority": false,
   "external_screen": {
@@ -20759,6 +20819,274 @@
    "max_dd_r": null,
    "win_rate": null,
    "symbol": "NZDCAD"
-  }
+  },
+  "canonical_cell": "NZDCAD.discovered.p=e2538527e059e127",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-73b623",
+  "geneology_id": "external:edge_search:x_hour__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CADCHF discovered params={'feature': 'x_hour__tick_volume', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=1782 exp=0.19508073005363227R t=8.235087576132752 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_hour__tick_volume",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1782,
+   "exp_r": 0.19508073005363227,
+   "t_stat": 8.235087576132752,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CADCHF"
+  },
+  "canonical_cell": "CADCHF.discovered.p=1bfa000ea33a025f",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-02df55",
+  "geneology_id": "external:edge_search:x_spread__sign_entropy_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: CHFJPY discovered params={'feature': 'x_spread__sign_entropy_3', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=412 exp=0.39989296516141576R t=8.116940682132817 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_spread__sign_entropy_3",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 412,
+   "exp_r": 0.39989296516141576,
+   "t_stat": 8.116940682132817,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "CHFJPY"
+  },
+  "canonical_cell": "CHFJPY.discovered.p=6d685ae904364dc3",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-0c0b8e",
+  "geneology_id": "external:edge_search:x_hour__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPAUD discovered params={'feature': 'x_hour__tick_volume', 'band': [0.9, 1.0], 'horizon': 1, 'side': 1} screened at n=2491 exp=0.16174645630961076R t=8.072752509313883 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_hour__tick_volume",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2491,
+   "exp_r": 0.16174645630961076,
+   "t_stat": 8.072752509313883,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPAUD"
+  },
+  "canonical_cell": "GBPAUD.discovered.p=1bfa000ea33a025f",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-45315d",
+  "geneology_id": "external:edge_search:x_spread__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF discovered params={'feature': 'x_spread__tick_volume', 'band': [0.9, 1.0], 'horizon': 1, 'side': -1} screened at n=1760 exp=0.19240520016928536R t=8.071851054859826 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_spread__tick_volume",
+   "band": [
+    0.9,
+    1.0
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1760,
+   "exp_r": 0.19240520016928536,
+   "t_stat": 8.071851054859826,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDCHF"
+  },
+  "canonical_cell": "USDCHF.discovered.p=62a0ad65e8b7e315",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-564f21",
+  "geneology_id": "external:edge_search:x_spread__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF discovered params={'feature': 'x_spread__tick_volume', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=1766 exp=0.19193175773972115R t=8.065702334261923 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_spread__tick_volume",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1766,
+   "exp_r": 0.19193175773972115,
+   "t_stat": 8.065702334261923,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDCHF"
+  },
+  "canonical_cell": "USDCHF.discovered.p=c355e1d512daa2a7",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-e25331",
+  "geneology_id": "external:edge_search:x_spread__path_efficiency_3",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: USDCHF discovered params={'feature': 'x_spread__path_efficiency_3', 'band': [0.0, 0.1], 'horizon': 1, 'side': 1} screened at n=955 exp=0.25209179242399404R t=7.790411386839767 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_spread__path_efficiency_3",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": 1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 955,
+   "exp_r": 0.25209179242399404,
+   "t_stat": 7.790411386839767,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "USDCHF"
+  },
+  "canonical_cell": "USDCHF.discovered.p=c243c72090b7c02a",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-728fff",
+  "geneology_id": "external:edge_search:x_hour__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: AUDCAD discovered params={'feature': 'x_hour__tick_volume', 'band': [0.0, 0.1], 'horizon': 1, 'side': -1} screened at n=1779 exp=0.180902124359133R t=7.630124790933265 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_hour__tick_volume",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 1779,
+   "exp_r": 0.180902124359133,
+   "t_stat": 7.630124790933265,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "AUDCAD"
+  },
+  "canonical_cell": "AUDCAD.discovered.p=1bfe13b1dda2c0b1",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
+ },
+ {
+  "id": "ext-20260829-231b3e",
+  "geneology_id": "external:edge_search:x_hour__tick_volume",
+  "hypothesis": "EXTERNAL STAGE-A SURVIVOR promoted to the canonical gauntlet: GBPAUD discovered params={'feature': 'x_hour__tick_volume', 'band': [0.0, 0.1], 'horizon': 1, 'side': -1} screened at n=2459 exp=0.15319080483022432R t=7.596472364279614 pf=None maxDD=NoneR by the external backtest chain. Screen authority is ZERO (two-stage law); this card exists so the exact ten-gate gauntlet and forward clock judge it like every other candidate.",
+  "family": "discovered",
+  "side": "BOTH",
+  "params": {
+   "feature": "x_hour__tick_volume",
+   "band": [
+    0.0,
+    0.1
+   ],
+   "horizon": 1,
+   "side": -1
+  },
+  "created_at": "2026-08-29T13:50:03.732144+00:00",
+  "status": "GAUNTLET_REJECTED",
+  "route": "external_gauntlet",
+  "promotion_authority": false,
+  "external_screen": {
+   "n": 2459,
+   "exp_r": 0.15319080483022432,
+   "t_stat": 7.596472364279614,
+   "profit_factor": null,
+   "max_dd_r": null,
+   "win_rate": null,
+   "symbol": "GBPAUD"
+  },
+  "canonical_cell": "GBPAUD.discovered.p=1bfe13b1dda2c0b1",
+  "reconciled_at": "2026-08-29T14:01:20.151676+00:00",
+  "canonical_verdict": "REJECTED",
+  "canonical_report": "desks/mt5/reports/universal_gates_external.json"
  }
 ]
