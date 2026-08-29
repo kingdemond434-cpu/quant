@@ -305,9 +305,14 @@ ALLOWLIST: dict[str, str] = {
                                     "USDCHF, USDCAD' -- explicitly MT5 ground",
     "scripts/compute_performance.py": "live rc=0 'wrote web/data.json candidates=308', top by "
                                       "Sharpe USDJPY:mean_reversion:vwap_reversion -- MT5",
-    "scripts/report_gate_audit.py": "repaired this cycle (it crashed with a raw FileNotFoundError "
-                                    "whenever its producer had not run); now rc=2 with one line "
-                                    "naming measure_admission_power as the only producer",
+    "scripts/measure_admission_power.py": "weekly (Mon 07:30), and the single most "
+                                         "decision-relevant number produced this cycle. Run to "
+                                         "completion 2026-08-29 after nine days dead: "
+                                         "false-admission rate 37.1% on 420 pure nulls -> 155.8 "
+                                         "admissible nulls per campaign against 12 forward "
+                                         "slots. SATURATED -- the forward stage is occupied by "
+                                         "noise and the discovery rate is ~zero however good the "
+                                         "candidates are. 41min at nice 19, 350MB peak, weekly",
     "scripts/check_margin_topology.py": "live rc=2 -- margin construction inherited from connector "
                                         "order and never chosen. Margin is an MT5 money-path "
                                         "quantity and no other fence asks this",
