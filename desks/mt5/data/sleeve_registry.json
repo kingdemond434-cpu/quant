@@ -693,9 +693,184 @@
     "contract_oz": 100000.0,
     "quote_per_account": 10.86507
    }
+  },
+  "EURNOK.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "EURNOK",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "db9d80d95e76e7c6",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "f73d4808b9167c96e7f7"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:51+00:00",
+   "forward_start": "2026-08-29T13:34:35.776957+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 153.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 10.86507
+   }
+  },
+  "GBPCHF.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "025637a951760283d335"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:53+00:00",
+   "forward_start": "2026-08-29T13:34:35.776965+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "GBPMXN.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPMXN",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "c090060dc7d2ea75",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "35ef5b79e0621af8093e"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:54+00:00",
+   "forward_start": "2026-08-29T13:34:35.776973+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 298.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 19.7355
+   }
+  },
+  "GBPNOK.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPNOK",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "9702f55a3eba6a76",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "ad42b8ccd7432ecfccf2"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:54+00:00",
+   "forward_start": "2026-08-29T13:34:35.776979+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 274.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 10.86507
+   }
+  },
+  "GBPSEK.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPSEK",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "92593a8523870ec6",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "6243c4cf158ff434ab8b"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:55+00:00",
+   "forward_start": "2026-08-29T13:34:35.776987+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 222.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 11.1296
+   }
+  },
+  "GBPZAR.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "GBPZAR",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "bf57f04669f06c5a",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "6b2d4c24ea1c028f8460"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:55+00:00",
+   "forward_start": "2026-08-29T13:34:35.776994+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 376.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 18.7414
+   }
+  },
+  "USDMXN.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "USDMXN",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "71ba75046690c68f",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "3434393cdb805386cde6"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:37:56+00:00",
+   "forward_start": "2026-08-29T13:34:35.777001+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 172.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 19.7355
+   }
   }
  },
- "updated_at": "2026-08-29T14:15:17+00:00",
+ "updated_at": "2026-08-29T14:37:56+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",

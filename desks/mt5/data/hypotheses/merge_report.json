@@ -1,9 +1,9 @@
 {
- "merged_at": "2026-08-29T13:39:20+00:00",
- "pipeline_started_at": "2026-08-29T12:45:34+00:00",
+ "merged_at": "2026-08-29T14:57:57+00:00",
+ "pipeline_started_at": "2026-08-29T14:05:01+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
-  "miner_candidates.json": 206,
+  "miner_candidates.json": 183,
   "edge_search_results.json": -2,
   "orthogonal_candidates.json": -2,
   "coverage_search_results.json": 0,
