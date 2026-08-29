@@ -5345,3 +5345,31 @@ Both halves route to the same one-line patch surface: the nine-field block in
 `contract_terms_row`, which is **already written, already correct in shape, and inert until the
 Windows task is registered** (GAP #210, principal-gated, `data/PRINCIPAL_ACTION.md`). Every field
 in §3 is a one-line addition to a block that has not yet run — the cheapest moment in its life.
+
+---
+
+## s28 (2026-08-29) — TWO PROCESS IMPORTS FROM THE ALTERNATIVE-IMPLEMENTATION LAYER
+
+**1. TYPE-CHECK EXPRESSIONS BEFORE EVALUATING THEM** (from `AshSwing/FastPlus`, MIT, TEXT only).
+The operator set is a typed algebra (Matrix / Vector / Group / constants) with a hard rule that a
+signal must be Matrix-compatible — full census in
+`data/brain_hunter_s28_operator_typespec.json`, detail in
+`docs/research/search_operator_library.md`. The desk's generator has no type discipline, so a
+malformed expression is discovered by EVALUATING it. A parse-time check costs microseconds and
+saves two things the desk pays for: compute, and **trial count** — a candidate that could never
+have been well-formed should never have entered the multiplicity denominator. Concrete step:
+give each operator in the desk's library a declared `(arg_types) -> return_type` and reject at
+construction. Cheap, mechanical, and it makes an illegal cell unrepresentable rather than
+merely unprofitable.
+
+**2. `keep_for_learning` AS A DISPOSITION** (from `i9880612/alpha-garden`, MIT). Its screen has
+four outcomes — `discard`, `keep_for_learning`, `submit_queue`, `auto_submit` — and the second
+is the one the desk lacks a name for: a candidate that fails the bar but still updates
+field/operator weights for the next generation. The desk's graveyard already holds the material
+(L1.17: every failure preserved as structured knowledge) but **nothing reads it back into
+generation** — the loop from graveyard to generator prior is open. This is not a bar change and
+must not become one: the disposition is about what a REJECTED candidate teaches, never about
+letting it through. Route: a generator prior that consumes `docs/graveyard.md` outcomes.
+
+**NOT IMPORTED:** neither repo's thresholds, Sharpe/fitness bands or auto-submit path. Those are
+an in-sample submission filter for an operator that runs its own OOS afterwards (L1.6).

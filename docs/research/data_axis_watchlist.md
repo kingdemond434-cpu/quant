@@ -10066,3 +10066,40 @@ content rising monotonically to k≈128; **k=96 reaches |corr| 0.477 on 214 symb
 `data/mt5_grouping_map.json` (point-in-time, year Y from Y−1). No data gap — this axis needs no
 new source, only a consumer. Status: **built, wired to nothing** (III.16) until a cross-sectional
 cell runs on it.
+
+---
+
+## VECTOR FIELDS — per-(date, symbol) MULTI-VALUED DATA (BRAIN HUNTER s28, 2026-08-29)
+
+**How it was found:** parsing the FastPlus operator registry
+(`data/brain_hunter_s28_operator_typespec.json`, 108 operators, MIT source mined as TEXT) turned
+up **8 operators of signature `(Vector)->Matrix`** — `vec_avg`, `vec_count`, `vec_norm`,
+`vec_range`, `vec_stddev`, and siblings. They have NO MT5 analogue and that is the finding: an
+operator with no analogue names data the desk lacks, which is the information-frontier axis.
+
+**What a Vector is:** a field carrying MANY values for one symbol on one day, reduced to a Matrix
+by an explicit reducer. On the source platform that is e.g. every analyst estimate for one name.
+The desk's whole feature layer is `(date, symbol) -> one number`; it has no type for this at all,
+so it has never asked what its multi-valued fields would be.
+
+**MT5 candidates the desk could actually own (all point-in-time, all from ground it already
+touches):**
+- **every tick inside the bar** — the desk records its own MT5 tape (self-footprint moat). A bar
+  is currently 4 numbers; it is really a vector of ticks. `vec_stddev`/`vec_range` over intra-bar
+  ticks is a microstructure feature no aggregator sells.
+- **the depth ladder** at each snapshot — a vector of (price, size) per side.
+- **every calendar event for a currency on one day** — the macro-calendar family (RESEARCH §2
+  h19-003) is naturally multi-valued and is currently collapsed to a flag or a count. `vec_count`
+  IS "how many events"; `vec_range` is "how dispersed the surprises were".
+- **every fill the desk got on one symbol on one day** — execution-quality vector, owned data,
+  currently averaged before it is looked at.
+
+**Why this ranks:** it is not a purchase and not a scrape. Three of the four candidates are data
+the desk ALREADY HAS and throws away by reducing it at ingest. That is the sealed core's
+under-exploration breach in its purest form — edge already paid for and declined — and the fix is
+a retention decision, not an acquisition.
+
+**Next step (not taken here, research freeze):** name one vector field and one reducer, and
+measure whether the reduced feature adds anything over the scalar it replaced. Intra-bar tick
+dispersion vs bar range is the cheapest first test — same tape, no new source, and the scalar
+control is already computed.

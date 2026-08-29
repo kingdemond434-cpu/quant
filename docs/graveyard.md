@@ -2309,3 +2309,77 @@ were voided UNMEASURED by a property of the guard.
 the FULL universe rather than on their own retained subset — e.g. a peer assignment that gives
 singletons a nearest-cluster fallback instead of dropping them. Until then, k>24 must not be
 preferred on the s25/s26 evidence.
+
+---
+
+## ALPHA101 AS A BODY OF IMPORTABLE ALPHAS — KILLED BY AN INDEPENDENT AUDIT (BRAIN HUNTER s28, 2026-08-29)
+
+**Claim:** the 101 Formulaic Alphas are a ready stock of alpha the desk should translate to MT5.
+Four sessions (s10, s12, s13, s14) went into recovering the formulas correctly — a transpiled
+public implementation was found to invert corr/cov at 47/47 sites (s12), a PDF extractor returned
+clean text from 1 of 22 pages (s13), and the field/glyph layer was repaired (s14). The implicit
+premise throughout was that a CORRECT alpha101 is worth having.
+
+**Mechanism of death:** an independent, audited, out-of-time replication —
+`OctopusTakopi/toraniko-alpha101` (MIT), S&P Composite 1500, 2023-01-03 → 2026-07-16, signals at
+*t* applied to *t+1*, quintile long/short, formula-mandated GICS neutralisations checked against
+an explicit manifest — reports, against the paper's own numbers:
+
+| statistic | audit (2023–2026) | paper |
+|---|---:|---:|
+| max Sharpe | 2.120 | 4.162 |
+| median Sharpe | 0.518 | 2.224 |
+| mean Sharpe | 0.411 | 2.265 |
+| positive-Sharpe alphas | **74/101** | 101/101 |
+
+**Median Sharpe falls by 4.3x and 27 of 101 alphas are outright negative** on a modern
+cross-section, BEFORE costs and WITH survivorship bias helping the replication (current
+constituents only). This is not a coding dispute — it is the same formulas, audited, on later
+data.
+
+**AND THE SURVIVORS DIE TO COSTS AT MT5 SPREADS.** Break-even round-trip cost per unit of gross
+turnover, computed from the audit's own annual-return and turnover columns (mean daily return in
+bp ÷ daily turnover):
+
+| alpha | Sharpe | bp/day | daily turnover | break-even cost |
+|---|---:|---:|---:|---:|
+| alpha021 | 2.120 | 2.54 | 39.9% | **6.4 bp** |
+| alpha043 | 1.512 | 2.53 | 54.5% | 4.7 bp |
+| alpha011 | 1.339 | 1.89 | 56.7% | 3.3 bp |
+| alpha096 | 1.153 | 0.74 | 34.3% | 2.2 bp |
+| alpha054 | 1.082 | 1.98 | 79.3% | **2.5 bp** |
+
+The whole distribution lives inside **2–13 bp of round-trip cost**. That is survivable on US
+equities and is NOT survivable across an MT5 book whose non-major legs cost multiples of it — and
+the desk's own spread census (R0728, s24b) shows `universe.json` UNDERSTATES spreads, so the true
+margin is thinner than any number here. A cross-sectional daily alpha earning ~2.5 bp/day at 40%
+turnover has no room for a CFD book's costs.
+
+**Supporting refutation from the same audit:** mean/median pairwise alpha-RETURN correlation is
+0.1942 / 0.1711 across 5,050 pairs. So the 101 are ~correlated as the paper claimed — the body is
+not 101 independent bets, and importing many of them buys far less independence than the count
+suggests. (This is a RETURN correlation on an equity cross-section and is NOT the same quantity as
+s14's 87.33% max pairwise SIGNAL correlation measured on desk tape; the two are not in conflict
+and must not be quoted as one number.)
+
+**Also refuted, incidentally:** adding `log(Turnover)` to `log(Return) ~ log(Volatility)` gives a
+coefficient of −0.016 at t = −0.072 — turnover explains nothing once volatility is in. Any
+argument that a turnover penalty is picking up a return-relevant quantity, rather than a COST
+quantity, is unsupported on this evidence. The fitness formula's churn penalty stays a cost
+argument, which is the only footing it ever had (`wq_operators.fitness()`, diagnostic only).
+
+**WHAT SURVIVES AND IS NOT KILLED HERE:** the alpha101 *vocabulary* — the operators, the
+transformation grammar, the neutralisation idea, the construction methodology. That is exactly
+what BRAIN HUNTER exists to extract, and s28's type-algebra find
+(`docs/research/search_operator_library.md`) is worth more than any formula in the paper. The
+FORMULAS as deployable alphas are dead; the METHOD is not.
+
+**Reopen condition (L1.16a):** a named enabling change to the cost side — an execution venue or
+instrument set where a 2–13 bp break-even is comfortable — or an audited replication on a
+cross-section resembling the MT5 book rather than US equities. Neither exists today.
+
+**Provenance:** SOURCE `OctopusTakopi/toraniko-alpha101` README + `reports/full_market/
+alpha101_analysis.md` (public, MIT, raw.githubusercontent, mined as TEXT). DERIVES-FROM: the desk's
+own s10/s12/s13/s14 alpha101 line. Claimed-not-verified: the audit's Sharpes are ORE — they are
+another desk's numbers on another universe. They are used here only to KILL an import, never to
+justify one, which is the direction in which unverified ore is admissible.

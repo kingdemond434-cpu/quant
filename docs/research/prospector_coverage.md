@@ -12897,3 +12897,97 @@ Video: 0 fetched, 0 locked (no video ground touched). §13: no external fetch; e
    never vendor), `i9880612/alpha-garden` (MIT, operator/field compatibility matrix).
 4. **The BRAIN-scoped collector arm — TWENTY sessions old.** Belongs to a seat that is not
    research-frozen.
+
+---
+
+## BRAIN HUNTER s28 — 2026-08-29 — THE CONVERSION SIX SESSIONS OWED, AND IT DID NOT SAY WHAT THEY ASSUMED
+
+**The owed work, done.** s11 built `data/mt5_grouping_map.json`; s24–s27 argued about which arm
+to use and finally settled it on a held population (ward k24). `grep -rl mt5_grouping_map libs
+desks scripts` returned only the operator definitions and a bar builder — **no hypothesis had
+ever consumed any arm.** Six sessions of evidence about a RULER, none about a signal. s28 ran the
+cells: `data/brain_hunter_s28_group_cells.py` → `..._group_cells.json`. 6 features × 4
+neutralisers + 8 exact size-matched control draws each = **72 trials, every one reported.**
+
+**THE VERDICT, and it is not the one the ruler predicted.** Against the exact size-matched
+control (s27's ordering: restrict members first, permute second), ward k24 differs at **|z| ≥ 4.3
+in 6 of 6 features** — the PIT cluster labels carry real information a shuffle does not. **But
+the sign is feature-dependent:**
+
+| feature | universe | ward k24 | control (8 draws) | z | ward |
+|---|---:|---:|---:|---:|---|
+| reversal_1 | 0.510 | **0.759** | 0.504 ± 0.043 | **+5.93** | helps |
+| lowvol_20 | 0.112 | 0.301 | 0.115 ± 0.027 | +6.89 | helps |
+| accel | −0.210 | 0.079 | −0.100 ± 0.040 | +4.47 | helps |
+| mom_5 | −0.020 | −0.194 | −0.003 ± 0.044 | −4.34 | **hurts** |
+| mom_20 | 0.235 | −0.008 | 0.166 ± 0.038 | −4.58 | **hurts** |
+| mom_60 | −0.093 | −0.277 | −0.058 ± 0.028 | −7.82 | **hurts** |
+
+**"Use `group_rank` instead of `rank`" is REFUTED as a blanket rule.** The ruler measured that
+group-relative rank is DIFFERENT from universe-wide rank; it could never measure whether the
+difference is worth having, and on half the features it is worth having negatively. The
+neutraliser is a per-feature choice, and the peer-group operators the desk was about to build out
+would have carried a −4 to −8 z penalty on the momentum family had they been applied uniformly.
+Every one of the three that helps is a REVERSAL-or-dispersion feature and every one that hurts is
+a TREND feature: neutralising a trend against its own correlation cluster removes the shared move
+that IS the trend. That is a mechanism, and it is testable.
+
+**NO CELL IS A SURVIVOR AND NONE IS CLAIMED.** Best cell is `reversal_1|ward_k24` at gross
+t = 2.33 over 2,380 days, break-even **1.60 bp per unit of turnover at 147% daily turnover**. It
+dies to any realistic MT5 cost, and 24 cells were tried. No bar was applied here (L1.60): this is
+a screen that sorts and reports; the ten gates decide.
+
+**THE DEFECT THE RUN CAUGHT IN ITSELF — fourth turn of the same screw.** The first pass
+(`data/brain_hunter_s28_group_cells_VOID_calendar_bug.json`, kept as evidence) reported clean
+numbers for all six features. `mean_names` printed beside every score showed the cross-section
+collapsing from 140.6 to ~12.7 the moment any rolling window was involved: a naive
+`panel.rolling(w)` needs w CONSECUTIVE non-NaN rows in the SHARED calendar, and the panel index is
+the union of every symbol's days — so one weekend, one holiday, one symbol on a different calendar
+annihilates the window for everyone. **89% of the cross-section lost silently, with no error and
+no NaN in the output.** The fix rolls each symbol over its own valid observations and reindexes.
+The habit that caught it is the one s25/s26/s27 paid for: **print `n` beside every number.**
+
+**Alternative-implementation layer — the untouched node, opened.** `AshSwing/FastPlus`
+(MIT, `src/operator.rs`, mined as TEXT, nothing installed): **all 108 Expert-scope operators with
+their TYPE ALGEBRA** — Matrix/Vector/Group/constants, 14 signature classes, signal must be
+Matrix-compatible. Full census `data/brain_hunter_s28_operator_typespec.json`; routed to
+`docs/research/search_operator_library.md`. Two consequences: **the grouping map feeds 14
+group-consuming operators and the desk built 2** (`group_rank`, `group_zscore`; `group_neutralize`
+and 11 others ABSENT), and **29 operators are not named in the desk catalogue at all**
+(`ts_ir`, `ts_max_diff`, `ts_vector_proj/neut`, `pasteurize`, `clamp`, `ts_target_tvr_hump`, …).
+The 8 `(Vector)->Matrix` operators have no MT5 analogue and named a data axis →
+`docs/research/data_axis_watchlist.md`.
+
+**`OctopusTakopi/toraniko-alpha101` (MIT) — alpha101 as an importable body of alphas is DEAD.**
+An independent audited replication, 2023–2026 S&P 1500: median Sharpe **0.518 vs the paper's
+2.224**, **74/101 positive vs 101/101**, and break-even costs of **2–13 bp per unit turnover** on
+the survivors — unsurvivable across an MT5 book. Ledgered in `docs/graveyard.md` with the
+computation. Four sessions (s10/s12/s13/s14) recovering these formulas correctly retain their
+value as OPERATOR and METHOD extraction; the formulas themselves are retired.
+
+**Artifacts exhausted this session (do not re-surface-scan):** `AshSwing/FastPlus` `src/operator.rs`
+(fully parsed, 108/108); `OctopusTakopi/toraniko-alpha101` README + `reports/full_market/
+alpha101_analysis.md`. **Surface-scanned only:** `i9880612/alpha-garden` README (one import taken:
+`keep_for_learning` as a disposition → `improvement_inbox.md`).
+
+Video: 0 fetched, 0 locked (no video ground touched). §13: three public MIT repos read via
+raw.githubusercontent as TEXT; nothing installed, executed or vendored; no login, no wall touched.
+
+### NEXT UN-EXHAUSTED GROUND (for s29, in order)
+
+1. **The per-feature neutraliser rule is a MECHANISM CLAIM and it is testable now.** "Cluster
+   neutralisation helps dispersion/reversal features and hurts trend features" was read off 6
+   cells. Test it on features chosen to split the axis cleanly, with the same exact control. If it
+   holds, the desk gains a RULE for when to group — worth far more than any single cell.
+2. **`group_neutralize` — the highest-value absent operator.** 12 of 14 group-consuming operators
+   are unbuilt; `group_neutralize` is the one the whole sector-neutralisation methodology rests on
+   and its MT5 analogue (residualise a leg against its asset-class / currency / PIT-cluster mean)
+   is exactly the cross-asset conditioning RESEARCH §2 h19-004 asks for. Not buildable under this
+   seat's freeze — route to a seat that can write `libs/`.
+3. **`ts_vector_proj` / `ts_vector_neut`** — rolling projection and residual, i.e. beta-hedging as
+   an OPERATOR. No data gap, no grouping needed, immediately implementable on desk tape.
+4. **`efJerryYang/worldquant-brain-simulator` (GPL-3.0) — still uncensused.** Mine as TEXT only,
+   never vendor. The brief's own argument: a simulator exposes the semantics documentation elides
+   (how decay interacts with turnover, what neutralisation subtracts, where delay is applied).
+5. **The BRAIN-scoped collector arm — now TWENTY-ONE sessions old.** Belongs to a seat that is not
+   research-frozen.

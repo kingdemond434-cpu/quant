@@ -4161,3 +4161,73 @@ to every PDF ground the desk mines: central-bank annexes, exchange contract spec
 filings, theses and conference decks, which are disproportionately the ones with subset math fonts.
 
 **DATA THE DESK LACKS:** nothing. Pure stdlib, no install, works under the research freeze.
+
+---
+
+## BRAIN HUNTER s28 (2026-08-29) — THE OPERATOR SET HAS A TYPE ALGEBRA, AND THE DESK NEVER HAD IT
+
+**Source:** `AshSwing/FastPlus` `src/operator.rs` (MIT, public, branch `dev`) — a Rust/PyO3
+reimplementation of WorldQuant's Fast Expression Language. Mined as TEXT; nothing installed or
+executed (supply-chain rule). Full parsed census: `data/brain_hunter_s28_operator_typespec.json`
+(**108 operators parsed, exactly the count the README claims** — so the registry is complete for
+Expert scope, not a sample).
+
+**THE FIND IS NOT THE OPERATOR NAMES. IT IS THE TYPES.** The desk's catalogue records operators
+as names and prose. The reimplementation had to encode what the docs assume, and it is a typed
+algebra over four kinds — `Matrix` (date × symbol panel), `Vector`, `Group` (a labelling),
+and constants (`PositiveInt`/`Int`/`Boolean`/`Number`) — with a hard rule: **a signal must be
+Matrix-compatible.** 108 operators collapse to **14 signature classes**:
+
+| n | signature | reading |
+|--:|---|---|
+| 34 | `(Matrix)->Matrix` | unary transforms |
+| 25 | `(Matrix,PositiveInt)->Matrix` | the time-series family — window is a TYPE, not a number |
+| 16 | `(Matrix,Matrix)->Matrix` | binary combiners |
+| 9 | `(Matrix,Group)->Matrix` | **the peer-group family** |
+| 8 | `(Vector)->Matrix` | vector-field reducers (no MT5 analogue, see below) |
+| 6 | `(Matrix,Matrix,PositiveInt)->Matrix` | pairwise time-series |
+| 2 | `(Matrix,Matrix,Group)->Matrix` | per-group neutralisation |
+| 1 each | `(Group)->Group`, `(Matrix)->Group`, `(Int)->Matrix`, … | grouping constructors |
+
+**WHY A TYPE ALGEBRA IS WORTH MORE THAN AN OPERATOR:** the desk's generator has no type
+discipline, so it can emit expressions that are not bad alphas but MALFORMED, and it only finds
+out by evaluating them. A parse-time type check kills those before they consume an evaluation
+AND before they enter the trial count — which is the thing the desk actually pays for twice
+(compute, and multiplicity). `vec_avg(rank(x))` is rejected statically because `rank` returns
+Matrix and `vec_avg` demands Vector; `bucket(...)` returning Group can never be a signal.
+
+**THE GROUPING MAP UNLOCKS FOURTEEN OPERATORS AND THE DESK BUILT TWO.** Group-consuming
+operators in the registry: `densify`, `group_backfill`, `group_cartesian_product`, `group_count`,
+`group_max`, `group_mean`, `group_min`, `group_neutralize`, `group_rank`, `group_scale`,
+`group_std_dev`, `group_sum`, `group_vector_neut`, `group_zscore`. **`grep -rl "def <op>" libs/`
+finds exactly two: `group_rank` and `group_zscore` (`libs/research/operators.py`). The other
+twelve are ABSENT.** Six sessions were spent choosing which grouping arm to use; the arm now
+feeds 2/14 of the operators it exists to serve. `group_neutralize` is the most consequential
+absence — it is the operator the entire sector-neutralisation methodology is built on, and its
+MT5 analogue (neutralise within asset-class / currency bucket / PIT correlation cluster) is
+exactly the transform `docs/LAWS.md`-mandated cross-asset conditioning wants.
+
+**29 OPERATORS THE DESK'S CATALOGUE DOES NOT NAME AT ALL** (full list + descriptions in the
+artifact). The ones with an immediate MT5 analogue and no data gap:
+- `ts_ir(x,d)` = `ts_mean/ts_std_dev` — a rolling information ratio as a FEATURE, not a metric.
+- `ts_max_diff(x,d)` = `x - ts_max(x,d)` — distance-below-rolling-high; the drawdown-state
+  feature the desk computes ad hoc in several places and has never had as an operator.
+- `ts_vector_proj(x,y,d)` / `ts_vector_neut(x,y,d)` — **time-series** projection and residual.
+  This is beta-hedging as an operator: neutralise a symbol's feature against a reference market
+  over a rolling window. Direct MT5 use — neutralise any FX leg against DXY/gold/index state.
+- `ts_co_skewness`, `ts_kurtosis`, `ts_triple_corr` — higher-moment and three-way dependence.
+- `clamp`, `purify`, `pasteurize`, `nan_mask`, `is_not_finite` — the HYGIENE layer. `pasteurize`
+  ("NaN if the instrument is not in the alpha universe") is the platform's own answer to the
+  point-in-time universe problem, and it is an OPERATOR there, not an afterthought.
+- `ts_target_tvr_hump` — tunes hump until turnover hits a TARGET. The platform treats turnover as
+  a controlled quantity with a solver, not a reported diagnostic.
+
+**NO MT5 ANALOGUE — the data-axis routing.** The 8 `(Vector)->Matrix` operators (`vec_count`,
+`vec_norm`, `vec_range`, `vec_stddev`, `vec_avg`, …) presuppose a **vector field**: multiple
+values per (date, symbol) — e.g. every analyst estimate for one name on one day. The MT5 book has
+no such field today. It names a real axis: per-(date,symbol) multi-valued data the desk could
+own — every tick in the bar, the full depth ladder, every calendar event for a currency that day.
+Routed to `docs/research/data_axis_watchlist.md`.
+
+**NOT IMPORTED (L1.6):** nothing about the platform's thresholds, fitness bar or submission
+filter is taken from this repo. The type algebra is a correctness property; it has no bar.
