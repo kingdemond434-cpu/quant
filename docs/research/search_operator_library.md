@@ -4231,3 +4231,126 @@ Routed to `docs/research/data_axis_watchlist.md`.
 
 **NOT IMPORTED (L1.6):** nothing about the platform's thresholds, fitness bar or submission
 filter is taken from this repo. The type algebra is a correctness property; it has no bar.
+
+---
+
+## BRAIN s29 — 2026-08-29 — `efJerryYang/worldquant-brain-simulator` (GPL-3.0), mined as TEXT
+
+s28's next-ground item 4. The brief's argument for opening a reimplementation is that *a
+simulator exposes the semantics documentation elides*. It does — and on this one the loudest
+semantics are the ones the simulator **advertises and then never applies**.
+
+**THE ONE SEMANTIC THE DESK ACTUALLY NEEDED — the post-processing ORDER.** `Simulator.post_processing`
+is the entire alpha→weights path and it is four lines, in this order:
+
+1. **neutralize** — `alpha = alpha - alpha.mean()` (cross-sectional demean)
+2. **truncate** — `alpha = alpha.clip(-boundary, +boundary)`, `boundary = settings["truncation"]`
+3. **normalize** — `alpha = alpha / alpha.abs().sum()` (gross book = 1)
+
+Neutralise → truncate → normalise. The desk's own cells (s28) do demean-then-gross-normalise with
+no truncation step at all, so the ordering is now pinned against an independent implementation.
+
+**BUT THE TRUNCATION IS SCALE-INHOMOGENEOUS AND THEREFORE MEANINGLESS AS WRITTEN.** The clip is
+applied to the RAW alpha value, BEFORE normalisation. Alpha units are arbitrary — a `rank()` alpha
+lives in [0,1], a raw-price alpha lives in the hundreds — so `truncation: 0.01` either clips
+nothing (rank alpha demeaned into [−0.5,0.5]… actually clips most of it) or clips everything,
+purely as a function of the expression's scale. On the platform truncation is a cap on the FINAL
+weight as a fraction of book, i.e. it must come AFTER normalisation, and it must be re-normalised
+afterwards or the book no longer sums to 1. **The MT5 lesson, and it is the s21 test again:
+`score(k·alpha)` must equal `score(alpha)`. Any desk-side truncation/hump/cap must be applied to
+normalised weights, and re-normalised, or it is a hidden function of expression scale.**
+
+**`rank(x, rate=2)` — the platform's default rank is APPROXIMATE.** The repo quotes the official
+description verbatim with its URL: rank returns floats equally distributed in [0,1], *"when rate
+is set to 0, the sorting is done precisely. The default value of rate is 2."* The desk's `rank`
+has no `rate` and is exact. **This matters for reading any published BRAIN result**: an alpha
+tuned under bucketed ranking is not the same alpha as one tuned under exact ranking, and the
+difference is largest exactly where the cross-section is thin — which is the MT5 book's normal
+state (s28 measured a mean cross-section of ~140 names, against the platform's Top3000). Logged as
+a FACT ABOUT THEIR PROCESS (L1.6); the desk imports no rate parameter and no bar.
+
+**DELAY IS STRUCTURAL, NOT A SETTING.** `process_day(prev_day, today)` computes the alpha from
+data up to and including `prev_day` and applies it to `today`'s returns. `delay: 1` is hardcoded
+by the loop's shape; `delay: 0` is unreachable. This is the same construction s28's cells use, so
+the desk's PIT convention is confirmed against an independent build.
+
+**THE UNIVERSE OPERATOR — worth stealing, and it is free.** `filter_by_universe(prev_day)` ranks
+by `cumulative_liq = rolling_90d_sum(log(volume × close))` and takes the top N **as of the
+previous day**, with an 89-row per-symbol burn-in dropped and any date carrying fewer than 200
+names dropped entirely. MT5 analogue exists today: `log(tick_volume × close)` summed over 90 days
+per symbol, ranked PIT. BRAIN s24 already killed liquidity tier as a *grouping*; this is a
+different use — a PIT UNIVERSE FILTER, not a peer group — and it is untested on the desk.
+
+### WHAT THE SIMULATOR PARSES AND THEN THROWS AWAY (four settings, zero readers)
+
+`settings.yaml` declares `neutralization`, `decay`, `pasteurization`, `nan-handling`. Greping the
+whole repo for their readers:
+
+| setting | read? | applied? |
+|---|---|---|
+| `neutralization: Market\|Sector\|Industry\|Subindustry\|None` | `by_what = settings.get(...)` assigned | **NEVER USED** — the next line demeans unconditionally |
+| `decay: 30` | never read | no (`decay_linear` exists in `expression.py` as an alpha101 primitive only) |
+| `pasteurization: True` | never read | no |
+| `nan-handling: False` | never read | no |
+| `unit-handling`, `instrument-type` | commented `# No usage` (honest) | no |
+
+**The consequence is a hard scope limit and it must be recorded before anyone cites this repo:
+this simulator cannot answer a neutralisation question.** Every setting from `None` to
+`Subindustry` produces byte-identical market-neutral output. Its `docs/*_platform.png`
+side-by-side comparisons against the real platform were therefore run with the platform
+neutralising by sector and the local build neutralising by market, whatever the yaml said. This
+is the parsed-but-unread-settings-key class (BRAIN s7): **a dead key is indistinguishable from a
+live one at the call site, and here it silently voids the one axis this desk came for.**
+
+### A SILENT WINDOW TRUNCATION — the s28 calendar bug's cousin, in someone else's code
+
+`process_day` hands the alpha function `s.df.query("... @start_day_dt <= date <= @prev_day_dt")`
+with `start_day_dt = prev_day − 60 CALENDAR days` — about **41 trading days**. Nothing checks it.
+Every alpha101 expression with a window past ~41 bars (and there are many: `ts_rank(…, 250)`,
+`correlation(…, 250)`, `sum(…, 220)`) returns NaN or a short-window value **with no error and no
+warning**, exactly like s28's union-calendar collapse. It is the same defect class for the third
+run in a row: *a window silently served fewer observations than it asked for, and the output
+looked clean.* The habit that catches it is unchanged — **print `n` beside every number**, where
+here `n` is the count of bars the window actually consumed.
+
+### PROVENANCE — and a correction to the desk's own s12 finding
+
+`expression.py` opens `# yli188's original work here: https://github.com/yli188/WorldQuant_alpha101_code`.
+BRAIN s12 proved yli188's `code_2` inverts `correlation`/`covariance` at 47/47 sites. **This
+descendant does NOT carry the inversion**: `correlation` returns `x.rolling(w).corr(y)` and
+`covariance` returns `x.rolling(w).cov(y)`, both correct. So a public corrected fork of the
+inverted file exists, and s12's finding is a property of yli188's file, never of the lineage.
+SOURCE: `efJerryYang/worldquant-brain-simulator` (GPL-3.0). DERIVES-FROM: yli188 (stated by the
+file itself). No third-party code was installed, executed or vendored — read as TEXT via
+`raw.githubusercontent.com`.
+
+**NOT IMPORTED (L1.6):** no threshold, no fitness bar, no booksize, no submission filter.
+`booksize = 20_000_000  # should not change` is a fact about their harness and nothing else.
+
+### BRAIN s29 (2026-08-29) — `rank(x, rate)` granularity, and the post-processing order
+
+Source: `efJerryYang/worldquant-brain-simulator` (GPL-3.0), `src/alpha_pool/expression.py:154`
+and `src/simulator/simulate.py:252-264`. Mined as TEXT; nothing installed or vendored.
+
+- **`rank(x, rate=2)`** — the platform's own description, quoted verbatim in that file: ranks x
+  among all instruments returning floats **equally distributed on [0.0, 1.0]**; `rate=0` sorts
+  precisely, and **the default is rate=2, i.e. deliberately imprecise**. MT5 analogue: bucketed
+  cross-sectional rank, `ceil(pct * B) / B`. **MEASURED AND REFUTED as a turnover lever**
+  (`data/brain_hunter_s29b_coarse_rank.json`): precise → 3 buckets moves daily turnover 1.467 →
+  1.452 on `reversal_1|ward_k24`, non-monotone, effect size indistinguishable from noise on all
+  three cells tried. Retained as a documented operator, **not** as a cost lever — the family's
+  turnover is set by the feature's autocorrelation, not by ranking granularity.
+- **Checked null, recorded so nobody re-derives it:** the platform's `(rank−1)/(n−1)` and the desk's
+  `rank(pct=True)` = `rank/n` are affine transforms of one another. Demeaning removes the offset and
+  gross-normalisation removes the scale, so the resulting weights are **identical**. No change owed.
+- **Post-processing ORDER: neutralise → truncate → normalise.** The desk's cells currently do
+  demean → gross-normalise with **no truncation stage**. Flagged as a **spec question, not a spec**:
+  this implementation clips in raw-alpha units *before* normalising, which is not the same as
+  bounding a normalised weight, and clip-then-renormalise is not idempotent. The author's own hidden
+  README TODO reads *"Truncation correctness (current not necessarily working)"*. A per-name weight
+  cap is worth testing on desk cells on its own merits (concentration control), but this source
+  cannot settle what the platform actually does.
+- **Do not read this simulator's `settings.yaml` as the platform's parameter list.**
+  `neutralization` is read into a variable that is never used (`simulate.py:257`) — all four modes
+  silently execute market neutralisation — and `decay`, `delay`, `pasteurization`, `nan-handling`
+  and `unit-handling` appear in no `settings.get` call at all. Six of twelve settings are inert.

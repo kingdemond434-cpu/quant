@@ -10103,3 +10103,39 @@ a retention decision, not an acquisition.
 measure whether the reduced feature adds anything over the scalar it replaced. Intra-bar tick
 dispersion vs bar range is the cheapest first test — same tape, no new source, and the scalar
 control is already computed.
+
+---
+
+## BRAIN s29 — 2026-08-29 — the volume axis the MT5 book half-owns (from the BRAIN simulator's universe filter)
+
+`efJerryYang/worldquant-brain-simulator` builds its PIT universe from `log(volume × close)`
+summed over 90 days, and derives `vwap = amount / volume` — i.e. it assumes a feed carrying
+**notional turnover (`amount`) alongside share volume**. The MT5 book has `tick_volume` (a COUNT
+of price updates) on every symbol and `real_volume` on almost none — Fusion CFDs are OTC, so
+there is no exchange turnover to report. Two consequences:
+
+- **Available today, untested:** a PIT liquidity rank from `log(tick_volume × close)`. It is a
+  proxy for activity, not for notional, and that distinction must be carried in its name.
+- **The named gap:** per-symbol notional turnover, and therefore a true daily VWAP. Free
+  reconstruction candidates, in order of cost: (a) the desk's own recorded tick tape → summed
+  |Δprice| × tick count is still not notional but is a strictly better activity measure than a
+  bar's tick count; (b) for symbols with a listed futures analogue (gold, indices, energy, FX
+  majors), CME/ICE public daily volume and settlement files carry real notional and are keyless;
+  (c) for share CFDs, the underlying's exchange volume. (b) is the highest-yield untried leg and
+  it also serves the futures-curve axis already on this list.
+
+Status: NEVER-HUNTED (no prior desk work on futures-volume→CFD-activity mapping found by
+`vault_search.py "futures volume CFD turnover"`). No licence obstacle identified yet; §13 grading
+happens at first fetch, not here.
+
+### 2026-08-29 — BRAIN s29: no new data gap, and that is the finding
+
+The simulator census produced **no new external data axis**. Its settings surface (`region`,
+`universe: Top3000`, `instrument-type: Equity`) is equity-venue-specific and does not name any feed
+the MT5 book lacks; its data source is a local SQLite snapshot of Snowball US equities, which the
+author himself records as containing errors (vwap mismatches). Logged as a **checked empty seam**
+(L1.25a) so no future session re-opens this repo hoping for a feed list.
+
+**The standing data gap from s28 is unchanged and is restated because it did not close:** the 8
+`(Vector) -> Matrix` operators in the FastPlus type algebra have no MT5 analogue, and the desk's
+`mt5_grouping_map` still feeds only 2 of 14 group-consuming operators. Nothing in s29 touched either.

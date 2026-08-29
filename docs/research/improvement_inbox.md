@@ -5373,3 +5373,63 @@ letting it through. Route: a generator prior that consumes `docs/graveyard.md` o
 
 **NOT IMPORTED:** neither repo's thresholds, Sharpe/fitness bands or auto-submit path. Those are
 an in-sample submission filter for an operator that runs its own OOS afterwards (L1.6).
+
+---
+
+## BRAIN s29 — 2026-08-29 — three method imports from `efJerryYang/worldquant-brain-simulator` (GPL-3.0, mined as TEXT)
+
+**1. TRUNCATION MUST BE APPLIED TO NORMALISED WEIGHTS — and the desk has no truncation at all.**
+The repo clips raw alpha before normalising, which makes the cap a function of expression scale
+(the BRAIN s21 scale-homogeneity defect, third sighting). The correct order is
+demean → normalise → clip → **re-normalise**. The import is not their bug, it is the missing step:
+the desk's cross-sectional cells have NO per-name weight cap, so a thin MT5 cross-section
+(s28: ~140 names, and far fewer inside a ward-k24 peer group) can concentrate the book on one
+symbol with no ceiling. This is a CONCENTRATION control on a live-money path, it is cheap, and
+its falsifier is direct: re-run the s28 cells with a 1%/2%/5% cap and report the Sharpe and the
+max single-name weight for each. Route: a seat that can write `libs/` (this one is research-frozen).
+
+**2. A PIT LIQUIDITY UNIVERSE FILTER, which is not the liquidity GROUPING s24 killed.**
+`rolling_90d_sum(log(volume × close))` per symbol, ranked as of the PREVIOUS day, top-N kept;
+plus two hygiene rules worth copying verbatim — drop each symbol's first 89 rows (window burn-in)
+and drop any DATE whose cross-section is below a floor. The desk's cells today rank whatever has
+a bar that day, so the population changes shape with the calendar rather than by rule. MT5
+analogue is immediate (`tick_volume × close`). Falsifier: does a top-N-by-liquidity population
+change the s28 cell verdicts? If not, the desk learns its results are not a liquidity artefact,
+which is worth knowing either way.
+
+**3. THE DEAD-SETTINGS AUDIT AS A STANDING CHECK.** Four of this repo's twelve settings are
+parsed and never read, and one of them (`neutralization`) silently voids the exact axis a reader
+would come to it for. The desk has the same failure mode (BRAIN s7; the `data/RECORDERS_OFF`
+family). The mechanical check is one line and has no false negatives worth caring about: for every
+key in a config schema, assert at least one reader outside the loader. Route: `ops/` fence.
+
+**NOT IMPORTED (L1.6):** no threshold, no fitness bar, no booksize, no submission path.
+
+### 2026-08-29 — BRAIN s29: three method imports, one of them the desk's own recurring defect
+
+1. **A rule read off the sample that produced it must be re-tested on features that sample never
+   saw, with the sign declared first.** s28 stated its neutraliser rule off the same six cells that
+   suggested it; s29 declared the predicted sign for six NEW features in the script before running,
+   plus an explicit falsifier (6/6, since a coin flip reaches 6/6 at p=1/64). It came back 5/6 and
+   the rule died. Under the old habit — measure, then narrate the pattern — the rule would have been
+   carried forward as established. **The cheap part is writing the prediction down; the expensive
+   part is not having done it.** Adopt as standing practice for any rule inferred from a screen.
+2. **A refutation that names the binding constraint outranks a confirmation that does not.** s29b
+   killed coarse rank as a turnover lever, but the same table showed persistent `lowvol_20` turning
+   over 0.586 against `reversal_1`'s 1.467 on identical machinery — which locates the turnover in
+   the feature's autocorrelation, not the operator. **Always run the contrast that can localise the
+   cause, not only the arm that can win.** The kill left s30 with a better-motivated target than a
+   pass would have.
+3. **`neutralization` read into a variable that is never used** (`worldquant-brain-simulator
+   simulate.py:257`): four advertised modes, one implemented, no error, and the setting *looks*
+   wired because it is read. This is the desk's own dominant defect class — a verdict computed then
+   discarded — found in the wild. **Grep suggestion for the fence seat, not buildable under this
+   seat's freeze:** flag any `settings.get(...)`/config read whose result is assigned and never
+   subsequently referenced. That is a mechanical check with no false-positive story, and the desk
+   has been bitten by this shape repeatedly (30 fences into devnull; a 2-part gate reported by its
+   non-binding half).
+
+Also imported from the same repo: `keep_for_learning`-style honesty — the author's hidden README
+TODO admits *"Truncation correctness (current not necessarily working)"* and that results differ
+from the platform. **A source that documents its own brokenness is more usable than a confident
+one**, and the admission is what stopped the truncation semantics being imported as a spec.

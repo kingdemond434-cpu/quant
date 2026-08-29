@@ -2383,3 +2383,29 @@ alpha101_analysis.md` (public, MIT, raw.githubusercontent, mined as TEXT). DERIV
 own s10/s12/s13/s14 alpha101 line. Claimed-not-verified: the audit's Sharpes are ORE — they are
 another desk's numbers on another universe. They are used here only to KILL an import, never to
 justify one, which is the direction in which unverified ore is admissible.
+
+### 2026-08-29 — BRAIN s29: two pre-registered claims, both refuted
+
+**KILLED: "cluster neutralisation helps dispersion features and hurts trend features" (s28's rule).**
+Tested on six features s28 never saw, sign pre-registered before the run, falsifier declared at 6/6.
+Result **5/6 — refuted as stated**. `mom_250` was predicted negative and came in **+0.194 at z=+5.51**
+against its own size-matched permuted control. The rule as a *feature-family* statement is dead.
+Evidence: `data/brain_hunter_s29_neutraliser_rule.json`. Mechanism of death: the axis is HORIZON, not
+family — neutralisation hurts at 5d–120d and helps at 250d and at every dispersion feature.
+**L1.16a reopen condition:** a pre-registered horizon-crossover test (150/180/200/250/300d) confirming
+the crossover would revive the *idea* under a corrected statement; nothing revives the family version.
+
+**KILLED: coarse cross-sectional rank as a turnover lever.** The platform's default `rank(x, rate=2)`
+is deliberately imprecise, which suggested a free turnover cut for cells that die on cost. Measured
+across 6 bucket counts × 3 cells (18 trials, all reported): precise → 3 buckets moves daily turnover
+**1.467 → 1.452 (−1.0%)**, break-even bp non-monotone, effect within noise on every cell. Evidence:
+`data/brain_hunter_s29b_coarse_rank.json`. Mechanism of death: `reversal_1` is yesterday's return and
+re-sorts the whole cross-section daily, so the ordering *inverts* rather than jitters and coarsening
+has nothing to bite on. Confirming contrast in the same table: persistent `lowvol_20` turns over 0.586
+vs reversal's 1.467 on identical machinery. **This kill is directional** — it identifies feature
+autocorrelation (hence `decay_linear`) as the only remaining lever on this family's binding constraint.
+
+**NOT A KILL, a correction to one: `yli188`'s corr/cov inversion (s12) is repo-specific.**
+`efJerryYang/worldquant-brain-simulator` cites yli188 as its source yet implements `correlation` and
+`covariance` correctly. s12's finding stands against that repo; it must not be generalised to the
+alpha101 transpile lineage as a whole.

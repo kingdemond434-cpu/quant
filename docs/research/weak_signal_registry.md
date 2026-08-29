@@ -636,3 +636,26 @@ named in card #38 NEXT). n=1 regime observation; no signal claim, no trial burne
 promotion-check: once a declaration-quantity series exists, test whether fee-direction flips are
 declaration-led (physical) or price-led (sentiment) across ≥3 direction regimes before any
 XAUUSD conditioning use.
+
+### WS — 2026-08-29 — the neutralisation horizon crossover (BRAIN s29)
+
+**Observation, unexplained.** Pooling s28 and s29 (12 pre-registered and post-hoc cells, all
+reported), the benefit of cluster-neutralising a cross-sectional MT5 feature flips sign with the
+feature's HORIZON, not its family. Neutralisation HURTS at 5d / 20d / 60d / 120d trend
+(`mom_120` Δ=−0.126 at z=−6.31; `mom_60_skip5` Δ=−0.086 at z=−3.48; s28's `mom_60` at z=−7.8) and
+HELPS at 250d (`mom_250` Δ=+0.194 at z=+5.51) and at every dispersion feature at every horizon
+(`reversal_5` +0.174, `lowvol_60` +0.224, `absret_20` +0.145, all z ≥ 4.33 vs exact permuted
+control). n = 2,379–2,380 days, 127.7–140.5 mean names.
+
+**Why it is registered as weak rather than banked.** The crossover between 120d and 250d rests on a
+single feature on the far side. It was NOT pre-registered — it is the residual left after s29's
+declared rule was refuted 5/6 — so it carries exactly the forking-paths problem s29 was built to
+avoid, and it is recorded here rather than acted on for that reason.
+
+**Candidate mechanism, untested:** at 250d the cross-sectional spread in trend is dominated by
+asset-class-level drift, so a universe-wide rank is effectively ranking asset classes and the
+cluster removes a common drift rather than the signal; at 5–120d the cluster *is* the signal carrier.
+
+**Falsifier and next step:** pre-register signs for 150 / 180 / 200 / 250 / 300d against the exact
+size-matched control and require a monotone sign change at a single crossover. A scattered or
+absent crossover kills it. This is s30's ranked-first ground.

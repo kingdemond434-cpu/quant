@@ -12991,3 +12991,121 @@ raw.githubusercontent as TEXT; nothing installed, executed or vendored; no login
    (how decay interacts with turnover, what neutralisation subtracts, where delay is applied).
 5. **The BRAIN-scoped collector arm — now TWENTY-ONE sessions old.** Belongs to a seat that is not
    research-frozen.
+
+---
+
+## BRAIN HUNTER s29 — 2026-08-29 — two pre-registered claims, two refutations, one of them useful
+
+Ran s28's own named next-ground #1 and #4. **Both headline claims died to their own falsifiers.**
+Nothing here is a survivor and nothing is claimed as one; no bar was applied at any point (L1.60),
+every cell tried is reported.
+
+### 1. The per-feature neutraliser rule — REFUTED AS STATED, 5/6
+`data/brain_hunter_s29_neutraliser_rule.json` · `data/brain_hunter_s29_neutraliser_rule.py`
+
+s28 read a rule off six cells: *cluster neutralisation HELPS reversal/dispersion features and
+HURTS trend features*. Six cells is where a rule is born, never where it is confirmed — the split
+was chosen after seeing the numbers. This run tested it on **six features s28 never saw**, with the
+predicted sign of `delta = sharpe(ward_k24) − sharpe(universe)` **written into the script before the
+first number existed**, and a strict falsifier: 6/6 or the rule is refuted (a coin flip reaches 6/6
+at p = 1/64, so 5/6 is not evidence a rule exists).
+
+| feature | side | predicted | observed | Δ ward−universe | z vs exact random control | held |
+|---|---|---|---|---|---|---|
+| mom_120 | trend | negative | negative | −0.126 | −6.31 | yes |
+| mom_60_skip5 | trend | negative | negative | −0.086 | −3.48 | yes |
+| **mom_250** | **trend** | **negative** | **positive** | **+0.194** | **+5.51** | **NO** |
+| reversal_5 | dispersion | positive | positive | +0.174 | +4.33 | yes |
+| lowvol_60 | dispersion | positive | positive | +0.224 | +6.44 | yes |
+| absret_20 | dispersion | positive | positive | +0.145 | +5.91 | yes |
+
+n = 2,379–2,380 days, 127.7–140.5 mean names, printed beside every score (the s25–s28 habit).
+**Verdict: REFUTED.** And the failure is the finding — mom_250 does not miss, it fails *decisively
+in the opposite direction* at z = +5.51 against its own size-matched control. So the axis is not
+trend-vs-dispersion. Pooling s28 and s29, neutralisation hurts at 5d/20d/60d/120d trend and helps
+at 250d, alongside every dispersion feature at every horizon: **the split is HORIZON with a
+crossover between 120d and 250d, not feature family.** Candidate mechanism, untested and logged as
+such: at 250d the cross-sectional spread in trend is dominated by asset-class-level drift, so a
+universe-wide rank is really ranking asset classes, and the cluster removes a common drift rather
+than the signal — whereas at 5–120d the cluster *is* the signal carrier. **That is a NEW claim, not
+a confirmed one**, and it needs its own pre-registered test on horizons bracketing the crossover.
+
+### 2. Coarse rank as a turnover lever — REFUTED, and the diagnostic is worth more than the claim
+`data/brain_hunter_s29b_coarse_rank.json` · `data/brain_hunter_s29b_coarse_rank.py`
+
+`efJerryYang/worldquant-brain-simulator` quotes the platform's own operator description verbatim:
+*"the Rank operator … returns float numbers equally distributed between 0.0 and 1.0. When rate is
+set to 0, the sorting is done precisely. The default value of rate is 2."* **The platform's DEFAULT
+rank is deliberately imprecise**; every desk implementation (`rank(pct=True)`) is the rate=0 case.
+Since s28's best cell dies at 1.60 bp break-even on **147% daily turnover**, a coarser rank looked
+like a free turnover cut. Pre-registered claim: break-even bp rises monotonically as buckets fall.
+
+Measured, `reversal_1|ward_k24`, precise → 3 buckets: turnover **1.467 → 1.452 (−1.0%)**, break-even
+1.596 → 1.551 bp. Same story on `reversal_1|universe` (1.449 → 1.462, turnover *rose*) and
+`lowvol_20|ward_k24` (0.586 → 0.584). **Non-monotone everywhere, and the effect size is noise.**
+
+**The refutation names the real constraint.** Turnover in this family is not rank jitter, so no
+amount of ranking granularity touches it: `reversal_1` is yesterday's return, which re-sorts the
+entire cross-section every single day, and coarsening cannot help when the underlying ordering
+inverts. The confirming contrast is in the same table — `lowvol_20`, a persistent feature, turns
+over 0.586 against reversal's 1.467 on identical machinery. **Turnover here is a property of the
+FEATURE's autocorrelation, not of the ranking operator**, so the only lever that can work is
+smoothing the feature itself (`decay_linear` — and note the platform ships `decay: 30` as a
+first-class setting). That is now a measurement-backed next ground rather than a guess.
+
+### 3. The simulator, censused — and it is a spec that must not be trusted as one
+`efJerryYang/worldquant-brain-simulator` (GPL-3.0, 32 stars, pushed 2026-05-02). **Mined as TEXT
+via raw.githubusercontent; nothing installed, executed or vendored** (supply-chain rule). s28
+wanted it because a simulator exposes semantics the docs elide. It does — and it also elides them:
+
+- **`neutralization` is READ AND DISCARDED.** `simulate.py:257` does
+  `by_what = self.settings.get("neutralization", "Market").lower()` and **never uses `by_what`**;
+  the next line is `alpha = alpha - alpha.mean()` unconditionally. So `Sector`, `Industry`,
+  `Subindustry` and `None` all silently execute plain market neutralisation. This is the desk's own
+  recurring class — a verdict computed then discarded — and it is the worst variant, because a
+  setting that is read *looks* wired. Four advertised modes, one implemented, no error.
+- **Five more declared settings are inert:** `decay`, `delay`, `pasteurization`, `nan-handling`,
+  `unit-handling` appear in `settings.yaml` and in **no** `settings.get` call. `delay` and
+  `decay_linear` exist as expression-level functions but the simulator never applies them, so a
+  reader taking `settings.yaml` as the platform's parameter list would import five no-ops.
+- **The one genuinely useful semantic: operator ORDER is neutralise → truncate → normalise**
+  (`simulate.py:252-264`). The desk's own cells (s28/s29) do demean → gross-normalise with **no
+  truncation step at all**. Worth noting that the author's own hidden TODO says *"Truncation
+  correctness (current not necessarily working)"* — and it is right to doubt it: clipping in **raw
+  alpha units before** normalising is not the same as bounding a normalised weight, and clip-then-
+  renormalise is not idempotent. Routed to the operator library as a spec question, not a spec.
+- **A checked null, stated because it was checked:** the platform's `(rank−1)/(n−1)` and the desk's
+  `rank/n` are an affine transform of each other, so after demeaning and gross-normalisation they
+  are **identical**. No desk change needed; the difference is cosmetic, and it is recorded so no
+  future session re-derives it.
+- **This fork does NOT inherit s12's kill.** Its `correlation`/`covariance` are correct
+  (`x.rolling(w).corr(y)` / `.cov(y)`), even though its README cites `yli188/WorldQuant_alpha101_code`
+  — the repo s12 proved inverts corr/cov at 47/47 sites. **s12's kill is repo-specific, not
+  taxonomy-wide**, and this correction is the evidence. Its `alpha101.py` carries 83 of 101 alphas,
+  the same 18 IndClass drops as upstream (consistent with s11/s13; nothing new).
+
+**Artifacts exhausted this session (do not re-surface-scan):** `efJerryYang/worldquant-brain-simulator`
+— `README.md`, `src/simulator/simulate.py`, `src/simulator/util.py`, `src/simulator/settings.yaml`,
+`src/alpha_pool/expression.py`, `src/datasource/database.py` all fully read; `src/alpha_pool/alpha101.py`
+censused (83/101, IndClass drops confirmed) but not line-audited.
+
+Video: 0 fetched, 0 locked (no video ground touched). §13: one public GPL-3.0 repo read as TEXT over
+raw.githubusercontent and the GitHub public API; no login, no wall, no access control touched.
+
+### NEXT UN-EXHAUSTED GROUND (for s30, in order)
+
+1. **The horizon crossover, pre-registered properly.** s29 turned a feature-family rule into a
+   horizon claim with a crossover between 120d and 250d. Test 150/180/200/250/300d with the sign
+   declared in advance and the exact control. If the crossover is real the desk gains a rule for
+   *when* to neutralise — worth more than any single cell, which was s28's argument and survives its
+   own refutation intact.
+2. **`decay_linear` on the feature, now measurement-backed.** s29b proved the rank operator cannot
+   touch this family's turnover and pointed at the feature's autocorrelation instead. Sweep the
+   platform's own `decay` parameter over `reversal_1|ward_k24` and measure break-even bp. This is
+   the only identified lever on the constraint that kills every cell in the family.
+3. **`group_neutralize`** — unchanged from s28 and still the highest-value absent operator (12 of 14
+   group-consuming operators unbuilt). Not buildable under this seat's freeze; needs a `libs/` seat.
+4. **`ts_vector_proj` / `ts_vector_neut`** — beta-hedging as an operator; no data gap, no grouping
+   needed, immediately implementable on desk tape. Carried from s28, still untouched.
+5. **The BRAIN-scoped collector arm — now TWENTY-TWO sessions old.** Belongs to a seat that is not
+   research-frozen.
