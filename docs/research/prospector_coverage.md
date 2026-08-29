@@ -10027,3 +10027,78 @@ not patched**.
    Worth entering specifically to check **whether the upstream ALSO drops the 18 IndClass alphas** —
    if it does, the wall is universal to the public lineage and that is a stronger claim still.
 5. **Re-run the population sweep paced** — s7's 97 repos remains a floor.
+
+## BRAIN HUNTER — session 11 (2026-08-29, dedicated daily organ)
+
+**§33 backlog CLEAR on entry** (29 carded finds all disposed; mining authorised), so this run went
+straight to s10's next-ground **#1** and **#4**, and both closed.
+
+### #1 — THE GROUPING MAP EXISTS AND THE OPERATORS RUN ON IT (the blocking input, since s2)
+
+`data/mt5_grouping_map.json`, built by `data/brain_hunter_s11_build_grouping_map.py` from data
+already on the box — **no new data, no new source, no §13 surface**. Five schemes: `asset_class`
+(registry), `currency_base` / `currency_quote` (parsed FX legs, the analogue with no equity
+counterpart), and point-in-time `corr_cluster` at two fixed cut heights (k=8, k=24), keyed so the map
+used in year `Y` is estimated on `Y-1` only. Verified by *running* `group_rank`/`group_zscore`
+against it: a series on all five schemes where every previous call returned `None`.
+
+**But the deliverable is the measurement, not the map** — full table in
+`search_operator_library.md`, raw in `data/brain_hunter_s11_group_independence.json`:
+
+| scheme | groups | max group | mean \|corr\| vs universe-wide `rank` |
+|---|---|---|---|
+| `currency_quote` | 19 | 13 | **0.493** |
+| `currency_base` / `corr_cluster k24` | 8 / 13 | 21 / 67 | **0.716** |
+| `asset_class` | 7 | 64 | **0.819** |
+| `corr_cluster k8` | 6 | **125** | **0.852** |
+
+**A grouping is not automatically a new axis.** The obvious `IndClass.sector` analogue —
+`asset_class`, which the desk would have adopted by default — reproduces the universe-wide rank at
+**0.82**, because its largest group *is* most of the universe (103 equity CFDs of 251). The k=8
+correlation cluster is worse: it succeeded and returned **one 125-member blob**. Either would have
+consumed a whole search arm to recompute what the desk already has — the exact failure
+`_require_groups` refuses, arriving through the front door with a *valid* map instead of a missing
+one. **Independence tracks median peer-group SIZE, monotonically, not the sophistication of the
+scheme.** Recommendation carried into the library: give `currency_quote` the first arm; deny
+`asset_class` and `corr_cluster k8` an arm at all on this measurement.
+
+### #4 — THE UPSTREAM DROPS THE SAME 18 ALPHAS: THE WALL IS UNIVERSAL TO THE PUBLIC LINEAGE
+
+s10's claim was one implementer's refusal. Checked against the upstream original that port credits,
+`yli188/WorldQuant_alpha101_code` (851★): upstream implements **83**, port **82**, and the **18
+missing from BOTH** — `{48,58,59,63,67,69,70,76,79,80,82,87,89,90,91,93,97,100}` — survive only as
+commented formulas, **every one carrying `IndNeutralize(..., IndClass.*)`**. The single divergence
+between the two, alpha56, is the **`cap`** alpha — s10's *other* named field gap, independently
+confirming that partition's shape. Two implementations, same wall, routed around twice, never
+solved. The map above is therefore a differentiating asset on this ground, not a catch-up item.
+
+### §13 AND FREEZE
+
+Public only: `raw.githubusercontent.com` + `api.github.com` (public repo contents), and the desk's
+own on-disk tape and registry. No login, no `api.worldquantbrain.com`, no platform-internal surface.
+**Freeze respected** — nothing under `scripts/`, `libs/`, the executor, a rail or a live-state file
+was modified; the builder lives under `data/` as a catalog producer and `wq_operators` was
+**imported and exercised, never edited**. The `+00:00` stamps on 23 of 196 parquets are stripped, not
+converted, in the builder (recorded lesson: the stamp is a label, converting would add 3h).
+
+- **EXHAUSTED (dated):** `yli188/WorldQuant_alpha101_code` `101Alpha_code_1.py` — **2026-08-29,
+  implemented-set / IndClass-partition level.** The file's 83 definitions and 18 commented
+  IndNeutralize formulas are extracted and the partition is settled; no seat re-scans it for *which
+  alphas are implemented*. Its per-alpha field vectors and `101Alpha_code_2.py` (111,340 b) remain
+  unmined, as does the repo's bundled `101 Formulaic Alphas.pdf`.
+- **Video:** 0 fetched, 0 locked — no video route attempted; ground worked was on-disk and repo-file.
+
+### NEXT UN-EXHAUSTED GROUND (for s12, in order)
+
+1. **Point the search at `currency_quote` — the map is no longer the blocker, the WIRING is.**
+   Nothing consumes `data/mt5_grouping_map.json` today (III.16): it is a built capability with no
+   caller, which is the defect this desk scores. The consumer is `edge_search.py`'s transform arm
+   and it is **outside this seat's freeze** — carry it as a ledger row for the MT5 desk, not a patch.
+2. **`real_volume` guard before any group arm ships** (s10): a cross-sectional rank over a column
+   that is all-zero on 195/197 symbols is a degenerate ordering by construction. Same owner as #1.
+3. **`101Alpha_code_2.py` (111 KB) and the bundled PDF** — the largest unmined bytes on the
+   most-starred artifact of this ground, and the PDF is the *original paper* rather than a port.
+4. **`Miasyster/QuantGPT` (456★, MIT)** — carried from s10, still the largest cleanly-licensed
+   unmined repo on the measured population.
+5. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, still open; this seat's
+   mandated daily ground is collected by nothing.

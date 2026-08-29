@@ -3895,3 +3895,70 @@ and **this is dead weight today, not a live defect.** Reported as the honest nul
 construction, forever** — a degenerate ordering that reads as a signal. The desk is actively working
 to point group operators at this universe, so the guard should become content-aware (`nunique > 1`)
 *before* that happens, not after.
+
+---
+
+## THE BLOCKING INPUT IS UNBLOCKED — `data/mt5_grouping_map.json` (BRAIN HUNTER s11, 2026-08-29)
+
+`group_rank` and `group_zscore` have been inert since adoption for want of a peer map (s10 measured
+the cost from the other side: **18 of 101 canonical alphas, 17.8%**, unimplementable without one).
+The map now exists, built from data already on the box by
+`data/brain_hunter_s11_build_grouping_map.py`, and **the operators were run against it** — both
+return a series on all five schemes rather than `None`.
+
+| scheme | symbols | groups | median group | max group | mean \|corr\| vs universe-wide `rank` |
+|---|---|---|---|---|---|
+| `asset_class` | 194 | 7 | 15 | 64 | **0.819** |
+| `currency_base` | 80 | 8 | 7 | 21 | **0.716** |
+| `currency_quote` | 79 | 19 | 4 | 13 | **0.493** |
+| `corr_cluster` k=8 (2025) | 192 | 6 | 9 | **125** | **0.852** |
+| `corr_cluster` k=24 (2025) | 183 | 13 | 5 | 67 | **0.716** |
+
+Window 2024-01-01..2025-12-31, daily log returns, baseline = universe-wide `rank` over the same
+members, per-symbol correlation then averaged. Saved: `data/brain_hunter_s11_group_independence.json`.
+
+**THE FINDING, and it decides which scheme to point the search at: a grouping is not automatically a
+new axis.** `asset_class` — the obvious `IndClass.sector` analogue, and the one the desk would have
+adopted by default — reproduces the universe-wide rank at **0.82**, because its largest group *is*
+most of the universe (103 equity CFDs of 251). The `k=8` correlation cluster is worse still at
+**0.85**: clustering "succeeded" and produced **one 125-member blob** plus five fragments. Both
+would consume a whole new arm of the search space to recompute something the desk already has —
+precisely the failure `_require_groups` was written to refuse, arriving through the front door with
+a legitimate map instead of a missing one.
+
+**Independence tracks median PEER-GROUP SIZE, not the sophistication of the grouping.** The ranking
+above is monotone in it. `currency_quote` (19 groups, median 4 members) is the only scheme that buys
+a genuinely different question, and it is the one with **no equity counterpart at all** — "is EURUSD
+extreme against the other things quoted in USD?" is not a factor BRAIN can express. It is the
+recommended first arm; `currency_base` and `corr_cluster k=24` are the second tier; **`asset_class`
+and `corr_cluster k=8` should not be given a search arm on this measurement.**
+
+**The cluster maps are point-in-time by construction.** Key `Y` is estimated on year `Y-1` daily
+returns only; no bar is ever grouped using its own future. A whole-sample cluster map would be
+lookahead and is deliberately not produced. Both cut heights (8, 24) are fixed a priori and carried
+side by side rather than tuned — the peer-size axis is left visible to the consumer.
+
+Unlabelled symbols are **omitted, never pooled** into an `other` bucket, and singleton groups are
+dropped at build time (a group of one has no rank to compute).
+
+### INDEPENDENT CORROBORATION OF s10 — THE IndClass WALL IS UNIVERSAL TO THE PUBLIC LINEAGE
+
+s10 found the most-used OSS port dropped 18 canonical alphas rather than solve the grouping problem.
+Checked against the **upstream original it credits**, `yli188/WorldQuant_alpha101_code`
+(851★, `101Alpha_code_1.py`, 44,512 b, HTTP 200 from `raw.githubusercontent.com`):
+
+```
+upstream implemented        83
+port implemented            82
+missing from BOTH           18  = {48,58,59,63,67,69,70,76,79,80,82,87,89,90,91,93,97,100}
+                                  every one present only as a COMMENTED formula carrying
+                                  IndNeutralize(..., IndClass.*)
+port minus upstream          1  = alpha56 -- the `cap` alpha, s10's other named field gap
+```
+
+Two independent public implementations, the same 18 alphas, the same stated reason, and the single
+divergence between them lands exactly on the *other* field s10 named. **The public lineage has never
+solved this; it has routed around it twice.** That makes the map above the differentiating asset on
+this ground rather than a catch-up item — and it is why the independence table matters more than the
+map's existence: the desk can now ask the question, and only one of its five ways of asking it is
+worth a search arm.
