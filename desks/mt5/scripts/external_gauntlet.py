@@ -783,6 +783,7 @@ def main():
     cache_hits = 0
     built_fresh = 0
     deferred: list[dict] = []
+    blocked_build: list[dict] = []
     _build_t0 = time.time()
     # Yesterday's keys die with yesterday's data-day; prune so the cache never grows unbounded.
     try:
@@ -797,6 +798,8 @@ def main():
         frame = _h1_for(spec["sym"])
         if frame is None or len(frame) == 0:
             print(f"  SKIP {key}: parquet missing")
+            blocked_build.append({**spec, "downstream_status": "NOT_RUN_DATA_MISSING",
+                                  "why": "point-in-time H1 parquet is missing or empty"})
             continue
         last_day = frame.index[-1].normalize()
         ckey = _cache_key(spec["sym"], spec["family"], spec["params"] or {}, str(last_day.date()))
@@ -826,6 +829,8 @@ def main():
             built_fresh += 1
         else:
             print(f"  SKIP {key}: parquet missing or build failed")
+            blocked_build.append({**spec, "downstream_status": "NOT_RUN_BUILD_FAILED",
+                                  "why": "signal construction returned no executable cell"})
     if cache_hits:
         print(f"Cell cache: {cache_hits}/{len(eligible_specs)} loaded (same data-day), "
               f"{len(eligible_specs) - cache_hits} to compute")
@@ -869,8 +874,16 @@ def main():
                 "resumes here rather than restarting; this is work not yet done, never a "
                 "verdict."),
     } for s in deferred]
+    blocked_verdicts = [{
+        "cell": cell_id({"sym": s["sym"], "family": s["family"],
+                         "params": s.get("params") or {}}),
+        "sym": s["sym"], "family": s["family"], "days": 0, "passed": None,
+        "stages": {}, "downstream_status": s["downstream_status"], "why": s["why"],
+    } for s in blocked_build]
     result["n_cells_deferred_build_budget"] = len(deferred)
-    result["verdicts"] = prior_rejections + deferred_verdicts + list(result.get("verdicts", []))
+    result["n_cells_blocked_build_or_data"] = len(blocked_build)
+    result["verdicts"] = (prior_rejections + deferred_verdicts + blocked_verdicts
+                          + list(result.get("verdicts", [])))
     result.setdefault("gate_fails", {})["economic_prior"] = (
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
