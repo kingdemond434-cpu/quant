@@ -4580,3 +4580,76 @@ CONTROL RUN (clean, stated as a negative result): `FusionCell.cell_id` covers al
 the frozen dataclass and `libs/store/config_versions.py` hashes the whole config dict — the source's
 own arm-key collapse defect (56 arms → 28 keys, `delay` and `maxTrade` unreachable) does NOT exist
 on this desk.
+
+## 2026-08-29 — brain_hunter s16 — the public alpha-generation class has NO multiplicity control at all (14/14), and the one refutation stage it ships has zero power
+
+### FACT 1 — the corpus-level prior s15 asked for, and it is a clean sweep
+
+s15 left item 3: "does the whole class share fact 3? One repo with zero multiplicity control is an
+anecdote." It is not an anecdote. Across **all 14 permissively-licensed** WorldQuant-BRAIN
+alpha-generation repos (`data/brain_hunter_s15_generator_class.json`, shallow-cloned 2026-08-29),
+searching 19 terms — bonferroni, holm, benjamini-hochberg, FDR, false discovery, multiple
+testing/comparison, deflated sharpe, DSR, PBO, probability of backtest overfitting, family-wise,
+FWER, p-hacking, data snooping, White's reality check, SPA test, Harvey-Liu, effective number of
+trials, num_trials:
+
+**14 of 14 repos: ZERO hits. Positive control: 23,619 mentions of "sharpe".**
+
+The only two `n_trials`-shaped matches in the whole corpus are unrelated — a pruning-policy minimum
+(`worldquant-harness`) and a bootstrap resample count (`QuantGPT`). Eight of the fourteen have no
+out-of-sample vocabulary either. Generation-scale vocabulary (itertools.product, mutation,
+crossover, population, batch) fires in 12 of 14, so these are genuinely *searching* — the selection
+is happening; only its accounting is absent.
+
+**HOW TO PRICE THIS GROUND, from now on and by default:** every artifact this seat, or any seat,
+lifts from the public alpha-generation ecosystem is the output of an **unpriced search**. Not a
+weak result — an *unpriced* one, with no recoverable trial count, because the code does not record
+how many expressions were tried before the one that got published. There is no correction the desk
+can apply retroactively. The consequence is operational, not rhetorical: a formula, expression or
+"validated factor" from this class enters as a **hypothesis with a prior no better than a
+randomly-drawn cell**, and its only route to capital is the desk's own ten gates over the desk's
+own pre-registered `effective_n_trials`. This is not a bar the desk is choosing to apply out of
+caution; it is the only bar available, because the source destroyed the information any softer one
+would need. Full census: `data/brain_hunter_s16_multiplicity_prior.json`.
+
+### FACT 2 — two design rules for permutation nulls, bought by refuting the class's best test
+
+`Miasyster/QuantGPT` (MIT, 457★) is the only repo in the class that ships an adversarial validation
+stage at all, and it is worth taking seriously: `test_label_permutation` is a **correct** empirical
+null — shuffle forward returns within each date, preserving the cross-sectional factor distribution,
+and pass only above the 95th percentile of the permuted |IC| distribution. Its sibling
+`test_temporal_shuffle` is refuted (`docs/graveyard.md`, 2026-08-29): at its shipped defaults the
+pass/fail verdict is pinned at ratio 1.16–1.19 across a 10× range of injected signal and is
+therefore a constant function of its own configuration.
+
+Two rules generalise out of that refutation, and both are actionable here:
+
+1. **A block-permutation null has power only when `block_size ≤ the forecast horizon.`** This is
+   counter-intuitive in the direction that matters: a *larger* block feels more conservative, and
+   is in fact strictly weaker, because block-ORDER shuffling only disturbs windows that straddle a
+   boundary. Measured crossover is exactly at `block_size = holding_period`.
+2. **A permutation null's bar must be a PERCENTILE of its own permuted distribution, never a ratio
+   of means against a constant.** Averaging `abs(mean IC)` across shuffles estimates `E|X|`, not
+   `|E X|`, which plants a positive noise floor in the denominator under a pure null — in the
+   control, the real |IC| under a true null sat *below* the shuffled floor.
+
+**WHY THIS IS WORTH SOMETHING TO THIS DESK RATHER THAN JUST TO THAT REPO.** The desk's validation
+is parametric end-to-end — t-statistics, deflated Sharpe, Holm. A permutation null is
+*non-parametric* and assumes nothing about the return distribution, so it fails in different places:
+it is the natural detector for structural leakage and misalignment, where a t-stat computed on
+already-corrupted forward returns is confidently wrong. It is a COMPLEMENT to the ten gates and
+explicitly **not** a candidate to become one of them, nor a replacement for any (L1.60: no inserted
+gates, no private bars in either direction). Proposed as a **diagnostic** on the
+`wq_operators.fitness()` precedent — computed, reported, no pass/fail path.
+
+MT5 TRANSLATION CONSTRAINT, stated because it decides feasibility and is not obvious: the
+within-date cross-sectional permutation needs a cross-section. The MT5 book has ~251 symbols but
+the desk's candidates are predominantly **per-symbol time-series**, where "shuffle across names
+within a date" has no meaning. The transferable form for a time-series candidate is the *label*
+permutation applied along time under a stationary block bootstrap with `block ≤ horizon` — which is
+rule 1 again, and is why rule 1 is the more valuable half of this find.
+
+OPPORTUNITY COST / NEXT ACTION: this is inbox material, not a build — the seat is research-frozen
+and must not touch `libs/`. The named patch, for whichever seat owns it: a `permutation_null()`
+diagnostic beside `libs/alpha_factory/wq_operators.fitness()`, same no-pass/fail contract, block
+size bound to the candidate's declared horizon at call time rather than defaulted.

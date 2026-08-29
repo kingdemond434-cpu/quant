@@ -2025,3 +2025,41 @@ L1.16a RE-OPEN CONDITION: a named enabling change that prices adaptive allocatio
 allocator restricted to re-ORDERING cells within a fixed pre-registered membership (ordering free,
 membership pre-registered), or a published correction valid under data-dependent trial allocation.
 Not before.
+
+## 2026-08-29 — REFUTED: block-order permutation as an "adversarial" validity test — brain_hunter s16
+
+MECHANISM: shuffle the panel's dates in contiguous BLOCKS, recompute forward returns, and pass a
+factor when `real|IC| / mean(shuffled|IC|) > 1.5`. SOURCE: `Miasyster/QuantGPT` (MIT, 457★),
+`quantgpt/adversarial_validator.py::test_temporal_shuffle`, defaults `block_size=20` against its
+own `holding_period=5`. DERIVES-FROM: NONE (checked — no citation in the repo; the sibling
+`test_label_permutation` is a correct 95th-percentile permutation null and is NOT graveyarded).
+
+MECHANISM OF DEATH: **the test has zero power at its shipped defaults, and it errs toward
+rejecting real signal.** Block-ORDER shuffling preserves within-block temporal alignment, so only
+forward-return windows straddling a block boundary are disturbed. Measured on a synthetic panel
+(60 names × 500 days, factor loading on the next-5-day cumulative return at a controlled strength,
+20 shuffles per cell, `data/brain_hunter_s16_multiplicity_prior.json`):
+
+| injected strength | real \|IC\| | ratio @ bs=20 | verdict | ratio @ bs=5 | verdict |
+|---|---|---|---|---|---|
+| 0.0 | 0.0001 | 0.07 | FAIL | 0.02 | FAIL |
+| 0.1 | 0.0439 | **1.11** | FAIL | 2.18 | PASS |
+| 0.4 | 0.1588 | **1.19** | FAIL | 2.38 | PASS |
+| 3.0 | 0.4732 | **1.16** | FAIL | 2.19 | PASS |
+
+The ratio is **pinned at 1.16–1.19 across a 10× range of real IC** and never reaches the 1.5 bar.
+The verdict is a function of `block_size / holding_period` ALONE and is independent of whether the
+factor is real: at `bs = HP` it is pinned at 2.19–2.44 and always passes. A test whose output does
+not move with its input is not a test.
+
+SECOND DEFECT, same direction: the baseline averages `abs(mean IC)` ACROSS shuffles — `E|X|`, not
+`|E X|` — so the denominator carries a positive noise floor (0.0053 here) even under a pure null.
+At strength 0 the real |IC| (0.0001) sits BELOW the shuffled floor.
+
+WHAT SURVIVES AND IS ROUTED, NOT BURIED (`improvement_inbox.md`): the two design rules this
+refutation establishes — a block-permutation null has power only when `block_size ≤ forecast
+horizon`, and the null must be a PERCENTILE of the permuted distribution rather than a ratio of
+means against an uncalibrated constant.
+
+L1.16a RE-OPEN CONDITION: a block-permutation test whose block size is bounded by the horizon it
+tests AND whose bar is a percentile of its own permuted distribution. That is a different test.

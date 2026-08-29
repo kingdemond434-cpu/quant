@@ -11466,3 +11466,76 @@ and `libs/store/config_versions.py` were **read as controls, never edited**.
 4. **The BRAIN-scoped collector arm** — s9's free-corpus gap, now **SEVEN sessions old**. Every dig
    including this one pays live tokens for population discovery it should inherit for free. Naming
    it again without fixing it is the finding; it belongs to a seat that is not research-frozen.
+
+## BRAIN HUNTER s16 — 2026-08-29 — the class-wide multiplicity census, and a refutation that pays
+
+Resumed from s15's "NEXT UN-EXHAUSTED GROUND" item 3 (the corpus-level prior) and reached item 2
+(the 13 deferred permissive repos) as its population. **Item 3 is delivered and the answer is a
+clean sweep; item 2's census is now on disk so no future seat re-clones it.**
+
+### #1 — 14 of 14 permissive generator repos have ZERO multiplicity control
+
+Full method, vocabulary and per-repo table: `data/brain_hunter_s16_multiplicity_prior.json`;
+the disposition is in `docs/research/improvement_inbox.md` (2026-08-29, fact 1). Headline: 19
+multiplicity terms searched across every `.py`/`.md`/`.ipynb` in all 14 repos → **0 hits**, against
+a positive control of **23,619** "sharpe" mentions. Generation-scale vocabulary fires in 12 of 14,
+so the search is real and only the accounting is missing. 8 of 14 have no OOS vocabulary either.
+
+s15 measured this on ONE repo (the 728★ flagship, 0 of 1,631 files) and correctly refused to
+generalise from it. It generalises. The operational consequence is that every artifact from this
+ground is the output of an **unpriced** search — not a weak result, an unpriceable one, since the
+trial count that a correction would need was never recorded — so it enters as a hypothesis with no
+better prior than a randomly-drawn cell. That is now a standing prior for this seat.
+
+### #2 — the class's only refutation stage, refuted on its own defaults
+
+`Miasyster/QuantGPT` (MIT, 457★, deferred five sessions by s10–s15) turned out to hold the single
+most useful artifact on this ground: `quantgpt/adversarial_validator.py`, four adversarial tests.
+`test_label_permutation` is **correct** and worth having. `test_temporal_shuffle` is refuted
+(`docs/graveyard.md` 2026-08-29): its verdict is pinned at ratio **1.16–1.19 across a 10× range of
+injected real IC** at its shipped `block_size=20` vs its own `holding_period=5`, so it fails a
+factor with |IC| = 0.47 and is a constant function of its own configuration. At `block_size = HP`
+it is pinned at 2.19–2.44 and always passes. Control: synthetic panel, 60 names × 500 days,
+controlled injection, 20 shuffles per cell — the table is in the artifact.
+
+Two transferable design rules survive the refutation and are routed to the inbox: block-permutation
+nulls have power only when `block_size ≤ forecast horizon` (larger blocks are strictly *weaker*,
+which is the counter-intuitive half), and the bar must be a percentile of the permuted distribution
+rather than a ratio of means against a constant. The named patch and its MT5 translation
+constraint (the desk's per-symbol candidates have no cross-section to permute) are in the inbox.
+
+### WHAT WAS NOT DONE, said plainly
+
+- s15's item 1 (`generation_two/core/fast_expr_ast.py` + `template_validator.py`, 90 files) was
+  **not** opened; s16 spent its budget on items 3 and 2 instead. It carries forward unchanged.
+- The 25 no-licence repos were not touched (all-rights-reserved; census only, per s15).
+- **The BRAIN-scoped collector arm is now EIGHT sessions old** (s9's free-corpus gap). This run
+  again paid live tokens for population discovery, though less than usual — s15's census meant the
+  14-repo population was inherited for free, which is exactly the argument for the collector arm.
+- Zero network requests beyond 14 shallow `git clone`s of public permissive repos. Video: 0
+  fetched, 0 locked (no video ground touched this run).
+
+### SECTION-EXHAUSTION CLAIMED (dated, so no seat re-scans it)
+
+**2026-08-29 — the multiplicity-control question over the 14 permissively-licensed BRAIN generator
+repos is EXHAUSTED.** 19-term vocabulary, every `.py`/`.md`/`.ipynb`, positive control passed. A
+future seat needs a NAMED enabling change to re-enter — a new repo in the class, or a term the
+vocabulary missed. The repos themselves are NOT exhausted; only this question over them is.
+
+### NEXT UN-EXHAUSTED GROUND (for s17, in order)
+
+1. **`QuantGPT`'s other two adversarial tests** — `test_random_universe` (subsample-stability) and
+   `test_noise_injection`. s16 refuted one of four and validated one of four; the remaining two are
+   the cheapest un-mined items on this ground and the same power control already exists on disk
+   (`/tmp/brainclass/control.py` pattern; re-derive, it is a tmp path). A stability test that
+   survives its own power control is a diagnostic the desk could actually run.
+2. **`generation_two/core/fast_expr_ast.py` + `template_validator.py` (90 files)** — carried
+   unchanged from s15 item 1. The expression AST's VALIDATOR names the well-formedness failure
+   modes someone else paid to discover; the desk's `combination_engine` has no validator at all.
+3. **Does the class share the ABSENCE OF COSTS as well as of multiplicity?** s16's scan measured
+   selection-bar vocabulary but never asked whether any of the 14 models transaction costs at all.
+   Same corpus, same mechanical grep, one more corpus-level prior — and cost-blindness would be a
+   second, independent reason every number from this ground is uninformative. Cheap; do it first
+   if item 1 stalls.
+4. **The BRAIN-scoped collector arm** — s9's gap, EIGHT sessions old. Belongs to a seat that is not
+   research-frozen; naming it again without fixing it remains the finding.
