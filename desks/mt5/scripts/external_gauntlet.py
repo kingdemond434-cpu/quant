@@ -872,6 +872,70 @@ def main():
                   f"written WITHOUT shadow_spec -- it cannot enrol until the selector is wired")
         survivors_all[key] = row
 
+    # ---------------------------------------------------------------- power-cure candidates
+    # THE CURE THE POLICY PROMISES NEEDS AN ARTIFACT TO ACT ON. gate_spec marks five gates POWER
+    # with cure_by_forward: true, and the promoter implements that cure -- but a cell can only be
+    # cured once it is on a forward clock, and nothing published the cells that qualify. So a
+    # sleeve that cleared every VALIDITY gate (the five with no cure) and missed only on a power
+    # gate had no way to begin gathering the evidence its failing gate is explicitly allowed to
+    # be settled by. Measured 2026-08-28: 506 such cells, the best at out-of-sample Sharpe 0.7771
+    # over 426 days, and CHFNOK carry passing NINE of ten.
+    #
+    # This file is SEPARATE from UNIVERSAL_SURVIVORS.json on purpose. That file is the
+    # certificate authority and nothing uncertified may appear in it. These rows are candidates
+    # for EVIDENCE GATHERING ONLY -- they carry no promotion authority, and the promoter still
+    # applies the forward cure thresholds before anything is promoted.
+    #
+    # VALIDITY IS ABSOLUTE. One validity miss and the cell is dead, never cured, never listed.
+    try:
+        from research.gate_policy import get_power_gates, get_validity_gates
+        _validity, _power = set(get_validity_gates()), set(get_power_gates())
+    except Exception:
+        _validity = {"economic_prior", "pbo", "reality_check_spa", "stress_costs", "lockbox"}
+        _power = {"in_sample_screen", "deflated_sharpe", "cpcv", "walk_forward", "expected_value"}
+
+    cure_rows = {}
+    for v in result.get("verdicts", []):
+        st = v.get("stages") or {}
+        if not st or v.get("passed"):
+            continue
+        if not all(isinstance(st.get(gname), dict) and st[gname].get("passed") is True
+                   for gname in _validity):
+            continue
+        failed_power = sorted(gname for gname in _power
+                              if not (isinstance(st.get(gname), dict)
+                                      and st[gname].get("passed") is True))
+        if not failed_power:
+            continue
+        params = _params_by_cell.get(v["cell"], {})
+        sel = _selector(params or {})
+        if sel is None:
+            continue          # never guess a selector; an unnamed window cannot be enrolled
+        cure_rows[f"external.{v['cell']}"] = {
+            "hunt": "external_discoveries",
+            "cell": v["cell"], "sym": v["sym"], "days": v["days"],
+            "failed_power_gates": failed_power,
+            "validity_pass": True,
+            "promotion_authority": False,
+            "gates": st,
+            "listed_at": datetime.now(UTC).isoformat(),
+            "shadow_spec": {"symbol": v["sym"], "selector": sel,
+                            "family": v.get("family", "session_range_breakout"),
+                            "is_universe": True, "hunt": "external_discoveries",
+                            "condition": None, "params": dict(params or {})},
+        }
+    (REPORTS / "POWER_CURE_CANDIDATES.json").write_text(json.dumps({
+        "gate_policy": ATTESTATION,
+        "note": ("validity-pass, power-deficient cells eligible to gather forward evidence. "
+                 "NOT certificates and never promotable on their own: the promoter applies the "
+                 "forward cure thresholds before anything is promoted."),
+        "swept_at": datetime.now(UTC).isoformat(),
+        "n": len(cure_rows),
+        "candidates": cure_rows,
+    }, indent=1, default=str), "utf-8")
+    print(f"power-cure candidates: {len(cure_rows)} validity-pass cell(s) eligible to gather "
+          f"forward evidence -> POWER_CURE_CANDIDATES.json")
+
     # NEVER SHRINK (2026-08-26, the certifier wipe): merging can only grow this file; a sweep
     # that certified nothing preserves what stands, because re-running a gauntlet is not
     # revoking a pass.
