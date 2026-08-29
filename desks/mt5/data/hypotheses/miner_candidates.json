@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-29T11:32:20+00:00",
+ "compiled_at": "2026-08-29T12:49:10+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -2511,7 +2511,7 @@
    "deepening": 13
   },
   "forexfactory": {
-   "rows": 30,
+   "rows": 29,
    "candidates": 0,
    "deepening": 62
   },
@@ -2566,9 +2566,9 @@
    "deepening": 43
   },
   "forextsd_cdx": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "quant_se": {
    "rows": 30,
@@ -2641,13 +2641,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 7,
+   "rows": 9,
    "candidates": 0,
-   "deepening": 7
+   "deepening": 9
   }
  },
- "rows_accounted": 818,
+ "rows_accounted": 938,
  "executable_candidates": 206,
- "deepening_tasks": 564,
+ "deepening_tasks": 686,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

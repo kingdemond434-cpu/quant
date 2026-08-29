@@ -159,8 +159,20 @@ class Instrument:
         instrument is far more dangerous than an absent one: it backtests as though trading were
         free and produces the best-looking cells in the sweep.
         """
+        # A ZERO SPREAD IS A MISSING MEASUREMENT, NOT A FREE INSTRUMENT. This tested
+        # `median_spread_pts >= 0`, so 0.0 passed -- and the docstring above already warns that an
+        # uncosted instrument is more dangerous than an absent one because it backtests as though
+        # trading were free and produces the best-looking cells in the sweep. The guard described
+        # the danger and then admitted it.
+        # Measured 2026-08-29: 24 of 251 symbols carried median_spread_pts = 0.0 and ALL 24 were
+        # marked usable -- including EURUSD, AUDUSD, EURGBP, EURCHF and USDJPY, the most liquid
+        # names on the book, which are precisely the ones a search will favour when they alone
+        # trade for nothing. The contamination was real: 4 of 23 certificates, 156 of 615
+        # power-cure candidates, and 3 of 17 LIVE forward clocks.
+        # No broker quotes a zero spread. Treating it as unusable is the same fail-closed rule
+        # this property already applies to tick_size and contract_size.
         return (self.bars >= MIN_BARS and self.tick_size > 0
-                and self.contract_size > 0 and self.median_spread_pts >= 0
+                and self.contract_size > 0 and self.median_spread_pts > 0
                 and self.tick_value > 0)
 
 

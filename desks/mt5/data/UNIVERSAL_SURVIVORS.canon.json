@@ -1486,7 +1486,7 @@
       "expected_value"
     ],
     "trials_multiplier": 7.0,
-    "trial_count_basis": "ceil(null_calibrated_participation_ratio_effective_cells * 7); fail closed to ceil(raw_cells * 7) when dependence is unmeasurable",
+    "trial_count_basis": "fixed_campaign_trials(597) + fixed_variance_of_sharpes(0.014863): BOTH inputs to the deflated-Sharpe hurdle are constants, so the bar is identical for every cell regardless of how many others share its sweep or how dispersed their Sharpes are",
     "dsr_threshold": 0.95,
     "pbo_max": 0.5,
     "spa_alpha": 0.05,
@@ -1502,5 +1502,5 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-08-29T03:42:21.888096+00:00"
+  "swept_at": "2026-08-29T12:45:23.463173+00:00"
 }

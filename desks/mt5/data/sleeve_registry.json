@@ -57,10 +57,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:19+00:00",
-   "identity_restored_at": "2026-08-28T03:17:19+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "CADJPY.asia#rr=2.5": {
    "identity": {
@@ -93,10 +93,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:20+00:00",
-   "identity_restored_at": "2026-08-28T03:17:20+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "CADJPY.asia#rr=1.5": {
    "identity": {
@@ -129,10 +129,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:20+00:00",
-   "identity_restored_at": "2026-08-28T03:17:20+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "EURJPY.asia#rr=1.5": {
    "identity": {
@@ -165,10 +165,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:21+00:00",
-   "identity_restored_at": "2026-08-28T03:17:21+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "EURJPY.asia": {
    "identity": {
@@ -201,10 +201,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:22+00:00",
-   "identity_restored_at": "2026-08-28T03:17:22+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "EURJPY.asia#rr=2.5": {
    "identity": {
@@ -237,10 +237,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T03:17:23+00:00",
-   "identity_restored_at": "2026-08-28T03:17:23+00:00",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "GBPJPY.asia#rr=1.5": {
    "identity": {
@@ -271,7 +271,12 @@
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "GBPJPY.asia#rr=2.5": {
    "identity": {
@@ -302,7 +307,12 @@
     "contract_oz": 100000.0,
     "quote_per_account": 184.573
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "USDJPY.asia#rr=1.5": {
    "identity": {
@@ -335,10 +345,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T22:06:04+00:00",
-   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "USDJPY.asia": {
    "identity": {
@@ -371,10 +381,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T22:06:04+00:00",
-   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "USDJPY.asia#rr=2.5": {
    "identity": {
@@ -407,10 +417,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
    "status_why": "",
-   "status_at": "2026-08-28T22:06:04+00:00",
-   "identity_restored_at": "2026-08-28T22:06:04+00:00",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 2
   },
   "USDZAR.overnight_gap_decay.asia": {
    "identity": {
@@ -467,7 +477,12 @@
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "XAUUSD.asia": {
    "identity": {
@@ -498,7 +513,12 @@
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "XAUUSD.asia#rr=2.5": {
    "identity": {
@@ -529,7 +549,12 @@
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   },
   "XAUUSD.asia#rr=1.5_wait_bars=8": {
    "identity": {
@@ -560,10 +585,15 @@
     "contract_oz": 100.0,
     "quote_per_account": 1.15844
    },
-   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00"
+   "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
+   "status_why": "",
+   "status_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 1
   }
  },
- "updated_at": "2026-08-28T22:06:04+00:00",
+ "updated_at": "2026-08-29T12:45:29+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",
