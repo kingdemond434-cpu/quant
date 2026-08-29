@@ -4729,3 +4729,83 @@ repo). A sha256 pairwise scan over all 91 repo pairs found this was the only pai
 independent zeros carry the same verdict — but any future significance statement over this class
 must use 13, and this is the failure mode of counting repos as observations without checking they
 are distinct.
+
+---
+
+## BRAIN s18 (2026-08-29) — the empirical failure-mode taxonomy of a compiled expression language, and the one class the desk's generator leaves unenumerated
+
+**Source:** `zhutoutoutousan/worldquant-miner` @ `6a0c9433`, Apache-2.0,
+`generation_two/core/template_validator.py` (1,837 lines) + `compiler_knowledge.json`.
+**DERIVES-FROM:** NONE (checked) — no other repo in the 13-repo permissive class carries an
+error-classification layer; s17's duplicate-pair scan found no sibling of this file.
+**Tier:** executable (probe: `data/brain_hunter_s18_validator_probe.py`, results
+`data/brain_hunter_s18_validator_probe.json`).
+
+### What is actually worth taking
+
+Not the code — the code is largely dead (see the graveyard entry of the same date). What is worth
+taking is the **error taxonomy**, because it was not designed, it was *paid for*: each class is a
+distinct rejection message the author hit often enough against a real simulator to write a
+dedicated repair arm for. Eight classes, in the order the file handles them:
+
+| # | class | what the compiler rejected | MT5 / desk analogue |
+|---|---|---|---|
+| 1 | `unknown_variable` | identifier not bound in scope | n/a — the desk composes callables, not text |
+| 2 | `invalid_field` | field id not in the region/delay universe | **live**: a feature absent for a symbol at that timeframe |
+| 3 | `syntax_error` / `unexpected character` | malformed expression, usually a missing comma | n/a by construction |
+| 4 | `type_error` / scope mismatch | REGULAR vs MATRIX vs VECTOR operator applied to the wrong field type | **`needs_panel`** — the desk already has this one, and it is the only one it has |
+| 5 | event-input incompatibility | cross-sectional/arithmetic operator applied to an event-shaped (sparse, irregularly-stamped) field | **live and uncovered**: the MT5 analogue is a calendar/event feature (macro releases, rollover stamps) fed to `rank`/`zscore`, which are defined on a dense panel |
+| 6 | arity (`invalid number of inputs`) | operator called with the wrong parameter count | n/a — Python signatures enforce it |
+| 7 | **missing lookback** | a windowed operator invoked without its window | **live and uncovered — see below** |
+| 8 | unknown operator | name not in the operator set | n/a |
+
+Classes 1, 3, 6 and 8 cannot occur on this desk *by construction*, and that is a real
+architectural advantage worth recording rather than a gap: `combination_engine` enumerates typed
+`Combination` dataclasses, so there is no text layer in which a lexical or arity error can exist.
+Class 4 is covered by `CROSS_SECTIONAL`/`needs_panel`, whose docstring already names the exact
+failure the BRAIN author hit ("a CS transform silently computed on a single symbol degenerates to
+a constant"). **Two transfer and are not covered: class 5 and class 7.**
+
+### Class 7 is the one with a number attached — the desk's transform windows are hardcoded and are not trials
+
+`libs/alpha_factory/evaluator.py:91-94` fixes the lookback of both windowed transforms:
+
+```
+if tf == "ts_rank": return x.rolling(60, min_periods=30).rank(pct=True)
+if tf == "decay":   return x.ewm(halflife=10, min_periods=10).mean()
+```
+
+`60` and `10` are free parameters of the hypothesis. They are **not fields of `Combination`, not
+part of `Combination.key`, and therefore not counted in `CombinationSpace.n_trials`.** Today that
+is honest — one point on the axis is enumerated and one trial is paid for. It stops being honest
+the moment anyone tunes either constant, because the deflation would not know a second point was
+tried. This is the L1.60 shape (a threshold living inside a stage rather than in the policy),
+found here only because BRAIN's taxonomy names lookback as a first-class failure class rather
+than an implementation detail.
+
+**Disposition — the recommendation, for a seat that is not research-frozen:** promote the window
+to a field of `Combination` with today's values as the sole default, so `key` and `n_trials`
+carry it. That is a *no-op on the enumerated space today* and makes any future window sweep pay
+its own multiplicity. It is deliberately NOT a proposal to sweep windows now: adding a second
+window point multiplies the space by 2 and must earn that through the same gates as anything else.
+
+### Class 5 — the event-input analogue, logged as a named gap not a fix
+
+The MT5 analogue is exact: a macro-calendar or rollover feature is *event-shaped* (values exist on
+a sparse, irregular subset of bars), and `rank`/`zscore` in `evaluator.transform` operate on the
+dense panel row, so an event feature entering a CS transform is ranked against bars where it does
+not exist. Whether that occurs today depends on how the calendar features are forward-filled
+before they reach the panel, which this seat did not measure and does not claim. **Named as a
+measurement, not a defect:** for each event-shaped feature reaching `enumerate_space`, what
+fraction of panel rows carry a real (not forward-filled) observation? A CS transform over a column
+that is ≥90% carried-forward is class 5 wearing MT5 clothes. Routed to the inbox rather than the
+watchlist because it is an engine question, not a hypothesis.
+
+### Adoptable, cheap, and the reason this file was worth reading at all
+
+The taxonomy itself is the deliverable: it is the list of ways an expression generator produces
+*well-formed-looking candidates that are semantically void*, discovered by someone else's
+simulator budget. The desk's generator is immune to half of it and already handles one more. That
+is a genuinely good result to be able to state with evidence, and it retires the recurring worry
+that `combination_engine` "has no validator at all" — it has no *parser*, which is why it needs no
+validator for classes 1/3/6/8.

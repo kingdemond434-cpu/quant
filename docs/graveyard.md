@@ -2116,3 +2116,83 @@ bar, because the level is a property of `k` and not of the factor.
 L1.16a RE-OPEN CONDITION: a noise-injection test scored on agreement with the analytic attenuation
 curve across ≥3 noise levels, with the null's ratio instability handled explicitly. That is a
 different test.
+
+---
+
+## 2026-08-29 — BRAIN s18: the "self-correcting AST" and the "retry until successful" repair loop are both REFUTED as capabilities
+
+**Artifact:** `zhutoutoutousan/worldquant-miner` @ `6a0c9433`, Apache-2.0.
+**Probe:** `data/brain_hunter_s18_validator_probe.py` → `data/brain_hunter_s18_validator_probe.json`.
+**Why this is a graveyard entry and not an inbox note:** three consecutive sessions (s15, s16, s17)
+named `fast_expr_ast.py` + `template_validator.py` as this ground's top un-mined item, on the
+stated reasoning that "the expression AST's VALIDATOR names the well-formedness failure modes
+someone else paid to discover". The failure modes are real and are routed to the inbox. The
+*validator* is not.
+
+### 1. `fast_expr_ast.py` (921 lines) is unreachable in the shipped configuration
+
+`TemplateValidator.__init__` takes `use_ast: bool = False`. The repo's **only** instantiation site
+— `generation_two/core/template_generator.py:187-192` — passes `use_ast=False` explicitly, with
+the comment *"Disable AST by default, use prompt engineering and database knowledge only"*.
+Every AST path is gated on that flag: `_fix_with_ast`, `_generate_fix_from_ast`,
+`learn_from_success`, `SelfCorrectingAST.learn_from_error`, and the `store_ast_pattern` call in
+`learn_from_simulation_error`. The AST, its self-correction and its pattern learning are dead code
+in the only configuration the repo ever runs. **The desk spent three sessions ranking a component
+its own author switched off.**
+
+### 2. Consequently the "learned compiler knowledge" is empty, and ships that way
+
+`generation_two/core/compiler_knowledge.json` describes itself as *"Compiler logic as code —
+learned from runtime errors and reverse engineered from AST"* and ships with
+`incompatible_operators: []`, `learned_rules: []`, `successful_patterns: []`,
+`failed_patterns: []`. Every non-empty rule in the file is hand-written prose. The behaviour is
+carried entirely by a hardcoded 15-name fallback set inside `_get_incompatible_operators`. This is
+the desk's own recurring class — a learning loop whose output is an empty artifact that reads
+identically to "nothing to learn".
+
+### 3. The error classifier cannot name 4 of the 8 classes the repo builds fixers for — MEASURED
+
+`_classify_error_from_message` matches four regex families (`unknown_variable`, `invalid_field`,
+`syntax_error`, `type_error`). Fed one canonical message per shipped error class, it returns
+`unknown_error` for **event-input incompatibility, arity, unexpected-character and
+missing-lookback** — precisely the four classes with dedicated repair functions and dedicated
+retry arms. Its output is stored as the `error_type` metadata key on every learned pattern, so the
+learning loop is label-collapsed at the source even when the AST is enabled.
+
+### 4. `max_attempts = 999` is a fixed-point spin, not a retry — MEASURED
+
+`refeed_with_correction` sets `max_attempts = 999` ("retry until successful") for three error
+classes and, for exactly those three, **explicitly skips prompt engineering** — the only
+stochastic element in the loop. What remains is deterministic string rewriting. Measured over 9
+cases, both repair functions reach their fixed point by pass 2 (`fixed_point_at_pass` ≤ 2 in every
+case, and = 1 whenever the first pass changed nothing). So attempts 2…999 recompute a byte-
+identical template. `_fix_input_count_error` failed to repair 1 of 3 arity cases
+(`ts_corr(close, open, 20)` against "should be exactly 2" — unchanged), which is a concrete
+instance that spins the full 999. Input-count and unexpected-character have no in-loop state
+change at all; the event-input arm calls `_learn_event_input_compatibility`, so only that arm has
+any mechanism by which a later pass could differ.
+
+### 5. The "aggressive" fix no-ops on operators the repo's own knowledge file names — MEASURED
+
+`_aggressive_event_input_fix` claims to "replace ALL incompatible operators". It is a table of 15
+hardcoded names. `compiler_knowledge.json` states the rule *"Cross-sectional operators (rank,
+winsorize, zscore) do not support event inputs"*; the table contains `rank` and neither of the
+other two, and contains no group operator. Measured: `group_rank(...)`, `winsorize(...)` and
+`zscore(...)` are returned **unchanged**, 4 of 6 probe cases no-op — after which the loop appends
+"Applied aggressive event input fix" to its fix list regardless and re-enters the 999-spin.
+
+### The common mechanism of death, and it is one the desk keeps meeting
+
+Every one of these is a **verdict or capability that is a constant function of configuration
+rather than of the input**: a flag off at the only call site, a classifier whose vocabulary does
+not intersect its own error set, a retry bound over an idempotent function, a claim of exhaustive
+replacement over a hardcoded list. Same shape as s16's `test_temporal_shuffle` and s17's
+`test_noise_injection`, and the same shape as the desk's own `GAP-FIXER 2026-08-29` finding
+(a verdict computed then discarded by the layer above).
+
+### L1.16a RE-OPEN CONDITION
+
+A NAMED enabling change: an upstream commit that flips `use_ast=True` at the call site, or that
+adds patterns to `error_patterns` covering the four unreachable classes. Absent that, no seat
+re-reads `fast_expr_ast.py` or `template_validator.py`. The **taxonomy** extracted from this file
+is live and sits in `improvement_inbox.md` under the same date; only the implementation is buried.

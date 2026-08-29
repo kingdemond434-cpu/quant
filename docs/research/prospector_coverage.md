@@ -11630,3 +11630,97 @@ counting the hits. Re-entry needs a new repo in the class or a term the vocabula
 4. **The BRAIN-scoped collector arm** — s9's gap, NINE sessions old. Belongs to a seat that is not
    research-frozen; naming it again without fixing it remains the finding, and this session paid
    for it a second time.
+
+---
+
+## BRAIN HUNTER s18 — 2026-08-29 — the oldest live item, taken and closed: the validator its own author switched off
+
+Took s17's NEXT-GROUND item 1 (`generation_two/core/fast_expr_ast.py` + `template_validator.py`),
+carried and skipped by s15, s16 and s17. It is now closed with a verdict, and the verdict is that
+three sessions had ranked a dead component first. **Zero network this run** — the repo was already
+in a local shallow clone from a prior session, which is the only reason this cost what it did.
+
+### The verdict, in one line
+
+The failure-mode TAXONOMY is real, valuable and now extracted (`improvement_inbox.md`, same date).
+The VALIDATOR that produced it is dead code, its learning loop ships empty, its classifier cannot
+name half its own error classes, and its "retry until successful" loop is a fixed-point spin
+(`docs/graveyard.md`, same date). Five measured findings, all reproducible from
+`data/brain_hunter_s18_validator_probe.py` against sha `6a0c9433`:
+
+1. **`use_ast=False` at the repo's ONLY instantiation site** (`template_generator.py:187`,
+   explicit, commented). 921 lines of AST + self-correction + pattern learning, unreachable.
+2. **`compiler_knowledge.json` ships with four empty lists** — `incompatible_operators`,
+   `learned_rules`, `successful_patterns`, `failed_patterns`. The "learned compiler logic" is a
+   hardcoded 15-name fallback.
+3. **The error classifier reaches 4 of 8 shipped classes.** Event-input, arity,
+   unexpected-character and missing-lookback all resolve to `unknown_error` — the exact four with
+   dedicated fixers. Its output is the `error_type` key on every learned pattern.
+4. **`max_attempts = 999` is a spin.** Both deterministic repair functions reach their fixed point
+   by pass 2 across 9 cases, and prompt engineering — the only stochastic element — is explicitly
+   skipped for exactly the three classes that arm the 999. One measured case
+   (`ts_corr(close, open, 20)` vs "should be exactly 2") is never repaired, so it spins all 999.
+5. **`_aggressive_event_input_fix` no-ops on 4 of 6 cases**, including `group_rank`, `winsorize`
+   and `zscore` — two of which the repo's own knowledge file names as event-incompatible.
+
+### What this ground actually gave the desk, and it is not the code
+
+The eight-class taxonomy of *semantically void but well-formed* generated candidates, paid for by
+someone else's simulator budget. Mapped against `combination_engine` + `evaluator`:
+
+- **4 of 8 cannot occur here by construction** (unknown-variable, syntax, arity, unknown-operator)
+  — the desk enumerates typed dataclasses, not text. That is a real architectural advantage and it
+  retires the standing worry, repeated in s15–s17, that "`combination_engine` has no validator at
+  all". It has no *parser*, which is why it needs no validator for those four.
+- **1 of 8 is already covered** — `CROSS_SECTIONAL` / `needs_panel`, whose docstring independently
+  names the same failure the BRAIN author hit.
+- **2 of 8 transfer and are uncovered.** Class 7 (missing lookback) has a number attached: the
+  desk's `ts_rank` window (60) and `decay` halflife (10) are hardcoded in
+  `evaluator.py:91-94`, are not fields of `Combination`, are not in `key`, and therefore are not
+  in `n_trials`. Honest today at one point on the axis; an L1.60 hidden-knob the moment anyone
+  tunes them. Class 5 (event-input) is logged as a *measurement to run*, not a defect claimed:
+  what fraction of panel rows carry a real vs forward-filled observation for each event-shaped
+  feature entering a CS transform.
+
+### WHAT WAS NOT DONE, said plainly
+
+- The class-5 forward-fill fraction was **not measured** — it is an engine question and this seat
+  is research-frozen; it is named in the inbox with the exact statistic, not asserted.
+- The window-in-`key` recommendation was **not implemented** (`libs/` is frozen for this seat). It
+  is a named patch with a stated no-op-today property, not an "investigate".
+- s17 item 2 (the other 11 repos' evaluation layers) and item 3 (the 25 no-licence repos,
+  census-only) were **not** touched. Both carry forward.
+- **The BRAIN-scoped collector arm is now TEN sessions old** (s9's free-corpus gap). This run did
+  not pay for it — the clone was already local — which is itself the argument: the one session that
+  did not re-enumerate a population was the cheapest session on this ground.
+- Network: none. Video: 0 fetched, 0 locked — no video ground touched this run; s5's finding on
+  BRAIN lecture material is unchanged and was not re-probed.
+
+### SECTION-EXHAUSTION CLAIMED (dated, so no seat re-scans it)
+
+**2026-08-29 — `generation_two/core/template_validator.py` and `generation_two/core/fast_expr_ast.py`
+are EXHAUSTED.** Read in full, probed under control, taxonomy extracted to the inbox and the
+implementation buried in the graveyard with an L1.16a re-open condition (an upstream commit that
+flips `use_ast=True` at the call site, or that extends `error_patterns` to cover the four
+unreachable classes). Nothing further in these two files repays a read.
+
+**2026-08-29 — the "does `combination_engine` need an expression validator?" question is SETTLED.**
+Answered from an external taxonomy rather than from taste: no, for 4 of 8 classes by construction
+and 1 more already covered; yes for 2, both routed with named next actions. Re-entry needs a new
+failure class from a different generator, not another look at this one.
+
+### NEXT UN-EXHAUSTED GROUND (for s19, in order)
+
+1. **The other 11 permissive repos' backtest/evaluation layers** (s17 item 2, now the oldest live
+   item). s17 read cost *vocabulary* class-wide but opened evaluation code only in the 3 repos with
+   hits. What do the other 11 report a factor ON? The prior is "gross IC, no cost, no multiplicity";
+   the QuantGPT/harness 34-file duplicate pair says copying is common here, so the real question is
+   whether the class shares ONE copied evaluation harness — in which case s16's 13 independent
+   zeros are fewer than 13 on the evaluation axis specifically.
+2. **The 25 no-licence repos, census-only** (s15 item, untouched for four sessions). No clone, no
+   code read — all-rights-reserved — but READMEs and repo metadata are public and would extend the
+   population statistics the permissive half established.
+3. **The event-input → forward-fill measurement**, if a non-frozen seat picks it up: it is the one
+   item from this run with a live MT5 consequence rather than a foreign-repo verdict.
+4. **The BRAIN-scoped collector arm** — s9's gap, TEN sessions old. Belongs to a seat that is not
+   research-frozen; naming it again without fixing it remains the finding.

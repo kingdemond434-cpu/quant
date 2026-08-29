@@ -1,0 +1,12 @@
+[
+ {
+  "source": "propfirm_boards",
+  "kind": "fetch_error",
+  "title": "HTTPSConnectionPool(host='ftmo.com', port=443): Max retries exceeded with url: /en/leaderboards/ (Caused by SSLError(SSLEOFError(8, '[SSL: UNEXPECTED_EOF_WHILE_READING] EOF occurred in violation of pr",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-29T13:25:21+00:00",
+  "needs_selector_work": true
+ }
+]
