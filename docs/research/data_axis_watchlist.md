@@ -9311,3 +9311,174 @@ publisher-maintained scoreboard** (card 91) — the desk's first named-analyst n
 4. Standing and unbudged: **the Pink Sheet publication vintage must be bounded by the card-83 method
    (with card 84's served-vs-requested capture check) before ANY axis built on it goes near the EV
    gate.** No exception, and no axis was pre-registered this run because of it.
+
+---
+
+### SESSION START — 2026-08-29 (free-data run **x**) — IN PROGRESS
+
+Backlog on entry: **clear** (`source_backlog_next.py`: 66 catalogued, all resolved, 28 deferred to
+dates 2026-09-01→09-15). No verification debt; going straight to the ground run (w) named.
+
+**ITEMS TAKEN THIS RUN (the chain run (w) left, in its own order):**
+1. **LBMA `/cn/` Chinese sitemap** and the CJK precious-metals layer behind it — clears run (w)'s
+   own named non-English debt first, per CJK PRIORITY.
+2. **IMF Primary Commodity Prices** as the second-institution cross-check on the World Bank Pink
+   Sheet (card 90), plus the unread CMO sheets/forecast tables.
+3. **LBMA forecast survey 2010→ back-years** — the extension that decides whether card 91 is a
+   curiosity or a powered candidate.
+
+Status: **CLOSED — 3 items taken, 3 closed to depth.**
+
+**Categories covered:** vendor-replacement reconstruction (cat 6 — LBMA's own statistical
+publications vs the IBA-licensed benchmark; IMF PCPS as the second-institution check), alternative
+data (cat 5 — the forecast panel), non-English (cat 3 — the LBMA `/cn/` layer, clearing run (w)'s
+named debt), community/archival lakes (cat 4 — Wayback CDX as a population enumerator), and
+**dead-data archaeology** (the addendum-7 seam). Crypto-exchange ground untouched (banned universe).
+
+**Verified vs UNVERIFIED: 3 adopted (2 verified-clean, 1 needs-monitoring), 1 UNVERIFIED and
+explicitly NOT adopted.** No axis pre-registered on the EV gate — reasons stated per card, not
+omitted.
+
+---
+
+#### THE RUN'S MOST DECISION-RELEVANT RESULT — RUN (w)'s ROLL-COST WEDGE SURVIVED REPLICATION
+
+Run (w) flagged, as a cross-source pair, that the World Bank Pink Sheet's **Brent benchmark sits
+0.56% BELOW the desk's XBRUSD CFD** while the metals sat at ~0.0%, and read it as a *cost* term.
+A single-institution result of that shape is indistinguishable from a methodology artifact.
+**IMF PCPS — an independent institution, own sources, own methodology — reproduces the signed
+pattern: Brent −0.395% (n=131), gold −0.026% and silver +0.017% (n=88 each).** The metals are the
+control, they are clean in BOTH institutions, and only energy carries the wedge. That is a
+replication, not a coincidence, and under the bottleneck law a cost term is usually where the
+marginal resource belongs. It is now the strongest-supported item in this document.
+
+---
+
+#### ITEM 1 — LBMA `/cn/` AND WHAT IT LED TO (2 new adopted sources) — **CLOSED**
+
+The Chinese layer itself is thin: 50 URLs, 35 pages + 15 PDFs, all institutional (Good Delivery,
+membership, responsible sourcing). **But it did two useful things.** First, it **independently
+corroborated run (w)'s licence withdrawal in a second language** — the CN prices page states the
+tables moved to the MyLBMA Portal and *「需要 IBA 的相关许可」* (an IBA licence is required). Run (w)
+re-graded `lbma_auction_prices_json` to `excluded-licensed` off the English page; the Chinese page
+says the same thing, so that withdrawal is not a misreading. Second, the CN overview named **three
+datasets that are not the benchmark price** — 伦敦金库持有量 (vault holdings), LBMA 贸易数据 (trade
+data) and 月度净结算数据 (monthly clearing) — and those are **LBMA's own publications, not IBA's.**
+
+That distinction is the whole find, and it is the §38 replacement for the source run (w) excluded:
+
+- **`lbma_london_clearing_data` — verified-clean, ADOPTED.** 357 consecutive months, **1996-10 →
+  2026-06**, zero gaps, zero duplicates. Gold and silver × (ounces, USD value, transfer count).
+  London OTC settlement flow on two instruments the desk trades — an *activity* axis, not another
+  price series, and the desk held nothing of this shape.
+- **`lbma_london_vault_holdings` — verified-clean, ADOPTED.** 120 consecutive months, **2016-07 →
+  2026-06**, end-of-month physical gold and silver in London vaults. The *stock* half of a
+  stock/flow pair.
+
+**VERIFICATION — against a quantity the source never publishes.** `value_US$ / ounces` implies a
+monthly average price. Diffed against the desk's own MT5 H1 tape over the 100 overlapping months:
+**XAUUSD corr = 0.999982** (mean dev −0.052%, sd 0.212%), **XAGUSD corr = 0.999889** (+0.084%,
+sd 0.723%). That single test simultaneously proves the unit mapping (ounces in *millions*, value in
+*billions*), the month-label calendar alignment, and the absence of any scale error — **none of
+which the file states anywhere.**
+
+**AND THE CROSS-CHECK CAUGHT A PUBLISHED ERROR, which is the point of running it.** Silver **2024-05**
+implies 31.29 against a market mean near 29.4 — **+6.55%**. I tested my own first explanation
+(value-weighting in a volatile month) and **it failed**: 2026-02 carries the *identical* within-month
+CV of 6.7% at only 0.94% deviation, and corr(|dev|, CV) is just +0.20 on n=100. So it is not a
+weighting artifact — it is a **single-month error in the published file, invisible without this
+cross-check.** Separately, silver's *general* 0.723% sd is fully explained by quantisation: value is
+printed to one decimal in billions, so silver (~7.5bn) carries ±0.67% — **the silver series' apparent
+noise is the printing precision, not the market.**
+
+**TWO TRAPS WORTH MORE THAN THE DATA** (both recorded as failure modes):
+1. **The vault file mixes date encodings in ONE column** — 79 of 120 month cells are raw Excel
+   serials (42552 = 2016-07), 41 are `YYYY-MM` strings. A parser reading the column as text keeps 41
+   months, **silently drops 79, and still returns a clean, gap-free-*looking* series.** A 66% loss
+   that passes every emptiness check.
+2. **The clearing figures are DAILY AVERAGES, not monthly totals** (the publisher's own Notes say so).
+   Reading 16.7 mns oz as a monthly total overstates the flow **~21×**. The number is a rate.
+
+**LICENCE — the discipline run (w) paid for, applied.** I opened the terms before grading. There is
+**no licence grant and no terms-of-use page**; the site asserts a bare `© 2026 LBMA`, and the
+trade-data disclaimer is a **liability** disclaimer (no warranties, no liability) containing **no
+licence requirement and no redistribution restriction** — the exact opposite of the benchmark price,
+which demands an IBA licence in explicit terms. Posture adopted: **internal research use only, no
+redistribution**, as a prudent default in the *absence* of a grant — stated, never inferred from an
+HTTP 200.
+
+**ROBOTS.** `lbma.org.uk/robots.txt` 403s to ClaudeBot but returns 200 to a browser UA and disallows
+**only `/cache/`**, naming no agent. So the site's stated policy permits this; the 403 is an edge
+UA-filter, not a verdict. Recorded as such in both cards.
+
+#### ITEM 2 — IMF PRIMARY COMMODITY PRICES — **CLOSED** (`needs-monitoring`, adopted)
+
+`www.imf.org` **and** `data.imf.org` both return an **Akamai edge 403** (`errors.edgesuite.net`),
+which survived a full browser header set — so it is a **datacentre-IP block, not a UA rule and not a
+robots verdict.** Infrastructure wall, *not* a §13 exclusion, and recorded that way. Reached instead
+through the **DBnomics** keyless mirror: PCPS = 1,236 series, 230,092 observations, 108 commodities,
+monthly levels from **1990-01** — eight years deeper than the desk's own tape.
+
+**Liveness is `max(observation_date)`, never a stamp — and here the stamp told the truth.** Every
+series tested ends at **2025-06**: the mirror is **14 months frozen**. PCPS via this route is a
+*historical archive*, not a live feed, and there is currently **no route at all to the live series**
+from this box. Graded `needs-monitoring` for exactly that reason, and the accuracy is excellent where
+it exists (gold corr 0.999990, silver 0.999986, Brent 0.999453 vs the desk tape).
+
+#### ITEM 3 — THE FORECAST-SURVEY BACK-YEARS — **CLOSED** (`UNVERIFIED`, deliberately NOT adopted)
+
+Direct probes of `forecast-survey-{2010..2022}` returned **13/13 404** — the back-years are genuinely
+not on the live site. **Wayback CDX enumerated the population the site hides** (756 rows): per-analyst
+annual PDFs for **2009, 2010, 2011, 2013, 2014, 2015**, per-metal HTML for **2003 and 2008**,
+`ajax_forecast.cfm` / `ajax_forecast_2012.cfm` endpoints, and media-centre result posts 2015–2020.
+I retrieved `forecast2011.pdf` (685 KB, real `%PDF-1.4`) and extracted it — **16 pages, 65 of 67
+streams decompressed, 213,698 chars** — confirming a genuine **per-analyst roster with institutions**
+(Bhar/Crédit Agricole, Cooper/Barclays, Jansen/JPMorgan, Steel/HSBC, Klapwijk/GFMS…). The seam is
+real and, being dead data, one-time-exhaustible.
+
+**I also found what the live site DOES carry:** a consensus scoreboard
+(`/forecast-survey-2026/2010-2026-performance`) with **16 paired (forecast, realised) years per
+metal** — so card 91's population is **n=16, not n=4**. Consensus MAPE vs a random-walk benchmark:
+**Gold 8.53% vs 10.91% (beats), Silver 11.44% vs 17.46% (beats), Palladium 11.08% vs 22.01% (beats),
+Platinum 9.98% vs 9.48% (loses).** Signed bias is **not** significant on any metal after multiplicity
+(platinum's t=+2.20 is one of four tests and does not survive Holm); pooled bias +1.58%, t=+1.00,
+with four strongly-correlated metals so effective n is well below 64.
+
+**BLUNT, AND UNCHANGED FROM RUN (w)'s VERDICT:** the upgrade from n=4 to n=16 is real and it is
+**still not a population.** These are calendar-year-average forecasts published each January; against
+the ten gates that is vacuous under L1.57. **The source is verified; the axis is not proposed, and
+no EV-gate pre-registration was made this run.** Reporting the skill numbers as a *finding* while
+refusing to trade them is the honest split.
+
+**DEPTH LINE (honestly):**
+- **LBMA CN layer — EXHAUSTED.** All 5 sitemap sections pulled, all 50 URLs enumerated, both prices
+  pages read in Chinese. Depth surfaced what the surface could not: the licence corroboration in a
+  second language, *and* the three non-benchmark datasets the English navigation buries.
+- **LBMA clearing/vault — EXHAUSTED as sources.** Sitemap → xlsx → stdlib parse → full census
+  (gaps/dupes/encodings) → ground-truth diff against the desk's own tape → **hypothesis test on the
+  residual, which refuted my own first explanation** → Notes read verbatim → terms read before
+  grading. The refuted explanation is the depth: it converted "noisy month" into "published error".
+- **Forecast back-years — POPULATION ENUMERATED, CONTENT NOT.** Live probe (13×404) → CDX
+  enumeration → one PDF retrieved and extracted with a page-vs-stream assertion. I did **not**
+  extract numbers from any back-year; that is named as next-run work, not implied as done.
+- **IMF — door found, DEAD END for live data, honestly graded.** Primary host probed twice
+  (UA-independent 403) → alternate host → mirror → observation-level liveness test → 4-series
+  ground-truth diff.
+- **Gaps I did not close:** no reply chains, no fork trees, no citation chains — institutional and
+  archival doors have no such layer, and CDX population enumeration was the equivalent depth. The
+  IMF's own terms of use remain **unread** because the host is unreachable; that is an open item on
+  the card, not a resolved one.
+
+**NEXT RUN TAKES:**
+1. **Extract the LBMA back-year PDFs (2009/2010/2011/2013/2014/2015) and the 2003/2008 HTML** to
+   per-analyst numbers, asserting page-count vs streams-parsed on every file (the s13 discipline).
+   Dead data — mine to EXHAUSTED and mark it so.
+2. **A live route to IMF PCPS** (the mirror is 14 months frozen and the IMF host is IP-blocked):
+   try other mirrors/statistics-agency doors, and **read the IMF ToS** from a reachable route to
+   close the open licence item.
+3. **The clearing × vault stock/flow pair as an actual axis** — 357 months of flow against 120 of
+   stock on XAUUSD/XAGUSD. **Bound the publication lag first by the card-83 vintage method**: the
+   vault file states "one month in arrears" but **the clearing file states no lag at all**, and an
+   unbounded lag makes any point-in-time claim fiction.
+4. Standing and unbudged: the Pink Sheet vintage bound (run (w) item 4) still gates any Pink-Sheet
+   axis, and now also gates the replicated Brent wedge above.

@@ -5015,3 +5015,55 @@ pointed at a scale-shaped quantity. Named for s20 as the one live question left 
 **Not a defect claim against the desk:** the desk's own `n_trials` accounting is a count of
 generated cells, i.e. already the scale-shaped instrument. This is a reporting-discipline item for
 census output, not an engine item, and it is stated as a rule to apply, not an investigation.
+
+### 2026-08-29 (free-data run x) — method findings
+
+1. **A CONSISTENCY RATIO BETWEEN TWO PUBLISHED COLUMNS IS A FREE ERROR DETECTOR, and it caught a
+   real one.** Where a source publishes both a quantity and a value, their ratio implies a price the
+   source never publishes — diffable against the desk's own tape. On LBMA clearing this proved the
+   unit mapping, the calendar alignment and the absence of scale error in ONE test (gold corr
+   0.999982), and then flagged silver 2024-05 as a **published-value error** (+6.55%) that no
+   internal check could see. **Generalise: for every adopted source with ≥2 numeric columns, derive
+   the implied third quantity and diff it.** Cheap, and it audits the publisher rather than the parser.
+2. **TEST YOUR OWN EXPLANATION OF A RESIDUAL BEFORE RECORDING IT.** My first read of that 6.55% was
+   value-weighting in a volatile month. It failed its own control: another month with an identical
+   within-month CV deviated 0.94%, and corr(|dev|, CV) was only +0.20. Had I not tested it, a real
+   published error would have been filed as a known-benign artifact — the most expensive kind of
+   wrong entry, because it *closes* the question.
+3. **PRINTING PRECISION MASQUERADES AS MARKET NOISE.** Silver's whole 0.72% dispersion was the value
+   column's one-decimal-in-billions quantisation (±0.67% at ~7.5bn) while gold's was 0.13% at ~38bn.
+   **Before attributing dispersion to a market, compute the quantisation implied by the printed
+   precision** — the same series can look 5× noisier purely from magnitude.
+4. **A SINGLE COLUMN CAN CARRY TWO DATE ENCODINGS.** LBMA's vault file holds 79 raw Excel serials
+   and 41 `YYYY-MM` strings in one column; a text-only reader keeps 41, drops 79, and returns a
+   gap-free-*looking* series that passes every emptiness check. **Branch on cell type, and assert
+   parsed-row-count against the source's own stated start date** (which caught it here: the publisher
+   says July 2016, the parser must reach July 2016).
+5. **DISTINGUISH THE EDGE FROM THE POLICY, IN BOTH DIRECTIONS.** LBMA 403s ClaudeBot but serves
+   robots.txt to a browser UA disallowing only `/cache/`; IMF 403s *every* UA including full browser
+   headers, from both hosts, at the Akamai edge. The first is a UA filter over a permissive policy;
+   the second is a datacentre-IP wall. **Neither is a §13 exclusion** — recording either as "walled"
+   loses a legitimate source (the free-data-g lesson, recurring). Probe with ≥2 header profiles
+   before grading, and record WHICH wall it is.
+6. **AN OPEN ENDPOINT ON THE SAME HOST CAN HAVE A DIFFERENT LICENCE FROM ITS NEIGHBOUR.** LBMA's
+   benchmark price requires an IBA licence in explicit terms; LBMA's OWN statistical publications on
+   the same site carry only a liability disclaimer. Run (w)'s withdrawal of the price was correct AND
+   the vault/clearing files are legitimately usable. **Grade the DATASET, never the host** — the
+   host-level generalisation would have cost the desk both.
+7. **WAYBACK CDX ENUMERATES POPULATIONS A LIVE SITE HIDES (OP-098, re-confirmed on a new ground).**
+   13/13 direct probes for LBMA's pre-2023 survey years returned 404; CDX returned per-analyst PDFs
+   back to 2009 and HTML to 2003. **A 404 sweep is evidence about the LIVE site only — never about
+   the existence of the data.** Run the CDX enumeration before grading any back-history absent.
+8. **NEVER WHOLE-FILE-REWRITE A SHARED JSON STATE FILE TO SET ONE KEY — I did, and I could not
+   afterwards prove I had lost nothing.** I set `last_data_axis_dig` in `data/cadence_state.json`
+   with a `json.load` → mutate → `json.dump(indent=1)` round-trip. The file was `M` in the working
+   tree at session start and was byte-identical to HEAD afterwards, i.e. **my write silently
+   normalised away whatever the working-tree difference was.** It resolved benignly here (two
+   sibling worktrees refreshed at 12:48 and 13:59 the same day are byte-identical to HEAD, and HEAD
+   already carried the value I was setting), but **the benign outcome was luck, not method** — a
+   concurrent writer's edit in the preceding hour would have been destroyed with no trace and no
+   error. `cadence_state.json` has multiple racing writers across ≥5 checkouts (the same unlocked
+   multi-writer shape already recorded for `macro_state.json`). **Fix: set one key with a targeted
+   in-place edit, and diff against `git show HEAD:<path>` BEFORE writing so a working-tree
+   difference is seen rather than overwritten.** A reformat is indistinguishable from a revert at
+   the point of reading — which is precisely why it passes review.

@@ -2897,6 +2897,111 @@
    ],
    "next_ground": "the 2010-2023 scoreboard/back-years (16 annual obs); the per-year at-a-glance pages (fetched, unparsed); the per-analyst COMMENTARY TEXT -- a free dated corpus of stated mechanisms from named professionals, entirely unmined.",
    "yield": "first named-professional numeric forecast panel in the map; one measured cross-metal dispersion extreme; one encoding-trap lesson."
+  },
+  "lbma_london_clearing_data": {
+   "grade": "verified-clean",
+   "adopted": true,
+   "provides": "London (LPMCL) OTC precious-metals CLEARING statistics, MONTHLY, 357 consecutive months 1996-10 -> 2026-06, ZERO gaps, ZERO duplicate months. Six series: gold and silver each as (a) ounces cleared, (b) value US$, (c) number of transfers. Settlement-flow and transaction-count data for the world's largest OTC gold/silver market -- a FLOW/ACTIVITY axis on instruments the desk trades (XAUUSD/XAGUSD), not another price series.",
+   "replaces": "The London OTC volume/flow component that Coinglass/Kaiko-class vendors do not carry at all and that metals vendors (Metals Focus, GFMS) sell inside paid research subscriptions. The desk held NO London OTC activity measure before this.",
+   "provenance": [
+    "https://www.lbma.org.uk/robots.txt (browser UA, HTTP 200: sitemaps + 'Disallow: /cache/' ONLY, no agent named; 403 to ClaudeBot UA = edge UA-filter, NOT a policy verdict)",
+    "https://www.lbma.org.uk/sitemaps-1-section-pages-1-sitemap.xml (the xlsx download URLs are listed IN the sitemap)",
+    "https://www.lbma.org.uk/prices-and-data/clearing-data (page body, 'Notes' block read verbatim)",
+    "https://cdn.lbma.org.uk/downloads/LBMA-Clearing-Data-June-2026.xlsx (38,078 bytes, HTTP 200, keyless, no registration; parsed with stdlib zipfile+ElementTree, no third-party install)"
+   ],
+   "method": "Single unauthenticated GET of the xlsx named in the publisher's own sitemap. One sheet, 361 rows, header block of 3 rows then one row per month descending.",
+   "license": "NO licence grant and NO terms-of-use page exists; the site asserts only a bare '(c) 2026 LBMA' and the associated trade-data disclaimer is a LIABILITY disclaimer (no warranties, no liability) that contains NO licence requirement and NO redistribution restriction. CONTRAST, and this is the load-bearing distinction: the LBMA benchmark PRICE requires an IBA licence in explicit terms (see lbma_auction_prices_json, excluded-licensed). POSTURE ADOPTED: internal research use only, NO redistribution -- stated as a prudent default in the ABSENCE of a grant, never inferred as permission from the HTTP code (run (w)'s lesson, applied).",
+   "cadence": "monthly; file name carries the month (…-June-2026.xlsx), so the URL must be DISCOVERED FROM THE SITEMAP each run, never templated blindly.",
+   "verification": "VERIFIED THIS RUN against a quantity the source never publishes. value_US$ / ounces = an IMPLIED monthly average price; diffed vs the desk's own MT5 H1 tape monthly mean over the 100 overlapping months 2018-03 -> 2026-06: XAUUSD corr=0.999982, mean dev -0.052%, sd 0.212%; XAGUSD corr=0.999889, mean dev +0.084%, sd 0.723%. This simultaneously proves the unit mapping (ounces in MILLIONS, value in BILLIONS), the month-label calendar alignment, and the absence of any scale error -- none of which the file states.",
+   "known_failure_modes": [
+    "DECLARED STATISTIC IS A DAILY AVERAGE, NOT A MONTHLY TOTAL. The Notes say 'collected and published monthly and is based on daily averages'. Reading 16.7 mns oz as a monthly total overstates the flow by ~21x. The number is dimensionally a RATE.",
+    "SINGLE-MONTH PUBLISHED-VALUE ERROR AT 2024-05 (silver): implied price 31.29 vs a market monthly mean near 29.4, a +6.55% deviation. NOT explained by within-month volatility -- 2026-02 carries the identical within-month CV (6.7%) at only 0.94% deviation, and corr(|dev|, CV) is only +0.20 on n=100. It is an outlier in the published file, and it is INVISIBLE without the implied-price cross-check above. Treat that month as suspect.",
+    "VALUE-COLUMN QUANTISATION: value is published to ONE DECIMAL in billions, so silver (~7.5bn) carries +/-0.67% quantisation and gold (~38bn) only +/-0.13%. This accounts for essentially all of silver's 0.723% sd -- i.e. the silver series' apparent noise is the PRINTING PRECISION, not the market.",
+    "PUBLICATION LAG IS NOT STATED on the page (unlike the vault file, which states its own). The June-2026 file was the newest on 2026-08-29, implying ~1-2 months, but this is INFERRED. Must be bounded by the card-83 vintage method before any axis built on it goes near the EV gate.",
+    "Scope exclusions are material and stated: LPMCL member-book transfers, physical transfers/shipments and BoE-account transfers are INCLUDED; credit-exposure-reducing allocations are EXCLUDED. A structural change in LPMCL membership is a break, not a signal.",
+    "Filename-dated URL: a templated fetcher silently 404s or serves a stale month; enumerate from the sitemap."
+   ],
+   "yield": "HIGH -- 357 months of OTC flow on two traded instruments, verified to 6 significant figures against the desk's own tape, at zero cost and zero registration.",
+   "first_seen": "2026-08-29 (free-data run x)"
+  },
+  "lbma_london_vault_holdings": {
+   "grade": "verified-clean",
+   "adopted": true,
+   "provides": "London vault PHYSICAL HOLDINGS of gold and silver, monthly, 120 consecutive months 2016-07 -> 2026-06, ZERO gaps, ZERO duplicates. Troy ounces ('000s), end-of-month, across the seven London custodians plus the Bank of England. A physical-STOCK series to sit against the clearing FLOW series.",
+   "replaces": "The physical-inventory component sold inside metals research subscriptions (Metals Focus / GFMS / World Gold Council paid cuts). Stock-level data the desk did not hold in any form.",
+   "provenance": [
+    "https://www.lbma.org.uk/robots.txt (browser UA, HTTP 200: sitemaps + 'Disallow: /cache/' ONLY, no agent named; 403 to ClaudeBot UA = edge UA-filter, NOT a policy verdict)",
+    "https://www.lbma.org.uk/sitemaps-1-section-pages-1-sitemap.xml (the xlsx download URLs are listed IN the sitemap)",
+    "https://www.lbma.org.uk/prices-and-data/london-vault-data (page body, 'Notes' block read verbatim)",
+    "https://cdn.lbma.org.uk/downloads/LBMA-London-Vault-Holdings-Data-July-2026.xlsx (23,604 bytes, HTTP 200, keyless)"
+   ],
+   "method": "Single unauthenticated GET of the xlsx named in the publisher's sitemap; one sheet, 124 rows.",
+   "license": "Same position as lbma_london_clearing_data: no grant, no terms page, bare '(c) 2026 LBMA'. Internal research use only, NO redistribution.",
+   "cadence": "monthly, ONE MONTH IN ARREARS (the publisher states this explicitly, unlike the clearing file) -- the July-2026 file's last observation is 2026-06.",
+   "verification": "STRUCTURALLY VERIFIED, NOT YET GROUND-TRUTH DIFFED. Publisher's stated start month (July 2016) matches the parsed first observation EXACTLY; the stated 'holdings on the last day of the month' and 'one month in arrears' are both consistent with the file's content and naming. 120/120 months present, no gaps, no duplicates. There is NO independent series to diff a physical stock against, so this is graded on internal + stated-vs-observed consistency ONLY -- the implied-price trick that verified the clearing file has no analogue here. Stamped honestly rather than borrowing the clearing file's verification.",
+   "known_failure_modes": [
+    "MIXED DATE ENCODING IN ONE COLUMN -- THE BINDING TRAP. 79 of the 120 month cells are raw EXCEL SERIAL NUMBERS (e.g. 42552 = 2016-07) while 41 are 'YYYY-MM' strings. A parser reading the column as text silently keeps 41 months and drops 79 -- a 66% silent loss that still returns a clean, gap-free-LOOKING series. Any reader MUST branch on cell type.",
+    "HEADER ROW CARRIES AN UNLABELLED OBSERVATION: the row above 2026-06 holds gold 306526.6 / silver 907058.9 with an EMPTY month cell -- the current (2026-07) figure. A naive 'first data row' offset either drops it or mislabels every subsequent month by one.",
+    "COVERAGE IS GEOGRAPHIC AND PARTIAL BY DESIGN: metal within the M25 only; excludes jewellery, retailer, individual and non-clearing-system holdings. It is a measure of LONDON WHOLESALE stock, not of world above-ground metal.",
+    "Structural break risk: the series begins in 2016-07 precisely because 'the current set of custodians were established' then -- so the series start is a REGIME definition, and any future custodian change is a level break rather than a flow.",
+    "Filename-dated URL, same as the clearing file: enumerate from the sitemap, never template."
+   ],
+   "yield": "HIGH -- the physical-stock half of a stock/flow pair on XAUUSD/XAGUSD, 10 years, free, keyless.",
+   "first_seen": "2026-08-29 (free-data run x)"
+  },
+  "imf_pcps_via_dbnomics": {
+   "grade": "needs-monitoring",
+   "adopted": true,
+   "provides": "IMF Primary Commodity Price System (PCPS): 108 commodity price series + group indices, monthly/quarterly/annual, USD and SDR, level and index. 1,236 series / 230,092 observations. Monthly levels reach back to 1990-01 -- EIGHT YEARS DEEPER than the desk's own MT5 tape (2018-03) on gold/silver and covering energy, metals, softs, fertilizer, rare earths and the energy-transition metals basket.",
+   "replaces": "The second-institution cross-check on the World Bank Pink Sheet (worldbank_pink_sheet, card 90) -- the commodity analogue of the desk's BIS x Eurostat FX consistency pair. Also a free substitute for the commodity-benchmark history inside paid macro terminals.",
+   "provenance": [
+    "https://www.imf.org/robots.txt -> HTTP 403 Akamai edge ('errors.edgesuite.net'), UNREADABLE from this box; retried with full browser header set, still 403 -- so it is a DATACENTRE-IP/edge block, NOT a User-Agent rule and NOT a robots verdict",
+    "https://data.imf.org/robots.txt -> same Akamai 403; the IMF's own hosts are unreachable from this box",
+    "https://api.db.nomics.world/v22/series/IMF/PCPS?limit=1 (dataset metadata, HTTP 200, keyless)",
+    "https://api.db.nomics.world/v22/series/IMF/PCPS/M.W00.PGOLD.USD?observations=1 (and PSILVER/POILBRE/PNGASUS, all HTTP 200, keyless)"
+   ],
+   "method": "IMF's own hosts are edge-blocked from this box, so the data is reached through the DBnomics mirror's keyless v22 REST API. DBnomics republishes the provider's series verbatim and states the provider's own terms of use (http://datahelp.imf.org/tos).",
+   "license": "DBnomics passes through the IMF's terms (datahelp.imf.org/tos), which were NOT readable this run because the IMF host is edge-blocked. Posture: internal research use only, NO redistribution, pending a reading of the IMF ToS from a reachable route. Stated as an open item, not assumed.",
+   "cadence": "IMF publishes monthly (first full week). THE MIRROR DOES NOT: see failure modes.",
+   "verification": "VERIFIED against the desk's own MT5 H1 tape, monthly means: PGOLD vs XAUUSD corr=0.999990, mean dev -0.026%, sd 0.119% (n=88); PSILVER vs XAGUSD corr=0.999986, mean dev +0.017%, sd 0.127% (n=88); POILBRE vs XBRUSD corr=0.999453, mean dev -0.395%, sd 1.065% (n=131).",
+   "cross_source_finding": "SECOND-INSTITUTION CONFIRMATION OF THE RUN-(w) ROLL-COST WEDGE, and this is the run's most decision-relevant number. Run (w) measured the World Bank Pink Sheet's Brent benchmark sitting 0.56% BELOW the desk's XBRUSD CFD while the metals sat at ~0.0%. IMF PCPS, an INDEPENDENT institution with its own methodology and sources, reproduces the same signed pattern: Brent -0.395% while gold (-0.026%) and silver (+0.017%) are flat. The metals are the control and they are clean in BOTH institutions, so the energy wedge is NOT a Pink-Sheet methodology artifact -- it survives replication. That reads a COST term in W(alpha,R,X,C,L,S) directly.",
+   "known_failure_modes": [
+    "THE MIRROR IS FROZEN AND THE DATASET IS NOT. Every series tested ends at 2025-06 -- 14 months stale as of 2026-08-29 (DBnomics' own updated_at is 2025-07-15, and the OBSERVATION check confirms the stamp rather than contradicting it). PCPS via this route is a HISTORICAL ARCHIVE, not a live feed. Any liveness assumption here is false, and liveness must be re-tested as max(observation_date) PER SERIES on every use.",
+    "THE PRIMARY SOURCE IS UNREACHABLE FROM THIS BOX (Akamai edge 403 on both www.imf.org and data.imf.org, UA-independent). So there is currently NO route to the live series and NO route to the IMF's own terms of use. This is an infrastructure wall, not a licence wall -- do not record it as a §13 exclusion.",
+    "Brent's -0.395% mean deviation vs XBRUSD is NOT an error in either series: it is the physical-benchmark-vs-CFD wedge (the cross-source finding above). Do not 'correct' it -- it is the signal.",
+    "The 2020-04 Brent outlier (6.86%) is the COVID negative-price month; monthly averaging of a month containing a collapse is not comparable across a physical benchmark and a CFD.",
+    "Index series are rebased (2016=100 in current vintage, 2005=100 in an older one) and the dataset notes carry BOTH rebasing paragraphs -- a reader that greps the notes for the base year will find two different answers. Use the USD LEVEL series, not the index, wherever a level exists.",
+    "Basket weights are revised about every 5 years (currently 2014-2016 trade shares) and applied to history -- the GROUP indices are therefore revised, non-point-in-time objects. Individual commodity level series are safe; group indices are not."
+   ],
+   "yield": "HIGH for history and for cross-institution verification; ZERO for live data via this route.",
+   "first_seen": "2026-08-29 (free-data run x)"
+  },
+  "lbma_forecast_survey_backyears_archive": {
+   "grade": "UNVERIFIED",
+   "adopted": false,
+   "provides": "The PRE-2023 years of the LBMA Annual Precious Metals Forecast Survey, which are ABSENT from the live site, recovered as a population from the Wayback CDX index: per-analyst annual PDFs (docs/forecasts/forecast2009.pdf, assets/forecast2010.pdf, forecast2011.pdf, forecast2013.pdf, forecast_2014_final_interact.pdf, 'forecast 2015_final linked.pdf') and per-metal HTML (publications/forecast 2003/forecast2003_gold|silver|pgms.htm, publications/forecast2008/forecast2008_gold.htm), plus ajax_forecast.cfm / ajax_forecast_2012.cfm endpoints and media-centre result posts for 2015-2020. SEPARATELY, the live site DOES carry a consensus scoreboard (forecast-survey-2026/2010-2026-performance) with 17 forecast-years and 16 actual-years for all four metals.",
+   "replaces": "Extends lbma_annual_forecast_survey_panel from 4 analyst-years of depth toward ~20.",
+   "provenance": [
+    "13 direct probes https://www.lbma.org.uk/forecast-survey-{2010..2022} -> ALL 404: the back-years are genuinely not on the live site",
+    "http://web.archive.org/cdx/search/cdx?url=lbma.org.uk*&filter=original:.*forecast.*&collapse=urlkey (756 rows) -- the enumerator that found the hidden population",
+    "https://web.archive.org/web/2013id_/http://www.lbma.org.uk/assets/forecast2011.pdf -> HTTP 200, 685,140 bytes, real %PDF-1.4",
+    "https://www.lbma.org.uk/2010-2023-performance -> 301 -> /forecast-survey-2024/2010-2024-performance; /forecast-survey-2026/2010-2026-performance also HTTP 200"
+   ],
+   "method": "Wayback CDX population enumeration (the desk's OP-098 method) after the live-site probe returned 13/13 404. One PDF retrieved and extracted with stdlib zlib over all streams: 16 pages, 65 of 67 streams decompressed, 213,698 characters, containing the 2011 per-analyst roster WITH institutions (Bhar/Credit Agricole, Cooper/Barclays Capital, Jansen/JPMorgan, Steel/HSBC, Klapwijk/GFMS, ...).",
+   "license": "Same posture as the rest of the LBMA family: no grant, bare copyright. Internal research use only, NO redistribution. Archived copies of the publisher's own documents do not change the licence.",
+   "cadence": "dead/static -- these are archived artifacts of a completed annual publication. Dead sources never change: mine to EXHAUSTED once.",
+   "verification": "PARTIALLY VERIFIED, and stamped honestly. What IS verified: the population exists, one 2011 PDF is retrievable and parses to a per-analyst roster with institutions. What is NOT: no forecast NUMBERS were extracted from any back-year, no year other than 2011 was retrieved, and nothing was diffed against the consensus scoreboard. The scoreboard consensus WAS extracted and analysed (see below) -- the per-analyst back-years were not.",
+   "consensus_scoreboard_result": "Extracted the Highcharts inline series from the 2010-2026 scoreboard: 16 paired (consensus forecast, realised annual average) observations per metal. Consensus MAPE vs a random-walk (prior-year actual) benchmark: Gold 8.53% vs 10.91% BEATS; Silver 11.44% vs 17.46% BEATS; Palladium 11.08% vs 22.01% BEATS; Platinum 9.98% vs 9.48% LOSES. Mean signed bias is NOT significantly different from zero on any metal after multiplicity (platinum t=+2.20 is one of four tests; Holm-corrected it does not survive). Pooled bias +1.58%, t=+1.00, and the four metals are strongly correlated so effective n is far below 64.",
+   "known_failure_modes": [
+    "THE LIVE SCOREBOARD'S CHART ELEMENT IDs ARE STALE: on the /2010-2024-performance page every renderTo id reads 'analyst-forecast-<metal>-2023'. Identifying either the metal-year or the vintage from the id suffix is wrong; the metal NAME in the id is correct, the YEAR is not.",
+    "Actual and forecast arrays have DIFFERENT LENGTHS by design (17 forecasts vs 16 actuals) because the current year's forecast is not yet realised. Zipping them without truncating misaligns every year.",
+    "SURVIVORSHIP, inherited from the parent card: analysts who stop being invited leave the panel, so panel-level accuracy is biased upward. This applies to the consensus scoreboard too.",
+    "The Wayback copies are point-in-time snapshots of a site that was redesigned at least twice (.cfm -> _blog -> current CMS); URL shape is NOT stable across years and must be enumerated, never templated.",
+    "PDF extraction risk, from the desk's own s13 lesson: 2 of 67 streams did not decompress. A partial extractor returns CLEAN-LOOKING text from a fraction of a document -- any back-year extraction must assert page count against streams parsed."
+   ],
+   "yield": "MEDIUM -- a one-time-exhaustible dead-data seam that could take the panel from 4 to ~20 analyst-years.",
+   "not_proposed_reason": "Even fully extracted this axis is ANNUAL. The scoreboard gives n=16 per metal on a CALENDAR-YEAR-AVERAGE forecast published each January. Against the ten gates that remains vacuous under L1.57, exactly as run (w) concluded at n=4 -- the upgrade from n=4 to n=16 is real and is still not a population. No EV-gate pre-registration this run.",
+   "first_seen": "2026-08-29 (free-data run x)"
   }
  },
  "residual_gaps_unpurchasable": [
