@@ -8131,7 +8131,7 @@ of one result.
 
 ---
 
-### 75. [dig 2026-08-29 (free-data t)] BIS `WS_XRU` — **daily USD exchange rates, 61 currencies, 1945-01-01 → 2026-08-25, 1,067,834 rows in ONE keyless request** — grade: **verified-clean** (RESOLVED by run (v): the EM-leg clock caveat is refuted — 11/12 legs land on the same hour-14 fixing. `CNY` alone is split off as needs-monitoring, and for a BASIS reason not a clock reason.)
+### 75. [dig 2026-08-29 (free-data t)] BIS `WS_XRU` — **daily USD exchange rates, 61 currencies, 1945-01-01 → 2026-08-25, 1,067,834 rows in ONE keyless request** — grade: **verified-clean** (RESOLVED by run (v): the EM-leg clock caveat is REFUTED — 11/12 legs land on the same hour-14 fixing with 6–10x discrimination. `CNY` is not a pending component of this card; it is a different instrument and is split off as card 79.)
 
 **PROVENANCE (opened this run, nothing claimed unread).**
 `https://data.bis.org/robots.txt` — `User-agent: * / Allow: /`, disallows only query-param patterns
@@ -8251,7 +8251,7 @@ refutations lacked.
 
 ---
 
-### 77. [dig 2026-08-29 (free-data t)] SEARCH-SPACE EXPANSION — **the supranational keyless SDMX registry family: 9,828 dataflows on one schema, four doors, zero keys** — grade: **UNVERIFIED (doors verified live, content deliberately unmined)**
+### 77. [dig 2026-08-29 (free-data t)] SEARCH-SPACE EXPANSION — **the supranational keyless SDMX registry family: 9,828 dataflows on one schema, four doors, zero keys** — grade: **verified-clean** (CLOSED by run (v) via card 78: the family's first series is pulled and diffed to ground truth. The remaining 9,827 dataflows are a door census, not an adoption — that residual is carried as card 82, not as a pending grade on this one.)
 
 Run (s) named "the supranational keyless API" as a new source *class* from one instance. This run
 **enumerated the family** and sized the ground:
@@ -8314,7 +8314,9 @@ bottleneck and the resume point are the same work.
 
 _(status lines appended below as each item resolves — never held in context)_
 
-### ITEM 1 — RESOLVED. Card 77 closes: **`ert_bil_eur_d` is a fixing SNAPSHOT, not the average its own `statinfo=AVG` field declares** — grade: **verified-clean**
+### 78. [dig 2026-08-29 (free-data v)] Eurostat `ert_bil_eur_d` — **ECB daily FX reference rates from an official EU door: 331,097 obs, 37 currencies, 1974-07-01 → 2026-08-27, keyless** — grade: **verified-clean**
+
+*(This card CLOSES card 77: it is the first series of the supranational SDMX family pulled and diffed to ground truth, rather than a door enumerated.)*
 
 Card 77 was graded UNVERIFIED because five doors returned *structure* and zero series were diffed.
 This run pulled series and diffed them against the desk's own MT5 H1 tape. Endpoint opened:
@@ -8362,7 +8364,9 @@ dataflow header reads `updated 2026-08-28` and is *green at the door while dead 
 `MDL`, `ALL`, `GEL`, `RSD` all stop **2026-07-31** — a month stale under a stamp one day old.
 Liveness is `max(observation_date)` PER SERIES, never per dataflow. Never read the header.
 
-### ITEM 2 — RESOLVED. Card 75's split grade closes: **the BIS EM legs are on the SAME clock as G10** — card 75 becomes **verified-clean**, with `CNY` split off
+### 79. [dig 2026-08-29 (free-data v)] BIS `WS_XRU` `CNY` leg vs the desk's `USDCNH` tape — **onshore fix vs offshore tape: the residual is a BASIS, not a clock** — grade: **needs-monitoring**
+
+*(Split off from card 75, which is now terminal. This card also records how card 75's EM-leg caveat was refuted.)*
 
 Card 75 read `verified-clean` AND `needs-monitoring` on one line, so `source_backlog.py` could
 never terminate it. The open question was narrow and answerable: *do the EM legs share the G10
@@ -8394,7 +8398,7 @@ desk's `USDCNH` tape is offshore. The residual is the CNH–CNY basis, not a tim
 as its own card grade: **needs-monitoring (basis, not clock); do not use BIS CNY as ground truth
 for USDCNH.**
 
-### ITEM 3 — SEARCH-SPACE EXPANSION. **NEW SOURCE CLASS: benchmark/market administrators, not central banks — LBMA's keyless London gold & silver FLOW doors** — grade: **verified-clean (decode and units); the AXIS itself is a candidate, not adopted**
+### 80. [dig 2026-08-29 (free-data v)] SEARCH-SPACE EXPANSION — **benchmark/market ADMINISTRATORS as a source class: LBMA's two keyless London gold & silver clearing/vault doors** — grade: **verified-clean** (decode, units and column map proven against an independent quantity; the ECONOMIC AXIS is a separate, un-pre-registered candidate — see card 81)
 
 **WHY THIS CLASS, AND IT CAME OUT OF MY OWN RUN'S BLIND SPOT.** Items 1 and 2 are FX fixings from
 central banks — and runs (m) through (u) are all the same shape. But the desk's mandated universe
@@ -8472,6 +8476,31 @@ LBMA `value-dates` and the annual `forecast-survey` (a dated, public, falsifiabl
 a positioning/sentiment axis with a built-in scoreboard); the `/cn/` Chinese sitemap; and the
 administrator class beyond metals — energy, softs and index benchmark administrators, where the
 desk currently holds **no reference source at all**.
+
+### 81. [dig 2026-08-29 (free-data v)] LBMA London vault-stock / clearing-turnover as an XAUUSD FLOW AXIS — grade: **needs-monitoring**
+
+The SOURCE is verified-clean (card 80). The AXIS is not, and is deliberately held out of the EV
+gate. Mechanism: vault holdings are the physical STOCK in London; the monthly change is net flow,
+and a COMEX–London EFP dislocation is closed by physically flying bullion to New York — slow,
+costly, capacity-constrained, publicly visible, and the participant cannot stop.
+
+**BLOCKING MEASUREMENT, and it is the only thing owed:** the publication vintage is OBSERVED but not
+ESTABLISHED. On 2026-08-29 the vault door served through 2026-07 and clearing through 2026-06, but
+observed availability is not a point-in-time release date. Recover the true release dates (LBMA
+release calendar, or CDX-stamp the monthly `.xlsx` filenames on `cdn.lbma.org.uk`) and re-run with
+the series lagged to its real vintage. Run (q) put ALL the significance of the macro→FX family in an
+untradable lag-0 bar; shipping this without its vintage is the identical error one family over.
+Secondary limit, stated plainly: **121 vault observations, monthly** — thin for the ten gates.
+
+### 82. [dig 2026-08-29 (free-data v)] The residual 9,827 un-mined supranational SDMX dataflows (BIS/IMF/OECD/Eurostat) — grade: **UNVERIFIED**
+
+Card 77 is closed because its FIRST series is now verified; this card carries what that closure does
+NOT cover, so the residual stays in the queue instead of inheriting a clean verdict. BIS 29 · IMF 101
+· OECD 1,546 · Eurostat 8,152 dataflows were enumerated; **one has been pulled and diffed.** A door
+census is not an adoption. Known failure mode before anyone starts: Eurostat's flows are
+overwhelmingly social/regional statistics and Quantocracy's comparable ground yielded 6.4% on-mandate
+— mandate-filter the saved structure files on disk with grep, and never fetch the 37 MB list into an
+agent context.
 
 ### SESSION SUMMARY — 2026-08-29 (free-data run **v**) — **CLOSED**
 
