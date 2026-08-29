@@ -295,7 +295,27 @@ ALLOWLIST: dict[str, str] = {
 #: headroom returns. Silent truncation would read as "the fleet is covered" when it is not.
 MIN_AVAIL_MB = 420           # below this, defer rather than fire (kernel OOM territory)
 MAX_FIRES_PER_TICK = 4       # burst cap: a 5-minute tick never thunders the whole manifest
-PENDING_MAX_AGE_MIN = 180    # a row deferred longer than this waits for its next natural slot
+PENDING_MAX_AGE_MIN = 180    # past this a deferred row is REPORTED as starved (it is not dropped)
+#: A DEFERRAL MUST NEVER BECOME A SILENT DEATH (gap-fixer 2026-08-29). PENDING_MAX_AGE_MIN used
+#: to DROP the row -- "wait for its next natural slot, never thunder" -- and for a row that fires
+#: every five minutes that is free, because its next slot is five minutes away. For a low-frequency
+#: row it is fatal: deferred by the memory governor, dropped after 3h, next slot 24h or 7d later,
+#: box still under MIN_AVAIL_MB, deferred and dropped again, forever, leaving no trace anywhere.
+#:
+#: MEASURED 2026-08-29: exactly 7 allowlisted rows had stale logs, and EVERY ONE was monthly,
+#: weekly or daily -- not one high-frequency row was affected. That is the signature of this
+#: mechanism, not of a broken schedule: a row with twelve chances an hour eventually finds a tick
+#: with memory above the floor; a weekly row gets one chance and never does. The seven were the
+#: coverage-floor ratchet raiser (dead 213h -- the L1.50 stall the desk state prints every
+#: session), the prompt ratchet (220h), the weekly gap re-ranker (282h), the panel roster
+#: refresher (285h -- the "under-driven seats" line), the mechanism-supply report (307h), the
+#: graveyard resurrector (310h) and the event-calendar builder, which had NEVER run.
+#:
+#: A pending row is now retried every tick until it either FIRES or its own next slot arrives
+#: (at which point `due` carries it and dropping loses nothing). The governor still delays work;
+#: it can no longer destroy it. STARVED_DROP_MIN is a bound on state growth, not a policy, and
+#: reaching it is recorded in `starved` rather than swallowed.
+STARVED_DROP_MIN = 60 * 24 * 8   # 8 days -- a safety bound so a broken spec cannot pin a row
 
 TOKEN_RE = re.compile(r"(?:scripts|deploy|ops)/[A-Za-z0-9_./-]+\.(?:py|sh)")
 
@@ -428,7 +448,7 @@ def main() -> int:
     # The published figure was 216 uncovered of 228; the true dead set is 201. A backlog gauge
     # that counts healed rows as sick can never reach zero, so the ratchet it feeds could never
     # close (L1.50) and the number could never be trusted enough to act on.
-    due: list[tuple[str, str]] = []
+    due: list[tuple[str, str, str]] = []
     for spec, cmd, token in rows:
         if token in twins:
             skipped_twinned.append(token)
@@ -441,28 +461,41 @@ def main() -> int:
                 continue
         except ValueError:
             continue  # malformed spec on an allowlisted row: never crash the whole dispatcher
-        due.append((token, cmd))
+        due.append((token, cmd, spec))
 
     # Rows deferred by a previous tick's governor come first: they are already late, and the
     # whole point of the pending queue is that a governor delays work rather than losing it.
     pending: dict[str, dict[str, str]] = dict(state.get("pending") or {})
-    replay: list[tuple[str, str]] = []
+    due_tokens = {t for t, _, _ in due}
+    starved: dict[str, float] = dict(state.get("starved") or {})
+    held: list[str] = []
+    replay: list[tuple[str, str, str]] = []
     for token, row in list(pending.items()):
         try:
             since = datetime.fromisoformat(str(row.get("since")))
         except (TypeError, ValueError):
             pending.pop(token, None)
             continue
-        if (now - since) > timedelta(minutes=PENDING_MAX_AGE_MIN):
-            pending.pop(token, None)  # stale: wait for the row's next natural slot, never thunder
+        if token in due_tokens:
+            pending.pop(token, None)   # its own slot came round; `due` carries it, nothing is lost
             continue
-        replay.append((token, str(row.get("cmd", ""))))
+        waited = (now - since).total_seconds() / 60.0
+        if waited > STARVED_DROP_MIN:
+            # The bound, not the policy. Recorded, never swallowed: nine days of dropped daily
+            # organs previously left `deferred_this_run: []` and `pending: {}` -- a healthy-looking
+            # artifact over a dead fleet, which is how this went unseen (L1.28a).
+            starved[token] = round(waited / 60.0, 1)
+            pending.pop(token, None)
+            continue
+        if waited > PENDING_MAX_AGE_MIN:
+            held.append(token)
+        replay.append((token, str(row.get("cmd", "")), str(row.get("spec", ""))))
     queue = replay + [d for d in due if d[0] not in pending]
 
-    for token, cmd in queue:
+    for token, cmd, spec in queue:
         if len(fired) >= MAX_FIRES_PER_TICK or _avail_mb() < MIN_AVAIL_MB:
             deferred.append(token)
-            pending[token] = {"cmd": cmd, "since": pending.get(token, {}).get(
+            pending[token] = {"cmd": cmd, "spec": spec, "since": pending.get(token, {}).get(
                 "since", now.isoformat(timespec="seconds"))}
             continue
         subprocess.Popen(["/bin/sh", "-c", cmd], cwd=ROOT,
@@ -486,6 +519,11 @@ def main() -> int:
     # The COUNT alone is not actionable -- the next seat needs to know WHICH organs are dead
     # without re-deriving it. The list is what turns this artifact from a number into a queue.
     state["uncovered_tokens"] = sorted(uncovered_tokens)
+    # A GOVERNOR THAT DELAYS MUST SAY SO. `held` is rows the memory floor has been holding
+    # back past PENDING_MAX_AGE_MIN and `starved` is rows it held past the bound -- the two
+    # numbers whose absence let a nine-day fleet outage read as a healthy dispatcher.
+    state["held_by_governor"] = sorted(held)
+    state["starved"] = starved
     state["allowlisted"] = len(ALLOWLIST)
     state["manifest_rows_seen"] = len(rows)
     STATE.parent.mkdir(parents=True, exist_ok=True)

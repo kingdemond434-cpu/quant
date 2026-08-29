@@ -241,3 +241,91 @@ def test_coverage_measurement_is_scheduled() -> None:
         "without it the L1.50 ratchet silently has no input again")
     timer = (root / "ops" / "quant-coverage-ratchet.timer").read_text("utf-8")
     assert "OnCalendar=" in timer, "the coverage measurement lost its schedule"
+
+
+# ---------------------------------------------------------------------------------------------
+# REGRESSION, gap-fixer 2026-08-29. A DEFERRAL MUST NEVER BECOME A SILENT DEATH.
+# The governor above delays correctly; the pending queue then DROPPED the row after 3h, and for a
+# low-frequency row the next slot is 24h or 7d away with the box still under the floor -- deferred
+# and dropped again, forever, leaving `deferred_this_run: []` and `pending: {}` behind. MEASURED:
+# exactly 7 allowlisted rows had stale logs and EVERY ONE was monthly, weekly or daily. Not one
+# high-frequency row was affected -- the signature of this mechanism, not of a broken schedule.
+# ---------------------------------------------------------------------------------------------
+
+def test_a_weekly_row_survives_a_memory_outage_longer_than_the_pending_cap(
+        tmp_path, monkeypatch) -> None:
+    """THE DEFECT. `rerank_gaps` (0 9 * * 1) was deferred, dropped 3h later, and its next chance
+    was SEVEN DAYS away with the box still starved. It went 282h without running."""
+    import json
+    from datetime import timedelta
+    rows = "0 9 * * 1 cd /x && .venv/bin/python scripts/rerank_gaps.py >> t.log 2>&1\n"
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows,
+                         allow={"scripts/rerank_gaps.py": "weekly triage"}, avail=1.0)
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [until])
+    md.main()                                              # its slot, and the box is starved
+    assert fired == []
+    assert list(json.loads((tmp_path / "state.json").read_text("utf-8"))["pending"]) == [
+        "scripts/rerank_gaps.py"]
+
+    # Six hours later the box is STILL starved and the row is NOT due again for a week.
+    state_path = tmp_path / "state.json"
+    st = json.loads(state_path.read_text("utf-8"))
+    st["pending"]["scripts/rerank_gaps.py"]["since"] = (
+        datetime.now(tz=UTC) - timedelta(minutes=md.PENDING_MAX_AGE_MIN + 180)
+    ).isoformat(timespec="seconds")
+    state_path.write_text(json.dumps(st), encoding="utf-8")
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [])   # not its slot
+    md.main()
+    st2 = json.loads(state_path.read_text("utf-8"))
+    assert "scripts/rerank_gaps.py" in st2["pending"], (
+        "a weekly row was DROPPED while starved -- its next chance is seven days away")
+    assert st2["held_by_governor"] == ["scripts/rerank_gaps.py"], (
+        "the governor held a row past its cap and published nothing -- the silence is the defect")
+
+    # Memory returns; the row fires without waiting a week for its next natural slot.
+    monkeypatch.setattr(md, "_avail_mb", lambda: float("inf"))
+    md.main()
+    assert fired and "rerank_gaps" in fired[0]
+    assert json.loads(state_path.read_text("utf-8"))["pending"] == {}
+
+
+def test_a_pending_row_is_released_when_its_own_slot_comes_round(tmp_path, monkeypatch) -> None:
+    """Dropping is only safe when `due` carries the row anyway -- then nothing is lost and the
+    pending copy must go, or the burst cap would be spent twice on one organ."""
+    import json
+
+    rows = "0 7 * * * cd /x && .venv/bin/python scripts/organ.py >> t.log 2>&1\n"
+    md, fired = _harness(tmp_path, monkeypatch, rows=rows,
+                         allow={"scripts/organ.py": "daily"}, avail=1.0)
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [until])
+    md.main()
+    assert list(json.loads((tmp_path / "state.json").read_text("utf-8"))["pending"]) == [
+        "scripts/organ.py"]
+    monkeypatch.setattr(md, "_avail_mb", lambda: float("inf"))
+    md.main()                                   # due again AND headroom: fires exactly once
+    assert len(fired) == 1
+    assert json.loads((tmp_path / "state.json").read_text("utf-8"))["pending"] == {}
+
+
+def test_reaching_the_safety_bound_is_recorded_never_swallowed(tmp_path, monkeypatch) -> None:
+    """STARVED_DROP_MIN bounds state growth; reaching it is a reportable event. Nine days of
+    dropped organs previously left a healthy-looking artifact over a dead fleet (L1.28a)."""
+    import json
+    from datetime import timedelta
+    rows = "0 9 * * 1 cd /x && .venv/bin/python scripts/organ.py >> t.log 2>&1\n"
+    md, _fired = _harness(tmp_path, monkeypatch, rows=rows,
+                          allow={"scripts/organ.py": "weekly"}, avail=1.0)
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [until])
+    md.main()
+    state_path = tmp_path / "state.json"
+    st = json.loads(state_path.read_text("utf-8"))
+    st["pending"]["scripts/organ.py"]["since"] = (
+        datetime.now(tz=UTC) - timedelta(minutes=md.STARVED_DROP_MIN + 60)
+    ).isoformat(timespec="seconds")
+    state_path.write_text(json.dumps(st), encoding="utf-8")
+    monkeypatch.setattr(md, "due_times", lambda spec, since, until: [])
+    md.main()
+    st2 = json.loads(state_path.read_text("utf-8"))
+    assert st2["pending"] == {}
+    assert "scripts/organ.py" in st2["starved"], "a dropped row left no trace at all"
+    assert st2["starved"]["scripts/organ.py"] > 0
