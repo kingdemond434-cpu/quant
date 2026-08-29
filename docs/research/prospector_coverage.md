@@ -12700,3 +12700,96 @@ the code and its test agree with each other perfectly.
 3. **The deferred track-record seeds returning 2026-09-03/05** (Myfxbook S10, Darwinex S11,
    Collective2 S14, FPA S16, ForexFactory S17, prop-firm S24) — all now carry the Build-5830
    drawdown-definition condition, which must be applied at ingest and not discovered per-seed.
+
+---
+
+## BRAIN HUNTER s26 — 2026-08-29 — the coverage collapse was AVERAGE LINKAGE, not the clustering; Ward wins on both axes at once
+
+s25's next-ground item 2. Every cluster number this desk has ever produced — s11's k8/k24, s24's
+tier comparison, s24b's random control, s25's whole k-curve, s25c's k48/k96 arms — comes from
+**average linkage on `d = 1 − corr`**, a method nobody chose and nobody swept. s25 chose k=96 as
+the operating point because content kept rising past it while COVERAGE collapsed (singletons have
+no peers), and named the suspicion that the collapse is a LINKAGE property.
+
+`data/brain_hunter_s26_linkage.py` → `data/brain_hunter_s26_linkage.json` sweeps
+**4 methods × 3 metrics × 5 k = 55 cells**, each with s24b's ruler and s24b's size-matched
+label-shuffle control, point-in-time throughout (year Y clustered on Y−1 daily returns only).
+
+**The suspicion is CONFIRMED. Ward dominates average linkage on BOTH axes simultaneously:**
+
+| k | method | \|corr\| ↓better | coverage ↑better | n | content | z |
+|---|---|---|---|---|---|---|
+| 48 | average | 0.621 | 92.0% | 238 | 0.229 | −51.8 |
+| 48 | **ward** | **0.531** | **99.8%** | **248** | 0.243 | −37.4 |
+| 96 | average (the desk's new arm) | 0.477 | 78.1% | 214 | 0.279 | −126.1 |
+| 96 | **ward** | **0.433** | **87.5%** | **232** | 0.250 | −69.2 |
+| 24 | average | 0.741 | 96.9% | 244 | 0.172 | −85.6 |
+| 24 | **ward** | **0.638** | **100.0%** | **248** | 0.235 | −133.4 |
+
+**There was no trade to make.** s25 spent a session pricing content against coverage and picked
+k=96 as the least-bad point on that frontier; the frontier was an artifact of the linkage. Ward at
+k=96 is better than average at k=96 on independence AND keeps 18 more symbols; **Ward at k=48
+keeps 99.8% of the book at an independence better than average linkage achieves anywhere before
+k=96.** Against the desk's best hand-built grouping (`currency_quote`, 0.488 on 76 FX legs), Ward
+k=96 is 0.433 on **232 symbols — 3.1× the coverage at a better number**.
+
+**The mechanism, and it is the reason average linkage was the wrong default here.** A CFD universe
+is one large correlated blob (USD legs, indices, metals) plus a tail of near-independent names.
+Average linkage raises k by **shaving loners off the blob** — group count rises, the blob does not
+split, and the new "clusters" are singletons that the ruler must then drop. Ward minimises
+within-cluster variance, so raising k **splits the blob itself**. That is why its coverage curve
+falls a third as fast (100% → 99.8% → 87.5% at k=24/48/96 vs 96.9% → 92.0% → 78.1%).
+
+**THE METRIC AXIS IS A NULL, and one half of it is a positive control that passes.** `euclid`
+(`d = sqrt(2(1−corr))`) reproduces `corr_d` to ≤0.001 on average/complete/single at every k — as
+it must, since all three are invariant to a monotone transform of the distance, so the pipeline
+reproducing that invariance is evidence the sweep is wired correctly rather than a finding.
+**Ledoit–Wolf shrinkage is a measured LOSS and should not be adopted**: at k=96 it degrades
+average linkage 0.477 → 0.516 and is a wash for Ward (0.433 → 0.436), despite n≈250 observations
+against p≈240 series making the sample correlation near-singular by construction — the regime
+where shrinkage is supposed to pay most. **Single linkage is worthless** (content 0.010 at k=24,
+z=−6.8): textbook chaining, one giant cluster plus dust.
+
+**A CORRECTION TO s25, found by applying its own control consistently.** s25 reported content
+peaking at 0.318 at k=128 and "plateauing". Under a population guard applied at every cell (a
+control draw is VOIDED if its retained population moves >10% from the real one), **0 of 8 draws
+hold at k=128 for average linkage** — the size profile there is singleton-heavy enough that no
+size-matched control exists. s25's k=128 and k=160 content numbers are therefore **UNMEASURED, not
+measured-and-lower-priority**, and the honest statement is that **k=96 is the last controlled point
+on the average-linkage curve**, which independently supports the operating point s25 chose for a
+different reason. Every voided cell in the new artifact carries an explicit `control_status`
+string; none is silently omitted and none is `null` without a reason (L1.28a).
+
+**CONVERTED, not carded.** `data/brain_hunter_s26b_build_ward_arms.py` writes
+**`ward_cluster_by_year` k48 (14 years) and k96 (8 years) into `data/mt5_grouping_map.json`**,
+additively — `corr_cluster_by_year` k8/k24/k48/k96 untouched, same point-in-time convention,
+`_meta.ward_evidence` pointing at the sweep. `group_rank`/`group_zscore` can consume the Ward arms
+today; no code changed (research freeze respected: `data/` and `docs/research/` only).
+
+**The habit this run adds, and it is s25's habit one level up.** s25 found that *a parameter set
+once and never swept is not a measured choice*. s26 finds the same defect one level higher: **k was
+the parameter everyone argued about, and `method="average"` was the parameter nobody named.** It
+sat in one line of s11's builder, was copied verbatim into four later scripts, and silently defined
+the frontier that five sessions of work were spent optimising along. The tell is syntactic: **k was
+a variable and `average` was a string literal**, and a literal in a call reads exactly like a
+default and exactly like a decision.
+
+Video: 0 fetched, 0 locked (no video ground touched this run). §13: no external fetch; the sweep is
+entirely desk-owned tape.
+
+### NEXT UN-EXHAUSTED GROUND (for s27, in order — supersedes s25's list)
+
+1. **Re-run the k-curve ON WARD, past k=96.** s25's curve stopped where average linkage ran out of
+   coverage. Ward still holds 73.4% at k=128 (vs average's 64.6%) at |corr| 0.378 — the best
+   number in the whole sweep — but its control is UNMEASURED there too, so the finding needs a
+   control that survives a singleton-heavy profile (stratified shuffle within size bands, rather
+   than the flat label shuffle s24b built). **Building that control is the gating work**, and it
+   retro-fits every voided cell in this artifact and in s25's.
+2. **Run the cross-sectional cells on a cluster arm** (s25 item 1, unpaid twice now). The ruler
+   says Ward k96 is the best grouping the desk has ever had; **no hypothesis has ever consumed
+   any cluster arm**, so the independence gain remains measured on the ruler and never on a
+   survivor. This is the conversion the whole five-session line owes.
+3. **The licensed BRAIN subclass, SIXTH raise, still never censused.** 63 repos from five queries,
+   one touched. `i9880612/alpha-garden` (MIT) carries an operator/field COMPATIBILITY matrix.
+4. **The BRAIN-scoped collector arm — NINETEEN sessions old.** Belongs to a seat that is not
+   research-frozen.
