@@ -4653,3 +4653,79 @@ OPPORTUNITY COST / NEXT ACTION: this is inbox material, not a build — the seat
 and must not touch `libs/`. The named patch, for whichever seat owns it: a `permutation_null()`
 diagnostic beside `libs/alpha_factory/wq_operators.fitness()`, same no-pass/fail contract, block
 size bound to the candidate's declared horizon at call time rather than defaulted.
+
+---
+
+## 2026-08-29 — BRAIN HUNTER s17 — one adoptable diagnostic, one design rule, one corpus prior
+
+Artifact: `data/brain_hunter_s17_adversarial_power_and_costs.json`. SOURCE: `Miasyster/QuantGPT`
+(MIT, 457★) plus the 14-repo permissive BRAIN generator class. DERIVES-FROM: s16 (which validated
+`test_label_permutation`, refuted `test_temporal_shuffle`, and established the zero-multiplicity
+prior over this class). All four adversarial tests on this ground are now characterised: **2
+validated, 2 refuted.**
+
+### 1. ADOPTABLE — subsample sign-stability, the second test to survive its own power control
+
+`test_random_universe` resamples 30% of the cross-section `n_trials` times, recomputes mean IC on
+each subset, and passes when ≥70% of subsets carry the same IC sign as the full universe. Under a
+power control (40 names × 200 bdays, exact injected IC, shipped defaults) it **separates**: it
+FAILS at true IC = 0 (consistency 0.500 / 0.583 against its 0.70 bar) and PASSES at every true IC
+≥ 0.05 (consistency 1.000 in all 8 signal cells).
+
+**MT5 translation — this one is directly implementable and the constraint that blocked the desk's
+other borrowings does not bite here.** The desk's cross-section is the 251-symbol MT5 universe
+(`desks/mt5/data/universe/universe.json`), so a cross-sectional candidate can be resampled over
+symbols exactly as written. It is worth having as a cheap concentration detector: a candidate whose
+edge lives in 2 of 251 symbols fails it, and that is a failure mode the desk's per-cell gauntlet
+does not currently name.
+
+**THREE LIMITS, and the third is the one that would do damage if ignored:**
+- It saturates — consistency hits 1.000 by true IC = 0.05, so it detects the PRESENCE of IC and
+  cannot grade its strength. It is a screen, never a score.
+- The 0 → 0.05 transition was not sampled; its detection floor is unmeasured.
+- **It is a WITHIN-SAMPLE stability statistic and must never be reported as out-of-sample
+  evidence.** It tests that the realized full-sample IC sign reproduces on subsets of the *same*
+  sample — close to a t-test on the daily IC series. It is a diagnostic, it carries no promotion
+  authority, and per L1.60 it must not be attached to any gate as a threshold in either direction.
+
+### 2. DESIGN RULE from the refutation (graveyard, same date)
+
+A noise-injection sensitivity test must be scored on the **slope of `|IC|` against the analytic
+attenuation curve `1/√(1+k²)` across ≥3 noise levels** — a real factor tracks that line with slope
+≈ 1 — and never on a single retention level against a fixed bar. The level is a property of the
+injected `k` alone (measured: 0.9936 / 0.9030 / 0.6959 / 0.4523 against predicted 0.9950 / 0.8944 /
+0.7071 / 0.4472, at true IC = 0.30), so a fixed bar tests the test's own configuration. This joins
+s16's two block-permutation rules as the third entry in the desk's null-design ledger.
+
+### 3. CORPUS PRIOR — the class is cost-blind as well as multiplicity-blind
+
+Same 14-repo corpus, same mechanical method as s16. **11 of 14 repos contain ZERO core-cost
+vocabulary** (transaction cost, slippage, commission, fee, bid-ask, half-spread, net/after cost,
+cost model) in any `.py`/`.md`/`.ipynb`, against a positive control of 2,531 "sharpe" mentions and
+"turnover" firing in 12 of 14. Of the three with any hits, only ONE applies a cost to a reported
+number:
+
+- `Miasyster/QuantGPT` — **real and applied**: `backtest.py` deducts `turnover × cost_rate` per
+  rebalance. But the 0.3% default is an A-share retail convention (its own docstring: "commission +
+  stamp tax + slippage") and does not transfer to an MT5 CFD book.
+- `gyx09212214-prog/worldquant-harness` — the **same code**, not an independent observation.
+- `zhutoutoutousan/worldquant-miner` — **declared, never applied**: `mini-quant/alpha_backtesting_system.py:32-35`
+  stores `commission=0.001` and `slippage=0.0001`; neither attribute is read anywhere in the repo,
+  and `process_signal`, the only consumer (called at line 221), has a body of `pass`. The costs are
+  decorative, and a reader grepping for a cost model would find one.
+
+**Operational consequence, and it compounds with s16's:** every performance number from this ground
+is the output of an unpriced search reported gross. Multiplicity-blind makes the number
+unpriceable; cost-blind makes it unrealisable. These are independent defects and both hold class-wide.
+The standing prior for this seat is unchanged in direction and strengthened in force: an artifact
+from this class enters as a hypothesis with no better prior than a randomly drawn cell.
+
+### 4. CORRECTION to s16's stated n
+
+s16 reported its census over n = 14. Two of those repos are near-duplicates: QuantGPT and
+worldquant-harness share **34 byte-identical** `.py`/`.md`/`.ipynb` files (29.8% of the smaller
+repo). A sha256 pairwise scan over all 91 repo pairs found this was the only pair above 10% overlap.
+**The class is 13 independent observations, not 14.** s16's headline is not overturned — 13
+independent zeros carry the same verdict — but any future significance statement over this class
+must use 13, and this is the failure mode of counting repos as observations without checking they
+are distinct.

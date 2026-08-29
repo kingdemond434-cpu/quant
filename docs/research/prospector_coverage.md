@@ -11539,3 +11539,94 @@ vocabulary missed. The repos themselves are NOT exhausted; only this question ov
    if item 1 stalls.
 4. **The BRAIN-scoped collector arm** — s9's gap, EIGHT sessions old. Belongs to a seat that is not
    research-frozen; naming it again without fixing it remains the finding.
+
+---
+
+## BRAIN HUNTER s17 — 2026-08-29 — all four adversarial tests characterised; the class is cost-blind too
+
+Resumed from s16's "NEXT UN-EXHAUSTED GROUND" items 1 and 3, and delivered both. Item 2
+(`generation_two/core/fast_expr_ast.py` + `template_validator.py`) again carries forward.
+
+### #1 — `test_random_universe` SURVIVES its power control; `test_noise_injection` is REFUTED
+
+`Miasyster/QuantGPT` `quantgpt/adversarial_validator.py`. Method: synthetic panel, 40 names × 200
+bdays, `fwd_ret = true_ic·f + √(1−true_ic²)·ε` injected EXACTLY (the validator's derived `fwd_ret`
+overwritten), 2 seeds per cell, both tests called at their SHIPPED defaults. Full table in
+`data/brain_hunter_s17_adversarial_power_and_costs.json`.
+
+**`test_random_universe` separates** — fails at true IC = 0 (consistency 0.500 / 0.583 vs its 0.70
+bar), passes at every true IC ≥ 0.05 (1.000 in all 8 signal cells). Routed to the inbox as an
+adoptable concentration detector; the desk's 251-symbol cross-section makes it directly
+implementable. Three limits recorded, the load-bearing one being that it is a WITHIN-SAMPLE
+statistic and carries no OOS or promotion authority.
+
+**`test_noise_injection` is refuted** (`docs/graveyard.md`, same date): 14 of 14 cells pass,
+including all six pure-null cells. The cause is analytic — for `f' = f + kσε`,
+`corr(f',r) = corr(f,r)/√(1+k²)`, so the true IC cancels and the shipped `k=0.5` pins retention at
+0.8944, above the shipped 0.50 bar. Confirmed across the noise ladder against 200 draws per cell
+(0.9936 / 0.9030 / 0.6959 / 0.4523 vs predicted 0.9950 / 0.8944 / 0.7071 / 0.4472). Worse: under a
+null the statistic is a ratio of near-zero quantities and **explodes** (means 1.30–20.70), so it
+passes noise harder than real signal.
+
+**Scoreboard for this ground, now complete: 4 of 4 adversarial tests characterised — 2 validated
+(`label_permutation` s16, `random_universe` s17), 2 refuted (`temporal_shuffle` s16,
+`noise_injection` s17).** Both refutations died the same way: a verdict that is a constant function
+of the test's own configuration rather than of the factor.
+
+### #2 — the class is cost-blind as well as multiplicity-blind (s16 item 3, delivered)
+
+11 of 14 repos hold ZERO core-cost vocabulary in any `.py`/`.md`/`.ipynb`, against 2,531 "sharpe"
+mentions and "turnover" firing in 12 of 14. Only ONE repo applies a cost to a reported number
+(QuantGPT, `turnover × cost_rate`, on an A-share 0.3% convention that does not transfer to MT5);
+one declares costs that are **never read anywhere in the repo** behind a `process_signal` whose body
+is `pass`. Disposition and the compounding argument are in `improvement_inbox.md`.
+
+### #3 — s16's n was inflated: the class is 13 independent repos, not 14
+
+sha256 over every `.py`/`.md`/`.ipynb`, pairwise across all 91 repo pairs. `Miasyster/QuantGPT` and
+`gyx09212214-prog/worldquant-harness` share **34 byte-identical files** (29.8% of the smaller repo);
+it was the only pair above 10%. s16's 0-of-14 headline stands on 13 independent zeros, but the
+stated n was wrong and future significance statements over this class must use 13.
+
+### WHAT WAS NOT DONE, said plainly
+
+- s15 item 1 / s16 item 2 (`fast_expr_ast.py` + `template_validator.py`, 90 files) was **not**
+  opened for the third session running. It carries forward unchanged and is now the oldest live item.
+- The 25 no-licence repos were not touched (all-rights-reserved; census only, per s15).
+- The `test_random_universe` detection floor (the 0 → 0.05 transition) was not sampled.
+- **The BRAIN-scoped collector arm is now NINE sessions old** (s9's free-corpus gap). This run paid
+  live tokens re-cloning a population two prior sessions had already enumerated, which is precisely
+  the cost the collector arm would remove.
+- Network: 14 shallow `git clone`s of public permissive repos, nothing else. Video: 0 fetched, 0
+  locked (no video ground touched this run).
+
+### SECTION-EXHAUSTION CLAIMED (dated, so no seat re-scans it)
+
+**2026-08-29 — `quantgpt/adversarial_validator.py` is EXHAUSTED.** All four of its tests have been
+read and put through a controlled power test; two are validated, two are in the graveyard with
+analytic mechanisms of death and L1.16a re-open conditions. A future seat needs a NAMED enabling
+change — a fifth test added upstream — to re-enter this file. The repo is NOT exhausted; only this
+file is.
+
+**2026-08-29 — the transaction-cost question over the 14 permissive BRAIN generator repos is
+EXHAUSTED.** 9-term core vocabulary plus a 16-term broad vocabulary, every `.py`/`.md`/`.ipynb`,
+positive control passed, and all three positive repos adjudicated by reading the code rather than
+counting the hits. Re-entry needs a new repo in the class or a term the vocabulary missed.
+
+### NEXT UN-EXHAUSTED GROUND (for s18, in order)
+
+1. **`generation_two/core/fast_expr_ast.py` + `template_validator.py` (90 files)** — carried from
+   s15 and skipped twice. The expression AST's VALIDATOR names the well-formedness failure modes
+   someone else paid to discover, and the desk's `combination_engine` has no validator at all.
+   It is now the oldest live item on this ground and should be taken first on principle.
+2. **The other three repos' backtest/evaluation layers** — s17 read cost vocabulary across the
+   class but only opened the evaluation code in the three repos that had hits. What do the other 11
+   actually report a factor ON? The prior says "gross IC with no cost and no multiplicity", and
+   confirming HOW they compute even that would establish whether the class shares a single copied
+   evaluation harness (the QuantGPT/harness duplicate pair suggests copying is common here).
+3. **The 25 no-licence repos, census-only** — untouched since s15. All-rights-reserved means no
+   clone and no code read, but their READMEs and repo metadata are public and would extend the
+   population statistics that items 1-3 of s16/s17 established over the permissive half.
+4. **The BRAIN-scoped collector arm** — s9's gap, NINE sessions old. Belongs to a seat that is not
+   research-frozen; naming it again without fixing it remains the finding, and this session paid
+   for it a second time.

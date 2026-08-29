@@ -2063,3 +2063,56 @@ means against an uncalibrated constant.
 
 L1.16a RE-OPEN CONDITION: a block-permutation test whose block size is bounded by the horizon it
 tests AND whose bar is a percentile of its own permuted distribution. That is a different test.
+
+---
+
+## 2026-08-29 — `QuantGPT.adversarial_validator.test_noise_injection` — REFUTED (BRAIN HUNTER s17)
+
+SOURCE: `Miasyster/QuantGPT` (MIT, 457★), `quantgpt/adversarial_validator.py:253-299`, the fourth
+of the four adversarial tests on this ground. DERIVES-FROM: s16's refutation of
+`test_temporal_shuffle`, same file, same power-control design. Artifact:
+`data/brain_hunter_s17_adversarial_power_and_costs.json`.
+
+CLAIM: adding Gaussian noise at 0.5× the factor's own std should destroy a fake factor and only
+degrade a real one, so "retains ≥ 50% of original |IC|" separates robust from fragile factors.
+
+MECHANISM OF DEATH: **the retention ratio is an attenuation constant that does not depend on the
+factor's true IC at all, and the shipped bar sits below it.** For `f' = f + kσε`,
+`corr(f', r) = corr(f, r) / sqrt(1 + k²)` — the true IC cancels. At the shipped `k = 0.5` that
+constant is **0.8944**, well above the shipped 0.50 bar, so the test cannot fail a real factor.
+
+Measured on a synthetic panel (40 names × 200 bdays, exact injected IC, 2 seeds per cell, test
+called at its shipped defaults):
+
+| injected true IC | realized IC | retention @ 0.5× | verdict |
+|---|---|---|---|
+| 0.00 | −0.0073 | 0.7312 | **PASS** |
+| 0.00 | 0.0103 | 0.5317 | **PASS** |
+| 0.05 | 0.0404 | 0.9294 | PASS |
+| 0.10 | 0.0868 | 0.9087 | PASS |
+| 0.20 | 0.1814 | 0.8990 | PASS |
+| 0.40 | 0.3706 | 0.8976 | PASS |
+
+**14 of 14 cells pass, including all six pure-null cells.** The verdict never varied with the
+injected signal. Analytic confirmation across the noise ladder (200 draws per cell):
+
+| k | predicted `1/√(1+k²)` | measured, true IC = 0.30 | measured, true IC = 0.02 |
+|---|---|---|---|
+| 0.1 | 0.9950 | 0.9936 | 1.6009 |
+| 0.5 | 0.8944 | 0.9030 | 2.1067 |
+| 1.0 | 0.7071 | 0.6959 | 20.7032 |
+| 2.0 | 0.4472 | 0.4523 | 2.1415 |
+
+SECOND DEFECT, and it is the worse half: under a near-null factor the statistic is a ratio of two
+near-zero quantities, so it does not merely pass — it **explodes above 1.0** (means 1.30–20.70) and
+passes *harder* than a genuine factor. A reader ranking factors by this diagnostic would rank the
+noise first.
+
+WHAT SURVIVES AND IS ROUTED, NOT BURIED (`improvement_inbox.md`): the sensitivity idea is sound but
+the statistic must be the SLOPE of `|IC|` against `1/√(1+k²)` — a real factor tracks the line with
+slope ≈ 1, a null factor does not track it at all — never a single retention level against a fixed
+bar, because the level is a property of `k` and not of the factor.
+
+L1.16a RE-OPEN CONDITION: a noise-injection test scored on agreement with the analytic attenuation
+curve across ≥3 noise levels, with the null's ratio instability handled explicitly. That is a
+different test.
