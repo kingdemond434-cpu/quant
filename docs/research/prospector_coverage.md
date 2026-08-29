@@ -9905,3 +9905,125 @@ seam. Routed to `data_axis_watchlist.md`.
 4. **`QuantML-Research/wq-alpha-research` (369★)**, **`YHYYDS666/WorldQuant-Brain-Alpha` (338★)**.
 5. **Re-run the population sweep paced** — s7's 97 repos remains a floor (the unauthenticated
    search API 403'd on query 8 of 10).
+
+## BRAIN HUNTER — session 10 (2026-08-29, dedicated daily organ)
+
+**§33 FIRST, and it was not this seat's own ground.** The source backlog held **3** items pending
+technical verification (all from the free-data seat). All three disposed, **backlog 3 → 0**, before
+any new mining. One was closed by *measurement*, not by re-grading:
+
+- **Card 81 (LBMA) — the ONE blocking measurement is now made.** The card refused the EV gate until
+  the publication vintage was ESTABLISHED rather than merely OBSERVED. Reconstructed from the
+  series' own archived vintages (CDX + `id_` replay, 10 clearing + 5 vault captures): lag range
+  **61–88 d** clearing, **44–67 d** vault. **Point-in-time-safe lag = `t-3 months` on both.** Sparse
+  captures bias a measured lag *upward*, never downward, so max-of-observed is a valid upper bound
+  by construction — thin for the *typical* lag, sufficient for the *worst* one, which is the only
+  quantity the gate needs. → card 83.
+- **Card 79 (BIS CNY)** — nothing was pending; the onshore-vs-offshore usage restriction was already
+  a terminal verdict and a stale grade alone held it in the queue for a third cycle. Resolved, and
+  its residual (the CNH–CNY basis, a policy-constraint axis with both legs now free) spawned as
+  card 85 under §38.
+- **Card 82 (9,827 SDMX residual)** — deferred with a **corrected first step**: the card prescribes
+  grep-filtering "the saved structure files on disk", and `find` returns nothing — run (v)
+  enumerated them in-context and discarded them, so the method would silently re-fetch 37 MB into
+  an agent. Persist first, then filter.
+
+### THE FIND THAT MATTERS MOST FROM THAT WORK — CDX REPLAY FABRICATES LOOKAHEAD (card 84)
+
+The clearing scan returned a publication lag of **−16 days**: the door apparently serving a
+2025-02-02 observation two weeks before that month existed. Impossible on a backward-looking flow
+statistic, so one clock was lying. **Cause verified, not assumed:** requesting
+`web.archive.org/web/20250117071926id_/...` returns HTTP 200 with a final URL of
+`/web/20250501085016id_/...` — Wayback resolves to the NEAREST capture and `urllib`/`curl -L` follow
+silently. Byte-identical, `len=15029`, two requested stamps.
+
+Harmless in content mining. In **vintage reconstruction it is manufactured lookahead** — later
+content under an earlier, authoritative timestamp. It surfaced *only* because it produced an
+impossible value; a substitution in the other direction leaves nothing anomalous and ships.
+**Rule, routed to `improvement_inbox.md`: compare the SERVED stamp in `response.url` against the
+REQUESTED one on every replay.** Exposed consumers to sweep: OP-098 CDX population enumerator,
+seed S18 (Wayback walker for dead EA forums), the FX Blue / Darwinex archived track-record corpora.
+Same family as the recorded lesson *"a Wayback CDX 200 archived a soft-404"*.
+
+### OWN GROUND — s9's NEXT-GROUND #1 WORKED TO COMPLETION: the field-reachability partition (OP-103)
+
+s9 measured this desk's external field breadth at **1** and named alpha101 field-vector extraction
+as the way to get the comparison number. Done, by script, not into context.
+
+`efJerryYang/worldquant-brain-simulator` `src/alpha_pool/alpha101.py` (GPL-3.0, 43,486 b). The
+reference set runs on **8 raw fields**, mean 2.84 per alpha — the OP-102 ruler confirmed on an
+independent artifact: each alpha is field-*shallow*; the set is broad because the *catalogue* is.
+
+```
+101 canonical  −18 (need IndClass grouping)  →  82 implemented
+                −30 (need vwap)  −1 (need cap)  →  51 REACHABLE
+                = 62% of implemented, 50.5% of canonical
+```
+
+**No long tail: beyond the grouping map the entire gap is TWO fields, `vwap` and `cap`.**
+
+**The independent corroboration is the best part of this session.** The 18 missing alphas are not
+stubbed — they are **absent from the file entirely**, surviving only as commented formulas, and
+every one of those comments carries `IndNeutralize(..., IndClass.*)`. The most-used open-source
+alpha101 port **hit this desk's own blocking input and dropped 17.8% of the canonical set rather
+than solve it.** The missing grouping map is not a local gap in one engine; it is a wall an
+independent implementer reached from the other side and declined. The brief's standing claim — *a
+grouping the desk can actually build is worth more than another operator it cannot apply* — now
+carries a number.
+
+**vwap is the largest single missing field (37%) and is NOT one flag away.** It looks cheap because
+`fetch_universe.py:94` pins `TIMEFRAME_H1` and the terminal serves M1. Measured: sub-H1 coverage is
+**4 of 197 symbols**, and the only M1 artifact spans **18 days** against H1 histories to 1984. The
+limit is broker M1 *retention*, not collector scope → carded as a **data axis** (86), with a
+tick_volume-weighted typical-price proxy as a labelled interim, never a replication.
+
+**Honest null, reported as one.** `real_volume` is advertised on all 197 files and **dead on 195**
+(only `BlackRock` and `CVSHealth`, both partial). `edge_search.py:210` admits it on
+`if col in d.columns` — presence, not content, the WS-005 shape. **Checked downstream before
+reporting it: 0 of 3,543 hypotheses use it**, so it is dead weight today, not a live defect. It is
+however a loaded gun for the group operators this seat is trying to add — a cross-sectional rank
+over `real_volume` would place 2 symbols above 195 structural zeros by construction, forever.
+
+### DEFECT LEDGERED — R0725, and it bit this run TWICE
+
+`libs/research/source_backlog.py:106` grades cards by **substring-matching the whole grade string**.
+Regrading card 79 with an explanation that *contained the phrase* `needs-monitoring` put it straight
+back into the verification queue — **a card's own explanation re-opens the card.** The mirror
+failure hit card 84: an unrecognised grade defaults *into* the pending queue rather than erroring,
+so an unparseable grade and a genuinely-owed one render identically (L1.28a). Fix specified both
+ways: parse a delimited leading token only, and make an unrecognised grade a loud parse error.
+
+### §13 AND FREEZE
+
+Public sources only: `raw.githubusercontent.com` (GPL-3.0 file), `web.archive.org` CDX + replay,
+`www.lbma.org.uk` (robots 200, `Disallow: /cache/` only). No login, no `api.worldquantbrain.com`, no
+platform-internal surface. **Freeze respected** — nothing under `scripts/`, `libs/`, the executor, a
+rail or a live-state file was modified; the `edge_search.py:210` guard was **measured and reported,
+not patched**.
+
+- **EXHAUSTED (dated):** `efJerryYang/worldquant-brain-simulator` `src/alpha_pool/alpha101.py` —
+  **2026-08-29, field-vector level.** s7 had explicitly left it unmined as "101 equity formulas";
+  the mechanism it actually carries is the FIELD VECTOR, and that is now extracted, partitioned and
+  saved to `data/brain_hunter_s10_alpha101_fields.json` (per-alpha field lists + counts). No seat
+  re-scans it for fields. The repo's `datasource/database.py` remains unmined.
+- **Video:** 0 fetched, 0 locked — no video route attempted this run; the ground worked was on-disk
+  and repo-file, and the s5 finding on BRAIN lecture material is unchanged.
+
+### NEXT UN-EXHAUSTED GROUND (for s11, in order)
+
+1. **BUILD THE GROUPING MAP — it is now the measured #1 by an independent yardstick** (18 canonical
+   alphas, 17.8%, and an external implementer's own refusal). MT5 analogue candidates, all
+   buildable from data already on the box: **asset class** (FX / metal / index / energy / soft /
+   share CFD, already in the universe registry), **currency bucket** (base+quote legs — the natural
+   `IndClass` analogue for FX and the one with no equity counterpart), and **correlation cluster**
+   over the 197×H1 tape. Asset class and currency bucket need **no new data at all**.
+2. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, still open: 2 keyword
+   hits of 130 repos, neither a BRAIN artifact, so this seat's mandated daily ground is collected by
+   nothing and every session pays live-browsing tokens for population enumeration.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — largest cleanly-licensed unmined artifact on the measured
+   population.
+4. **`yli188/WorldQuant_alpha101_code` (851★)** — the upstream original of the file mined this run
+   and still the most-starred artifact on this entire ground; the OSS port credits it in line 1.
+   Worth entering specifically to check **whether the upstream ALSO drops the 18 IndClass alphas** —
+   if it does, the wall is universal to the public lineage and that is a stronger claim still.
+5. **Re-run the population sweep paced** — s7's 97 repos remains a floor.

@@ -3800,3 +3800,98 @@ from the outside, from one that works** — and this repo's README carries the o
 *"results are still different from the platform's"* with two such keys sitting unread in it. The
 desk's own version of this is the gap-wirer class: *a producer computes a distinction, the
 consumer collapses it.* Where a config key is accepted, assert it is consumed.
+
+## OP-103 — THE FIELD-REACHABILITY PARTITION: 50.5% of canonical alpha101 is reachable on the desk's tape, and the entire gap is THREE named items (brain-hunter s10, 2026-08-29)
+
+s9 measured this desk's **external** field breadth at **1** (every one of 1730 `ext_` names is a
+function of peer close price) and named the alpha101 field-vector extraction as the way to get the
+comparison number — *how many distinct input fields the reference set spans, and how many have an
+MT5 analogue.* That ratio estimates the desk's reachable independence ceiling. It is now measured.
+
+**SOURCE:** `efJerryYang/worldquant-brain-simulator` `src/alpha_pool/alpha101.py`, GPL-3.0,
+43,486 b, fetched from `raw.githubusercontent.com`. Read by SCRIPT, not into context: methods split
+on `def alpha\d+`, raw fields taken as the `self.<name>` reference set per method.
+
+### THE MEASURED FIELD VECTOR — the reference set runs on EIGHT raw fields
+
+| field | alphas using it (of 82 implemented) |
+|---|---|
+| `close` | 53 | 
+| `volume` | 53 |
+| `high` | 31 |
+| `vwap` | 30 |
+| `low` | 28 |
+| `open` | 25 |
+| `returns` | 12 |
+| `cap` | 1 |
+
+Mean **2.84** distinct fields per alpha (median 2.5, min 1, max 6). This is the OP-102 ruler
+confirmed on an independent artifact: independence is bought in units of the DATA CATALOGUE, and
+each individual alpha is field-shallow — the *set* is broad because the catalogue is.
+
+### THE REACHABILITY PARTITION AGAINST THE DESK'S ACTUAL TAPE
+
+Desk tape measured, not assumed: **197/197** `*_H1.parquet` share one schema —
+`open high low close tick_volume spread real_volume`. Mapping `volume → tick_volume` (a proxy, see
+caveat) and `returns → derived from close`:
+
+```
+101  canonical alphas
+ -18  require IndNeutralize(..., IndClass.sector/industry/subindustry)  -> NO GROUPING MAP
+ ---
+  82  implemented in the OSS port
+ -30  require vwap                                                     -> NOT ON THE TAPE
+  -1  requires cap                                                     -> NOT ON THE TAPE
+ ---
+  51  REACHABLE  = 62% of implemented, 50.5% of canonical
+```
+
+**There is no long tail.** Beyond the grouping map, exactly TWO fields — `vwap` and `cap` — account
+for the entire remaining gap. That is a shopping list, not a research programme.
+
+### THE INDEPENDENT CONFIRMATION, AND IT ARRIVES FROM THE OPPOSITE DIRECTION
+
+The 18 missing alphas are **not stubbed and not partial — they are absent from the file entirely**
+(`alpha48/58/59/63/67/69/70/76/79/80/82/87/89/90/91/93/97/100` return `NOT MENTIONED ANYWHERE` on a
+source search). They survive only as **commented formulas**, and every one of those comments carries
+`IndNeutralize(..., IndClass.*)`.
+
+So the most-used open-source alpha101 reimplementation hit the desk's own blocking input, and
+**dropped 17.8% of the canonical set rather than solve it.** This desk's missing grouping map is not
+a local gap in a corner of one engine; it is the same wall an independent implementer hit and
+declined. That is external corroboration of the brief's standing claim — *a grouping the desk can
+actually build is worth more right now than another operator it cannot apply* — and it now carries a
+number: **18 reference alphas, 17.8% of the canonical set.**
+
+### VWAP IS THE SINGLE HIGHEST-LEVERAGE MISSING FIELD, AND IT IS NOT ONE FLAG AWAY
+
+`vwap` blocks **30/82 (37%)** of implemented alphas — more than every other missing field combined.
+The tempting conclusion is that it is cheap, since MT5 serves sub-H1 bars from the same terminal the
+desk already pulls H1 from (`fetch_universe.py:94` pins `mt5.TIMEFRAME_H1`). **Measured, that
+conclusion is wrong.** Sub-H1 coverage on the box is **4 symbols of 197** (3 FX crosses at M15,
+`XAUUSD` at M1/M5/M15), and the only M1 artifact — `XAUUSD_M1.parquet`, 20,000 rows — spans
+**2026-08-03 → 2026-08-21, eighteen days**, against an H1 history reaching back to 1984 on some
+symbols. Broker M1 retention, not collector scope, is the binding limit.
+
+**Therefore:** a *true* intrabar VWAP is not reconstructable over the backtest window. What IS
+available is a tick_volume-weighted typical-price **proxy** at H1 — a different object, and any
+alpha built on it is *inspired-by*, never a replication. Label it as a proxy at construction or the
+provenance is lost the moment it enters the gauntlet. **Recovering vwap over history is a DATA-AXIS
+item (a tick or M1 archive), not an engineering one** — routed to `data_axis_watchlist.md`.
+
+### SIDE MEASUREMENT — `real_volume` IS ADVERTISED ON 197 SYMBOLS AND DEAD ON 195
+
+`real_volume` is in the schema of all 197 files and is **all-zero on 195**. The only two exceptions
+are US share CFDs (`BlackRock` 5,637/13,480 non-zero from 1999-10; `CVSHealth` 9,374/17,219 from
+1984-12) and both are *partially* populated. `tick_volume` and `spread` are populated everywhere.
+
+`edge_search.py:210` admits the column on `if col in d.columns` — **presence, not content**, the
+WS-005 shape. Checked downstream before reporting it: `edge_search_results.json` contains **zero**
+`real_volume` hypotheses out of 3,543, so the constant-zero and all-NaN columns are filtered later
+and **this is dead weight today, not a live defect.** Reported as the honest null it is.
+
+**But it is a loaded gun for exactly the operators this seat is trying to add.** A cross-sectional
+`rank`/`zscore`/`group_rank` over `real_volume` puts those 2 symbols above 195 structural zeros **by
+construction, forever** — a degenerate ordering that reads as a signal. The desk is actively working
+to point group operators at this universe, so the guard should become content-aware (`nunique > 1`)
+*before* that happens, not after.

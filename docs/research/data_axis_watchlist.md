@@ -8654,3 +8654,30 @@ ground apply, and they are the whole reason this is carded UNVERIFIED rather tha
 
 **FIRST STEP:** measure the BIS `WS_XRU` publication lag by the card-83 method, then build the
 basis on true vintages and run it with the leak control before it goes near the EV gate.
+
+### 86. [dig 2026-08-29 (brain-hunter s10)] **A TICK / M1 ARCHIVE OVER HISTORY — the field that blocks 37% of the alpha101 reference set** — grade: **UNVERIFIED** `[§33: deferred(2026-09-05) tier:2]`
+
+OP-103 measured the desk's reachability against the canonical alpha101 set at **50.5%**, and found
+the residual gap is exactly three items: the grouping map (18 alphas), `vwap` (30 alphas, 37%), and
+`cap` (1). `vwap` is the largest single missing FIELD on this desk's tape.
+
+**WHY THIS IS A DATA AXIS AND NOT AN ENGINEERING TICKET.** MT5 serves sub-H1 bars from the terminal
+the desk already pulls from, which makes the fix look like a one-flag change at
+`fetch_universe.py:94`. It is not. Measured: sub-H1 coverage on the box is **4 of 197 symbols**, and
+the only M1 artifact (`XAUUSD_M1.parquet`, 20,000 rows) spans **18 days** against H1 histories
+reaching to 1984. The limit is **broker M1 retention**, not collector scope — pulling M1 for all 197
+tomorrow buys a few weeks of vwap, not a backtestable history.
+
+**WHAT WOULD ACTUALLY CLOSE IT:** a free, licensed historical tick or M1 archive over the MT5
+universe. The desk has already graded adjacent ground — HF broker-tick datasets are **symbol-named,
+never concept-named** (a recorded search lesson), and the Kraken downloadable OHLCVT archive is
+already deferred in the backlog but is crypto-exchange ground and therefore **void under the
+universe mandate**. This is FX/metals/indices tick ground and is unhunted.
+
+**INTERIM, and it must be labelled:** a `tick_volume`-weighted typical-price proxy at H1 is
+buildable today from the existing tape. It is a **different object** from VWAP; any alpha built on
+it is *inspired-by*, never a replication, and the proxy label must travel with it into the gauntlet.
+
+**SECOND, CHEAPER HALF — `cap`.** Blocks only 1 alpha, but the desk carries **US share CFDs** in its
+mandated universe, where market cap is a real, free, point-in-time-recoverable field. Low leverage
+on alpha101; noted because it is the only missing field with a genuinely easy door.
