@@ -181,7 +181,32 @@ def power_cure_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
         # No whitelist here either -- the cure lane must be open to every mechanism that clears
         # the validity gates, which is the entire point of curing by forward evidence.
         state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
-        out.add((symbol, selector, state, "session_range_breakout", False))
+        out.add((symbol, selector, state, _exec_family(family), False))
+
+    # THE EXTERNAL LANE, which had no route at all. The qquant report above is one producer; the
+    # gauntlet publishes its own validity-pass, power-deficient cells to POWER_CURE_CANDIDATES
+    # with an EXACT executable shadow_spec (never a guessed selector). Certificates stay in
+    # UNIVERSAL_SURVIVORS; these rows carry no promotion authority, and the promoter still
+    # applies the forward cure thresholds before anything is promoted.
+    # Measured 2026-08-29 -- 615 candidates across EIGHT families (cross_asset_residual 140,
+    # session_range_breakout 96, overnight_gap_decay 79, relative_value 73, carry 72, ...), 598
+    # of them failing deflated_sharpe alone. Without this block admission saw 68, all of one
+    # family, which is what a cure lane looks like when only one producer can reach it.
+    cure = _read(reports / "POWER_CURE_CANDIDATES.json")
+    if is_exact_policy(cure.get("gate_policy")):
+        for row in (cure.get("candidates") or {}).values():
+            if not isinstance(row, dict) or row.get("validity_pass") is not True:
+                continue
+            if not row.get("failed_power_gates"):
+                continue
+            spec = row.get("shadow_spec")
+            if not isinstance(spec, dict):
+                continue
+            if not {"symbol", "selector", "family", "is_universe"} <= set(spec):
+                continue
+            out.add((str(spec["symbol"]), str(spec["selector"]),
+                     spec.get("condition") or None, _exec_family(spec["family"]),
+                     spec["is_universe"] is True))
     return out
 
 
