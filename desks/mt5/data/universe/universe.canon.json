@@ -2,7 +2,7 @@
  "3M": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -29,7 +29,7 @@
  "ADAUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -56,7 +56,7 @@
  "ADP": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -83,7 +83,7 @@
  "AMD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -110,7 +110,7 @@
  "AT&T": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -137,7 +137,7 @@
  "AUDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -146,7 +146,7 @@
    }
   },
   "asset_class": "Forex",
-  "bars": 53856,
+  "bars": 53864,
   "contract_size": 100000.0,
   "currency_profit": "CAD",
   "digits": 5,
@@ -164,7 +164,7 @@
  "AUDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -191,7 +191,7 @@
  "AUDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -218,75 +218,49 @@
  "AUDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53856,
+  "bars": 53864,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 16.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 81.0,
-  "swap_long": 5.54,
-  "swap_short": -13.02,
-  "symbol": "AUDJPY",
   "tick_size": 0.001,
   "tick_value": 0.5417851821752675,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 479,
   "contract_size": 100000.0,
-  "currency_profit": "NZD",
-  "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 15.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 150.0,
-  "swap_long": 2.8,
-  "swap_short": -7.35,
-  "symbol": "AUDNZD",
   "tick_size": 1e-05,
   "tick_value": 0.5097723356748877,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -313,41 +287,28 @@
  "AUDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 53864,
   "contract_size": 100000.0,
-  "currency_profit": "USD",
-  "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 14.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 6.0,
-  "swap_long": -0.21,
-  "swap_short": -2.14,
-  "symbol": "AUDUSD",
   "tick_size": 1e-05,
   "tick_value": 0.8632298608473467,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "AUS200": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -374,7 +335,7 @@
  "AVAXUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -401,7 +362,7 @@
  "Accenture": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -428,7 +389,7 @@
  "Adobe": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -455,7 +416,7 @@
  "Airbnb": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -482,7 +443,7 @@
  "AlibabaGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -509,7 +470,7 @@
  "Alphabet-A": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -536,7 +497,7 @@
  "Alphabet-C": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -563,7 +524,7 @@
  "Amazon": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -590,7 +551,7 @@
  "AmericanExpress": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -617,7 +578,7 @@
  "Amgen": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -644,7 +605,7 @@
  "Apple": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -671,7 +632,7 @@
  "AppliedMaterials": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -698,7 +659,7 @@
  "Atlassian": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -725,7 +686,7 @@
  "BCHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -752,7 +713,7 @@
  "BNBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -779,35 +740,22 @@
  "BTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Crypto",
-  "bars": 63220,
+  "bars": 63230,
   "contract_size": 1.0,
-  "currency_profit": "USD",
-  "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1900.0,
+  "median_spread_pts": 1694.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 1804.0,
-  "swap_long": -15.0,
-  "swap_short": -10.0,
-  "symbol": "BTCUSD",
   "tick_size": 0.01,
   "tick_value": 0.008632298608473466,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Baidu": {
@@ -840,7 +788,7 @@
  "BankofAmericaCorp": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -867,7 +815,7 @@
  "Berkshire": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -894,7 +842,7 @@
  "BeyondMeat": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -911,7 +859,7 @@
  "BlackRock": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -938,7 +886,7 @@
  "BlockInc": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -955,7 +903,7 @@
  "Boeing": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -982,7 +930,7 @@
  "Booking": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1009,7 +957,7 @@
  "Broadcom": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1036,7 +984,7 @@
  "CA60": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1063,7 +1011,7 @@
  "CADCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1090,45 +1038,28 @@
  "CADJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
-   "median_spread_pts": {
-    "at": "2026-08-29T04:41:58+00:00",
-    "source": "realized_fills"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53856,
+  "bars": 53864,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.5,
+  "median_spread_pts": 15.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 26.0,
-  "swap_long": 1.44,
-  "swap_short": -5.78,
-  "symbol": "CADJPY",
   "tick_size": 0.001,
   "tick_value": 0.5417851821752675,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1155,7 +1086,7 @@
  "CHFHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1182,41 +1113,28 @@
  "CHFJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53857,
+  "bars": 53865,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 18.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 68.0,
-  "swap_long": -9.67,
-  "swap_short": 2.56,
-  "symbol": "CHFJPY",
   "tick_size": 0.001,
   "tick_value": 0.5417851821752675,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "CHFNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1243,7 +1161,7 @@
  "CHFPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1270,7 +1188,7 @@
  "CHFSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1297,7 +1215,7 @@
  "CHFSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1324,7 +1242,7 @@
  "CHINAH": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1459,7 +1377,7 @@
  "CVSHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1486,7 +1404,7 @@
  "Caterpillar": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1513,7 +1431,7 @@
  "CharlesSchwab": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1540,7 +1458,7 @@
  "Charter": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1567,7 +1485,7 @@
  "Chevron": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1594,7 +1512,7 @@
  "Cisco": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1621,7 +1539,7 @@
  "Citigroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1648,7 +1566,7 @@
  "Coca-Cola": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1675,7 +1593,7 @@
  "Coinbase": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1702,7 +1620,7 @@
  "Comcast": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1729,7 +1647,7 @@
  "CostcoWholesale": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1756,7 +1674,7 @@
  "DOGEUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1783,7 +1701,7 @@
  "DOTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1810,7 +1728,7 @@
  "DocuSign": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1837,7 +1755,7 @@
  "Doordash": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1864,7 +1782,7 @@
  "Dow": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1891,7 +1809,7 @@
  "E35": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1918,7 +1836,7 @@
  "EOSUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1945,75 +1863,49 @@
  "ETHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Crypto",
-  "bars": 63242,
+  "bars": 63252,
   "contract_size": 1.0,
-  "currency_profit": "USD",
-  "digits": 2,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 251.0,
+  "median_spread_pts": 258.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 306.0,
-  "swap_long": -15.0,
-  "swap_short": -10.0,
-  "symbol": "ETHUSD",
   "tick_size": 0.01,
   "tick_value": 0.008632298608473466,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53856,
+  "bars": 53864,
   "contract_size": 100000.0,
-  "currency_profit": "AUD",
-  "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 114.0,
-  "swap_long": -11.56,
-  "swap_short": 5.32,
-  "symbol": "EURAUD",
   "tick_size": 1e-05,
   "tick_value": 0.6136023365976979,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2040,41 +1932,28 @@
  "EURCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53892,
+  "bars": 53900,
   "contract_size": 100000.0,
-  "currency_profit": "CHF",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 14.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 31.0,
-  "swap_long": 2.33,
-  "swap_short": -10.19,
-  "symbol": "EURCHF",
   "tick_size": 1e-05,
   "tick_value": 1.0647812939222285,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2101,7 +1980,7 @@
  "EURDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2128,41 +2007,28 @@
  "EURGBP": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53856,
+  "bars": 53864,
   "contract_size": 100000.0,
-  "currency_profit": "GBP",
-  "digits": 5,
   "first": "2018-01-02 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 30.0,
-  "swap_long": -6.12,
-  "swap_short": 1.07,
-  "symbol": "EURGBP",
   "tick_size": 1e-05,
   "tick_value": 1.1696316829830289,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2189,7 +2055,7 @@
  "EURHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2216,7 +2082,7 @@
  "EURILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2243,45 +2109,28 @@
  "EURJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
-   "median_spread_pts": {
-    "at": "2026-08-29T04:41:58+00:00",
-    "source": "realized_fills"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53892,
+  "bars": 53900,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 5.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 40.0,
-  "swap_long": 2.87,
-  "swap_short": -9.89,
-  "symbol": "EURJPY",
   "tick_size": 0.001,
   "tick_value": 0.541791052862553,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2308,7 +2157,7 @@
  "EURNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2335,7 +2184,7 @@
  "EURNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2362,7 +2211,7 @@
  "EURPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2389,7 +2238,7 @@
  "EURRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2416,7 +2265,7 @@
  "EURSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2443,7 +2292,7 @@
  "EURSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2470,7 +2319,7 @@
  "EURTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2497,41 +2346,28 @@
  "EURUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "USD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 12.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 1.0,
-  "swap_long": -7.16,
-  "swap_short": 3.04,
-  "symbol": "EURUSD",
   "tick_size": 1e-05,
   "tick_value": 0.8632298608473467,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "EURZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2558,7 +2394,7 @@
  "EUSTX50": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2585,7 +2421,7 @@
  "ElectronicArts": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2612,7 +2448,7 @@
  "ExxonMobil": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2639,7 +2475,7 @@
  "FRA40": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2693,45 +2529,28 @@
  "GBPAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
-   "median_spread_pts": {
-    "at": "2026-08-29T04:41:58+00:00",
-    "source": "realized_fills"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53891,
+  "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "AUD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 4.0,
+  "median_spread_pts": 15.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 148.0,
-  "swap_long": -7.08,
-  "swap_short": -2.63,
-  "symbol": "GBPAUD",
   "tick_size": 1e-05,
   "tick_value": 0.6136023365976979,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2758,7 +2577,7 @@
  "GBPCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2785,7 +2604,7 @@
  "GBPDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2812,7 +2631,7 @@
  "GBPHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2839,41 +2658,28 @@
  "GBPJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53891,
+  "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 1.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 46.0,
-  "swap_long": 8.23,
-  "swap_short": -23.35,
-  "symbol": "GBPJPY",
   "tick_size": 0.001,
   "tick_value": 0.541791052862553,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2900,7 +2706,7 @@
  "GBPNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2927,7 +2733,7 @@
  "GBPNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2954,7 +2760,7 @@
  "GBPPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2981,7 +2787,7 @@
  "GBPSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3008,7 +2814,7 @@
  "GBPSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3035,7 +2841,7 @@
  "GBPTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3062,41 +2868,28 @@
  "GBPUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 53900,
   "contract_size": 100000.0,
-  "currency_profit": "USD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 10.0,
-  "swap_long": -2.0,
-  "swap_short": -2.07,
-  "symbol": "GBPUSD",
   "tick_size": 1e-05,
   "tick_value": 0.8632298608473467,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "GBPZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3123,7 +2916,7 @@
  "GER40": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3204,7 +2997,7 @@
  "GileadSciences": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3231,7 +3024,7 @@
  "GoldmanSachs": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3258,7 +3051,7 @@
  "HK50": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3285,7 +3078,7 @@
  "HKDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3312,7 +3105,7 @@
  "HomeDepot": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3339,7 +3132,7 @@
  "Honeywell": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3366,7 +3159,7 @@
  "IBM": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3393,7 +3186,7 @@
  "Intel": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3474,7 +3267,7 @@
  "JPMorganChase": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3501,7 +3294,7 @@
  "JPN225": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3528,7 +3321,7 @@
  "Johnson&Johnson": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3555,7 +3348,7 @@
  "LNKUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3582,7 +3375,7 @@
  "LTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3663,7 +3456,7 @@
  "MATICUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3690,7 +3483,7 @@
  "MXNJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3744,7 +3537,7 @@
  "McDonalds": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3798,7 +3591,7 @@
  "Merck": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3825,7 +3618,7 @@
  "Meta": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3879,7 +3672,7 @@
  "Microsoft": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3933,7 +3726,7 @@
  "NAS100": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3960,7 +3753,7 @@
  "NETH25": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4014,7 +3807,7 @@
  "NOKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4041,7 +3834,7 @@
  "NOKSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4095,41 +3888,28 @@
  "NZDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53891,
+  "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "CAD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 17.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 62.0,
-  "swap_long": -0.45,
-  "swap_short": -2.69,
-  "symbol": "NZDCAD",
   "tick_size": 1e-05,
   "tick_value": 0.6223937262712392,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4156,7 +3936,7 @@
  "NZDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4183,45 +3963,28 @@
  "NZDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
-   "median_spread_pts": {
-    "at": "2026-08-29T04:41:58+00:00",
-    "source": "realized_fills"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53890,
+  "bars": 53898,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 147.0,
+  "median_spread_pts": 15.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 63.0,
-  "swap_long": 1.8199999999999998,
-  "swap_short": -6.46,
-  "symbol": "NZDJPY",
   "tick_size": 0.001,
   "tick_value": 0.5417851821752675,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "NZDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4248,41 +4011,28 @@
  "NZDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53891,
+  "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "USD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 14.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 17.0,
-  "swap_long": -3.02,
-  "swap_short": 0.58,
-  "symbol": "NZDUSD",
   "tick_size": 1e-05,
   "tick_value": 0.8632298608473467,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "Netflix": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4309,7 +4059,7 @@
  "Nike": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4390,7 +4140,7 @@
  "PayPal": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4417,7 +4167,7 @@
  "Pepsi": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4525,7 +4275,7 @@
  "Procter&Gamble": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4660,7 +4410,7 @@
  "SEKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4687,7 +4437,7 @@
  "SGDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4714,7 +4464,7 @@
  "SOLUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4822,7 +4572,7 @@
  "Salesforce": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5092,7 +4842,7 @@
  "Tesla": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5200,7 +4950,7 @@
  "Travelers": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5254,7 +5004,7 @@
  "UK100": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5362,7 +5112,7 @@
  "US30": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5389,7 +5139,7 @@
  "US500": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5443,7 +5193,7 @@
  "USDBRL": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5470,75 +5220,49 @@
  "USDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 53900,
   "contract_size": 100000.0,
-  "currency_profit": "CAD",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 15.0,
-  "swap_long": 3.16,
-  "swap_short": -8.2,
-  "symbol": "USDCAD",
   "tick_size": 1e-05,
   "tick_value": 0.6223937262712392,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
-  "bars": 53891,
+  "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "CHF",
-  "digits": 5,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 20.0,
-  "swap_long": 5.03,
-  "swap_short": -12.36,
-  "symbol": "USDCHF",
   "tick_size": 1e-05,
   "tick_value": 1.0647812939222285,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDCNH": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5565,7 +5289,7 @@
  "USDCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5592,7 +5316,7 @@
  "USDDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5619,7 +5343,7 @@
  "USDHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5646,7 +5370,7 @@
  "USDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5673,7 +5397,7 @@
  "USDIDR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5700,7 +5424,7 @@
  "USDILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5727,7 +5451,7 @@
  "USDINR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5754,41 +5478,28 @@
  "USDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Forex",
   "bars": 53899,
   "contract_size": 100000.0,
-  "currency_profit": "JPY",
-  "digits": 3,
   "first": "2018-01-02 00:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 0.0,
+  "median_spread_pts": 13.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 10.0,
-  "swap_long": 7.13,
-  "swap_short": -18.12,
-  "symbol": "USDJPY",
   "tick_size": 0.001,
   "tick_value": 0.541791052862553,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "USDKRW": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5815,7 +5526,7 @@
  "USDMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5842,7 +5553,7 @@
  "USDNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5869,7 +5580,7 @@
  "USDPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5896,7 +5607,7 @@
  "USDRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5923,7 +5634,7 @@
  "USDSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5950,7 +5661,7 @@
  "USDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5977,7 +5688,7 @@
  "USDTHB": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6004,7 +5715,7 @@
  "USDTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6031,7 +5742,7 @@
  "USDX": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6058,7 +5769,7 @@
  "USDZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6193,7 +5904,7 @@
  "UnitedHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6247,7 +5958,7 @@
  "Verizon": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6274,7 +5985,7 @@
  "Visa": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6328,7 +6039,7 @@
  "Walgreens": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6345,7 +6056,7 @@
  "Walmart": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6372,7 +6083,7 @@
  "WaltDisney": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6426,7 +6137,7 @@
  "XAGEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6453,41 +6164,28 @@
  "XAGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Commodities",
-  "bars": 49955,
+  "bars": 49963,
   "contract_size": 5000.0,
-  "currency_profit": "USD",
-  "digits": 3,
   "first": "2018-03-19 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 4.0,
+  "median_spread_pts": 21.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 31.0,
-  "swap_long": -10.99,
-  "swap_short": 0.09,
-  "symbol": "XAGUSD",
   "tick_size": 0.001,
   "tick_value": 4.316149304236733,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XALUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6514,7 +6212,7 @@
  "XAUAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6541,7 +6239,7 @@
  "XAUEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6568,45 +6266,28 @@
  "XAUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
-   "currency_profit": {
-    "at": "2026-08-28T23:35:46+00:00",
-    "source": "refresh_cost_fields"
-   },
-   "median_spread_pts": {
-    "at": "2026-08-29T04:41:58+00:00",
-    "source": "realized_fills"
-   },
    "tick_value": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "broker_reported"
    }
   },
-  "asset_class": "Commodities",
   "bars": 49964,
   "contract_size": 100.0,
-  "currency_profit": "USD",
-  "digits": 2,
   "first": "2018-03-19 01:00:00+00:00",
   "last": "2026-08-17 23:00:00+00:00",
-  "median_spread_pts": 14.5,
+  "median_spread_pts": 16.0,
   "min_volume": 0.01,
-  "spread_pts_at_collection": 20.0,
-  "swap_long": -67.06,
-  "swap_short": 32.75,
-  "symbol": "XAUUSD",
   "tick_size": 0.01,
   "tick_value": 0.8632298608473467,
-  "updated_at": "2026-08-29T04:40:04+00:00",
-  "volume_min": 0.01,
   "volume_step": 0.01
  },
  "XBRUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6633,7 +6314,7 @@
  "XCUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6660,7 +6341,7 @@
  "XLMUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6687,7 +6368,7 @@
  "XNGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6714,7 +6395,7 @@
  "XNIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6741,7 +6422,7 @@
  "XPBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6768,7 +6449,7 @@
  "XPDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6795,7 +6476,7 @@
  "XPTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6822,7 +6503,7 @@
  "XTIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6849,7 +6530,7 @@
  "XZNUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6876,7 +6557,7 @@
  "ZARJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6903,7 +6584,7 @@
  "eBay": {
   "_provenance": {
    "bars": {
-    "at": "2026-08-29T12:43:00+00:00",
+    "at": "2026-08-29T14:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {

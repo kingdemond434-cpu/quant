@@ -591,9 +591,111 @@
    "identity_restored_at": "2026-08-29T12:45:29+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
    "identity_restore_count": 1
+  },
+  "AUDCHF.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "AUDCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "c5a94798c38c2ae0d913"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:15:16+00:00",
+   "forward_start": "2026-08-29T13:47:10.298322+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "CADCHF.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "CADCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "a469a41bb657c46c644f"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:15:16+00:00",
+   "forward_start": "2026-08-29T13:34:35.776858+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "CHFDKK.overnight_gap_decay.asia": {
+   "identity": {
+    "family": "overnight_gap_decay",
+    "symbol": "CHFDKK",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {},
+    "code_hash": "8ccadda6ee747cb6",
+    "cost_hash": "e3bd9859658d7b19",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "47f5f700d67a30123197"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:15:16+00:00",
+   "forward_start": "2026-08-29T13:34:35.776887+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 40.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 7.47536
+   }
+  },
+  "CHFNOK.carry.asia#input_symbol=CHFNOK": {
+   "identity": {
+    "family": "carry",
+    "symbol": "CHFNOK",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "input_symbol": "CHFNOK"
+    },
+    "code_hash": "a2439d7cd8a24a44",
+    "cost_hash": "2e488d732fdad10e",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "636ff32c6599fddc449f"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T14:15:17+00:00",
+   "forward_start": "2026-08-29T13:34:35.776896+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 264.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 10.86507
+   }
   }
  },
- "updated_at": "2026-08-29T12:45:29+00:00",
+ "updated_at": "2026-08-29T14:15:17+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",
