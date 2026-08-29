@@ -7853,7 +7853,7 @@ smallest number in this run, `sd = 0.01 bp`, is the one that killed an indicator
 
 > **VERIFIED AND EXHAUSTED 2026-08-28 (prospector s15) — the instruction above was followed exactly.** robots.txt is a single `User-agent: *` group with **ZERO directives** = fully allowed. `sitemap.xml` 301s to `sitemap_index.xml` (the silent-redirect trap s14 flagged). **Enumerated, never browsed:** 3 post-sitemaps -> **2,317 index pages**, all fetched, **0 errors** -> **6,908 dated items / 373 blogs / 369 hosts / 2015-04-09 -> 2026-08-27**, saved to `data/intelligence/quantocracy_blogosphere_index.json`. Naming convention changes end-2024 (`daily-wrap-for-` -> `recent-quant-links-...-as-of-`); both parsed. **NOTE the trap: `/feed/?paged=2` returns BYTE-IDENTICAL content to `/feed/` (md5 match) — the RSS route silently caps and would have understated the population by ~99%; the sitemap is the only honest enumerator.** `wp-json` is 404. **GRADE FOR THIS DESK'S MANDATE: THIN — measured, not felt.** Only **445/6,908 (6.4%)** of titles touch FX/metals/rates/commodities/index futures; the corpus is overwhelmingly US equity-factor and asset allocation. **358/369 hosts are absent from the desk's entire `docs/` corpus** (6 of the 11 'known' are generic: medium, t.co, youtube, arxiv, ssrn, substack), so the enumeration is real new ground — it is simply mostly off-mandate. Value is concentrated by MT5-hit density, not volume: **SR SV 36/161 (22.4%)**, Relative Value Arbitrage 16/89, Quantpedia 52/382, Flirting with Models 23/274 — while Alpha Architect, the largest contributor at 984 items, is 3.6%. **This source is now enumerated once and for all; no future run re-scans it — query the saved index.** [§33: screened -> data/intelligence/quantocracy_blogosphere_index.json]
 
-### 73. [dig 2026-08-29 (BRAIN hunter s8)] **THE FIELD-COUNT AXIS ITSELF — the desk's independence bottleneck is raw-field intake, and the live generic search currently consumes ZERO external fields** — grade: **MEASURED DEFECT, ledgered R0715/R0716/R0717**
+### 73. [dig 2026-08-29 (BRAIN hunter s8)] **THE FIELD-COUNT AXIS ITSELF — the desk's independence bottleneck is raw-field intake, and the live generic search consumes ONE external field** — grade: **verified-clean AS A BACKLOG ITEM 2026-08-29 (BRAIN hunter s9): verification complete, the axis is REAL and now MEASURED (external raw-field breadth = 1), s8's stated proof was refuted and the claim re-derived from the artifacts, fully converted to R0715/R0718-R0722. The DEFECT it names is open in the ledger; the SOURCE-BACKLOG obligation is discharged.**
 
 **Not a source card. An axis card, and it re-prices every source card above it.** OP-102, measured
 over `CrisperX/50_WorldQuant_Alpha_Examples_for_Alphathon`: 50 mutually-independent alphas are
@@ -7894,3 +7894,105 @@ unit belongs on R0715, because until it lands, a newly-acquired field cannot rea
 search at all: it would be added to `resolve_inputs`, which raises. **A data axis wired into a
 function that always throws is an acquisition the desk has paid for and declined.**
 [§33: wired -> R0715/R0716/R0717 + data/brain_hunter_s8_20260829.json + OP-102/OP-103]
+
+
+---
+
+**VERIFICATION — BRAIN hunter s9, 2026-08-29. The card is UPHELD ON MECHANISM, REFUTED ON ITS
+PROOF, and the defect it names is PROSPECTIVE rather than historical.**
+
+- **s8's "proof from the output" was a measurement error on its own evidence file.** Re-measured
+  on the *same* `edge_search_results.json` (`searched_at 2026-08-29T02:33`, same 3543
+  hypotheses): **3390 of 3543 (95.7%) ARE `ext_` hypotheses**, spanning **1730 distinct `ext_`
+  feature names**. The features sit at `params.feature`, not at a top-level key. The external
+  axis was WORKING when that artifact was written, so "consumes ZERO external fields" was wrong
+  as written.
+- **The TypeError is real, and it is now universal.** Reproduced by direct call this run:
+  `resolve_inputs(sym, df.index, all_197)` raises for `AUDUSD`, `XAUUSD` **and** `ADAUSD` — two
+  aware targets and a naive one. The unguarded concat is at **`edge_search.py:274`, inside the
+  sorted peer loop** (not 296, the cross-section block): an aware target meets naive `3M` on
+  iteration 1, a naive target meets aware `AUDCAD` a few iterations later. Nobody survives.
+- **The generation split is dated:** 24 tz-aware parquets written **2026-08-28 23:55–23:56** (the
+  liquid core — every FX major plus BTC/ETH); the other 173 share one mtime, **2026-08-26 11:06**.
+- **So the correct statement of the card is worse than the original.** The next nightly run
+  silently deletes **95.7% of its own hypotheses**, and the only symptom is one swallowed `print`.
+  A break behind you gets noticed; a break scheduled for tonight does not. **R0719.**
+
+**THE FIELD-BREADTH NUMBER, which is what the card was actually reaching for: 1.** The 1730
+distinct `ext_` names resolve to six families — `ext_lead_*` (1292), `ext_residz_*` (218),
+`ext_resid_*` (191), `ext_triangle_*` (26), `ext_xsection_*` (3), `ext_corr_*` — and **every one
+is a function of peer CLOSE PRICE**. A 13,210,812-trial search, 1730 features wide, runs on a raw
+external catalogue of **one field**. Under OP-102 that is the hard ceiling on how independent its
+survivors can be, and no operator added anywhere moves it. The card's thesis is therefore correct
+and the corrected number (1, not 0) does not weaken it.
+
+**AND THE FOUR FIELDS THAT WOULD RAISE IT ARE ALL DEAD ON A PATH OR FORMAT MISMATCH — not on
+absent data. Every one of these is on this box.**
+
+| family | reader expects | actually on disk | ledger |
+|---|---|---|---|
+| `ext_swap_diff` | `data/tape/contract_terms/*.json*` | `contract_terms/2026-08-27.parquet` — **1908 rows**, columns `swap_long swap_short swap_mode contract_size tick_value` | **R0720** |
+| `ext_cot` | `data/cot_tff.json`, `cot.json`, `cot_disagg.json` | `data/cot_tff/{aud,cad,chf,eur,gbp,…}.parquet`, `data/cot_disagg/{gold,silver}.parquet`, `data/cot_gold.parquet` — right names, **directories of parquet** | R0717 |
+| `ext_macro_*` | numeric scalars at the TOP level of `macro_state.json` | top level is `{updated: str, series: {}, states: {}, differentials: {}}` — **zero numeric scalars**; the numbers are under `states`/`differentials` | **R0718** |
+| `ext_book_*` | `data/tape/ticks/<symbol>/*.parquet` | **`data/tape/ticks/` does not exist** — `data/tape/` holds only `contract_terms/` and `triangle_executable.json` | **R0721** |
+
+**A WARNING ON THE MACRO REPAIR, because the one-line fix is worse than the bug (R0718).** Line
+374 is `pd.Series(float(v), index=index)` — it **broadcasts one scalar across the whole history**.
+Fix the nesting and every bar back to 2015 is conditioned on a number computed in 2026: a constant
+column (zero information) *and* the `*_now` conditioning-variable leak this desk already paid for
+on `unlock_event_screen.json`, which is the direction no gate catches because a falsely-killed
+axis raises no alert. **The vintage-correct source is already on the box:**
+`desks/mt5/data/lake/alfred/` plus `lake/fred_*.parquet` (ALFRED serves as-published vintages).
+`desks/mt5/data/macro_pointintime/` exists and is **EMPTY** — a named, unfilled slot.
+
+
+### 74. [dig 2026-08-29 (BRAIN hunter s9)] **THE BRAIN GROUND IS COLLECTED BY NOTHING — this seat's entire mandated daily corpus has no python collector, so every session spends live browsing on population enumeration** — grade: **verified-clean AS A BACKLOG ITEM 2026-08-29 (same run, screen-on-discovery): the collector's query list was read and the gap is CONFIRMED — 10 hardcoded FX/MT5 queries, zero BRAIN vocabulary. Ledgered R0723.**
+
+**Not a source. A collector-scope gap, found by using the free corpus the way the standing order
+says to — corpora first, tokens for judgement.** `desks/mt5/data/intelligence/github/discoveries_*.json`
+runs **hourly** and has accumulated **130 distinct repos**. Filtered against this seat's own
+vocabulary (`worldquant`, `brain`, `alpha101`, `alphagen`, `factor`, `operator`, `expression`,
+`symbolic`, `genetic`): **2 hits out of 130**, and neither is a BRAIN artifact — one is a genetic-
+programming FX repo, the other an S&P long/short backtester.
+
+**The collector is scoped to MT5/EA vocabulary.** That is correct for the desk's venue mandate and
+wrong for this seat, whose permanent ground is the public BRAIN corpus and everything reachable
+from it. The consequence is structural and repeats every single day: **the BRAIN population is
+enumerated by a reasoning organ instead of by a free python collector**, which is exactly the
+inversion the token-discipline order forbids. s7 spent a whole session measuring a 97-repo
+population and recorded it as a FLOOR because the unauthenticated search API 403'd on query 8 of
+10 — that is a paced-collector job, not a judgement job.
+
+**WHY IT IS A DATA AXIS AND NOT MERELY AN EFFICIENCY NOTE.** Under OP-102 the desk's independence
+ceiling is set by its count of weakly-correlated input FIELDS, and card 73 measures the live
+number at **1**. The BRAIN corpus's value to this desk is precisely that it is a catalogue of
+*fields and the transformations over them* — so the ground that would raise the binding number is
+the one ground with no automated intake. The gap compounds: what is not collected is not ranked,
+what is not ranked is re-enumerated by hand, and the seat's tokens go to HTML instead of to
+mechanism extraction.
+
+**WHAT TO BUILD (cheap, and it converts every future session of this seat from browsing to
+judgement):** a BRAIN-scoped arm on the existing github collector — same shape, same cadence, same
+artifact directory, different query vocabulary (`worldquant brain`, `alpha101`, `alphagen`,
+`wqb`, `alpha expression`, `operator set`, `alpha simulator`, plus star-delta novelty sweeps over
+the topic). Paced, because the unauthenticated search API 403s. **§13:** public GitHub search
+only, no login, no platform-internal surface.
+
+**NEXT ACTION:** route to the MT5 desk as a collector change; this seat is research-only and may
+not touch `scripts/`. Verification owed: confirm the existing collector's query list is in fact
+MT5-scoped by reading it (this card is graded from its OUTPUT, 130 repos, not from its source).
+
+**VERIFICATION — same run, screen-on-discovery. CONFIRMED from the source, not the output.**
+`desks/mt5/side_channels/github_miner.py:26` holds `QUERIES` as **ten hardcoded literals** —
+`forex trading strategy`, `gold XAUUSD algorithm`, `session breakout forex`, `mean reversion
+trading`, `momentum trading strategy`, `price action algorithm`, `central bank trading`,
+`JPY carry trade`, `algorithmic trading python`, `quantitative finance strategy` — and a
+23-entry hardcoded `SYMBOLS` list beside it. **Not one BRAIN token appears.** The 2-of-130
+hit rate measured from the artifact is therefore not sampling noise; it is the ceiling the
+query list imposes.
+
+**AND THE LISTS ARE A SECOND, LARGER DEFECT (LAWS §1 anti-hardcode).** Neither `QUERIES` nor
+`SYMBOLS` declares itself a bootstrap SEED, and `SYMBOLS` is a 23-entry hand list sitting beside
+a live registry of **197** universe parquets. A literal list that silently caps exploration is
+the WS-005 class — absence read as a clean verdict — and here it reads as "the BRAIN ground is
+thin" when what is actually true is "the BRAIN ground was never queried". **R0723.**

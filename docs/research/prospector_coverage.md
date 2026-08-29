@@ -9785,3 +9785,123 @@ working.
    (338★)** — next by stars, both untouched.
 4. **Re-run the population sweep paced** — s7's 97 repos is a floor (the unauthenticated search
    API 403'd on query 8 of 10), and the ranking should be refreshed before it is spent again.
+
+## BRAIN HUNTER — session 9 (2026-08-29, dedicated daily organ)
+
+**Ground: the OWED §33 card from s8, verified before anything new was mined.** The source backlog
+held exactly one item pending technical verification — s8's card *"THE FIELD-COUNT AXIS ITSELF —
+the desk's independence bottleneck is raw-field intake, and the live generic search currently
+consumes ZERO external fields"*. This run verified it against the artifacts and **the card's
+conclusion survives while its stated proof does not**, which changes the repair.
+
+### VERDICT — the card is UPHELD ON MECHANISM, REFUTED ON ITS PROOF, and the defect is PROSPECTIVE
+
+- **s8's proof was a measurement error on its own evidence file.** It reported "today's live
+  `edge_search_results.json`, 3,543 hypotheses, holds ZERO `ext_` features". Re-measured on the
+  *same* file (`desks/mt5/data/hypotheses/edge_search_results.json`, `searched_at`
+  `2026-08-29T02:33`, same 3543 hypotheses): **3390 of 3543 hypotheses (95.7%) ARE built on an
+  external feature**, spanning **1730 distinct `ext_` feature names**. The features live at
+  `params.feature`, not at a top-level key, which is what a shallow scan misses. The external
+  axis was WORKING when that artifact was written.
+- **But the TypeError is real, reproduced by direct call, and now fires for EVERYONE.**
+  `edge_search.resolve_inputs(sym, df.index, all_197)` raises
+  `TypeError: Cannot join tz-naive with tz-aware DatetimeIndex` for `AUDUSD`, `XAUUSD` **and**
+  `ADAUSD` — an aware target, an aware target, and a naive one. The unguarded
+  `pd.concat([...], join="inner")` at `edge_search.py:274` sits **inside the peer loop**, and
+  peers are `sorted()`, so an aware target meets naive `3M` on iteration 1 and a naive target
+  meets aware `AUDCAD` a few iterations in. Either way the exception unwinds the whole call and
+  the caller at `:612` swallows it into a `print`, discarding every peer key already built.
+- **The generation split is a partial sync, and its clock is now measured.** 24 files are
+  tz-aware UTC, written **2026-08-28 23:55–23:56**; the other **173 all share one mtime,
+  2026-08-26 11:06**. The aware 24 are the liquid core — `AUDCAD AUDJPY AUDNZD AUDUSD BTCUSD
+  CADJPY CHFJPY ETHUSD EURAUD EURCHF EURGBP EURJPY EURUSD GBPAUD GBPJPY …` — every FX major plus
+  BTC/ETH.
+- **So this is a defect in front of the desk, not behind it, and that is worse.** The next
+  nightly run silently deletes 95.7% of its own hypotheses, and the only symptom is one swallowed
+  `print` line. A break that has already happened gets noticed; a break scheduled for tonight
+  does not. **R0715 re-raised with this correction.**
+
+### THE FIELD-BREADTH RULER (OP-102) POINTED AT THE ARTIFACT — the number is 1
+
+s8's mechanism was that independence is purchased in units of the **data catalogue**: 50 mutually
+independent BRAIN alphas = 50 distinct fields × 8 operators. Applying that ruler to the desk's own
+output is the cheapest independence audit available, and it gives a hard number.
+
+The 1730 distinct `ext_` features resolve to exactly **six families**, and every one of them is a
+function of **peer CLOSE PRICE**: `ext_lead_*` (1292 names), `ext_residz_*` (218),
+`ext_resid_*` (191), `ext_triangle_*` (26), `ext_xsection_*` (3), `ext_corr_*`. **Raw external
+field breadth = 1.** A 13,210,812-trial search, 1730 feature names wide, runs on a catalogue of
+one field. Under OP-102 that is the ceiling on how independent its survivors can be, and no
+operator added anywhere moves it.
+
+### THE FOUR GENUINELY INDEPENDENT FIELDS THE CODE ALREADY ATTEMPTS, AND ALL FOUR ARE DEAD
+
+`resolve_inputs` declares twelve `ext_` families. Six flow. The other six are the only ones that
+would raise field breadth above 1 — carry, positioning, macro, order book — and **each dies on a
+path or format mismatch, not on absent data**. The data is on this box:
+
+| family | reader expects | what is actually on disk | verdict |
+|---|---|---|---|
+| `ext_swap_diff` | `data/tape/contract_terms/*.json*` | `contract_terms/2026-08-27.parquet`, **1908 rows**, columns `swap_long swap_short swap_mode contract_size tick_value` | glob never matches — **carry primitive absent from all 13.2M trials** |
+| `ext_cot` | `data/cot_tff.json`, `cot.json`, `cot_disagg.json` | `data/cot_tff/{aud,cad,chf,eur,gbp,…}.parquet`, `data/cot_disagg/{gold,silver}.parquet`, `data/cot_gold.parquet` | right NAMES, wrong TYPE — they are **directories of parquet**, read as JSON files |
+| `ext_macro_*` | numeric scalars at the TOP level of `data/macro_state.json` | top level is `{updated: str, series: {...}, states: {...}, differentials: {...}}` — **zero numeric scalars** | loop yields nothing; the numbers are one level down under `states`/`differentials` |
+| `ext_book_*` | `data/tape/ticks/<symbol>/*.parquet` | **`data/tape/ticks/` does not exist** — `data/tape/` holds only `contract_terms/` and `triangle_executable.json` | all three book primitives structurally dead |
+
+Three of the four are one-line repairs against data the desk already pays to collect. **R0716 and
+R0717 re-raised with the exact on-disk paths; R0718 (swap) and R0719 (book) raised.**
+
+### AND THE R0716 REPAIR AS SPECIFIED WOULD SHIP A LOOK-AHEAD — R0720
+
+Fixing the macro nesting is not enough, and the naive fix is worse than the bug. Line 374 is
+`extra[f"macro_{k}"] = pd.Series(float(v), index=index)` — it **broadcasts one scalar across the
+entire history**. Read `states.GROWTH_STATE = -0.045` today and every bar back to 2015 is
+conditioned on a number computed in 2026. That is a **constant column** (zero information) *and*
+the `*_now` conditioning-variable leak this desk already paid for on
+`data/unlock_event_screen.json` — the direction no gate catches, because a falsely-killed axis
+raises no alert. The correct source is already on the box and is vintage-correct:
+**`desks/mt5/data/lake/alfred/` plus `lake/fred_*.parquet`** (ALFRED = as-published vintages).
+`desks/mt5/data/macro_pointintime/` exists and is **EMPTY** — a named, unfilled slot.
+
+### THE LEDGER IS BEING DESTROYED, THIRD CONSECUTIVE INSTANCE, AND IT IS MEASURED NOW — R0721
+
+`docs/research/recommendation_ledger.json` at `HEAD` holds **716** rows; the working tree held
+**713**, and the deleted set was **exactly `{R0715, R0716, R0717}`** — the three rows s8 raised
+and committed in `fddac0a6`. Union-diffed both directions: no other row differed and nothing was
+added, so this is **pure destruction, not a merge**. Restored from `HEAD`. It then happened
+**again, during this session, to a row added seconds earlier**. Cause is known and now
+confirmed live: a `pytest --cov` run (pid 2333612) was active, and `libs/ops/protected_artifacts.py`
+snapshots the ledger at session start and restores it — so any row written while a suite runs is
+erased on its exit. This is the third recorded instance. **The working practice that survives it
+is the only one that works: write, `git add`, and `git commit` in a single shell invocation** —
+the index and the commit survive what the tree does not.
+
+### NEW GROUND TOUCHED — and the collector scope is itself the finding
+
+`desks/mt5/data/intelligence/github/discoveries_*.json` (28 rows/run, hourly, **130 distinct
+repos** accumulated) was checked as the free pre-fetched corpus for this seat's ground.
+**2 keyword hits out of 130**, and neither is a BRAIN artifact. The collector is scoped to
+**MT5/EA vocabulary**, so the BRAIN corpus — this seat's entire mandated daily ground — is
+**collected by nothing**, and every BRAIN dig therefore spends live browsing on population
+enumeration that a python collector would do for free. That is a collector-scope gap, not a thin
+seam. Routed to `data_axis_watchlist.md`.
+
+- **§13:** every artifact read this run is the desk's own repo and its own data. No network, no
+  login, no platform-internal surface.
+- **Freeze respected:** nothing under `scripts/`, `libs/`, the executor, a rail or a live-state
+  file was modified. Seven defects in `desks/mt5/research/edge_search.py` were **ledgered, not
+  patched**.
+
+### NEXT UN-EXHAUSTED GROUND (for s10, in order)
+
+1. **`src/alpha_pool/alpha101.py` (43KB), field-vector extraction** — carried forward from s8 and
+   now the *highest*-value item on the list rather than the second, because this run measured the
+   desk's own external field breadth at **1**. The 101 reference alphas give the comparison
+   number: how many distinct input fields they span, and how many of those have an MT5 analogue.
+   That ratio is a direct estimate of this desk's reachable independence ceiling.
+2. **A BRAIN-scoped arm for the github collector** — the free-corpus gap above. Cheap, and it
+   converts every future session of this seat from browsing to judgement.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — largest cleanly-licensed unmined artifact on s7's
+   measured population.
+4. **`QuantML-Research/wq-alpha-research` (369★)**, **`YHYYDS666/WorldQuant-Brain-Alpha` (338★)**.
+5. **Re-run the population sweep paced** — s7's 97 repos remains a floor (the unauthenticated
+   search API 403'd on query 8 of 10).
