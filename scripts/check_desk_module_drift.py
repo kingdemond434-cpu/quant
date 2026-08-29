@@ -115,6 +115,13 @@ MODULES = [
     # depend on it; a stale copy on the box means 344 near-certificates silently stop
     # accruing the forward evidence that is their only route to a certificate.
     "desks/mt5/mt5desk/family_inputs.py",
+    # THE RECORDER. Only the desk box can read the terminal, so it is the sole producer of
+    # the contract/swap terms every carry cell is judged on -- and it was unwatched. Its
+    # `point` field (the UNIT that makes a POINTS-mode swap convertible to money) was
+    # added here and never reached the box, so a fresh recording on 2026-08-29 still wrote
+    # rows without it and `swap_money_per_lot` correctly refused every one. 72 carry
+    # candidates could not accrue forward evidence because a file nothing named was stale.
+    "desks/mt5/mt5desk/tape.py",
     "desks/mt5/research/qquant_shadow.py",
     "desks/mt5/research/curve_strategy_screen.py",
     "desks/mt5/research/fetch_futures_curves.py",
@@ -164,19 +171,46 @@ def _head_hash(rel: str) -> str | None:
     return out if rc == 0 and out else None
 
 
+#: `_remote_hash` returns this when the box simply does not have the file. It is NOT the same
+#: answer as None ("I could not ask"), and conflating the two is what let a brand-new module sit
+#: unshipped while the healer reported a clean run -- see ABSENT_IS_DRIFT below.
+ABSENT = "__absent__"
+
+
 def _remote_hash(rel: str) -> str | None:
+    """Hash of the box's copy, ABSENT if it has none, None if the box could not be asked.
+
+    ABSENT_IS_DRIFT. This used to collapse "no such file" into None along with every ssh failure,
+    and `main` skipped both as unreachable. That is backwards for the case that matters most: a
+    NEW module is precisely the one the box has never had, so absence was treated as a reason not
+    to ship the very file most in need of shipping. It cost 34 live forward clocks -- every sleeve
+    in `shadow_state.json` went BLOCKED_SLEEVE_ERROR with `ModuleNotFoundError: No module named
+    'mt5desk.family_inputs'` while this check printed a clean run, because the module was on the
+    watchlist, matched HEAD, and was absent on the box.
+
+    A missing file and an unreachable box need opposite responses -- ship, versus report and wait
+    -- so they must not share a return value.
+    """
     rc, out = _run(["ssh", "-o", "ConnectTimeout=25", REMOTE,
                     f"cd C:\\opt\\quant && git hash-object {rel}"])
+    text = (out or "").replace("\r", "").strip()
     if rc != 0:
+        # Distinguish "git says no such file" from "the box did not answer". Only the former is
+        # safe to treat as absence; a timeout that read as ABSENT would ship on every network
+        # blip, and worse, would report success for a box that never received anything.
+        low = text.lower()
+        if "could not open" in low or "no such file" in low or "does not exist" in low:
+            return ABSENT
         return None
-    line = out.replace("\r", "").strip().splitlines()
+    line = text.splitlines()
     return line[-1].strip() if line else None
 
 
 def main() -> int:
     now = datetime.now(tz=UTC)
     report: dict = {"checked_at": now.isoformat(timespec="seconds"),
-                    "drifted": [], "healed": [], "dirty_skipped": [], "unreachable": []}
+                    "drifted": [], "healed": [], "dirty_skipped": [], "unreachable": [],
+                    "absent_on_box": []}
 
     for rel in MODULES:
         if not (ROOT / rel).exists():
@@ -198,13 +232,20 @@ def main() -> int:
             continue
         if remote == local:
             continue
-        report["drifted"].append(rel)
+        # Absence and drift both end in the same scp; they differ only in what gets reported, and
+        # absence is the louder of the two because it means the box has NEVER run this code.
+        if remote == ABSENT:
+            report["absent_on_box"].append(rel)
+            print(f"  ABSENT {rel}: the box has never had this file -- shipping it now")
+        else:
+            report["drifted"].append(rel)
         rc, _ = _run(["scp", "-o", "ConnectTimeout=45", "-q",
                       str(ROOT / rel), f"{REMOTE}:C:/opt/quant/{rel}"], timeout=180)
         after = _remote_hash(rel) if rc == 0 else None
         if after == local:
             report["healed"].append(rel)
-            print(f"  RE-SHIPPED {rel}: box had {remote[:8]}, now {after[:8]} (matches HEAD)")
+            had = "NOTHING" if remote == ABSENT else remote[:8]
+            print(f"  RE-SHIPPED {rel}: box had {had}, now {after[:8]} (matches HEAD)")
         else:
             print(f"  FAILED to re-ship {rel}: box still {str(after)[:8]}")
 
