@@ -4552,3 +4552,31 @@ digger-vocabulary are sitting in the same queue for the same reason.
 after the regrade — **0 cards remain in the verification queue**, so card 87 was the only one
 stuck on vocabulary. The general fix is still worth making (the next digger will write the same
 words card 87 did), but the blast radius today is one card, measured rather than assumed.
+
+## 2026-08-29 — brain_hunter s15 — ADAPTIVE SEARCH-SPACE ALLOCATION IS INCOMPATIBLE WITH PRE-REGISTERED MULTIPLICITY (refusal, with reason)
+
+SOURCE: `zhutoutoutousan/worldquant-miner` (Apache-2.0, 728★) — epsilon-greedy multi-armed bandit
+over simulation CONFIGS, reward = the alpha's own in-sample Sharpe/fitness. DERIVES-FROM: NONE
+(checked). MINED AS TEXT, never installed or run.
+
+**REFUSED, and the reason is the deliverable.** `FusionPlan.effective_n_trials` is the ENUMERATED
+grid hashed before compute, and that accounting is valid ONLY because allocation is non-adaptive. A
+bandit that reallocates trials toward arms that already scored well makes data-dependent selection
+decisions no fixed `n_trials` can price — the enumerated grid stops being the multiplicity owed the
+moment the allocator learns, and there is no honest constant to replace it with. L1.60 already
+forbids a producer supplying its own `search_trials`; **this is the same breach arriving as an
+ARCHITECTURE rather than as a number, which is harder to see and would pass every existing fence.**
+
+Evidence that the endpoint is real, measured on the source (not asserted): the repo stacks an LLM
+expression writer, a genetic mutator and the config bandit — three compounding selection engines —
+and `bonferroni|deflated|family.?wise|holm|fdr_|benjamini|multiple.?compar` matches **0 of its 1,631
+`.py` files**.
+
+**Standing rule proposed for any future "adaptive search" proposal on this desk:** an allocator may
+re-order which cells run FIRST (a compute-budget decision) but may never change WHICH cells count
+toward the declared trial total. Ordering is free; membership is pre-registered.
+
+CONTROL RUN (clean, stated as a negative result): `FusionCell.cell_id` covers all three fields of
+the frozen dataclass and `libs/store/config_versions.py` hashes the whole config dict — the source's
+own arm-key collapse defect (56 arms → 28 keys, `delay` and `maxTrade` unreachable) does NOT exist
+on this desk.

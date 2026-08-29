@@ -2004,3 +2004,24 @@ see `docs/research/prospector_coverage.md` s18 item 3.
 
 **EVIDENCE:** post body + 9 comments fetched 2026-08-29; sitemap `6 <loc>`; derivation and the full
 control table in `prospector_coverage.md` s18 item 3.
+
+## 2026-08-29 — REFUSED: adaptive (bandit) allocation over the search grid — brain_hunter s15
+
+MECHANISM: epsilon-greedy multi-armed bandit over simulation CONFIGS (neutralization, truncation,
+delay, weight cap), reward = the candidate's own in-sample Sharpe/fitness. SOURCE:
+`zhutoutoutousan/worldquant-miner` (Apache-2.0, 728★). DERIVES-FROM: NONE (checked).
+
+MECHANISM OF DEATH: incompatible with pre-registered multiplicity. `FusionPlan.effective_n_trials`
+is the enumerated grid hashed before compute, and that is honest ONLY while allocation is
+non-adaptive. An allocator that concentrates trials on arms that already scored well is
+data-dependent selection that no fixed `n_trials` can price. L1.60 in architectural form.
+
+MEASURED ON THE SOURCE: three stacked selection engines (LLM writer + genetic mutator + config
+bandit) and **0 of 1,631 `.py` files** match any multiplicity-correction term. The published bandit
+also does not compile (`adaptive_alpha_miner.py:491`) and its arm key drops two of its four axes
+(56 arms → 28 keys; `delay` and `maxTrade` unreachable).
+
+L1.16a RE-OPEN CONDITION: a named enabling change that prices adaptive allocation honestly — e.g. an
+allocator restricted to re-ORDERING cells within a fixed pre-registered membership (ordering free,
+membership pre-registered), or a published correction valid under data-dependent trial allocation.
+Not before.

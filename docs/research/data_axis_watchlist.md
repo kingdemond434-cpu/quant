@@ -8735,3 +8735,26 @@ comparatively calm sample; the level/shape relationship is likely to **decouple 
 stress regimes the desk does not yet hold data for**. That is not a reason to trust the shape axis —
 it is a reason to re-measure the correlation once the extended history is used, and it is exactly
 the sample where a term-structure gate could still earn its keep. Graded UNMEASURED, not assumed.
+
+## 2026-08-29 — brain_hunter s15 — the PORTFOLIO-CONSTRUCTION axes are unswept (3 arms, 1 buildable today)
+
+SOURCE: `zhutoutoutousan/worldquant-miner` (Apache-2.0, 728★), `adaptive_alpha_miner.py`
+`_initialize_settings_variations`. DERIVES-FROM: NONE (checked) — no prior desk card sweeps
+neutralization, weight-cap or decay; `libs/research/fusion_search.py` grid is
+`axes × representation(3) × horizon` and contains none of them.
+
+BRAIN treats neutralization / truncation / decay as SEARCHABLE axes; this desk treats them as fixed
+implementation choices. MT5 analogues and status:
+
+- **neutralization arm** — asset-class / currency-bucket demean. **`data/mt5_grouping_map.json`
+  already exists** (built by brain_hunter s11). NOT a data gap: buildable today, unswept.
+- **truncation arm** — per-symbol position weight cap (0.05–0.15 band is BRAIN's, recorded as a fact
+  about THEIR process, never imported as a desk parameter).
+- **decay arm** — signal EMA smoothing window.
+- `delay=0/1` has NO desk analogue as an axis and must not acquire one: the desk's PIT bar-lag is a
+  correctness constraint, not a free parameter. Recorded so no seat later "adds the missing arm".
+
+CONSTRAINT (this is the whole point, see coverage s15): these enter as a **fixed pre-registered grid
+extension**, multiplying `FusionPlan.effective_n_trials` by a declared constant before compute.
+They must NEVER enter as adaptive allocation — the source's own bandit is refused for exactly that
+reason.

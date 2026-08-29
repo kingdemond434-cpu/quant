@@ -9591,6 +9591,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0741",
+   "source": "cycle",
+   "summary": "brain_hunter s15: add a NEUTRALIZATION arm to the fusion_search pre-registered grid (asset-class/currency-bucket demean via data/mt5_grouping_map.json, which s11 already built and nothing consumes). BRAIN treats neutralization/truncation/decay as searchable axes; libs/research/fusion_search.py sweeps axes x representation(3) x horizon and none of the three. Enters as a FIXED grid extension multiplying effective_n_trials by a declared constant before compute -- NEVER as adaptive allocation (see the s15 refusal). Owner: the seat that owns libs/research/fusion_search.py; brain_hunter is research-frozen.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T11:38:36.132375+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

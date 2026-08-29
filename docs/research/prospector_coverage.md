@@ -11326,3 +11326,143 @@ edited**, and their fix is ledgered as R0739 for the seat that owns them.
    mandated daily ground is collected by nothing and every dig pays live-browsing tokens for
    population discovery it should inherit for free. Six sessions of naming it and not fixing it is
    itself the finding: this is a conversion failure on my own seat, not a discovery gap.
+
+---
+
+## BRAIN HUNTER s15 — 2026-08-29 — the generator/agent subclass, opened; and why the desk must REFUSE its central mechanism
+
+### SEARCH-SPACE EXPANSION (the thing s15 owed)
+
+s10–s14 mined one artifact type on this ground: **alpha101 formula transcriptions** — a repo file,
+a second repo file, then the paper itself, twice. Five sessions, one class. The gap that made that
+look like the whole ground is that nobody had ever asked what ELSE is in the population.
+
+`data/brain_repo_population.json` (97 repos, s15's own earlier floor) segments cleanly. **39 of the
+97 are not formula transcriptions at all — they are GENERATORS: alpha miners, LLM agent crews,
+search harnesses, MCP tool servers, evolutionary alpha engines.** That subclass had never been
+touched by any seat. It is censused with licence, size, push date and star count into
+`data/brain_hunter_s15_generator_class.json`: **14 carry a named permissive licence, 25 carry no
+LICENCE file at all** (all-rights-reserved — readable as public text, never copyable, and that
+split is recorded so no future seat has to re-derive it).
+
+This is the more valuable half of the ground and it was invisible because of what the seat had been
+searching FOR. s10–s14 were not shallow; they were narrow, and narrowness reads exactly like
+exhaustion from inside.
+
+### THE FLAGSHIP, MINED: `zhutoutoutousan/worldquant-miner` (Apache-2.0, 728★, 1,631 .py)
+
+Three architectural generations of an alpha-mining pipeline plus a Dify fork. The module worth the
+dig is `generation_one/consultant-multi-arm-bandit-ollama/adaptive_alpha_miner.py`: an
+epsilon-greedy **multi-armed bandit over SIMULATION SETTINGS** — region, universe, neutralization,
+truncation, delay, maxTrade — with the alpha's realised Sharpe/fitness/turnover as the arm reward.
+Not a bandit over expressions. A bandit over the CONFIG axis. That is a genuinely different idea
+from anything on this desk and it is why the file was worth reading.
+
+**Three measured facts about it, all reproduced, none taken on the README's word:**
+
+**1. It does not parse.** `ast.parse` over all 1,631 `.py` files in the repo returns **2 syntax
+errors, and both are in the multi-arm-bandit directory** — `adaptive_alpha_miner.py:491`
+(`expected an indented block after 'for' statement on line 490`, the delay loop has no body) and
+its sibling `web_dashboard.py:383`. Every other file in the repo compiles. **The single most
+conceptually interesting module in the 39-repo class has never run in its published form**, and it
+has 728 stars in front of it. A star count measures attention, not execution.
+
+**2. The bandit cannot see two of its own four axes.** `_settings_to_key()` builds the arm key from
+`region_universe_instrumentType_neutralization_truncation` — **`delay` and `maxTrade` are absent** —
+while `add_arm()` is `if key not in self.arms`. Replicating their enumeration and their key function
+verbatim: **56 intended arms collapse to 28 distinct keys, and only the FIRST-enumerated value of
+each dropped axis is ever stored, so only that one is ever simulated.** For USA (`delays=[0,1]`)
+delay=1 is unreachable; for CHN (`max_trade=["ON","OFF"]`) OFF is unreachable. `delay` is the axis
+that governs which data fields exist at all — the most consequential setting in the file — and the
+learner is structurally blind to it while logging `Initialized 28 settings variations` as though 28
+were the design. This is the desk's own recurring class (a producer computes a distinction, the
+consumer's key collapses it) found intact on foreign ground.
+
+**3. Zero multiplicity control in 1,631 files.** `bonferroni|deflated|family.?wise|holm|fdr_|
+benjamini|multiple.?compar` over the entire repo: **no file matches.** 17 files mention
+OOS/walk-forward in passing. The corpus has an LLM writing expressions, a genetic algorithm mutating
+them and a bandit reallocating configs toward whatever scored best — three compounding selection
+engines and no trial accounting anywhere.
+
+### THE VERDICT: THE MECHANISM IS REFUSED, WITH ITS REASON
+
+The tempting transfer is obvious — the desk's `fusion_search` enumerates a fixed grid and screens
+every cell uniformly, so adaptive allocation toward productive configs looks like free efficiency.
+**It is not free, and the reason is the desk's own multiplicity law.**
+
+`FusionPlan.effective_n_trials` is the ENUMERATED grid, hashed before compute (`grid_hash`), and
+that accounting is only *valid because allocation is non-adaptive*. A bandit that reallocates trials
+toward arms that already scored well is making **data-dependent selection decisions that no fixed
+`n_trials` can price**: the enumerated grid stops being the multiplicity owed the moment the
+allocator starts learning, and there is no honest constant to put in its place. Adaptive
+search-space allocation and pre-registered multiplicity are **incompatible**, and the 728★ repo
+demonstrates the endpoint of choosing the first — three stacked selection engines and no correction.
+
+L1.60 already forbids a producer supplying its own `search_trials`. This is the same breach arriving
+as an *architecture* rather than as a number, which is harder to see. **Refused, ledgered, not
+adopted.** Recording why is the deliverable; the desk does not import it.
+
+**Control run (a refusal is worth nothing if the desk has the same defect).** `FusionCell.cell_id`
+= `axes + representation + horizon_days` — **all three fields of the frozen dataclass, no axis
+dropped**, so the collapse found in fact 2 does not exist here. `libs/store/config_versions.py`
+hashes the whole config dict, not a subset. **Checked, clean, stated as a negative result.**
+
+### WHAT DOES TRANSFER: the portfolio-construction axes are unswept, and one arm is buildable today
+
+Drop the bandit, keep the observation underneath it. BRAIN treats **neutralization group, weight
+truncation and decay** as *searchable axes*. The desk treats them as fixed implementation choices:
+`fusion_search` sweeps `axes × representation(3) × horizon` and **nothing else** — there is no
+neutralization arm, no weight-cap arm, no signal-decay arm anywhere in the grid.
+
+The MT5 analogues, and the first is not a data gap:
+
+| BRAIN axis | MT5 analogue | desk status |
+|---|---|---|
+| `neutralization=INDUSTRY/SECTOR` | asset-class / currency-bucket demean | **`data/mt5_grouping_map.json` EXISTS** (built by s11) — buildable today, unswept |
+| `truncation` (0.05–0.15 weight cap) | per-symbol position weight cap | not an axis |
+| `decay` (signal EMA) | signal smoothing window | not an axis |
+| `delay=0/1` | the desk's PIT bar-lag | fixed correctly, not searchable — and correctly so |
+
+**These are pre-registerable as a fixed grid extension**, which is exactly what the bandit is not:
+adding a neutralization arm and a truncation arm multiplies `effective_n_trials` by a constant the
+plan declares before compute, and the DSR pays for it honestly. That is the version of BRAIN's idea
+this desk can actually take. Routed to `docs/research/data_axis_watchlist.md` and
+`docs/research/improvement_inbox.md`.
+
+### §13 AND FREEZE
+
+Public only: `api.github.com` (unauthenticated), `raw.githubusercontent.com`, and a `git clone
+--depth 1` of an **Apache-2.0** repo. No login, no `api.worldquantbrain.com`, no platform-internal
+surface, no credentialed content. The 25 no-licence repos in the census were read only as GitHub
+metadata (name/stars/size/date) — **no source from an unlicensed repo was copied or derived from**,
+and the split is recorded so the boundary is inheritable. Third-party tooling was **mined as text
+and never installed or run** (the clone was `ast.parse`d and grepped, never executed). **Freeze
+respected** — writes confined to `data/*` and `docs/research/*`; `libs/research/fusion_search.py`
+and `libs/store/config_versions.py` were **read as controls, never edited**.
+
+- **EXHAUSTED (dated):** `zhutoutoutousan/worldquant-miner` `generation_one/consultant-multi-arm-
+  bandit-ollama/` — **2026-08-29, COMPLETE.** Both files, the bandit mechanism, the arm-key
+  collapse and the parse status are extracted to `data/brain_hunter_s15_generator_class.json`. No
+  seat re-scans this directory. **Named residual (not an exhaustion claim):** `generation_two/`
+  (90 files: `fast_expr_ast.py`, `template_validator.py`, `template_generator.py`) and
+  `consultant-atom-up/` are downloaded and UNREAD — the expression-AST and template layers are
+  untouched ground, not empty ground.
+- **Video:** 0 fetched, 0 locked — the ground worked was repo source and GitHub metadata.
+
+### NEXT UN-EXHAUSTED GROUND (for s16, in order)
+
+1. **`generation_two/core/fast_expr_ast.py` + `template_validator.py` (90 files).** The expression
+   AST and its VALIDATOR — the layer that decides which generated expressions are even well-formed.
+   The desk's `combination_engine` has no validator at all; a published one names the failure modes
+   someone else already paid to discover. Already on disk from this session's clone.
+2. **The 13 other permissively-licensed generator repos** in `brain_hunter_s15_generator_class.json`
+   — `Miasyster/QuantGPT` (MIT, 457★, deferred FIVE sessions now), `gyx09212214-prog/worldquant-
+   harness` (MIT, 108★), `aznikline/alpha-mining-system` (MIT). The class is open; the census means
+   no future seat has to rediscover it.
+3. **Does the whole class share fact 3?** One repo with zero multiplicity control is an anecdote.
+   The same grep over the 14 permissive repos is a corpus-level prior about how the entire public
+   alpha-generation ecosystem handles selection — cheap, mechanical, and it prices every claim this
+   ground will ever hand the desk.
+4. **The BRAIN-scoped collector arm** — s9's free-corpus gap, now **SEVEN sessions old**. Every dig
+   including this one pays live tokens for population discovery it should inherit for free. Naming
+   it again without fixing it is the finding; it belongs to a seat that is not research-frozen.
