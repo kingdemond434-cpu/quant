@@ -2246,3 +2246,44 @@ with any regressor present, caught by a bare `except:` that returns a plain deme
 "industry/size neutralization" never runs, silently, 100% of the time.
 **Consequence for this desk:** the founding blocking input — no grouping map — gets no help from
 this ground. A grouping map must be BUILT. Re-entry only on a new repo entering the population.
+
+## 2026-08-29 — IMF Primary Commodity Prices (PCPS), on EVERY route (free-data run x; disposed by BRAIN hunter s22)
+
+**Class:** licence hard-stop (§13), not a route failure. Run (w) adopted PCPS via the DBnomics
+mirror having left the IMF's own terms **unread** (`imf.org` 403s datacentre IPs); run (x) read them
+on two independent routes and the adoption does not survive.
+**Mechanism of death:** the IMF terms (`imf.org/external/terms.htm`, Wayback `20241007090557`) grant
+download "**for personal, noncommercial usage only, without any right to resell or redistribute or
+to compile or create derivative works**". A desk building features is commercial derivative-work
+creation. **The mirror does not launder it:** the FRED route (release `rid=365`, 189 keyless series,
+fresher than DBnomics at 2026-07 vs 2025-06) carries "Copyright © 2016, International Monetary Fund.
+Reprinted with permission." and FRED's own ToU FAQ Q3 states that permission is **non-transferable**
+— "the Federal Reserve Bank of St. Louis cannot give you such permission."
+**A working route is not a licence.** Both live doors (FRED CSV, DBnomics) are technically open and
+both are forbidden; a source can pass every technical check and still be unusable.
+**L1.16a re-open condition:** written permission from the IMF, or a PCPS re-release under an open
+licence. Nothing about a new mirror, a new endpoint or a fresher vintage re-opens this.
+**Replacement already adopted:** World Bank Pink Sheet (card 91) — CC-BY, 32 years deeper.
+
+## 2026-08-29 — naive text-layer extraction of KERNED PDF tables (free-data run x; disposed by BRAIN hunter s22)
+
+**Class:** extraction METHOD refuted; the population it was aimed at (LBMA forecast back-years)
+survives and is still worth mining by another method.
+**Mechanism of death:** in the LBMA forecast PDFs the text layer is kerned character-by-character
+(`1 , 1 00 7 5 0 9 50` for 1,100 / 750 / 950). The separator BETWEEN columns is a single space
+**identical** to the space INSIDE a number, so the extractor cannot tell them apart and both
+readings are silently plausible: a rank-walking parser recovered the row counts **exactly right**
+(24 gold / 20 silver / 20 platinum / 20 palladium) while producing a gold mean of **150.04** against
+the document's own printed **880.74**; de-kerning fails the opposite way, fusing the published
+averages line into `1073.54721.46880.74`.
+**The transferable lesson, and it is the expensive one: a correct row COUNT is not evidence the
+parse worked.** Had the count been trusted, a fabricated analyst panel would have been carded.
+Same family as "clean output from a broken extractor" (s13) — and `alch41_forecast` in the same
+population decoded **1 of 8** streams and still yielded 19KB of clean-looking text.
+**Population census retained (this part is NOT dead):** 9 distinct PDFs retrieved, but only 4 carry
+the four-metal per-analyst tables in the text layer (`lbma_2008forecast`, `lbma_2009forecast`,
+`forecast2009`, `forecast2011`); the other five are commentary editions whose tables are images.
+**L1.16a re-open condition:** a positional extractor that reads the PDF content stream's `Tm`/`TJ`
+X-coordinates rather than the flattened string, validated against the document's OWN printed
+aggregate (gold 1073.54 high / 721.46 low / 880.74 average) as a built-in control. Any re-extraction
+that cannot reproduce that printed average is wrong regardless of how right its row count looks.

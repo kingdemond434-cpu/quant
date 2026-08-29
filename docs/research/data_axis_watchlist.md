@@ -9517,7 +9517,7 @@ So this run takes run (w)'s own named chain, in its stated order:
 
 _(status lines appended below as each item resolves — never held in context)_
 
-### 90. [dig 2026-08-29 (free-data x)] **IMF PCPS — RETRACTION of run (w)'s adoption: the licence forbids the desk's use, on BOTH routes** — grade: **licence-blocked (do not adopt)**
+### 90. [dig 2026-08-29 (free-data x)] **IMF PCPS — RETRACTION of run (w)'s adoption: the licence forbids the desk's use, on BOTH routes** — grade: **licence-blocked (do not adopt)** [§33: killed -> docs/graveyard.md `IMF Primary Commodity Prices (PCPS), on EVERY route`]
 
 Item 1 of this run. Run (w) adopted IMF Primary Commodity Prices via the DBnomics mirror and left
 the IMF's own terms **unread** because `www.imf.org` / `data.imf.org` return an Akamai
@@ -9565,6 +9565,7 @@ licence, not piracy, so the map grade is `licence-blocked`, not `excluded-illegi
 
 **§38 — THE EXCLUSION SPAWNS THE HUNT, ANSWERED IN THE SAME RUN, AND THE REPLACEMENT IS BETTER
 THAN WHAT IT REPLACES.** See card 91.
+
 
 ### 91. [dig 2026-08-29 (free-data x)] **World Bank Pink Sheet (CMO) — 71 commodity series, monthly, 1960-01 → 2026-07, CC-BY 4.0 WITH COMMERCIAL USE EXPRESSLY GRANTED** — grade: **verified-clean**
 
@@ -9676,7 +9677,7 @@ vintage** — liveness must be `max(observation month)` per series; **(3) one de
 (`Shrimps, Mexican`, ends 2023M10) inside an otherwise-live file**; **(4)** `…` is the missing-value
 token, not blank, so a naive float parse yields silent gaps.
 
-### 92. [dig 2026-08-29 (free-data x)] **LBMA forecast back-years: population EXTRACTED, and the naive extraction METHOD is REFUTED — a kerned PDF table produces plausible, silently WRONG numbers** — grade: **UNVERIFIED (numbers not trustworthy; method fix named)**
+### 92. [dig 2026-08-29 (free-data x)] **LBMA forecast back-years: population EXTRACTED, and the naive extraction METHOD is REFUTED — a kerned PDF table produces plausible, silently WRONG numbers** — grade: **UNVERIFIED (numbers not trustworthy; method fix named)** [§33: killed -> docs/graveyard.md `naive text-layer extraction of KERNED PDF tables`]
 
 Item 2 of this run: run (w) enumerated the back-year population via Wayback CDX and retrieved one
 file without extracting numbers from any. I retrieved and extracted the whole population this run.
@@ -9742,6 +9743,7 @@ ground truth on four metals per file. That validation must gate any adoption.
 confirmed to exist with institutions attached, and the numbers are NOT extracted.** Run (w) said
 "extract next run"; this run turned that into a *measured* method refutation with the exact reason,
 which is what stops the next run from shipping fiction.
+
 
 ### 93. [dig 2026-08-29 (free-data x)] **World Bank CMO Commodity Price FORECASTS — a semi-annual, point-in-time, CC-BY forecast panel over 62 commodities, in XLSX** — grade: **verified-clean**
 
@@ -9844,3 +9846,48 @@ nothing about whether the desk is *allowed* to use a source, and the licence rea
 step in the whole pipeline. Second blunt point: I extracted a 20-year analyst panel and am shipping
 **none of its numbers**, because the parse that got every row count right got every value wrong.
 Verified small beats unverified impressive.
+
+### 94. [dig 2026-08-29 (BRAIN hunter s22)] **DELAY and LIQUIDITY-TIER as declared UNIVERSE axes — the desk's 251-symbol MT5 registry declares neither, and every screen therefore runs one undifferentiated pool** — grade: **mechanism extracted (from filenames only); desk-side gap named, not yet measured** [§33: screened -> data/brain_hunter_s22_homogeneity_screen.json `brain_hunter_s22`]
+
+**PROVENANCE.** SOURCE: the seven cache filenames in `shu476891497-hash/worldquant-miner`'s git
+tree, read from the GitHub recursive-trees API (paths and byte sizes, **no content fetched** — the
+repo is unlicensed and 74% of its bytes are credential-walled platform dumps; see s22 Arm B).
+DERIVES-FROM: `NONE (checked)` — this axis is absent from `search_operator_library.md` and from the
+desk's universe registry. The extraction cost zero and crossed nothing.
+
+**THE TAXONOMY, decoded from the filenames.** `data_fields_cache_{REGION}_{DELAY}_{UNIVERSE}.json`
+over `USA_0_TOP1000`, `USA_1_TOP3000`, `CHN_1_TOP2000U`, `EUR_1_TOP2500`, `GLB_1_TOP3000`,
+`IND_1_TOP500`, `ASI_1_MINVOL1M`. Three orthogonal axes: **region**, **delay ∈ {0,1}**, and a
+**liquidity-ranked universe cut**. The platform treats all three as properties OF THE UNIVERSE, so
+a field catalogue is fetched per cell — the delay is not a per-study assertion, it is part of the
+universe's identity.
+
+**WHY THIS IS AN MT5 GAP AND NOT AN EQUITIES CURIOSITY.**
+- **DELAY.** This desk asserts data availability per study, in prose, per hypothesis. It is not a
+  declared property of `desks/mt5/data/universe/universe.json`, so nothing can enumerate "which
+  symbols support a delay-0 signal" and no screen can be run twice — once assuming same-bar
+  availability, once assuming prior-bar — as a matched pair. The falsifier is exactly the lag-0
+  control the desk already paid for twice (prospector s19: CBOE vol shape 9/16 at same-bar, 0/16
+  tradable; free-data q: macro→FX t=+13.52 contemporaneous vs ≤1.99 tradable). **The desk keeps
+  rediscovering that its significance sits in the untradable bar because delay is not a universe
+  axis it can hold fixed and sweep.** Making it one turns a recurring per-study control into a
+  structural one.
+- **LIQUIDITY TIER.** The registry has no tiering. 251 symbols spanning FX majors and thin exotics,
+  metals, indices, energy, softs and share CFDs are screened as one pool, so a cross-sectional rank
+  asks "extreme against everything the broker lists" — the *universe-wide vs peer* defect s11
+  measured (`asset_class` group_rank reproduced universe-wide rank at 0.82 because the largest group
+  IS the universe; `currency_quote` at 0.493 was the only arm worth having). A liquidity cut is a
+  candidate peer grouping that s11 did not test and that does not require any external taxonomy —
+  it is computable from the desk's own tape (spread, tick rate, bar count) and from
+  `symbol_info` fields the desk records.
+
+**WHAT IS CLAIMED AND WHAT IS NOT.** Claimed: the two axes are absent from the registry, and the
+mechanism for why each matters is stated with a falsifier. **NOT claimed:** any measured effect.
+Nothing is pre-registered here; this is a data-axis gap, and s22 is research-frozen so it did not
+touch the registry. Next-run work is the census — how many of the 251 symbols would fall in each
+tier, and whether a liquidity-tier `group_rank` decorrelates from universe-wide rank by more than
+s11's `currency_quote` 0.493.
+
+**KNOWN FAILURE MODE, stated up front:** a liquidity tiering computed on the desk's own tape is
+point-in-time-sensitive — spreads and tick rates change, and a tier assigned on full-sample
+statistics is lookahead. Any tier used in a screen must be assigned on a trailing window only.

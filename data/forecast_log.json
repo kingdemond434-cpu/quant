@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-08-29T04:14:46.571823+00:00",
+      "updated": "2026-08-29T15:25:53.348183+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-08-29T04:14:46.621461+00:00",
+      "updated": "2026-08-29T15:25:53.379130+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-08-29T04:14:46.659169+00:00",
+      "updated": "2026-08-29T15:25:53.410315+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -5292,6 +5292,90 @@
       "updated": "2026-08-28T20:52:42.117406+00:00",
       "resolve_by": "2026-09-11T20:52:42.115091+00:00",
       "claim": "R0713 reaches IMPLEMENTED by 2026-09-11"
+    },
+    "rec:R0736": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T10:58:27.455551+00:00",
+      "resolve_by": "2026-09-12T10:58:27.453241+00:00",
+      "claim": "R0736 reaches IMPLEMENTED by 2026-09-12"
+    },
+    "rec:R0737": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T11:12:57.727139+00:00",
+      "resolve_by": "2026-09-12T11:12:57.720033+00:00",
+      "claim": "R0737 reaches IMPLEMENTED by 2026-09-12"
+    },
+    "rec:R0739": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T11:27:11.903476+00:00",
+      "resolve_by": "2026-09-12T11:27:11.899736+00:00",
+      "claim": "R0739 reaches IMPLEMENTED by 2026-09-12"
+    },
+    "rec:R0740": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T11:27:23.705395+00:00",
+      "resolve_by": "2026-09-12T11:27:23.702728+00:00",
+      "claim": "R0740 reaches IMPLEMENTED by 2026-09-12"
+    },
+    "rec:R0741": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T11:38:36.173318+00:00",
+      "resolve_by": "2026-09-12T11:38:36.167760+00:00",
+      "claim": "R0741 reaches IMPLEMENTED by 2026-09-12"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q1": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:31.977514+00:00",
+      "resolve_by": "2026-08-29T16:20:31.969800+00:00",
+      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q2": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:31.993670+00:00",
+      "resolve_by": "2026-08-30T00:20:31.969800+00:00",
+      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q3": {
+      "p": 0.485,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:32.002614+00:00",
+      "resolve_by": "2026-08-30T12:20:31.969800+00:00",
+      "claim": "Will SOLUSDT trade ABOVE 104.1 in 24 hours' time?"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q4": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:32.011959+00:00",
+      "resolve_by": "2026-08-29T16:20:31.969800+00:00",
+      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q5": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:32.019907+00:00",
+      "resolve_by": "2026-08-30T00:20:31.969800+00:00",
+      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?"
+    },
+    "probe:2026-08-29T12:20:31.969800+00:00:q6": {
+      "p": 0.485,
+      "kind": "calibration_probe",
+      "updated": "2026-08-29T12:20:32.028548+00:00",
+      "resolve_by": "2026-08-30T12:20:31.969800+00:00",
+      "claim": "Will XRPUSDT trade ABOVE 1.3872 in 24 hours' time?"
+    },
+    "rec:R0742": {
+      "p": 0.5261,
+      "kind": "recommendation",
+      "updated": "2026-08-29T16:24:25.378111+00:00",
+      "resolve_by": "2026-09-12T16:24:25.372593+00:00",
+      "claim": "R0742 reaches IMPLEMENTED by 2026-09-12"
     }
   }
 }

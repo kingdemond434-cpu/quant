@@ -12080,3 +12080,149 @@ the oldest live item on this ground (opened s15, deferred s16–s20).
    again by this run: Arm B's 25-repo census took ~30 seconds of API calls and would have been
    free at any point in the last six sessions. Nothing persists the population, so every session
    re-pays. Belongs to a seat that is not research-frozen.
+
+## BRAIN HUNTER s22 — 2026-08-29 — the falsifier turned on the desk finds it in the forward-slot queue; and s21's class verdict is REFUTED one day old by the largest repo on the ground
+
+Took s21's NEXT-GROUND items 1 and 2. Item 3 (the BRAIN-scoped collector arm, now FOURTEEN sessions
+old) is re-raised unchanged — it belongs to a seat that is not research-frozen. Every number is in
+`data/brain_hunter_s22_homogeneity_screen.json`; the probe is
+`data/brain_hunter_s22_homogeneity_screen.py`.
+
+**§33 CONVERSION FIRST, done before any mining:** the two owed T3 cards from free-data run (x)
+(IMF PCPS licence retraction; LBMA kerned-PDF extraction) were disposed `killed` with mechanism
+entries written to `docs/graveyard.md`. Backlog clear, mining authorised, both in the same run.
+
+### Arm A — s21 item 1: the homogeneity falsifier, pointed at the DESK
+
+s21 derived `score(k·s) == score(s)` from a BRAIN generator whose 100,000-evaluation GA had its
+optimum at zero exposure, and applied it to exactly one desk function. Applied here to seven, with
+**the BRAIN objective reproduced verbatim as a positive control** — it must fail, and it does
+(−0.0313 → −14.92 over k = 1e−3 → 100), which is what licenses the other six verdicts.
+
+| desk scorer | verdict |
+|---|---|
+| `capital_competition.score` | SCALE-INVARIANT (`edge_bps/vol_bps`, both degree 1) |
+| `stage14.score.institutional_portfolio_score` | SCALE-INVARIANT (every input `_clip01`'d) |
+| `alpha_competition_engine._score` | **CLEAN, adjudicated** — the raw curve is a clamp saturating; `strength` is bounded 0..1 conviction, not exposure |
+| `weight_optimizer._score` | **CLEAN, adjudicated** — same shape, four bounded factors |
+| `wq_operators.fitness` | invariant above the floor, **INVERTED below it** |
+| `screen_admission.rank_score` | **FAILS — monotone-decreasing, optimum at zero exposure** |
+
+**Two of the seven raw verdicts are probe artifacts and are adjudicated CLEAN in the artifact.**
+Scaling a `Field(ge=0, le=1)` conviction is scaling a degree-0 input into its own clamp; reporting
+that as a defect would be exactly the "count was right, content was wrong" failure this run
+graveyarded an hour earlier. Named so the JSON cannot be read as four failures.
+
+**THE FLOOR CORNER — a finding in its own right.** `wq_operators.fitness` uses
+`max(turnover, floor=0.125)`, added to bound the trade-nothing corner. It does, and **below the
+floor the denominator stops tracking the position, so the score turns monotone *increasing* in
+exposure** (0.0588 → 0.1859 → 0.4648 across k = 1e−3 → 0.1, flat thereafter). A clamp placed to
+close one degenerate corner opens its mirror. Harmless today — zero callers outside tests, one of
+the 227 III.16 rows — but it must be known before anything wires it.
+
+**THE ONE THAT IS ON THE MONEY PATH → R0742.** `screen_admission.rank_score` orders candidates for
+**scarce forward clocks** and computes `oos_sharpe + … − GROSS_TURNOVER_PENALTY(1.0) × turnover`,
+where `turnover` is a bare float with **no declared unit** in the signature, the docstring or any
+schema — while the desk holds at least three live conventions (`portfolio/construction.turnover` =
+one-way weight fraction 0..1; `autodiscovery/generators` = per-bar `|diff(pos)|`;
+`run_full_sweep`'s `r.turnover`). Decisive measurement, and it is an ORDERING flip, not a level
+shift: candidate **A** (oos 1.40, 0.08 turnover/day) beats **B** (oos 1.10, 0.02/day) under
+fraction-per-day (+0.241) and under an absent field (+0.301), and **loses to B** under
+trades-per-day (−14.70), annualised (−14.82) and notional (−59,999.70). Same economics, different
+holder of the clock, decided by a convention nothing declares.
+
+**AND THE WS-005 HALF, which is the part that is live today.** The module's own comment states that
+an UNKNOWN cost basis "is treated as GROSS" precisely so the desk never assumes costs were charged
+— but the code applies the penalty only `if turnover is not None`, and **no admit() caller supplies
+turnover at all** (`measure_admission_power.py:89-91` documents this in as many words). So the
+stated conservative default is not implemented, absence scores as free churn, and the penalty is
+dead code **that will begin deciding slots silently the day anyone wires `run_full_sweep`'s
+turnover column into it.** Three-part fix named in R0742; this seat is research-frozen and did not
+apply it. Mechanism routed to `improvement_inbox.md` as a standing data-free test.
+
+### Arm B — s21 item 2: `shu476891497-hash/worldquant-miner`, and it REFUTES s21's class verdict
+
+Metadata only — `api.github.com/repos` plus the recursive git-trees API, which returns **paths and
+byte sizes, no content**. No clone, no file fetched, no code read. Licence still `null`
+(all rights reserved), 41★, 16 forks, `fork=false`, pushed 2026-07-13, 373 blobs / 25.14 MB / 198
+`.py`.
+
+**s21 asked why a harness would be 23 MB. It is not a harness, and the size is not code.**
+**18.66 MB of 25.14 (74%) is cached BRAIN platform state**: seven regional data-field catalogues
+(`data_fields_cache_{USA_0_TOP1000, USA_1_TOP3000, CHN_1_TOP2000U, EUR_1_TOP2500, GLB_1_TOP3000,
+IND_1_TOP500, ASI_1_MINVOL1M}.json`), `consultant_expression_fields.jsonl.gz` (10.35 MB),
+`d0_fields_whitelist.json`, `earnings4_fields.json` and `wq_forum_posts.json` — dumps of
+credential-walled platform internals. **§13 HARD STOP twice over** (no licence, and a walled
+origin). Named, not touched, and this organ will not fetch them under any future licence change
+either, because a licence on the repo cannot grant what the platform withheld — the same principle
+that killed IMF PCPS on the FRED route in this run's own §33 disposition.
+
+**But the ARCHITECTURE is the find, and it inverts one-day-old desk belief.** s21 closed the 25
+no-licence repos with: *"the subclass contains no locally-runnable evaluation logic … the licence
+was never the binding constraint; the architecture was."* **`generation_two/shadow_scorer/` is 49
+files and is a full local replica of the BRAIN evaluation stack** — `parser/lexer.py`,
+`parser/ast_nodes.py`, `parser/evaluator.py`, `parser/operators/{arithmetic,cross_sectional,group}.py`,
+`evaluate.py` — with its own **five-source off-platform data layer** (`yfinance_source.py`,
+`simfin_source.py`, `tushare_source.py`, `wind_source.py`, plus `universe.py`, `field_mapper.py`,
+`pipeline.py`, `storage.py`). There is also a 5-file LaTeX `spec/` (architecture, expression
+compiler, smart search, requirements). **For THIS repo the architecture is exactly what the desk
+wants and the licence IS the binding constraint** — the reverse of s21's verdict, which stands for
+the other 24 and is corrected here for the one that mattered.
+
+**And it lands on this organ's founding blocking input.** `parser/operators/group.py` beside
+`data/universe.py` and `data/field_mapper.py` means someone had to solve the peer-grouping problem
+**locally, off-platform, against yfinance/SimFin/Tushare/Wind** — the exact problem s11 and s20 both
+closed as "a grouping map must be BUILT". This is the first artifact in the 97-repo population that
+demonstrably built one. It is therefore promoted to **the single highest-priority licence-gated
+re-entry candidate on this entire ground**, ahead of s21's three local-hint repos.
+
+**THE ONE THING LEGITIMATELY EXTRACTABLE, taken from filenames only.** The seven cache filenames
+encode the platform's universe taxonomy as `{REGION}_{DELAY}_{UNIVERSE}`: region ∈ {USA, CHN, EUR,
+GLB, IND, ASI}, **delay ∈ {0, 1}**, universe a liquidity-ranked cut (TOP1000/TOP2000U/TOP2500/
+TOP3000/TOP500/MINVOL1M). Two of those three axes are stratifications this desk does not declare on
+its own 251-symbol MT5 registry: **a DELAY dimension** (is the signal computed on same-bar or
+prior-bar data — the desk asserts this per-study and never as a universe property) and a
+**LIQUIDITY-TIER cut** (the registry has no tiering at all, so every screen runs one undifferentiated
+pool). Routed to `data_axis_watchlist.md`. Cost: zero, from a directory listing.
+
+### Boundary and cost
+
+Public GitHub REST + git-trees metadata; on-disk reads of this repo's own `libs/`. No login, no
+`api.worldquantbrain.com`, no clone, no blob fetched from any no-licence repo, nothing behind a
+credential wall. Research freeze respected: `docs/research/*`, `docs/graveyard.md`, `data/*` only —
+the R0742 patch is named and filed, not applied. Video: 0 fetched, 0 locked (no video ground).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — "does the desk's own scoring layer carry s21's inhomogeneity defect?" is ANSWERED at
+7 of 7 money-path-relevant scorers**: 2 invariant, 2 clean-adjudicated, 1 floor-corner, 1 failing
+(R0742). Re-entry when a NEW composite scorer is added, which is what the standing test in
+`improvement_inbox.md` is for — not another sweep of these seven.
+
+**2026-08-29 — the 23 MB discrepancy on `shu476891497-hash/worldquant-miner` is RESOLVED at the
+metadata layer** (74% walled data dump, not code). The repo itself is NOT exhausted; it is
+licence-blocked at the code layer with a named re-entry condition.
+
+### CORRECTION TO A PRIOR SESSION NOTE
+
+s21's second exhaustion claim — "the 25 no-licence repos are EXHAUSTED as a class … the licence was
+never the binding constraint; the architecture was" — is **too strong and is narrowed**. It holds
+for the 21 submission harnesses. `shu476891497-hash/worldquant-miner` was not in that 25 (it was
+census-visible only, unread), and it carries a complete local evaluator. The class claim should
+have been scoped to what was actually censused; it was generalised past its population.
+
+### NEXT UN-EXHAUSTED GROUND (for s23, in order)
+
+1. **The 16 FORKS of `shu476891497-hash/worldquant-miner`.** A fork can carry a licence its parent
+   lacks — a downstream author who adds a LICENSE file grants on their own copy of the code they
+   redistribute, and that is the one route to `shadow_scorer/` that does not cross §13. Check all
+   16 for a licence via `api.github.com/repos/{fork}` metadata; s21's `(size, pushed_at,
+   description)` collision detector applies to spot untracked copies outside the fork graph too.
+   Cheap, decisive, and it is the only door to the grouping-map artifact this ground has produced.
+2. **The DELAY and LIQUIDITY-TIER axes on the desk's own registry** (Arm B's free extraction).
+   `desks/mt5/data/universe/universe.json` declares neither. Ask what a delay-0 vs delay-1 split
+   and a liquidity tiering would change about the screens that currently run one undifferentiated
+   251-symbol pool. Desk-side, research-frozen-legal, no external ground needed.
+3. **The BRAIN-scoped collector arm — FOURTEEN sessions old, re-raised unchanged.** Arm B cost ~40
+   seconds of API calls and nothing persists the 97-repo population, so every session re-pays for
+   the census. Belongs to a seat that is not research-frozen.

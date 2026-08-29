@@ -9605,6 +9605,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0742",
+   "source": "deep_sweep",
+   "summary": "SCREEN_ADMISSION.rank_score DECIDES WHO GETS A SCARCE FORWARD CLOCK ON AN UNDECLARED UNIT, AND THE WINNER FLIPS (BRAIN hunter s22, measured: data/brain_hunter_s22_homogeneity_screen.json). rank_score(...) adds oos_sharpe (dimensionless, degree 0 under position scaling) and subtracts GROSS_TURNOVER_PENALTY(=1.0) * turnover, where turnover is a bare float the caller supplies with NO declared unit in the signature, the docstring or any schema -- and the desk holds at least three live conventions (libs/portfolio/construction.turnover = one-way weight fraction 0..1; libs/autodiscovery/generators = per-bar abs(diff(pos)); scripts/run_full_sweep r.turnover). Falsifier score(k*s)==score(s) run over 7 desk scorers with the s21 BRAIN objective as a reproduced positive control: capital_competition.score and stage14.institutional_portfolio_score are SCALE-INVARIANT; alpha_competition_engine._score and weight_optimizer._score are CLEAN (bounded 0..1 inputs, adjudicated); rank_score is MONOTONE-DECREASING, optimum at zero exposure, same class as the control. DECISIVE: two candidates A (oos 1.40, turnover 0.08/day) and B (oos 1.10, turnover 0.02/day) -- A wins the slot under fraction-per-day and under an absent field, B wins under trades-per-day, annualised and notional. Same economics, different clock holder. THE FIX, three parts, all in libs/validation/screen_admission.py: (1) rename the parameter to turnover_frac_per_period and assert 0 <= t <= 1, rejecting anything outside as an undeclared unit rather than scoring it; (2) make the penalty a RATIO of the Sharpe term, not a subtraction in Sharpe units, so it is degree 0 like everything else it is added to; (3) close the WS-005 half -- the module comment at line 150-155 states UNKNOWN cost basis is 'treated as GROSS', but the code applies the penalty only 'if turnover is not None', so a missing field is scored as free churn, the exact opposite of the stated conservative default; either implement the stated default or delete the claim. Add the general falsifier as a test over every desk scoring function. Live blast radius TODAY is bounded, not zero: the only admit() caller with a position path is scripts/run_real_campaign.py and scripts/measure_admission_power.py documents that it passes no turnover -- so the penalty is currently dead code that will start deciding slots silently the day anyone wires run_full_sweep's turnover column into it.",
+   "roi_bps": null,
+   "rank": 70.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T16:24:25.302611+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

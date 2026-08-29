@@ -5163,3 +5163,51 @@ WALLED while the data door is open. **FIX:** the desk's recorded lesson is "send
 get past bot walls"; it needs the symmetric case added — **vary the UA in BOTH directions before
 believing a wall, grade the DOOR not the HOST, and treat curl `000` as a possible header rejection
 rather than a network fault.**
+
+## 2026-08-29 — THE HOMOGENEITY FALSIFIER, generalised into a standing screen over the desk's own scorers (BRAIN hunter s22)
+
+**Origin, and it is the point of this organ:** s21 derived a one-line general falsifier from a
+BRAIN generator (`zhutoutoutousan/worldquant-miner`) whose 100,000-evaluation GA had its optimum at
+zero exposure, and applied it to exactly ONE desk function. s22 pointed it at the desk. The
+mechanism transferred; the equity factor never would have.
+
+**THE SCREEN.** A composite ranking objective is well-posed only if **every term has the same
+degree of homogeneity in position scale**. Mixing a scale-free reward (Sharpe, IC, hit-rate,
+correlation, t-stat) with a scale-dependent penalty (raw turnover in price/notional units, absolute
+P&L, drawdown in currency) produces an objective whose optimum is "trade nothing" — and the
+optimiser finds it while every component metric still reads plausibly. Mixing the other way (a
+floored denominator, a clamped bound) opens the opposite corner and rewards raw size. The test is
+one line and needs no data: **`score(k·s)` must equal `score(s)` for all `k > 0`, or the score is a
+scale test wearing a performance name.**
+
+**RUN, with the BRAIN objective reproduced as a POSITIVE CONTROL** (it must fail, and it does:
+−0.0313 → −14.92 across k = 1e−3 → 100). Probe `data/brain_hunter_s22_homogeneity_screen.py`,
+results `data/brain_hunter_s22_homogeneity_screen.json`.
+
+| desk scorer | verdict |
+|---|---|
+| `libs/portfolio/capital_competition.score` | **SCALE-INVARIANT** — `edge_bps/vol_bps`, both degree 1 |
+| `libs/stage14/score.institutional_portfolio_score` | **SCALE-INVARIANT** — every input `_clip01`'d |
+| `libs/signal_engine/alpha_competition_engine._score` | **CLEAN** (adjudicated) — `strength` is bounded 0..1 conviction; the raw curve is the clamp saturating, not exposure entering |
+| `libs/self_improvement/weight_optimizer._score` | **CLEAN** (adjudicated) — same shape, four bounded factors |
+| `libs/alpha_factory/wq_operators.fitness` | **INVARIANT ABOVE THE FLOOR, INVERTED BELOW IT** — see note |
+| `libs/validation/screen_admission.rank_score` | **FAILS — MONOTONE-DECREASING, optimum at zero exposure** → R0742 |
+
+**The floor corner is a finding in its own right.** `wq_operators.fitness` uses
+`max(turnover, floor=0.125)`, which the desk added to bound the trade-nothing corner. It does — and
+below the floor the denominator stops tracking the position, so the score becomes monotone
+*increasing* in exposure (0.0588 → 0.1859 → 0.4648 over k = 1e−3 → 0.1, flat thereafter). A clamp
+placed to close one degenerate corner opens its mirror. Harmless today: zero callers outside tests
+(III.16, one of the 227), but it must be known before anything wires it.
+
+**The failing one is on the money path and is filed as R0742**: `rank_score` orders candidates for
+scarce forward clocks and subtracts `1.0 × turnover` — a bare float with no declared unit — from a
+dimensionless Sharpe. Measured ordering inversion: candidate A (oos 1.40, 0.08 turnover/day) beats
+B (oos 1.10, 0.02/day) under a fraction-per-day convention and under an absent field, and **loses**
+to B under trades-per-day, annualised, or notional. Same economics, different clock holder, decided
+by a convention nothing declares.
+
+**ADOPT THE FALSIFIER AS A STANDING TEST, not a one-off audit.** It is data-free, costs
+microseconds, and catches the class before an optimiser is pointed at it. The desk has now watched
+this exact defect kill two external generators (s20's random target, s21's inhomogeneous objective)
+and found one instance in its own promotion path on the first sweep.
