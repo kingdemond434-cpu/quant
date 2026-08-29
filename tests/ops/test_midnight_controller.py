@@ -112,6 +112,12 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     assert '|| TRANSFER_RC=$?' in source
 
 
+def test_shadow_forward_service_can_import_certified_enrolment_modules() -> None:
+    service = Path("ops/shadow-forward.service").read_text("utf-8")
+    assert "sys.path.insert(0,'research')" in service
+    assert "from research.shadow_forward import main" in service
+
+
 def test_midnight_builds_mt5_state_before_reasoning() -> None:
     wrapper = WRAPPER.read_text("utf-8")
     assert wrapper.index("--pipeline-start") < wrapper.index("build_mt5_midnight_state.py")
