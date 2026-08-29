@@ -27,7 +27,7 @@
   {
    "id": "R0003",
    "source": "deep_sweep",
-   "summary": "O1 data-moat: screen the desk's own L2 tape \u2014 build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
+   "summary": "O1 data-moat: screen the desk's own L2 tape — build depth-imbalance panel from data/moat (microstructure.py has zero callers) and stage_a_screen it; crown-jewel dataset has 0 research artifacts in ~1 month of recording (converges with data-intelligence sweep's moat-extraction pilot)",
    "roi_bps": null,
    "raised": "2026-07-26T11:45:41.959734+00:00",
    "status": "implemented",
@@ -456,7 +456,7 @@
   {
    "id": "R0034",
    "source": "cycle",
-   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape \u00a735/\u00a741 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
+   "summary": "EV-GATE MISCALIBRATION IS UNFIXED AND IT BLOCKED THIS CYCLE'S GENERATION. The 07-28 cycle wrote the lesson ('_EV_THRESHOLD=0.05 needs est_sharpe>=1.6 at breadth 40; conservative honesty is auto-rejected, optimism rewarded, the many-small-decorrelated-sleeves class dies at the door') into institutional_knowledge.md and left the constant at 0.05. Measured today: 4 novel, mechanism-backed hypotheses on already-ingested axes scored ev=0.005-0.010 -> all REJECT. A finding written and not driven is the exact shape §35/§41 exist to stop. FIX NEEDS ITS OWN CAREFUL PASS: recalibrate against a known-good reference (carry 3.28 -> 0.1171) AND a known-marginal one, same method as the PBO/RC fix -- do NOT hand-tune the constant at the end of a long cycle.",
    "roi_bps": 20.0,
    "raised": "2026-07-29T06:25:25.355470+00:00",
    "status": "implemented",
@@ -468,7 +468,7 @@
   {
    "id": "R0035",
    "source": "cycle",
-   "summary": "\u00a735 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
+   "summary": "§35 coverage regression (100%->97%) resolved by DISPOSITION, not new work: of the 5 findings with no register trace, 4 were already decided and merely unrecorded -- #79 job-market data and #80 satellite/shipping carry written REJECT reasons, #26 competitor-simulation is blocked on the same $120 OpenRouter top-up already paged, and micro_audit_inbox #1 (carry-funding silent zero) was fixed 2026-07-26. Only #48 wallet behavioural fingerprinting is a live undriven finding (wallet RISK replicated OOS while wallet RETURNS were refuted at n=1400) -- rowed as GAP #88 with a mechanism-first screen plan.",
    "roi_bps": 8.0,
    "raised": "2026-07-29T06:26:50.644322+00:00",
    "status": "implemented",
@@ -955,7 +955,7 @@
   {
    "id": "R0070",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler \u2014 migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
+   "summary": "SYNTH0731 P0-1 [DI-1=infraF1=E-7]: de-dup dual scheduler — migrate legacy-only jobs into ops/crontab.manifest, delete legacy block once, stagger 13-job 08:21 herd, dedup 2x rows since 07-30T23:00 (defi/oi_ls/venue_div), crontab-vs-manifest drift fence. ingest_axes collides 06:40Z daily w/ different args+locks; recorder double-spawn armed against moat",
    "roi_bps": 80,
    "raised": "2026-07-31T03:45:44.935428+00:00",
    "status": "implemented",
@@ -967,7 +967,7 @@
   {
    "id": "R0071",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path \u2014 record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
+   "summary": "SYNTH0731 P0-2 [exec F1/F2/F8/F7/F9]: launch money path — record_capital_event+check_gate0_ready read cashcarry_positions.json, executor persists last_combined_equity, refuse zero-equity rebase; copy 3-line equity fix to binance_live.py:188; wire place_stop_market into open path; executor consumes live_guard effective_size+limit_only; live_guard minutes-cadence; THEN dispose R0057. Rail currently loosens ~89 pct at launch inception",
    "roi_bps": 500,
    "raised": "2026-07-31T03:45:45.001121+00:00",
    "status": "implemented",
@@ -999,7 +999,7 @@
   {
    "id": "R0073",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability \u2014 TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
+   "summary": "SYNTH0731 P0-4 [DM-1=infraF5]: moat survivability — TODAY cp execution_tape+3 sqlites off-box; disk fence (<15pct page, <8pct hard) in check_ratchets; hourly rclone of closed moat/lake hours to Storage Box (EUR4/mo, principal line); monthly restore drill. ~29d fuse to 80pct guard, zero copies of irreplaceable L2",
    "roi_bps": 200,
    "raised": "2026-07-31T03:45:45.135219+00:00",
    "status": "implemented",
@@ -1032,7 +1032,7 @@
   {
    "id": "R0075",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity \u2014 top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
+   "summary": "SYNTH0731 P1-6 [meta X1/X3/X4/X7 + val X10]: repair capacity — top-10 open/past-due R-rows into carry-over brief; max_audit recommendations-past-due gate; repair-mode backpressure at open+past-due>25; MTTR/P(fix)/stock-growth born-fenced; age-escalating priority; split roi_bps measured-vs-rank; disposition-in-same-commit duty. Queue at lambda/mu~4, P(fix|survives session)~5pct, no row >3.67d old ever implemented",
    "roi_bps": 120,
    "raised": "2026-07-31T03:45:45.265843+00:00",
    "status": "implemented",
@@ -1056,7 +1056,7 @@
   {
    "id": "R0077",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand \u2014 gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
+   "summary": "SYNTH0731 P2-9 [val X1/X2/T2 + alpha F14/O2]: act on certification (SR-3 controls FAIL both paths all seeds, SR-5 passes percand — gate measured WELDED): make screen_select BY-FDR the decider, dsr/RW demoted to ranking stats (page the gate-topology ruling); re-score the 420 under fixed per-candidate gate as ONE pre-registered resurrection batch; standing gate-CI + scheduled histogram regen",
    "roi_bps": 250.0,
    "raised": "2026-07-31T03:45:45.409373+00:00",
    "status": "implemented",
@@ -1068,7 +1068,7 @@
   {
    "id": "R0078",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty \u2014 anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
+   "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty — anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
    "roi_bps": 90.0,
    "raised": "2026-07-31T03:45:45.483084+00:00",
    "status": "scheduled",
@@ -1092,7 +1092,7 @@
   {
    "id": "R0080",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence \u2014 replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
+   "summary": "SYNTH0731 P2-13 [val V5/V6 + 0729F7]: capacity coherence — replace validate() 2x-book bar with 10pct-slice ADMIT band AND plumb real per-symbol ADV in the SAME change (either alone misfires); delete dead deployed_equity_usd/n_sleeves params",
    "roi_bps": 70.0,
    "raised": "2026-07-31T03:45:45.617318+00:00",
    "status": "implemented",
@@ -1114,7 +1114,7 @@
   {
    "id": "R0081",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner \u2014 manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
+   "summary": "SYNTH0731 P3-14 [DI-7/DI-13]: bronze owner — manifest job for full-universe daily klines + backfill 132 symbols frozen since 06-21 (Binance Vision free) + write-rate anomaly fence (learned rows/period +-50pct) on every appending collector, must retro-fire on current defi file",
    "roi_bps": 60.0,
    "raised": "2026-07-31T03:45:45.682895+00:00",
    "status": "scheduled",
@@ -1148,7 +1148,7 @@
   {
    "id": "R0083",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock \u2014 Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
+   "summary": "SYNTH0731 P3-16 [DI-12 + alpha F2/O3]: options VRP unlock — Deribit surface hourly + 3-5 strikes/expiry; build the consumer for graveyard_resurrection_queue; pre-registered VRP re-screen at ~60 obs; refresh forward_slots snapshot + fill idle Holm slot",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:45.822061+00:00",
    "status": "scheduled",
@@ -1160,7 +1160,7 @@
   {
    "id": "R0084",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion \u2014 schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
+   "summary": "SYNTH0731 P3-17 [DM-5/M4/M6/DM-12]: moat conversion — schedule micro_factory daily; tape records attempts/partials (open_fail rows) + TCA fields on all open paths + cashcarry_error.log fence; data_vitals globs cover execution_tape + lake. Micro-feature screening itself = existing R0003",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:45.886004+00:00",
    "status": "scheduled",
@@ -1172,7 +1172,7 @@
   {
    "id": "R0085",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs \u2014 fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
+   "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs — fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T03:45:45.950552+00:00",
    "status": "scheduled",
@@ -1184,7 +1184,7 @@
   {
    "id": "R0086",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle \u2014 DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
+   "summary": "SYNTH0731 P2-19 [val V11/V6/V14 + 0729F11]: validation small-fix bundle — DSR n_eff=n/autocorr_factor (3 lines, anti-conservative side); _PERIODS_PER_YEAR x4.1 annual_sharpe inflation; event_study bootstrap overlap conservatism",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:46.017975+00:00",
    "status": "implemented",
@@ -1196,7 +1196,7 @@
   {
    "id": "R0087",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore \u2014 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
+   "summary": "SYNTH0731 P2-20 [val X4/U2]: implement the lake-backed _forward_score() stub in run_rejection_rescore — 57 rejects, 0 forward-scored, ~6 days; the desk s only false-negative instrument",
    "roi_bps": 45.0,
    "raised": "2026-07-31T03:45:46.085918+00:00",
    "status": "implemented",
@@ -1220,7 +1220,7 @@
   {
    "id": "R0089",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table \u2014 venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
+   "summary": "SYNTH0731 P0-2b [exec F13]: dispose the 8-item carried execution table — venue_reconcile contradiction, CI phantom error-log stamps, SPOT-EXCESS page hook, reconcile retry cap, dup closes/atomic persist, hurdle consumer, BNB burn decision, web/tca.json writer",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.237561+00:00",
    "status": "rejected",
@@ -1253,7 +1253,7 @@
   {
    "id": "R0091",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology \u2014 reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
+   "summary": "SYNTH0731 P3-22 [DI-15 + DM M12/DM-8]: era archaeology — reconcile 69k-thread-catalog claim vs 713 rows on disk (sec33 credit from artifacts only); first thread-to-series-to-StageA conversion as the existence proof for the 8btc universe",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.375608+00:00",
    "status": "scheduled",
@@ -1286,7 +1286,7 @@
   {
    "id": "R0093",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal \u2014 the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
+   "summary": "SYNTH0731 P1-8c [meta X6/M6]: principal_doctrine.txt diff triggers auto blind-spot row origin=principal — the failure-signal gauge logged 0 principal rows across 6+ doctrine orders since 07-26",
    "roi_bps": 20.0,
    "raised": "2026-07-31T03:45:46.509584+00:00",
    "status": "implemented",
@@ -1310,7 +1310,7 @@
   {
    "id": "R0095",
    "source": "deep_sweep",
-   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty \u2014 nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
+   "summary": "SYNTH0731 P1-8d [E-6/E-8/E-12/E-13]: intelligence-cycle honesty — nonzero exit = ERROR not NO-INPUT in _subprocess_cap; fix label_factory.py:296 (.iloc/reset_index) + dup-index regression test; point research layer at NAV-chain equity (third equity source); research_priority wired to real family kills or labeled DATA-FREE",
    "roi_bps": 55.0,
    "raised": "2026-07-31T03:45:46.643172+00:00",
    "status": "implemented",
@@ -1923,7 +1923,7 @@
    "roi_bps": 0.0,
    "raised": "2026-07-31T18:00:00+00:00",
    "status": "done",
-   "reason": "built, 10 review tests, 21/21 build standard, registered as a \u00a736 producer",
+   "reason": "built, 10 review tests, 21/21 build standard, registered as a §36 producer",
    "commit": null,
    "due": null,
    "note": "weights are fixed and nothing here fine-tunes -- what improves is evidence-weighted knowledge of which setups pay, the way a journal improves a human trader",
@@ -3689,7 +3689,7 @@
   {
    "id": "R0277",
    "source": "principal",
-   "summary": "CN miner recall: seeded native slang, added grounds, installed an AI-quant scam filter. THE RECALL FINDING, which is more useful than the glossary that prompted it: Chinese crypto discussion uses coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING, so a miner querying translated terms is searching for exactly the words that get filtered rather than the words practitioners type. That is a concrete mechanical explanation for weak CN recall, not a claim the ground is empty. Verified against live sources before seeding: \u5927\u997c dabing = BITCOIN (the highest-value token here -- it is how CN traders name BTC when they do not want to type BTC), \u7cd6\u679c = airdrops, \u97ed\u83dc/\u5272\u97ed\u83dc = retail who are harvested, \u5e84\u5bb6/\u72d7\u5e84 = the manipulator (translated 'whale' finds nothing), \u7a7a\u6c14\u5e01 = air coin, \u5c71\u5be8\u5e01 = altcoin. EXPLICITLY REFUSED TO SEED the unverified half of the supplied glossary: \u5047\u5e01 does NOT mean shitcoin (it means counterfeit banknotes; \u5c71\u5be8\u5e01 is the term), 'Kuisancle' is not pinyin for anything (probably garbled \u4e8f\u635f kuisun = loss), and \u725b\u5b63\u8282/\u8721\u70db\u7334/\u65b0\u8471/\u97ed\u83dc\u76d2/\u72d7\u5546/\u5927\u9cc4\u9c7c could not be confirmed. Querying invented slang burns budget AND returns null, which would make a rich ground read as picked clean -- strictly worse than not querying. They are recorded as UNVERIFIED with instructions to promote or disconfirm on sight, so the next run inherits the resolution either way. GROUNDS ADDED: Gate \u5e7f\u573a, UQER \u4f18\u77ff, digtime.cn, \u5c0f\u7ea2\u4e66 Xiaohongshu (manual traders moving into crypto -- discretionary process material the English crowd never reads), Binance Square CN, KuCoin CN research. BigQuant was already listed. SCAM FILTER, mandatory and ledger-protecting: AI\u91cf\u5316 is simultaneously a legitimate frontier and the current favourite bait of CN investment fraud, with repeated regulator warnings. Stereotyped profile: 'AI\u91cf\u5316\u6bcf\u65e51%', '\u6708\u6536\u76ca\u7ffb\u500d', fabricated dashboards, small early payouts then frozen withdrawals. A source promising a FIXED periodic return is disqualified as evidence on that basis alone -- no real strategy has one, and the claim is the tell. Confirmed scam patterns route to graveyard.md as pre-emptive falsification, never to the watchlist. The filter explicitly forbids retreating from \u91cf\u5316 as a ground: the legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same keyword.",
+   "summary": "CN miner recall: seeded native slang, added grounds, installed an AI-quant scam filter. THE RECALL FINDING, which is more useful than the glossary that prompted it: Chinese crypto discussion uses coded vocabulary that developed IN PART TO EVADE KEYWORD FILTERING, so a miner querying translated terms is searching for exactly the words that get filtered rather than the words practitioners type. That is a concrete mechanical explanation for weak CN recall, not a claim the ground is empty. Verified against live sources before seeding: 大饼 dabing = BITCOIN (the highest-value token here -- it is how CN traders name BTC when they do not want to type BTC), 糖果 = airdrops, 韭菜/割韭菜 = retail who are harvested, 庄家/狗庄 = the manipulator (translated 'whale' finds nothing), 空气币 = air coin, 山寨币 = altcoin. EXPLICITLY REFUSED TO SEED the unverified half of the supplied glossary: 假币 does NOT mean shitcoin (it means counterfeit banknotes; 山寨币 is the term), 'Kuisancle' is not pinyin for anything (probably garbled 亏损 kuisun = loss), and 牛季节/蜡烛猴/新葱/韭菜盒/狗商/大鳄鱼 could not be confirmed. Querying invented slang burns budget AND returns null, which would make a rich ground read as picked clean -- strictly worse than not querying. They are recorded as UNVERIFIED with instructions to promote or disconfirm on sight, so the next run inherits the resolution either way. GROUNDS ADDED: Gate 广场, UQER 优矿, digtime.cn, 小红书 Xiaohongshu (manual traders moving into crypto -- discretionary process material the English crowd never reads), Binance Square CN, KuCoin CN research. BigQuant was already listed. SCAM FILTER, mandatory and ledger-protecting: AI量化 is simultaneously a legitimate frontier and the current favourite bait of CN investment fraud, with repeated regulator warnings. Stereotyped profile: 'AI量化每日1%', '月收益翻倍', fabricated dashboards, small early payouts then frozen withdrawals. A source promising a FIXED periodic return is disqualified as evidence on that basis alone -- no real strategy has one, and the claim is the tell. Confirmed scam patterns route to graveyard.md as pre-emptive falsification, never to the watchlist. The filter explicitly forbids retreating from 量化 as a ground: the legitimate BigQuant/UQER/JoinQuant practitioner layer sits under the same keyword.",
    "roi_bps": null,
    "raised": "2026-08-01T09:43:17.657823+00:00",
    "status": "implemented",
@@ -3935,7 +3935,7 @@
   {
    "id": "R0295",
    "source": "cycle",
-   "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to \u00a742's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
+   "summary": "RU-02 [DESIGN INVERSION] scripts/run_crossexchange_backtest.py measures cross-venue funding DISPERSION over a hardcoded 14-symbol large-cap universe -- the cohort most heavily cross-venue arbitraged, where venue funding converges by construction, so the signal is sampled where its variance is minimised. Directly opposite to §42's named ground 'thin-pair cross-venue funding'. Corroborated independently by RU practitioners who name thin venues that drift 1-4% for 15-45min on shitcoins as where divergence lives. A null from this backtest is evidence about the cohort, not the mechanism. Needs R0294 fixed first as the enabling ingredient.",
    "roi_bps": 40.0,
    "raised": "2026-08-01T13:20:49.380845+00:00",
    "status": "implemented",
@@ -4130,7 +4130,7 @@
    "roi_bps": 10.0,
    "raised": "2026-08-01T14:10:32.619346+00:00",
    "status": "implemented",
-   "reason": "Licence READ done 2026-08-12: canonical ToS found at bitbank.cc/doc/tos (the 08-04 target /error/terms was the SPA error route \u2014 wrong-URL diagnosis, not egress). 86,728 chars extracted; Art.17 has NO data-reuse clause; Art.20 excludes public info; footer disclaimer is the one restrictive text (private-use-only over prices/data). Venue support docs positively invite programmatic public-data retrieval. Card 28 re-graded needs-legitimacy-review, decision owed 2026-08-19.",
+   "reason": "Licence READ done 2026-08-12: canonical ToS found at bitbank.cc/doc/tos (the 08-04 target /error/terms was the SPA error route — wrong-URL diagnosis, not egress). 86,728 chars extracted; Art.17 has NO data-reuse clause; Art.20 excludes public info; footer disclaimer is the one restrictive text (private-use-only over prices/data). Venue support docs positively invite programmatic public-data retrieval. Card 28 re-graded needs-legitimacy-review, decision owed 2026-08-19.",
    "commit": "5361358",
    "due": null,
    "disposed": "2026-08-12T01:14:00.071266+00:00"
@@ -4264,7 +4264,7 @@
   {
    "id": "R0319",
    "source": "cycle",
-   "summary": "\u00a737 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
+   "summary": "§37 carry-over brief recorded ACKED defects as owed: 26 of 47 reported items carried dated acks, top-12 were 12/12 acked, so the brain's FIRST-priority queue was 57% false and anti-correlated with real work. Fixed by sharing max_audit.split_acked; deferral now tracked separately with a 30d TREADMILL detector.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:01:10.384705+00:00",
    "status": "implemented",
@@ -4364,7 +4364,7 @@
    "roi_bps": 0.0,
    "raised": "2026-08-01T15:19:30.741616+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both CI-blocking tests now PASS (run 2026-08-04): tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail. The judgment work was done the chartered way, not by mass-graduation: docs/desk_lessons.jsonl shows L0024 retired ('2026-08-04: ABSORBED into L0038'), L0038 enforced_by=tests/research/test_mined_evidence_priority.py, L0051 enforced_by=tests/stage14/test_survival_calibration.py, L0057 enforced_by=tests/test_suite_collectable.py \u2014 merge 9d456b7 ('curation debt paid by graduation not budget').",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both CI-blocking tests now PASS (run 2026-08-04): tests/test_desk_memory.py::test_graduation_actually_freed_budget and ::test_overflow_is_by_rank_and_stays_a_small_tail. The judgment work was done the chartered way, not by mass-graduation: docs/desk_lessons.jsonl shows L0024 retired ('2026-08-04: ABSORBED into L0038'), L0038 enforced_by=tests/research/test_mined_evidence_priority.py, L0051 enforced_by=tests/stage14/test_survival_calibration.py, L0057 enforced_by=tests/test_suite_collectable.py — merge 9d456b7 ('curation debt paid by graduation not budget').",
    "commit": null,
    "due": "2026-08-02",
    "disposed": "2026-08-01T15:20:58.825189+00:00"
@@ -4480,11 +4480,11 @@
   {
    "id": "R0337",
    "source": "owed-work-worker",
-   "summary": "THREE PYTEST FAILURES THAT WERE STRUCTURALLY INVISIBLE UNTIL 2026-08-01, now visible and owned by nobody. tests/test_gate0_soak.py executed at import and raised SystemExit, killing pytest with INTERNALERROR exit 3, so the suite produced NO report at all and every failure behind it was hidden. Collection is now repaired (all 7 of its own Gate-0 soak cases pass and had never once run). Remaining, each verified not to be a side effect of that repair: (1) test_every_tracked_jsonl_parses_per_line -- docs/desk_lessons.jsonl:1 is a '#' comment header; the file is tracked and the header is byte-identical to 8ae06a7^, so this predates the repair. The desk's OWN loader (desk_memory.load) explicitly skips '#' lines, so the integrity test and the documented format disagree; decide which is authoritative and make one match the other rather than deleting the header. (2) test_every_docs_artifact_is_claimed -- docs/research/recent_changes.md is ungoverned under \u00a736; it is a generated 24h commit digest whose producer ops/run_commit_audit.sh is also unlanded, so both should land together with a _PRODUCER_CADENCE entry. (3+4) the two test_desk_memory invariants, red because 7 unenforced 'wasted' lessons overflow the 12k char budget: L0009 L0010 L0013 L0024 L0028 L0038 L0051. The chartered fixes are graduation or retirement, NEVER raising the budget (that is how the doctrine reached 95k), and learn.py currently has no 'retire' verb at all, which may be the actual blocker -- the audit tells you to 'retire a lesson whose falsifier arrived' and gives you no way to do it. Candidate honest graduations to check against their assertions before claiming: L0028 vs tests/validation/test_robustness_filters.py (the luck filter's both-error calibration), L0013 vs test_transcript_candidates::test_costs_are_charged_on_every_turn.",
+   "summary": "THREE PYTEST FAILURES THAT WERE STRUCTURALLY INVISIBLE UNTIL 2026-08-01, now visible and owned by nobody. tests/test_gate0_soak.py executed at import and raised SystemExit, killing pytest with INTERNALERROR exit 3, so the suite produced NO report at all and every failure behind it was hidden. Collection is now repaired (all 7 of its own Gate-0 soak cases pass and had never once run). Remaining, each verified not to be a side effect of that repair: (1) test_every_tracked_jsonl_parses_per_line -- docs/desk_lessons.jsonl:1 is a '#' comment header; the file is tracked and the header is byte-identical to 8ae06a7^, so this predates the repair. The desk's OWN loader (desk_memory.load) explicitly skips '#' lines, so the integrity test and the documented format disagree; decide which is authoritative and make one match the other rather than deleting the header. (2) test_every_docs_artifact_is_claimed -- docs/research/recent_changes.md is ungoverned under §36; it is a generated 24h commit digest whose producer ops/run_commit_audit.sh is also unlanded, so both should land together with a _PRODUCER_CADENCE entry. (3+4) the two test_desk_memory invariants, red because 7 unenforced 'wasted' lessons overflow the 12k char budget: L0009 L0010 L0013 L0024 L0028 L0038 L0051. The chartered fixes are graduation or retirement, NEVER raising the budget (that is how the doctrine reached 95k), and learn.py currently has no 'retire' verb at all, which may be the actual blocker -- the audit tells you to 'retire a lesson whose falsifier arrived' and gives you no way to do it. Candidate honest graduations to check against their assertions before claiming: L0028 vs tests/validation/test_robustness_filters.py (the luck filter's both-error calibration), L0013 vs test_transcript_candidates::test_costs_are_charged_on_every_turn.",
    "roi_bps": 60.0,
    "raised": "2026-08-01T16:43:55.926110+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes \u2014 ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; \u00a736 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated \u2014 see R0327/R0348).",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] All four named failures are green (pytest 2026-08-04): the jsonl fence was taught the ledger's own '#' header convention (tests/governance/test_tracked_json_integrity.py:42-44, merge 9d456b7 'jsonl integrity fence taught the lessons ledger's own # header convention'); test_every_docs_artifact_is_claimed passes — ops/run_commit_audit.sh landed in 5920b60 with docs/research/recent_changes.md deliberately GITIGNORED (425KB regenerable payload; §36 governance applies to what is committed, per that commit's message); and both test_desk_memory invariants pass after the merge's graduations/retirement (L0024 retired, L0038/L0051 graduated — see R0327/R0348).",
    "commit": null,
    "due": null,
    "disposed": "2026-08-04T22:04:47Z",
@@ -4606,7 +4606,7 @@
    "roi_bps": 20.0,
    "raised": "2026-08-01T17:27:49.388074+00:00",
    "status": "implemented",
-   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band \u2014 a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
+   "reason": "[triage 2026-08-04 wf_8e81833d-78a] Both tests pass on this tree (pytest 2026-08-04). The close came by the research decision the row demanded, not a false enforcement claim: docs/desk_lessons.jsonl records L0024 retired='2026-08-04: ABSORBED into L0038' (falsifier-style retirement, absorbed duplicate), L0038 enforced_by=tests/research/test_mined_evidence_priority.py::test_every_miner_prompt_carries_the_mined_evidence_priority_block, and L0051 enforced_by=tests/stage14/test_survival_calibration.py::test_the_default_drawdown_limit_rejects_the_entire_real_edge_band — a genuine behavioural test of the inert-gate property, NOT the okx test R0347 flagged as pinning the bug.",
    "commit": null,
    "due": null,
    "disposed": "2026-08-04T22:04:47Z",
@@ -5426,7 +5426,7 @@
   {
    "id": "R0415",
    "source": "cycle",
-   "summary": "THE GROWTH AUDIT'S ONLY CONSERVATISM DEFECT IS EXPLAINED, AND THE EXPLANATION WAS BURIED BY 476 FALSE ALARMS. web/growth_audit.json 2026-08-05T21:00Z reports carry_capital_utilization GAP, 0 deployed of 200 authorized, justified_by NONE -- the one item the cycle contract requires be closed or justified same-cycle. The answer is in web/cashcarry_live.json last_actions and it is the LAST of 477 entries: 'live_guard: sizing scaled to 0%'. The other 476 are ALL SPOT-EXCESS lines -- one per symbol, spanning the whole alphabet from 0GUSDT to ZRXUSDT plus the joke ticker \u5e01\u5b89\u4eba\u751fUSDT -- each declaring an untracked naked spot long and each ordering 'verify/flatten by hand'. They total 363,127 dollars of claimed naked exposure against 200 dollars of authorized capital, which is arithmetically impossible. VERIFIED CAUSE: libs/execution/binance_spot_testnet.py:21 pins _BASE to testnet.binance.vision, so the wallet the detector is reading is the TESTNET FAUCET's pre-seeded balances, which cluster at ~500 dollars per symbol across every listed pair. The detector's false-positive rate on this account is ~100 percent, so per L1.43 it carries zero information, and per the 2026-07-31 CI lesson a gate that cries wolf gets ignored -- this one does worse than get ignored, it CONSUMES the action feed and pushes the single true line to the end. TWO SEPARATE FIXES OWED: (1) SPOT-EXCESS must exclude wallet balances the desk never bought -- reconcile against our own fill history rather than against tracked carries alone, or the testnet faucet is permanently indistinguishable from a stranded leg, which also means a REAL stranded leg would be invisible in the noise on day one of live trading; (2) run_growth_audit must read the live_guard clamp so a deployment gap that IS explained stops being reported as justified_by NONE -- an unexplained-looking defect that has a known cause trains the reader to discount the whole report. Also note data/cashcarry_error.log 21:07:41Z shows the genuine asymmetry live: 'unfilled leg MOVEUSDT spot_ok=True fut_ok=False' -- spot filled, futures did not, the gap-41 class that CREATES real stranded legs, which is exactly what fix (1) must stay able to see.",
+   "summary": "THE GROWTH AUDIT'S ONLY CONSERVATISM DEFECT IS EXPLAINED, AND THE EXPLANATION WAS BURIED BY 476 FALSE ALARMS. web/growth_audit.json 2026-08-05T21:00Z reports carry_capital_utilization GAP, 0 deployed of 200 authorized, justified_by NONE -- the one item the cycle contract requires be closed or justified same-cycle. The answer is in web/cashcarry_live.json last_actions and it is the LAST of 477 entries: 'live_guard: sizing scaled to 0%'. The other 476 are ALL SPOT-EXCESS lines -- one per symbol, spanning the whole alphabet from 0GUSDT to ZRXUSDT plus the joke ticker 币安人生USDT -- each declaring an untracked naked spot long and each ordering 'verify/flatten by hand'. They total 363,127 dollars of claimed naked exposure against 200 dollars of authorized capital, which is arithmetically impossible. VERIFIED CAUSE: libs/execution/binance_spot_testnet.py:21 pins _BASE to testnet.binance.vision, so the wallet the detector is reading is the TESTNET FAUCET's pre-seeded balances, which cluster at ~500 dollars per symbol across every listed pair. The detector's false-positive rate on this account is ~100 percent, so per L1.43 it carries zero information, and per the 2026-07-31 CI lesson a gate that cries wolf gets ignored -- this one does worse than get ignored, it CONSUMES the action feed and pushes the single true line to the end. TWO SEPARATE FIXES OWED: (1) SPOT-EXCESS must exclude wallet balances the desk never bought -- reconcile against our own fill history rather than against tracked carries alone, or the testnet faucet is permanently indistinguishable from a stranded leg, which also means a REAL stranded leg would be invisible in the noise on day one of live trading; (2) run_growth_audit must read the live_guard clamp so a deployment gap that IS explained stops being reported as justified_by NONE -- an unexplained-looking defect that has a known cause trains the reader to discount the whole report. Also note data/cashcarry_error.log 21:07:41Z shows the genuine asymmetry live: 'unfilled leg MOVEUSDT spot_ok=True fut_ok=False' -- spot filled, futures did not, the gap-41 class that CREATES real stranded legs, which is exactly what fix (1) must stay able to see.",
    "roi_bps": 300.0,
    "raised": "2026-08-05T21:12:00.269114+00:00",
    "status": "scheduled",
@@ -5738,7 +5738,7 @@
   {
    "id": "R0441",
    "source": "cycle",
-   "summary": "WIRE PLAN P4-P10 from the 2026-08-11 \u00a736 orphan census (P1-P3 executed same day: 60->45 budget met). Highest-value remainder, each module tested green and consulted by nothing: (P7) the 6-module libs/validation gate-design batch -- ensemble_gate, near_miss, random_baseline, drawdown_metrics, lookahead_audit, pre_filter (+earnability, +brain_calibration into scripts/calibrate_gauntlet.py) -- wired into libs/autodiscovery/validation.py per the 49->45 exemplar (a869ca3/2c1e298); this is the desk's own remediation of its measured worst defect (gauntlet powered only at true-SR~5 while hunting 0.5-1.5). (P5) research_budget (LAW-BOUND: CONSTITUTION L1.51 names its exhaustion_claim as THE producer), wq_operators (R0437), research_attribution into the alpha_factory controller. (P6) sleeve_allocation into run_live_ladder (R0340/R0357: live-capital law exists only in dead code). (P4) retire signal_engine.signal_embedding_engine (superseded by wired alpha_embedding_engine). (P8-P10) capital_basis declare() migration (R0287), event_calendar into event-study runners (R0276), untrusted+claim_screen into miner ingestion (MASTER \u00a798), stage14_5 five into run_portfolio_risk's self-arming block. Census with per-module evidence: agent report 2026-08-11, docs/graveyard.md resurrection note.",
+   "summary": "WIRE PLAN P4-P10 from the 2026-08-11 §36 orphan census (P1-P3 executed same day: 60->45 budget met). Highest-value remainder, each module tested green and consulted by nothing: (P7) the 6-module libs/validation gate-design batch -- ensemble_gate, near_miss, random_baseline, drawdown_metrics, lookahead_audit, pre_filter (+earnability, +brain_calibration into scripts/calibrate_gauntlet.py) -- wired into libs/autodiscovery/validation.py per the 49->45 exemplar (a869ca3/2c1e298); this is the desk's own remediation of its measured worst defect (gauntlet powered only at true-SR~5 while hunting 0.5-1.5). (P5) research_budget (LAW-BOUND: CONSTITUTION L1.51 names its exhaustion_claim as THE producer), wq_operators (R0437), research_attribution into the alpha_factory controller. (P6) sleeve_allocation into run_live_ladder (R0340/R0357: live-capital law exists only in dead code). (P4) retire signal_engine.signal_embedding_engine (superseded by wired alpha_embedding_engine). (P8-P10) capital_basis declare() migration (R0287), event_calendar into event-study runners (R0276), untrusted+claim_screen into miner ingestion (MASTER §98), stage14_5 five into run_portfolio_risk's self-arming block. Census with per-module evidence: agent report 2026-08-11, docs/graveyard.md resurrection note.",
    "roi_bps": 25.0,
    "raised": "2026-08-11T20:37:39.854623+00:00",
    "status": "scheduled",
@@ -5870,7 +5870,7 @@
   {
    "id": "R0452",
    "source": "cycle",
-   "summary": "STAT-ARB OPENING CONSTRAINT (prospector 2026-08-12, NP 161299 practitioner testimony + Lo VR): any sub-hour mean-reversion quantifier (VR/Hurst/RV-frequency-structure) must sample MIDPOINTS (or last-trades at >=15min) and ship a bounce NEGATIVE control (synthetic random walk + realistic bid-ask bounce must NOT flag MR) \u2014 else the STATISTICAL-ARBITRAGE family (coverage next_family, n_tested=0) opens with a bounce detector wearing a green positive control (instrument-artifact class of coinbase_premium_timing/L1.46). Consumer: whichever organ opens stat-arb; pairs with R0296 (cost-first).",
+   "summary": "STAT-ARB OPENING CONSTRAINT (prospector 2026-08-12, NP 161299 practitioner testimony + Lo VR): any sub-hour mean-reversion quantifier (VR/Hurst/RV-frequency-structure) must sample MIDPOINTS (or last-trades at >=15min) and ship a bounce NEGATIVE control (synthetic random walk + realistic bid-ask bounce must NOT flag MR) — else the STATISTICAL-ARBITRAGE family (coverage next_family, n_tested=0) opens with a bounce detector wearing a green positive control (instrument-artifact class of coinbase_premium_timing/L1.46). Consumer: whichever organ opens stat-arb; pairs with R0296 (cost-first).",
    "roi_bps": 0.0,
    "raised": "2026-08-12T01:26:44.606347+00:00",
    "status": "scheduled",
@@ -5882,7 +5882,7 @@
   {
    "id": "R0453",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 A (w8/w1): validation-integrity instrumentation \u2014 persist validation-search trajectories as evidence-of-record (query,URL,snippet), port STC 3-level leakage taxonomy w/ cheap detector stack, VOID+rerun-search-blind on answer-leakage events (conditional inflation ~100% masks 4% aggregate), standing search-off ablation; audits read logs+code not summaries (74.0 vs 51.4 measured). Sources: arXiv 2606.05241, 2607.27518, 2509.08713.",
+   "summary": "litminer run6 inbox 2026-08-12 A (w8/w1): validation-integrity instrumentation — persist validation-search trajectories as evidence-of-record (query,URL,snippet), port STC 3-level leakage taxonomy w/ cheap detector stack, VOID+rerun-search-blind on answer-leakage events (conditional inflation ~100% masks 4% aggregate), standing search-off ablation; audits read logs+code not summaries (74.0 vs 51.4 measured). Sources: arXiv 2606.05241, 2607.27518, 2509.08713.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:47.990104+00:00",
    "status": "rejected",
@@ -5894,7 +5894,7 @@
   {
    "id": "R0454",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 B (w1): gate-battery validity trio composing with the IRT fit (#86) \u2014 predictive-validity rank-transfer (Spearman gate-time vs realized OOS ranking; exemplar leaderboard rho=-0.13 vs own hidden set), per-gate construct statements + standing killed-population error analysis (would have caught the DSR-bar design defect pre-420), MTMM discriminant audit of gate-score correlations (fictional breadth breaks multiplicity accounting). All computable from existing ledgers, zero new runs. Sources: 2606.19704, 2511.04703, 2607.24999.",
+   "summary": "litminer run6 inbox 2026-08-12 B (w1): gate-battery validity trio composing with the IRT fit (#86) — predictive-validity rank-transfer (Spearman gate-time vs realized OOS ranking; exemplar leaderboard rho=-0.13 vs own hidden set), per-gate construct statements + standing killed-population error analysis (would have caught the DSR-bar design defect pre-420), MTMM discriminant audit of gate-score correlations (fictional breadth breaks multiplicity accounting). All computable from existing ledgers, zero new runs. Sources: 2606.19704, 2511.04703, 2607.24999.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:50.339992+00:00",
    "status": "rejected",
@@ -5906,7 +5906,7 @@
   {
    "id": "R0455",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 C (w4/w5/w3): panel independence + elicitation batch \u2014 cap shared-context panel stages at <=1 round (monotone 72% fact erasure), same-family majorities match base prior 65-76% (marginal same-family seat n_eff~1), cross-family retention 0.598 vs 0.357 = published support for L1.31/33; BEI co-failure audit on own seat logs, cross-family verification by default (judge-target entanglement predicts bias rho~0.5), honest null: entanglement reweighting +0.001 \u2014 audit not voting formula; ownership-bias fix for L1.29 elicitation (frame as USER text, P(True) over Likert, ECE 0.1-0.26 free). Sources: 2606.03032, 2604.07650, 2606.03437(corrected).",
+   "summary": "litminer run6 inbox 2026-08-12 C (w4/w5/w3): panel independence + elicitation batch — cap shared-context panel stages at <=1 round (monotone 72% fact erasure), same-family majorities match base prior 65-76% (marginal same-family seat n_eff~1), cross-family retention 0.598 vs 0.357 = published support for L1.31/33; BEI co-failure audit on own seat logs, cross-family verification by default (judge-target entanglement predicts bias rho~0.5), honest null: entanglement reweighting +0.001 — audit not voting formula; ownership-bias fix for L1.29 elicitation (frame as USER text, P(True) over Likert, ECE 0.1-0.26 free). Sources: 2606.03032, 2604.07650, 2606.03437(corrected).",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:53.293740+00:00",
    "status": "rejected",
@@ -5918,7 +5918,7 @@
   {
    "id": "R0456",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 D (ENGINE-UPDATE #85, w2): e-process operations manual \u2014 GROW-optimal lambda*, expected-N=log(1/alpha)/g replaces forward-clock guesswork, constant 1/alpha threshold under any peeking (the 8.8x fix as law), predictability constraint binds self-tuning organs (timestamp tuning inputs before data bet on), e-BH + dependent-mean-of-e-values for the correlated hypothesis book. Reimplement in-repo, no package import. Source: 2602.06379.",
+   "summary": "litminer run6 inbox 2026-08-12 D (ENGINE-UPDATE #85, w2): e-process operations manual — GROW-optimal lambda*, expected-N=log(1/alpha)/g replaces forward-clock guesswork, constant 1/alpha threshold under any peeking (the 8.8x fix as law), predictability constraint binds self-tuning organs (timestamp tuning inputs before data bet on), e-BH + dependent-mean-of-e-values for the correlated hypothesis book. Reimplement in-repo, no package import. Source: 2602.06379.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:55.901377+00:00",
    "status": "implemented",
@@ -5930,7 +5930,7 @@
   {
    "id": "R0457",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 E (w7): generation-side quality \u2014 randomize+log candidate-list order in every list-presenting organ (measured 100% metric order-dependence; the 420 may have been menu-chosen), machine-checkable protocol block at generation diffed at gate (25% silent drift rate), ForeSci-style temporal-cutoff backtest of the GENERATION organ against own realized ledger + evidence-decision decoupling check. Sources: 2509.08713 appendix, 2606.00644.",
+   "summary": "litminer run6 inbox 2026-08-12 E (w7): generation-side quality — randomize+log candidate-list order in every list-presenting organ (measured 100% metric order-dependence; the 420 may have been menu-chosen), machine-checkable protocol block at generation diffed at gate (25% silent drift rate), ForeSci-style temporal-cutoff backtest of the GENERATION organ against own realized ledger + evidence-decision decoupling check. Sources: 2509.08713 appendix, 2606.00644.",
    "roi_bps": null,
    "raised": "2026-08-12T01:57:59.132942+00:00",
    "status": "implemented",
@@ -5942,7 +5942,7 @@
   {
    "id": "R0458",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox 2026-08-12 F (w6): organ reliability + memory \u2014 measured null: memory products lose to BM25 (do not adopt Mem0/Zep-class), vault+files+BM25 is the evidence-favored design; supersession ledgering load-bearing (selective forgetting <=28% universally); compaction = cost knob (structural masking over LLM re-summarization); after ANY organ model swap re-measure the organ completion/decay curve (two-source: capability gains give only small reliability gains; <=19% meltdown-by-ambition) \u2014 directly relevant to the live llm-auto-upgrade branch. Sources: MemoryAgentBench ICLR26, LongMemEval-V2, 2605.18854, 2603.29231, 2602.16666.",
+   "summary": "litminer run6 inbox 2026-08-12 F (w6): organ reliability + memory — measured null: memory products lose to BM25 (do not adopt Mem0/Zep-class), vault+files+BM25 is the evidence-favored design; supersession ledgering load-bearing (selective forgetting <=28% universally); compaction = cost knob (structural masking over LLM re-summarization); after ANY organ model swap re-measure the organ completion/decay curve (two-source: capability gains give only small reliability gains; <=19% meltdown-by-ambition) — directly relevant to the live llm-auto-upgrade branch. Sources: MemoryAgentBench ICLR26, LongMemEval-V2, 2605.18854, 2603.29231, 2602.16666.",
    "roi_bps": null,
    "raised": "2026-08-12T01:58:02.647430+00:00",
    "status": "implemented",
@@ -5954,7 +5954,7 @@
   {
    "id": "R0459",
    "source": "deep_sweep",
-   "summary": "litminer run6 cards 27-29 build batch (arXiv sweep, dues aligned w/ R0193 lane): (27) 5-min copula-state BTC-hedged alt spread Stage-A screen \u2014 FIRST test of the n=0 stat-arb family; funding-accrual falsifier FIRST (paper omitted it; hourly rung graveyard-killed at all costs w/ funding modeled); (28) quarter-hour clock-phase imbalance screen on own-clock recorder + funding-window conditioning; cheapest leg = execution hygiene (avoid executing ON marks, feeds 66bps program, no alpha claim; executor change = money-path, L1.38 window applies); (29) Polymarket-vs-Deribit binary wedge MEASUREMENT (both feeds free; OpenMarket CC-BY corpus = backfill; trading leg separately gated needs-legitimacy-review). Litminer freeze bars runner code \u2014 alpha org owns constructions. Cards carry pre-registered falsifiers + graveyard priors.",
+   "summary": "litminer run6 cards 27-29 build batch (arXiv sweep, dues aligned w/ R0193 lane): (27) 5-min copula-state BTC-hedged alt spread Stage-A screen — FIRST test of the n=0 stat-arb family; funding-accrual falsifier FIRST (paper omitted it; hourly rung graveyard-killed at all costs w/ funding modeled); (28) quarter-hour clock-phase imbalance screen on own-clock recorder + funding-window conditioning; cheapest leg = execution hygiene (avoid executing ON marks, feeds 66bps program, no alpha claim; executor change = money-path, L1.38 window applies); (29) Polymarket-vs-Deribit binary wedge MEASUREMENT (both feeds free; OpenMarket CC-BY corpus = backfill; trading leg separately gated needs-legitimacy-review). Litminer freeze bars runner code — alpha org owns constructions. Cards carry pre-registered falsifiers + graveyard priors.",
    "roi_bps": 40.0,
    "raised": "2026-08-12T02:07:10.562976+00:00",
    "status": "scheduled",
@@ -5966,7 +5966,7 @@
   {
    "id": "R0460",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox G: adopt the lead-lag STANDING RULE \u2014 future cross-venue lead-lag proposals must use RAW TRADES w/ own-clock provenance (never marks/indices: arXiv 2608.09188 proves estimators on marks have power=size when venues cross-reference; R0117's aliasing kill was the shallower half) + Epps-correct sampling; OpenMarket ms-paired corpus (universe map 97) is the free compliant testbed. One-paragraph rule into the validation lane's checklist; pre-kills a whole class of future phantom proposals at zero cost.",
+   "summary": "litminer run6 inbox G: adopt the lead-lag STANDING RULE — future cross-venue lead-lag proposals must use RAW TRADES w/ own-clock provenance (never marks/indices: arXiv 2608.09188 proves estimators on marks have power=size when venues cross-reference; R0117's aliasing kill was the shallower half) + Epps-correct sampling; OpenMarket ms-paired corpus (universe map 97) is the free compliant testbed. One-paragraph rule into the validation lane's checklist; pre-kills a whole class of future phantom proposals at zero cost.",
    "roi_bps": 15.0,
    "raised": "2026-08-12T02:07:14.014990+00:00",
    "status": "implemented",
@@ -5978,7 +5978,7 @@
   {
    "id": "R0461",
    "source": "deep_sweep",
-   "summary": "litminer run6 inbox H: execution+stats shelf \u2014 (a) liquidity-state-first prior for the 66bps program (classify pre-order L2 state from own recorder; design-hint grade, replicate on own data); (b) two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) as candidate MECHANISED leakage gates (R0289 documented causal_guard's enumerated-subset blindness); (c) post-selection Sharpe estimation + tsbootstrap + HAC-over-rejects-at-cycle-scale (size 0.33 @ nominal 0.05, n~4 regimes) into the methods backlog.",
+   "summary": "litminer run6 inbox H: execution+stats shelf — (a) liquidity-state-first prior for the 66bps program (classify pre-order L2 state from own recorder; design-hint grade, replicate on own data); (b) two 2026 decision-time-leakage formalisations (2605.23959 one-switch benchmark, 2607.04958 temporal non-interference) as candidate MECHANISED leakage gates (R0289 documented causal_guard's enumerated-subset blindness); (c) post-selection Sharpe estimation + tsbootstrap + HAC-over-rejects-at-cycle-scale (size 0.33 @ nominal 0.05, n~4 regimes) into the methods backlog.",
    "roi_bps": 20.0,
    "raised": "2026-08-12T02:07:18.186663+00:00",
    "status": "rejected",
@@ -7030,7 +7030,7 @@
   {
    "id": "R0548",
    "source": "cycle",
-   "summary": "MAX_AUDIT'S LIVE-DEFECT SET IS NOT STABLE WITHIN A CYCLE, so a \u00a737 brief built from one snapshot lists items a later reader cannot find. Measured 2026-08-13: the 00:30 run reported 14 live defects with ZERO occurrences of 'paywall' anywhere (live or acked); re-running the identical CHECKS list at 01:5x gives 17 live including paywall-unhunted, which check_paywalls_registered emits deterministically from libs.data.paywall.vendors_encountered (llama.fi, free_replacement_status=UNHUNTED). The three-defect delta is exactly the three items the \u00a737 brief listed as SKIPPED-surviving-6-sweeps (paywall-unhunted, promotion-no-routes-registered, blocked-routes-idle). Cause is input mutation by collectors between runs, not a swallowed branch -- _fenced() isolates every check. CONSEQUENCE: absence from a max_audit snapshot is being read as fixed when it means not-yet-observed (L1.49). Publish the input mtimes the run observed alongside the defect list so two snapshots are comparable.",
+   "summary": "MAX_AUDIT'S LIVE-DEFECT SET IS NOT STABLE WITHIN A CYCLE, so a §37 brief built from one snapshot lists items a later reader cannot find. Measured 2026-08-13: the 00:30 run reported 14 live defects with ZERO occurrences of 'paywall' anywhere (live or acked); re-running the identical CHECKS list at 01:5x gives 17 live including paywall-unhunted, which check_paywalls_registered emits deterministically from libs.data.paywall.vendors_encountered (llama.fi, free_replacement_status=UNHUNTED). The three-defect delta is exactly the three items the §37 brief listed as SKIPPED-surviving-6-sweeps (paywall-unhunted, promotion-no-routes-registered, blocked-routes-idle). Cause is input mutation by collectors between runs, not a swallowed branch -- _fenced() isolates every check. CONSEQUENCE: absence from a max_audit snapshot is being read as fixed when it means not-yet-observed (L1.49). Publish the input mtimes the run observed alongside the defect list so two snapshots are comparable.",
    "roi_bps": 3.0,
    "raised": "2026-08-13T00:49:11.586534+00:00",
    "status": "scheduled",
@@ -7042,7 +7042,7 @@
   {
    "id": "R0549",
    "source": "cycle",
-   "summary": "\u00a742 PAYWALL-UNHUNTED (VERIFIED LIVE 2026-08-13, survived 6 \u00a737 sweeps with no dated ack): llama.fi is registered in docs/research/paid_dataset_targets.md but carries free_replacement_status=UNHUNTED in the encounter ledger. DefiLlama's emissions endpoint returned HTTP 402. Listed is not hunted -- \u00a742's deliverable is the REPLACEMENT, not the row. Free-first protocol owed: primary-source reconstruction (facts are not copyrightable) from the open DefiLlama endpoints plus on-chain unlock schedules, verified against ground truth before any pipeline trusts it.",
+   "summary": "§42 PAYWALL-UNHUNTED (VERIFIED LIVE 2026-08-13, survived 6 §37 sweeps with no dated ack): llama.fi is registered in docs/research/paid_dataset_targets.md but carries free_replacement_status=UNHUNTED in the encounter ledger. DefiLlama's emissions endpoint returned HTTP 402. Listed is not hunted -- §42's deliverable is the REPLACEMENT, not the row. Free-first protocol owed: primary-source reconstruction (facts are not copyrightable) from the open DefiLlama endpoints plus on-chain unlock schedules, verified against ground truth before any pipeline trusts it.",
    "roi_bps": 5.0,
    "raised": "2026-08-13T00:49:20.225932+00:00",
    "status": "scheduled",
@@ -7859,7 +7859,7 @@
    "roi_bps": 15.0,
    "raised": "2026-08-18T19:55:29.047795+00:00",
    "status": "rejected",
-   "reason": "MANDATE RE-GRADE 2026-08-25 (prospector, the seat that raised it): the pre-registered screen design rides data_axis_watchlist card 26's Upbit announcement archive and targets crypto listing events \u2014 crypto-exchange-native ground banned by the 2026-08-18 MT5 universe order, so alpha-screening must NOT burn this screen on 09-01. Card 26 killed same day (graveyard kr_venue_state_layer). The universe-independent mechanism half (new issues reprice the existing comparable curve) is retained as prospector watchlist memory with a named MT5 re-entry trigger: US share CFD / index-constituent data ingested -> re-design on IPO/index-inclusion comparables, preregistered fresh. No trial was charged; the EV-QUEUE verdict (0.0038) described the crypto application and does not transfer unexamined.",
+   "reason": "MANDATE RE-GRADE 2026-08-25 (prospector, the seat that raised it): the pre-registered screen design rides data_axis_watchlist card 26's Upbit announcement archive and targets crypto listing events — crypto-exchange-native ground banned by the 2026-08-18 MT5 universe order, so alpha-screening must NOT burn this screen on 09-01. Card 26 killed same day (graveyard kr_venue_state_layer). The universe-independent mechanism half (new issues reprice the existing comparable curve) is retained as prospector watchlist memory with a named MT5 re-entry trigger: US share CFD / index-constituent data ingested -> re-design on IPO/index-inclusion comparables, preregistered fresh. No trial was charged; the EV-QUEUE verdict (0.0038) described the crypto application and does not transfer unexamined.",
    "commit": null,
    "due": null,
    "disposed": "2026-08-25T18:15:48.617915+00:00"
@@ -7867,7 +7867,7 @@
   {
    "id": "R0617",
    "source": "cycle",
-   "summary": "source_backlog_next.py verify queue is STALE: cards 23+24 carry grade MINED 2026-08-18 in data_axis_watchlist.md yet still count as pending verification and print in the VERIFY-this-cycle list (verified twice 2026-08-18, incl. after the free-data commit). Parser vs card-grade token mismatch (L1.61 two-encodings class). Fix owner = engineering seat owning scripts/source_backlog_next.py + its lib: consume the grade/\u00a733 tokens miners write, add a test pinning card 23 non-pending. Cost: misdirects every seat's RESUME step 1.",
+   "summary": "source_backlog_next.py verify queue is STALE: cards 23+24 carry grade MINED 2026-08-18 in data_axis_watchlist.md yet still count as pending verification and print in the VERIFY-this-cycle list (verified twice 2026-08-18, incl. after the free-data commit). Parser vs card-grade token mismatch (L1.61 two-encodings class). Fix owner = engineering seat owning scripts/source_backlog_next.py + its lib: consume the grade/§33 tokens miners write, add a test pinning card 23 non-pending. Cost: misdirects every seat's RESUME step 1.",
    "roi_bps": 5.0,
    "raised": "2026-08-18T20:01:54.646705+00:00",
    "status": "open",
@@ -8125,7 +8125,7 @@
   {
    "id": "R0636",
    "source": "cycle",
-   "summary": "source_backlog._classify: fail-open serves terminally-graded cards as pending-verification forever when the grade lacks a terminal substring (F0002 recurrence: 3 of 7 queue items were phantom on 2026-08-19 \u2014 cards 24/27/32 'verified + MINED'/'BUILT'/'structural-reference'; card 35 minted same-day in the same shape). Docs half fixed same-run by AR s3 (grades made parser-terminal + vocabulary rule in watchlist header). ENGINE half owed: print a GRADE-UNPARSEABLE (possibly phantom) warning when the unrecognized-grade card carries a [s33: wired/screened -> artifact] marker, so the ambiguity surfaces instead of masquerading as work. Frozen for the miner seat (scripts/).",
+   "summary": "source_backlog._classify: fail-open serves terminally-graded cards as pending-verification forever when the grade lacks a terminal substring (F0002 recurrence: 3 of 7 queue items were phantom on 2026-08-19 — cards 24/27/32 'verified + MINED'/'BUILT'/'structural-reference'; card 35 minted same-day in the same shape). Docs half fixed same-run by AR s3 (grades made parser-terminal + vocabulary rule in watchlist header). ENGINE half owed: print a GRADE-UNPARSEABLE (possibly phantom) warning when the unrecognized-grade card carries a [s33: wired/screened -> artifact] marker, so the ambiguity surfaces instead of masquerading as work. Frozen for the miner seat (scripts/).",
    "roi_bps": null,
    "rank": 3.0,
    "roi_basis": "rank",
@@ -8321,7 +8321,7 @@
   {
    "id": "R0650",
    "source": "prospector",
-   "summary": "MANDATE SWEEP OF CRYPTO-SUBJECT OPEN/SCHEDULED LEDGER ROWS (prospector 2026-08-25, raised while clearing the source-backlog verify queue): at least three rows still carry banned or part-banned subjects and will burn owner effort on dead ground unless re-graded by their owning seats before their dates fire. (1) R0462 Binance COIN-M backfill, scheduled, due 2026-08-27 \u2014 subject wholly banned, dispose or repoint BEFORE the fetch burns. (2) R0193 residual leg (carry_z->forward-liquidation screen + stablecoin premium legs), scheduled/disposed-INCONSISTENT row state, due 2026-08-24 already past \u2014 residual subjects voided by the card 23/25 re-grades landed today; the row also needs its state repaired. (3) R0637 split (brain-s5 prescription 2026-08-20, still open 5 days): DEX-mining half killed today with card 37 (graveyard dex_wallet_tape_mining); the universe-independent halves (utilisation-meter blindness; vec_*/reduce_* operator gap now aimed at the MT5 per-tick tape) still need their own row(s). Owners: the seats that raised each row; this row is the chase, not the fix (L1.28b conversion parity).",
+   "summary": "MANDATE SWEEP OF CRYPTO-SUBJECT OPEN/SCHEDULED LEDGER ROWS (prospector 2026-08-25, raised while clearing the source-backlog verify queue): at least three rows still carry banned or part-banned subjects and will burn owner effort on dead ground unless re-graded by their owning seats before their dates fire. (1) R0462 Binance COIN-M backfill, scheduled, due 2026-08-27 — subject wholly banned, dispose or repoint BEFORE the fetch burns. (2) R0193 residual leg (carry_z->forward-liquidation screen + stablecoin premium legs), scheduled/disposed-INCONSISTENT row state, due 2026-08-24 already past — residual subjects voided by the card 23/25 re-grades landed today; the row also needs its state repaired. (3) R0637 split (brain-s5 prescription 2026-08-20, still open 5 days): DEX-mining half killed today with card 37 (graveyard dex_wallet_tape_mining); the universe-independent halves (utilisation-meter blindness; vec_*/reduce_* operator gap now aimed at the MT5 per-tick tape) still need their own row(s). Owners: the seats that raised each row; this row is the chase, not the fix (L1.28b conversion parity).",
    "roi_bps": null,
    "rank": 12.0,
    "roi_basis": "rank",
@@ -8335,7 +8335,7 @@
   {
    "id": "R0651",
    "source": "prospector",
-   "summary": "DIAGNOSTIC COLUMN (single subject, engineering-owned, ~20 lines, zero gate change): add |AR1|-penalized Smart Sharpe beside walk_forward stability in Stage-A screen reports. Formula + pitfall from Numerai forum 151 full-tree read (prospector 2026-08-25, rm-20260825T181857-e7667f): autocorr_penalty(x)=sqrt(1+2*sum(((n-i)/n)*p**i)) with p=ABS(ar1(x)) \u2014 the abs() is the load-bearing refinement (raw AR1 rewards negative autocorrelation = certainty, not stationarity; 3-post reply-chain consensus). Purpose: a returns-stream whose Sharpe survives but whose |AR1| penalty is large is regime-lumpy \u2014 flags fragile survivors for the adversarial pass. DIAGNOSTICS ONLY: the 10-gate canon is fixed for life and this must never block a promotion (LAWS \u00a75). Companion caveat already in rm (899 thread, taori #48): feature neutralization helps simple models and HURTS advanced ones OOS \u2014 never blanket-apply in the factor work.",
+   "summary": "DIAGNOSTIC COLUMN (single subject, engineering-owned, ~20 lines, zero gate change): add |AR1|-penalized Smart Sharpe beside walk_forward stability in Stage-A screen reports. Formula + pitfall from Numerai forum 151 full-tree read (prospector 2026-08-25, rm-20260825T181857-e7667f): autocorr_penalty(x)=sqrt(1+2*sum(((n-i)/n)*p**i)) with p=ABS(ar1(x)) — the abs() is the load-bearing refinement (raw AR1 rewards negative autocorrelation = certainty, not stationarity; 3-post reply-chain consensus). Purpose: a returns-stream whose Sharpe survives but whose |AR1| penalty is large is regime-lumpy — flags fragile survivors for the adversarial pass. DIAGNOSTICS ONLY: the 10-gate canon is fixed for life and this must never block a promotion (LAWS §5). Companion caveat already in rm (899 thread, taori #48): feature neutralization helps simple models and HURTS advanced ones OOS — never blanket-apply in the factor work.",
    "roi_bps": null,
    "rank": 30.0,
    "roi_basis": "rank",
@@ -8349,7 +8349,7 @@
   {
    "id": "R0652",
    "source": "prospector",
-   "summary": "PRINCIPAL SEED DROP IS INVISIBLE TO THE QUEUE IT WAS ROUTED THROUGH (prospector 2026-08-25, found minutes after d317925d landed): the seed cards use '### S1.'-style headings but libs/research/source_backlog.py _CARD_RE is r'^### (\\d+)\\.' \u2014 DIGITS ONLY \u2014 so source_backlog_next.py parses ZERO of them and prints 'backlog clear' over a live principal order (WS-005: absence reads as clean; verified by running the tool post-drop = 0 pending while the S-cards carry 'pending verification' / 'needs-legitimacy-review' grades, incl. the S5 Truth Social legitimacy DECIDE). EXACT PATCH, either side: (a) docs-side \u2014 renumber S-cards to the next free integer ids (43+) keeping grades verbatim (one sed, zero code); or (b) parser-side \u2014 widen _CARD_RE to accept an optional letter prefix (engineering-owned, R0617's owner already holds this parser). Owner should coordinate with the seed-drop session if still live; do NOT let the daily cycles keep reading 'backlog clear' while the principal's hunt seeds sit unserved.",
+   "summary": "PRINCIPAL SEED DROP IS INVISIBLE TO THE QUEUE IT WAS ROUTED THROUGH (prospector 2026-08-25, found minutes after d317925d landed): the seed cards use '### S1.'-style headings but libs/research/source_backlog.py _CARD_RE is r'^### (\\d+)\\.' — DIGITS ONLY — so source_backlog_next.py parses ZERO of them and prints 'backlog clear' over a live principal order (WS-005: absence reads as clean; verified by running the tool post-drop = 0 pending while the S-cards carry 'pending verification' / 'needs-legitimacy-review' grades, incl. the S5 Truth Social legitimacy DECIDE). EXACT PATCH, either side: (a) docs-side — renumber S-cards to the next free integer ids (43+) keeping grades verbatim (one sed, zero code); or (b) parser-side — widen _CARD_RE to accept an optional letter prefix (engineering-owned, R0617's owner already holds this parser). Owner should coordinate with the seed-drop session if still live; do NOT let the daily cycles keep reading 'backlog clear' while the principal's hunt seeds sit unserved.",
    "roi_bps": null,
    "rank": 8.0,
    "roi_basis": "rank",
@@ -8769,7 +8769,7 @@
   {
    "id": "R0682",
    "source": "max_audit",
-   "summary": "\u00a733 TAG GRAMMAR FAILS SILENTLY IN TWO SHAPES, and both cost this seat its first effort today (4 cards, 3 owing at T1/T2 for a full day while their evidence sat on disk). Reproduced against libs/research/mine_conversion.parse_dispositions: (1) an ILLEGAL VERB is correctly diagnosed per-item as illegal_reason=\"unknown disposition 'converted'\", but conversion_report's verdict string reports only 'N item(s) owe a disposition' -- the diagnosis exists and never reaches the operator, who reads a card whose grade says CONVERTED and a fence that says untagged, with no way to tell a mis-typed verb from an undone conversion (same class as R-2429 'absent input arrived as a verdict'). (2) WORSE, and silent end-to-end: _DISP_RE orders tier BEFORE the arrow, so the natural form '[\u00a733: wired -> path/x.json tier:1]' parses artifact='path/x.json tier:1' and fails backing as anchor-absent -- a CORRECTLY CITED card reads as an uncorroborated claim, i.e. the launder-detector firing on honest work. Fixes, both small and independent: (a) surface illegal_reason in the verdict and in ConversionReport (illegal_names is already carried but unprinted); (b) accept tier on EITHER side of the arrow in _DISP_RE, or strip a trailing 'tier:N' from the captured artifact. NOTE the freeze: this seat is research-only and did not touch libs/; the four cards were re-tagged to the legal grammar instead (docs/research/data_axis_watchlist.md cards 61/65/65b/66, backlog now CLEAR).",
+   "summary": "§33 TAG GRAMMAR FAILS SILENTLY IN TWO SHAPES, and both cost this seat its first effort today (4 cards, 3 owing at T1/T2 for a full day while their evidence sat on disk). Reproduced against libs/research/mine_conversion.parse_dispositions: (1) an ILLEGAL VERB is correctly diagnosed per-item as illegal_reason=\"unknown disposition 'converted'\", but conversion_report's verdict string reports only 'N item(s) owe a disposition' -- the diagnosis exists and never reaches the operator, who reads a card whose grade says CONVERTED and a fence that says untagged, with no way to tell a mis-typed verb from an undone conversion (same class as R-2429 'absent input arrived as a verdict'). (2) WORSE, and silent end-to-end: _DISP_RE orders tier BEFORE the arrow, so the natural form '[§33: wired -> path/x.json tier:1]' parses artifact='path/x.json tier:1' and fails backing as anchor-absent -- a CORRECTLY CITED card reads as an uncorroborated claim, i.e. the launder-detector firing on honest work. Fixes, both small and independent: (a) surface illegal_reason in the verdict and in ConversionReport (illegal_names is already carried but unprinted); (b) accept tier on EITHER side of the arrow in _DISP_RE, or strip a trailing 'tier:N' from the captured artifact. NOTE the freeze: this seat is research-only and did not touch libs/; the four cards were re-tagged to the legal grammar instead (docs/research/data_axis_watchlist.md cards 61/65/65b/66, backlog now CLEAR).",
    "roi_bps": null,
    "rank": 6.0,
    "roi_basis": "rank",
@@ -8783,7 +8783,7 @@
   {
    "id": "R0683",
    "source": "max_audit",
-   "summary": "THE ANTI-HARDCODE LAW CITED A DEAD 23-SYMBOL FILE AS 'THE REGISTRY' -- 9.2% of the universe, wearing the authority of LAWS \u00a71. docs/LAWS.md:51, docs/RESEARCH.md:37 and CLAUDE.md:41 all named desks/mt5/universe/universe.json as the registry that defines scope. That path holds 23 symbols, was last written 2026-08-20 (79ab4705), and has ZERO code readers repo-wide. The LIVE registry every writer and repair script uses is desks/mt5/data/universe/universe.json -- 251 symbols, and the 23 are a STRICT SUBSET of the 251, so nothing is lost by repointing. The defect is the citation, and it is the exact failure the law it appears in exists to prevent: a law whose whole point is 'registries define scope, never a literal list' pointed every reader at a stale literal list, so any organ or seat obeying the law's own citation scopes itself to 9.2% of the hunted ground and reads that as compliance (WS-005: a stale twin read as the authority). REPAIRED HERE: all three citations repointed; constitution seal re-verified intact after the LAWS.md edit. RESIDUAL, deliberately not done and owed: (1) the orphan file itself is not deleted -- deletion is a tracked-artifact act outside this research-only seat, and until it is gone the wrong path stays greppable and re-citable; (2) NOTHING FENCES THIS -- there is no check that a path a governing doc calls a registry actually has readers and is not stale, which is what let an 8-day-dead file hold the citation.",
+   "summary": "THE ANTI-HARDCODE LAW CITED A DEAD 23-SYMBOL FILE AS 'THE REGISTRY' -- 9.2% of the universe, wearing the authority of LAWS §1. docs/LAWS.md:51, docs/RESEARCH.md:37 and CLAUDE.md:41 all named desks/mt5/universe/universe.json as the registry that defines scope. That path holds 23 symbols, was last written 2026-08-20 (79ab4705), and has ZERO code readers repo-wide. The LIVE registry every writer and repair script uses is desks/mt5/data/universe/universe.json -- 251 symbols, and the 23 are a STRICT SUBSET of the 251, so nothing is lost by repointing. The defect is the citation, and it is the exact failure the law it appears in exists to prevent: a law whose whole point is 'registries define scope, never a literal list' pointed every reader at a stale literal list, so any organ or seat obeying the law's own citation scopes itself to 9.2% of the hunted ground and reads that as compliance (WS-005: a stale twin read as the authority). REPAIRED HERE: all three citations repointed; constitution seal re-verified intact after the LAWS.md edit. RESIDUAL, deliberately not done and owed: (1) the orphan file itself is not deleted -- deletion is a tracked-artifact act outside this research-only seat, and until it is gone the wrong path stays greppable and re-citable; (2) NOTHING FENCES THIS -- there is no check that a path a governing doc calls a registry actually has readers and is not stale, which is what let an 8-day-dead file hold the citation.",
    "roi_bps": null,
    "rank": 8.0,
    "roi_basis": "rank",
@@ -9362,6 +9362,20 @@
    "rank": 7.0,
    "roi_basis": "rank",
    "raised": "2026-08-29T07:30:51.788208+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0725",
+   "source": "cycle",
+   "summary": "THE §33 GRADE PARSER SUBSTRING-MATCHES, SO A CARD'S OWN EXPLANATION RE-OPENS THE CARD. libs/research/source_backlog.py:106 does `if 'needs-monitoring' in g` over the WHOLE grade string. Hit live 2026-08-29: card 79 was regraded verified-clean with an explanation containing the phrase 'the needs-monitoring grade alone was holding it in the queue' -- and the parser put it straight back into the verification queue. Card 84 hit the mirror failure: an unrecognised grade ('method defect, desk-wide') defaults INTO the pending queue rather than erroring, so an unparseable grade and a genuinely-pending one render identically (the L1.28a UNMEASURED-reads-as-a-verdict class). FIX: parse the grade from a delimited leading token only -- everything up to the first '(' or backtick -- and make an unrecognised grade a LOUD parse error, never a silent pending. Both halves matter: the first stops a disposition from undoing itself, the second stops an unparseable card from being indistinguishable from real owed work.",
+   "roi_bps": null,
+   "rank": 40.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T08:41:18.758013+00:00",
    "status": "open",
    "reason": null,
    "commit": null,
