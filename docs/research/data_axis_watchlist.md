@@ -9949,3 +9949,53 @@ enters a screen must be assigned on a trailing window only.
 
 **THE DELAY AXIS REMAINS UNMEASURED (L1.28a).** The registry declares no delay dimension and this
 run built no instrument for one; "absent" is recorded, not "fine".
+
+### BRAIN HUNTER s24 — 2026-08-29 — the liquidity tier is KILLED as a peer axis (0.953), and the cost field it was built on is two statistics under one name
+
+s23 left the decorrelation test as next-run work. It is run, point-in-time, with s11's own ruler
+rebuilt and validated against s11's published numbers before use:
+`data/brain_hunter_s24_liquidity_tier_axis.py` → `data/brain_hunter_s24_liquidity_tier_axis.json`.
+
+**RULER VALIDATION FIRST (s11 kept no measuring script, only its output).** The rebuilt ruler —
+per-day within-group `rank(pct)` vs universe-wide `rank(pct)` over the same members, |corr| per
+symbol, 2024-01-01..2025-12-31 daily log returns — reproduces s11 on both surviving controls:
+`asset_class` 0.819 vs s11's 0.819 (n=246 vs 194), `currency_quote` 0.488 vs s11's 0.493 (n=76 vs
+79). The instrument is the same instrument, so the new number is comparable.
+
+**VERDICT: the liquidity tier is the WORST grouping this desk has measured. mean |corr| 0.953,
+median 0.965, n=249, median peer-group size 60.** Worse than `asset_class` (0.819), worse than the
+k=8 correlation clusters (0.852), roughly twice as dependent as `currency_quote` (0.488). Tiers were
+assigned point-in-time — the tier used in year Y comes from year Y−1's nonzero-median spread only,
+never from the year being ranked (s22's lookahead warning honoured; a whole-sample tier map would
+have been lookahead by construction). **s11's law holds for a third grouping family: independence
+tracks median peer-group size and nothing else.** Four cost quartiles over 251 symbols give groups
+of ~60, so ranking inside a tier is very nearly ranking inside the universe. `currency_quote` wins
+because it has 19 groups of median size 4, not because currency is economically special.
+**This closes s23's Arm C: cost tiering is a real and useful stratification of the universe for
+EXECUTION and capacity purposes, and it is not an alpha axis. Do not spend on it again.** Any
+future tier proposal must state its median group size first; below ~10 it is not worth measuring.
+
+**AND THE INPUT WAS UNSOUND — the more expensive half of the run.** Building the tier honestly
+required going to the per-bar `spread` column in the H1 parquets, which s23 never opened, and the
+registry field it used instead does not survive contact with it. `median_spread_pts` is written by
+TWO producers with incompatible semantics and has no `_provenance` entry to tell them apart:
+`desks/mt5/research/expand_universe.py:136` writes `float(df["spread"].median())` over the whole
+tape, while `desks/mt5/research/validate_fusion.py:125` overwrites it with the median of ten
+`symbol_info` polls 0.35 s apart — **a 3.5-second live snapshot wearing the word "median"**.
+139/251 symbols match the tape median, 112 do not, 8 match `spread_pts_at_collection`, and no
+consumer can tell which one it is holding. Both statistics are wrong for costing:
+
+- The tape's early era is zero-filled — **81/251 symbols have >20% zero-spread bars** (AT&T: every
+  bar 1984–2021, so 55% zeros drag its whole-history median to 0.0 against a non-zero median of 3).
+  A whole-history median over that mixture prices the backfill, not the book.
+- The snapshot path prices one 3.5-second instant, permanently. **GBPJPY reads 1.0 point while
+  every single year of its tape medians between 5 and 22.**
+
+Measured against each symbol's own 2025 trailing median (zeros excluded), **the field understates
+one-way cost on 144 of 247 costable symbols, by up to 17×** — Meta 0.149→2.539 bps, CHFJPY 16×,
+Microsoft 12×, GBPJPY 12×, Tesla 10×, Apple 7× — **and reads exactly 0.0 bps on 24 symbols
+including EURUSD, GBPUSD and USDJPY** (the R0728 zero-spread set, now explained rather than
+observed). CHFJPY and GBPJPY have ~0% zero bars, so this is not only the zero-fill: it is a
+second, independent defect in the snapshot producer. Over 20 `desks/mt5` hunt and research scripts
+cost on this field. Ledgered as **R0744** with the per-symbol table; the fix is a distinct
+trailing-window field with its own provenance entry, not a repair of the overloaded one.

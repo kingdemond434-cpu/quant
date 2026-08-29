@@ -12369,3 +12369,74 @@ standing habit to adopt: **before claiming a wall, run the search that would fin
    ~90 seconds of API calls and nothing persists the population, so every session re-pays for the
    census and this run had to rediscover that the population is 63+, not 97-and-known. Belongs to a
    seat that is not research-frozen.
+
+## BRAIN HUNTER s24 — 2026-08-29 — the tier axis dies at 0.953, and the cost field it stood on is two statistics under one name
+
+Took s23's NEXT-GROUND item 1 in full. Item 2 (the licensed subclass, 63 repos, never censused) and
+item 3 (the BRAIN-scoped collector arm, now SIXTEEN sessions old) are re-raised below, untouched:
+item 1 opened a desk-side defect large enough to consume the run, and stopping to write it up was
+the right trade. Script `data/brain_hunter_s24_liquidity_tier_axis.py` →
+`data/brain_hunter_s24_liquidity_tier_axis.json`. Full detail in `docs/research/data_axis_watchlist.md`.
+
+**The ruler was validated before it was used.** s11 published independence numbers but kept no
+measuring script, so the ruler was rebuilt from its description and checked against its output
+first: `asset_class` 0.819 vs 0.819, `currency_quote` 0.488 vs 0.493, on a wider member set. Only
+then was it pointed at the new grouping. A rebuilt instrument that has not reproduced the old
+instrument's readings is not a comparison, it is a new number.
+
+**Result 1 — the liquidity tier is REFUTED as a peer-grouping axis: mean |corr| 0.953 against
+universe-wide rank (median 0.965, n=249, median peer-group size 60).** Worse than every grouping
+the desk has tried, including `asset_class`. Tiers assigned point-in-time (year Y from year Y−1).
+s11's law survives a third family: **independence tracks median peer-group size and nothing else** —
+four quartiles over 251 symbols cannot be an axis, because ranking within a 60-member group is
+ranking within the universe. s23's Arm C is closed; cost tiering is an execution/capacity
+stratification, never an alpha axis.
+
+**Result 2, and the one that matters more — `median_spread_pts` is unsound and 20+ scripts cost on
+it.** Building the tier honestly meant opening the per-bar `spread` column in the H1 parquets,
+which no prior session had. Two producers write the field with incompatible semantics and there is
+no `_provenance` entry for it: `expand_universe.py:136` takes a whole-tape median (whose early era
+is zero-filled — 81/251 symbols exceed 20% zero-spread bars), `validate_fusion.py:125` overwrites it
+with the median of ten `symbol_info` polls 0.35 s apart, **a 3.5-second snapshot called a median**.
+139/251 match the tape median, 112 do not, and nothing records which. Against each symbol's own 2025
+trailing median the field **understates one-way cost on 144/247 symbols, up to 17× (Meta), and reads
+exactly 0.0 on 24 including EURUSD/GBPUSD/USDJPY** — which is the R0728 zero-spread observation,
+now with its mechanism. GBPJPY reads 1.0 point against a 5–22 point tape median in every year, and
+its zero-fraction is 0.0, so the snapshot producer is a second independent defect and not a
+symptom of the zero-fill. Ledgered **R0744** (rank 90) with the per-symbol table.
+
+**The standing habit this run adds, and it is s23's in the other direction:** s23 said *before
+claiming a wall, run the search that would find the door*. s24 says **before ranking on a field,
+open the raw column it claims to summarise** — s23 built an entire 4-tier universe stratification,
+a 335× cost ratio and an asset-class breakdown on a field it never checked against the tape sitting
+in the same directory, and every number in that section inherits the defect.
+
+**§13:** desk-side only. No network call, no login, no `api.worldquantbrain.com`, no repo fetched.
+Research freeze respected — `docs/research/*` and `data/*` only, plus one ledger row.
+Video: 0 fetched, 0 locked (no video ground touched this run).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — "is a cost/liquidity tier a peer-grouping axis for the MT5 universe?" is SETTLED at
+0.953 and is CLOSED.** Re-entry only on a NAMED enabling change: a tiering scheme whose median
+peer-group size is under ~10, which four quartiles over 251 symbols can never be. Not a re-scan
+candidate. Combined with s23's n=0 grouping-map verdict, **the peer-grouping question is now closed
+on both the external (BRAIN repo) and internal (desk-built) sides: the only grouping measured worth
+having remains `currency_quote` at 0.488/19 groups/median size 4.**
+
+### NEXT UN-EXHAUSTED GROUND (for s25, in order)
+
+1. **The group-size law is now three-for-three — so test it directly instead of one grouping at a
+   time.** `asset_class` 0.819/size 14, `corr_cluster k8` 0.852/size 9-with-a-125-blob, `k24`
+   0.716/size 5, `currency_quote` 0.488/size 4, liquidity tier 0.953/size 60. That is a curve, not
+   five anecdotes. Fit |corr| against median group size across ALL maps plus randomly-permuted
+   maps of matched sizes; if a random grouping of size 4 also lands near 0.49, then
+   `currency_quote` carries no economic content either and the desk's one surviving grouping is a
+   size effect — which would be the most consequential negative result on this ground.
+2. **The licensed subclass, THIRD raise, still never censused.** 63 repos from five queries, one
+   touched. `i9880612/alpha-garden` (MIT) carries `generator/catalog/operator_support_matrix.py`
+   and `platform_operator_manifest.py` — an operator/field COMPATIBILITY matrix, a shape the desk
+   has no analogue of and the one artifact on this ground that is not another expression library.
+3. **The BRAIN-scoped collector arm — SIXTEEN sessions old, re-raised unchanged.** Nothing persists
+   the repo population, so every session re-pays the census. Belongs to a seat that is not
+   research-frozen.

@@ -1,0 +1,2403 @@
+{
+ "A_spread_statistic_audit": {
+  "n_compared": 247,
+  "n_registry_median_zero": 24,
+  "n_symbols_with_tape": 251,
+  "n_understated_by_registry": 144,
+  "n_zero_frac_over_20pct": 81,
+  "per_symbol": {
+   "3M": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0385
+   },
+   "ADAUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 33.0,
+    "median_nonzero_all": 34.0,
+    "registry_median_spread_pts": 33.0,
+    "zero_frac_all": 0.1049
+   },
+   "ADP": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.027
+   },
+   "AMD": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0285
+   },
+   "AT&T": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5486
+   },
+   "AUDCAD": {
+    "first_year_zero_free": 2018,
+    "median_all": 16.0,
+    "median_nonzero_all": 16.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0069
+   },
+   "AUDCHF": {
+    "first_year_zero_free": 1998,
+    "median_all": 0.0,
+    "median_nonzero_all": 160.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.6183
+   },
+   "AUDHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 9700.0,
+    "median_nonzero_all": 11400.0,
+    "registry_median_spread_pts": 10824.0,
+    "zero_frac_all": 0.1817
+   },
+   "AUDJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 16.0,
+    "median_nonzero_all": 16.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0069
+   },
+   "AUDNZD": {
+    "first_year_zero_free": 2026,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0
+   },
+   "AUDSGD": {
+    "first_year_zero_free": 2005,
+    "median_all": 1.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.4079
+   },
+   "AUDUSD": {
+    "first_year_zero_free": 2018,
+    "median_all": 14.0,
+    "median_nonzero_all": 14.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0051
+   },
+   "AUS200": {
+    "first_year_zero_free": 2021,
+    "median_all": 80.0,
+    "median_nonzero_all": 80.0,
+    "registry_median_spread_pts": 80.0,
+    "zero_frac_all": 0.2116
+   },
+   "AVAXUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 50.0,
+    "median_nonzero_all": 50.0,
+    "registry_median_spread_pts": 50.0,
+    "zero_frac_all": 0.0
+   },
+   "Accenture": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.3991
+   },
+   "Adobe": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0235
+   },
+   "Airbnb": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0375
+   },
+   "AlibabaGroup": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.1938
+   },
+   "Alphabet-A": {
+    "first_year_zero_free": 2023,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.2321
+   },
+   "Alphabet-C": {
+    "first_year_zero_free": 2023,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.2478
+   },
+   "Amazon": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0254
+   },
+   "AmericanExpress": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0234
+   },
+   "Amgen": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0256
+   },
+   "Apple": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0286
+   },
+   "AppliedMaterials": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0251
+   },
+   "Atlassian": {
+    "first_year_zero_free": 2021,
+    "median_all": 7.0,
+    "median_nonzero_all": 7.0,
+    "registry_median_spread_pts": 7.0,
+    "zero_frac_all": 0.0
+   },
+   "BCHUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 128.0,
+    "median_nonzero_all": 130.0,
+    "registry_median_spread_pts": 130.0,
+    "zero_frac_all": 0.0491
+   },
+   "BNBUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 80.0,
+    "median_nonzero_all": 82.0,
+    "registry_median_spread_pts": 80.0,
+    "zero_frac_all": 0.1064
+   },
+   "BTCUSD": {
+    "first_year_zero_free": 2019,
+    "median_all": 1694.0,
+    "median_nonzero_all": 1694.0,
+    "registry_median_spread_pts": 1900.0,
+    "zero_frac_all": 0.052
+   },
+   "Baidu": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.1195
+   },
+   "BankofAmericaCorp": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5374
+   },
+   "Berkshire": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.4541
+   },
+   "BeyondMeat": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 8,
+    "zero_frac_all": 0.1091
+   },
+   "BlackRock": {
+    "first_year_zero_free": 2022,
+    "median_all": 9.0,
+    "median_nonzero_all": 21.0,
+    "registry_median_spread_pts": 20.0,
+    "zero_frac_all": 0.4182
+   },
+   "BlockInc": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 500,
+    "zero_frac_all": 0.2381
+   },
+   "Boeing": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.024
+   },
+   "Booking": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.04
+   },
+   "Broadcom": {
+    "first_year_zero_free": 2025,
+    "median_all": 0.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.6143
+   },
+   "CA60": {
+    "first_year_zero_free": 2022,
+    "median_all": 30.0,
+    "median_nonzero_all": 30.0,
+    "registry_median_spread_pts": 30.0,
+    "zero_frac_all": 0.1462
+   },
+   "CADCHF": {
+    "first_year_zero_free": 2007,
+    "median_all": 0.0,
+    "median_nonzero_all": 160.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.6221
+   },
+   "CADJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 15.0,
+    "median_nonzero_all": 15.0,
+    "registry_median_spread_pts": 1.5,
+    "zero_frac_all": 0.0049
+   },
+   "CHFDKK": {
+    "first_year_zero_free": 2022,
+    "median_all": 37.0,
+    "median_nonzero_all": 43.0,
+    "registry_median_spread_pts": 40.0,
+    "zero_frac_all": 0.2099
+   },
+   "CHFHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 13054.0,
+    "median_nonzero_all": 16930.0,
+    "registry_median_spread_pts": 16540.0,
+    "zero_frac_all": 0.1867
+   },
+   "CHFJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 18.0,
+    "median_nonzero_all": 18.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0076
+   },
+   "CHFNOK": {
+    "first_year_zero_free": 2021,
+    "median_all": 173.0,
+    "median_nonzero_all": 307.0,
+    "registry_median_spread_pts": 264.0,
+    "zero_frac_all": 0.2152
+   },
+   "CHFPLN": {
+    "first_year_zero_free": 2021,
+    "median_all": 114.0,
+    "median_nonzero_all": 174.0,
+    "registry_median_spread_pts": 174.0,
+    "zero_frac_all": 0.1939
+   },
+   "CHFSEK": {
+    "first_year_zero_free": 2021,
+    "median_all": 183.0,
+    "median_nonzero_all": 292.0,
+    "registry_median_spread_pts": 276.0,
+    "zero_frac_all": 0.1739
+   },
+   "CHFSGD": {
+    "first_year_zero_free": 2005,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 3.0,
+    "zero_frac_all": 0.1432
+   },
+   "CHINAH": {
+    "first_year_zero_free": 2022,
+    "median_all": 160.0,
+    "median_nonzero_all": 180.0,
+    "registry_median_spread_pts": 180.0,
+    "zero_frac_all": 0.1666
+   },
+   "COFARA": {
+    "first_year_zero_free": 2022,
+    "median_all": 23.0,
+    "median_nonzero_all": 23.0,
+    "registry_median_spread_pts": 23.0,
+    "zero_frac_all": 0.0529
+   },
+   "COFROB": {
+    "first_year_zero_free": 2022,
+    "median_all": 230.0,
+    "median_nonzero_all": 230.0,
+    "registry_median_spread_pts": 230.0,
+    "zero_frac_all": 0.0569
+   },
+   "CORN": {
+    "first_year_zero_free": 2022,
+    "median_all": 68.0,
+    "median_nonzero_all": 68.0,
+    "registry_median_spread_pts": 68.0,
+    "zero_frac_all": 0.0457
+   },
+   "COTTON": {
+    "first_year_zero_free": 2022,
+    "median_all": 112.0,
+    "median_nonzero_all": 112.0,
+    "registry_median_spread_pts": 112.0,
+    "zero_frac_all": 0.0369
+   },
+   "CVSHealth": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5447
+   },
+   "Caterpillar": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0251
+   },
+   "CharlesSchwab": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5124
+   },
+   "Charter": {
+    "first_year_zero_free": 2022,
+    "median_all": 9.0,
+    "median_nonzero_all": 10.0,
+    "registry_median_spread_pts": 9.0,
+    "zero_frac_all": 0.0307
+   },
+   "Chevron": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0398
+   },
+   "Cisco": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0473
+   },
+   "Citigroup": {
+    "first_year_zero_free": 2023,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0008
+   },
+   "Coca-Cola": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0255
+   },
+   "Coinbase": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0276
+   },
+   "Comcast": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0466
+   },
+   "CostcoWholesale": {
+    "first_year_zero_free": 2022,
+    "median_all": 6.0,
+    "median_nonzero_all": 7.0,
+    "registry_median_spread_pts": 6.0,
+    "zero_frac_all": 0.0349
+   },
+   "DOGEUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 38.0,
+    "median_nonzero_all": 38.0,
+    "registry_median_spread_pts": 38.0,
+    "zero_frac_all": 0.0914
+   },
+   "DOTUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 34.0,
+    "median_nonzero_all": 34.0,
+    "registry_median_spread_pts": 33.0,
+    "zero_frac_all": 0.0949
+   },
+   "DocuSign": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 3.0,
+    "zero_frac_all": 0.1097
+   },
+   "Doordash": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0378
+   },
+   "Dow": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0292
+   },
+   "E35": {
+    "first_year_zero_free": 2021,
+    "median_all": 475.0,
+    "median_nonzero_all": 600.0,
+    "registry_median_spread_pts": 600.0,
+    "zero_frac_all": 0.3434
+   },
+   "EOSUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 62.0,
+    "median_nonzero_all": 63.0,
+    "registry_median_spread_pts": 62.0,
+    "zero_frac_all": 0.1313
+   },
+   "ETHUSD": {
+    "first_year_zero_free": 2019,
+    "median_all": 258.0,
+    "median_nonzero_all": 258.0,
+    "registry_median_spread_pts": 251.0,
+    "zero_frac_all": 0.0518
+   },
+   "EURAUD": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.008
+   },
+   "EURCAD": {
+    "first_year_zero_free": 1999,
+    "median_all": 0.0,
+    "median_nonzero_all": 160.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.6038
+   },
+   "EURCHF": {
+    "first_year_zero_free": 2018,
+    "median_all": 14.0,
+    "median_nonzero_all": 14.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0081
+   },
+   "EURCZK": {
+    "first_year_zero_free": 2021,
+    "median_all": 544.0,
+    "median_nonzero_all": 704.0,
+    "registry_median_spread_pts": 674.0,
+    "zero_frac_all": 0.1887
+   },
+   "EURDKK": {
+    "first_year_zero_free": 2021,
+    "median_all": 31.0,
+    "median_nonzero_all": 35.0,
+    "registry_median_spread_pts": 33.0,
+    "zero_frac_all": 0.18
+   },
+   "EURGBP": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0084
+   },
+   "EURHKD": {
+    "first_year_zero_free": null,
+    "median_all": 1.0,
+    "median_nonzero_all": 10.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.4935
+   },
+   "EURHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 10600.0,
+    "median_nonzero_all": 14200.0,
+    "registry_median_spread_pts": 14100.0,
+    "zero_frac_all": 0.1941
+   },
+   "EURILS": {
+    "first_year_zero_free": 2021,
+    "median_all": 104.0,
+    "median_nonzero_all": 154.0,
+    "registry_median_spread_pts": 148.0,
+    "zero_frac_all": 0.2181
+   },
+   "EURJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0048
+   },
+   "EURMXN": {
+    "first_year_zero_free": 2022,
+    "median_all": 136.0,
+    "median_nonzero_all": 209.0,
+    "registry_median_spread_pts": 185.0,
+    "zero_frac_all": 0.2124
+   },
+   "EURNOK": {
+    "first_year_zero_free": 2021,
+    "median_all": 120.0,
+    "median_nonzero_all": 164.0,
+    "registry_median_spread_pts": 153.0,
+    "zero_frac_all": 0.2002
+   },
+   "EURNZD": {
+    "first_year_zero_free": 1999,
+    "median_all": 2.0,
+    "median_nonzero_all": 7.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.2675
+   },
+   "EURPLN": {
+    "first_year_zero_free": 2021,
+    "median_all": 92.0,
+    "median_nonzero_all": 141.0,
+    "registry_median_spread_pts": 124.0,
+    "zero_frac_all": 0.2173
+   },
+   "EURRUB": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 250.0,
+    "registry_median_spread_pts": 34.0,
+    "zero_frac_all": 0.5473
+   },
+   "EURSEK": {
+    "first_year_zero_free": 2021,
+    "median_all": 113.0,
+    "median_nonzero_all": 152.0,
+    "registry_median_spread_pts": 142.0,
+    "zero_frac_all": 0.2122
+   },
+   "EURSGD": {
+    "first_year_zero_free": 2012,
+    "median_all": 2.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.3779
+   },
+   "EURTRY": {
+    "first_year_zero_free": 2021,
+    "median_all": 977.0,
+    "median_nonzero_all": 1501.0,
+    "registry_median_spread_pts": 1379.0,
+    "zero_frac_all": 0.2174
+   },
+   "EURUSD": {
+    "first_year_zero_free": 2018,
+    "median_all": 12.0,
+    "median_nonzero_all": 12.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.005
+   },
+   "EURZAR": {
+    "first_year_zero_free": 2022,
+    "median_all": 204.0,
+    "median_nonzero_all": 368.0,
+    "registry_median_spread_pts": 310.0,
+    "zero_frac_all": 0.2204
+   },
+   "EUSTX50": {
+    "first_year_zero_free": 2023,
+    "median_all": 50.0,
+    "median_nonzero_all": 120.0,
+    "registry_median_spread_pts": 120.0,
+    "zero_frac_all": 0.2674
+   },
+   "ElectronicArts": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0414
+   },
+   "ExxonMobil": {
+    "first_year_zero_free": 2022,
+    "median_all": 0.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.6269
+   },
+   "FRA40": {
+    "first_year_zero_free": 2021,
+    "median_all": 70.0,
+    "median_nonzero_all": 78.0,
+    "registry_median_spread_pts": 78.0,
+    "zero_frac_all": 0.291
+   },
+   "Ford": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0466
+   },
+   "GBPAUD": {
+    "first_year_zero_free": 2018,
+    "median_all": 15.0,
+    "median_nonzero_all": 15.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0078
+   },
+   "GBPCAD": {
+    "first_year_zero_free": 1998,
+    "median_all": 2.0,
+    "median_nonzero_all": 47.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.4014
+   },
+   "GBPCHF": {
+    "first_year_zero_free": 1997,
+    "median_all": 1.0,
+    "median_nonzero_all": 70.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.4615
+   },
+   "GBPDKK": {
+    "first_year_zero_free": 2022,
+    "median_all": 38.0,
+    "median_nonzero_all": 47.0,
+    "registry_median_spread_pts": 44.0,
+    "zero_frac_all": 0.2538
+   },
+   "GBPHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 16010.0,
+    "median_nonzero_all": 17970.0,
+    "registry_median_spread_pts": 17700.0,
+    "zero_frac_all": 0.1868
+   },
+   "GBPJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0
+   },
+   "GBPMXN": {
+    "first_year_zero_free": 2021,
+    "median_all": 227.0,
+    "median_nonzero_all": 321.0,
+    "registry_median_spread_pts": 298.0,
+    "zero_frac_all": 0.1826
+   },
+   "GBPNOK": {
+    "first_year_zero_free": 2021,
+    "median_all": 158.0,
+    "median_nonzero_all": 291.0,
+    "registry_median_spread_pts": 274.0,
+    "zero_frac_all": 0.2093
+   },
+   "GBPNZD": {
+    "first_year_zero_free": 2025,
+    "median_all": 2.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.3871
+   },
+   "GBPPLN": {
+    "first_year_zero_free": 2021,
+    "median_all": 92.0,
+    "median_nonzero_all": 170.0,
+    "registry_median_spread_pts": 162.0,
+    "zero_frac_all": 0.2164
+   },
+   "GBPSEK": {
+    "first_year_zero_free": 2022,
+    "median_all": 163.0,
+    "median_nonzero_all": 248.0,
+    "registry_median_spread_pts": 222.0,
+    "zero_frac_all": 0.2328
+   },
+   "GBPSGD": {
+    "first_year_zero_free": 2006,
+    "median_all": 4.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 3.0,
+    "zero_frac_all": 0.1558
+   },
+   "GBPTRY": {
+    "first_year_zero_free": 2021,
+    "median_all": 1146.0,
+    "median_nonzero_all": 1918.0,
+    "registry_median_spread_pts": 1708.0,
+    "zero_frac_all": 0.2624
+   },
+   "GBPUSD": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.005
+   },
+   "GBPZAR": {
+    "first_year_zero_free": 2022,
+    "median_all": 61.0,
+    "median_nonzero_all": 312.0,
+    "registry_median_spread_pts": 376.0,
+    "zero_frac_all": 0.2829
+   },
+   "GER40": {
+    "first_year_zero_free": 2022,
+    "median_all": 80.0,
+    "median_nonzero_all": 80.0,
+    "registry_median_spread_pts": 80.0,
+    "zero_frac_all": 0.1966
+   },
+   "GeneralElectric": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0461
+   },
+   "GeneralMotors": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0466
+   },
+   "GileadSciences": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0457
+   },
+   "GoldmanSachs": {
+    "first_year_zero_free": 2022,
+    "median_all": 6.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 6.0,
+    "zero_frac_all": 0.0326
+   },
+   "HK50": {
+    "first_year_zero_free": 2021,
+    "median_all": 420.0,
+    "median_nonzero_all": 420.0,
+    "registry_median_spread_pts": 420.0,
+    "zero_frac_all": 0.3629
+   },
+   "HKDJPY": {
+    "first_year_zero_free": null,
+    "median_all": 0.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.8358
+   },
+   "HomeDepot": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0347
+   },
+   "Honeywell": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0387
+   },
+   "IBM": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.04
+   },
+   "Intel": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0447
+   },
+   "Intuit": {
+    "first_year_zero_free": 2022,
+    "median_all": 10.0,
+    "median_nonzero_all": 11.0,
+    "registry_median_spread_pts": 10.0,
+    "zero_frac_all": 0.0456
+   },
+   "IntuitiveSurgical": {
+    "first_year_zero_free": 2022,
+    "median_all": 7.0,
+    "median_nonzero_all": 8.0,
+    "registry_median_spread_pts": 7.0,
+    "zero_frac_all": 0.0457
+   },
+   "JPMorganChase": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.042
+   },
+   "JPN225": {
+    "first_year_zero_free": 2021,
+    "median_all": 500.0,
+    "median_nonzero_all": 600.0,
+    "registry_median_spread_pts": 600.0,
+    "zero_frac_all": 0.2136
+   },
+   "Johnson&Johnson": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0431
+   },
+   "LNKUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 35.0,
+    "median_nonzero_all": 35.0,
+    "registry_median_spread_pts": 34.0,
+    "zero_frac_all": 0.0428
+   },
+   "LTCUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 36.0,
+    "median_nonzero_all": 37.0,
+    "registry_median_spread_pts": 36.0,
+    "zero_frac_all": 0.1508
+   },
+   "LucidGroup": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0445
+   },
+   "Lyft": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0468
+   },
+   "MATICUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 40.0,
+    "median_nonzero_all": 40.0,
+    "registry_median_spread_pts": 40.0,
+    "zero_frac_all": 0.0
+   },
+   "MXNJPY": {
+    "first_year_zero_free": 2022,
+    "median_all": 24.0,
+    "median_nonzero_all": 24.0,
+    "registry_median_spread_pts": 24.0,
+    "zero_frac_all": 0.1161
+   },
+   "Mastercard": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0457
+   },
+   "McDonalds": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0386
+   },
+   "Medtronic": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0468
+   },
+   "Merck": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0249
+   },
+   "Meta": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.1452
+   },
+   "MicronTechnology": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0469
+   },
+   "Microsoft": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0386
+   },
+   "MorganStanley": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0471
+   },
+   "NAS100": {
+    "first_year_zero_free": 2022,
+    "median_all": 80.0,
+    "median_nonzero_all": 80.0,
+    "registry_median_spread_pts": 80.0,
+    "zero_frac_all": 0.2374
+   },
+   "NETH25": {
+    "first_year_zero_free": 2023,
+    "median_all": 7.0,
+    "median_nonzero_all": 7.0,
+    "registry_median_spread_pts": 7.0,
+    "zero_frac_all": 0.2515
+   },
+   "NIO": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 3.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0459
+   },
+   "NOKJPY": {
+    "first_year_zero_free": 2021,
+    "median_all": 25.0,
+    "median_nonzero_all": 26.0,
+    "registry_median_spread_pts": 26.0,
+    "zero_frac_all": 0.2235
+   },
+   "NOKSEK": {
+    "first_year_zero_free": 2021,
+    "median_all": 30.0,
+    "median_nonzero_all": 39.0,
+    "registry_median_spread_pts": 37.0,
+    "zero_frac_all": 0.225
+   },
+   "NVIDIA": {
+    "first_year_zero_free": 2025,
+    "median_all": 0.0,
+    "median_nonzero_all": 6.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.5306
+   },
+   "NZDCAD": {
+    "first_year_zero_free": 2018,
+    "median_all": 17.0,
+    "median_nonzero_all": 17.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0117
+   },
+   "NZDCHF": {
+    "first_year_zero_free": 2025,
+    "median_all": 0.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5827
+   },
+   "NZDHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 10400.0,
+    "median_nonzero_all": 12224.0,
+    "registry_median_spread_pts": 11624.0,
+    "zero_frac_all": 0.1777
+   },
+   "NZDJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 15.0,
+    "median_nonzero_all": 15.0,
+    "registry_median_spread_pts": 147.0,
+    "zero_frac_all": 0.0002
+   },
+   "NZDSGD": {
+    "first_year_zero_free": 2004,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0532
+   },
+   "NZDUSD": {
+    "first_year_zero_free": 2018,
+    "median_all": 14.0,
+    "median_nonzero_all": 14.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0085
+   },
+   "Netflix": {
+    "first_year_zero_free": 2025,
+    "median_all": 1.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.1918
+   },
+   "Nike": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0395
+   },
+   "OJ": {
+    "first_year_zero_free": 2022,
+    "median_all": 15.0,
+    "median_nonzero_all": 20.0,
+    "registry_median_spread_pts": 15.0,
+    "zero_frac_all": 0.1964
+   },
+   "Oracle": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.047
+   },
+   "PayPal": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0334
+   },
+   "Pepsi": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0413
+   },
+   "Pfizer": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0467
+   },
+   "PhilipMorrisInternational": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.046
+   },
+   "Pinterest": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0465
+   },
+   "Procter&Gamble": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0407
+   },
+   "Qualcomm": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0462
+   },
+   "RobinhoodMarkets": {
+    "first_year_zero_free": 2022,
+    "median_all": 300.0,
+    "median_nonzero_all": 400.0,
+    "registry_median_spread_pts": 300.0,
+    "zero_frac_all": 0.0193
+   },
+   "Roku": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0457
+   },
+   "S&PGlobal": {
+    "first_year_zero_free": 2022,
+    "median_all": 8.0,
+    "median_nonzero_all": 8.0,
+    "registry_median_spread_pts": 8.0,
+    "zero_frac_all": 0.0456
+   },
+   "SEKJPY": {
+    "first_year_zero_free": 2021,
+    "median_all": 25.0,
+    "median_nonzero_all": 26.0,
+    "registry_median_spread_pts": 26.0,
+    "zero_frac_all": 0.2065
+   },
+   "SGDJPY": {
+    "first_year_zero_free": 2014,
+    "median_all": 1.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.3121
+   },
+   "SOLUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 150.0,
+    "median_nonzero_all": 150.0,
+    "registry_median_spread_pts": 150.0,
+    "zero_frac_all": 0.0
+   },
+   "SOYBEAN": {
+    "first_year_zero_free": 2022,
+    "median_all": 112.0,
+    "median_nonzero_all": 112.0,
+    "registry_median_spread_pts": 112.0,
+    "zero_frac_all": 0.0369
+   },
+   "SUGAR": {
+    "first_year_zero_free": 2022,
+    "median_all": 53.0,
+    "median_nonzero_all": 53.0,
+    "registry_median_spread_pts": 53.0,
+    "zero_frac_all": 0.1898
+   },
+   "SUGARRAW": {
+    "first_year_zero_free": 2022,
+    "median_all": 30.0,
+    "median_nonzero_all": 30.0,
+    "registry_median_spread_pts": 30.0,
+    "zero_frac_all": 0.0572
+   },
+   "Salesforce": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0315
+   },
+   "ServiceNow": {
+    "first_year_zero_free": 2024,
+    "median_all": 3.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 3.0,
+    "zero_frac_all": 0.0739
+   },
+   "Shopify": {
+    "first_year_zero_free": 2023,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.12
+   },
+   "Snapchat": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0466
+   },
+   "Snowflake": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0444
+   },
+   "Spotify": {
+    "first_year_zero_free": 2022,
+    "median_all": 7.0,
+    "median_nonzero_all": 8.0,
+    "registry_median_spread_pts": 7.0,
+    "zero_frac_all": 0.0456
+   },
+   "Starbucks": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0461
+   },
+   "TMEGroup": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0461
+   },
+   "TSMC": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0462
+   },
+   "Target": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.046
+   },
+   "Tesla": {
+    "first_year_zero_free": 2023,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.2723
+   },
+   "TexasInstruments": {
+    "first_year_zero_free": 2022,
+    "median_all": 3.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 3.0,
+    "zero_frac_all": 0.046
+   },
+   "ThermoFisherScientific": {
+    "first_year_zero_free": 2022,
+    "median_all": 11.0,
+    "median_nonzero_all": 11.0,
+    "registry_median_spread_pts": 11.0,
+    "zero_frac_all": 0.0456
+   },
+   "Toyota": {
+    "first_year_zero_free": 2022,
+    "median_all": 8.0,
+    "median_nonzero_all": 8.0,
+    "registry_median_spread_pts": 8.0,
+    "zero_frac_all": 0.0456
+   },
+   "Travelers": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0186
+   },
+   "Twilio": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0461
+   },
+   "UK100": {
+    "first_year_zero_free": 2021,
+    "median_all": 60.0,
+    "median_nonzero_all": 64.0,
+    "registry_median_spread_pts": 60.0,
+    "zero_frac_all": 0.2505
+   },
+   "UKCOCOA": {
+    "first_year_zero_free": 2022,
+    "median_all": 260.0,
+    "median_nonzero_all": 260.0,
+    "registry_median_spread_pts": 260.0,
+    "zero_frac_all": 0.0714
+   },
+   "UKGILT": {
+    "first_year_zero_free": 2024,
+    "median_all": 36.0,
+    "median_nonzero_all": 36.0,
+    "registry_median_spread_pts": 36.0,
+    "zero_frac_all": 0.0
+   },
+   "US2000": {
+    "first_year_zero_free": 2023,
+    "median_all": 20.0,
+    "median_nonzero_all": 20.0,
+    "registry_median_spread_pts": 20.0,
+    "zero_frac_all": 0.0
+   },
+   "US30": {
+    "first_year_zero_free": 2022,
+    "median_all": 120.0,
+    "median_nonzero_all": 150.0,
+    "registry_median_spread_pts": 150.0,
+    "zero_frac_all": 0.2617
+   },
+   "US500": {
+    "first_year_zero_free": 2022,
+    "median_all": 30.0,
+    "median_nonzero_all": 30.0,
+    "registry_median_spread_pts": 30.0,
+    "zero_frac_all": 0.2563
+   },
+   "USCOCOA": {
+    "first_year_zero_free": 2022,
+    "median_all": 300.0,
+    "median_nonzero_all": 300.0,
+    "registry_median_spread_pts": 300.0,
+    "zero_frac_all": 0.0555
+   },
+   "USDBRL": {
+    "first_year_zero_free": 2021,
+    "median_all": 235.0,
+    "median_nonzero_all": 235.0,
+    "registry_median_spread_pts": 235.0,
+    "zero_frac_all": 0.0
+   },
+   "USDCAD": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.005
+   },
+   "USDCHF": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.0084
+   },
+   "USDCNH": {
+    "first_year_zero_free": 2022,
+    "median_all": 24.0,
+    "median_nonzero_all": 27.0,
+    "registry_median_spread_pts": 26.0,
+    "zero_frac_all": 0.283
+   },
+   "USDCZK": {
+    "first_year_zero_free": 2021,
+    "median_all": 314.0,
+    "median_nonzero_all": 488.0,
+    "registry_median_spread_pts": 484.0,
+    "zero_frac_all": 0.1903
+   },
+   "USDDKK": {
+    "first_year_zero_free": 2021,
+    "median_all": 30.0,
+    "median_nonzero_all": 34.0,
+    "registry_median_spread_pts": 34.0,
+    "zero_frac_all": 0.1875
+   },
+   "USDHKD": {
+    "first_year_zero_free": null,
+    "median_all": 0.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.6247
+   },
+   "USDHUF": {
+    "first_year_zero_free": 2021,
+    "median_all": 9124.0,
+    "median_nonzero_all": 12500.0,
+    "registry_median_spread_pts": 12500.0,
+    "zero_frac_all": 0.1876
+   },
+   "USDIDR": {
+    "first_year_zero_free": 2021,
+    "median_all": 94.0,
+    "median_nonzero_all": 94.0,
+    "registry_median_spread_pts": 97.0,
+    "zero_frac_all": 0.0
+   },
+   "USDILS": {
+    "first_year_zero_free": 2021,
+    "median_all": 108.0,
+    "median_nonzero_all": 139.0,
+    "registry_median_spread_pts": 128.0,
+    "zero_frac_all": 0.2234
+   },
+   "USDINR": {
+    "first_year_zero_free": 2021,
+    "median_all": 36.0,
+    "median_nonzero_all": 36.0,
+    "registry_median_spread_pts": 37.0,
+    "zero_frac_all": 0.0
+   },
+   "USDJPY": {
+    "first_year_zero_free": 2018,
+    "median_all": 13.0,
+    "median_nonzero_all": 13.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.005
+   },
+   "USDKRW": {
+    "first_year_zero_free": 2021,
+    "median_all": 59.0,
+    "median_nonzero_all": 59.0,
+    "registry_median_spread_pts": 59.0,
+    "zero_frac_all": 0.0
+   },
+   "USDMXN": {
+    "first_year_zero_free": 2022,
+    "median_all": 142.0,
+    "median_nonzero_all": 192.0,
+    "registry_median_spread_pts": 172.0,
+    "zero_frac_all": 0.2288
+   },
+   "USDNOK": {
+    "first_year_zero_free": 2021,
+    "median_all": 96.0,
+    "median_nonzero_all": 137.0,
+    "registry_median_spread_pts": 127.0,
+    "zero_frac_all": 0.2099
+   },
+   "USDPLN": {
+    "first_year_zero_free": 2021,
+    "median_all": 52.0,
+    "median_nonzero_all": 84.0,
+    "registry_median_spread_pts": 74.0,
+    "zero_frac_all": 0.2185
+   },
+   "USDRUB": {
+    "first_year_zero_free": 2022,
+    "median_all": 649.0,
+    "median_nonzero_all": 25470.5,
+    "registry_median_spread_pts": 20649.0,
+    "zero_frac_all": 0.3615
+   },
+   "USDSEK": {
+    "first_year_zero_free": 2021,
+    "median_all": 63.0,
+    "median_nonzero_all": 119.0,
+    "registry_median_spread_pts": 110.0,
+    "zero_frac_all": 0.2063
+   },
+   "USDSGD": {
+    "first_year_zero_free": 2025,
+    "median_all": 0.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.5126
+   },
+   "USDTHB": {
+    "first_year_zero_free": 2022,
+    "median_all": 230.0,
+    "median_nonzero_all": 424.0,
+    "registry_median_spread_pts": 324.0,
+    "zero_frac_all": 0.2546
+   },
+   "USDTRY": {
+    "first_year_zero_free": 2021,
+    "median_all": 330.0,
+    "median_nonzero_all": 527.0,
+    "registry_median_spread_pts": 446.0,
+    "zero_frac_all": 0.2058
+   },
+   "USDX": {
+    "first_year_zero_free": 2022,
+    "median_all": 17.0,
+    "median_nonzero_all": 17.0,
+    "registry_median_spread_pts": 17.0,
+    "zero_frac_all": 0.1008
+   },
+   "USDZAR": {
+    "first_year_zero_free": 2021,
+    "median_all": 245.0,
+    "median_nonzero_all": 360.0,
+    "registry_median_spread_pts": 328.0,
+    "zero_frac_all": 0.22
+   },
+   "UST05Y": {
+    "first_year_zero_free": 2024,
+    "median_all": 22.0,
+    "median_nonzero_all": 22.0,
+    "registry_median_spread_pts": 22.0,
+    "zero_frac_all": 0.0
+   },
+   "UST10Y": {
+    "first_year_zero_free": 2024,
+    "median_all": 39.0,
+    "median_nonzero_all": 39.0,
+    "registry_median_spread_pts": 39.0,
+    "zero_frac_all": 0.0
+   },
+   "Uber": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0471
+   },
+   "UnionPacific": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0457
+   },
+   "UnitedHealth": {
+    "first_year_zero_free": 2022,
+    "median_all": 5.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 5.0,
+    "zero_frac_all": 0.0342
+   },
+   "UnitedParcelService": {
+    "first_year_zero_free": 2022,
+    "median_all": 4.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0457
+   },
+   "Verizon": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0487
+   },
+   "Visa": {
+    "first_year_zero_free": 2022,
+    "median_all": 2.0,
+    "median_nonzero_all": 2.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.0366
+   },
+   "WHEAT": {
+    "first_year_zero_free": 2022,
+    "median_all": 60.0,
+    "median_nonzero_all": 60.0,
+    "registry_median_spread_pts": 60.0,
+    "zero_frac_all": 0.1253
+   },
+   "Walgreens": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 5,
+    "zero_frac_all": 0.0568
+   },
+   "Walmart": {
+    "first_year_zero_free": 2025,
+    "median_all": 0.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 0.0,
+    "zero_frac_all": 0.5409
+   },
+   "WaltDisney": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0368
+   },
+   "WellsFargo": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 4.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0467
+   },
+   "XAGEUR": {
+    "first_year_zero_free": 2024,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.4558
+   },
+   "XAGUSD": {
+    "first_year_zero_free": 2019,
+    "median_all": 21.0,
+    "median_nonzero_all": 21.0,
+    "registry_median_spread_pts": 4.0,
+    "zero_frac_all": 0.0634
+   },
+   "XALUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 2200.0,
+    "median_nonzero_all": 3300.0,
+    "registry_median_spread_pts": 3150.0,
+    "zero_frac_all": 0.2114
+   },
+   "XAUAUD": {
+    "first_year_zero_free": 2024,
+    "median_all": 1.0,
+    "median_nonzero_all": 11.0,
+    "registry_median_spread_pts": 6.0,
+    "zero_frac_all": 0.4603
+   },
+   "XAUEUR": {
+    "first_year_zero_free": 2024,
+    "median_all": 1.0,
+    "median_nonzero_all": 5.0,
+    "registry_median_spread_pts": 2.0,
+    "zero_frac_all": 0.4626
+   },
+   "XAUUSD": {
+    "first_year_zero_free": 2019,
+    "median_all": 16.0,
+    "median_nonzero_all": 16.0,
+    "registry_median_spread_pts": 14.5,
+    "zero_frac_all": 0.0965
+   },
+   "XBRUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 16.0,
+    "median_nonzero_all": 16.0,
+    "registry_median_spread_pts": 16.0,
+    "zero_frac_all": 0.1617
+   },
+   "XCUUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 3500.0,
+    "median_nonzero_all": 5200.0,
+    "registry_median_spread_pts": 4950.0,
+    "zero_frac_all": 0.2117
+   },
+   "XLMUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 43.0,
+    "median_nonzero_all": 43.0,
+    "registry_median_spread_pts": 43.0,
+    "zero_frac_all": 0.0424
+   },
+   "XNGUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 70.0,
+    "median_nonzero_all": 70.0,
+    "registry_median_spread_pts": 70.0,
+    "zero_frac_all": 0.1806
+   },
+   "XNIUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 9440.0,
+    "median_nonzero_all": 12940.0,
+    "registry_median_spread_pts": 9690.0,
+    "zero_frac_all": 0.2455
+   },
+   "XPBUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 2450.0,
+    "median_nonzero_all": 2900.0,
+    "registry_median_spread_pts": 2900.0,
+    "zero_frac_all": 0.2115
+   },
+   "XPDUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 487.0,
+    "median_nonzero_all": 614.0,
+    "registry_median_spread_pts": 586.0,
+    "zero_frac_all": 0.2015
+   },
+   "XPTUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 166.0,
+    "median_nonzero_all": 218.0,
+    "registry_median_spread_pts": 216.0,
+    "zero_frac_all": 0.2043
+   },
+   "XTIUSD": {
+    "first_year_zero_free": 2022,
+    "median_all": 16.0,
+    "median_nonzero_all": 16.0,
+    "registry_median_spread_pts": 16.0,
+    "zero_frac_all": 0.1806
+   },
+   "XZNUSD": {
+    "first_year_zero_free": 2021,
+    "median_all": 2620.0,
+    "median_nonzero_all": 2720.0,
+    "registry_median_spread_pts": 2720.0,
+    "zero_frac_all": 0.2109
+   },
+   "ZARJPY": {
+    "first_year_zero_free": 2022,
+    "median_all": 6.0,
+    "median_nonzero_all": 7.0,
+    "registry_median_spread_pts": 7.0,
+    "zero_frac_all": 0.2286
+   },
+   "eBay": {
+    "first_year_zero_free": 2022,
+    "median_all": 1.0,
+    "median_nonzero_all": 1.0,
+    "registry_median_spread_pts": 1.0,
+    "zero_frac_all": 0.0429
+   }
+  },
+  "worst_understatements": [
+   {
+    "ratio": 17.0,
+    "registry_bps": 0.14938081651554308,
+    "symbol": "Meta",
+    "trailing_bps": 2.5394738807642323,
+    "zero_frac_all": 0.1452
+   },
+   {
+    "ratio": 16.0,
+    "registry_bps": 0.055101427953505415,
+    "symbol": "CHFJPY",
+    "trailing_bps": 0.8816228472560866,
+    "zero_frac_all": 0.0076
+   },
+   {
+    "ratio": 12.000000000000002,
+    "registry_bps": 0.2084766610377968,
+    "symbol": "Microsoft",
+    "trailing_bps": 2.501719932453562,
+    "zero_frac_all": 0.0386
+   },
+   {
+    "ratio": 11.999999999999998,
+    "registry_bps": 0.050671267617766365,
+    "symbol": "GBPJPY",
+    "trailing_bps": 0.6080552114131963,
+    "zero_frac_all": 0.0
+   },
+   {
+    "ratio": 10.0,
+    "registry_bps": 0.1403456244912471,
+    "symbol": "CADJPY",
+    "trailing_bps": 1.403456244912471,
+    "zero_frac_all": 0.0049
+   },
+   {
+    "ratio": 9.999999999999998,
+    "registry_bps": 0.28951939779965263,
+    "symbol": "Tesla",
+    "trailing_bps": 2.895193977996526,
+    "zero_frac_all": 0.2723
+   },
+   {
+    "ratio": 7.000000000000001,
+    "registry_bps": 0.38359737619394685,
+    "symbol": "IBM",
+    "trailing_bps": 2.685181633357628,
+    "zero_frac_all": 0.04
+   },
+   {
+    "ratio": 7.0,
+    "registry_bps": 0.514615067929189,
+    "symbol": "Alphabet-C",
+    "trailing_bps": 3.602305475504323,
+    "zero_frac_all": 0.2478
+   },
+   {
+    "ratio": 7.0,
+    "registry_bps": 0.434593654932638,
+    "symbol": "Apple",
+    "trailing_bps": 3.0421555845284662,
+    "zero_frac_all": 0.0286
+   },
+   {
+    "ratio": 6.0,
+    "registry_bps": 0.6578947368421052,
+    "symbol": "3M",
+    "trailing_bps": 3.9473684210526314,
+    "zero_frac_all": 0.0385
+   },
+   {
+    "ratio": 6.0,
+    "registry_bps": 0.7918910357934749,
+    "symbol": "Shopify",
+    "trailing_bps": 4.751346214760849,
+    "zero_frac_all": 0.12
+   },
+   {
+    "ratio": 5.999999999999999,
+    "registry_bps": 0.348638566398215,
+    "symbol": "JPMorganChase",
+    "trailing_bps": 2.0918313983892896,
+    "zero_frac_all": 0.042
+   },
+   {
+    "ratio": 5.5,
+    "registry_bps": 0.0687781560576361,
+    "symbol": "XAUEUR",
+    "trailing_bps": 0.3782798583169985,
+    "zero_frac_all": 0.4626
+   },
+   {
+    "ratio": 5.000000000000001,
+    "registry_bps": 0.5177591384487936,
+    "symbol": "Alphabet-A",
+    "trailing_bps": 2.5887956922439685,
+    "zero_frac_all": 0.2321
+   },
+   {
+    "ratio": 5.000000000000001,
+    "registry_bps": 1.4867677668748143,
+    "symbol": "CVSHealth",
+    "trailing_bps": 7.433838834374073,
+    "zero_frac_all": 0.5447
+   }
+  ]
+ },
+ "B_ruler": {
+  "asset_class_control": {
+   "mean_abs_corr": 0.819,
+   "median_abs_corr": 0.866,
+   "median_group_size": 14.0,
+   "n": 246
+  },
+  "currency_quote_control": {
+   "mean_abs_corr": 0.488,
+   "median_abs_corr": 0.553,
+   "median_group_size": 4.0,
+   "n": 76
+  },
+  "liquidity_tier_pit": {
+   "mean_abs_corr": 0.953,
+   "median_abs_corr": 0.965,
+   "median_group_size": 60.0,
+   "n": 249
+  }
+ },
+ "_meta": {
+  "baseline": "universe-wide rank over the same members, same days",
+  "built_at": "2026-08-29",
+  "built_by": "BRAIN HUNTER s24",
+  "s11_reference": {
+   "asset_class": 0.819,
+   "currency_quote": 0.493
+  },
+  "tier_assignment": "tier for year Y from year Y-1 nonzero-median spread only (PIT)",
+  "window": "2024-01-01..2025-12-31 daily log returns"
+ },
+ "tier_map_by_year": {
+  "2024": {
+   "3M": "L2",
+   "ADAUSD": "L4",
+   "ADP": "L2",
+   "AMD": "L2",
+   "AT&T": "L4",
+   "AUDCAD": "L3",
+   "AUDCHF": "L1",
+   "AUDHUF": "L4",
+   "AUDJPY": "L3",
+   "AUDSGD": "L1",
+   "AUDUSD": "L3",
+   "AUS200": "L2",
+   "AVAXUSD": "L4",
+   "Accenture": "L2",
+   "Adobe": "L2",
+   "Airbnb": "L2",
+   "AlibabaGroup": "L2",
+   "Alphabet-A": "L2",
+   "Alphabet-C": "L2",
+   "Amazon": "L2",
+   "AmericanExpress": "L1",
+   "Amgen": "L2",
+   "Apple": "L1",
+   "AppliedMaterials": "L1",
+   "Atlassian": "L4",
+   "BCHUSD": "L4",
+   "BNBUSD": "L4",
+   "BTCUSD": "L4",
+   "Baidu": "L3",
+   "BankofAmericaCorp": "L4",
+   "Berkshire": "L1",
+   "BeyondMeat": "L4",
+   "BlackRock": "L3",
+   "BlockInc": "L3",
+   "Boeing": "L1",
+   "Booking": "L3",
+   "CA60": "L3",
+   "CADCHF": "L1",
+   "CADJPY": "L2",
+   "CHFDKK": "L1",
+   "CHFHUF": "L4",
+   "CHFJPY": "L2",
+   "CHFNOK": "L3",
+   "CHFPLN": "L3",
+   "CHFSEK": "L3",
+   "CHFSGD": "L1",
+   "CHINAH": "L3",
+   "COFARA": "L4",
+   "COFROB": "L4",
+   "CORN": "L4",
+   "COTTON": "L4",
+   "CVSHealth": "L2",
+   "Caterpillar": "L2",
+   "CharlesSchwab": "L3",
+   "Charter": "L3",
+   "Chevron": "L1",
+   "Cisco": "L3",
+   "Citigroup": "L3",
+   "Coca-Cola": "L3",
+   "Coinbase": "L2",
+   "Comcast": "L3",
+   "CostcoWholesale": "L1",
+   "DOGEUSD": "L4",
+   "DOTUSD": "L4",
+   "DocuSign": "L3",
+   "Doordash": "L2",
+   "Dow": "L3",
+   "E35": "L4",
+   "EOSUSD": "L4",
+   "ETHUSD": "L4",
+   "EURAUD": "L1",
+   "EURCAD": "L1",
+   "EURCHF": "L2",
+   "EURCZK": "L3",
+   "EURDKK": "L1",
+   "EURGBP": "L2",
+   "EURHKD": "L1",
+   "EURHUF": "L3",
+   "EURILS": "L4",
+   "EURJPY": "L2",
+   "EURMXN": "L1",
+   "EURNOK": "L2",
+   "EURNZD": "L1",
+   "EURPLN": "L3",
+   "EURSEK": "L2",
+   "EURSGD": "L1",
+   "EURTRY": "L4",
+   "EURUSD": "L2",
+   "EURZAR": "L1",
+   "EUSTX50": "L3",
+   "ElectronicArts": "L2",
+   "ExxonMobil": "L2",
+   "FRA40": "L2",
+   "Ford": "L4",
+   "GBPAUD": "L1",
+   "GBPCAD": "L1",
+   "GBPCHF": "L1",
+   "GBPDKK": "L1",
+   "GBPHUF": "L4",
+   "GBPJPY": "L1",
+   "GBPMXN": "L1",
+   "GBPNOK": "L1",
+   "GBPNZD": "L1",
+   "GBPPLN": "L3",
+   "GBPSEK": "L2",
+   "GBPSGD": "L1",
+   "GBPUSD": "L2",
+   "GBPZAR": "L1",
+   "GER40": "L2",
+   "GeneralElectric": "L2",
+   "GeneralMotors": "L3",
+   "GileadSciences": "L2",
+   "GoldmanSachs": "L2",
+   "HK50": "L3",
+   "HKDJPY": "L2",
+   "HomeDepot": "L1",
+   "Honeywell": "L1",
+   "IBM": "L1",
+   "Intel": "L3",
+   "Intuit": "L3",
+   "IntuitiveSurgical": "L3",
+   "JPMorganChase": "L1",
+   "JPN225": "L3",
+   "Johnson&Johnson": "L1",
+   "LNKUSD": "L4",
+   "LTCUSD": "L4",
+   "LucidGroup": "L4",
+   "Lyft": "L4",
+   "MATICUSD": "L4",
+   "MXNJPY": "L4",
+   "Mastercard": "L2",
+   "McDonalds": "L1",
+   "Medtronic": "L2",
+   "Merck": "L2",
+   "Meta": "L1",
+   "MicronTechnology": "L3",
+   "Microsoft": "L1",
+   "MorganStanley": "L2",
+   "NAS100": "L1",
+   "NETH25": "L2",
+   "NIO": "L4",
+   "NOKJPY": "L4",
+   "NOKSEK": "L3",
+   "NZDCAD": "L3",
+   "NZDCHF": "L1",
+   "NZDHUF": "L4",
+   "NZDJPY": "L3",
+   "NZDSGD": "L2",
+   "NZDUSD": "L3",
+   "Netflix": "L3",
+   "Nike": "L2",
+   "OJ": "L4",
+   "Oracle": "L2",
+   "PayPal": "L3",
+   "Pepsi": "L1",
+   "Pfizer": "L3",
+   "PhilipMorrisInternational": "L2",
+   "Pinterest": "L4",
+   "Procter&Gamble": "L1",
+   "Qualcomm": "L2",
+   "RobinhoodMarkets": "L4",
+   "Roku": "L3",
+   "S&PGlobal": "L3",
+   "SEKJPY": "L4",
+   "SGDJPY": "L1",
+   "SOLUSD": "L4",
+   "SOYBEAN": "L4",
+   "SUGAR": "L4",
+   "SUGARRAW": "L4",
+   "Salesforce": "L1",
+   "ServiceNow": "L3",
+   "Shopify": "L3",
+   "Snapchat": "L4",
+   "Snowflake": "L2",
+   "Spotify": "L3",
+   "Starbucks": "L2",
+   "TMEGroup": "L4",
+   "TSMC": "L2",
+   "Target": "L1",
+   "Tesla": "L1",
+   "TexasInstruments": "L1",
+   "ThermoFisherScientific": "L3",
+   "Toyota": "L3",
+   "Travelers": "L2",
+   "Twilio": "L3",
+   "UK100": "L2",
+   "UKCOCOA": "L4",
+   "US2000": "L2",
+   "US30": "L1",
+   "US500": "L1",
+   "USCOCOA": "L4",
+   "USDBRL": "L3",
+   "USDCAD": "L2",
+   "USDCHF": "L3",
+   "USDCNH": "L1",
+   "USDCZK": "L1",
+   "USDDKK": "L1",
+   "USDHKD": "L1",
+   "USDHUF": "L3",
+   "USDIDR": "L4",
+   "USDILS": "L4",
+   "USDINR": "L3",
+   "USDJPY": "L2",
+   "USDKRW": "L3",
+   "USDMXN": "L1",
+   "USDNOK": "L3",
+   "USDPLN": "L2",
+   "USDRUB": "L4",
+   "USDSEK": "L1",
+   "USDSGD": "L1",
+   "USDTHB": "L2",
+   "USDTRY": "L3",
+   "USDX": "L2",
+   "USDZAR": "L1",
+   "Uber": "L3",
+   "UnionPacific": "L2",
+   "UnitedHealth": "L2",
+   "UnitedParcelService": "L1",
+   "Verizon": "L3",
+   "Visa": "L1",
+   "WHEAT": "L4",
+   "Walgreens": "L3",
+   "WaltDisney": "L2",
+   "WellsFargo": "L3",
+   "XAGEUR": "L2",
+   "XAGUSD": "L4",
+   "XALUSD": "L4",
+   "XAUAUD": "L1",
+   "XAUEUR": "L1",
+   "XAUUSD": "L2",
+   "XBRUSD": "L3",
+   "XCUUSD": "L4",
+   "XLMUSD": "L4",
+   "XNGUSD": "L4",
+   "XNIUSD": "L4",
+   "XPBUSD": "L4",
+   "XPDUSD": "L4",
+   "XPTUSD": "L4",
+   "XTIUSD": "L3",
+   "XZNUSD": "L4",
+   "ZARJPY": "L4",
+   "eBay": "L3"
+  },
+  "2025": {
+   "3M": "L3",
+   "ADAUSD": "L4",
+   "ADP": "L2",
+   "AMD": "L3",
+   "AT&T": "L4",
+   "AUDCAD": "L2",
+   "AUDCHF": "L1",
+   "AUDHUF": "L3",
+   "AUDJPY": "L2",
+   "AUDSGD": "L1",
+   "AUDUSD": "L2",
+   "AUS200": "L1",
+   "AVAXUSD": "L4",
+   "Accenture": "L2",
+   "Adobe": "L1",
+   "Airbnb": "L3",
+   "AlibabaGroup": "L3",
+   "Alphabet-A": "L3",
+   "Alphabet-C": "L3",
+   "Amazon": "L2",
+   "AmericanExpress": "L2",
+   "Amgen": "L2",
+   "Apple": "L2",
+   "AppliedMaterials": "L2",
+   "Atlassian": "L3",
+   "BCHUSD": "L4",
+   "BNBUSD": "L4",
+   "BTCUSD": "L2",
+   "Baidu": "L3",
+   "BankofAmericaCorp": "L4",
+   "Berkshire": "L1",
+   "BeyondMeat": "L4",
+   "BlackRock": "L2",
+   "BlockInc": "L3",
+   "Boeing": "L2",
+   "Booking": "L3",
+   "Broadcom": "L3",
+   "CA60": "L2",
+   "CADCHF": "L1",
+   "CADJPY": "L1",
+   "CHFDKK": "L1",
+   "CHFHUF": "L3",
+   "CHFJPY": "L1",
+   "CHFNOK": "L2",
+   "CHFPLN": "L2",
+   "CHFSEK": "L2",
+   "CHFSGD": "L1",
+   "CHINAH": "L2",
+   "COFARA": "L4",
+   "COFROB": "L3",
+   "CORN": "L4",
+   "COTTON": "L4",
+   "CVSHealth": "L4",
+   "Caterpillar": "L2",
+   "CharlesSchwab": "L3",
+   "Charter": "L3",
+   "Chevron": "L3",
+   "Cisco": "L4",
+   "Citigroup": "L4",
+   "Coca-Cola": "L4",
+   "Coinbase": "L2",
+   "Comcast": "L4",
+   "CostcoWholesale": "L1",
+   "DOGEUSD": "L4",
+   "DOTUSD": "L4",
+   "DocuSign": "L4",
+   "Doordash": "L3",
+   "Dow": "L4",
+   "E35": "L3",
+   "EOSUSD": "L4",
+   "ETHUSD": "L4",
+   "EURAUD": "L1",
+   "EURCAD": "L1",
+   "EURCHF": "L2",
+   "EURCZK": "L2",
+   "EURDKK": "L1",
+   "EURGBP": "L1",
+   "EURHKD": "L1",
+   "EURHUF": "L2",
+   "EURILS": "L3",
+   "EURJPY": "L1",
+   "EURMXN": "L1",
+   "EURNOK": "L2",
+   "EURNZD": "L1",
+   "EURPLN": "L2",
+   "EURSEK": "L1",
+   "EURSGD": "L1",
+   "EURTRY": "L3",
+   "EURUSD": "L1",
+   "EURZAR": "L2",
+   "EUSTX50": "L2",
+   "ElectronicArts": "L3",
+   "ExxonMobil": "L3",
+   "FRA40": "L1",
+   "Ford": "L4",
+   "GBPAUD": "L1",
+   "GBPCAD": "L1",
+   "GBPCHF": "L1",
+   "GBPDKK": "L1",
+   "GBPHUF": "L3",
+   "GBPJPY": "L1",
+   "GBPMXN": "L1",
+   "GBPNOK": "L2",
+   "GBPNZD": "L1",
+   "GBPPLN": "L2",
+   "GBPSEK": "L2",
+   "GBPSGD": "L1",
+   "GBPTRY": "L3",
+   "GBPUSD": "L1",
+   "GBPZAR": "L2",
+   "GER40": "L1",
+   "GeneralElectric": "L3",
+   "GeneralMotors": "L4",
+   "GileadSciences": "L3",
+   "GoldmanSachs": "L1",
+   "HK50": "L2",
+   "HKDJPY": "L1",
+   "HomeDepot": "L2",
+   "Honeywell": "L2",
+   "IBM": "L2",
+   "Intel": "L4",
+   "Intuit": "L2",
+   "IntuitiveSurgical": "L2",
+   "JPMorganChase": "L2",
+   "JPN225": "L1",
+   "Johnson&Johnson": "L3",
+   "LNKUSD": "L4",
+   "LTCUSD": "L4",
+   "LucidGroup": "L4",
+   "Lyft": "L4",
+   "MATICUSD": "L4",
+   "MXNJPY": "L4",
+   "Mastercard": "L1",
+   "McDonalds": "L2",
+   "Medtronic": "L3",
+   "Merck": "L3",
+   "Meta": "L1",
+   "MicronTechnology": "L3",
+   "Microsoft": "L1",
+   "MorganStanley": "L3",
+   "NAS100": "L1",
+   "NETH25": "L1",
+   "NIO": "L4",
+   "NOKJPY": "L4",
+   "NOKSEK": "L3",
+   "NVIDIA": "L3",
+   "NZDCAD": "L2",
+   "NZDCHF": "L1",
+   "NZDHUF": "L3",
+   "NZDJPY": "L2",
+   "NZDSGD": "L1",
+   "NZDUSD": "L2",
+   "Netflix": "L1",
+   "Nike": "L3",
+   "OJ": "L3",
+   "Oracle": "L3",
+   "PayPal": "L4",
+   "Pepsi": "L2",
+   "Pfizer": "L4",
+   "PhilipMorrisInternational": "L3",
+   "Pinterest": "L4",
+   "Procter&Gamble": "L2",
+   "Qualcomm": "L2",
+   "RobinhoodMarkets": "L4",
+   "Roku": "L4",
+   "S&PGlobal": "L2",
+   "SEKJPY": "L4",
+   "SGDJPY": "L1",
+   "SOLUSD": "L4",
+   "SOYBEAN": "L4",
+   "SUGAR": "L4",
+   "SUGARRAW": "L4",
+   "Salesforce": "L2",
+   "ServiceNow": "L2",
+   "Shopify": "L3",
+   "Snapchat": "L4",
+   "Snowflake": "L3",
+   "Spotify": "L3",
+   "Starbucks": "L3",
+   "TMEGroup": "L4",
+   "TSMC": "L3",
+   "Target": "L3",
+   "Tesla": "L2",
+   "TexasInstruments": "L2",
+   "ThermoFisherScientific": "L2",
+   "Toyota": "L3",
+   "Travelers": "L3",
+   "Twilio": "L4",
+   "UK100": "L1",
+   "UKCOCOA": "L4",
+   "UKGILT": "L3",
+   "US2000": "L1",
+   "US30": "L1",
+   "US500": "L1",
+   "USCOCOA": "L3",
+   "USDBRL": "L3",
+   "USDCAD": "L1",
+   "USDCHF": "L1",
+   "USDCNH": "L1",
+   "USDCZK": "L2",
+   "USDDKK": "L1",
+   "USDHKD": "L1",
+   "USDHUF": "L3",
+   "USDIDR": "L3",
+   "USDILS": "L3",
+   "USDINR": "L3",
+   "USDJPY": "L1",
+   "USDKRW": "L3",
+   "USDMXN": "L1",
+   "USDNOK": "L1",
+   "USDPLN": "L2",
+   "USDRUB": "L4",
+   "USDSEK": "L2",
+   "USDSGD": "L1",
+   "USDTHB": "L1",
+   "USDTRY": "L3",
+   "USDX": "L2",
+   "USDZAR": "L2",
+   "UST05Y": "L2",
+   "UST10Y": "L3",
+   "Uber": "L3",
+   "UnionPacific": "L2",
+   "UnitedHealth": "L1",
+   "UnitedParcelService": "L3",
+   "Verizon": "L4",
+   "Visa": "L2",
+   "WHEAT": "L4",
+   "Walgreens": "L4",
+   "Walmart": "L4",
+   "WaltDisney": "L3",
+   "WellsFargo": "L4",
+   "XAGEUR": "L2",
+   "XAGUSD": "L4",
+   "XALUSD": "L4",
+   "XAUAUD": "L1",
+   "XAUEUR": "L1",
+   "XAUUSD": "L1",
+   "XBRUSD": "L2",
+   "XCUUSD": "L3",
+   "XLMUSD": "L4",
+   "XNGUSD": "L4",
+   "XNIUSD": "L3",
+   "XPBUSD": "L4",
+   "XPDUSD": "L4",
+   "XPTUSD": "L4",
+   "XTIUSD": "L2",
+   "XZNUSD": "L4",
+   "ZARJPY": "L4",
+   "eBay": "L4"
+  }
+ }
+}

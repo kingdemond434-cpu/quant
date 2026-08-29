@@ -9633,6 +9633,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0744",
+   "source": "cycle",
+   "summary": "universe.json median_spread_pts is TWO incompatible statistics under one name and has no provenance entry: expand_universe.py writes float(df['spread'].median()) over the WHOLE tape (whose early era is zero-filled -- 81/251 symbols have >20% zero-spread bars), while validate_fusion.apply() overwrites it with the median of ten symbol_info polls 0.35s apart -- a 3.5-SECOND live snapshot. 139/251 match the tape median, 112 do not, and _provenance tracks only bars and tick_value so no consumer can tell which it holds. Measured against each symbol's own 2025 tape median, the field UNDERSTATES one-way cost on 144/247 symbols, up to 17x (Meta 0.149 -> 2.539 bps; CHFJPY 16x; Microsoft 12x; GBPJPY 12x -- GBPJPY reads 1.0 pt while EVERY year of its tape medians 5-22), and reads exactly 0.0 bps on 24 symbols including EURUSD/GBPUSD/USDJPY (R0728). 20+ desks/mt5 hunt and research scripts cost on this field. FIX: write a trailing-window (last full year, zeros excluded) median as a distinct field with its own _provenance entry, keep the 3.5s poll as spread_pts_at_collection where it already belongs, and make Costs.from_symbol read the trailing field. Evidence and per-symbol table: data/brain_hunter_s24_liquidity_tier_axis.json (BRAIN HUNTER s24)",
+   "roi_bps": null,
+   "rank": 90.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T16:52:17.696567+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
