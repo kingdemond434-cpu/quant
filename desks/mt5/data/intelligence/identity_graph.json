@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-29T15:25:06+00:00",
+ "rebuilt_at": "2026-08-29T17:24:33+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -622,7 +622,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 2,
+    "longevity_max_d": 3,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -637,7 +637,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 2,
+    "longevity_max_d": 3,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -938,7 +938,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -953,7 +953,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -968,7 +968,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -983,7 +983,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -999,7 +999,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1074,7 +1074,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1089,7 +1089,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1115,6 +1115,36 @@
    },
    "cohorts": [
     "affd4a2ad691a572"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "anas1412": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "8a36f8b721dcd061"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "prblydv": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "ca71ea8e0b3ab443"
    ],
    "scores": {
     "independent_evidence": 1,

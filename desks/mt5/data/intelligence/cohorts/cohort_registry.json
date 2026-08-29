@@ -6413,5 +6413,51 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"8a36f8b721dcd061": {
+"t0": "2026-08-29T17:24:31+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "anas1412/orb-mt5",
+"url": "https://github.com/anas1412/orb-mt5",
+"text": "Configurable opening-range breakout EA for MetaTrader 5, with a reproducible research harness. Every parameter is an input; runs on Windows and Linux/Wine.",
+"symbols": [],
+"found_at": "2026-08-29T17:24:26+00:00",
+"topic": "mql5",
+"stars": 2,
+"star_delta": 0,
+"pushed": "2026-08-29T17:21:28Z"
+},
+"mechanism_tags": [
+"breakout",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ca71ea8e0b3ab443": {
+"t0": "2026-08-29T17:24:31+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "prblydv/tradelens",
+"url": "https://github.com/prblydv/tradelens",
+"text": "A calmer Windows companion for understanding MT5 trade risk before you place a trade.",
+"symbols": [],
+"found_at": "2026-08-29T17:24:27+00:00",
+"topic": "metatrader5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-29T17:19:38Z"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }
