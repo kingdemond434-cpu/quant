@@ -203,6 +203,8 @@ def main() -> int:
     stage_path = stage_dir / f"{out_path.name}.staging"
 
     has_data = shell = dead = failed = 0
+    # ORPHAN-SAFE: `stage_path` is outside the tracked tree by construction and the tracked
+    # artifact is written in one pass below, which is the repair this fence looks for.
     with stage_path.open("a", encoding="utf-8") as fh:
         for i, user in enumerate(batch, 1):
             rec = harvest_user(user, args.delay)

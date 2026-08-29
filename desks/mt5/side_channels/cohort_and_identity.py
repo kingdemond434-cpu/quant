@@ -106,7 +106,16 @@ def observe_due(reg: dict) -> int:
             due.append((age_d - m["next_due_d"], cid))
     due.sort(reverse=True)
     checked = 0
-    with OBS.open("a", encoding="utf-8") as obs:
+    # ORPHAN-SAFE. This loop sleeps a second and waits up to twenty per member, so the handle
+    # used to be held open across MINUTES while `desks/mt5/data/` -- a git-TRACKED tree this
+    # box checks out every ten minutes (auto_push) and hourly (the cycle) -- was rewritten under
+    # it. That is the 2026-08-28 FX Blue defect exactly: the file gets unlinked, the process
+    # keeps appending to a nameless inode, nothing errors, and a reader sees a clean short file.
+    # ~500 harvested records were lost to it once already. Stage outside the tracked tree and
+    # publish in one append at the end, so the window a checkout can eat is a single write and
+    # an interrupted run leaves its rows recoverable in the staging file.
+    stage = Path("/tmp") / f"{OBS.name}.staging"          # noqa: S108 -- outside the repo IS the point
+    with stage.open("w", encoding="utf-8") as obs:
         for _, cid in due[:MAX_CHECKS_PER_RUN]:
             m = reg[cid]
             url = m["frozen"].get("url", "")
@@ -143,6 +152,12 @@ def observe_due(reg: dict) -> int:
                                   "verdict": verdict, "http": code,
                                   "source": m["frozen"].get("source")}) + "\n")
             checked += 1
+            obs.flush()
+    if checked:
+        OBS.parent.mkdir(parents=True, exist_ok=True)
+        with OBS.open("a", encoding="utf-8") as fh:
+            fh.write(stage.read_text(encoding="utf-8"))
+        stage.unlink(missing_ok=True)
     return checked
 
 

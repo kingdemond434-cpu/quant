@@ -2807,3 +2807,18 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 # report a clean verdict about the desk.
 20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/cost_surface.py >> data/cro_ai_logs/cost_surface.log 2>&1
 35 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cost_surface.py >> data/cro_ai_logs/cost_surface_fence.log 2>&1
+
+# --- ORPHANABLE WRITERS (added 2026-08-29, frontier_unified) -------------------------------
+# WHY THIS EXISTS. On 2026-08-28 both FX Blue harvesters reported row 50 while their output
+# held 28 rows: `desks/mt5/data/` is git-TRACKED, this box checks it out every ten minutes
+# (auto_push) and hourly (the cycle), and a long-running writer that holds an append handle
+# open keeps writing into the inode AFTER the name has been unlinked. Nothing errors, nothing
+# warns, a reader sees a clean short file, and ~500 harvested records were lost.
+# The defect is a SHAPE, not a path -- an append handle held open across a loop that waits on
+# network, sleep or a subprocess -- so it recurs in whatever directory is written next. The
+# fence looks for the shape, restricted to targets git actually tracks (a gitignored artifact
+# has no checkout to eat it), and prints the repair with each hit.
+# EVIDENCE: scripts/check_orphanable_writers.py; exit 1 = at least one unrepaired writer.
+# A writer that stages outside the tree and publishes in one pass declares ORPHAN-SAFE and
+# stops reporting; today that is fxblue_track_record_miner and cohort_and_identity.
+41 7 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_orphanable_writers.py >> data/cro_ai_logs/orphanable_writers_fence.log 2>&1
