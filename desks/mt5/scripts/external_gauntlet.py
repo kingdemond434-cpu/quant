@@ -280,10 +280,15 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             call_params.pop("input_source", None)
             call_params["events"] = inputs._event_index()
         elif family == "discovered":
-            from research.edge_search import resolve_inputs
+            # Price-native discoveries need no external feature universe. Loading all peers for
+            # every dd/hour/ru cell caused OOM without changing the selected signal.
+            feature = str(call_params.get("feature") or "")
+            if "ext_" in feature:
+                from research.edge_search import resolve_inputs
 
-            all_symbols = sorted(p.stem.removesuffix("_H1") for p in UNI.glob("*_H1.parquet"))
-            call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
+                all_symbols = sorted(p.stem.removesuffix("_H1")
+                                     for p in UNI.glob("*_H1.parquet"))
+                call_params["extra"] = resolve_inputs(sym, h1.index, all_symbols)
     except Exception as exc:
         print(f"  INPUT-FAIL {sym}.{family}: {type(exc).__name__}: {exc}")
         return None

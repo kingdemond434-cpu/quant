@@ -113,6 +113,12 @@ def resolve(sym: str, family: str, params: dict[str, Any],
             return extra, "ok"
 
         if family == "discovered":
+            # Price-native primitives are rebuilt by family_discovered. Resolving every peer,
+            # triangle, tape, macro and COT series for dd/hour/ru cells is unnecessary and large
+            # enough to OOM the forward service. Only ext_* features need the external universe.
+            feature = str(call.get("feature") or "")
+            if "ext_" not in feature:
+                return extra, "ok: price-native discovered feature"
             from research.edge_search import resolve_inputs
 
             all_symbols = sorted(p.stem.removesuffix("_H1")
