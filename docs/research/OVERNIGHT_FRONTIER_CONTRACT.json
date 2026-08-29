@@ -26,6 +26,8 @@
                                "data/constitution_core.lock",
                                "data/intelligence/mt5_midnight_state.json",
                                "data/intelligence/midnight_completion.json",
+                               "data/intelligence/midnight_completion_checkpoint.json",
+                               "data/intelligence/midnight_morning_report.json",
                                "desks/mt5/data/universe/universe.json",
                                "desks/mt5/data/research_queue.json",
                                "desks/mt5/reports/UNIVERSAL_SURVIVORS.json",

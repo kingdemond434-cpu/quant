@@ -25,9 +25,10 @@ def test_plan_reuses_canonical_organs_in_dependency_order() -> None:
     names = [stage.name for stage in stages]
     assert names == [
         "canonical_external_pipeline", "external_queue_projection",
-        "external_queue_reconciliation", "certificate_projection", "forward_lane_heal",
-        "zero_capital_shadow_forward", "same_day_fence", "certificate_yield_fence",
-        "forward_clock_fence",
+        "external_queue_reconciliation", "certificate_projection", "fusion_state_pull",
+        "forward_identity_reconciliation", "forward_clock_reconciliation",
+        "forward_lane_heal", "zero_capital_shadow_forward", "mechanism_independence",
+        "same_day_fence", "certificate_yield_fence", "forward_clock_fence",
     ]
     commands = " ".join(part for stage in stages for part in stage.command)
     assert "quant-external-pipeline.service" in commands
@@ -42,7 +43,14 @@ def test_completion_continues_after_failure_and_publishes_counts(tmp_path: Path)
     _write(desk / "data" / "research_queue.json", [
         {"status": "QUEUED_CANONICAL_GAUNTLET"}, {"status": "GAUNTLET_PASSED"}
     ])
-    _write(desk / "data" / "hypotheses" / "external_survivors.json", [{"id": 1}])
+    _write(desk / "data" / "hypotheses" / "external_survivors.json", [
+        {"symbol": "XAUUSD", "family": "x", "params": {}}
+    ])
+    _write(desk / "reports" / "universal_gates_external.json", {
+        "n_cells_discovered": 1,
+        "verdicts": [{"cell": "XAUUSD.x.p=44136fa355b3678a", "passed": False,
+                      "stages": {"economic_prior": {"passed": False}}}],
+    })
     _write(desk / "reports" / "UNIVERSAL_SURVIVORS.json", {"survivors": {"gold": {}}})
     _write(desk / "reports" / "shadow" / "shadow_state.json", {
         "gold": {"status": "ACTIVE"}, "dead": {"status": "RETIRED_GATE_FAIL"}
@@ -75,3 +83,39 @@ def test_completion_continues_after_failure_and_publishes_counts(tmp_path: Path)
         "active_forward_clocks": 1,
     }
     assert json.loads(output.read_text("utf-8"))["complete"] is False
+
+
+def test_catch_up_restarts_the_same_service_until_no_cell_is_deferred(tmp_path: Path) -> None:
+    report_path = (tmp_path / "desks" / "mt5" / "reports"
+                   / "universal_gates_external.json")
+    calls = 0
+
+    def fake_runner(command, timeout, root):
+        nonlocal calls
+        del command, timeout
+        calls += 1
+        verdict = ({"cell": "x", "passed": None,
+                    "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}
+                   if calls == 1 else {"cell": "x", "passed": False})
+        _write(root / report_path.relative_to(tmp_path), {
+            "n_cells_discovered": 1, "verdicts": [verdict]
+        })
+        return completion.CommandResult(0, "", "", 1.0)
+
+    stage = completion.Stage("canonical_external_pipeline", ("canonical",), 1,
+                             catch_up=True)
+    result = completion.execute(tmp_path, (stage,), fake_runner,
+                                tmp_path / "completion.json")
+    assert calls == 2
+    assert result["hard_failures"] == []
+    assert result["stages"][0]["passes"][-1]["outstanding_after"] == 0
+    checkpoint = json.loads(
+        (tmp_path / "data" / "intelligence"
+         / "midnight_completion_checkpoint.json").read_text("utf-8")
+    )
+    assert checkpoint["stages"]["canonical_external_pipeline"] == {
+        "status": "DONE",
+        "finished_at": checkpoint["stages"]["canonical_external_pipeline"]["finished_at"],
+        "returncode": 0,
+        "passes_completed": 2,
+    }

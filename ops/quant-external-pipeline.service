@@ -4,8 +4,14 @@ Description=Same-day stages 2-4: external backtest -> ten-gate gauntlet -> canon
 [Service]
 Type=oneshot
 MemoryMax=1500M
+MemoryHigh=1200M
 MemorySwapMax=0
-CPUWeight=50
+# Research yields to recorders, gateways and shadow evidence under contention; when the box is
+# otherwise idle these weights impose no throughput ceiling.
+CPUWeight=25
+Nice=10
+IOSchedulingClass=idle
+OOMPolicy=stop
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/bash /home/quant/quant-platform/ops/run_external_pipeline.sh
 TimeoutStartSec=2h

@@ -94,6 +94,9 @@ def test_codex_controller_is_noninteractive_fenced_and_checkpointed() -> None:
     service = SERVICE.read_text("utf-8")
     assert "CODEX_NIGHTLY_MODEL=gpt-5.6-terra" in service
     assert "CODEX_NIGHTLY_REASONING_EFFORT=medium" in service
+    for resource_control in ("MemoryHigh=1200M", "MemoryMax=1500M", "CPUWeight=25",
+                             "IOSchedulingClass=idle", "OOMPolicy=stop"):
+        assert resource_control in Path("ops/quant-external-pipeline.service").read_text("utf-8")
     assert "CODEX_GLOBAL_ARGS=(--dangerously-bypass-approvals-and-sandbox)" in source
     assert "CODEX_EXECUTION_ARGS=(--sandbox danger-full-access)" in source
     assert source.index("check_constitution_core.py") < source.index(
@@ -136,6 +139,8 @@ def test_controller_prompt_is_one_compact_mt5_only_operating_brief() -> None:
         "implementation ledger of at most 300 words",
         "never a replacement, reduction or amendment",
         "preserve every master obligation",
+        "TIER1_CONTROLLER_MANDATE.md",
+        "tier-1 institutions",
     ):
         assert required.casefold() in prompt.casefold()
     assert MANDATE.exists() and len(MANDATE.read_text("utf-8")) > 20_000

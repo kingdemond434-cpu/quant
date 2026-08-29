@@ -11,8 +11,8 @@ external_gauntlet.py consumes the source docket directly and reconcile_external_
 records its verdict here. The generic run_hunt18 worker must not consume this different route.
 
 Dedup is content-keyed (symbol+family+params) against BOTH the queue and its own ledger, so
-re-runs and re-discoveries never double-mint a trial (novelty-gate discipline). Ranked by
-t_stat, capped per run to keep queue growth reviewable.
+re-runs and re-discoveries never double-mint a trial (novelty-gate discipline). Every fresh exact
+cell is projected in the same run; the queue is lineage, not a manual review waiting room.
 
     .venv/bin/python scripts/promote_external_to_queue.py
 """
@@ -28,7 +28,6 @@ ROOT = Path("/home/quant/quant-platform")
 SURV = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "external_survivors.json"
 QUEUE = ROOT / "desks" / "mt5" / "data" / "research_queue.json"
 LEDGER = ROOT / "desks" / "mt5" / "data" / "hypotheses" / "queued_external.json"
-MAX_PER_RUN = 8
 
 
 def key(s: dict) -> str:
@@ -57,7 +56,7 @@ def main() -> int:
     fresh.sort(key=lambda s: abs(float(s.get("t_stat", 0) or 0)), reverse=True)
     now = datetime.now(tz=UTC)
     added = 0
-    for s in fresh[:MAX_PER_RUN]:
+    for s in fresh:
         k = key(s)
         card = {
             "id": f"ext-{now:%Y%m%d}-{k[:6]}",
