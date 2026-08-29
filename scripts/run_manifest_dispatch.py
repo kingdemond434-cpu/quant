@@ -272,6 +272,56 @@ ALLOWLIST: dict[str, str] = {
     "scripts/refresh_panel_roster.py": "live rc=0 -- 416 catalog models recorded. The desk-state "
                                        "hook reports LLM depth under-driven and names this script",
     # ------------------------------------------------------------------------------------
+    # FOURTH WAVE, gap-fixer 2026-08-29. Every token below was RUN THIS CYCLE with its TRUE exit
+    # code captured from the process -- the first two probe passes read `o=$(cmd|tail); rc=$?`,
+    # which reports tail's status and graded a live traceback as rc=0, so the reasons here quote
+    # a measurement the earlier method could not have made. Each is venue-agnostic or explicitly
+    # MT5: rows whose output named a crypto instrument are listed in the exclusions below rather
+    # than woken, because resurrecting a retired-universe organ is negative wiring, not wiring.
+    # ------------------------------------------------------------------------------------
+    "scripts/run_wiring_agent.py": "the desk's OWN wiring organ, dead 202h -- live rc=0 emitting "
+                                   "AUTO-WIRE proposals (it named report_gate_audit.py, which "
+                                   "this cycle repaired by hand). Wiring the wirer first is the "
+                                   "highest-leverage row in this wave",
+    "scripts/verify_backtest_engine.py": "live rc=0 'backtest-verify | PASS over 240 bars' -- the "
+                                         "engine every certificate on this desk is computed by, "
+                                         "and its verification had not run since 08-20",
+    "scripts/run_geometric_review.py": "live rc=0 'GEOMETRIC GROWTH REVIEW -- E[log wealth], not "
+                                       "backtest CAGR' over data/shadow. This is the objective "
+                                       "function itself, reviewed by nothing for nine days",
+    "scripts/run_type2_report.py": "live rc=0 -- ranks the weakest POWERED negatives (type-2 "
+                                   "error). A desk that only counts rejections never learns "
+                                   "which of them it lacked the power to make",
+    "scripts/slot_budget_analysis.py": "live rc=0 'VERDICT: INCONCLUSIVE' over N=1..40, pi in "
+                                       "[0.05,0.25], t in [2.5,4.0] -- pure simulation, no venue. "
+                                       "It sizes the forward slot budget, and this cycle measured "
+                                       "that observation count (not the 14-day clock) is what "
+                                       "binds promotion, which is exactly this organ's question",
+    "scripts/run_calibration_probe.py": "live rc=0 'UNINFORMATIVE -- Brier 0.2825 >= 0.25' -- the "
+                                        "desk's stated probabilities are no better than the base "
+                                        "rate, and L1.29 says a desk that never grades its "
+                                        "forecasts has no calibration, only opinions",
+    "scripts/run_research_lake.py": "live rc=0 '425 lake symbols; testing EURUSD, GBPUSD, USDJPY, "
+                                    "USDCHF, USDCAD' -- explicitly MT5 ground",
+    "scripts/compute_performance.py": "live rc=0 'wrote web/data.json candidates=308', top by "
+                                      "Sharpe USDJPY:mean_reversion:vwap_reversion -- MT5",
+    "scripts/report_gate_audit.py": "repaired this cycle (it crashed with a raw FileNotFoundError "
+                                    "whenever its producer had not run); now rc=2 with one line "
+                                    "naming measure_admission_power as the only producer",
+    "scripts/check_margin_topology.py": "live rc=2 -- margin construction inherited from connector "
+                                        "order and never chosen. Margin is an MT5 money-path "
+                                        "quantity and no other fence asks this",
+    "scripts/check_cost_surface.py": "live rc=0 over 3424 measured cells (535 unmeasured): 920 "
+                                     "cells materially disperse from the pooled scalar, 676 "
+                                     "undercharged and 244 OVERCHARGED. Cost is the bottleneck "
+                                     "the objective says to route to, and it drifts both ways",
+    "scripts/build_data_registry.py": "live rc=0 -- the registry of what the desk owns. "
+                                      "check_claim_consistency reads it, and an unbuilt registry "
+                                      "means 'the desk does not know what it owns'",
+    "scripts/run_weekly_desk_grade.py": "live rc=0, dead 309h -- the weekly self-grade, including "
+                                        "the L1.67 risk-units line. Weekly cadence, so nine days "
+                                        "dead is more than a full missed cycle",
+    # ------------------------------------------------------------------------------------
     # DELIBERATELY NOT ALLOWLISTED, each with the measurement that decided it. A backlog is only
     # honest when its exclusions are reasoned rather than merely un-chosen:
     #   check_coverage_floors.py -- rc=1 `cannot read coverage.json`. It CONSUMES a --cov run's
@@ -287,6 +337,25 @@ ALLOWLIST: dict[str, str] = {
     #   check_kernel_log.py -- rc=2 UNREADABLE, no kernel-log channel visible to this user. A
     #     genuine finding (every "no OOM" claim on this box is uncheckable) but scheduling it
     #     would page daily about a permission the desk cannot grant itself.
+    #   -- measured 2026-08-29, all rc=0 and all reading RETIRED crypto ground. Working code
+    #      pointed at a universe LAWS s1 forbids hunting; each needs repointing at the MT5 tape
+    #      before it is worth a slot, and waking it meanwhile would spend the box on banned
+    #      ground while reporting healthy:
+    #   run_decline_detection.py -- 'BNBUSDT 191 declines', 236 classified declines, all crypto.
+    #   build_return_panel.py -- rejects BNBUSDT on overlap; the panel is a crypto cross-section.
+    #   run_fee_attribution.py -- TSTUSDT fees, 'tape coverage 7.0%' of a retired venue's tape.
+    #   screen_moat.py, run_moat_campaign.py, screen_orderbook_state.py -- all three block on
+    #     data/moat, which holds only bybit/ and execution_tape/. The MT5 moat lives under
+    #     desks/mt5/data (moat_coverage.json rebuilt today over 251 MT5 symbols), so these are
+    #     orphaned by the universe migration rather than broken.
+    #   snapshot_universe.py -- '882 symbols {TRADING: 751, SETTLING: 130}': venue statuses from
+    #     a crypto exchange, against an MT5 registry of 251.
+    #   run_paper_sleeve_spawner.py / run_paper_sleeve_forward.py -- a SECOND forward loop, fed
+    #     by conv_* crypto screens. L1.58 mandates ONE shadow/forward engine for ALL lanes and
+    #     calls a lane that builds its own "a defect on sight"; the MT5 engine is the one.
+    #   vault_search.py -- UNRUNNABLE AS SCHEDULED: the manifest fires it with no arguments and
+    #     the tool requires a positional query, so every scheduled run since the row was written
+    #     has exited 2 on an argparse usage message. A query tool has no cadence to have.
     # ------------------------------------------------------------------------------------
 }
 
