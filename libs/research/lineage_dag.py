@@ -228,6 +228,106 @@ def subtree_penalty(failed: list[Node]) -> dict[tuple[str, ...], dict[str, Any]]
             for t, n in counts.items() if n >= SUBTREE_RUT_AT}
 
 
+def crossover_candidates(dag: LineageDAG, *, seed: int, k: int = 5,
+                         min_fertility: float = 0.2) -> list[dict[str, Any]]:
+    """Pairs of lineages whose SEGMENTS are worth recombining. QuantaAlpha's trajectory crossover.
+
+    THE UNIT IS A SEGMENT, NOT A STRATEGY. QuantaAlpha's contribution is that a research run is a
+    trajectory -- mechanism, observable, timing, implementation -- and the useful recombination is
+    "take THIS lineage's timing and THAT one's conditioning", not "average two strategies".
+    Averaging two strategies produces a third strategy that inherits both parents' weaknesses;
+    recombining segments produces one that inherits the two segments each parent got right.
+
+    WHAT MAKES A PAIR ELIGIBLE, and each condition blocks a specific way this goes wrong:
+
+      DIFFERENT MECHANISMS   two lineages of the same mechanism recombine into a third variant of
+                             it. That is the parameter-sweep failure wearing an evolutionary
+                             costume -- `discovered` produced 10,624 candidates that way.
+      BOTH FERTILE           a barren parent contributes a segment with no evidence behind it, so
+                             the child inherits a guess and a credential.
+      DIFFERENT FAILING STEPS  this is the actual signal. If A fails on timing and B fails on
+                             implementation, then A's implementation and B's timing are the parts
+                             that were never indicted, and the child is built from two segments
+                             each parent's own failure exonerated.
+
+    A CHILD INHERITS NO CREDIBILITY. The returned spec carries `starts_at: IDEA` and the full
+    validation bar. Evolutionary search that lets children inherit parental standing is how one
+    mediocre strategy becomes five hundred "discoveries".
+    """
+    rng = random.Random(seed)  # noqa: S311 -- research sampling, not crypto
+    fertile = []
+    for aid, node in dag.nodes.items():
+        st = dag.branch_stats(aid)
+        f = st["fertility"]
+        if f is not None and f >= min_fertility and node.mechanism:
+            fertile.append((aid, node, f, st))
+    if len(fertile) < 2:
+        return []
+
+    pairs: list[dict[str, Any]] = []
+    for i in range(len(fertile)):
+        for j in range(i + 1, len(fertile)):
+            a_id, a, a_f, _ = fertile[i]
+            b_id, b, b_f, _ = fertile[j]
+            if a.mechanism == b.mechanism:
+                continue
+            a_step = a.failing_step or assign_credit(a.failure_class)[0]
+            b_step = b.failing_step or assign_credit(b.failure_class)[0]
+            if a_step and b_step and a_step == b_step:
+                # Both broke at the same link; neither exonerates a segment the other needs.
+                continue
+            donate_a = b_step or "conditioning"
+            donate_b = a_step or "timing"
+            pairs.append({
+                "parents": (a_id, b_id),
+                "mechanisms": (a.mechanism, b.mechanism),
+                "fertility": (round(a_f, 3), round(b_f, 3)),
+                "take_from_a": donate_a,
+                "take_from_b": donate_b,
+                "starts_at": "IDEA",
+                "why": (f"{a.mechanism} failed at {a_step or 'nothing recorded'} and "
+                        f"{b.mechanism} at {b_step or 'nothing recorded'}; each parent's failure "
+                        f"exonerates the segment the other needs. The child inherits ZERO "
+                        f"credibility and faces the full bar."),
+                "score": (a_f + b_f) / 2.0 * (1.0 + rng.random() * 0.1),
+            })
+    pairs.sort(key=lambda p: -p["score"])
+    return pairs[:k]
+
+
+def diversified_init(coordinates: list[str], k: int, *, seed: int) -> list[str]:
+    """Seed a search with coordinates spread across REGIONS, not clustered in one.
+
+    QuantaAlpha's "diversified planning initialization". A search seeded from k nearby starting
+    points converges to one answer regardless of how good its evolution is -- the diversity has
+    to be present at initialisation because no later operator creates it. Picks at most one
+    coordinate per (event, direction) region before allowing a second anywhere.
+    """
+    rng = random.Random(seed)  # noqa: S311
+    by_region: dict[tuple[str, str], list[str]] = defaultdict(list)
+    for c in coordinates:
+        parts = c.split("|")
+        if len(parts) == 5:
+            by_region[(parts[0], parts[3])].append(c)
+    regions = sorted(by_region)
+    rng.shuffle(regions)
+    out: list[str] = []
+    round_no = 0
+    while len(out) < k and regions:
+        progressed = False
+        for r in regions:
+            pool = by_region[r]
+            if round_no < len(pool):
+                out.append(pool[round_no])
+                progressed = True
+                if len(out) >= k:
+                    break
+        if not progressed:
+            break
+        round_no += 1
+    return out
+
+
 def retrieve_seeds(dag: LineageDAG, k: int, *, seed: int,
                    candidates: list[str] | None = None) -> list[tuple[str, float]]:
     """Sample `k` ancestors worth revisiting, by posterior fertility. AlphaPROBE's retriever.
