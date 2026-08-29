@@ -8280,3 +8280,18 @@ series. Quantocracy's 6,908 items yielded **6.4%** on-mandate. Eurostat's 8,152 
 overwhelmingly social and regional statistics. **Filter by mandate on the saved structure files
 before pulling anything** — and never fetch the 37 MB list into an agent context; write it to disk
 and grep it.
+
+---
+
+## SESSION SUMMARY — 2026-08-29 (free-data run **u**) — IN PROGRESS
+
+**Items taken this run (completion contract, written BEFORE searching):**
+1. **Close card 77** (the only genuinely-pending verification): stop enumerating the supranational
+   SDMX doors and *pull series*. Verify Eurostat `ert_bil_eur_d` daily FX against the desk's own MT5
+   parquet ground truth, and mandate-filter the saved Eurostat/OECD structure files on disk.
+2. **Close card 75's split grade**: it reads `verified-clean` AND `needs-monitoring` in one line, so
+   `source_backlog.py` fails it open to pending forever. Resolve the EM-leg clock question and give
+   it one terminal grade (or split the card).
+3. **SEARCH-SPACE EXPANSION (>=25%)**: a new source class, hunted after 1 and 2 close.
+
+_(status lines appended below as each item resolves — never held in context)_
