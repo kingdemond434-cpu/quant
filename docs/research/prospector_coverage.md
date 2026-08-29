@@ -10102,3 +10102,19 @@ converted, in the builder (recorded lesson: the stamp is a label, converting wou
    unmined repo on the measured population.
 5. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, still open; this seat's
    mandated daily ground is collected by nothing.
+
+---
+
+## PROSPECTOR s16 — 2026-08-29 (session note written FIRST, per the COMPLETION CONTRACT)
+
+**ITEMS TAKEN THIS RUN (bounded breadth, uncapped depth) — taken from s15's own NEXT-GROUND list:**
+1. **`macrosynergy/macrosynergy` fork-divergence layer + Issues/Discussions** (s15 next-ground #1).
+   Chosen deliberately because it **has a comment layer**: s15 closed with *two consecutive runs
+   mining zero reply chains* and named that as the first thing s16 must fix.
+2. **The density-ranked hosts inside the saved Quantocracy index** (s15 next-ground #2), starting
+   with `blog.harbourfronts.com` (16/89 MT5-density). Query the saved JSON — **quantocracy itself
+   is EXHAUSTED, never re-scan it.**
+3. **The 190-blog long-tail of that index** (s15 next-ground #3) — the deep-forest layer that only
+   exists because s15 enumerated it.
+
+Status: **OPEN**. Updated in place as each item resolves.
