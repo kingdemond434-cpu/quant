@@ -1,0 +1,78 @@
+{
+ "_meta": {
+  "built_at": "2026-08-29",
+  "built_by": "BRAIN HUNTER s24b",
+  "control": "labels permuted within year: identical group-size profile, identical members, economic content destroyed",
+  "draws": 12,
+  "seed": 20260829,
+  "window": "2024..2025 daily log returns"
+ },
+ "results": {
+  "asset_class": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.951,
+   "random_same_size_sd": 0.0019,
+   "real": {
+    "mean_abs_corr": 0.819,
+    "median_group_size": 14.0,
+    "n": 246
+   },
+   "z_real_vs_random": -68.87
+  },
+  "corr_cluster_k24": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.895,
+   "random_same_size_sd": 0.0026,
+   "real": {
+    "mean_abs_corr": 0.678,
+    "median_group_size": 5.5,
+    "n": 188
+   },
+   "z_real_vs_random": -82.98
+  },
+  "corr_cluster_k8": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.967,
+   "random_same_size_sd": 0.0011,
+   "real": {
+    "mean_abs_corr": 0.848,
+    "median_group_size": 8.0,
+    "n": 193
+   },
+   "z_real_vs_random": -110.17
+  },
+  "currency_base": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.898,
+   "random_same_size_sd": 0.0066,
+   "real": {
+    "mean_abs_corr": 0.719,
+    "median_group_size": 6.5,
+    "n": 78
+   },
+   "z_real_vs_random": -27.14
+  },
+  "currency_quote": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.765,
+   "random_same_size_sd": 0.0064,
+   "real": {
+    "mean_abs_corr": 0.488,
+    "median_group_size": 4.0,
+    "n": 76
+   },
+   "z_real_vs_random": -43.64
+  },
+  "liquidity_tier": {
+   "random_draws": 12,
+   "random_same_size_mean": 0.979,
+   "random_same_size_sd": 0.0016,
+   "real": {
+    "mean_abs_corr": 0.953,
+    "median_group_size": 61.2,
+    "n": 249
+   },
+   "z_real_vs_random": -16.46
+  }
+ }
+}

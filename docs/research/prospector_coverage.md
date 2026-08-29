@@ -12440,3 +12440,47 @@ having remains `currency_quote` at 0.488/19 groups/median size 4.**
 3. **The BRAIN-scoped collector arm — SIXTEEN sessions old, re-raised unchanged.** Nothing persists
    the repo population, so every session re-pays the census. Belongs to a seat that is not
    research-frozen.
+
+## BRAIN HUNTER s24b — 2026-08-29 — the same-session falsifier, and it refutes my own sentence
+
+L1.7: every success triggers an attempt to disprove it. s24 confirmed the group-size law for a
+third family and then explained `currency_quote` away as a size artifact. The obvious falsifier —
+permute the labels, keep the size profile — had never been run on ANY of the desk's groupings, so
+it was run in the same session rather than left to s25.
+`data/brain_hunter_s24b_groupsize_control.py` → `data/brain_hunter_s24b_groupsize_control.json`.
+The vectorised ruler reproduces s24's three shared numbers exactly (0.819 / 0.488 / 0.953).
+
+**Every one of six groupings beats its size-matched random control, by 16 to 110 sd.**
+`currency_quote` 0.488 vs 0.765 random at size 4 (z = −43.6). **s24's sentence that
+`currency_quote` "wins because it has 19 groups of median size 4, not because currency is
+economically special" is WITHDRAWN as refuted.** The corrected law: **independence is a group-size
+CEILING (random rises monotonically 0.765 at size 4 → 0.979 at size 61) MINUS the economic content
+of the labels, and both terms are large.** s11's ranking survives; s11's stated mechanism does not.
+
+This also narrows s24's own exhaustion claim, in the same run that made it. The liquidity tier
+beats its random control at z = −16.5, so it carries real content and merely suffers a median group
+of 61 against a 0.979 ceiling. **The claim is corrected to: the FOUR-tier cost grouping is settled;
+a 12–25-tier point-in-time cost grouping is one unrun measurement**, and it is blocked behind R0744
+because tiering on today's `median_spread_pts` sorts 24 symbols at exactly zero and misprices
+144/247 by up to 17× — it would sort the defect, not the book.
+
+**The habit this pair of runs adds:** a control that destroys ONLY the content while preserving
+the structure is cheap, and the desk had ranked five groupings across two sessions without ever
+running it. Whenever a metric is explained by a structural property, permute the content and keep
+the property — if the explanation is right the score should not move, and here it moved 43 sd.
+
+### NEXT UN-EXHAUSTED GROUND (for s25, in order — supersedes s24's list)
+
+1. **The 12–25-tier point-in-time cost grouping, AFTER R0744.** Named above with its own
+   prerequisite. One measurement, and the ceiling curve in s24b's table says in advance what a
+   size-15 grouping must beat (~0.95) to be worth having.
+2. **Point-in-time correlation clusters at k=40–60**, which no session has cut. `k24` already sits
+   at 0.678/size 5.5 against a 0.895 ceiling — the largest content term of any map measured — and
+   nobody has asked where it stops improving. This is the cheapest remaining shot at a grouping
+   that beats `currency_quote`, and unlike currency it covers the whole 251-symbol universe rather
+   than 76 FX legs.
+3. **The licensed BRAIN subclass, FOURTH raise, still never censused.** 63 repos from five queries,
+   one touched. `i9880612/alpha-garden` (MIT) carries an operator/field COMPATIBILITY matrix, a
+   shape the desk has no analogue of.
+4. **The BRAIN-scoped collector arm — SEVENTEEN sessions old.** Belongs to a seat that is not
+   research-frozen.

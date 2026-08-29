@@ -9999,3 +9999,43 @@ observed). CHFJPY and GBPJPY have ~0% zero bars, so this is not only the zero-fi
 second, independent defect in the snapshot producer. Over 20 `desks/mt5` hunt and research scripts
 cost on this field. Ledgered as **R0744** with the per-symbol table; the fix is a distinct
 trailing-window field with its own provenance entry, not a repair of the overloaded one.
+
+### BRAIN HUNTER s24b — 2026-08-29 — the falsifier on the group-size law REFUTES my own s24 sentence: every grouping beats its size-matched random control, `currency_quote` by 43 sd
+
+`data/brain_hunter_s24b_groupsize_control.py` → `data/brain_hunter_s24b_groupsize_control.json`.
+Ruler rewritten vectorised (per-year whole-window rank rather than a per-day loop) and it
+reproduces s24 exactly on all three shared maps — 0.819, 0.488, 0.953 — so the speedup changed
+nothing but the runtime.
+
+**CONTROL:** for each real map, permute the group labels within each year. Identical members,
+identical group-size profile, identical persistence, economic content destroyed. 12 draws, seed
+20260829.
+
+| grouping | median group size | real \|corr\| | random same-size | z |
+|---|---|---|---|---|
+| `currency_quote` | 4.0 | **0.488** | 0.765 | **−43.6** |
+| `corr_cluster_k24` | 5.5 | 0.678 | 0.895 | −83.0 |
+| `currency_base` | 6.5 | 0.719 | 0.898 | −27.1 |
+| `corr_cluster_k8` | 8.0 | 0.848 | 0.967 | −110.2 |
+| `asset_class` | 14.0 | 0.819 | 0.951 | −68.9 |
+| liquidity tier | 61.2 | 0.953 | 0.979 | −16.5 |
+
+**CORRECTION TO s24.** s24 wrote that `currency_quote` "wins because it has 19 groups of median
+size 4, not because currency is economically special." **That sentence is refuted by this control
+and is withdrawn.** A random grouping of the same size profile scores 0.765; `currency_quote`
+scores 0.488, forty-three standard deviations better. Group size sets the CEILING on how
+independent any grouping can be — the random column rises monotonically with size, from 0.765 at
+size 4 to 0.979 at size 61 — but real economic content buys a large, overwhelmingly significant
+improvement beneath that ceiling on every one of the six maps. s11's "independence tracks median
+peer-group size and nothing else" is right about the ranking of these six maps and wrong about the
+mechanism; the honest statement is **independence = a size ceiling MINUS whatever economic content
+the labels carry, and both terms are large.**
+
+**And this partly re-opens the liquidity tier.** At z = −16.5 the tier is not information-free —
+it beats its own random control decisively. It loses because four quartiles over 251 symbols
+force a median group of 61, where the ceiling itself is 0.979. **A finer cost tiering (12–25 tiers,
+median group size 10–20, still point-in-time) is therefore worth exactly one measurement**, and
+s24's "do not spend on it again" is narrowed to "do not spend on it again at four tiers." The
+prerequisite is R0744: tiering on `median_spread_pts` sorts 24 symbols at exactly zero cost and
+misprices 144 of 247 by up to 17×, so a finer tier built on today's field would be sorting the
+defect, not the book.
