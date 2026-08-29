@@ -1,10 +1,10 @@
 {
- "merged_at": "2026-08-29T18:38:54+00:00",
- "pipeline_started_at": "2026-08-29T17:38:22+00:00",
+ "merged_at": "2026-08-29T19:43:52+00:00",
+ "pipeline_started_at": "2026-08-29T18:51:25+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
   "miner_candidates.json": 260,
-  "edge_search_results.json": -2,
+  "edge_search_results.json": 2003,
   "orthogonal_candidates.json": -2,
   "coverage_search_results.json": -2,
   "requeue_named.json": -2
@@ -12,12 +12,12 @@
  "source_state": {
   "external_backtest_results.json": "FRESH",
   "miner_candidates.json": "FRESH",
-  "edge_search_results.json": "STALE_SKIPPED",
+  "edge_search_results.json": "FRESH",
   "orthogonal_candidates.json": "STALE_SKIPPED",
   "coverage_search_results.json": "STALE_SKIPPED",
   "requeue_named.json": "STALE_SKIPPED"
  },
- "total": 13891,
+ "total": 14819,
  "families": {
   "asia_momentum": 15,
   "calendar_month": 2,
@@ -25,7 +25,7 @@
   "correlation_regime": 275,
   "cot_positioning": 10,
   "cross_asset_residual": 601,
-  "discovered": 11252,
+  "discovered": 12180,
   "drawdown_conditional": 11,
   "event_reaction": 113,
   "lvc_asia_london": 13,

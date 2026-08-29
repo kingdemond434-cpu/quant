@@ -1,0 +1,14 @@
+[
+ {
+  "source": "forexpeacearmy",
+  "kind": "walled",
+  "title": "ROBOTS_DISALLOW (probe not due)",
+  "url": "https://www.forexpeacearmy.com/",
+  "text": "robots.txt names this agent explicitly: 'User-agent: ClaudeBot / Disallow: /', alongside Content-Signal 'ai-train=no, use=reference'. The miner was sending a spoofed Chrome UA hourly to a site that had refused it in writing, and getting 403 for it.",
+  "symbols": [],
+  "found_at": "2026-08-29T20:24:04+00:00",
+  "verdict": "ROBOTS_DISALLOW",
+  "walled_since": "2026-08-26",
+  "needs_selector_work": false
+ }
+]

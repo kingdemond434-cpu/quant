@@ -58,10 +58,10 @@
   "vi": {
    "region": "Vietnam",
    "open_frontier": false,
-   "queries_exercised": 15,
+   "queries_exercised": 18,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-29T02:22:01+00:00",
+   "last_swept": "2026-08-29T20:22:01+00:00",
    "native_terms_available": 10
   },
   "id": {
