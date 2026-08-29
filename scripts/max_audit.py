@@ -32,7 +32,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -2714,6 +2714,39 @@ def check_production(defects) -> None:
             defects.append(("production-stub",
                             f"{label}: product {newest.name} is {sz}b (<{min_b}b) -- ran but "
                             "produced a stub, not real output (the quota-stub / refuse class)"))
+    # THE FINANCING TAPE IS UNBUYABLE ONCE THE DAY PASSES, AND IT DIED IN SILENCE. On 2026-08-29
+    # `desks/mt5/data/tape/contract_terms` held exactly one file -- 2026-08-27, 9 hourly
+    # observations -- while the H1 bar sync from the same Windows terminal was fresh THAT DAY, so
+    # the terminal was up and only this recorder had stopped. Nothing said so, because no fence
+    # gauged it: the crypto recorders had `ensure_recorder` and a staleness pager, and the
+    # obligation that "TRANSFERS to mt5desk.tape" (ops/crontab.manifest:814) transferred without
+    # its instrument. `mt5desk.tape --terms-only` exists precisely so the cheap perishable leg can
+    # run at its own cadence; what it lacked was anything that noticed when it did not.
+    #
+    # GAUGED ON TRADING DAYS, NOT ON AGE. A plain mtime bar cannot distinguish a dead recorder
+    # from a weekend: loose enough to survive Fri-close..Mon-open (~51h) it also sleeps through a
+    # missed Friday, which is the exact miss here. So the test is the honest one -- the most
+    # recent WEEKDAY that has fully passed must have a file. It cannot fire on a Saturday for
+    # being a Saturday, and it fires the morning after any missed trading day.
+    _terms = ROOT / "desks/mt5/data/tape/contract_terms"
+    _have = {q.stem for q in _terms.glob("*.parquet")} if _terms.exists() else set()
+    _day = datetime.now(UTC).date() - timedelta(days=1)
+    while _day.weekday() >= 5:                      # Sat/Sun are not trading days
+        _day -= timedelta(days=1)
+    if not _terms.exists():
+        defects.append(("production-missing",
+                        "mt5-contract-terms: NO tape at desks/mt5/data/tape/contract_terms -- the "
+                        "point-in-time swap/margin history has never been recorded"))
+    elif _day.isoformat() not in _have:
+        defects.append(("production-stale",
+                        f"mt5-contract-terms: no rows for {_day.isoformat()} (the last completed "
+                        f"trading day); newest on disk is {max(_have) if _have else 'nothing'}. "
+                        "Point-in-time broker financing is UNBUYABLE once the day passes -- a "
+                        "swap or margin reprice inside the gap is permanently gone. The recorder "
+                        "runs on the Windows terminal box (`python -m mt5desk.tape --terms-only`, "
+                        "seconds of work); install/repair its scheduled task via "
+                        "desks/mt5/scripts/install_contract_terms_task.ps1"))
+
     # research_memory must GROW, not just be non-zero (the null-pipe class)
     try:
         import sqlite3

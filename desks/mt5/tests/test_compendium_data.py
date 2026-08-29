@@ -33,6 +33,39 @@ def test_contract_terms_are_point_in_time_and_keep_both_sides() -> None:
     assert row["swap_long"] == -3.2 and row["swap_short"] == 1.1
 
 
+def test_contract_terms_keep_the_brokers_forced_trade_fields() -> None:
+    """`symbol_info` is already paid for; dropping these loses unbuyable point-in-time state."""
+    at = datetime(2026, 8, 29, 12, tzinfo=UTC)
+    info = SimpleNamespace(
+        swap_long=-3.2, swap_short=1.1, swap_mode=1, swap_rollover3days=3,
+        trade_contract_size=100_000, trade_tick_size=0.00001, trade_tick_value=1.0,
+        currency_profit="USD", currency_margin="EUR",
+        trade_mode=3, margin_initial=0.0, margin_maintenance=250.0,
+        trade_stops_level=12, freeze_level=0, volume_min=0.01, volume_max=100.0,
+        volume_limit=0.0, spread=8,
+    )
+    row = contract_terms_row("EURUSD", info, at)
+    assert row["trade_mode"] == 3            # CLOSEONLY -- a dated forced-exit instruction
+    assert row["margin_maintenance"] == 250.0
+    assert row["trade_stops_level"] == 12
+    assert row["spread"] == 8
+    # A REPORTED ZERO IS A VALUE and must survive as one.
+    assert row["margin_initial"] == 0.0 and row["freeze_level"] == 0
+
+
+def test_absent_symbol_info_fields_are_none_never_zero() -> None:
+    """`trade_mode == 0` means DISABLED; defaulting an unread field to 0 fabricates that."""
+    at = datetime(2026, 8, 29, 12, tzinfo=UTC)
+    info = SimpleNamespace(
+        swap_long=0.0, swap_short=0.0, swap_mode=0, swap_rollover3days=3,
+        trade_contract_size=100_000, trade_tick_size=0.00001, trade_tick_value=1.0,
+    )
+    row = contract_terms_row("EURUSD", info, at)
+    for field in ("trade_mode", "margin_initial", "margin_maintenance",
+                  "trade_stops_level", "freeze_level", "volume_min", "spread"):
+        assert row[field] is None, field
+
+
 def test_triangle_uses_executable_bid_ask_not_mid_prices() -> None:
     ts = pd.to_datetime(["2026-08-23T12:00:00Z"])
     direct = pd.DataFrame({"ts": ts, "bid": [0.85], "ask": [0.851]})

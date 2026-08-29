@@ -60,6 +60,27 @@ MAX_TICKS_PER_CALL = 2_000_000
 COLD_START_DAYS = 7
 
 
+def _opt_float(info: object, name: str) -> float | None:
+    """None when the terminal did not report the field -- absence is never a value (WS-005)."""
+    raw = getattr(info, name, None)
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _opt_int(info: object, name: str) -> int | None:
+    raw = getattr(info, name, None)
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
     """Point-in-time broker financing and contract terms; never backfilled from today's values."""
     return {
@@ -82,6 +103,29 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
         "tick_value": float(info.trade_tick_value),
         "currency_profit": str(getattr(info, "currency_profit", "")),
         "currency_margin": str(getattr(info, "currency_margin", "")),
+        # THE BROKER'S OWN FORCED-TRADE ANNOUNCEMENTS, already paid for and previously dropped.
+        # `symbol_info` is one call and it carries these; writing eleven of its fields and
+        # discarding these cost nothing to keep and is unbuyable once the hour passes.
+        #   trade_mode        3 = CLOSEONLY, 0 = DISABLED -- a symbol flipping to CLOSEONLY is a
+        #                     dated, published-by-behaviour instruction that every holder must
+        #                     exit. Today the desk would learn of it from an order rejection.
+        #   margin_initial    an increase is announced deleveraging in a named symbol inside a
+        #                     dated window; a decrease permits expansion. Direction-agnostic.
+        #   trade_stops_level/freeze_level bound where a stop may LEGALLY sit; the execution model
+        #                     currently assumes a stop can be placed anywhere.
+        # ABSENT IS None, NEVER 0 (WS-005): `trade_mode == 0` means DISABLED and `margin_* == 0`
+        # means no requirement, so defaulting an absent field to zero would make "we did not read
+        # it" render identically to "the broker disabled the symbol" -- the exact collapse this
+        # desk keeps paying for.
+        "trade_mode": _opt_int(info, "trade_mode"),
+        "margin_initial": _opt_float(info, "margin_initial"),
+        "margin_maintenance": _opt_float(info, "margin_maintenance"),
+        "trade_stops_level": _opt_int(info, "trade_stops_level"),
+        "freeze_level": _opt_int(info, "freeze_level"),
+        "volume_min": _opt_float(info, "volume_min"),
+        "volume_max": _opt_float(info, "volume_max"),
+        "volume_limit": _opt_float(info, "volume_limit"),
+        "spread": _opt_int(info, "spread"),
     }
 
 
