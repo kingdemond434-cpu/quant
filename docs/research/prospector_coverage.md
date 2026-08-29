@@ -12484,3 +12484,70 @@ the property — if the explanation is right the score should not move, and here
    shape the desk has no analogue of.
 4. **The BRAIN-scoped collector arm — SEVENTEEN sessions old.** Belongs to a seat that is not
    research-frozen.
+
+## BRAIN HUNTER s25 — 2026-08-29 — the cluster grouping never stopped improving, and the desk stopped at k=24
+
+s24b's next ground, item 2: `corr_cluster k24` carried the largest content term of any map measured
+and nobody had asked where it stops. Answer: **it does not stop anywhere near where the desk built
+it.** `data/brain_hunter_s25_kcurve.py` → `data/brain_hunter_s25_kcurve.json` sweeps k = 8…160
+point-in-time (year Y clustered on Y−1 daily-return correlations only, s11's own convention) with
+s24b's ruler and s24b's size-matched random control at EVERY k.
+
+| k | n symbols | \|corr\| | random ceiling | content |
+|---|---|---|---|---|
+| 8 | 248 | 0.872 | 0.965 | 0.093 |
+| 24 | 244 | 0.741 | 0.914 | 0.173 |
+| 48 | 238 | 0.621 | 0.847 | 0.226 |
+| 96 | 214 | **0.477** | 0.756 | 0.280 |
+| 128 | 178 | 0.413 | 0.730 | **0.318** |
+| 160 | 145 | 0.364 | 0.677 | 0.313 |
+
+**The desk's map stops at k=8/k=24 — i.e. at 0.173 of an available 0.318 of content.** Every
+cross-sectional cell the desk has ever run on a cluster grouping used the weakest arm on the curve.
+
+**k=96 beats `currency_quote`, the desk's best grouping, on 2.8× the coverage.** 0.477 vs 0.488, on
+214 universe-wide symbols against currency_quote's 76 FX legs. That answers s24b's open question
+(what a fine grouping must beat) in the affirmative.
+
+**The falsifier, run in the same session (L1.7).** |corr| falls monotonically in k, but so does the
+POPULATION — singletons have no peers and are dropped, 248 symbols at k=8 down to 145 at k=160. If
+the survivors are the easy ones the whole curve is selection. `data/brain_hunter_s25b_fixedset.py`
+re-scores every k on the SAME 145 symbols present at all of them: **0.858 → 0.694 → 0.572 → 0.463 →
+0.404 (k=8→128), content 0.103 → 0.299. The curve survives its own population control.**
+
+**What the peak actually is: a content/coverage trade, not a content maximum.** Content plateaus at
+k≈128 and turns down by 160, but coverage collapses from 86% (k=96) to 72% (k=128) to 58% (k=160)
+as more symbols become singletons. **k=96 is the operating point** — it takes 88% of the maximum
+content while keeping 86% of the book. k=128+ buys the last 12% of content by throwing away a
+seventh of the universe, which is a worse trade for a desk whose scarcity is independent sleeves.
+
+**CONVERTED, not carded.** `data/brain_hunter_s25c_build_k_arms.py` writes **k48 (14 years) and k96
+(8 years) arms into `data/mt5_grouping_map.json`**, additively — k8/k24 untouched, same
+point-in-time convention, `_meta` stamped with the evidence paths. `group_rank`/`group_zscore` can
+consume them today; no code changed (research freeze).
+
+**One row is UNMEASURED and says so.** At k=160 every random draw dropped >10% of the common set
+(the size profile is singleton-heavy), so no ceiling exists for that row. It is written `null` with
+an explicit `control_status`, not omitted and not left as `NaN` — the artifact also parses as
+strict JSON now, which it did not when first written (Python accepts `NaN`, jq and JS do not).
+
+**The habit this run adds:** when a parameter was chosen once and never swept, the sweep is the
+finding. s11 requested `[8, 24]`, five sessions ranked groupings against each other, and nobody
+asked whether the parameter that generated two of the contenders was anywhere near its optimum. A
+value in a `_meta` block reads exactly like a measured choice and exactly like a default.
+
+### NEXT UN-EXHAUSTED GROUND (for s26, in order — supersedes s24b's list)
+
+1. **Run the cross-sectional cells on the k96 arm.** The arm now exists; nothing has consumed it.
+   The independence gain is measured on the RULER, never yet on a hypothesis — a grouping that
+   scores well and produces no different survivor is a measurement, not an edge.
+2. **The linkage/metric axis, entirely unswept.** Every cluster number on this desk comes from
+   average linkage on `1 − corr`. Ward, complete, and a Ledoit-Wolf-shrunk or DTW distance are
+   unrun, and the singleton-blob behaviour that caps coverage at high k is a LINKAGE property —
+   a linkage that splits the blob would push the operating point past k=96 without the coverage
+   cost that decided against k=128.
+3. **The licensed BRAIN subclass, FIFTH raise, still never censused.** 63 repos from five queries,
+   one touched. `i9880612/alpha-garden` (MIT) carries an operator/field COMPATIBILITY matrix, a
+   shape the desk has no analogue of.
+4. **The BRAIN-scoped collector arm — EIGHTEEN sessions old.** Belongs to a seat that is not
+   research-frozen.

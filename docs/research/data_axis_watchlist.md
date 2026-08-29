@@ -10039,3 +10039,12 @@ s24's "do not spend on it again" is narrowed to "do not spend on it again at fou
 prerequisite is R0744: tiering on `median_spread_pts` sorts 24 symbols at exactly zero cost and
 misprices 144 of 247 by up to 17×, so a finer tier built on today's field would be sorting the
 defect, not the book.
+
+### 2026-08-29 — BRAIN HUNTER s25 — fine correlation-cluster groupings (k=48, k=96) — BUILT, UNCONSUMED
+The desk's peer-grouping axis was built at k=8/k=24 and never swept. Measured sweep to k=160
+(`data/brain_hunter_s25_kcurve.json`, population-controlled in `..._s25b_fixedset.json`) shows
+content rising monotonically to k≈128; **k=96 reaches |corr| 0.477 on 214 symbols, beating
+`currency_quote` (0.488 on 76 FX legs) on 2.8× the coverage.** k48/k96 arms are now IN
+`data/mt5_grouping_map.json` (point-in-time, year Y from Y−1). No data gap — this axis needs no
+new source, only a consumer. Status: **built, wired to nothing** (III.16) until a cross-sectional
+cell runs on it.
