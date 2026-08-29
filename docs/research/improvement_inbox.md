@@ -5131,3 +5131,35 @@ silently removed 25% of its operator set (`delta` → `diff` hits exact zeros �
 NaN) while working perfectly on the author's random test data. **Any desk selector that compares
 with `>` against a running best should count its NaNs and report them, or an entire arm can vanish
 with no error and no log line.**
+
+## 2026-08-29 — free-data run (x) — three method findings, each with its fix
+
+**1. A CORRECT ROW COUNT IS NOT EVIDENCE A TABLE PARSE WORKED.** Extracting the LBMA back-year
+forecast PDFs, a rank-walking parser recovered the row counts *exactly* (24 gold, 20 each
+silver/platinum/palladium — matching the document's own stated contributor count) while every
+extracted VALUE was fiction (recomputed gold mean 150.04 vs the document's published 880.74). The
+cause: character-level kerning makes the between-column separator a single space *identical* to the
+intra-number space, so both the naive parse and the de-kerned parse yield plausible numbers.
+**FIX:** any PDF table extractor on this desk must (a) bin glyphs by `Tm`/`TJ` x-coordinate rather
+than by whitespace, and (b) validate against a total printed inside the document itself where one
+exists. Structural agreement (row counts, column counts) must never be accepted as value validation
+— it is the failure mode that *looks* like success.
+
+**2. LIVENESS AND VINTAGE ARE SEPARATE PROPERTIES, AND A DOCUMENT-HASH URL CONFLATES THEM.** The
+World Bank Pink Sheet is served from `thedocs.worldbank.org/en/doc/<hash>-<vintage>/…`. A stale
+hash returns **HTTP 200 with a well-formed 778 KB workbook forever**, and the stale file's own
+"Updated on" header disagreed with its content by **twelve months**. Neither the status code, the
+byte count, nor the document's own stamp detects it. **FIX:** for any vintage-keyed document
+source, resolve the URL from the publisher's landing page on every run and never store it; take
+liveness as `max(observation date)` **per series**, never from a header. Applies to any collector
+the desk writes against `thedocs.worldbank.org` or a similar CDN-hashed document store.
+
+**3. UA-KEYED BLOCKS RUN IN BOTH DIRECTIONS, AND ONE OF THEM DOES NOT LOOK LIKE A BLOCK.** On
+`fred.stlouisfed.org`, requests carrying a browser User-Agent failed in 0.12 s with **curl exit
+code 000** — a connection-level rejection with no HTTP status, which reads as "the network is
+down". The identical URL with curl's *default* UA returned HTTP 200. Meanwhile `robots.txt` on the
+same host returned a 385-byte Akamai 403 throughout, so a robots-first check grades the whole host
+WALLED while the data door is open. **FIX:** the desk's recorded lesson is "send browser headers to
+get past bot walls"; it needs the symmetric case added — **vary the UA in BOTH directions before
+believing a wall, grade the DOOR not the HOST, and treat curl `000` as a possible header rejection
+rather than a network fault.**

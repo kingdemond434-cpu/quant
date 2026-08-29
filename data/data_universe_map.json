@@ -1,7 +1,7 @@
 {
  "updated": "2026-08-29",
  "posture": "FREE-FIRST. No paid data until the Discovery Bottleneck Detector proves a residual gap is the binding constraint on alpha discovery. ~$1.5k paid basket replaced at $0 + cents of S3 egress.",
- "grading_legend": "verified-clean = URL opened this session + mechanism/format directly confirmed | needs-monitoring = corroborated by >=1 independent source or opened in a prior session but not diffed vs ground truth this session | UNVERIFIED = found this session, not opened/confirmed first-party, DO NOT feed a live signal | destroyed-at-source = no free or paid path reconstructs this component",
+ "grading_legend": "verified-clean = URL opened this session + mechanism/format directly confirmed | needs-monitoring = corroborated by >=1 independent source or opened in a prior session but not diffed vs ground truth this session | UNVERIFIED = found this session, not opened/confirmed first-party, DO NOT feed a live signal | destroyed-at-source = no free or paid path reconstructs this component | licence-blocked = legitimate, reachable and technically excellent, but the publisher's terms forbid the desk's (commercial/derivative) use on every route tested -- NOT piracy, NOT excluded-illegitimate, and NEVER adopted",
  "sources": {
   "cex_trades_ohlcv": [
    {
@@ -3001,7 +3001,88 @@
    ],
    "yield": "MEDIUM -- a one-time-exhaustible dead-data seam that could take the panel from 4 to ~20 analyst-years.",
    "not_proposed_reason": "Even fully extracted this axis is ANNUAL. The scoreboard gives n=16 per metal on a CALENDAR-YEAR-AVERAGE forecast published each January. Against the ten gates that remains vacuous under L1.57, exactly as run (w) concluded at n=4 -- the upgrade from n=4 to n=16 is real and is still not a population. No EV-gate pre-registration this run.",
-   "first_seen": "2026-08-29 (free-data run x)"
+   "first_seen": "2026-08-29 (free-data run x)",
+   "run_x_2026_08_29_update": {
+    "retrieval": "11 of 12 CDX rows retrieved, 9 distinct real %PDF- files. Page-vs-stream assertion carried on every file. 'alch41_forecast' decoded 1 of 8 streams yet yielded 19,412 clean-looking chars -- flagged as the 'clean output from a broken extractor' shape, NOT trusted. 'forecast 2015' reports 0 /Type/Page with 159 streams = object-stream-compressed page tree, not an empty file.",
+    "population_correction": "Only 4 of the 9 PDFs carry the per-analyst tables in their text layer (lbma_2008forecast, lbma_2009forecast: 'Company' x4 + 'AVERAGES' x4; forecast2009: AVERAGES x8; forecast2011: x4). forecast2010/2013/2014/2015 carry ZERO -- commentary editions whose tables are images. The back-year panel is 4 files, not 9; this is invisible from the CDX listing.",
+    "panel_confirmed": "lbma_2009forecast: 24 gold rows + 20 each silver/platinum/palladium, every row with rank, surname/forename, INSTITUTION and CITY (Allidina/Morgan Stanley/New York, Christian/CPM Group/New York, Jansen/JPMorgan/London, Klapwijk/GFMS/London, Steel/HSBC Bank USA/New York...), with the published aggregate printed beneath (gold high 1073.54 / low 721.46 / average 880.74).",
+    "METHOD REFUTED -- DO NOT SHIP THESE NUMBERS": "The text layer is kerned character-by-character ('1 , 1 00 7 5 0 9 50' for 1,100/750/950). A rank-walking parser recovered the row counts EXACTLY (24/20/20/20) and the values were FICTION: recomputed gold mean 150.04 vs the document's own published 880.74. De-kerning the numerals fails in the opposite direction: the AVERAGES line collapses to '1073.54721.46880.74' -- three numbers fused, because the between-column separator is a single space IDENTICAL to the intra-number kerning space. Both readings produce entirely plausible numbers. THE CORRECT ROW COUNT IS NOT EVIDENCE THE PARSE WORKED.",
+    "fix_named_and_proven_available": "Content streams carry Tm text-positioning operators (e.g. '13.1527 0 0 13.1527 110.52 687.54 Tm') with TJ/Tj runs, so column boundaries are recoverable from x-coordinates rather than whitespace. A Tm/TJ-aware extractor binning glyphs by x-position will parse these tables, and it self-validates because EVERY table prints its own AVERAGES row -- a built-in ground truth on four metals per file. That validation must gate any adoption."
+   }
+  },
+  "imf_pcps_primary_commodity_prices": {
+   "grade": "licence-blocked",
+   "adopted": false,
+   "retracts": "Run (w) 2026-08-29 adopted this via the DBnomics mirror as needs-monitoring WITHOUT reading the IMF terms (the IMF host is IP-blocked). That adoption is RETRACTED.",
+   "provides": "IMF Primary Commodity Prices: 63 commodities x annual/monthly/quarterly = 189 series, monthly levels 1992-01 -> 2026-07 (FRED route) / 1990-01 -> 2025-06 (DBnomics mirror, 13 months FROZEN).",
+   "live_route_found_this_run": "FRED release rid=365, keyless: https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES> -- 189 series enumerated by paginating https://fred.stlouisfed.org/release?rid=365&pageID={1..4}. All 63 monthly series end 2026-07.",
+   "why_blocked": [
+    "IMF terms (imf.org/external/terms.htm, read via Wayback 20241007090557 -- host is Akamai datacentre-IP 403): 'permission ... for personal, noncommercial usage only, without any right to resell or redistribute or to compile or create derivative works'; 'The IMF's written permission must be obtained for all other uses'.",
+    "The FRED route does NOT launder it. FRED series notice: 'Copyright (c) 2016, International Monetary Fund. Reprinted with permission.' FRED ToU FAQ Q3: 'Series with a copyright notice are owned by third parties and have special restrictions ... you must contact the data owner to obtain permission. Unfortunately, the Federal Reserve Bank of St. Louis cannot give you such permission.'",
+    "A mirror cannot grant a licence its upstream withheld -- so the DBnomics route inherits the same block."
+   ],
+   "provenance": [
+    "https://fred.stlouisfed.org/release?rid=365 (200, 189 economic data series)",
+    "https://fred.stlouisfed.org/series/POILBREUSDM (200, 74746 b -- copyright notice + suggested citation read)",
+    "https://fred.stlouisfed.org/legal/ (200, 117020 b -- ToU FAQ Q3 read verbatim)",
+    "http://web.archive.org/web/20241007090557/https://www.imf.org/external/terms.htm (200, 33928 b)"
+   ],
+   "failure_modes": [
+    "UA-KEYED IN THE OPPOSITE DIRECTION TO THE DESK'S HABIT: fredgraph.csv with a browser UA ('Mozilla/5.0 ...') fails in 0.12s with curl code 000 (connection-level rejection, NOT an HTTP status, reads as 'network down'); the SAME URL with curl's default UA returns 200. robots.txt on the same host is a 385-byte Akamai 403 throughout -- a robots-first check grades the host WALLED while the data door is open.",
+    "DBnomics mirror is 13 months frozen (ends 2025-06) while presenting as live."
+   ],
+   "replacement_hunt": "CLOSED SAME RUN -- see worldbank_pink_sheet_cmo_monthly (better on licence, 32 years deeper, equally fresh).",
+   "session": "free-data run (x) 2026-08-29"
+  },
+  "worldbank_pink_sheet_cmo_monthly": {
+   "grade": "verified-clean",
+   "adopted": true,
+   "provides": "World Bank Commodity Markets Outlook 'Pink Sheet' monthly prices: 71 named commodity series (energy, metals, softs, fertilizers, food), monthly nominal USD, 1960-01 -> 2026-07. 805 rows x 89 cols. 51 series start 1960-01.",
+   "replaces": "IMF PCPS (licence-blocked, see imf_pcps_primary_commodity_prices) -- and dominates it: 32 years deeper history, equally fresh, 71 vs 63 monthly series, and a licence that expressly permits commercial use.",
+   "licence": "CC-BY 4.0. datacatalog.worldbank.org/public-licenses: 'allows users to copy, modify and distribute data in any format for any purpose, INCLUDING COMMERCIAL USE. Users are only obligated to give appropriate credit ... default license for all Datasets produced by the World Bank itself.' ATTRIBUTION IS A STANDING CONDITION OF USE.",
+   "provenance": [
+    "https://www.worldbank.org/robots.txt (200, 'User-agent: * / Allow: /', 38 path-scoped Disallow rows, none covering thedocs. or /en/research/)",
+    "https://www.worldbank.org/en/research/commodity-markets (200, 55953 b -- live docs URL + licence link resolved from here)",
+    "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx (200, 577979 b)",
+    "https://datacatalog.worldbank.org/public-licenses (200, 16028 b -- CC-BY text read verbatim)",
+    "http://web.archive.org/cdx/search/cdx?url=thedocs.worldbank.org/en/doc/*&filter=original:.*CMO-Historical-Data-Monthly.* (200, 51 snapshots / 5 doc-hash vintages / 37 distinct digests on one hash)"
+   ],
+   "verification": {
+    "vs_imf_pcps": "9 overlapping commodities x 415 monthly obs. Scale-invariant test (median ratio, not difference): coffee 0.022046 and sugar 0.022111 reproduce the physical constant cents/lb -> $/kg = 0.0220462 to 5 s.f. -- a UNITS PROOF, and the reason a naive difference showed a 97.8% 'error' at corr 0.9997. Median post-scaling deviation: copper 0.05%, aluminium 0.05%, coffee 0.12%, maize 0.13%, Brent 0.58%. Wheat (4.49%) and Natural-gas-Europe (3.52%) do NOT collapse -- genuinely different benchmark definitions, recorded as such.",
+    "vs_desk_mt5_tape": "Monthly-averaged H1 closes from desks/mt5/data/universe/*_H1.parquet. XTIUSD/WTI ratio 1.00106 (med dev 0.23%, n=193); XBRUSD/Brent 1.00579 (1.25%, n=144); SUGARRAW/Sugar 45.522 vs the cents/lb constant 45.359 (0.36% off, 1.21% dev, n=72); USCOCOA/Cocoa 1008.3 vs the $/mt constant 1000 (0.83% off, 1.41% dev, n=72). These two RECOVER the broker's unit convention rather than assuming it. COTTON (38.82 vs 45.36), CORN (2.198 vs 2.540), SOYBEAN (2.374 vs 2.722) and WHEAT (2.102 vs 2.722) sit a STABLE 13-23% below their conversion constants -- that is the physical/futures basis (freight, quality, delivery point), not a unit error.",
+    "publication_lag": "BOUNDED EMPIRICALLY on 3 vintages spanning 5 years: 2021-05-12 snapshot stamped 'May 03, 2021' holds data to 2021M04; 2023-02-10 snapshot stamped 'February 03, 2023' holds to 2023M01; live stamped 'August 04, 2026' holds to 2026M07. Month M publishes on ~day 3-4 of M+1. Point-in-time use is safe at a one-month-plus-four-days embargo. This CLOSES run (w)'s standing item 4."
+   },
+   "failure_modes": [
+    "VINTAGE TRAP -- THE DOCS HASH IS THE VINTAGE KEY. A plausible-but-old docs URL (18675f1d...-0050012025) returns HTTP 200 with a well-formed 778KB workbook ending 2025M12. A hardcoded URL silently freezes the feed while looking healthy. RESOLVE THE URL FROM THE CMO PAGE EVERY RUN, NEVER STORE IT.",
+    "THE FILE'S OWN STAMP LIED BY 12 MONTHS in the 2025 vintage ('Updated on January 06, 2025' over data through 2025M12). Liveness must be max(observation month) PER SERIES, never the header.",
+    "DEAD LEG INSIDE A LIVE FILE: 'Shrimps, Mexican' ends 2023M10 (identical in the 2025 vintage, so a genuine discontinuation); 'Tobacco, US import u.v.' ends 2026M05. 69 of 71 end 2026M07.",
+    "Missing values are the token '\\u2026' (ellipsis), NOT blank -- a naive float parse yields silent gaps.",
+    "Wayback retrieval rate on the vintage archive is ~50%: 2 of 4 probes failed (one non-zip error page, one hard 404 despite a CDX row)."
+   ],
+   "unproposed_axis": "CFD-vs-physical-cash basis on the 8 softs/energy MT5 symbols (mechanism: the CFD tracks an exchange future, Pink tracks physical cash, the spread is a freight/quality basis). NOT pre-registered and NOT claimed: the desk's softs tape is 72 monthly observations, which is vacuous against the ten gates under L1.57. Mechanism and falsifier logged for a run with a longer tape.",
+   "cadence": "monthly, ~day 3-4",
+   "session": "free-data run (x) 2026-08-29"
+  },
+  "worldbank_cmo_price_forecasts": {
+   "grade": "verified-clean",
+   "adopted": true,
+   "provides": "World Bank CMO 'Commodity Price Forecasts' (Table 1): 63 labelled rows with >=4 numeric cells -- 13 price indexes + ~50 individual commodities, each with its UNIT and columns 2024|2025|2026f|2027f (two realised years beside two forecast years). Covers energy, fertilizers, agriculture (beverages/food/oils+meals/grains/raw materials), metals and minerals, and precious metals (Gold $/toz, Silver $/toz, Platinum $/toz).",
+   "replaces": "The economically-interesting half of a paid consensus-forecast panel, and it is the OPEN-LICENCE analogue of the LBMA annual forecast survey (which is (c) LBMA with no grant and only n=16 annual cells on 4 metals).",
+   "licence": "CC-BY 4.0, commercial use expressly granted -- same publisher and same licence page as worldbank_pink_sheet_cmo_monthly. Attribution required.",
+   "provenance": [
+    "https://www.worldbank.org/en/research/commodity-markets (200 -- links CMO-April-2026-Forecasts.pdf)",
+    "https://thedocs.worldbank.org/en/doc/f3138644a1e8e2bb631399ae11d6c408-0050012026/related/CMO-April-2026-Forecasts.pdf (200, 51369 b, 2 pages, 39 streams / 37 decoded)",
+    "https://thedocs.worldbank.org/en/doc/f3138644a1e8e2bb631399ae11d6c408-0050012026/related/CMO-April-2026-Forecasts.xlsx (200, 34316 b) -- URL found INSIDE the PDF's own text layer; the CMO landing page does not advertise it"
+   ],
+   "cadence": "semi-annual (April / October), annual-average forecasts, two-year horizon",
+   "failure_modes": [
+    "Same VINTAGE TRAP as the monthly Pink Sheet: the docs hash is the vintage key, so a hardcoded URL freezes silently at HTTP 200. Resolve from the CMO page every run.",
+    "Forecasts are ANNUAL AVERAGES published semi-annually -- a slow-horizon expectations axis, never intraday.",
+    "The machine-readable XLSX is undiscoverable from the landing page; it must be recovered from the PDF text layer (or guessed by extension swap)."
+   ],
+   "cross_source_pair": "worldbank_pink_sheet_cmo_monthly (realised, monthly, 1960-01 -> 2026-07) x worldbank_cmo_price_forecasts (predicted, semi-annual, vintage-archived via Wayback). Neither half is a forecast-vs-realised scoreboard alone; together they are one, on ~62 commodities, under ONE licence and ONE unit convention because the same institution produces both. Estimated population if vintages reach ~2010: ~900+ forecast-year cells, vs n=16 for the LBMA panel.",
+   "not_claimed": "ONE vintage collected this run. The scoreboard does not exist until vintages are collected and joined to realised Pink Sheet outcomes. Sized and named, NOT a result.",
+   "session": "free-data run (x) 2026-08-29"
   }
  },
  "residual_gaps_unpurchasable": [

@@ -9496,3 +9496,351 @@ constructible from `desks/mt5/data/universe/universe.json` plus the desk's own t
 hunter s11 already measured which of those carries independent information (`currency_quote` at
 0.493 was the only arm worth having; `asset_class` reproduced the universe-wide rank at 0.82
 because the largest group IS the universe). Building the map is a desk-side task, not a mine.
+
+## SESSION SUMMARY — 2026-08-29 (free-data run **x**) — CLOSED
+
+**RESUME, NOT RESTART.** `source_backlog_next.py --limit 6` → **backlog clear** (94 catalogued, 66
+resolved, **0 pending verification**, 28 deferred to their own future dates — none workable today).
+So this run takes run (w)'s own named chain, in its stated order:
+
+1. **IMF PCPS — a LIVE route, and the unread ToS.** Run (w) adopted PCPS via the DBnomics mirror but
+   graded it `needs-monitoring` because the mirror is **14 months frozen (ends 2025-06)** and both
+   `www.imf.org` and `data.imf.org` return an Akamai **datacentre-IP 403**, leaving the IMF's own
+   terms **unread**. Close both: find a live door, and read the licence from a reachable route.
+2. **LBMA forecast-survey BACK-YEARS — extract, don't just enumerate.** Run (w) enumerated the
+   population via Wayback CDX (756 rows; per-analyst PDFs 2009/2010/2011/2013/2014/2015, HTML
+   2003/2008) and retrieved ONE file without extracting numbers from any. Dead data =
+   one-time-exhaustible: mine to EXHAUSTED and mark it, with the page-count-vs-streams-parsed
+   assertion on every file (the s13 "clean output from a broken extractor" discipline).
+3. **SEARCH-SPACE EXPANSION (>=25%)** — a source CLASS the desk has never dug, chosen after items
+   1–2 report, biased to the mandated-but-unsourced parts of the MT5 universe (energy/softs).
+
+_(status lines appended below as each item resolves — never held in context)_
+
+### 90. [dig 2026-08-29 (free-data x)] **IMF PCPS — RETRACTION of run (w)'s adoption: the licence forbids the desk's use, on BOTH routes** — grade: **licence-blocked (do not adopt)**
+
+Item 1 of this run. Run (w) adopted IMF Primary Commodity Prices via the DBnomics mirror and left
+the IMF's own terms **unread** because `www.imf.org` / `data.imf.org` return an Akamai
+datacentre-IP 403. I read them this run from a reachable route and the adoption does not survive.
+
+**A LIVE ROUTE EXISTS, and finding it is what made the licence readable.** `www.imf.org` is
+IP-blocked, but the IMF republishes PCPS through **FRED release `rid=365`**: `189` series
+(63 commodities × annual/monthly/quarterly), keyless, one GET each via
+`https://fred.stlouisfed.org/graph/fredgraph.csv?id=<SERIES>`. All 63 monthly series end
+**2026-07** — the DBnomics mirror run (w) adopted ends **2025-06**, so it is **13 months frozen**,
+exactly as run (w) suspected. (FRED's coverage starts **1992-01** vs DBnomics' 1990-01: the live
+route is fresher and two years shallower. Neither matters now — see the licence.)
+
+**AN OPERATIONAL NOTE THAT COST ME FOUR FAILED PULLS, and it inverts the usual habit.** Every
+request carrying a browser User-Agent (`Mozilla/5.0 …`) failed in **0.12 s with curl code 000** — an
+instant connection-level rejection, not a timeout and not an HTTP status. The identical URL with
+**curl's default UA returns HTTP 200**. The desk's recorded lesson is that hosts block bots and
+reward browser headers (BoE/RBA/Akamai); this host does the **opposite**, and because the failure
+surfaces as `000` rather than `403` it reads as "the network is down", not "your headers were
+refused". `robots.txt` on the same host returned a 385-byte Akamai **403** throughout — so a
+robots-first check would have graded the whole host WALLED while the data door was open. **Grade
+the DOOR, not the host, and vary the UA in both directions before believing a wall.**
+
+**THE LICENCE, READ IN FULL, ON TWO INDEPENDENT ROUTES:**
+
+1. **The IMF's own terms** (`imf.org/external/terms.htm`, unreachable live — read via the Wayback
+   snapshot `20241007090557`, 33,928 b): *"The IMF grants permission to visit its Sites and to
+   download and copy information … **for personal, noncommercial usage only, without any right to
+   resell or redistribute or to compile or create derivative works**"*, and *"The IMF's written
+   permission must be obtained for all other uses"*. A trading desk building features is
+   commercial derivative-work creation. **Not granted.**
+2. **The FRED route does not launder it.** The FRED series page for `POILBREUSDM` carries the
+   notice *"Copyright © 2016, International Monetary Fund. Reprinted with permission."* — and
+   FRED's own Terms-of-Use FAQ, Q3, answers this exactly: *"Series with a copyright notice are
+   owned by third parties and have special restrictions. Before using data with a copyright notice
+   for anything other than your own personal use, **you must contact the data owner to obtain
+   permission. Unfortunately, the Federal Reserve Bank of St. Louis cannot give you such
+   permission.**"* FRED's permission is FRED's, and it is explicitly non-transferable.
+
+**So the mirror route run (w) adopted carries the same copyright as the primary.** DBnomics
+redistributes the identical IMF content; a mirror cannot grant a licence its upstream withheld.
+**Run (w)'s `needs-monitoring` adoption of PCPS is retracted.** This is a §13 HARD STOP, not a
+hurdle — and it is worth naming that the source is *legitimate and excellent*: the block is a
+licence, not piracy, so the map grade is `licence-blocked`, not `excluded-illegitimate`.
+
+**§38 — THE EXCLUSION SPAWNS THE HUNT, ANSWERED IN THE SAME RUN, AND THE REPLACEMENT IS BETTER
+THAN WHAT IT REPLACES.** See card 91.
+
+### 91. [dig 2026-08-29 (free-data x)] **World Bank Pink Sheet (CMO) — 71 commodity series, monthly, 1960-01 → 2026-07, CC-BY 4.0 WITH COMMERCIAL USE EXPRESSLY GRANTED** — grade: **verified-clean**
+
+The §38 replacement for card 90, and it dominates the source it replaces on every axis that matters.
+
+| | IMF PCPS (blocked) | **World Bank Pink Sheet** |
+|---|---|---|
+| licence | personal/non-commercial only, no derivative works | **CC-BY 4.0, commercial use expressly permitted** |
+| history | 1992-01 (FRED) / 1990-01 (DBnomics) | **1960-01 — 32 years deeper** |
+| freshness | 2026-07 (FRED) / 2025-06 (DBnomics, frozen) | **2026-07** |
+| series | 63 monthly commodities | 71 monthly commodities |
+| key | none | none |
+
+**LICENCE VERIFIED AT THE SOURCE, NOT ASSUMED FROM AN HTTP 200.** The CMO page's own
+"Data Access and Licensing" link resolves to `datacatalog.worldbank.org/public-licenses#cc-by`,
+which states verbatim: *"The Creative Commons Attribution 4.0 International license allows users
+to copy, modify and distribute data in any format **for any purpose, including commercial use**.
+Users are only obligated to give appropriate credit … CC-BY 4.0 … is the **default license for all
+Datasets produced by the World Bank itself**."* `worldbank.org/robots.txt` → HTTP 200,
+`User-agent: * / Allow: /` with 38 path-scoped `Disallow` rows, none covering `thedocs.` or
+`/en/research/`. Attribution obligation recorded as a standing condition of use.
+
+**THE VINTAGE TRAP — AND IT SERVES HTTP 200 FOREVER.** My first pull used a plausible docs URL and
+returned **HTTP 200, 778 KB, a perfectly well-formed workbook ending 2025M12**. It is a **2025
+vintage**: the live file lives under a *different* document hash
+(`74e8be41…-0050012026` vs `18675f1d…-0050012025`), which I only found by reading the CMO landing
+page rather than reusing a URL. The stale file's own stamp reads **"Updated on January 06, 2025"**
+while it contains data through **2025M12** — the stamp and the content disagree by twelve months,
+so *neither* the URL's 200 nor the file's own header detects the staleness. **The docs hash IS the
+vintage key: any hardcoded Pink-Sheet URL silently freezes the feed while continuing to look
+healthy.** Recorded as the collector's primary failure mode — resolve the URL from the CMO page
+every run, never store it.
+
+**CENSUS OF THE LIVE FILE** (`Monthly Prices` sheet, parsed with stdlib `zipfile`+`ElementTree`,
+no third-party reader): 805 rows × 89 columns, **71 named price series**, stamp "Updated on
+August 04, 2026", data to **2026M07**. Liveness taken per series, never from the stamp:
+**69 of 71 end 2026M07**; `Tobacco, US import u.v.` ends **2026M05**; **`Shrimps, Mexican` ends
+2023M10 — a dead leg inside a live file**, present identically in the 2025 vintage, so it is a
+genuine discontinuation and not a sync artifact. Start dates: 51 series at 1960M01, the rest
+staggered 1970→1996.
+
+**PUBLICATION LAG BOUNDED EMPIRICALLY — this closes run (w)'s standing item 4.** Run (w) held that
+"an unbounded lag makes any point-in-time claim fiction". Wayback CDX over
+`thedocs.worldbank.org/en/doc/*` filtered to the monthly workbook returned **51 snapshots across 5
+document-hash vintages**, of which one hash (`5d903e84-0350012021`) carries **37 distinct content
+digests from 2021-05 to 2025-12** — the file is overwritten in place monthly and the archive holds
+the point-in-time series. Two vintages retrieved and parsed:
+
+| snapshot | file's own stamp | last observation |
+|---|---|---|
+| 2021-05-12 | Updated on **May 03, 2021** | **2021M04** |
+| 2023-02-10 | Updated on **February 03, 2023** | **2023M01** |
+| live (2026-08-29) | Updated on **August 04, 2026** | **2026M07** |
+
+**Lag = month M is published on ~day 3–4 of month M+1, consistent across three vintages spanning
+five years.** Point-in-time use is therefore safe at a one-month-plus-four-days embargo. (Honest
+note: **2 of the 4 archive probes failed** — one returned a non-zip Wayback error page and one a
+hard 404 despite a CDX row. The recorded "CDX 200 archived a soft-404" class, second instance;
+retrieval rate on this archive is ~50%, not 100%.)
+
+**VERIFIED AGAINST IMF PCPS — and the one alarming column turned out to be a units PROOF.** Nine
+overlapping commodities, 415 monthly observations each. Coffee and sugar showed a **97.8% median
+relative "error" at correlation 0.9997**, which is the desk's own recorded trap (a ratio published
+before both legs are in the same units). Testing scale-invariance instead of difference:
+median ratio **0.022046** for coffee and **0.022111** for sugar, against the physical constant
+1 lb = 0.45359 kg ⇒ cents/lb → $/kg = **0.022046**. **The ratio reproduces the conversion constant
+to five significant figures** — Pink Sheet quotes $/kg where IMF quotes cents/lb, and the two are
+the same number. Residual deviation after scaling (median): Brent **0.58%**, maize 0.13%, coffee
+0.12%, copper 0.05%, aluminium 0.05%. Wheat (4.49%) and Natural-gas-Europe (3.52%) do **not**
+collapse — those are genuinely different benchmark definitions, not unit errors, and are recorded
+as such rather than smoothed over.
+
+**AND VERIFIED AGAINST THE DESK'S OWN MT5 TAPE — which recovered broker unit conventions the desk
+had nowhere written down.** Monthly-averaged H1 closes from `desks/mt5/data/universe/*_H1.parquet`
+against the matching Pink series:
+
+| MT5 symbol | Pink series | n (months) | median ratio | median dev | reading |
+|---|---|---|---|---|---|
+| `XTIUSD` | Crude oil, WTI | 193 | 1.00106 | **0.23%** | same unit, same benchmark |
+| `XBRUSD` | Crude oil, Brent | 144 | 1.00579 | **1.25%** | same unit, same benchmark |
+| `SUGARRAW` | Sugar, world | 72 | **45.522** | 1.21% | broker quotes **cents/lb** (const 45.359, 0.36% off) |
+| `USCOCOA` | Cocoa | 72 | **1008.3** | 1.41% | broker quotes **$/mt** (const 1000, 0.83% off) |
+| `COTTON` | Cotton, A Index | 71 | 38.82 | 1.90% | cents/lb would be 45.36 — **14% below: a real basis, not a unit** |
+| `CORN` | Maize | 72 | 2.198 | 2.81% | cents/bu would be 2.540 — **13% below (CBOT vs US-Gulf FOB)** |
+| `SOYBEAN` | Soybeans | 71 | 2.374 | 2.79% | cents/bu would be 2.722 — **13% below** |
+| `WHEAT` | Wheat, US HRW | 72 | 2.102 | 3.62% | cents/bu would be 2.722 — **23% below (CBOT SRW vs HRW Gulf)** |
+
+Two of the eight (`SUGARRAW`, `USCOCOA`) land on a physical conversion constant to under 1%, which
+**proves the tape's unit convention** rather than assuming it. The other four sit a stable 13–23%
+below their conversion constant with a *small* dispersion — that gap is the physical/futures basis
+(freight, quality, delivery point), and its stability is the interesting part.
+
+**WHAT THIS BUYS THE DESK, STATED WITHOUT INFLATION.** The desk trades eight softs/energy CFDs and
+held **no physical-cash reference for any of them**. Pink Sheet supplies one, openly licensed,
+back to 1960, at a bounded and now-measured publication lag. The obvious axis — CFD-vs-cash basis
+as a rich/cheap signal, mechanism being that the CFD tracks an exchange future while Pink tracks
+physical cash, so the spread is a freight/quality basis with real economic anchoring — is **not
+pre-registered this run and I am not claiming it**. The reason is population: the desk's softs tape
+is **72 monthly observations**, and a monthly-frequency signal on n=72 is vacuous against the ten
+gates under L1.57. Naming it and refusing to trade it is the honest split; the falsifier and the
+mechanism are logged so a future run with a longer tape can take it.
+
+**GENEALOGY.** Source `worldbank.org/en/research/commodity-markets` → docs URL resolved per run
+(never stored) → `CMO-Historical-Data-Monthly.xlsx` → stdlib xlsx parse → `Monthly Prices` sheet.
+Licence **CC-BY 4.0** (commercial use granted; attribution required). Cadence **monthly, ~day 3–4**.
+Known failure modes: **(1) hardcoded docs-hash URL serves a stale vintage at HTTP 200 forever**;
+**(2) the file's own "Updated on" stamp disagreed with its content by 12 months in the 2025
+vintage** — liveness must be `max(observation month)` per series; **(3) one dead leg
+(`Shrimps, Mexican`, ends 2023M10) inside an otherwise-live file**; **(4)** `…` is the missing-value
+token, not blank, so a naive float parse yields silent gaps.
+
+### 92. [dig 2026-08-29 (free-data x)] **LBMA forecast back-years: population EXTRACTED, and the naive extraction METHOD is REFUTED — a kerned PDF table produces plausible, silently WRONG numbers** — grade: **UNVERIFIED (numbers not trustworthy; method fix named)**
+
+Item 2 of this run: run (w) enumerated the back-year population via Wayback CDX and retrieved one
+file without extracting numbers from any. I retrieved and extracted the whole population this run.
+
+**RETRIEVAL: 11 of 12 CDX rows, 9 distinct PDFs, all real `%PDF-`** (`forecast2009/2010/2011/2013`,
+`forecast_2014_final_interact`, `forecast 2015_final linked`, `lbma_2008forecast`,
+`lbma_2009forecast`, `alch41_forecast`). One row failed with an HTTPError. Extracted with stdlib
+`zlib` only, carrying the s13 page-vs-stream assertion on every file:
+
+| file | pages | streams | decoded | chars |
+|---|---|---|---|---|
+| forecast2009 | 16 | 45 | 44 | 233,785 |
+| forecast2010 | 16 | 102 | 89 | 117,183 |
+| forecast2011 | 16 | 67 | 65 | 213,509 |
+| forecast2013 | 25 | 115 | 105 | 82,731 |
+| forecast_2014 | 29 | 130 | 116 | 43,770 |
+| forecast 2015 | 0 (¹) | 159 | 129 | 206,237 |
+| lbma_2008forecast | 5 | 10 | 9 | 11,152 |
+| lbma_2009forecast | 5 | 17 | 16 | 13,022 |
+| alch41_forecast | 1 | 8 | **1** | 19,412 |
+
+(¹ `/Type/Page` count of 0 with 159 streams = an object-stream-compressed page tree, not an empty
+file. `alch41` decoded **1 of 8** streams and still yielded 19KB of clean-looking text — the exact
+"clean output from a broken extractor" shape; flagged, not trusted.)
+
+**WHICH FILES ACTUALLY HOLD THE PANEL — a census, not an assumption.** Counting the table's own
+header tokens on the flattened text: only `lbma_2008forecast` and `lbma_2009forecast` carry
+`Company` ×4 and `AVERAGES` ×4 (the four-metal per-analyst tables). `forecast2009` (AVERAGES ×8)
+and `forecast2011` (×4) carry tables too; `forecast2010`, `forecast2013`, `forecast_2014` and
+`forecast 2015` carry **zero** — those are the commentary editions and their tables are images or
+otherwise not in the text layer. **So the back-year panel is 4 files, not 9** — a distinction
+invisible from the CDX listing that run (w) worked from.
+
+**THE PANEL IS REAL AND FULLY LEGIBLE.** From `lbma_2009forecast`: 24 gold rows, 20 each for silver,
+platinum and palladium, every row carrying rank, surname/forename, **institution and city** —
+Allidina/Morgan Stanley/New York, Bhar/Calyon/London, Christian/CPM Group/New York, Cooper/Barclays
+Capital/London, Jansen/JPMorgan/London, Klapwijk/GFMS/London, Steel/HSBC Bank USA/New York … with
+the published aggregate printed underneath (gold high 1073.54 / low 721.46 / **average 880.74**).
+
+**AND HERE IS WHY I AM NOT SHIPPING THE NUMBERS.** The text layer is kerned character-by-character
+(`1 , 1 00 7 5 0 9 50` for the triple 1,100 / 750 / 950). A rank-walking parser recovered the row
+counts **exactly right** — 24 gold, 20 silver, 20 platinum, 20 palladium — and the values were
+**fiction**: recomputed gold mean **150.04** against the document's own published **880.74**. I then
+de-kerned the numerals, and the de-kern *also* fails, in the opposite direction: the published
+averages line collapses to `1073.54721.46880.74` — **three numbers fused into one**, because the
+separator between columns is a single space *identical* to the space inside a number. The
+extractor cannot tell an intra-number kerning space from a between-column space, and **both
+readings produce numbers that look completely plausible.**
+
+**Had I trusted the row count as evidence the parse worked, I would have carded a fabricated
+analyst panel.** The count was right and the content was wrong — the same shape as the desk's
+recorded "a partial extractor fails as CLEAN OUTPUT" class, one layer deeper: here the *structure*
+verified and only the *values* were fiction.
+
+**THE FIX IS NAMED AND PROVEN AVAILABLE, NOT SPECULATED.** I probed the content streams for text
+positioning: `Tm` operators are present (`13.1527 0 0 13.1527 110.52 687.54 Tm`) with `TJ`/`Tj`
+runs, so **column boundaries are recoverable from x-coordinates** rather than from whitespace. A
+Tm/TJ-aware extractor that bins glyphs by x-position will parse these tables correctly, and it can
+be validated on the spot because **every table prints its own AVERAGES row** — a built-in
+ground truth on four metals per file. That validation must gate any adoption.
+
+**Grade UNVERIFIED and honestly so: the population is now retrieved and censused, the panel is
+confirmed to exist with institutions attached, and the numbers are NOT extracted.** Run (w) said
+"extract next run"; this run turned that into a *measured* method refutation with the exact reason,
+which is what stops the next run from shipping fiction.
+
+### 93. [dig 2026-08-29 (free-data x)] **World Bank CMO Commodity Price FORECASTS — a semi-annual, point-in-time, CC-BY forecast panel over 62 commodities, in XLSX** — grade: **verified-clean**
+
+Item 3, the search-space expansion — and it lands on the axis card 92 could not verify, from a
+publisher whose licence is already cleared (card 91).
+
+The CMO landing page links `CMO-April-2026-Forecasts.pdf`. Extracting that PDF surfaced, inside its
+own text layer, a URL the page does **not** advertise: the same document as
+**`CMO-April-2026-Forecasts.xlsx`** (34,316 b, HTTP 200). Reading the PDF is how the clean machine-
+readable door was found — the boring layer paying again.
+
+**CENSUS** (stdlib xlsx parse, sheet `Forecast`): **63 labelled rows carrying ≥4 numeric cells** —
+13 price indexes plus ~50 individual commodities — each with its **unit** and the columns
+`2024 | 2025 | 2026f | 2027f`, i.e. realised years beside **two forecast years**. Coverage spans
+energy, fertilizers, agriculture (beverages, food, oils/meals, grains, raw materials), metals and
+minerals, and precious metals: `Gold $/toz 2388 / 3442 / 4700f / 4300f`, `Silver $/toz 28.3 / 39.8 /
+70f / 65f`, `Platinum $/toz 955 / 1278 / 1950f / 1700f`, `Nickel`, `Tin`, `Zinc`, `Iron ore`, …
+
+**WHY THIS MATTERS AGAINST CARD 92, AND IT IS THE POINT OF THE EXPANSION.** Run (w) verified the
+LBMA consensus scoreboard and refused to propose it because the population is **n=16 annual cells
+on 4 metals** — vacuous under L1.57. This source is the same *kind* of object (a dated, public,
+falsifiable forecast with a realised outcome) at **62 commodities × 2 forecast horizons**, published
+semi-annually, under **CC-BY 4.0 with commercial use expressly granted** — where the LBMA panel is
+`© LBMA` with no grant. And because the docs URL is vintage-keyed and Wayback-archived (card 91),
+**the point-in-time forecast vintages are recoverable**, which is what turns a forecast table into a
+forecast-vs-realised scoreboard. Sizing it honestly: if vintages reach back to ~2010, the order of
+magnitude is ~62 commodities × ~15 years ≈ **900+ forecast-year cells**, against LBMA's 16.
+
+**NOT CLAIMED, AND THE GAP IS NAMED:** I have collected **one** vintage. The scoreboard does not
+exist until the vintages are collected and joined to realised Pink Sheet outcomes (card 91), and
+the forecasts are **annual averages at semi-annual publication**, so this is a slow-horizon
+positioning/expectations axis, never an intraday one. That is next-run work with a named, sized
+population — not a result.
+
+**CROSS-SOURCE PAIR (joint value > either alone):** **Pink Sheet (realised, monthly, 1960→2026-07)
+× CMO Forecasts (predicted, semi-annual, vintage-archived)** — one publisher, one licence, one unit
+convention, realised and predicted on the same 62 commodities. Neither half is a scoreboard alone;
+together they are one, and the units already agree because the same institution produces both.
+
+### SESSION CLOSE — 2026-08-29 free-data run (x)
+
+**COUNTS.** Categories touched: 5 (macro/alt-data reference, vendor-replacement reconstruction,
+community/archival data lakes, non-English n/a this run, search-space expansion). Sources graded:
+**4** — 1 `licence-blocked` (retraction), **2 `verified-clean`**, 1 `UNVERIFIED` (upgraded from
+"enumerated" to "population retrieved + method refuted"). **Verified 2, unverified 1, retracted 1.**
+
+**BEST VENDOR-REPLACEMENT:** World Bank Pink Sheet — replaces the licence-blocked IMF PCPS and
+**dominates it**: CC-BY 4.0 with commercial use expressly granted (vs personal/non-commercial only),
+1960-01 vs 1992-01 (**32 years deeper**), 71 vs 63 monthly series, equally fresh at 2026-07.
+
+**CROSS-SOURCE PAIR:** Pink Sheet (realised) × CMO Forecasts (predicted) — one publisher, one
+licence, one unit convention, ~62 commodities, realised and predicted. Joint value is a
+forecast-vs-realised scoreboard neither half provides; ~900+ candidate cells vs n=16 for the LBMA
+panel this desk already judged vacuous.
+
+**NEW SOURCE CLASS DISCOVERED:** *openly-licensed institutional commodity FORECAST panels* — the
+CC-BY analogue of the `(c)`-restricted analyst-survey class the desk has been mining at the LBMA.
+
+**DEPTH LINE, honestly:**
+- **IMF PCPS — EXHAUSTED as a question, and the answer is no.** Live route found (FRED rid=365,
+  189 series enumerated by pagination) → lineage confirmed from the series page's own copyright
+  notice → **both** licence routes read verbatim (IMF terms via Wayback; FRED ToU FAQ Q3) → prior
+  adoption retracted. Depth surfaced what the surface could not: run (w) adopted this source on an
+  HTTP 200 and the *terms*, once read, kill it. Reading the licence is depth.
+- **Pink Sheet — EXHAUSTED for this run.** Landing page → live docs hash → stdlib parse → per-series
+  liveness census (found a dead leg and a 12-month-lying stamp) → **two** ground-truth diffs (vs
+  IMF, vs the desk's own MT5 tape) → scale-invariant test that converted a 97.8% "error" into a
+  units *proof* → Wayback CDX vintage enumeration → 3 vintages parsed to bound the publication lag.
+  Depth surfaced the vintage trap, which the surface serves as a clean 200 forever.
+- **LBMA back-years — POPULATION RETRIEVED, VALUES REFUTED.** 9 PDFs extracted with page-vs-stream
+  assertions → per-file census of which actually hold tables (**4 of 9**, not 9) → parser built →
+  **parser refuted against the documents' own published averages** → fix probed and proven
+  available (`Tm` ops present). Depth surfaced that the *correct row count* was hiding fabricated
+  values.
+- **CMO Forecasts — surface + one layer past it.** PDF read → the unadvertised XLSX URL found
+  *inside the PDF's own text layer* → parsed and censused. One vintage only; named as such.
+- **Gaps I did not close:** no reply chains, no fork trees, no citation chains (institutional
+  document sources have none — CDX vintage enumeration was the equivalent depth). **No non-English
+  ground this run** — a real omission against the standing CJK priority, named rather than papered
+  over, and taken as next-run item 4.
+
+**NEXT RUN TAKES (named so exhaustion is achievable across runs):**
+1. **Build the Tm/TJ x-coordinate PDF table extractor** and re-parse the 4 LBMA back-year files,
+   gating adoption on reproducing each table's own printed AVERAGES row. This is the only thing
+   standing between the desk and a 20-year per-analyst precious-metals forecast panel.
+2. **Collect the CMO Forecasts vintages** (Wayback CDX over `thedocs.worldbank.org`, expecting ~50%
+   retrieval per card 91) and join to realised Pink Sheet outcomes → the forecast-vs-realised
+   scoreboard, and only then size it against the ten gates.
+3. **The Pink Sheet revision history**: one docs hash carries **37 distinct content digests**
+   (2021-05 → 2025-12). Revisions to published commodity benchmarks are themselves an axis and the
+   desk holds nothing like it — and it is the point-in-time correctness check for item 2.
+4. **Non-English ground, owed from this run**: the CJK/regional statistics-agency door for
+   commodity benchmarks (the recorded "statistics agency is the door" class — SSB/statbank —
+   applied to commodity rather than FX reference data).
+
+**BLUNT CLOSE.** The headline of this run is a **retraction**: run (w) adopted IMF PCPS without
+reading its terms, and the terms forbid it on every route. The replacement is strictly better, so
+the desk ends the run richer — but the lesson is that an HTTP 200 and a clean ground-truth diff say
+nothing about whether the desk is *allowed* to use a source, and the licence read is the cheapest
+step in the whole pipeline. Second blunt point: I extracted a 20-year analyst panel and am shipping
+**none of its numbers**, because the parse that got every row count right got every value wrong.
+Verified small beats unverified impressive.
