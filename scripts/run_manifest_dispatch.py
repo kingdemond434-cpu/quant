@@ -33,6 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = ROOT / "ops" / "crontab.manifest"
 STATE = ROOT / "data" / "manifest_dispatch_state.json"
+OUTCOMES = ROOT / "data" / "fence_outcomes.jsonl"
 USER_UNITS = Path.home() / ".config" / "systemd" / "user"
 CATCHUP_CAP_MIN = 20
 
@@ -297,6 +298,83 @@ ALLOWLIST: dict[str, str] = {
 #: the ruin probability it reduces, as the survival rails require of every clamp.
 #: A deferred row is NEVER dropped: it lands in `pending` and fires on a later tick when the
 #: headroom returns. Silent truncation would read as "the fleet is covered" when it is not.
+def _wrap_for_rc(cmd: str, token: str, at: str) -> str:
+    """Append the row's EXIT CODE to data/fence_outcomes.jsonl once it finishes.
+
+    THE DEFECT THIS ENDS (2026-08-29). This dispatcher fires ~30 fences that exit 2 on a real
+    finding -- check_organ_liveness DARK, check_bar_span CONTAMINATED, check_calibration
+    OVERDUE -- and detaches with stdout/stderr to DEVNULL. Nothing collected the exit codes, so
+    every one of those verdicts existed only inside a log that no organ read, and the desk
+    learned a fence was red only when a human happened to run it by hand. A fence that fails
+    loud into a void is indistinguishable from a fence that passes.
+
+    The row keeps its own flock/redirects untouched; `$?` is captured on the very next line, so
+    it is the ROW's status and not the appender's. Token and timestamp are dispatcher-owned
+    strings (a repo-relative path and an ISO stamp), so single-quoting them is safe.
+    """
+    # The row runs in a SUBSHELL. A row sealed with `exit $?` -- the house pattern that stops
+    # bash re-reading a rewritten script mid-run (ops/run_recommendation_worker.sh) -- would
+    # otherwise terminate this shell BEFORE the appender line, and a row that records no
+    # outcome at all reads downstream as "not red", which is absence mistaken for a clean
+    # verdict (L1.28a). The subshell makes `exit` end the row, not the recording.
+    return (f"( {cmd}\n )\n"
+            "__rc=$?\n"
+            "printf '{\"token\":\"%s\",\"at\":\"%s\",\"rc\":%s}\\n' "
+            f"'{token}' '{at}' \"$__rc\" >> '{OUTCOMES}'\n")
+
+
+def red_rows(within_h: float = 26.0, now: datetime | None = None) -> dict[str, dict[str, object]]:
+    """Latest non-zero exit per token inside the window -- the dispatcher's OWN red list.
+
+    Keyed by token and keeping only the LATEST outcome per token, so a fence that has since
+    gone green stops being reported. Absence of the file is UNMEASURED, which reads here as an
+    empty dict AND is why the caller reports the file's own age alongside the count (L1.28a).
+    """
+    now = now or datetime.now(UTC)
+    latest: dict[str, dict[str, object]] = {}
+    try:
+        lines = OUTCOMES.read_text("utf-8").splitlines()[-4000:]
+    except OSError:
+        return {}
+    for line in lines:
+        try:
+            row = json.loads(line)
+            at = datetime.fromisoformat(str(row["at"]))
+        except Exception:
+            continue
+        if (now - at).total_seconds() / 3600.0 > within_h:
+            continue
+        tok = str(row.get("token", ""))
+        prev = latest.get(tok)
+        if prev is None or str(prev["at"]) <= str(row["at"]):
+            latest[tok] = {"rc": row.get("rc"), "at": row.get("at")}
+    return {t: v for t, v in latest.items() if v.get("rc") not in (0, "0")}
+
+
+def outcome_coverage(within_h: float = 26.0, now: datetime | None = None) -> int:
+    """How many DISTINCT tokens reported any outcome in the window -- the red list's denominator.
+
+    Without it `red_rows_n: 0` is ambiguous between "every fence passed" and "nothing has been
+    recorded yet", and those two must never render identically (L1.28a). A reader that sees
+    0 red over 0 recorded is looking at an UNMEASURED fleet, not a healthy one.
+    """
+    now = now or datetime.now(UTC)
+    seen: set[str] = set()
+    try:
+        lines = OUTCOMES.read_text("utf-8").splitlines()[-4000:]
+    except OSError:
+        return 0
+    for line in lines:
+        try:
+            row = json.loads(line)
+            at = datetime.fromisoformat(str(row["at"]))
+        except Exception:
+            continue
+        if (now - at).total_seconds() / 3600.0 <= within_h:
+            seen.add(str(row.get("token", "")))
+    return len(seen)
+
+
 MIN_AVAIL_MB = 420           # below this, defer rather than fire (kernel OOM territory)
 MAX_FIRES_PER_TICK = 4       # burst cap: a 5-minute tick never thunders the whole manifest
 PENDING_MAX_AGE_MIN = 180    # past this a deferred row is REPORTED as starved (it is not dropped)
@@ -561,7 +639,8 @@ def main() -> int:
             pending[token] = {"cmd": cmd, "spec": spec, "since": pending.get(token, {}).get(
                 "since", now.isoformat(timespec="seconds"))}
             continue
-        subprocess.Popen(["/bin/sh", "-c", cmd], cwd=ROOT,
+        subprocess.Popen(["/bin/sh", "-c",
+                          _wrap_for_rc(cmd, token, now.isoformat(timespec="seconds"))], cwd=ROOT,
                          env={"PATH": "/usr/bin:/bin", "HOME": str(Path.home()),
                               "QUANT_ROOT": str(ROOT)},
                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -577,6 +656,10 @@ def main() -> int:
     state["deferred_this_run"] = deferred
     state["pending"] = pending
     state["avail_mb"] = _avail_mb()
+    reds = red_rows(now=now)
+    state["red_rows"] = reds
+    state["red_rows_n"] = len(reds)
+    state["outcomes_recorded_n"] = outcome_coverage(now=now)
     state["skipped_twinned"] = sorted(set(skipped_twinned))
     state["uncovered_unallowed"] = len(uncovered_tokens)
     # The COUNT alone is not actionable -- the next seat needs to know WHICH organs are dead

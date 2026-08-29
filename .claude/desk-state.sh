@@ -48,20 +48,43 @@ if hw:
     else:
         print("             last_raised ABSENT -- L1.50: absent is not clean")
 
-# The 40-day forward clock. Distinct UTC days in the archive IS the clock; the venue caps
-# openInterestHist at ~30d so it can only be accrued, never backfilled.
+# The 40-day forward clock. Distinct UTC days in the archive IS the clock -- but a FROZEN
+# archive and an accruing one produce the identical count, so the count alone is a liveness
+# claim the desk cannot cash. Until 2026-08-29 this printed "23/40 ~17d to go" to every session
+# for 8 days after its collector died with root cron (2026-08-20T20:32Z), which is the desk's
+# own "heartbeat liveness != data liveness" lesson reappearing on its own front page.
+# Two facts now travel with the number: how OLD the newest observation is, and that the feed is
+# fapi.binance.com (scripts/collect_oi_ls_live.py:42) -- BANNED ground under LAWS s1, so this
+# clock can never legitimately mature and must not be resurrected.
 p = "data/oi_ls_live.jsonl"
 if os.path.exists(p):
-    days = set()
+    days, newest = set(), ""
     try:
         with open(p, encoding="utf-8") as f:
             for line in f:
-                try: days.add(json.loads(line).get("ts", "")[:10])
-                except Exception: pass
-    except Exception: days = set()
+                try:
+                    ts = json.loads(line).get("ts", "")
+                except Exception:
+                    continue
+                if ts:
+                    days.add(ts[:10])
+                    if ts > newest: newest = ts
+    except Exception:
+        days, newest = set(), ""
     d = len(days - {""})
-    print(f"  oi/ls clock  {d}/40 distinct days"
-          + ("  MATURE -- now needs t>=1.65" if d >= 40 else f"  ~{40-d}d to go"))
+    age_h = None
+    if newest:
+        try:
+            age_h = (datetime.now(UTC) - datetime.fromisoformat(newest)).total_seconds() / 3600.0
+        except Exception:
+            age_h = None
+    if age_h is None:
+        state = "UNMEASURED -- no parseable timestamp; count is not a clock"
+    elif age_h > 36:
+        state = f"FROZEN {age_h/24:.1f}d (banned-universe feed; RETIRED, never resurrect)"
+    else:
+        state = "MATURE -- now needs t>=1.65" if d >= 40 else f"~{40-d}d to go"
+    print(f"  oi/ls clock  {d}/40 distinct days  {state}")
 else:
     print("  oi/ls clock  archive ABSENT on this clone (data/ is gitignored -> it is on the VPS)")
 
@@ -143,6 +166,33 @@ except Exception:
 PYEOF
 else
     echo "  unwired      data/unwired_capability.json ABSENT -- the III.16 hunter has not run here"
+fi
+# THE FENCE RED LIST (wired 2026-08-29). ~70 dead cron rows run under the manifest dispatcher
+# since the 08-20 root-cron OOM death, and ~30 of them are fences whose contract is to exit 2 on a
+# real finding. The dispatcher detached every one of them with stdout on DEVNULL and collected no
+# exit code, so `check_organ_liveness: DARK (32 dead organs)` and `check_bar_span: CONTAMINATED
+# 88/88` existed only inside unread logs. The dispatcher now records each row's rc; this surfaces
+# the roll-up where every session already looks. The DENOMINATOR travels with it on purpose: 0 red
+# over 0 recorded is an unmeasured fleet, not a healthy one, and the two must never render alike.
+if [ -f data/manifest_dispatch_state.json ]; then
+    "$PY" - <<'PYEOF2' 2>/dev/null || true
+import json
+try:
+    d = json.load(open("data/manifest_dispatch_state.json"))
+    reds, rec = d.get("red_rows") or {}, d.get("outcomes_recorded_n")
+    if rec is None:
+        print("  fences       exit codes NOT RECORDED -- dispatcher predates the rc wiring; "
+              "fence health UNMEASURED, not clean")
+    elif int(rec) == 0:
+        print("  fences       0 of 0 rows reported an exit code in 26h -- UNMEASURED "
+              "(a dispatcher that fired nothing looks identical to a healthy fleet)")
+    else:
+        names = ", ".join(sorted(reds)[:3]).replace("scripts/", "")
+        tail = f" -- {names}{' ...' if len(reds) > 3 else ''}" if reds else ""
+        print(f"  fences       {len(reds)} RED of {rec} rows reporting in 26h{tail}")
+except Exception:
+    print("  fences       dispatch state unreadable -- fence health UNKNOWN, not clean")
+PYEOF2
 fi
 echo "  READ FIRST: CLAUDE.md, then docs/GAP_REGISTER.md row 91 (the ranked top item)."
 echo "=========================================================================="
