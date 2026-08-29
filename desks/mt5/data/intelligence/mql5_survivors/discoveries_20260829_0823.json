@@ -1,0 +1,1138 @@
+[
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2304847",
+  "symbols": [
+   "AUDCAD",
+   "OSMOSE",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 275.261,
+  "growth_pct": 20582.81,
+  "weeks": 93.0,
+  "pf": 1.9,
+  "max_dd_pct": null,
+  "trades": 2965.0,
+  "win_pct": 2280.0,
+  "algo_pct": 96.0,
+  "subscribers": 25.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1402%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "1988269",
+    "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
+    "growth": "1024%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "121%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 2,
+   "13": 2,
+   "20": 5,
+   "21": 2,
+   "09": 1,
+   "12": 2,
+   "19": 3,
+   "23": 2,
+   "14": 1,
+   "06": 2,
+   "17": 1,
+   "07": 2,
+   "05": 3,
+   "18": 2,
+   "10": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2379208",
+  "symbols": [
+   "BEFORE",
+   "BROKER"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 42.388,
+  "growth_pct": 3460.95,
+  "weeks": 78.0,
+  "pf": 2.0,
+  "max_dd_pct": null,
+  "trades": 4037.0,
+  "win_pct": 3327.0,
+  "algo_pct": 100.0,
+  "subscribers": 65.0,
+  "author": "/en/users/mo2002",
+  "author_other_signals": [
+   {
+    "sid": "2379250",
+    "title": "'World Peace Forex Strategy 02' by Nobeyo- Sano",
+    "growth": "67%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 2,
+   "08": 3,
+   "16": 2,
+   "15": 1,
+   "17": 1,
+   "22": 6,
+   "12": 1,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2375343",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "CADCHF",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 34.339,
+  "growth_pct": 3170.48,
+  "weeks": 61.0,
+  "pf": 1.36,
+  "max_dd_pct": null,
+  "trades": 503.0,
+  "win_pct": 305.0,
+  "algo_pct": 92.0,
+  "subscribers": 11.0,
+  "author": "/en/users/x_alexander_x",
+  "author_other_signals": [
+   {
+    "sid": "2356441",
+    "title": "'FXtrading' by Alexander Pavlenko",
+    "growth": "1279%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   }
+  ],
+  "hour_histogram": {
+   "08": 2,
+   "13": 3,
+   "15": 2,
+   "14": 1,
+   "06": 1,
+   "02": 2,
+   "05": 1,
+   "01": 1,
+   "12": 2,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2280569",
+  "symbols": [
+   "AUDCAD",
+   "AUDUSD",
+   "NADCAD",
+   "NZDCAD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 43.158,
+  "growth_pct": 3336.6,
+  "weeks": 87.0,
+  "pf": 3.8,
+  "max_dd_pct": null,
+  "trades": 2153.0,
+  "win_pct": 1727.0,
+  "algo_pct": 92.0,
+  "subscribers": 19.0,
+  "author": "/en/users/gutiv",
+  "author_other_signals": [
+   {
+    "sid": "2315819",
+    "title": "'MagicGW 7M 8434' by Ihor Hut",
+    "growth": "233%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   },
+   {
+    "sid": "2361746",
+    "title": "'GridWise 8015' by Ihor Hut",
+    "growth": "233%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2385784",
+    "title": "'X2 med 0594' by Ihor Hut",
+    "growth": "139%",
+    "curve_points": 20,
+    "curve_dd": -11.0
+   }
+  ],
+  "hour_histogram": {
+   "22": 3,
+   "01": 2,
+   "00": 3,
+   "12": 2,
+   "09": 3,
+   "08": 2,
+   "18": 2,
+   "04": 1,
+   "17": 1,
+   "15": 3,
+   "10": 2,
+   "05": 4,
+   "21": 5,
+   "11": 1,
+   "13": 2,
+   "02": 1,
+   "03": 3,
+   "14": 1,
+   "19": 1,
+   "07": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2262642",
+  "symbols": [
+   "AUDCAD",
+   "SIGNAL"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived"
+  ],
+  "ev_score": 46.121,
+  "growth_pct": 2099.26,
+  "weeks": 251.0,
+  "pf": 1.7,
+  "max_dd_pct": null,
+  "trades": 5857.0,
+  "win_pct": 3745.0,
+  "algo_pct": 14.0,
+  "subscribers": 67.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [
+   {
+    "sid": "2308093",
+    "title": "'UpFuji MT4' by Daniel Moraes Da Silva",
+    "growth": "289%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2308095",
+    "title": "'UpFuji MT5' by Daniel Moraes Da Silva",
+    "growth": "102%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363323",
+    "title": "'UpEverest MT4' by Daniel Moraes Da Silva",
+    "growth": "528%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "16": 3,
+   "13": 5,
+   "05": 2,
+   "03": 2,
+   "09": 3,
+   "06": 1,
+   "08": 1,
+   "17": 3,
+   "23": 2,
+   "18": 2,
+   "07": 2,
+   "02": 1,
+   "10": 4,
+   "15": 2,
+   "21": 1,
+   "12": 1,
+   "01": 2,
+   "04": 1,
+   "20": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2231030",
+  "symbols": [
+   "CHOICE",
+   "SIGNAL",
+   "STRESS",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "high_pf",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 21.562,
+  "growth_pct": 1401.98,
+  "weeks": 123.0,
+  "pf": 3.24,
+  "max_dd_pct": null,
+  "trades": 1085.0,
+  "win_pct": 897.0,
+  "algo_pct": 96.0,
+  "subscribers": 29.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2304847",
+    "title": "'MSC SuperGold Pro' by Bui Huy Dat",
+    "growth": "20583%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "1988269",
+    "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
+    "growth": "1024%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "121%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "06": 2,
+   "17": 1,
+   "15": 1,
+   "20": 6,
+   "16": 2,
+   "00": 3,
+   "19": 4,
+   "04": 1,
+   "22": 1,
+   "01": 1,
+   "03": 1,
+   "23": 1,
+   "21": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2356441",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD",
+   "GBPAUD",
+   "GBPCAD",
+   "GBPNZD",
+   "GBPUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "high_pf",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 14.519,
+  "growth_pct": 1279.05,
+  "weeks": 67.0,
+  "pf": 2.69,
+  "max_dd_pct": null,
+  "trades": 317.0,
+  "win_pct": 238.0,
+  "algo_pct": 87.0,
+  "subscribers": 10.0,
+  "author": "/en/users/x_alexander_x",
+  "author_other_signals": [
+   {
+    "sid": "2375343",
+    "title": "'Multi EA Trading' by Alexander Pavlenko",
+    "growth": "3170%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   }
+  ],
+  "hour_histogram": {
+   "07": 4,
+   "14": 1,
+   "02": 1,
+   "09": 1,
+   "15": 1,
+   "11": 1,
+   "16": 3,
+   "20": 1,
+   "13": 1,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/1988269",
+  "symbols": [
+   "AUDCAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "gold"
+  ],
+  "ev_score": 18.349,
+  "growth_pct": 1023.88,
+  "weeks": 167.0,
+  "pf": 1.78,
+  "max_dd_pct": null,
+  "trades": 1661.0,
+  "win_pct": 1323.0,
+  "algo_pct": 73.0,
+  "subscribers": 10.0,
+  "author": "/en/users/datbh",
+  "author_other_signals": [
+   {
+    "sid": "2304847",
+    "title": "'MSC SuperGold Pro' by Bui Huy Dat",
+    "growth": "20583%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   },
+   {
+    "sid": "2231030",
+    "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
+    "growth": "1402%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2381088",
+    "title": "'MSC SuperGold IC Pro' by Bui Huy Dat",
+    "growth": "121%",
+    "curve_points": 20,
+    "curve_dd": -14.0
+   }
+  ],
+  "hour_histogram": {
+   "09": 1,
+   "14": 3,
+   "05": 3,
+   "10": 2,
+   "22": 1,
+   "15": 1,
+   "13": 1,
+   "06": 1,
+   "21": 1,
+   "12": 1,
+   "20": 3,
+   "08": 2,
+   "11": 1,
+   "16": 3,
+   "03": 1,
+   "19": 7,
+   "17": 1,
+   "07": 2,
+   "00": 2,
+   "02": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2371777",
+  "symbols": [
+   "AUDNZD",
+   "CHFJPY",
+   "EURCAD",
+   "EURGBP",
+   "EURJPY",
+   "EURUSD",
+   "GBPJPY",
+   "GBPUSD",
+   "USDCAD",
+   "USDJPY"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "new_fast_growth",
+   "high_pf",
+   "multi_fx"
+  ],
+  "ev_score": 3.966,
+  "growth_pct": 583.73,
+  "weeks": 24.0,
+  "pf": 2.05,
+  "max_dd_pct": null,
+  "trades": 618.0,
+  "win_pct": 478.0,
+  "algo_pct": 75.0,
+  "subscribers": 28.0,
+  "author": "/en/users/osvaldasozzy",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "11": 2,
+   "15": 3,
+   "18": 1,
+   "20": 1,
+   "19": 1,
+   "03": 1,
+   "02": 2,
+   "01": 3,
+   "14": 3,
+   "08": 2,
+   "07": 1,
+   "06": 1,
+   "04": 1,
+   "16": 1,
+   "05": 1,
+   "00": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2265877",
+  "symbols": [
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 4.07,
+  "growth_pct": 299.51,
+  "weeks": 96.0,
+  "pf": 2.33,
+  "max_dd_pct": null,
+  "trades": 850.0,
+  "win_pct": 613.0,
+  "algo_pct": 99.0,
+  "subscribers": 37.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2204998",
+    "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
+    "growth": "978%",
+    "curve_points": 20,
+    "curve_dd": -6.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "647%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   },
+   {
+    "sid": "2376950",
+    "title": "'Multi EA combo' by Profalgo Limited",
+    "growth": "372%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   }
+  ],
+  "hour_histogram": {
+   "15": 1,
+   "17": 3,
+   "10": 4,
+   "06": 1,
+   "05": 6,
+   "01": 2,
+   "08": 1,
+   "09": 2,
+   "04": 2,
+   "19": 4,
+   "22": 3,
+   "16": 1,
+   "13": 2,
+   "14": 2,
+   "23": 1,
+   "18": 1,
+   "02": 2,
+   "03": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2329290",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 4.708,
+  "growth_pct": 475.36,
+  "weeks": 51.0,
+  "pf": 1.43,
+  "max_dd_pct": null,
+  "trades": 788.0,
+  "win_pct": 461.0,
+  "algo_pct": 98.0,
+  "subscribers": 18.0,
+  "author": "/en/users/archigenius",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "08": 2,
+   "13": 4,
+   "10": 2,
+   "09": 2,
+   "16": 1,
+   "11": 4,
+   "17": 1,
+   "06": 2,
+   "15": 2,
+   "14": 4,
+   "18": 1,
+   "03": 1,
+   "22": 2,
+   "21": 1,
+   "19": 2,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2271402",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "EURGBP",
+   "NZDCAD",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 144.626,
+  "growth_pct": 6289.0,
+  "weeks": 275.0,
+  "pf": 1.87,
+  "max_dd_pct": null,
+  "trades": 1849.0,
+  "win_pct": 1369.0,
+  "algo_pct": 99.0,
+  "subscribers": 2.0,
+  "author": "/en/users/victor_can69",
+  "author_other_signals": [],
+  "hour_histogram": {
+   "11": 4,
+   "22": 2,
+   "14": 5,
+   "12": 2,
+   "08": 2,
+   "21": 3,
+   "15": 4,
+   "10": 7,
+   "04": 1,
+   "09": 2,
+   "07": 2,
+   "06": 1,
+   "01": 1,
+   "16": 2,
+   "13": 2,
+   "17": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2339082",
+  "symbols": [
+   "XAUUAD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "high_pf",
+   "algo_survivor",
+   "gold"
+  ],
+  "ev_score": 8.133,
+  "growth_pct": 721.9,
+  "weeks": 66.0,
+  "pf": 4.41,
+  "max_dd_pct": null,
+  "trades": 279.0,
+  "win_pct": 266.0,
+  "algo_pct": 99.0,
+  "subscribers": 48.0,
+  "author": "/en/users/thomaszhong",
+  "author_other_signals": [
+   {
+    "sid": "2378982",
+    "title": "'AXIO EC' by Shengzu Zhong",
+    "growth": "189%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   }
+  ],
+  "hour_histogram": {
+   "19": 6,
+   "06": 2,
+   "07": 5,
+   "18": 5,
+   "08": 2,
+   "02": 1,
+   "14": 1,
+   "01": 2,
+   "13": 1,
+   "20": 2,
+   "12": 2,
+   "22": 1,
+   "10": 1,
+   "15": 2
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2300694",
+  "symbols": [
+   "AUDCAD",
+   "AUDNZD",
+   "BTCUSD",
+   "EURAUD",
+   "EURUSD",
+   "NZDCAD",
+   "NZDUSD",
+   "USDCAD",
+   "XAGUSD",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 40.316,
+  "growth_pct": 2076.6,
+  "weeks": 196.0,
+  "pf": 1.96,
+  "max_dd_pct": null,
+  "trades": 1845.0,
+  "win_pct": 1354.0,
+  "algo_pct": 94.0,
+  "subscribers": 4.0,
+  "author": "/en/users/antonkon",
+  "author_other_signals": [
+   {
+    "sid": "2346562",
+    "title": "'ENZA EA' by Anton Kondratev",
+    "growth": "39%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363787",
+    "title": "'AGERA VANTAGE' by Anton Kondratev",
+    "growth": "37%",
+    "curve_points": 20,
+    "curve_dd": -59.0
+   }
+  ],
+  "hour_histogram": {
+   "10": 3,
+   "14": 2,
+   "19": 1,
+   "17": 1,
+   "16": 1,
+   "22": 1,
+   "05": 1,
+   "09": 1,
+   "15": 1,
+   "07": 1,
+   "23": 1,
+   "02": 1,
+   "00": 1,
+   "01": 1,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2222743",
+  "symbols": [
+   "BTCUSD",
+   "EURUSD",
+   "USDJPY",
+   "XAUEUR",
+   "XAUUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "gold",
+   "multi_fx"
+  ],
+  "ev_score": 49.559,
+  "growth_pct": 3110.55,
+  "weeks": 132.0,
+  "pf": 1.31,
+  "max_dd_pct": null,
+  "trades": 5278.0,
+  "win_pct": 2096.0,
+  "algo_pct": 82.0,
+  "subscribers": 0.0,
+  "author": "/en/users/liehtw",
+  "author_other_signals": [
+   {
+    "sid": "2153920",
+    "title": "'MCA100' by LU KUEI LIEH",
+    "growth": "2025%",
+    "curve_points": 20,
+    "curve_dd": -4.0
+   },
+   {
+    "sid": "2340704",
+    "title": "'XAUUSD AND XAUEUR' by LU KUEI LIEH",
+    "growth": "334%",
+    "curve_points": 20,
+    "curve_dd": -8.0
+   },
+   {
+    "sid": "2299696",
+    "title": "'Chicken dinner' by LU KUEI LIEH",
+    "growth": "2689%",
+    "curve_points": 20,
+    "curve_dd": -7.0
+   }
+  ],
+  "hour_histogram": {
+   "02": 1,
+   "20": 1,
+   "13": 1,
+   "03": 1,
+   "11": 3,
+   "15": 2,
+   "09": 1,
+   "01": 1,
+   "23": 1,
+   "21": 1,
+   "05": 1,
+   "04": 2,
+   "06": 1,
+   "17": 2,
+   "12": 1,
+   "07": 2,
+   "14": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2204998",
+  "symbols": [
+   "AUDCAD",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURJPY",
+   "EURNZD",
+   "EURUSD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "low_dd_high_return",
+   "long_lived",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 19.611,
+  "growth_pct": 978.2,
+  "weeks": 209.0,
+  "pf": 1.2,
+  "max_dd_pct": null,
+  "trades": 7870.0,
+  "win_pct": 4895.0,
+  "algo_pct": 95.0,
+  "subscribers": 0.0,
+  "author": "/en/users/strueli",
+  "author_other_signals": [
+   {
+    "sid": "2265877",
+    "title": "'Gold Reaper New V2 2' by Profalgo Limited",
+    "growth": "300%",
+    "curve_points": 20,
+    "curve_dd": -1.0
+   },
+   {
+    "sid": "2084890",
+    "title": "'Goldtrade Pro ICM' by Profalgo Limited",
+    "growth": "647%",
+    "curve_points": 20,
+    "curve_dd": -9.0
+   },
+   {
+    "sid": "2376950",
+    "title": "'Multi EA combo' by Profalgo Limited",
+    "growth": "372%",
+    "curve_points": 20,
+    "curve_dd": -2.0
+   }
+  ],
+  "hour_histogram": {
+   "14": 2,
+   "23": 1,
+   "20": 2,
+   "16": 1,
+   "04": 1,
+   "06": 6,
+   "08": 2,
+   "12": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2367701",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDUSD",
+   "BTCUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFJPY",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "max_growth",
+   "algo_survivor",
+   "multi_fx"
+  ],
+  "ev_score": 5.12,
+  "growth_pct": 544.37,
+  "weeks": 46.0,
+  "pf": 1.91,
+  "max_dd_pct": null,
+  "trades": 2628.0,
+  "win_pct": 2078.0,
+  "algo_pct": 84.0,
+  "subscribers": 6.0,
+  "author": "/en/users/lubot",
+  "author_other_signals": [
+   {
+    "sid": "2375767",
+    "title": "'Main Account' by Luca Barone",
+    "growth": "441%",
+    "curve_points": 20,
+    "curve_dd": -12.0
+   }
+  ],
+  "hour_histogram": {
+   "22": 1,
+   "02": 1,
+   "13": 1
+  }
+ },
+ {
+  "source": "mql5_survivors",
+  "kind": "track_record",
+  "title": "",
+  "url": "https://www.mql5.com/en/signals/2308095",
+  "symbols": [
+   "AUDCAD"
+  ],
+  "found_at": "2026-08-29T08:23:35+00:00",
+  "platform": "mt5",
+  "phenotypes": [
+   "high_pf",
+   "algo_survivor"
+  ],
+  "ev_score": 1.158,
+  "growth_pct": 101.98,
+  "weeks": 67.0,
+  "pf": 2.05,
+  "max_dd_pct": null,
+  "trades": 568.0,
+  "win_pct": 405.0,
+  "algo_pct": 97.0,
+  "subscribers": 9.0,
+  "author": "/en/users/tec_daniel",
+  "author_other_signals": [
+   {
+    "sid": "2262642",
+    "title": "'NoPain MT5' by Daniel Moraes Da Silva",
+    "growth": "2099%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2308093",
+    "title": "'UpFuji MT4' by Daniel Moraes Da Silva",
+    "growth": "289%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   },
+   {
+    "sid": "2363323",
+    "title": "'UpEverest MT4' by Daniel Moraes Da Silva",
+    "growth": "528%",
+    "curve_points": 20,
+    "curve_dd": 0.0
+   }
+  ],
+  "hour_histogram": {
+   "06": 7,
+   "00": 2,
+   "12": 2,
+   "11": 1,
+   "05": 2,
+   "13": 1,
+   "10": 1,
+   "22": 1,
+   "14": 1,
+   "03": 1,
+   "19": 2
+  }
+ }
+]
