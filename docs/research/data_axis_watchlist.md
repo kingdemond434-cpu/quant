@@ -8364,7 +8364,7 @@ dataflow header reads `updated 2026-08-28` and is *green at the door while dead 
 `MDL`, `ALL`, `GEL`, `RSD` all stop **2026-07-31** — a month stale under a stamp one day old.
 Liveness is `max(observation_date)` PER SERIES, never per dataflow. Never read the header.
 
-### 79. [dig 2026-08-29 (free-data v)] BIS `WS_XRU` `CNY` leg vs the desk's `USDCNH` tape — **onshore fix vs offshore tape: the residual is a BASIS, not a clock** — grade: **needs-monitoring**
+### 79. [dig 2026-08-29 (free-data v)] BIS `WS_XRU` `CNY` leg vs the desk's `USDCNH` tape — **onshore fix vs offshore tape: the residual is a BASIS, not a clock** — grade: **verified-clean** (RESOLVED 2026-08-29 by brain-hunter. NOTHING was pending technical verification on this card: the source is proven, and the card's own text states a TERMINAL verdict -- BIS `CNY` is the ONSHORE fix, the desk's `USDCNH` tape is OFFSHORE, they are different instruments, and the standing usage restriction is **do not use BIS CNY as ground truth for USDCNH**. A decided usage restriction is a resolution, not a monitoring state; the stale grade alone was holding it in the verification queue for a third cycle. The unmeasured RESIDUAL -- the CNH-CNY basis itself -- is not a defect in this source and is spawned as card 85 under §38.)
 
 *(Split off from card 75, which is now terminal. This card also records how card 75's EM-leg caveat was refuted.)*
 
@@ -8477,7 +8477,7 @@ a positioning/sentiment axis with a built-in scoreboard); the `/cn/` Chinese sit
 administrator class beyond metals — energy, softs and index benchmark administrators, where the
 desk currently holds **no reference source at all**.
 
-### 81. [dig 2026-08-29 (free-data v)] LBMA London vault-stock / clearing-turnover as an XAUUSD FLOW AXIS — grade: **needs-monitoring**
+### 81. [dig 2026-08-29 (free-data v)] LBMA London vault-stock / clearing-turnover as an XAUUSD FLOW AXIS — grade: **verified-clean** (RESOLVED 2026-08-29 by brain-hunter via card 83: the ONE blocking measurement -- the publication vintage -- is measured from 10 clearing + 5 vault archived vintages. Point-in-time-safe lag is **t-3 months** on both series, worst observed 88d / 67d. The axis is now EV-gate eligible; the residual 121-observation thinness is a POWER limit for the gates to judge, not a pending source verification.)
 
 The SOURCE is verified-clean (card 80). The AXIS is not, and is deliberately held out of the EV
 gate. Mechanism: vault holdings are the physical STOCK in London; the monthly change is net flow,
@@ -8492,7 +8492,7 @@ the series lagged to its real vintage. Run (q) put ALL the significance of the m
 untradable lag-0 bar; shipping this without its vintage is the identical error one family over.
 Secondary limit, stated plainly: **121 vault observations, monthly** — thin for the ten gates.
 
-### 82. [dig 2026-08-29 (free-data v)] The residual 9,827 un-mined supranational SDMX dataflows (BIS/IMF/OECD/Eurostat) — grade: **UNVERIFIED**
+### 82. [dig 2026-08-29 (free-data v)] The residual 9,827 un-mined supranational SDMX dataflows (BIS/IMF/OECD/Eurostat) — grade: **UNVERIFIED** `[§33: deferred(2026-09-05) tier:2]` (DEFERRED 2026-08-29 by brain-hunter with a CORRECTED first step: the card prescribes "mandate-filter the saved structure files on disk with grep", but `find data -iname "*sdmx*" -o -iname "*dataflow*"` returns NOTHING -- run (v) enumerated the 9,828 dataflows IN CONTEXT and discarded them, so the prescribed method has a missing precondition and would silently re-fetch 37 MB into an agent. First step is therefore: re-enumerate and **PERSIST** the four structure files to disk, THEN grep-filter. Same "computed then discarded" class as the desk's standing gap-fixer finding.)
 
 Card 77 is closed because its FIRST series is now verified; this card carries what that closure does
 NOT cover, so the residual stays in the queue instead of inheriting a clean verdict. BIS 29 · IMF 101
@@ -8558,3 +8558,99 @@ stamp).
 the vault/clearing axis on true vintages — the one thing blocking an EV-gate pre-registration;
 (2) `lppm.com/data` + the LBMA annual forecast-survey consensus panel; (3) expansion — an energy or
 softs benchmark administrator, where the desk holds **no reference source at all**.
+
+### 83. [dig 2026-08-29 (brain-hunter)] LBMA vault + clearing PUBLICATION VINTAGE — **MEASURED, card 81 unblocked** — grade: **verified-clean**
+
+Card 81 named exactly one blocking measurement and refused the EV gate without it: *the publication
+vintage is OBSERVED but not ESTABLISHED.* It is now established, by reconstructing the series from
+its own archived vintages rather than by asking the site what it publishes today.
+
+**METHOD.** CDX-enumerate `www.lbma.org.uk/{clearing-data,vault-holdings-data}/data.json`, replay
+each capture with `id_` (raw origin bytes, gzip), take `max(row[0])` (epoch-ms month stamp) and
+difference it against the CAPTURE timestamp. Each capture is a genuine point-in-time observation of
+what the door served on that date.
+
+| series | vintages | lag range (days) | worst |
+|---|---|---|---|
+| clearing turnover | 10 clean | 61 – 88 | **88** |
+| vault holdings | 5 clean | 44 – 67 | **67** |
+
+**VERDICT — point-in-time-safe lag is THREE CALENDAR MONTHS on both series** (`t-3m`), not the
+~1–2 months that observed availability suggested on 2026-08-29. Vault publishes materially faster
+than clearing (44–67 vs 61–88 d) but a single lag for both is the simpler and safer construction.
+
+**WHY max-of-observed is a VALID conservative bound and not a small-n hand-wave.** Archive captures
+are sparse and irregular, so a capture can only land *at or after* the true release. Sparse sampling
+therefore biases the measured lag **upward**, never downward — the max of observed lags is an upper
+bound on the true release lag by construction, which is exactly the direction point-in-time safety
+requires. n=10 / n=5 is thin for estimating the *typical* lag; it is sufficient for bounding the
+*worst* one, and the worst one is the only quantity the gate needs.
+
+**RESIDUAL, stated:** this bounds AVAILABILITY, not the LBMA's own scheduled release calendar; a
+calendar would be tighter and is still unrecovered. It does not change the `t-3m` decision, only the
+possibility of a later improvement. Card 81's secondary limit is untouched and still binding:
+**121 monthly vault observations** is thin for the ten gates before any regime conditioning.
+
+**DISPOSITION of card 81: the blocking measurement is CLOSED.** The axis is now eligible for EV-gate
+pre-registration at `t-3m`, and the run-(q) failure mode it was held back to avoid — putting the
+significance in an untradable lag-0 bar — is now structurally excluded.
+
+### 84. [dig 2026-08-29 (brain-hunter)] **WAYBACK `id_` REPLAY SILENTLY SUBSTITUTES A DIFFERENT CAPTURE — and in a vintage reconstruction that FABRICATES LOOKAHEAD** — grade: **verified-clean** (a METHOD defect, not a source: cause verified by comparing served vs requested capture stamps, fix stated in one line, routed to improvement_inbox.md. Nothing pending.)
+
+Found while measuring card 83, and it is worth more than the LBMA axis is.
+
+**THE OBSERVATION.** The clearing scan returned a lag of **−16 days** at the 2025-01-17 vintage: the
+door appeared to be serving a 2025-02-02 observation two weeks *before that month existed*. A
+negative publication lag on a backward-looking flow statistic is physically impossible, so one of
+the two clocks was lying.
+
+**THE CAUSE, verified rather than assumed.** Requesting
+`web.archive.org/web/20250117071926id_/...` returns HTTP 200 with a **final URL of
+`/web/20250501085016id_/...`** — Wayback resolved the request to the NEAREST capture and both
+`urllib` and `curl -L` follow that redirect silently. Byte-identical content, `len=15029`, served
+under two different requested timestamps. The 2025-01-17 row exists in the CDX index; the CONTENT
+behind it does not.
+
+**WHY IT IS DANGEROUS SPECIFICALLY HERE.** For ordinary corpus mining, getting a near-neighbour
+capture is harmless. For **point-in-time / vintage reconstruction it is the worst possible failure**:
+it attributes LATER content to an EARLIER date, which is lookahead — manufactured, invisible, and
+carrying an authoritative archive timestamp. Had the −16 been rounded off as noise instead of
+chased, the LBMA lag would have been recorded as ~2 months when the evidence supports 3.
+
+**THE FIX, one line, and it belongs in every CDX consumer on this desk:** after replay, compare the
+**served** stamp in `response.url` against the **requested** stamp, and discard or re-label any row
+where they differ. `collapse=digest` makes this MORE likely, not less — it returns one index row per
+digest-run while replay still resolves per-timestamp.
+
+**REACH.** This desk uses CDX as a population enumerator and a vintage source in several places
+(OP-098 CDX population enumerator; seed S18 Wayback CDX walker for dead EA forums; the archived
+track-record corpora). Any of those that reason about DATES rather than merely about CONTENT is
+exposed. Routed to `docs/research/improvement_inbox.md` as a method rule; the earlier recorded
+lesson *"a Wayback CDX 200 archived a soft-404"* is the same family — **a CDX index row is a claim
+about the index, never a guarantee about the bytes you get back.**
+
+### 85. [dig 2026-08-29 (brain-hunter)] §38 SPAWN — the **CNH–CNY basis** as an axis in its own right — grade: **UNVERIFIED** `[§33: deferred(2026-09-05) tier:2]`
+
+Card 79 established that BIS `CNY` (onshore fix) and the desk's `USDCNH` tape (offshore) are
+different instruments, and correctly barred BIS CNY as ground truth for USDCNH. That exclusion
+leaves a quantity behind: **the desk now holds both legs of the CNH–CNY basis, free and keyless,
+one from BIS and one from its own tape.** An exclusion spawns a hunt (§38).
+
+**MECHANISM, and it names its forced participant.** The onshore rate is administered — the PBoC
+sets a daily fix and the onshore band is defended; the offshore rate is not. The spread between
+them is therefore a direct, published measure of *pressure against an administered price*, and the
+participant on the other side is a central bank that cannot costlessly stop defending it. That is a
+policy-constraint axis, structurally unlike the five refuted macro→FX axes, and unlike the LBMA
+stock/flow axis on card 81.
+
+**BEFORE ANY PRE-REGISTRATION, the two lessons this desk has already paid for on exactly this
+ground apply, and they are the whole reason this is carded UNVERIFIED rather than screened today:**
+1. **Run (q)'s lag-0 trap.** The basis and any USDCNH return are contemporaneous by construction.
+   The sign(next-day-return) leak control is mandatory, and significance that lives only in the
+   lag-0 bar is an untradable artifact, not an edge.
+2. **The vintage question, per card 83.** The BIS fix's own publication lag must be measured from
+   archived vintages before the basis is treated as available at any bar — and per card 84, that
+   measurement must verify the SERVED archive capture against the REQUESTED one.
+
+**FIRST STEP:** measure the BIS `WS_XRU` publication lag by the card-83 method, then build the
+basis on true vintages and run it with the leak control before it goes near the EV gate.

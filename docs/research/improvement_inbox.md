@@ -4363,3 +4363,25 @@ Quantocracy was "the highest-leverage single source catalogued in several runs":
 population enumerator (OP-098 class) and it is now enumerated once and for all — but for THIS
 desk's mandated universe it is a thin seam, and the value is concentrated in a handful of hosts
 the density ranking names, not in the 6,908.
+
+## [2026-08-29 brain-hunter] METHOD RULE — verify the SERVED Wayback capture, never trust the REQUESTED one
+
+`web.archive.org/web/<stamp>id_/<url>` resolves to the NEAREST capture when `<stamp>` has no exact
+replay, and both `urllib` and `curl -L` follow that redirect silently at HTTP 200. Verified
+2026-08-29: requesting `20250117071926id_` for `www.lbma.org.uk/clearing-data/data.json` served
+`20250501085016id_`, byte-identical, `len=15029`.
+
+In content mining this is harmless. In **point-in-time / vintage reconstruction it fabricates
+lookahead** — later content attributed to an earlier date, under an authoritative archive timestamp.
+It surfaced as a *negative publication lag* (−16 days on a backward-looking monthly statistic),
+which is the only reason it was caught; a substitution in the other direction leaves no impossible
+value and would have shipped.
+
+**RULE:** every CDX replay compares `response.url`'s served stamp against the requested stamp and
+discards or re-labels on mismatch. `collapse=digest` raises the exposure, since it returns one index
+row per digest-run while replay still resolves per-timestamp.
+
+**EXPOSED CONSUMERS to sweep:** OP-098 CDX population enumerator; seed S18 (Wayback CDX walker for
+dead EA forums); archived track-record corpora (FX Blue / Darwinex). Any consumer reasoning about
+DATES rather than only about CONTENT. Same family as the recorded lesson *"a Wayback CDX 200
+archived a soft-404"*: a CDX index row is a claim about the INDEX, never about the bytes returned.
