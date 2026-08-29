@@ -2720,7 +2720,7 @@
    "cadence": "daily, T-3-ish (last obs 2026-08-25 on a 2026-08-29 pull)",
    "license": "GREEN, unambiguous. bis.org/terms_statistics.htm: 'The use of the statistics is unrestricted, provided that' the BIS is cited when REPRODUCED, translations are marked unofficial, use is not misleading, and a commercial publication including them adds no charge to subscribers. Own-account internal research and trading redistribute nothing and publish nothing -- squarely permitted. Contrast card 1 (Upbit), which is still awaiting a principal ruling: there is no equivalent ambiguity here.",
    "verified": "2026-08-29 VERIFIED-CLEAN ON G10 by offset scan against the desk's own H1 tape. Best cell is h=14 on the broker-EET-labelled tape, UNANIMOUS across all 16 currencies tested and across both DST seasons (EURUSD 5.95 summer / 5.92 winter; USDJPY 4.46/5.00; GBPJPY 5.73/6.48 -- DST-stable, so the snapshot follows EUROPEAN LOCAL TIME, not UTC). Direct MAE at h=14: NZDUSD 3.52, SGD 3.22, AUDUSD 3.98, CHF 4.20, CAD 5.22, JPY 5.34, EUR 6.47, GBP 6.82 pips; range/bias 9.7-15.5, comfortably past the precondition run (s) established. CROSS RECONSTRUCTION verified too (this is new -- no prior run tested a computed cross): EURGBP 4.77, CHFJPY 6.47, NZDCAD 3.99, EURJPY 7.87, GBPJPY 8.43 pips, all with h=14 first and h=15 second.",
-   "grade": "verified-clean (G10 and G10 crosses) / needs-monitoring (EM legs)",
+   "grade": "verified-clean (G10, CEE and EM legs alike) -- the EM-leg 'needs-monitoring' caveat is REFUTED by measurement, see verified_2026_08_29. `CNY` alone is carved out as needs-monitoring, for a BASIS reason not a clock reason.",
    "coverage_for_this_desk": "85 of the desk's 118 FX-like universe symbols have BOTH legs live in WS_XRU and a local parquet, i.e. 85 symbols gain 25-80 years of daily history above a tape that starts 2018. The 33 uncovered legs are metals, crypto, indices and CNH (XAU XAG XPT XPD XCU XAL XNI XZN XPB XTI XBR XNG, BTC ETH SOL ADA DOT LTC BCH BNB EOS XLM TON LNK, index tickers, CNH) -- structurally outside an FX-rate panel, so nothing is owed there.",
    "failure_modes": [
     "THE TITLE LIES ABOUT THE STATISTIC. Every daily row is titled 'Average of observations through period' and carries COLLECTION=A ('average'). It is NOT an average: the mean of the day's hourly closes scores MAE 18.89 pips on GBPUSD against 6.82 for the single 14:00 cell. The COLLECTION=A label is inherited from the monthly series and is wrong at daily frequency. A reader who trusted the title would smear a point-in-time snapshot into a daily average and build a look-ahead-flavoured feature out of a clean one.",
@@ -2730,9 +2730,12 @@
     "EM legs identify the clock far more weakly (range/bias EURTRY 3.2, EURPLN 4.7, USDZAR 5.3, USDMXN 5.6) -- the level is usable, the intraday cell is not established. These are national-fixing currencies, not the CET snapshot.",
     "EUR carries 309,266 rows because many REF_AREAs report a EUR series; collapse by date before use or the join silently duplicates.",
     "Redenominations are in the raw series (TRY back to 1950, VEF, etc.) and are NOT handled by the API.",
-    "BIS reserves the right to rate-limit or suspend any IP; the API terms forbid reverse-engineering the API (not the statistics)."
+    "BIS reserves the right to rate-limit or suspend any IP; the API terms forbid reverse-engineering the API (not the statistics).",
+    "KEY SHAPE: the daily key is FREQ.REF_AREA.CURRENCY.COLLECTION, i.e. `D.PL.PLN.A` -- NOT `D.PLN..A`. The wrong shape returns HTTP 404 with <com:Text>No results for query</com:Text>, which reads exactly like an absent series and is really a misplaced dimension. AN SDMX 'no results' IS A KEY-SHAPE BUG UNTIL PROVEN A DATA GAP; this misreading cost run (u) the answer entirely. `D...A?startPeriod=2024-01-01` -> HTTP 200, 9,360,628 b, 55,779 rows, 54 currencies.",
+    "CNY IS NOT GROUND TRUTH FOR USDCNH: the offset scan cannot identify it at all (hour 13 = 84.33, hour 14 = 84.93, worst = 117.27 -- a best/worst ratio of 1.4x, i.e. no signal; the scan needs range/bias >> 1). BIS `CNY` is the ONSHORE fix and the desk's USDCNH tape is OFFSHORE: the residual is the CNH-CNY basis, a different instrument, not a timestamp."
    ],
-   "yield": "highest-yield single source this mission has found on the history axis: 85 desk symbols x 25-80 years, verified, keyless, one request, licence-green."
+   "yield": "highest-yield single source this mission has found on the history axis: 85 desk symbols x 25-80 years, verified, keyless, one request, licence-green.",
+   "verified_2026_08_29": "EM-LEG CLOCK CAVEAT RESOLVED by offset-scan vs the desk's own MT5 H1 tape, 619-676 common days from 2024-01-01 (best hour / MAE / worst-hour MAE, pips): PLN 14/20.74/128.99, TRY 14/55.04/567.44, MXN 14/140.36/798.65, ZAR 14/137.93/782.82, HUF 14/24.72/137.81, CZK 14/118.69/639.42, SEK 14/61.67/353.45, NOK 14/63.46/373.74, JPY 14/6.12/48.12, CHF 14/3.64/22.07, CAD 14/4.20/26.04. ELEVEN OF TWELVE land on hour 14 unanimously with 2x separation from the runner-up and 6-10x from the worst hour. The EM legs' larger ABSOLUTE MAE is pair volatility, not clock error -- the discrimination RATIO, which is what identifies a clock, is as sharp for MXN (5.7x) as for CHF (6.1x). One fixing, one hour, G10 and EM alike."
   },
   "bis_dataflow_census_2026_08_29": {
    "name": "BIS SDMX dataflow census - the door is EXHAUSTED at 29, not ~40",
@@ -2762,12 +2765,64 @@
    ],
    "method": "keyless GET; all four speak SDMX 2.1/3.0, so ONE reader serves all of them. Doors PROBED this run, contents NOT mined.",
    "verified": "2026-08-29 UNVERIFIED as data -- the DOORS are verified live (all five HTTP 200 with parseable structure), the CONTENT is not diffed against anything. Stated as a door census, never as an adopted source.",
-   "grade": "UNVERIFIED (door-verified, content-unmined)",
+   "grade": "partially verified -- the family's FIRST series is now diffed to ground truth (Eurostat ert_bil_eur_d, verified-clean, own card). The remaining 9,827 dataflows stay UNVERIFIED and the door census is still NOT an adoption.",
    "failure_modes": [
     "Enumerating a dataflow is not finding a series: Eurostat's 8,152 flows are overwhelmingly off-mandate social/regional statistics, and the BIS lesson of this run is that 6.4%-style relevance rates are normal. Size the ground, then filter by mandate BEFORE pulling.",
-    "Eurostat's dataflow list is 37 MB -- do not fetch it in an agent context; fetch to disk and grep."
+    "Eurostat's dataflow list is 37 MB -- do not fetch it in an agent context; fetch to disk and grep.",
+    "CONFIRMED ACROSS THE FAMILY, not just one door: SDMX descriptive fields are boilerplate and lie. BIS WS_XRU's TITLE and Eurostat ert_bil_eur_d's `statinfo=AVG` BOTH declare a daily average and BOTH are 14:00 CET point-in-time snapshots -- two independent institutions, same false label, same hour. Never adopt an SDMX series on its stated statistic; diff it against a known tape and offset-scan the clock."
    ],
    "yield": "names the next ground for several runs at once and retires the country-by-country posture."
+  },
+  "Eurostat ert_bil_eur_d -- ECB daily FX reference rates from an official EU door (keyless)": {
+   "name": "Eurostat `ert_bil_eur_d` -- Euro/ECU daily exchange rates, 37 currencies, 1974-07-01 -> 2026-08-27",
+   "provides": "331,097 daily FX reference observations, 37 currencies, 13,870 periods back to 1974-07-01 (ECU era, pre-euro), keyless JSON-stat in ONE 5.98 MB request.",
+   "replaces": "a multi-decade daily FX reference subscription AND -- the point of the card -- the desk's own third-party `frankfurter` proxy dependency for ECB reference rates, because the publisher's own API (data-api.ecb.europa.eu dataflow EXR) returns HTTP 503 'Security Check'. This is a PRIMARY-source replacement of a third-party hop, not a redundant second copy.",
+   "provenance": [
+    "https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ert_bil_eur_d?format=JSON&lang=EN -> HTTP 200, 5,983,125 b, JSON-stat, label 'Euro/ECU exchange rates - daily data', updated 2026-08-28T11:00:00+0200",
+    "per-currency slice verified: ...&currency=USD&sinceTimePeriod=2024-01-01 -> HTTP 200, 53,638 b, 678 observations"
+   ],
+   "verified_2026_08_29": "GROUND-TRUTH DIFF vs the desk's OWN MT5 H1 parquet tape, 678 common days from 2024-01-01. The dataflow's `statinfo` dimension declares AVG (average); tested as a true daily mean of 24 H1 closes it matches at MAE 11.81 pips, tested as a SINGLE-BAR SNAPSHOT at the 14:00 stamp it matches at MAE 4.15 pips -- 2.8x better than the statistic it claims to be. THE LABEL IS WRONG; it is the ECB concertation fixing. Clock is CET-anchored and DST-STABLE (best hour = 14 in BOTH seasons: summer MAE 3.14 n=361, winter MAE 3.88 n=208), which rules out a UTC-offset artifact -- the desk's parquets are stamped +00:00 but carry broker EET, and EET = CET+1 year-round, so the EET-14:00 bar closes at the CET 14:00 fixing moment. Generalises: EURGBP 2.16, EURCHF 2.90, EURUSD 4.15, EURTRY 5.61, EURJPY 6.38, EURPLN 13.49 pips, each at hour 14.",
+   "grade": "verified-clean (G10 and CEE legs); EURTRY identification WEAK -- best/worst-hour ratio only 2.1x vs 4-8x elsewhere, so its hour is consistent-with but not evidence-for the fixing clock",
+   "license": "Eurostat re-use policy: free re-use with attribution (Commission Decision 2011/833/EU) -- https://ec.europa.eu/eurostat/about-us/policies/copyright",
+   "cadence": "daily, published ~11:00 CET for the prior fixing day",
+   "failure_modes": [
+    "THE `statinfo=AVG` FIELD IS FALSE -- it is a 14:00 CET point-in-time snapshot. Second independent instance of this exact defect in two runs (BIS WS_XRU carried the identical 'daily average' lie at the identical hour). Treat SDMX statinfo/TITLE as boilerplate, never as a spec.",
+    "PER-SERIES LIVENESS: the dataflow header read `updated 2026-08-28` while SEVEN series were stale or dead inside it -- RUB ends 2022-03-01 (sanctions, destroyed-at-source), UAH ends 2026-08-11, and MKD/MDL/ALL/GEL/RSD all stop 2026-07-31, a month stale under a one-day-old stamp. Liveness is max(observation_date) PER SERIES, never per dataflow. NEVER read the header.",
+    "Sparse index: the JSON-stat time dimension enumerates calendar days (13,870) but only publishes TARGET2 business days (331,097 values across 37 currencies) -- index positions must be mapped, not zipped.",
+    "Weekend/holiday gaps are absent keys, not nulls."
+   ],
+   "yield": "HIGH -- retires a third-party proxy hop on an already-adopted axis, and extends the G10 legs ~25 years beyond the desk's own tape (1974 ECU era) into exactly the pre-2019 regime depth held-out OOS validation is starved of.",
+   "cross_source_pair": "PAIR WITH BIS WS_XRU: two independent institutions publishing the SAME 14:00 CET fixing -- BIS quotes CCY-per-USD, Eurostat quotes CCY-per-EUR. Their implied cross is a free, continuous, 50-year cross-publisher CONSISTENCY CHECK that neither source provides alone, and it is the cheapest available detector of a silent revision or a units break on either door.",
+   "session": "free-data run (v) 2026-08-29"
+  },
+  "lbma_london_gold_silver_clearing_and_vault_flow": {
+   "name": "SEARCH-SPACE EXPANSION: benchmark/market ADMINISTRATORS as a source class -- LBMA keyless London gold & silver clearing-turnover and vault-holdings doors",
+   "provides": "Two keyless JSON doors, neither advertised as an API. Clearing: 357 MONTHLY rows 1996-10 -> 2026-06, columns [epoch_ms, gold_volume_Moz_daily_avg, gold_n_transfers, gold_value_USDbn, silver_volume_Moz, silver_n_transfers, silver_value_USDbn]. Vault: 121 MONTHLY rows 2016-07 -> 2026-07, columns [epoch_ms, gold, silver] in Troy Ounces (000s).",
+   "replaces": "partially replaces the vendor-gated LBMA daily trade-reporting feed (LSEG/Refinitiv terminal); and it is the FIRST non-FX reference source this mission has adopted -- every prior adoption was a central-bank FX door.",
+   "why_this_class": "The desk's mandated universe is metals, energy, softs, indices and share CFDs as well as FX, but runs (m)-(u) adopted FX sources exclusively. The narrowing was invisible from the output because what was missing was never named. The class covering the rest is not central banks but BENCHMARK AND MARKET ADMINISTRATORS.",
+   "provenance": [
+    "https://www.lbma.org.uk/robots.txt -> HTTP 200, `Disallow: /cache/` ONLY (clean); advertises a /cn/ Chinese sitemap",
+    "https://prices.lbma.org.uk/robots.txt -> HTTP 401 (ambiguous under RFC 9309) -- the price host was NOT touched",
+    "https://www.lbma.org.uk/clearing-data/data.json -> HTTP 200, 15,769 b, 357 rows",
+    "https://www.lbma.org.uk/vault-holdings-data/data.json -> HTTP 200, 3,697 b, 121 rows",
+    "column map + units read from the Highcharts config in https://www.lbma.org.uk/prices-and-data/clearing-data and /london-vault-data (axis titles 'Millions of Ounces (daily averages)' and 'Gold - Troy Ounces (000s)')"
+   ],
+   "verified_2026_08_29": "DECODE PROVEN AGAINST AN INDEPENDENT QUANTITY. The payload is bare unlabelled arrays and carries no price, so `value / volume` yields an implied USD/oz the source never publishes. Diffed vs the desk's own MT5 monthly mean over 100 common months 2018-03 -> 2026-06: GOLD vs XAUUSD level corr 0.99999, log-return corr 0.9964, median ratio -0.04%, sd 0.20%; SILVER vs XAGUSD level corr 0.99989, log-return corr 0.9926, median ratio +0.01%, sd 0.74%. A units error or a mis-assigned column could not survive that. PHYSICAL-BOUND CHECK at ingest (not a z-score): latest vault row = 9,534 t gold / 28,209 t silver in London, against ~216,000 t above-ground gold and ~36,000 t of total CB reserves -- passes.",
+   "grade": "verified-clean (decode, units and column map); the ECONOMIC AXIS is a CANDIDATE, not adopted -- see blocking_measurement",
+   "mechanism": "Vault holdings are the STOCK of physical metal in London; the monthly change is net physical flow. When the COMEX-London EFP dislocates, the arb closes by physically flying bullion to New York -- slow, costly, capacity-constrained and publicly visible in this series. The forced participant cannot stop: the metal must move for the basis to close.",
+   "blocking_measurement": "PUBLICATION LAG IS OBSERVED BUT NOT ESTABLISHED. On 2026-08-29 the vault door served through 2026-07 (~1 month) and clearing through 2026-06 (~2 months), but observed availability is NOT a point-in-time release date. Recover the true release dates (LBMA release calendar, or CDX-stamp the monthly .xlsx filenames on cdn.lbma.org.uk) and re-run with the series lagged to its real vintage BEFORE any EV-gate pre-registration. Run (q) put ALL the significance of the macro->FX family in an untradable lag-0 bar; shipping this without its vintage would be the identical error one family over.",
+   "license": "LBMA website terms -- data published free to the public on the open site; attribution to LBMA. Not redistributed.",
+   "cadence": "monthly",
+   "failure_modes": [
+    "THIN: 357 monthly clearing observations and only 121 vault observations, and the tradable horizon is monthly. That is thin for the ten gates before any regime conditioning.",
+    "Unlabelled bare-array payload with NO schema endpoint -- the column meaning lives only in the page's Highcharts JS. A silent column reorder would be invisible; re-derive the implied price against the desk tape on every refresh as a standing decode check.",
+    "Epoch stamps are month-END at 23:00 UTC, so a naive .to_period('M') assigns rows to the PRIOR month; shift +1 day before period-mapping.",
+    "Vault series starts only 2016-07 while clearing reaches 1996-10 -- do not join them into one panel and read the short leg's absence as zero."
+   ],
+   "excluded_and_replacement_hunt_38": "lbma-daily-trade-reporting-data (actual DAILY OTC London volumes) is EXCLUDED-PAYWALLED: the only public artifact is cdn.lbma.org.uk/pages/refinitivtradedatariccodes.xlsx, a list of Refinitiv RIC codes behind an LSEG terminal. Replacement is these same two doors -- monthly clearing turnover and vault stock reconstruct London OTC activity from the administrator itself. RESIDUAL GAP GRADED HONESTLY: daily granularity is NOT free-reconstructable; the desk gets the monthly aggregate, not the daily tape.",
+   "next_ground_unexhausted": "lppm.com/data (platinum/palladium sister administrator, linked and untouched); LBMA value-dates; the LBMA annual forecast-survey (a dated public falsifiable CONSENSUS panel with a built-in scoreboard); the /cn/ Chinese sitemap; and the administrator class beyond metals -- energy, softs and index benchmark administrators, where the desk holds NO reference source at all.",
+   "yield": "HIGH as a class-opener (first non-FX reference source; an entire un-hunted administrator class named), MEDIUM as an axis (monthly, thin, vintage unmeasured).",
+   "session": "free-data run (v) 2026-08-29"
   }
  },
  "residual_gaps_unpurchasable": [

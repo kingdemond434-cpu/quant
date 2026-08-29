@@ -8131,7 +8131,7 @@ of one result.
 
 ---
 
-### 75. [dig 2026-08-29 (free-data t)] BIS `WS_XRU` — **daily USD exchange rates, 61 currencies, 1945-01-01 → 2026-08-25, 1,067,834 rows in ONE keyless request** — grade: **verified-clean** (G10 legs and G10 crosses; EM legs needs-monitoring on their clock only)
+### 75. [dig 2026-08-29 (free-data t)] BIS `WS_XRU` — **daily USD exchange rates, 61 currencies, 1945-01-01 → 2026-08-25, 1,067,834 rows in ONE keyless request** — grade: **verified-clean** (RESOLVED by run (v): the EM-leg clock caveat is refuted — 11/12 legs land on the same hour-14 fixing. `CNY` alone is split off as needs-monitoring, and for a BASIS reason not a clock reason.)
 
 **PROVENANCE (opened this run, nothing claimed unread).**
 `https://data.bis.org/robots.txt` — `User-agent: * / Allow: /`, disallows only query-param patterns
@@ -8295,3 +8295,237 @@ and grep it.
 3. **SEARCH-SPACE EXPANSION (>=25%)**: a new source class, hunted after 1 and 2 close.
 
 _(status lines appended below as each item resolves — never held in context)_
+
+---
+
+## SESSION SUMMARY — 2026-08-29 (free-data run **v**) — IN PROGRESS
+
+**RESUME, NOT RESTART.** Run (u) wrote its completion-contract header and died before resolving a
+single item. Its three items are re-taken verbatim rather than replaced — and items 1 and 2 are
+also exactly the two rows `source_backlog_next.py` returns as PENDING VERIFICATION, so the
+bottleneck and the resume point are the same work.
+
+1. **Close card 77** — pull series, not structure. Verify Eurostat `ert_bil_eur_d` daily FX against
+   the desk's own MT5 parquet ground truth; mandate-filter the saved OECD/Eurostat structure lists
+   on disk (grep, never into context).
+2. **Close card 75's split grade** — it reads `verified-clean` AND `needs-monitoring` on one line,
+   so the backlog parser fails it open to pending forever. Give it one terminal grade or split it.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — a new source class, after 1 and 2 close.
+
+_(status lines appended below as each item resolves — never held in context)_
+
+### ITEM 1 — RESOLVED. Card 77 closes: **`ert_bil_eur_d` is a fixing SNAPSHOT, not the average its own `statinfo=AVG` field declares** — grade: **verified-clean**
+
+Card 77 was graded UNVERIFIED because five doors returned *structure* and zero series were diffed.
+This run pulled series and diffed them against the desk's own MT5 H1 tape. Endpoint opened:
+`https://ec.europa.eu/eurostat/api/dissemination/statistics/1.0/data/ert_bil_eur_d?format=JSON&lang=EN`
+→ HTTP 200, 5,983,125 bytes, JSON-stat, `updated 2026-08-28T11:00:00+0200`.
+
+**THE LABEL LIES, AND IT IS THE SECOND INSTANCE OF THE SAME CLASS IN TWO RUNS.** The dimension
+`statinfo` carries exactly one member, `AVG`. Tested literally — EURUSD daily mean of all 24 H1
+closes vs the published value, 678 common days — that reading is **MAE 11.81 pips**. Tested as a
+single-bar snapshot at the 14:00 stamp: **MAE 4.15 pips**. The published number matches one
+instant of the day 2.8x better than it matches the statistic it claims to be. Run (t) found the
+identical defect on BIS `WS_XRU` ("daily average" that was a 14:00 CET snapshot). **Two
+independent institutions, same lie, same hour — the field name is describing the ECB
+concertation-procedure fixing, and `AVG` is inherited schema boilerplate on both doors.**
+
+**THE CLOCK IS CET-ANCHORED AND DST-STABLE**, which is what rules out a UTC-offset artifact:
+best hour is **14 in BOTH seasons** (summer Apr–Sep MAE 3.14 n=361; winter Nov–Feb MAE 3.88
+n=208). The desk's parquets are stamped `+00:00` but carry broker EET (standing lesson), and EET
+= CET+1 year-round, so the EET-14:00 bar *closes* at CET 14:00 — the ECB reference moment. A
+clock that did not move when both zones shifted is a wall-clock fixing, not an offset.
+
+**GENERALISES ACROSS THE PANEL** (best hour / MAE / worst-hour MAE, 2024-01-01→, n=678):
+EURUSD 14 / 4.15 / 24.31 · EURGBP 14 / 2.16 / 12.44 · EURJPY 14 / 6.38 / 48.94 ·
+EURCHF 14 / 2.90 / 17.90 · EURPLN 14 / 13.49 / 85.85 · EURTRY 14 / 5.61 / 11.71.
+EURTRY is the one weak identification — best/worst ratio only **2.1x** against 4–8x elsewhere, so
+its hour is *consistent with* but not *evidence for* the fixing clock; recorded as such rather
+than counted as a sixth confirmation.
+
+**WHAT THE DOOR IS ACTUALLY WORTH, AND IT IS NOT THE REDUNDANCY I EXPECTED.** The map already
+holds ECB reference FX — but at line 2650 it is adopted *"via the frankfurter route"*, because
+`data-api.ecb.europa.eu/service/data/EXR/...` returns **HTTP 503 "Security Check"** (the map's own
+note: the host is verified-clean PRIMARY for the `YC` dataflow and 503s for `EXR` — grade the
+dataflow, never the host). So the desk's daily FX reference has been arriving through a
+**third-party proxy** because the publisher's own API refuses it. `ert_bil_eur_d` is the **same
+ECB rates from an official EU institution, keyless** — this is a primary-source replacement of a
+third-party dependency, not a spare tyre.
+
+**SIZE: 331,097 daily observations, 37 currencies, 1974-07-01 → 2026-08-27** (13,870 periods).
+It predates the euro — those are ECU rates — so it reaches ~25 years further back than the
+desk's tape on the G10 legs and is exactly the pre-2019 regime depth held-out OOS is starved of.
+
+**FAILURE MODE — PER-SERIES LIVENESS, APPLIED (run (t)'s lesson, and it caught seven).** The
+dataflow header reads `updated 2026-08-28` and is *green at the door while dead inside it*:
+`RUB` ends **2022-03-01** (sanctions, destroyed-at-source); `UAH` ends 2026-08-11; and `MKD`,
+`MDL`, `ALL`, `GEL`, `RSD` all stop **2026-07-31** — a month stale under a stamp one day old.
+Liveness is `max(observation_date)` PER SERIES, never per dataflow. Never read the header.
+
+### ITEM 2 — RESOLVED. Card 75's split grade closes: **the BIS EM legs are on the SAME clock as G10** — card 75 becomes **verified-clean**, with `CNY` split off
+
+Card 75 read `verified-clean` AND `needs-monitoring` on one line, so `source_backlog.py` could
+never terminate it. The open question was narrow and answerable: *do the EM legs share the G10
+fixing clock?* Measured, not argued.
+
+**THE KEY WAS WRONG IN THE PRIOR NOTE AND THAT COST THE LAST RUN THE ANSWER.** `D.PLN..A` returns
+HTTP 404 `"No results for query"` — which reads like an absent series and is really a **misplaced
+dimension**: the daily key is `FREQ.REF_AREA.CURRENCY.COLLECTION`, so `PLN` was sitting in the
+REF_AREA slot. `D...A?startPeriod=2024-01-01` → HTTP 200, 9.36 MB, 55,779 rows, 54 currencies.
+*An SDMX "no results" is a key-shape bug until proven a data gap.*
+
+Offset-scan vs the desk's own MT5 H1 tape (best hour / MAE / worst-hour MAE):
+PLN 14 / 20.74 / 128.99 · TRY 14 / 55.04 / 567.44 · MXN 14 / 140.36 / 798.65 ·
+ZAR 14 / 137.93 / 782.82 · HUF 14 / 24.72 / 137.81 · CZK 14 / 118.69 / 639.42 ·
+SEK 14 / 61.67 / 353.45 · NOK 14 / 63.46 / 373.74 · JPY 14 / 6.12 / 48.12 ·
+CHF 14 / 3.64 / 22.07 · CAD 14 / 4.20 / 26.04.
+
+**Eleven of twelve land on hour 14 unanimously**, each with 2x separation from the runner-up and
+6–10x from the worst hour. The EM legs' larger absolute MAE is **pair volatility, not clock
+error** — the discrimination ratio, which is the thing that identifies a clock, is as sharp for
+MXN (5.7x) as for CHF (6.1x). The `needs-monitoring` caveat was a hypothesis about the clock and
+it is now **refuted**: one fixing, one hour, G10 and EM alike.
+
+**THE TWELFTH IS A REAL EXCEPTION AND IT IS NOT A CLOCK PROBLEM.** `CNY` vs `USDCNH` cannot be
+identified at all: hour 13 = 84.33, hour 14 = 84.93, worst = 117.27 — a best/worst ratio of
+**1.4x**, i.e. the scan has no signal (the standing rule: an offset scan needs range/bias >> 1).
+The mechanism is that these are **different instruments** — BIS `CNY` is the onshore fix, the
+desk's `USDCNH` tape is offshore. The residual is the CNH–CNY basis, not a timestamp. Split out
+as its own card grade: **needs-monitoring (basis, not clock); do not use BIS CNY as ground truth
+for USDCNH.**
+
+### ITEM 3 — SEARCH-SPACE EXPANSION. **NEW SOURCE CLASS: benchmark/market administrators, not central banks — LBMA's keyless London gold & silver FLOW doors** — grade: **verified-clean (decode and units); the AXIS itself is a candidate, not adopted**
+
+**WHY THIS CLASS, AND IT CAME OUT OF MY OWN RUN'S BLIND SPOT.** Items 1 and 2 are FX fixings from
+central banks — and runs (m) through (u) are all the same shape. But the desk's mandated universe
+is metals, energy, softs, indices and share CFDs *as well as* FX. **Every reference-data source
+this mission has adopted is an FX source.** The narrowing was invisible from the output because
+what was missing was never named. The class that covers the rest is not central banks at all: it
+is **benchmark and market administrators** (LBMA, LPPM, exchanges, physical-market bodies).
+First target chosen by desk exposure: XAUUSD.
+
+**§13 GATE, BOTH DIRECTIONS.** `www.lbma.org.uk/robots.txt` → HTTP 200, `Disallow: /cache/` only —
+clean, and it advertises a `/cn/` Chinese sitemap (CJK ground, noted for a later run).
+`prices.lbma.org.uk/robots.txt` → **HTTP 401**, which is ambiguous under RFC 9309, so the price
+host was **not touched**; everything below came off the allowed host.
+
+**TWO KEYLESS JSON DOORS, neither advertised as an API** (both found by grepping the page, not the
+marketing copy — the endpoint IS the find):
+
+| endpoint | result |
+|---|---|
+| `https://www.lbma.org.uk/clearing-data/data.json` | HTTP 200, 15,769 b, **357 monthly rows, 1996-10 → 2026-06** |
+| `https://www.lbma.org.uk/vault-holdings-data/data.json` | HTTP 200, 3,697 b, **121 monthly rows, 2016-07 → 2026-07** |
+
+**THE PAYLOAD IS UNLABELLED ARRAYS — AND THE UNITS WERE READ, NOT GUESSED.** Both return bare
+`[[epoch_ms, …]]` with no schema. The column map and units come from the page's own Highcharts
+config: clearing `[t, gold_volume_Moz, gold_n_transfers, gold_value_$bn, silver_volume_Moz,
+silver_n_transfers, silver_value_$bn]` (axis title *"Millions of Ounces (daily averages)"*),
+vault `[t, gold, silver]` in *"Troy Ounces (000s)"*.
+
+**VERIFY-DON'T-TRUST — and the decode is confirmed by an INDEPENDENT quantity, which is the whole
+point.** Nothing here carries a price label, so `value ÷ volume` yields an implied USD/oz that the
+source never publishes. Diffed against the desk's own MT5 monthly mean, 100 common months
+2018-03 → 2026-06:
+
+- **GOLD vs XAUUSD: level correlation 0.99999, log-return correlation 0.9964, median ratio −0.04%, sd 0.20%**
+- **SILVER vs XAGUSD: level correlation 0.99989, log-return correlation 0.9926, median ratio +0.01%, sd 0.74%**
+
+A units error or a mis-assigned column could not survive that. **The volume and value columns are
+correct, the Moz/$bn units are correct, and the decode is proven without trusting one label.**
+
+**PHYSICAL-BOUND CHECK (a bound at ingest, never a z-score).** Latest vault row → **9,534 t gold**
+and **28,209 t silver** in London. Both sit exactly where the London market is known to be, against
+~216,000 t of above-ground gold and ~36,000 t of total central-bank reserves. Passes.
+
+**THE MECHANISM, AND IT NAMES ITS FORCED PARTICIPANT.** Vault holdings are the *stock* of physical
+metal in London; their monthly change is the net physical flow in or out. When the COMEX–London EFP
+dislocates, the arb is closed by **physically flying bullion to New York**, which is slow, costly,
+capacity-constrained and publicly visible in this series. The participant cannot stop: the metal
+must move for the basis to close. That is a stock/flow constraint on the world's dominant gold
+venue, published free, and it is a different family entirely from the five refuted macro→FX axes.
+
+**BLUNT LIMITS — WHY THIS IS CARDED AS A CANDIDATE AND NOT PRE-REGISTERED THIS RUN.** The series is
+**MONTHLY**: 357 observations for clearing, **121** for vault. That is thin for the ten gates before
+any regime conditioning, and the tradable horizon is monthly. Worse, **the publication lag is
+observed but not established**: on 2026-08-29 the vault door served through 2026-07 (~1 month) and
+clearing through 2026-06 (~2 months), but an *observed availability* is not a point-in-time release
+date. **The exact next measurement, and it gates everything: recover the true release dates** (the
+LBMA release calendar, or CDX-stamp the monthly `.xlsx` filenames on `cdn.lbma.org.uk`) **and
+re-run the axis with the series lagged to its real vintage.** Run (q) put ALL the significance of
+the macro→FX family in an untradable lag-0 bar; proposing a stock/flow axis without its vintage
+would be the identical error one family over. No EV-gate pre-registration until that lag is
+measured.
+
+**§38 — AN EXCLUSION SPAWNS A HUNT.** `lbma-daily-trade-reporting-data` is the highest-value page
+on the site (actual daily OTC London volumes) and it is **vendor-gated**: the only artifact is
+`cdn.lbma.org.uk/pages/refinitivtradedatariccodes.xlsx`, a list of **Refinitiv RIC codes** — the
+data is behind an LSEG terminal. Graded **excluded-paywalled**, never adopted. Its replacement is
+already half-open and it is these same two doors: clearing turnover and vault stock are the free,
+lower-frequency reconstruction of London OTC activity from the administrator itself. Residual gap,
+graded honestly: **daily granularity is not free-reconstructable** — the desk gets the monthly
+aggregate, not the daily tape.
+
+**NEXT UN-EXHAUSTED GROUND ON THIS CLASS (the section is opened, NOT dug):** `lppm.com/data`
+(platinum/palladium, the sister administrator, linked from the LBMA page and untouched);
+LBMA `value-dates` and the annual `forecast-survey` (a dated, public, falsifiable *consensus* panel —
+a positioning/sentiment axis with a built-in scoreboard); the `/cn/` Chinese sitemap; and the
+administrator class beyond metals — energy, softs and index benchmark administrators, where the
+desk currently holds **no reference source at all**.
+
+### SESSION SUMMARY — 2026-08-29 (free-data run **v**) — **CLOSED**
+
+**Categories covered:** vendor-replacement reconstruction (cat 6, both items), alternative/macro
+(cat 5), and a **new source class** opened under search-space expansion. Crypto-exchange ground
+untouched (banned universe).
+
+**Items: 3 taken, 3 closed to depth.** Both pending `source_backlog` verification rows are now
+terminal, so the desk's stated bottleneck — verification, not cataloguing — is clear on this seat.
+
+**Verified vs UNVERIFIED: 3 verified-clean, 0 new UNVERIFIED, 1 excluded-paywalled (with its §38
+replacement opened in the same run), 7 series graded destroyed-or-stale-at-source.** No link dump:
+every card above cites the exact URL, its HTTP code and byte count, and a diff against ground truth.
+
+**Best vendor-replacement:** Eurostat `ert_bil_eur_d`. Not for the reason it was carded — the desk
+already held ECB reference FX, but **via a third-party `frankfurter` proxy**, because the ECB's own
+`EXR` dataflow 503s. This replaces a third-party hop with an official EU door, keyless, and extends
+the G10 legs to **1974** (ECU era, ~25 years past the desk's tape).
+
+**Cross-source pair flagged (joint value > either alone):** BIS `WS_XRU` × Eurostat `ert_bil_eur_d`
+— two independent institutions publishing the **same 14:00 CET fixing**, one in CCY-per-USD and one
+in CCY-per-EUR. Their implied cross is a free, continuous, 50-year cross-publisher consistency
+check and the cheapest available detector of a silent revision or a units break on either door.
+
+**NEW SOURCE CLASS discovered:** **benchmark / market administrators** (LBMA, LPPM, exchange and
+physical-market bodies) — the answer to a blind spot in this mission's own record: every source
+adopted across runs (m)–(u) was a central-bank **FX** door, while the mandated universe is metals,
+energy, softs, indices and share CFDs too.
+
+**THE RUN'S ONE TRANSFERABLE LESSON — a source's stated statistic is boilerplate, and it now has
+two independent instances.** BIS `WS_XRU`'s TITLE and Eurostat `ert_bil_eur_d`'s `statinfo=AVG`
+both declare a *daily average*; both are **14:00 CET point-in-time snapshots**, proven by the same
+offset-scan against the desk's own tape. Two institutions, same false label, same hour. Never adopt
+an SDMX series on its declared statistic — diff it and offset-scan the clock. The corollary that
+paid for itself twice this run: **liveness is `max(observation_date)` PER SERIES, never the
+dataflow header** (it caught RUB dead since 2022-03 and six more stale series under a one-day-old
+stamp).
+
+**DEPTH LINE (per the depth mandate, honestly):**
+- Card 77 / Eurostat — **EXHAUSTED for this door**: structure → series → full 37-currency panel →
+  per-currency liveness → per-season clock → 6-pair generalisation. Depth surfaced what the surface
+  could not: the surface said "a live daily FX door"; the depth said *the label is wrong, seven
+  series are dead inside it, and the desk's existing route is a third-party proxy.*
+- Card 75 / BIS EM legs — **EXHAUSTED**: the caveat is refuted on 11 pairs, and the depth found a
+  twelfth (`CNY`) that fails for a **basis** reason, not the clock reason the card assumed. The
+  surface would have recorded "EM legs unverified" for a third run.
+- LBMA — **section opened, NOT exhausted**: page → grepped-out JSON endpoints → Highcharts column
+  map → implied-price cross-validation → physical bound. Named next ground rather than claiming the
+  class dug.
+- **Not breadth-theatre**, but one honest gap: I chased no citation chains and no fork trees this
+  run — this ground is institutional doors, where the equivalent depth is dataflow enumeration and
+  ground-truth diffing, and that is what was done.
+
+**NEXT RUN TAKES (chain intact):** (1) recover the LBMA point-in-time release calendar and re-run
+the vault/clearing axis on true vintages — the one thing blocking an EV-gate pre-registration;
+(2) `lppm.com/data` + the LBMA annual forecast-survey consensus panel; (3) expansion — an energy or
+softs benchmark administrator, where the desk holds **no reference source at all**.
