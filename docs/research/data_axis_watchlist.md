@@ -9891,3 +9891,61 @@ s11's `currency_quote` 0.493.
 **KNOWN FAILURE MODE, stated up front:** a liquidity tiering computed on the desk's own tape is
 point-in-time-sensitive — spreads and tick rates change, and a tier assigned on full-sample
 statistics is lookahead. Any tier used in a screen must be assigned on a trailing window only.
+
+### BRAIN HUNTER s23 — 2026-08-29 — the liquidity-tier census, run: 335x, and `asset_class` does not separate it
+
+s22 left the tier census as next-run work. It is done: `data/brain_hunter_s23_liquidity_tier.py` →
+`data/brain_hunter_s23_liquidity_tier.json`. One-way cost in bps of notional is computed from
+registry fields only — `median_spread_pts × 10^−digits / median(close, last 500 H1 bars)` — over all
+**251/251** symbols, and the median close comes from the canonical store `desks/mt5/data/universe/`.
+
+| quantile | one-way cost (bps) |
+|---|---|
+| min | 0.039 |
+| p25 | 0.663 |
+| median | 1.726 |
+| p75 | 4.406 |
+| p90 | 15.690 |
+| max | 578.70 |
+
+**The single pool spans 335x from median to worst and ~14,700x end to end.** A screen that applies
+one turnover or cost assumption across it is applying it to two populations that do not share a
+decimal place.
+
+**AND THE OPERATIVE HALF: `asset_class` — the desk's only existing stratifier — is not a proxy for
+the tier.** Splitting the 227 positively-costed symbols into quartiles:
+
+| tier | n | cost range (bps) | asset-class mix |
+|---|---|---|---|
+| T1 | 56 | 0.039 – 0.661 | Commodities 5, Equities 23, Forex 9, Forex Exotics 13, Indices 6 |
+| T2 | 56 | 0.663 – 1.713 | Energy 1, Equities 37, Forex Exotics 11, Indices 7 |
+| T3 | 56 | 1.724 – 4.290 | Bonds 3, Commodities 1, Crypto 1, Energy 1, Equities 28, Forex Exotics 19, Indices 3 |
+| T4 | 59 | 4.316 – 578.70 | Commodities 6, Crypto 13, Energy 1, Equities 12, Forex 1, Forex Exotics 12, Soft Commodity 11, UNCLASSIFIED 3 |
+
+Every tier is asset-class-mixed, and **five of the nine asset classes appear in both the cheapest and
+the dearest quartile**. A Forex major sits in T4; 23 share CFDs sit in T1 alongside metals. So the
+tier is a genuinely new grouping axis, not a relabelling of one the desk already has — which is
+exactly the test s11 set (`asset_class` group_rank reproduced universe-wide rank at 0.82;
+`currency_quote` at 0.493 was the only arm worth having).
+
+**TWO REGISTRY DEFECTS SURFACED BY THE SAME PASS, both cheap and both silent:**
+- **24 of 251 symbols carry `median_spread_pts = 0`** — arithmetically impossible, and it is not the
+  thin tail: `EURUSD`, `GBPUSD`, `USDJPY`, `USDCAD`, `USDCHF`, `AUDUSD`, `EURGBP`, `NZDUSD`,
+  `AUDCAD`, `AUDCHF`, `AUDJPY`, `AUDSGD`, `CADCHF`, `EURAUD`, `EURCAD`, `EURCHF`, `GBPCAD`,
+  `GBPCHF`, `HKDJPY`, `NZDCAD`, `USDHKD`, plus the share CFDs `NVIDIA`, `Broadcom`, `Walmart`.
+  Anything reading this field costs the desk's most-traded instruments as **free**. (Consistent with
+  the earlier 24/251 observation under R0728; this run names the full list and both share-CFD and FX
+  membership.)
+- **3 symbols carry no `asset_class` at all** — `BeyondMeat`, `BlockInc`, `Walgreens` — and their
+  median one-way cost is 268 bps, i.e. they are in the dearest quartile while being invisible to
+  every asset-class-conditioned screen.
+
+**WHAT IS CLAIMED:** the cost distribution above, the mix table, and the two registry defects, all
+recomputable from the committed probe. **NOT CLAIMED:** that tiering improves any screen. The
+decorrelation test s22 named (does a liquidity-tier `group_rank` beat `currency_quote`'s 0.493?) is
+still unrun and is next-ground for s24. The point-in-time warning from s22 stands unchanged: this
+census uses full-sample spread and price and is therefore a *map*, not a usable tier — any tier that
+enters a screen must be assigned on a trailing window only.
+
+**THE DELAY AXIS REMAINS UNMEASURED (L1.28a).** The registry declares no delay dimension and this
+run built no instrument for one; "absent" is recorded, not "fine".

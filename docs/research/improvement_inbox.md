@@ -5211,3 +5211,34 @@ by a convention nothing declares.
 microseconds, and catches the class before an optimiser is pointed at it. The desk has now watched
 this exact defect kill two external generators (s20's random target, s21's inhomogeneous objective)
 and found one instance in its own promotion path on the first sweep.
+
+### BRAIN HUNTER s23 — 2026-08-29 — a repo tree carries two `universe/` directories and a live screen reads the wrong one
+
+Not a BRAIN mechanism; found while pointing s22's liquidity-tier work at the desk's own tape, and it
+is the more expensive of the two findings. The tree holds **`desks/mt5/universe/` (24 `*_H1.parquet`)
+and `desks/mt5/data/universe/` (251)**. Same filenames, same schema, different contents: on both
+`XAUUSD_H1` and `EURUSD_H1` the two copies are `git hash-object`-DIVERGED, the shadow copy is 2026-08-23
+and the canonical one 2026-08-29.
+
+**One live reader:** `scripts/run_cot_change_screen.py:37` sets `_H1_DIR = _ROOT / "desks/mt5/universe"`.
+Its `gold` and `gold`/`silver` legs are the only two `"h1"` entries in `_LEGS`, both are present in the
+shadow directory, so **the screen does not fail — it succeeds on a six-day-stale tape** and emits a
+preregistered KILL verdict (`_BAR = -1.96`) from prices that are not the desk's prices. L1.44:
+a decision is only as live as its inputs, and this one reads green either way.
+
+**The latent half is larger than the live half.** Eight of the ten `_LEGS` currently route through
+FRED. The moment any of them is moved to the desk's own tape — which is the obvious upgrade, since
+FRED `DEX*` is a daily fixing and the desk holds H1 — the leg lands in a directory holding 24 of 251
+symbols and the missing 227 read as absence, not as a wrong path (WS-005).
+
+**FIX, one line, filed as R0743** (this seat is research-frozen and did not apply it):
+`_H1_DIR = _ROOT / "desks/mt5/data/universe"`, then re-run and compare the pooled `dx1` t against the
+recorded verdict in `docs/research/COT_SCREEN_RESULT.md` — if the verdict moves, the recorded one was
+produced by the stale copy.
+
+**THE GENERALISATION, which is the part worth keeping.** A duplicated data directory is invisible to
+every check the desk runs: both paths exist, both parse, both return non-empty frames, and the
+reader's own logs cannot distinguish them. The cheap standing test is structural rather than
+statistical — **assert that no two directories in the tree hold the same bar filename** — and it
+costs a `find | basename | sort | uniq -d`. Whoever is not research-frozen should wire it beside the
+existing artifact fences; a grep for `mt5/universe` outside `data/` is the same check in one line.

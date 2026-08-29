@@ -9619,6 +9619,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0743",
+   "source": "deep_sweep",
+   "summary": "scripts/run_cot_change_screen.py:37 reads _H1_DIR=desks/mt5/universe -- a 24-file SHADOW copy of the canonical 251-file desks/mt5/data/universe. Its gold/silver legs (XAUUSD, XAGUSD, the two 'h1' entries in _LEGS) are therefore computed on a tape frozen 2026-08-23 while the canonical store updated 2026-08-29 (git hash-object DIVERGED both symbols; 1647718 vs 1655728 bytes on XAUUSD). The screen emits a preregistered KILL verdict (_BAR=-1.96) from 6-day-stale prices, and every future non-FRED leg added to _LEGS silently loses 227 of 251 symbols. FIX: one line, _H1_DIR = _ROOT / 'desks/mt5/data/universe'; then re-run and compare the pooled dx1 t. Found by BRAIN HUNTER s23; evidence in data/brain_hunter_s23_liquidity_tier.json.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-29T16:38:30.822720+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

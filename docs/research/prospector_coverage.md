@@ -12226,3 +12226,146 @@ have been scoped to what was actually censused; it was generalised past its popu
 3. **The BRAIN-scoped collector arm — FOURTEEN sessions old, re-raised unchanged.** Arm B cost ~40
    seconds of API calls and nothing persists the 97-repo population, so every session re-pays for
    the census. Belongs to a seat that is not research-frozen.
+
+## BRAIN HUNTER s23 — 2026-08-29 — the licence door was never the door: an MIT repo already carries a full local BRAIN evaluator, and its `group_neutralize` has no groups
+
+Took s22's NEXT-GROUND items 1 and 2. Item 3 (the BRAIN-scoped collector arm, now FIFTEEN sessions
+old) is re-raised unchanged; it belongs to a seat that is not research-frozen. §33 backlog was clear
+at entry (30 carded finds disposed, mining authorised), so this run mined. Probe and numbers:
+`data/brain_hunter_s23_liquidity_tier.py` → `data/brain_hunter_s23_liquidity_tier.json`.
+
+### Arm A — s22 item 1: all 16 forks, and the door is CLOSED
+
+`api.github.com/repos/shu476891497-hash/worldquant-miner/forks`, metadata only. **16 of 16 carry
+`license: null`.** No downstream author granted anything, so there is no §13-clean route to
+`generation_two/shadow_scorer/` — the 49-file local evaluator with the off-platform data layer that
+s22 promoted to the highest-priority licence-gated re-entry candidate on this ground. Decisive null,
+and it retires the item rather than deferring it.
+
+Two of the sixteen are not plain mirrors and are worth recording: `volcanoAlbert/wq-miner` (2,625 KB,
+351 blobs, pushed 2026-06-30) and `Taiwan-LZX/wop-mini` (399 KB, 117 blobs, pushed 2026-04-24), both
+renamed and both pushed *before* the parent. `wq-miner` retains the whole of `shadow_scorer/` at a
+tenth of the parent's size, which independently confirms s22's 74%-is-cached-platform-state finding
+from a second angle: **the code is ~2.6 MB, the rest is the walled data dump.** `wop-mini` at 117
+blobs carries the `constants/data_fields_cache_*.json` dumps and no `shadow_scorer/` — an earlier
+lineage. Neither was cloned and no blob was fetched from either; both are unlicensed.
+
+### Arm B — the collision detector, and it REFUTES the premise of Arm A
+
+s21's `(size, pushed_at, description)` collision detector was pointed outside the fork graph, via
+five `search/repositories` queries. **The population is far larger than the 97-repo census: 63
+distinct repos from five queries alone, and the licensed subclass is the majority of it** — MIT,
+Apache-2.0 and AGPL repos at every size from 20 KB to 22 MB. s22 spent its Arm B establishing that
+the one architecturally-interesting repo was licence-blocked, and concluded the licence *was* the
+binding constraint for it. That is true of that repo and **false of the ground**, which is the
+finding: nobody had looked for a licensed equivalent.
+
+**`qq547820639/WorldQuant-BRAIN-Alpha` — MIT, 1,393 blobs, 905 `.py`, pushed 2026-08-15 — carries
+exactly the artifact the fork census was hunting**, permissively licensed:
+`brain_alpha_ops/research/local_backtest/expression_evaluator/{_tokenizer,_parser,_core,_evaluator,_operators}.py`,
+plus `research/expression_ast/_parser.py` and `research/hypothesis_expression_support/_operators.py`.
+LICENSE verified as MIT text, not a metadata tag.
+
+**AND THE ARTIFACT DOES NOT SOLVE THIS ORGAN'S FOUNDING BLOCKING INPUT — it reproduces the desk's own
+2026-08-07 defect.** `_OperatorsMixin._group_neutralize(row)` is, in full:
+
+```python
+mean_val = _safe_mean(row)
+return [value - mean_val for value in row]
+```
+
+It takes **the whole cross-section row** and demeans it. There is no group argument, no grouping
+map, and a tree scan of all 1,393 paths returns **zero** hits for `sector`, `industry`,
+`subindustry`, `market_cap` or `universe`. A repo advertising a local BRAIN replica silently
+collapses `group_neutralize` into universe-wide demean — the identical failure the desk shipped until
+2026-08-07, when a forwarded screenshot revealed that all 179,712 of its cross-sectional cells asked
+"extreme against ALL" and none asked "against its PEERS".
+
+**So the class verdict is now settled on all four subpopulations and it is the same verdict.** The
+97-repo census (s7), the 25 no-licence subclass (s21), the 16 forks (this run, Arm A) and now the
+licensed subclass (this run, Arm B) supply **n = 0** peer-grouping maps. s11 and s20 each closed with
+"a grouping map must be BUILT"; that is no longer an inference from a sample, it is the measured
+state of the ground. **Stop hunting this ground for a grouping map.** The only remaining artifact
+that demonstrably built one is `shadow_scorer/`, and Arm A closed its licence door at 16/16.
+
+Two smaller semantics notes from the MIT evaluator, recorded because the desk implements the same
+operators and the divergences are silent: `_cross_rank` breaks ties by array index
+(`sort(key=lambda x: (x[0], x[1]))`), so tied values receive **distinct** ranks rather than average
+ranks — material on any field with mass at a point, e.g. zero volume-change; and `_extract_window`
+returns a hardcoded **20** and `_extract_scalar` a hardcoded **2.0** when the argument is empty, and
+coerces via `int(abs(val))`, so a malformed or negative window is silently absorbed instead of
+raising.
+
+### Arm C — s22 item 2: the liquidity-tier census, run
+
+Full numbers and the two registry defects are in `docs/research/data_axis_watchlist.md`. Headline:
+one-way cost spans **0.039 → 578.70 bps** over 251/251 symbols (median 1.726, **335x median-to-max**),
+and **`asset_class` does not separate it** — every cost quartile is asset-class-mixed and five of nine
+classes appear in both the cheapest and the dearest quartile. So BRAIN's liquidity-tier stratification
+is a genuinely new grouping axis on this registry, not a relabelling of one the desk has. Also
+surfaced: **24/251 symbols carry `median_spread_pts = 0`** including EURUSD/GBPUSD/USDJPY and three
+share CFDs (costed as free by anything reading the field), and **3 symbols carry no `asset_class`**
+while sitting in the dearest quartile at 268 bps. The DELAY axis remains **UNMEASURED**, recorded as
+such rather than as clean.
+
+### Arm D — the defect Arm C walked into → R0743
+
+The tree holds **two** `universe/` directories with the same filenames: `desks/mt5/universe/` (24
+`*_H1.parquet`) and `desks/mt5/data/universe/` (251). They are `git hash-object`-DIVERGED on both
+symbols checked, the shadow copy dated 2026-08-23 against the canonical 2026-08-29. My first census
+ran against the shadow and reported "227 of 251 have no bars" — wrong, and it would have read as a
+data-coverage catastrophe. **One live reader has the same bug:**
+`scripts/run_cot_change_screen.py:37`. Its only two tape-sourced legs (XAUUSD, XAGUSD) exist in the
+shadow directory, so the screen does not fail — it emits a preregistered KILL verdict from a
+six-day-stale tape and reads green (L1.44). Eight of its ten legs currently route through FRED; the
+moment one moves to the desk's own tape it lands in a 24-symbol directory and 227 absences read as
+data gaps (WS-005). One-line fix named in R0743; mechanism and the structural standing test
+(`find | basename | sort | uniq -d` — no two directories may hold the same bar filename) routed to
+`improvement_inbox.md`. Research freeze respected: `scripts/` untouched.
+
+### Boundary and cost
+
+Public GitHub REST (`/repos`, `/forks`, `/git/trees`, `/search/repositories`) and two
+`raw.githubusercontent.com` fetches from an **MIT-licensed** repo (its LICENSE and one operators
+file). No login, no `api.worldquantbrain.com`, no clone, and **no blob fetched from any no-licence
+repo** — the 16 forks and the parent were read at the metadata layer only, and the
+`data_fields_cache_*` platform dumps were not touched in any copy. Writes: `docs/research/*`,
+`data/*`, plus one ledger row. Video: 0 fetched, 0 locked (no video ground touched; s5's finding on
+BRAIN lecture material is unchanged and was not re-probed).
+
+### SECTION-EXHAUSTION CLAIMED (dated)
+
+**2026-08-29 — the fork graph of `shu476891497-hash/worldquant-miner` is EXHAUSTED at 16/16, all
+unlicensed.** Re-entry only on a NAMED enabling change: a fork or the parent adding a LICENSE file.
+Not a re-scan candidate.
+
+**2026-08-29 — "does the BRAIN repo ground supply a peer-grouping map?" is SETTLED at n = 0 across
+all four subpopulations** (97-repo census, 25 no-licence subclass, 16 forks, licensed subclass).
+Re-entry only if a repo appears carrying an off-platform grouping artifact. The grouping map is
+desk-build work, permanently, and no further session should spend on this question.
+
+### CORRECTION TO A PRIOR SESSION NOTE
+
+s22 closed Arm B with the licensed door unexplored and treated `shadow_scorer/`'s licence as the
+binding constraint **for the ground**. It is the binding constraint for that repo only: a
+permissively-licensed full local evaluator (`qq547820639/WorldQuant-BRAIN-Alpha`, MIT) was one
+search query away and was never looked for. Second consecutive session in which a class-level claim
+was generalised past the population actually censused — s22 corrected s21 for the same defect. The
+standing habit to adopt: **before claiming a wall, run the search that would find the door.**
+
+### NEXT UN-EXHAUSTED GROUND (for s24, in order)
+
+1. **The decorrelation test on the liquidity tier.** s11's ruler, applied to Arm C's tiering: does a
+   liquidity-tier `group_rank` decorrelate from universe-wide rank by more than `currency_quote`'s
+   0.493? Tiers must be assigned on a trailing window only (s22's lookahead warning). Desk-side, no
+   external ground, and it converts Arm C from a map into an axis or kills it.
+2. **The licensed subclass, now known to be the majority of the ground and never censused.** Arm B
+   touched one of 63 repos from five queries. `zhutoutoutousan/worldquant-miner` (Apache-2.0, 5,968
+   blobs) and `nyumuharon/WorldQuant_miner` (Apache-2.0, 5,972) are near-twins whose bulk is a vendored
+   `dify` fork — the interesting question is what the ~330 non-vendored files are. `i9880612/alpha-garden`
+   (MIT) carries `generator/catalog/operator_support_matrix.py` and `platform_operator_manifest.py`:
+   an operator/field COMPATIBILITY matrix, which is a shape the desk has no analogue of.
+3. **The BRAIN-scoped collector arm — FIFTEEN sessions old, re-raised unchanged.** Arms A and B cost
+   ~90 seconds of API calls and nothing persists the population, so every session re-pays for the
+   census and this run had to rediscover that the population is 63+, not 97-and-known. Belongs to a
+   seat that is not research-frozen.
