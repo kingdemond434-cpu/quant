@@ -8,7 +8,15 @@ import json
 def cell_id(cell: dict) -> str:
     """Executable identity; arbitrary DSL parameters must never collapse onto rr=?/wb=? IDs."""
     params = dict(cell.get("params") or {})
-    if "rr" in params or "wait_bars" in params:
+    # THE LEGACY SHORT FORM IS ONLY SAFE WHEN rr/wait_bars ARE THE WHOLE PARAMETER SET.
+    # It used to fire whenever EITHER key was present, so every other parameter collapsed out
+    # of the identity -- measured 2026-08-29 on H-20260828-005, where 24 distinct trials
+    # (3 symbols x 2 rr x 2 ttl_bars x 2 directions) printed as 8 ids, three cells deep each,
+    # with opposite-signed Sharpes under the SAME name. The docstring above already forbade
+    # exactly this; the branch predicate did not enforce it. Anything richer than {rr,
+    # wait_bars} now takes the digest form, so no historical id whose params were only those
+    # two keys changes value.
+    if params and set(params) <= {"rr", "wait_bars"}:
         return (f"{cell['sym']}.{cell['family']}.rr={params.get('rr', '?')}"
                 f"_wb={params.get('wait_bars', '?')}")
     payload = json.dumps(params, sort_keys=True, separators=(",", ":"), default=str)

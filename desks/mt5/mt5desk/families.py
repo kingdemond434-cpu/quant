@@ -162,8 +162,24 @@ def _h1(df: pd.DataFrame) -> pd.DataFrame:
     A producer rewrote the universe parquets with a tz-NAIVE datetime64[ms] index (caught
     2026-08-27: every comparison against an aware stamp -- lookahead guards, forward boundaries,
     session windows -- raised or, worse, silently disagreed about which hour a bar is). Bars on
-    this desk are broker-UTC by contract, so naive input is localized, aware input is converted,
-    and no caller ever has to guess again.
+    this desk are stamped +00:00, so naive input is localized, aware input is converted, and no
+    caller ever has to guess again about the OFFSET ARITHMETIC.
+
+    THE STAMP IS NOT UTC AND THIS DOCSTRING USED TO SAY IT WAS ("broker-UTC by contract").
+    MEASURED 2026-08-29 on the live parquets: 446 of 452 weeks in EURUSD_H1 begin Monday 00:00
+    and end Friday 23:00, in summer and winter alike. A true-UTC FX tape cannot do that -- its
+    week boundary walks between 21:00 and 22:00 Sunday with DST. These are broker EET stamps
+    (UTC+3 summer / UTC+2 winter) wearing a +00:00 label.
+
+    WHAT THAT COSTS, AND WHAT IT DOES NOT. It costs nothing arithmetically: the stamps are
+    self-consistent and every family below compares stamp-hours to stamp-hours. It costs a
+    MECHANISM CLAIM, which is gate 1's entire subject. `ts.hour == 16` is 13:00 UTC in summer,
+    so a family named for the London close is trading the London afternoon, and gate 1 passes
+    it on the strength of a name that does not describe the window. Hour constants are NOT
+    changed here -- several were evidently chosen in broker time and land correctly (comex
+    settle_hour 20 is 17:00 UTC, the real COMEX settlement) -- because silently re-timing a
+    certified cell is a worse defect than a wrong label. The labels are corrected in place and
+    the re-timing question is carded, not performed.
     """
     if len(df) == 0:
         return df
@@ -236,6 +252,9 @@ def family_usd_session_shock(
     df: pd.DataFrame,
     fx: pd.DataFrame | None,
     *,
+    # STAMP-HOURS, NOT UTC (measured 2026-08-29, see `_h1`): 7-16 broker EET is 04:00-13:00 UTC
+    # in summer -- it opens three hours before London does and closes three hours before it
+    # does. Constants unchanged; the claim is what was wrong.
     london_start: int = 7,
     london_end: int = 16,
     shock_atr: float = 2.0,
@@ -612,6 +631,10 @@ def family_london_close_momentum(
     ttl_bars: int = 4,
     rr: float = 1.5,
 ) -> list[Signal]:
+    """NAME IS 2-3 HOURS OFF ITS WINDOW (measured 2026-08-29, see `_h1`). Stamp-hour 16 is
+    13:00 UTC in summer / 14:00 in winter -- the London AFTERNOON, not the 15:00-16:00 UTC
+    London close. The hour is left untouched (re-timing a tested cell needs its own evidence);
+    only the claim is corrected, because gate 1 judges the mechanism by this name."""
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     a = atr.to_numpy()
@@ -1420,4 +1443,75 @@ def family_ict_fvg(
         target = entry + side * stop_dist * rr
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
                               ttl_bars=ttl_bars, tag="ict_fvg"))
+    return signals
+
+
+@register_family(param_grid={
+    "rr": [1.0, 1.5],
+    "ttl_bars": [2, 4],
+    "mode": ["fade", "follow"],
+}, tags=["retail_flow", "fxblue", "H-20260828-005"])
+def family_retail_overlap_reversal(
+    df: pd.DataFrame,
+    *,
+    hours: tuple[int, ...] = (15, 16),
+    ext_atr: float = 1.0,
+    atr_n: int = 20,
+    stop_atr: float = 1.5,
+    ttl_bars: int = 2,
+    rr: float = 1.5,
+    mode: str = "fade",
+) -> list[Signal]:
+    """H-20260828-005 -- fade the extension into the retail-concentration hours.
+
+    THE CLOCK IS BROKER STAMP-HOURS, AND THE CARD'S "UTC" LABEL WAS WRONG (verified
+    2026-08-29). The universe parquets are stamped +00:00 but carry a fixed civil clock:
+    446/452 weeks in EURUSD_H1 begin Monday 00:00 and end Friday 23:00 in BOTH summer and
+    winter, which no true-UTC FX tape does (its week boundary walks with DST). They are
+    broker EET. The FX Blue corpus that produced this card carries the SAME convention --
+    its trade-share peak (15/16/17) is the tape's own stamp-hour tick_volume peak
+    (EURUSD 7.3/7.8/8.5%, GBPUSD 7.0/7.6/8.2%, XAUUSD 6.7/8.4/8.4%), and under a UTC
+    reading it would have landed on 18-20 where the tape falls away to 6.1/4.2/3.6%.
+
+    So `hours` are stamp-hours on both sides and NO conversion is applied: the integers in
+    the card are operationally right and its narrative was three hours off (stamp 15-17 is
+    UTC 12-14 -- London afternoon into the NY open, not the overlap's centre). Anyone who
+    had "fixed" the label by converting would have introduced the error the label implied.
+
+    M15 IS UNMEASURED, NOT TESTED: the card prescribes M15 and this box holds H1 only
+    (203 *_H1 parquets, no M15 for these symbols). This is the H1 arm of the mechanism.
+    """
+    h1 = _h1(df)
+    if len(h1) < atr_n + 4:
+        return []
+    atr = _atr(h1, atr_n)
+    a = atr.to_numpy()
+    o = h1["open"].to_numpy()
+    c = h1["close"].to_numpy()
+    hset = set(int(x) for x in hours)
+    signals: list[Signal] = []
+    # i is the CLOSED extension bar; entry fills at the open of i+1 (engine rule), so the
+    # bar that decides the signal is never the bar that fills it.
+    for i in range(atr_n + 1, len(h1) - 2):
+        ts = h1.index[i]
+        if ts.hour not in hset:
+            continue
+        ai = a[i]
+        if not (ai > 0) or np.isnan(ai):
+            continue
+        ext = (c[i] - o[i]) / ai
+        if abs(ext) < ext_atr:
+            continue
+        # BOTH DIRECTIONS ARE IN THE GRID BECAUSE THE CARD SET direction: 0 AND SAID SO --
+        # "direction is the gauntlet's question". Running only the fade would have been the
+        # producer answering a question it explicitly deferred, and both arms are counted as
+        # trials by the canonical census, never reported as one.
+        sign = 1 if ext > 0 else -1
+        side = -sign if mode == "fade" else sign
+        entry = c[i]
+        stop_dist = stop_atr * ai
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=ts, side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="retail_overlap_reversal"))
     return signals

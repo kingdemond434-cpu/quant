@@ -100,3 +100,41 @@ notes: 'ACTIVITY-half card. The clock is the deliverable and it is NOT survivors
   half of the same corpus shows 61.3% of accounts profitable at 15:00 (z~2.4 on 24 hourly tests, i.e.
   NOT significant under Holm, and the accounts are not independent) -- that number is recorded as a pointer
   and is deliberately NOT the basis of this rule.'
+
+# ---------------------------------------------------------------------------
+# GAUNTLET VERDICT 2026-08-29 (frontier_unified) -- the L1.58 same-day debt owed
+# by the 08-28 run, paid. Canonical ten gates via external_gauntlet.run_gauntlet
+# (no inserted threshold, either direction). Report:
+#   desks/mt5/reports/gauntlet_H-20260828-005.json
+# Driver: desks/mt5/scripts/gauntlet_h20260828_005.py
+# Family: mt5desk.families.family_retail_overlap_reversal (registered, so the
+#         canonical hourly sweep reaches it from now on -- III.16).
+#
+# 24 preregistered cells, ALL REPORTED: 3 symbols x rr{1.0,1.5} x ttl{2,4} x
+# BOTH directions. The card set `direction: 0` and said direction "is the
+# gauntlet's question", so running the fade alone would have been the producer
+# answering a question it had deferred. Charged trial census: 31.
+#
+#   survivors passing all ten: 0 / 24
+#   program level: PBO 0.3295 (pass), Hansen SPA p = 0.827 (fail)
+#   best cell of 24: USDJPY follow rr=1.5 ttl=4, Sharpe 0.0297, EV 0.0249R
+#   deflated_sharpe fails 24/24 (DSR ~ 0 against sr0 0.1142)
+#   fade arm alone (first run, 12 cells): every Sharpe negative, -0.006..-0.164
+#
+# The direction question is answered and the answer is NEITHER: the follow arm
+# is not the fade arm's mirror (stops, targets and costs break the symmetry),
+# and it is indistinguishable from zero rather than positive.
+#
+# WHAT SURVIVES. The CLOCK finding survives and is the run's asset: the corpus
+# hour axis and the desk's tape share one broker-EET convention (see the family
+# docstring for the week-boundary proof). The concentration is real; it is the
+# tradable consequence that is refuted.
+#
+# UNMEASURED, NOT FAILED (L1.28a): the M15 arm the card prescribes. This box
+# holds 203 *_H1 parquets and no M15 for these symbols, so the H1 arm is a
+# coarser test of the same mechanism, not the card's own resolution. A 2h hold
+# on an H1 clock is 2 bars; on M15 it is 8, and the entry is a quarter-hour
+# rather than an hour late. That residual is real and is carded, not waved.
+status: refuted_h1_arm
+refuted_on: '2026-08-29'
+refuted_by: frontier_unified_20260829/canonical_ten_gates
