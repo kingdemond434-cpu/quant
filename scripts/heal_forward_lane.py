@@ -183,8 +183,22 @@ def _blocked_rows() -> list[dict]:
                              "status": st.get("status"),
                              "error": str(st.get("last_error") or
                                           st.get("gate_reason") or "")[:200],
-                             "at": st.get("last_error_at")})
+                             "at": st.get("last_error_at"),
+                             "last_attempt_at": st.get("last_attempt_at")})
     return rows
+
+
+def _error_is_stale(row: dict) -> bool:
+    """True only when this same sleeve was attempted after the recorded error.
+
+    Comparing a row with the book-wide newest attempt is invalid because sleeves are evaluated
+    sequentially: every failing row except the last then looks stale during the very pass that
+    produced its live error.  That bug prevented the healer from shipping a missing dependency
+    shared by seven EURCHF clocks.
+    """
+    error_at = _parse_ts(row.get("at"))
+    attempted_at = _parse_ts(row.get("last_attempt_at"))
+    return bool(error_at and attempted_at and attempted_at > error_at)
 
 
 #: A sleeve the engine has not touched in this long is not "accumulating", it is stopped. Two
@@ -332,9 +346,11 @@ def main() -> int:
     engine_run = _engine_last_run()
     live_rows, stale_rows = [], []
     for r in rows:
-        err_at = _parse_ts(r.get("at"))
-        if engine_run and err_at and err_at < engine_run:
-            stale_rows.append({**r, "engine_ran_at": engine_run.isoformat(timespec="seconds")})
+        if _error_is_stale(r):
+            observed = engine_run or _parse_ts(r.get("last_attempt_at"))
+            stale_rows.append({**r, "engine_ran_at": (
+                observed.isoformat(timespec="seconds") if observed else None
+            )})
         else:
             live_rows.append(r)
     report["stale_errors"] = stale_rows

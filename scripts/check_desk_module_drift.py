@@ -162,6 +162,9 @@ MODULES = [
     "desks/mt5/research/forward_reconcile.py",
     "desks/mt5/research/portfolio_evidence.py",
     "desks/mt5/research/shadow_forward.py",
+    # Imported by edge_search while rebuilding `discovered` runtime inputs. Its absence blocked
+    # seven live EURCHF forward clocks even though family_inputs and shadow_forward both matched.
+    "desks/mt5/research/carry_state.py",
     # The shared runtime-input reconstruction. Both the gauntlet and the forward engine
     # depend on it; a stale copy on the box means 344 near-certificates silently stop
     # accruing the forward evidence that is their only route to a certificate.

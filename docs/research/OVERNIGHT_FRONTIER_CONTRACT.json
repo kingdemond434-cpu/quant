@@ -116,6 +116,14 @@
                                   ],
     "controller_mandate":  "docs/MASTER_QUANT_CONSTITUTION.md",
     "implementation_mandate":  "docs/research/TIER1_CONTROLLER_MANDATE.md",
+    "nightly_repair_invariants":  [
+                                      "no stale or silently missing candidate, gauntlet, certificate, forward clock, bar source, queue, watchdog or fixer",
+                                      "run every canonical watchdog and fixer; prove the repair from its consumer artifact rather than process exit",
+                                      "resume every unfinished screen from its cell checkpoint and disposition it as tested, queued, rejected or explicitly blocked",
+                                      "certify only universal-gate passes and enroll every runnable certificate into zero-capital universal shadow",
+                                      "compare missing capabilities by function against tier-one institutions and implement the highest marginal expected-log-wealth gap",
+                                      "preserve every obligation in the master constitution and historical mandate coverage; compact prompts may index but never delete them"
+                                  ],
     "controller_continuity":  {
                                   "lease":  "data/controller_lease.json",
                                   "checkpoint":  "data/controller_checkpoint.json",
