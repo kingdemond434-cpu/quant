@@ -187,6 +187,53 @@ def _dirty(root: Path) -> list[str]:
 _ORPHAN_AFTER_S = 2 * 60 * 60
 
 
+def _is_tmpfs(path: Path) -> bool:
+    """True only when `path` demonstrably sits on a tmpfs. Unknown reads as False.
+
+    Longest-prefix match against /proc/mounts, the way the kernel resolves it. Unknown must NOT
+    read as tmpfs: the consequence of a wrong True is relocating a checkout onto a path that may
+    not exist on a host this gate has never seen, and this gate's verdict must never depend on
+    where its scratch landed.
+    """
+    try:
+        lines = Path("/proc/mounts").read_text("utf-8").splitlines()
+    except OSError:
+        return False
+    best, fstype = "", ""
+    for line in lines:
+        parts = line.split()
+        if len(parts) > 2 and str(path).startswith(parts[1]) and len(parts[1]) > len(best):
+            best, fstype = parts[1], parts[2]
+    return fstype == "tmpfs"
+
+
+def _checkout_base() -> Path:
+    """Where a HEAD checkout is allocated: DISK, never RAM.
+
+    THE DEFECT THIS CLOSES (gap-fixer 2026-08-29). `_reap_stale_checkouts` below already knows
+    this checkout lands on a tmpfs -- its own docstring says "150MB of tmpfs owned by no
+    process" -- and answered by reaping it after two hours. That treats the symptom. Measured
+    this cycle the checkout is 297MB, it has DOUBLED since that note was written, and the box
+    has 3815MB with ZERO swap: one law gate on a dirty tree claims ~50% of typical free RAM for
+    its whole run, and a reaper cannot help while the run is legitimately alive. Four of these
+    were allocated inside thirty minutes on this box.
+
+    Disk is the correct home for a throwaway checkout and there is 12GB of it. `~/.cache` is the
+    conventional place, is outside the repo (a checkout INSIDE it would show up in `git status`
+    and is the mass-deletion launder R0423 names), and is verified not to be a tmpfs itself
+    before it is used. Any failure -- no HOME, unwritable, or itself in RAM -- falls back to
+    `tempfile.gettempdir()`, which is exactly today's behaviour, so this can only improve.
+    """
+    try:
+        base = Path(os.environ.get("XDG_CACHE_HOME") or (Path.home() / ".cache")) / "quant-lawgate"
+        if _is_tmpfs(base.parent if not base.exists() else base):
+            return Path(tempfile.gettempdir())
+        base.mkdir(parents=True, exist_ok=True)
+    except (OSError, RuntimeError):
+        return Path(tempfile.gettempdir())
+    return base
+
+
 def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """Delete lawgate HEAD checkouts left by runs that DIED before reaching their own cleanup.
 
@@ -212,10 +259,16 @@ def _reap_stale_checkouts(root: Path, *, now: float | None = None) -> int:
     """
     now = now if now is not None else time.time()
     reaped = 0
-    try:
-        candidates = sorted(Path(tempfile.gettempdir()).glob("lawgate-head-*"))
-    except OSError:
-        return 0                            # unreadable /tmp is not this gate's verdict to fail
+    # BOTH bases, always. The gate RE-EXECS HEAD's copy of itself, so an older HEAD still
+    # allocates under gettempdir() -- and every orphan that predates the move lives there too.
+    # Sweeping only the new base would strand exactly the pile this relocation exists to stop.
+    candidates: list[Path] = []
+    for base in {_checkout_base(), Path(tempfile.gettempdir())}:
+        try:
+            candidates.extend(base.glob("lawgate-head-*"))
+        except OSError:
+            continue                        # unreadable base is not this gate's verdict to fail
+    candidates.sort()
     for d in candidates:
         try:
             if not d.is_dir() or now - d.stat().st_mtime < _ORPHAN_AFTER_S:
@@ -254,7 +307,7 @@ def _at_head(root: Path) -> tuple[Path, str, list[str]]:
     if not dirt:
         return root, "cwd==HEAD (tree clean)", []
     _reap_stale_checkouts(root)             # sweep our own dead before allocating another 150MB
-    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-"))
+    tmp = Path(tempfile.mkdtemp(prefix="lawgate-head-", dir=_checkout_base()))
     wt = tmp / "t"
     try:
         r = subprocess.run(["git", "worktree", "add", "--detach", str(wt), "HEAD"],
