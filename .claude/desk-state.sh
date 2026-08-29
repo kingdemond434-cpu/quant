@@ -194,5 +194,42 @@ except Exception:
     print("  fences       dispatch state unreadable -- fence health UNKNOWN, not clean")
 PYEOF2
 fi
+# DOCUMENT DESTRUCTION, COUNTED WHERE SOMEONE READS IT (wired 2026-08-29). The replay fence
+# heals a guarded ledger every minute and records each heal in its own log -- and on 2026-08-29 it
+# logged 31 heals of docs/GAP_REGISTER.md between 03:38 and 03:54, then went quiet, because at
+# 04:22 the stale content was COMMITTED and a fence that heals FROM HEAD cannot see a bad HEAD.
+# 87 rows were gone by then. Nothing read that log, and the unit's exit code is the wrong channel:
+# a unit permanently parked in `failed` is a unit nobody reads. A heal is a SYMPTOM of an upstream
+# writer, so the count belongs where every session already looks.
+if [ -f data/doc_replay_fence.log ]; then
+    "$PY" - <<'PYEOF3' 2>/dev/null || true
+import re
+from datetime import UTC, datetime, timedelta
+try:
+    cut = datetime.now(UTC) - timedelta(hours=24)
+    heals = {"REPLAY HEALED": 0, "DESTROYED": 0, "EMPTIED": 0}
+    files = set()
+    with open("data/doc_replay_fence.log", encoding="utf-8", errors="replace") as fh:
+        for line in fh:
+            m = re.match(r"(\S+) (REPLAY HEALED|DESTROYED|EMPTIED) (\S+?):", line)
+            if not m:
+                continue
+            try:
+                when = datetime.fromisoformat(m.group(1))
+            except ValueError:
+                continue
+            if when >= cut:
+                heals[m.group(2)] += 1
+                files.add(m.group(3))
+    n = sum(heals.values())
+    if n:
+        bad = heals["DESTROYED"] + heals["EMPTIED"]
+        print(f"  doc heals    {n} in 24h over {len(files)} guarded file(s)"
+              + (f" -- {bad} DESTRUCTION(S), not replays" if bad else " (stale-snapshot replays)")
+              + " <-- an upstream writer is trampling this tree; the heal is the symptom")
+except Exception:
+    print("  doc heals    fence log unreadable -- tramble rate UNKNOWN, not zero")
+PYEOF3
+fi
 echo "  READ FIRST: CLAUDE.md, then docs/GAP_REGISTER.md row 91 (the ranked top item)."
 echo "=========================================================================="

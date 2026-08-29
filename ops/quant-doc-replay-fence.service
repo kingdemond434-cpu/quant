@@ -2,6 +2,14 @@
 Description=Doc replay fence: heal a tracked document reverted to an older snapshot of itself
 
 [Service]
+# A HEALED DESTRUCTION IS NOT A UNIT FAILURE (2026-08-29). The fence exits 1 when it healed a
+# guarded document that was EMPTIED or had lost records -- loud on purpose, because that class is
+# not routine. But a unit permanently parked in `failed` is a unit nobody reads, which is the
+# desensitising defect that let qquant-shadow fail every 30 minutes unnoticed. The escalation
+# channel is the desk-state header, which counts today's heals from the fence's own log; the exit
+# code stays non-zero for a human running it by hand. Same pattern as quant-coverage-ratchet,
+# which declares SuccessExitStatus=0 1 for a real BREACH finding.
+SuccessExitStatus=0 1
 Type=oneshot
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_doc_replay_fence.py
