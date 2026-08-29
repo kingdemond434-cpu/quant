@@ -70,7 +70,7 @@ def _zscore(matrix: np.ndarray) -> np.ndarray:
     mu = matrix.mean(axis=0, keepdims=True)
     sd = matrix.std(axis=0, ddof=1, keepdims=True)
     sd = np.where(sd <= 0, np.inf, sd)          # a flat series correlates with nothing
-    return (matrix - mu) / sd
+    return np.asarray((matrix - mu) / sd, dtype=float)
 
 
 def _safe_corr(z: np.ndarray) -> np.ndarray:
@@ -111,7 +111,7 @@ def strip_factors(matrix: np.ndarray, n_factors: int = DEFAULT_FACTORS) -> np.nd
         return z
     u, s, vt = np.linalg.svd(z, full_matrices=False)
     common = (u[:, :k] * s[:k]) @ vt[:k, :]
-    return z - common
+    return np.asarray(z - common, dtype=float)
 
 
 def participation_ratio(corr: np.ndarray) -> float:
