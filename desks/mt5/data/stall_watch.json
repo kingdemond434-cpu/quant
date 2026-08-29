@@ -1,16 +1,14 @@
 {
-    "free_gb":  38.4,
-    "checked_at":  "2026-08-28T11:50:21.1196090Z",
+    "free_gb":  37.5,
+    "checked_at":  "2026-08-28T23:50:09.6689494Z",
     "actions":  [
-                    "RAM-FLOOR: only 130MB free -- shed ? (rss 1875MB), the largest non-money-path job; it resumes from cache on its next trigger",
-                    "FEED LAG: 7 CLOCKED symbol(s) \u003e6h stale: CADJPY,EURJPY,EURZAR,GBPJPY,USDJPY,USDZAR,XAUUSD",
-                    "FEED LAG fixer: re-selected 7 symbol(s) in MarketWatch"
+                    "RAM-FLOOR: only 309MB free -- shed ? (rss 2433MB), the largest non-money-path job; it resumes from cache on its next trigger"
                 ],
     "low_mem_strikes":  2,
     "procs":  {
-                  "fail.MT5-Gauntlet":  {
-                                            "cpu":  75,
-                                            "at":  "2026-08-28T13:50:12.3678673+02:00"
-                                        }
+                  "external_gauntlet.2516":  {
+                                                 "cpu":  75.921875,
+                                                 "at":  "2026-08-29T01:50:03.3201588+02:00"
+                                             }
               }
 }

@@ -1,19 +1,9 @@
 {
- "checked_at": "2026-08-27T07:58:08+00:00",
- "enrolled": 21,
+ "checked_at": "2026-08-28T23:36:10+00:00",
+ "enrolled": 24,
  "enrolment_readable": true,
  "certified_clocks": 17,
  "certified_pairs": 8,
- "actions": [
-  {
-   "key": "EURZAR.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
-  },
-  {
-   "key": "USDZAR.overnight_gap_decay.asia",
-   "action": "REVIVED_CERTIFIED",
-   "why": "retired on a key-shape inference while holding a live ten-gate certificate and an active enrolment; clock restamped FRESH so no pre-registration boundary is inherited"
-  }
- ]
+ "identity_unfrozen": 0,
+ "actions": []
 }
