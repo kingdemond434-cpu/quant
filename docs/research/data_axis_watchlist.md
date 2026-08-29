@@ -10280,3 +10280,67 @@ the R0423 shared-worktree hazard producing it. **Repaired**: `git restore --stag
 only. The working tree was already correct and was not touched. The guard did its job; worth noting
 that it fired on a *staged* file for a session that had staged something else entirely, which is
 the only reason it was seen at all.
+
+---
+
+## BRAIN HUNTER s30 (2026-08-29) — the grouping axis was never a data gap
+
+**Six sessions (s11–s28) treated "the desk has no grouping map" as a DATA-ACQUISITION problem** —
+hunt a taxonomy (CoinGecko categories, exchange tiers, correlation clusters), build ward clusters,
+then argue for four sessions about k. The BRAIN operator registry extracted this session
+(`data/brain_hunter_s28_operator_typespec.json`, source `AshSwing/FastPlus`, MIT — re-read this session) shows the
+platform's canonical construct does **not** source a taxonomy: **`bucket(x, range=…) → Group`**
+manufactures a grouping from any numeric field, and the documented idiom is literally
+`bucket(rank(x), range='0,1,0.1')`. `group_cartesian_product` crosses two groupings;
+`densify` compacts one.
+
+**Consequence for this watchlist: the taxonomy hunt is DOWNGRADED, not closed.** A static
+external taxonomy is still worth having (it carries information a price-derived bucket cannot —
+who issues the instrument, what it is claimed on), but it is **no longer a blocker**, and it never
+was one. Every candidate grouping below is buildable **today from the desk's own tape**, needs no
+new source, no licence and no vendor, and is **PIT by construction** — which the year-lagged ward
+clusters are not:
+
+| candidate grouping | construction on MT5 tape | why it might carry information |
+|---|---|---|
+| volatility tier | `bucket(rank(ts_std_dev(ret, 60)))` | vol regime is the desk's most-measured conditioning axis |
+| liquidity tier | `bucket(rank(ADV))` or rank of tick volume | s22's liquidity-tier census already exists, never consumed by a signal |
+| gold-beta tier | `bucket(rank(ts_corr(ret, XAUUSD, 120)))` | a risk-factor bucket the desk's asset_class arm cannot express |
+| USD-beta tier | `bucket(rank(ts_corr(ret, DXY-proxy, 120)))` | the FX book's dominant common factor |
+| carry tier | `bucket(rank(broker swap differential))` | uses the desk's own financing tape (gap row #210) |
+| session-activity tier | `bucket(rank(share of daily range in London))` | MT5-native; no equity counterpart exists |
+| crossed cells | `densify(group_cartesian_product(vol_tier, liq_tier))` | the platform's own route to a fine grouping without a taxonomy |
+
+**Nothing here is measured.** No cell has been run and no claim is made about any of these beyond
+buildability; that is s31's first ground and is named as such in the coverage note. Logged as an
+AXIS, not a finding.
+
+**The residual real data gap, restated honestly:** the operators that consume a grouping still do
+not exist on this desk (12 of 14 unbuilt, confirmed against a primary registry this session), and
+this seat is research-frozen. The blocker was never the data — **it was the code**, and it has
+been misfiled as a data gap for six sessions.
+
+### BRAIN HUNTER s30 (2026-08-29) — the video mandate is structurally unserviceable on this ground
+
+L1.34 makes video first-class for every seat, and thirty BRAIN sessions have logged
+`video: 0 fetched, 0 locked`. That has read as "this seat does not touch video ground". The cause
+is measurable and it is not the seat's attention: the desk's shared video corpus
+(`data/intelligence/youtube/videos_*.json`, **530 videos across 13 channels**) contains
+**ZERO quant-research channels**. The full roster is Gabriel Parra, IQCapital, Lewis Jackson,
+Trading with DaviddTech, Ryan Brown, Lewis Jackson Tips, Unbiased Trading, AI Pathways, Business
+Pathway, "Trading, as interpreted by AI", IQ Capital TV, Goshawk Asset Management, Surprised
+Goshawk — retail FX and generic AI-trading, end to end. A keyword pass over the last three days
+(`worldquant`, `brain`, `alpha101`, `factor mining`, `formulaic alpha`) returns **0 of 530**.
+
+**So "0 fetched, 0 locked" was never a statement about the ground — it was a statement about the
+roster**, and the two are indistinguishable from the session note, which is the WS-005 shape
+(absence read as a clean verdict). The BRAIN ground is substantially lecture video (the platform's
+own course material, CN-ecosystem Bilibili factor-mining lectures, conference talks), and none of
+it is reachable through the corpus this seat is told to consume first.
+
+**The fix is a roster line, not a dig**: the channel roster is a data-acquisition item and belongs
+to the seat that owns the collector. Named channel classes worth adding, in priority order:
+CN factor-mining lectures on Bilibili (`scripts/fetch_video_transcript.py --bilibili <BVid>`
+already exists and is unused by this seat), quant-conference talks, and university quant-finance
+lecture series. Until then, this seat's video line should read **UNSERVICED (roster gap)**, never
+`0 locked` — the second is a claim the desk cannot cash.

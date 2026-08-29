@@ -5488,3 +5488,47 @@ file carries 7 `/ToUnicode` streams and 14 `/BaseFont` entries that `extract()` 
 because it emits text in stream order with no positional information, table columns concatenate
 (`64,01065,66063,67065,510`) — a positional parse off the `Td`/`TD` operands is needed before any
 JPX table can be read as a table.
+
+---
+
+## BRAIN HUNTER s30 (2026-08-29) — two methodology imports and one self-diagnosis
+
+Source: `AshSwing/FastPlus` (MIT) operator registry →
+`data/brain_hunter_s28_operator_typespec.json` (s28 census, re-read this session). Nothing installed.
+
+**1. TURNOVER IS A SPECIFIED QUANTITY, NOT A DISCOVERED ONE.** The platform ships three
+`ts_target_tvr_*` operators (`_decay`, `_hump`, `_delta_limit`) whose entire job is: *you state the
+turnover you want, the operator solves for the smoothing parameter* (optimising λ inside a stated
+`lambda_min, lambda_max`). The desk's approach to the same constraint — s29b, s30c — is a **grid
+over the smoothing parameter, reading turnover off as an outcome**. Both find a point on the same
+curve; the difference is that one of them makes turnover an input to the research question and the
+other leaves it an output to be discovered per cell.
+
+This matters here more than it does there. s29b established that **turnover is what kills every
+cell in this family**, and a desk whose binding constraint is a cost quantity should be
+parameterising by that quantity directly — every cell run at a *fixed, comparable* turnover
+instead of at whatever turnover it happens to produce. That also makes cells comparable across
+features, which the current design does not.
+**Not proposed as a build** (this seat is frozen, and an unwired build is a defect): proposed as
+the shape of the next cost experiment. The falsifier is cheap — if solving for λ at a fixed target
+tvr produces the same break-even bp as the best grid point, the import buys nothing but
+comparability, and that should be stated rather than assumed.
+
+**2. A CODE GAP FILED AS A DATA GAP FOR SIX SESSIONS — the self-diagnosis, and it is the more
+expensive of the two.** s11–s28 recorded "the desk has no grouping map" as a data-acquisition
+problem and spent six sessions hunting taxonomies and arguing over cluster k. The registry shows
+`Group` is a **produced type** — `bucket()` makes one out of any numeric field the desk already
+owns. The actual blocker was always that **12 of the 14 group-consuming operators are not
+implemented** (confirmed this session against a primary typed registry, matching s28's secondary
+count). Six sessions of effort went to the wrong side of the pipeline because the gap was
+mis-classified once and every later session inherited the classification.
+
+**The generalisable defect, which is what belongs in this inbox:** *a missing capability and a
+missing input are indistinguishable from downstream* — both present as "we can't run this cell".
+The desk has no gate that forces the question **"is this absence a DATA gap or a CODE gap?"** at
+the moment a gap is carded, and the two route to entirely different seats (a miner vs a `libs/`
+seat). A gap carded to the wrong seat is not slow — it is **permanently unworked**, because the
+seat that receives it cannot fix it and the seat that could never sees it. Recommend the gap-card
+schema carry a required `blocker_kind: data | code | licence | compute` field, and that
+`data_axis_watchlist.md` entries whose blocker is `code` be mirrored to the build queue rather
+than living only where miners read.

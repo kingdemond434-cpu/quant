@@ -2409,3 +2409,40 @@ autocorrelation (hence `decay_linear`) as the only remaining lever on this famil
 `efJerryYang/worldquant-brain-simulator` cites yli188 as its source yet implements `correlation` and
 `covariance` correctly. s12's finding stands against that repo; it must not be generalised to the
 alpha101 transpile lineage as a whole.
+
+## 2026-08-29 — `decay_linear` as a cost lever on the cross-sectional reversal family: REFUTED
+
+**Pre-registered, falsifier stated in advance, both arms.**
+`data/brain_hunter_s30c_decay_lever.json` · `data/brain_hunter_s30c_decay_lever.py`
+(BRAIN HUNTER s30c; the mechanism is BRAIN's `ts_decay_linear`, ported as a mechanism — linear
+weights d, d−1, …, 1 over each symbol's own valid observations — never copied as a formula.)
+
+s29b established that this family's turnover is a property of the **feature's autocorrelation**,
+not of the ranking operator, and named feature smoothing as **the one identified lever** on the
+constraint that kills every cell in the family. The platform ships it as a first-class setting
+(`decay: 30`). This run swept d ∈ {1,2,3,5,10,20,30} on `reversal_1`, both neutralisation arms,
+2019–2026 daily MT5 closes.
+
+- **Mechanical check (a) PASSED on both arms** — turnover strictly decreasing in d
+  (ward: 1.467 → 1.247 → 1.128 → 0.997 → 0.856 → 0.754 → 0.703). The port does what the operator
+  says, so the refutation below is of the claim, not of the code.
+- **Substantive claim (b) REFUTED on both arms** — break-even cost is **maximised at d = 1**,
+  i.e. no smoothing. Ward arm: **1.596 bp at d=1**, and every d > 1 is worse (0.903, 0.787,
+  0.376, 0.806, 0.785, 0.706). Universe arm the same shape: 1.484 at d=1, everything else below.
+- **The mechanism of the refutation is visible in the numbers, and it is the useful part.**
+  Decay destroys the signal faster than it destroys the turnover: one step of smoothing (d=2)
+  costs **51% of gross Sharpe** (ward 0.759 → 0.368) to buy a **15% turnover reduction**
+  (1.467 → 1.247). `reversal_1`'s information is essentially all in the most recent bar — which is
+  what a one-day reversal *is* — so any average over prior bars is mostly deletion.
+
+**Consequence, stated plainly: this family is dead on cost and the desk should stop trying to
+rescue it.** Both identified levers are now refuted with pre-registered falsifiers — coarse ranking
+(s29b) and feature decay (s30c) — and the best cell in the family survives only to **1.6 bp per
+unit of turnover at ~147% daily turnover**, unsurvivable on any MT5 spread. Three sessions have
+now been spent lowering the cost of a signal whose gross edge cannot pay a realistic spread.
+
+**What is NOT refuted, and the distinction matters for L1.16a reopening:** decay as an operator
+(it works, it is now ported and measured), decay on *slower* features whose information is not
+concentrated in the last bar, and the platform's `ts_target_tvr_*` **solver** approach to the same
+constraint (routed to `improvement_inbox.md` — untested, and it targets turnover directly rather
+than sweeping a proxy for it). The kill is specific: **decay does not rescue a one-day reversal.**

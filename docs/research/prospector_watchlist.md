@@ -1290,3 +1290,42 @@ two measured nulls, one handed escalation refuted.** Full evidence in `prospecto
 **HONEST VERDICT:** a conversion run, not a discovery run. It closed the backlog to zero pending
 verifications and paid down three sessions of deferred work — but it opened **no new source class**,
 so the ≥25% search-space-expansion reserve went unpaid and s20 owes it first.
+
+## BRAIN HUNTER s30 (2026-08-29) — `GaomingOrion/qweave` and the GTJA191 corpus (NEXT GROUND, not a card)
+
+`GaomingOrion/qweave` (MIT, 4★, pushed 2026-07-17, Rust + Polars). A **factor-computation
+engine**, which is a different and better source class than every BRAIN artifact mined to date:
+`AshSwing/FastPlus` is a *parser* (signatures, no semantics) and
+`efJerryYang/worldquant-brain-simulator` proved a simulator can silently not implement what it
+declares. qweave ships **450 built-in factors — WorldQuant Alpha101 + Qlib Alpha158 + 国泰君安
+(Guotai Junan) Alpha191 — with GOLDEN-FIXTURE PARITY TESTS**
+(`crates/qweave-factors/tests/fixtures/golden_gtja_alpha191.parquet`, `golden_qlib_alpha158.parquet`,
+`golden_alphas.parquet`) plus operator implementations in `crates/qweave-core/src/alpha_eval.rs`.
+A golden fixture is the **cheapest refutation tier there is** (L1: executable > spec > mechanism >
+claim): a desk port can be checked against a fixed expected output rather than against a claim.
+
+**GTJA191 is un-mined ground on this desk.** `vault_search` returns **zero hits** for
+`alpha191 / gtja / guotai`; the corpus is named exactly twice in `docs/` — in
+`cn_oss_extraction_20260731.md` (which grades it *"bare price-pattern families — the 420/0-refuted
+class"*) and in an `improvement_inbox.md` "Alpha Zoo" listing. **Named, graded by analogy, never
+looked at.**
+
+**The honest prior is bad and is stated up front:** alpha101 died on independent audit (median
+Sharpe 0.518 vs the paper's 2.224, ledgered in `docs/graveyard.md` by s28), and GTJA191 is the
+same construction class on the same kind of data. **This is a next ground, NOT an EV-gate
+pre-registration** — a corpus does not earn a pre-registration because it is large, and
+pre-registering a family whose nearest neighbour has already been killed would be exactly the
+padding this seat is told not to produce.
+
+**What would make it worth a card, stated in advance so a future session cannot move the post:**
+GTJA191 is a **Chinese A-share** factor library, so its distinguishing content is the operators
+and conditioning structures that alpha101 does not contain (CN-market microstructure conventions,
+different volume/turnover treatments). If a census of `gtja_alpha191.rs` finds **operators or
+conditioning shapes absent from both alpha101 and the 108-operator BRAIN registry**, those are the
+find — and the 191 formulas themselves remain ore, exactly as s28 ruled for alpha101.
+
+Population context: `data/brain_hunter_s30_repo_census.json` — **139 repos** in the keyless GitHub
+repo-search population for `worldquant+brain` ∪ `worldquant+alpha`, of which **40 are named
+anywhere in `prospector_coverage.md`**. **99 unnamed.** Caveat recorded in the artifact: GitHub
+**code** search is 401 keyless, so any repo whose README never says "worldquant" is invisible to
+this census — 139 is a floor on the ground, not its size.

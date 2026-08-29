@@ -4354,3 +4354,143 @@ and `src/simulator/simulate.py:252-264`. Mined as TEXT; nothing installed or ven
   `neutralization` is read into a variable that is never used (`simulate.py:257`) — all four modes
   silently execute market neutralisation — and `decay`, `delay`, `pasteurization`, `nan-handling`
   and `unit-handling` appear in no `settings.get` call at all. Six of twelve settings are inert.
+
+---
+
+## BRAIN HUNTER s30 (2026-08-29) — three findings inside an artifact s28 had already exhausted
+
+**FIRST, THE DEFECT, AND IT IS MINE.** s28 marked `AshSwing/FastPlus` `src/operator.rs`
+**"fully parsed, 108/108"** in the exhaustion list, with the census committed as
+`data/brain_hunter_s28_operator_typespec.json`. This session re-fetched and re-parsed the same
+file from scratch before reading that line, and produced a strictly *worse* duplicate (no kwarg
+defaults, no variadic arity). The duplicate artifact has been **deleted**; s28's typespec remains
+the desk's operator registry. The exhaustion list did its job and I failed to read it first —
+recorded because the whole point of a dated exhaustion claim is that the next session does not
+re-spend on it, and the claim is only as good as the habit of reading it before fetching.
+
+Everything below is what re-reading the same file surfaced that s28's note did **not** carry.
+Source unchanged: `AshSwing/FastPlus` (MIT, 4★, pushed 2026-08-13), read as TEXT over
+raw.githubusercontent; nothing installed, executed or vendored. §13 clean. **CLAIMED, not
+verified** — the descriptions are the platform's documentation as transcribed by that author, and
+nothing here has been run on desk data.
+
+### 1. `Group` is a PRODUCED type — the grouping is manufactured, never sourced
+s28 counted the 14 group-**consuming** operators and concluded the desk needs a grouping map.
+It did not report the other side of the type algebra: **three operators RETURN `Group`.**
+
+**And the data was already on disk.** `data/brain_hunter_s28_operator_typespec.json` records
+`(Matrix)->Group` and `(Group,Group)->Group` among its fourteen signature classes. s28 captured
+the fact and did not read it; this session re-fetched the source to rediscover something the
+desk's own artifact already held. That is the owned-data breach in miniature — the re-fetch was
+waste, but the *unread artifact* was the more expensive of the two, and it went unnoticed for a
+session because the census was reported as a count rather than interrogated as a structure.
+
+- **`bucket(x, range=…|buckets=…, skipBoth=, NaNGroup=) → Group`** — converts **any numeric
+  field** into a grouping by ranking to [0,1] and cutting into buckets. The registry's own
+  description ends with the platform's documented idiom, verbatim: *"most common usage is
+  `bucket(rank(x), range='0,1,0.1')`"*. Hidden `(-inf,start]` / `[end,+inf)` buckets by default;
+  `NaNGroup=True` gives NaNs their own bucket instead of dropping them.
+- **`group_cartesian_product(g1, g2) → Group`** — cross two groupings into `len_1 × len_2` cells.
+- **`densify(g) → Group`** — collapse a many-bucket grouping to only its occupied buckets.
+
+**Consequence, and it is six sessions wide.** s11–s28 treated the missing grouping as a
+**data-acquisition** problem: hunt a taxonomy, build ward clusters, argue about k for four
+sessions. The platform's canonical route sources no taxonomy at all — it builds the grouping from
+a numeric field you already own, per bar, **PIT by construction** (unlike the year-lagged ward
+clusters). On MT5 that needs nothing new: `bucket(rank(ts_std_dev(ret,60)))` is a volatility tier,
+`bucket(rank(ADV))` a liquidity tier, `bucket(rank(ts_corr(ret, XAUUSD, 120)))` a gold-beta tier.
+Routed as an axis to `data_axis_watchlist.md`; **named as s31's first ground**; **untested**.
+
+### 2. The turnover family is a SOLVER, not a grid — and turnover is this desk's binding constraint
+s28 listed `ts_target_tvr_hump` among "operators not named in the desk catalogue" and moved on.
+Reading the descriptions, there are **six** operators aimed at turnover and **three of them invert
+the problem** — you state the turnover you want and they solve for the smoothing parameter,
+optimising λ inside a stated `lambda_min, lambda_max`:
+
+| operator | what it computes |
+|---|---|
+| `ts_decay_linear(x, d, dense=)` | linear-weighted MA over the last d values |
+| `hump(x, hump=)` | limits the amount **and magnitude** of change in the input |
+| `jump_decay(x, d, stddev=, sensitivity=, force=)` | `abs(x−ts_delay(x,1)) > sensitivity·ts_stddev(x,d) ? ts_delay(x,1)+ts_delta(x,1)·force : x` — a vol-scaled **gap filter**: a jump bigger than the threshold is only partially followed |
+| `ts_target_tvr_decay(x, target_tvr=, lambda_min=, lambda_max=)` | tunes the decay so **realised turnover equals a target** |
+| `ts_target_tvr_hump(...)` | same, solving for the hump threshold |
+| `ts_target_tvr_delta_limit(x, y, ...)` | same, solving a delta limit; `y` may be `adv20`/volume **or a constant** |
+
+All six have direct MT5 analogues and need no grouping and no new data. `jump_decay` is the
+pointed one: an MT5 book takes weekend and session gaps that this operator exists to absorb, and
+the desk has no equivalent. Methodology consequence routed to `improvement_inbox.md`.
+
+### 3. The desk implements SIX of 108 — across TWO modules, three of them implemented twice
+**Corrected mid-session, and the correction is the finding.** My first pass counted 4 by treating
+`libs/alpha_factory/wq_operators.py` as the desk's only WQ operator module. It is not: a second
+module, **`libs/research/operators.py`**, implements `group_rank`, `group_zscore`, `vector_neut`,
+`ts_backfill` and `ts_information_ratio` (= the registry's `ts_ir`). I found it only because a
+sibling session's abandoned script quoted it. The true union is **6 of 108 (5.6%)**:
+
+| operator | `libs/alpha_factory/wq_operators.py` | `libs/research/operators.py` |
+|---|---|---|
+| `group_rank` | ✔ | ✔ |
+| `group_zscore` | ✔ | ✔ |
+| `ts_backfill` | ✔ | ✔ |
+| `trade_when` | ✔ | — |
+| `vector_neut` | — | ✔ |
+| `ts_ir` (as `ts_information_ratio`) | — | ✔ |
+
+**Two defects fall out of that table.** (1) **Three operators are implemented twice, in two
+modules, with no shared source** — two independent definitions of `group_rank` that no test
+compares, which is a divergence waiting to be discovered as an unexplained result difference
+between two cells. (2) **`vector_neut` is implemented and has never been consumed by a
+hypothesis**, while three consecutive session notes (s28, s29, s30) carried it forward as an
+un-built "next ground". A capability that exists but is invisible to the seats that need it is
+the III.16 shape, and it cost this ground three sessions of misdirected priority.
+
+**The measurement trap, recorded because it is what produced my wrong number.** A `def <name>`
+grep across `libs/` and `desks/` returns 14 matches. Nine — `add`, `log`, `or`, `quantile`,
+`rank`, `reverse`, `scale`, `sign`, `bucket` — are **name collisions with unrelated desk
+functions**; `vector_neut` and `ts_information_ratio` are **real and were nearly discarded as
+collisions**. So the naive grep is wrong in *both* directions at once: it over-counts by 9 and,
+once you start pruning collisions by eye, it invites you to prune the true positives too. The only
+reliable method is to enumerate the modules that exist, which is what the table above does.
+
+### Still not buildable under this seat
+This seat is research-frozen (docs/research + data only). Every operator above is a `libs/` change
+and is named here as a **specification**, not as work done.
+`data/brain_hunter_s28_operator_typespec.json` is the machine-readable input for a seat that can
+write code. `group_neutralize`, `ts_vector_proj`/`ts_vector_neut` and `ts_regression(rettype 0–9)`
+remain genuinely absent. **`vector_neut` does NOT** — it is implemented in
+`libs/research/operators.py` and has simply never been consumed; carrying it as an un-built
+"next ground" for three sessions was an error of inventory, not of capability, and the correct
+next step for it is a HYPOTHESIS, not a build.
+
+### 4. Operator shapes the BRAIN registry does NOT contain — `GaomingOrion/qweave` (MIT), read as TEXT
+
+qweave is a **computation engine**, not a parser, so its AST is a claim about semantics rather
+than signatures. Its expression enum (`crates/qweave-core/src/expr.rs`) carries several shapes
+absent from the 108-operator BRAIN Expert registry:
+
+- **`Sma(x, n, m)` — the Chinese recursive smoother.** Confirmed from the repo's own docs
+  (`docs/gtja_alpha191.md`): *"`SMA(A,n,m)` 使用递归平滑系数 `m/n`"* — an EWMA with smoothing
+  coefficient **m/n**, not a moving average. This is the signature operator of the CN factor
+  libraries and BRAIN has no equivalent.
+- **`Wma(x, n)` with `0.9^i` weights** — same doc: the GTJA research report's own definition is
+  **geometric**, not linear. BRAIN's `ts_decay_linear` uses linear weights d, d−1, …, 1. Two
+  different kernels on the same axis, and the desk has now measured only one of them.
+- **`ConditionalBeta`** — beta estimated conditional on a state. No BRAIN analogue; `ts_regression`
+  is unconditional.
+- **`Resi` / `MultiResi` / `RollingBeta` / `Slope` / `Rsquare`** — regression residuals and
+  diagnostics as first-class nodes (BRAIN folds these into `ts_regression(rettype 0–9)`).
+- **`ScanMul`** — an *expanding* cumulative product; BRAIN's `ts_product` is windowed.
+
+**The immediate consequence for s30c's refutation, and it is a pre-registerable follow-up.** s30c
+refuted **linear** decay as a cost lever on `reversal_1`, and the mechanism of the refutation was
+that smoothing deletes signal faster than it deletes turnover, because a one-day reversal's
+information is concentrated in the most recent bar. That mechanism makes a **directional
+prediction about other kernels**: a kernel that concentrates more weight on the newest bar should
+lose less signal per unit of turnover reduction than linear decay did. `Sma(x, n, m)` (EWMA, tuned
+by m/n) and `Wma` at `0.9^i` are exactly that, and the desk has neither.
+
+**Declare the sign before running it** (s29's rule, and it is the whole point of writing it here
+rather than after): at a **matched turnover reduction**, EWMA/geometric smoothing loses **less**
+gross Sharpe than linear decay. If it loses the same or more, the kernel axis is closed and the
+family's cost problem is confirmed as kernel-independent — which would be the stronger and more
+useful result of the two.
