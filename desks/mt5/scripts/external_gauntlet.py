@@ -9,11 +9,11 @@ compute theatre and prevents fresh candidates from reaching the same machinery.
 from __future__ import annotations
 
 import json
-import os
-from collections import OrderedDict
 import math
+import os
 import sys
 import time
+from collections import OrderedDict
 from datetime import UTC, datetime
 from pathlib import Path
 
