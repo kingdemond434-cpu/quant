@@ -261,6 +261,11 @@ def main() -> None:
     # here automatically -- the same day they are written -- with their clock stamped below.
     enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout") for s, w in SLEEVES]
                 + certified_sleeves())
+    # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
+    # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
+    # safety ceiling as soon as all certified families became genuinely enrollable.
+    enrolled.sort(key=lambda row: (row[0], row[1], row[3], repr(sorted(row[2].items()))))
+    cached_symbol: str | None = None
     seen: set[str] = set()
     for sym, win, params, fam in enrolled:
         key = sleeve_key(sym, win, params, fam)
@@ -284,6 +289,9 @@ def main() -> None:
         # Counters are left untouched -- a failed evaluation produces no new evidence, so it must
         # not overwrite the evidence the row already holds.
         try:
+            if cached_symbol != sym:
+                h1_cache.clear()
+                cached_symbol = sym
             if sym not in h1_cache:
                 h1_cache[sym] = fetch_h1(sym)
             bars = h1_cache[sym]
