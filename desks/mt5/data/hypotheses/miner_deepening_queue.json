@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-29T08:17:00+00:00",
+ "built_at": "2026-08-29T09:19:43+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3535,200 +3535,320 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Lesetja Kganyago: Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
-   "url": "https://www.bis.org/review/r260813i.htm",
+   "title": "Overview of the South African economy",
+   "url": "https://www.bis.org/speeches/20260817-overview-south-african-economy",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Lesetja Kganyago: Overview of the South African economy",
-   "url": "https://www.bis.org/review/r260813j.htm",
+   "title": "The cooperative spirit at the heart of the digital euro",
+   "url": "https://www.bis.org/speeches/20260817-cooperative-spirit-heart-digital-euro",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Lisa D Cook: Outlook for the US and Alaskan economies",
-   "url": "https://www.bis.org/review/r260813h.htm",
+   "title": "Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
+   "url": "https://www.bis.org/speeches/20260817-remarks-annual-dinner-heads-foreign-missions-accredited-south-africa",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Yannis Stournaras: The global economy in 2026 and beyond - financing Europe and Greece's future",
-   "url": "https://www.bis.org/review/r260813g.htm",
+   "title": "Remarks on the MAS Annual Report 2025/2026",
+   "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Burkhard Balz: 40 years of the Deutsche Bundesbank's Representative Office in New York",
-   "url": "https://www.bis.org/review/r260813f.htm",
+   "title": "Opportunities and risks for CCPs and their overseers in a changing environment",
+   "url": "https://www.bis.org/speeches/20260817-opportunities-and-risks-ccps-and-their-overseers-changing-environment",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Philip R Lane: AI and monetary policy",
-   "url": "https://www.bis.org/review/r260813c.htm",
+   "title": "40 years of the Deutsche Bundesbank's Representative Office in New York",
+   "url": "https://www.bis.org/speeches/20260817-40-years-deutsche-bundesbanks-representative-office-new-york",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Rohit Jain: Building deep and resilient financial markets for a Viksit Bharat",
-   "url": "https://www.bis.org/review/r260813b.htm",
+   "title": "Monetary policy in an era of shocks",
+   "url": "https://www.bis.org/speeches/20260817-monetary-policy-era-shocks",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Chia Der Jiun: Remarks on the MAS Annual Report 2025/2026",
-   "url": "https://www.bis.org/review/r260813l.htm",
+   "title": "Outlook for the US and Alaskan economies",
+   "url": "https://www.bis.org/speeches/20260817-outlook-us-and-alaskan-economies",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Michele Bullock: Monetary policy in an era of shocks",
-   "url": "https://www.bis.org/review/r260813a.htm",
+   "title": "Building deep and resilient financial markets for a Viksit Bharat",
+   "url": "https://www.bis.org/speeches/20260817-building-deep-and-resilient-financial-markets-viksit-bharat",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Denis Beau: Opportunities and risks for CCPs and their overseers in a changing environment",
-   "url": "https://www.bis.org/review/r260813e.htm",
+   "title": "The global economy in 2026 and beyond - financing Europe and Greece's future",
+   "url": "https://www.bis.org/speeches/20260817-global-economy-2026-and-beyond-financing-europe-and-greeces-future",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Piero Cipollone: The cooperative spirit at the heart of the digital euro",
-   "url": "https://www.bis.org/review/r260813d.htm",
+   "title": "AI and monetary policy",
+   "url": "https://www.bis.org/speeches/20260817-ai-and-monetary-policy",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Mary-Elizabeth McMunn: Reinforcing the foundations - openness through resilience in the face of change",
-   "url": "https://www.bis.org/review/r260805g.htm",
+   "title": "Opening remarks - CMA Governors Meeting",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-cma-governors-meeting",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Joachim Nagel: Acting together for a sovereign and competitive Europe",
-   "url": "https://www.bis.org/review/r260805f.htm",
+   "title": "Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-hong-kong-monetary-authority-hkma-hong-kong-association-banks-hkab-seminar",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Swaminathan J: Strengthening customer grievance redress - the role of the internal ombudsman",
-   "url": "https://www.bis.org/review/r260805e.htm",
+   "title": "Strengthening customer grievance redress - the role of the internal ombudsman",
+   "url": "https://www.bis.org/speeches/20260810-strengthening-customer-grievance-redress-role-internal-ombudsman",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Phil Mnisi: Opening remarks - CMA Governors Meeting",
-   "url": "https://www.bis.org/review/r260805d.htm",
+   "title": "Acting together for a sovereign and competitive Europe",
+   "url": "https://www.bis.org/speeches/20260810-acting-together-sovereign-and-competitive-europe",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Michelle W Bowman: Opening remarks on Sound Practices for Artificial Intelligence",
-   "url": "https://www.bis.org/review/r260805c.htm",
+   "title": "Playing the long game - how should monetary policy adapt to the Great Reconfiguration?",
+   "url": "https://www.bis.org/speeches/20260810-playing-long-game-how-should-monetary-policy-adapt-great-reconfiguration",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Fabio Panetta: Playing the long game - how should monetary policy adapt to the Great Reconfiguration?",
-   "url": "https://www.bis.org/review/r260805b.htm",
+   "title": "Reinforcing the foundations - openness through resilience in the face of change",
+   "url": "https://www.bis.org/speeches/20260810-reinforcing-foundations-openness-through-resilience-face-change",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Arthur Yuen: Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
-   "url": "https://www.bis.org/review/r260805a.htm",
+   "title": "Opening remarks on Sound Practices for Artificial Intelligence",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-sound-practices-artificial-intelligence",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Andriy Pyshnyy: National Bank of Ukraine press briefing - monetary policy decisions",
-   "url": "https://www.bis.org/review/r260813k.htm",
+   "title": "National Bank of Ukraine press briefing - monetary policy decisions",
+   "url": "https://www.bis.org/speeches/20260806-national-bank-ukraine-press-briefing-monetary-policy-decisions",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Michelle W Bowman: Responsible innovation and financial inclusion",
-   "url": "https://www.bis.org/review/r260730o.htm",
+   "title": "Navigating economic shocks - a monetary policymaker's perspective",
+   "url": "https://www.bis.org/speeches/20260803-navigating-economic-shocks-monetary-policymakers-perspective",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Philip N Jefferson: Navigating economic shocks - a monetary policymaker's perspective",
-   "url": "https://www.bis.org/review/r260731b.htm",
+   "title": "Responsible innovation and financial inclusion",
+   "url": "https://www.bis.org/speeches/20260803-responsible-innovation-and-financial-inclusion",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "John C Williams: Stability of Thy Times",
-   "url": "https://www.bis.org/review/r260731a.htm",
+   "title": "Stability of Thy Times",
+   "url": "https://www.bis.org/speeches/20260803-stability-thy-times",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Michelle W Bowman: Modernizing financial regulation",
-   "url": "https://www.bis.org/review/r260730j.htm",
+   "title": "Speech - Hong Kong FIC and Bond Connect Summit",
+   "url": "https://www.bis.org/speeches/20260731-speech-hong-kong-fic-and-bond-connect-summit",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Andrew Bailey: Growth and regulation",
-   "url": "https://www.bis.org/review/r260730s.htm",
+   "title": "Growth and regulation",
+   "url": "https://www.bis.org/speeches/20260731-growth-and-regulation",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Lisa D Cook: Economic outlook",
-   "url": "https://www.bis.org/review/r260730r.htm",
+   "title": "Modernizing financial regulation",
+   "url": "https://www.bis.org/speeches/20260731-modernizing-financial-regulation",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opening remarks - Joint Workshop \"Global interconnections and financial stability\"",
+   "url": "https://www.bis.org/speeches/20260731-opening-remarks-joint-workshop-global-interconnections-and-financial-stability",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The euro in a fragmented world - stability, sovereignty, and global responsibility",
+   "url": "https://www.bis.org/speeches/20260731-euro-fragmented-world-stability-sovereignty-and-global-responsibility",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Monetary policy at a crossroads",
+   "url": "https://www.bis.org/speeches/20260731-monetary-policy-crossroads",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Economic outlook",
+   "url": "https://www.bis.org/speeches/20260731-economic-outlook",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Release of the Monetary Policy Report",
+   "url": "https://www.bis.org/speeches/20260731-release-monetary-policy-report",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Understanding supply shocks and their implications for monetary policy",
+   "url": "https://www.bis.org/speeches/20260731-understanding-supply-shocks-and-their-implications-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The economic and financial system amidst uncertainty and innovation",
+   "url": "https://www.bis.org/speeches/20260731-economic-and-financial-system-amidst-uncertainty-and-innovation",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Will artificial intelligence broadly raise living standards or drive income and wealth inequality?",
+   "url": "https://www.bis.org/speeches/20260731-will-artificial-intelligence-broadly-raise-living-standards-or-drive-income-and-wealth-inequality",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Additional monetary policy tools - reflections and a new framework",
+   "url": "https://www.bis.org/speeches/20260730-additional-monetary-policy-tools-reflections-and-new-framework",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Two thoughts on the transmission of monetary policy",
+   "url": "https://www.bis.org/speeches/20260730-two-thoughts-transmission-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Agents of change",
+   "url": "https://www.bis.org/speeches/20260730-agents-change",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Finance for innovation and artificial intelligence as drivers of development",
+   "url": "https://www.bis.org/speeches/20260730-finance-innovation-and-artificial-intelligence-drivers-development",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The green transition - benefits and barriers",
+   "url": "https://www.bis.org/speeches/20260730-green-transition-benefits-and-barriers",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Response to media regarding the new measures announced by People Bank of China's Governor Pan Gongsheng",
+   "url": "https://www.bis.org/speeches/20260730-response-media-regarding-new-measures-announced-people-bank-chinas-governor-pan-gongsheng",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Hearing of the Committee on Economic and Monetary Affairs of the European Parliament",
+   "url": "https://www.bis.org/speeches/20260730-hearing-committee-economic-and-monetary-affairs-european-parliament",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4167,6 +4287,46 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Quorvathz/Prop-Matrix-Engine",
+   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
    "url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
    "symbols": [],
@@ -4247,40 +4407,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "avangardistic/MQL5-Knowledge-Graph-System",
-   "url": "https://github.com/avangardistic/MQL5-Knowledge-Graph-System",
+   "title": "dceoy/mt5cli",
+   "url": "https://github.com/dceoy/mt5cli",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4343,16 +4471,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6405,6 +6525,16 @@
   {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Monday Gold Bias? \ud83e\uddd0",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "\ud83d\udd25 GOLD \u2014 Supply Zone Rejection",
    "url": "",
    "symbols": [
@@ -6697,6 +6827,17 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "D.E. Shaw has recent 13F filing - check for position changes",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "sec_edgar",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Two Sigma has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
@@ -6796,6 +6937,16 @@
   {
    "source": "youtube",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold Live Trading | BTC Live Trading | Crypto Live Trading | XAUUSD &amp; Bitcoin Live Analysis",
+   "url": "https://youtube.com/watch?v=QM18wNXzuEg",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "youtube",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "\u09b8\u09be\u09aa\u09cb\u09b0\u09cd\u099f \u09b2\u09c7\u09ad\u09c7\u09b2\u09c7\u09b0 Liquidity Sweep \u09a7\u09b0\u09c7 \u09a7\u09be\u09ae\u09be\u0995\u09be \u098f\u09a8\u09cd\u099f\u09cd\u09b0\u09bf! \ud83d\ude80 | XAUUSD Trade Setup",
    "url": "https://youtube.com/watch?v=8cquGQ4F4Wc",
    "symbols": [
@@ -6842,26 +6993,6 @@
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "\ud83d\udcc8 Gold Higher High + Higher Low: How to Spot an XAU/USD Uptrend #xauusd",
    "url": "https://youtube.com/watch?v=yMP1Cpxh1CU",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Live Gold (XAUUSD) Trading &amp; Technical Analysis - My Gold Trading Strategy",
-   "url": "https://youtube.com/watch?v=eHWAecUCCJ8",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "youtube",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "\ud835\udc17\ud835\udc00\ud835\udc14\ud835\udc14\ud835\udc12\ud835\udc03 \ud835\udc00\ud835\udc27\ud835\udc1a\ud835\udc25\ud835\udc32\ud835\udc2c\ud835\udc22\ud835\udc2c \ud835\udc07\ud835\udfd2 \u2013 \ud835\udfd1\ud835\udfcf \ud835\udc00\ud835\udc2e\ud835\udc20\ud835\udc2e\ud835\udc2c\ud835\udc2d - \ud835\udfce\ud835\udfd2 \ud835\udc12\ud835\udc1e\ud835\udc29\ud835\udc2d\ud835\udc1e\ud835\udc26\ud835\udc1b\ud835\udc1e\ud835\udc2b \ud835\udfd0\ud835\udfce\ud835\udfd0\ud835\udfd4  #smc #trading #xauusd #forex #tradingplan",
-   "url": "https://youtube.com/watch?v=EDc4A02WphU",
    "symbols": [
     "XAUUSD"
    ],
