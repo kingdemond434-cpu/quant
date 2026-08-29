@@ -344,22 +344,41 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
             extra["book_ticks"] = mid.resample("1h").count()
 
     # --- swap/contract terms: the differential that a carry mechanism would condition on -----
+    # THREE SEVERANCES IN THESE TWELVE LINES, all repaired 2026-08-29 and all silent:
+    #   1. it globbed `*.json*`; `mt5desk.tape.record_contract_terms` writes `.parquet`, so this
+    #      feature has NEVER been populated on any run -- an empty `vals` is indistinguishable
+    #      from a symbol with no carry, and the second is what a reader assumes;
+    #   2. it read `recorded_at`/`at`; the recorder stamps `observed_at`, so even against JSON
+    #      `pd.Timestamp(None)` raised straight into the bare `except` and dropped every row;
+    #   3. `swap_long - swap_short` on the RAW field is not one quantity. 110 symbols quote swap
+    #      in POINTS and 138 as an ANNUAL PERCENT, so the raw difference mixes two dimensions
+    #      across the universe and is scaled by the broker's decimal places within it. Repairing
+    #      1 and 2 alone would have switched a mis-united conditioner ON for the first time,
+    #      which is why the unit resolution is part of the repair and not a later improvement.
+    # `float(row.get("swap_long", 0))` also defaulted an ABSENT field to zero -- the L1.28a
+    # defect exactly: a symbol with no recorded swap read as a symbol with no carry.
     terms_dir = BASE / "data" / "tape" / "contract_terms"
     if terms_dir.exists():
+        from .carry_state import money_per_lot_night
         vals = []
-        for f in sorted(terms_dir.glob("*.json*"))[-60:]:
+        for f in sorted(terms_dir.glob("*.parquet"))[-60:]:
             try:
-                raw = json.loads(f.read_text("utf-8"))
+                rows = pd.read_parquet(f)
             except Exception:
                 continue
-            for row in (raw if isinstance(raw, list) else [raw]):
-                if not isinstance(row, dict):
+            rows = rows[rows["symbol"].astype(str).str.upper() == symbol.upper()]
+            for row in rows.to_dict("records"):
+                if row.get("swap_long") is None or row.get("swap_short") is None:
                     continue
-                if str(row.get("symbol", "")).upper() != symbol.upper():
+                # Account currency per lot per night, on BOTH sides, or the row stands aside.
+                # Mode 5 needs a price this builder does not carry, so those symbols simply do
+                # not get the feature -- absent, never zero.
+                lo = money_per_lot_night(float(row["swap_long"]), row, None)[0]
+                sh = money_per_lot_night(float(row["swap_short"]), row, None)[0]
+                if lo is None or sh is None:
                     continue
                 try:
-                    vals.append((pd.Timestamp(row.get("recorded_at") or row.get("at"), tz="UTC"),
-                                 float(row.get("swap_long", 0)) - float(row.get("swap_short", 0))))
+                    vals.append((pd.Timestamp(row.get("observed_at"), tz="UTC"), lo - sh))
                 except Exception:
                     continue
         if vals:

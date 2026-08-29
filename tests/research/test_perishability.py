@@ -175,22 +175,39 @@ def test_carry_consumer_reads_the_parquet_the_recorder_writes(tmp_path, monkeypa
 
 def test_swap_money_refuses_without_a_mode_and_scales_points_correctly(fo) -> None:
     """SEVERANCE 2: the magnitude gate compared a basis-point threshold against a raw field that
-    is points on some symbols and currency on others."""
+    is points on some symbols and currency on others.
+
+    THE MODE NUMBER WAS WRONG HERE UNTIL 2026-08-29 and is corrected against the broker's own
+    tape. This test asserted `swap_mode: 0` was POINTS. MT5's ENUM_SYMBOL_SWAP_MODE has 0 =
+    DISABLED and 1 = POINTS, and counted over `desks/mt5/data/tape/contract_terms` the live
+    universe is 110 symbols at mode 1, 138 at mode 5 (INTEREST_CURRENT, an ANNUAL PERCENT) and
+    ZERO at mode 0. Implementing to the old spec would have produced a helper that refuses every
+    symbol this desk actually trades while reading DISABLED as a tradable rate.
+    """
     swap_money_per_lot = fo.swap_money_per_lot
 
     # points mode on a 3-digit JPY cross: point*contract = 100, so raw 6.35 is 635 in money
-    got = swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4, "swap_mode": 0,
+    got = swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4, "swap_mode": 1,
                               "point": 0.001, "contract_size": 100_000.0})
     assert got is not None and got[0] == pytest.approx(635.0)
 
     # a 5-digit major: point*contract == 1.0, which is why the bug hides on the obvious spot-check
-    same = swap_money_per_lot({"swap_long": -6.45, "swap_short": 2.69, "swap_mode": 0,
+    same = swap_money_per_lot({"swap_long": -6.45, "swap_short": 2.69, "swap_mode": 1,
                                "point": 1e-5, "contract_size": 100_000.0})
     assert same is not None and same[0] == pytest.approx(-6.45)
 
     # no mode => no unit => stand aside, never a guessed scale
     assert swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4}) is None
-    assert swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4, "swap_mode": 0}) is None
+    assert swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4, "swap_mode": 1}) is None
+
+    # mode 5 is an ANNUAL PERCENT of notional, needing a price and a day count. Refused, never
+    # read as currency -- that reading is a DIMENSION error on 138 of 248 symbols.
+    assert swap_money_per_lot({"swap_long": -7.31, "swap_short": 2.81, "swap_mode": 5,
+                               "point": 0.01, "contract_size": 1.0}) is None
+
+    # mode 0 is DISABLED, not POINTS. It must never yield a rate.
+    assert swap_money_per_lot({"swap_long": 6.35, "swap_short": -16.4, "swap_mode": 0,
+                               "point": 0.001, "contract_size": 100_000.0}) is None
 
 
 def test_family_carry_stands_aside_when_the_unit_is_unresolved(tmp_path, monkeypatch, fo) -> None:

@@ -2808,6 +2808,31 @@ SYSTEMD unit="quant-autodiscovery-slice9.timer" on="*:33" exec="scripts/run_cryp
 20 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/cost_surface.py >> data/cro_ai_logs/cost_surface.log 2>&1
 35 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_cost_surface.py >> data/cro_ai_logs/cost_surface_fence.log 2>&1
 
+# --------------------------------------------------------------------------------------------
+# CARRY STATE + CARRY-STATE FENCE (added 2026-08-29, capability hunt s0)
+# EVIDENCE: desks/mt5/research/carry_state.py -> desks/mt5/data/carry_state.json
+#           scripts/check_carry_state.py      -> data/carry_state_report.json
+# WHAT WAS MISSING: `grep -i swap desks/mt5/mt5desk/engine.py` returns ZERO hits -- every
+# backtest, gate, certificate and forward clock on this desk charges overnight financing at
+# exactly 0.00. `mt5desk/financing.py` built the entire verdict API for it and returned
+# UNMEASURED forever because "the broker's actual swap table is not in this repo"; it HAS been
+# since 2026-08-26 (82 hourly panels x 248 symbols in intelligence/broker_swaps, plus the
+# swap_mode units in tape/contract_terms) and nothing read either store. First run (2026-08-29):
+# 404 of 496 sides priced, 14 of 17 LIVE sleeves carrying a material uncharged leg -- XAUUSD
+# long -57.58/lot/night, which is 48.6% of that sleeve's expectancy and 2.88x the 20.00 rate the
+# published null assumed. 132 sides are CARRY-PAID (XAUUSD short +28.12/lot/night, booked at
+# zero) -- the false-null direction, which kills real edges with no alert anywhere.
+# CADENCE: daily, after the overnight rollover has repriced the panel and after cost_surface, so
+# the whole cost basis (spread surface + financing leg) refreshes as one before shadow_forward's
+# 07:58 pass. The ORDER is the load-bearing part, not the minute.
+# CONFIDENCE: inferred slot. The fence exits 2 on CARRY-UNCHARGED, CARRY-FLIP, STALE,
+# STATE-MISSING, UNMEASURED and NO-LIVE-SLEEVES, and never renders an unmeasured side as OK
+# (L1.28a). NO-LIVE-SLEEVES is its own status so an empty population cannot report a vacuous
+# pass (L1.57), and UNCLASSIFIED (rate known, spread basis absent) is kept distinct from
+# UNMEASURED (rate unknown) so a consumer cannot refuse a rate the desk actually holds.
+40 6 * * * cd "$QUANT_ROOT" && .venv/bin/python desks/mt5/research/carry_state.py >> data/cro_ai_logs/carry_state.log 2>&1
+50 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/check_carry_state.py >> data/cro_ai_logs/carry_state_fence.log 2>&1
+
 # --- ORPHANABLE WRITERS (added 2026-08-29, frontier_unified) -------------------------------
 # WHY THIS EXISTS. On 2026-08-28 both FX Blue harvesters reported row 50 while their output
 # held 28 rows: `desks/mt5/data/` is git-TRACKED, this box checks it out every ten minutes

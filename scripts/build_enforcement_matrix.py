@@ -70,7 +70,14 @@ _MAP: dict[str, list[str]] = {
              # `broken_references` -- which is exactly what this generator's own output warns
              # about and exactly what it caught when this line was first written.
              "scripts/check_cost_surface.py", "desks/mt5/research/cost_surface.py",
-             "tests/costs/test_cost_surface.py"],
+             "tests/costs/test_cost_surface.py",
+             # THE THIRD COST. Spread and commission were modelled; overnight financing was
+             # charged at exactly 0.00 on every backtest, gate, certificate and forward clock
+             # (`grep -i swap desks/mt5/mt5desk/engine.py` -> zero hits). Same reasoning as
+             # cost_surface above: this is an INSTRUMENT for L1.5, not a new duty, so it takes
+             # no law number of its own.
+             "scripts/check_carry_state.py", "desks/mt5/research/carry_state.py",
+             "tests/costs/test_carry_state.py"],
     "L1.6": ["libs/autodiscovery/validation.py", "check_welded_gates", "check_gate_optimality",
              "run_mutation.py"],
     "L1.7": ["check_rubberstamp_detector", "check_rubberstamp_enforcement", "deep_review.py"],

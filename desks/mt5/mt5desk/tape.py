@@ -69,6 +69,14 @@ def contract_terms_row(symbol: str, info: object, at: datetime) -> dict:
         "swap_short": float(info.swap_short),
         "swap_mode": int(info.swap_mode),
         "swap_rollover3days": int(info.swap_rollover3days),
+        # `point` AND `digits` ARE PART OF THE UNIT, not decoration. In POINTS mode the money
+        # value is a function of point*contract_size, and the error hides on exactly the majors a
+        # spot-check tries first (point*contract_size == 1.0 on a 5-digit major, 100 on a 3-digit
+        # JPY cross). Recorded rather than re-derived because `symbol_info` reports TODAY's value
+        # and a past night's is unbuyable at any price: a field re-derived from tomorrow's
+        # registry silently re-prices yesterday's tape.
+        "point": float(getattr(info, "point", 0.0) or 0.0),
+        "digits": int(getattr(info, "digits", 0) or 0),
         "contract_size": float(info.trade_contract_size),
         "tick_size": float(info.trade_tick_size),
         "tick_value": float(info.trade_tick_value),
@@ -266,6 +274,17 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     terms = record_contract_terms(symbols)
+    if "--terms-only" in argv:
+        # THE FINANCING LEG IS SECONDS OF WORK; THE TICK PULL IS MINUTES. Binding them meant the
+        # cheap perishable stream could only be scheduled at the expensive one's cadence, so a
+        # swap reprice between tick runs was permanently unbuyable. Measured on the desk's own
+        # panel: 81 of 248 symbols repriced inside a single three-day window.
+        print(f"{terms['rows']:,} point-in-time contract/swap rows recorded to {TERMS}")
+        if terms.get("failures"):
+            print(f"{len(terms['failures'])} symbol(s) failed: "
+                  f"{', '.join(sorted(terms['failures'])[:8])}")
+        return 0
+
     summary = record_ticks(symbols)
     total = sum(r.get("new_ticks", 0) for r in summary.values())
     for s, r in sorted(summary.items()):

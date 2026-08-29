@@ -93,6 +93,12 @@ def _load_terms() -> dict[str, dict]:
     return latest
 
 
+#: MT5 ENUM_SYMBOL_SWAP_MODE. 0 is DISABLED, not POINTS -- a confusion that reached this desk's
+#: only written statement of the convention (libs/research/perishability.py, corrected 2026-08-29)
+#: and the tests below. Measured on desks/mt5/data/tape/contract_terms: 0 symbols at mode 0.
+SWAP_MODE_POINTS = 1
+
+
 def _swap_terms(symbol: str) -> dict | None:
     """Point-in-time swap/contract terms the tape recorder already stores. None if unrecorded."""
     if not TERMS.exists():
@@ -118,6 +124,47 @@ def _swap_terms(symbol: str) -> dict | None:
                 if isinstance(row, dict) and str(row.get("symbol", "")).upper() == symbol.upper():
                     rows.append(row)
     return rows[-1] if rows else None
+
+
+def swap_money_per_lot(terms: dict) -> tuple[float, float] | None:
+    """(long, short) financing per lot per night in the PROFIT currency, or None to stand aside.
+
+    THE UNIT LIVES IN A DIFFERENT FIELD FROM THE NUMBER, which is the shape of every cost defect
+    this desk has paid for (gold's spread at 3%, CADJPY's commission at 1/184th, the pooled spread
+    scalar). `swap_long` is a bare numeral whose meaning is set by `swap_mode`:
+
+        swap_mode == 1  SYMBOL_SWAP_MODE_POINTS            110 symbols -- POINTS
+        swap_mode == 5  SYMBOL_SWAP_MODE_INTEREST_CURRENT  138 symbols -- ANNUAL PERCENT
+
+    counted on this desk's own contract-terms tape. Mode 0 is DISABLED and appears on ZERO
+    symbols. In POINTS mode the money value is `swap * point * contract_size`; mode 5 needs a
+    price and a day-count basis and is refused here rather than guessed.
+
+    **THE RETURN IS PROFIT CURRENCY AND IS THEREFORE NOT COMPARABLE ACROSS SYMBOLS.** USDJPY's
+    6.35 points is 635 JPY and EURUSD's -6.45 is -6.45 USD; a shared threshold applied to both
+    is comparing yen to dollars. For an account-currency figure -- the one a cross-symbol gate
+    actually needs -- use `desks/mt5/research/carry_state.money_per_lot_night`, which converts
+    through `tick_value`. This function exists to give `family_carry` a self-consistent magnitude
+    for ONE symbol and to make an unresolvable unit REFUSE instead of trading.
+
+    None means the unit could not be established. It never means zero (L1.28a).
+    """
+    mode = terms.get("swap_mode")
+    if mode is None:
+        return None
+    try:
+        mode = int(mode)
+        point = float(terms.get("point") or 0.0)
+        contract = float(terms.get("contract_size") or 0.0)
+        lo, sh = float(terms["swap_long"]), float(terms["swap_short"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if mode != SWAP_MODE_POINTS:
+        return None
+    if point <= 0 or contract <= 0:
+        return None
+    scale = point * contract
+    return lo * scale, sh * scale
 
 
 def family_carry(
@@ -147,11 +194,18 @@ def family_carry(
     terms = _swap_terms(symbol)
     if not terms:
         return []
-    try:
-        swap_long = float(terms.get("swap_long", 0.0))
-        swap_short = float(terms.get("swap_short", 0.0))
-    except (TypeError, ValueError):
+    # THE MAGNITUDE GATE READ THE RAW FIELD (repaired 2026-08-29). `swap_long - swap_short` is
+    # points on 110 symbols and annual percent on 138, and it was being compared against a
+    # threshold named `min_edge_bp_per_day`: three dimensions, one constant. In practice the
+    # gate was vacuous -- AUDHUF's raw differential is 1,580 and USDTRY's is 11,364 against a
+    # bar of 0.5, so any symbol with enough decimal places passed unconditionally, while the
+    # SIDE was picked by comparing two numerals whose scale is the broker's digit count.
+    # Resolving the unit first makes an unresolvable symbol STAND ASIDE, which can only ever
+    # emit fewer signals than before -- never a new one.
+    money = swap_money_per_lot(terms)
+    if money is None:
         return []
+    swap_long, swap_short = money
     side = 1 if swap_long > swap_short else -1
     edge = abs(swap_long - swap_short)
     if edge < min_edge_bp_per_day:

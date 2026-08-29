@@ -135,10 +135,16 @@ REGISTER: tuple[Observable, ...] = (
         recorder="desks.mt5.mt5desk.tape:record_contract_terms",
         backfill_route=None,
         max_staleness_h=30.0,
-        # `swap_mode` + `point` + `contract_size` ARE the unit. In mode 0 (POINTS) the money value
-        # is swap*point*contract_size; in any other mode it is already currency. Without all
-        # three a JPY cross reads 100x off a 5-digit major, and the error hides on exactly the
-        # majors a spot-check would try first (point*contract_size == 1.0 there).
+        # `swap_mode` + `point` + `contract_size` ARE the unit. CORRECTED 2026-08-29 against the
+        # tape itself: this comment previously said "in mode 0 (POINTS) ... in any other mode it
+        # is already currency", and both halves are wrong. MT5 mode 0 is DISABLED and mode 1 is
+        # POINTS; mode 5 (INTEREST_CURRENT) is an ANNUAL PERCENT of notional, not currency.
+        # Measured on desks/mt5/data/tape/contract_terms: 110 symbols are mode 1 and 138 are
+        # mode 5, so the "already currency" reading was wrong on 55% of the universe -- a
+        # DIMENSION error, not a factor, and always in the direction that makes a candidate look
+        # cheaper. Without all three fields a JPY cross reads 100x off a 5-digit major, and the
+        # error hides on exactly the majors a spot-check would try first (point*contract_size ==
+        # 1.0 there). The resolver is desks/mt5/research/carry_state.money_per_lot_night.
         interpretive_fields=("swap_mode", "point", "contract_size", "currency_profit"),
         why="MT5 symbol_info reports TODAY's swap only. There is no endpoint, archive or vendor "
             "for this broker's swap on a past date, so an unrecorded night is unbuyable. It is "
