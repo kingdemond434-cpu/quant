@@ -88,6 +88,10 @@ MODULES = [
     # file it does not expect. Safe to heal automatically only because this ships nothing that
     # differs from HEAD -- an unreviewed local edit can never reach certification this way.
     "desks/mt5/research/gate_policy.py",
+    # The recertification audit: it decides whether a STANDING certificate still holds,
+    # and it was unwatched. Its 2026-08-27 run failed 15 of 17 on deflated_sharpe against
+    # the inflated hurdle, so a stale copy here silently re-condemns the book.
+    "desks/mt5/scripts/recertify_canon.py",
     "desks/mt5/policy/gate_spec.yaml",
     # THE DAILY MONEY-PATH CHAIN, added 2026-08-28 after it decayed exactly as the comment at the
     # head of this list predicted. `hourly_cycle` was watched; `daily_cycle` -- the module it
