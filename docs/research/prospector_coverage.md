@@ -10773,3 +10773,149 @@ be cited as one.
 4. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, open since s9: 2 keyword
    hits of 130 repos, neither a BRAIN artifact, so this seat's mandated daily ground is collected by
    nothing and every dig spends live browsing on population discovery.
+
+---
+
+## BRAIN HUNTER s13 — 2026-08-29 — the PDF wall is down, and the paper corrects two desk beliefs
+
+s12 closed naming one next ground: finish `101 Formulaic Alphas.pdf` with per-font CMap binding,
+"bounded at ~40 lines, and it is the *original paper* rather than a port." It took ~200 lines and
+two bugs rather than one, and it worked. Everything below is measured against the **primary
+source** rather than a reimplementation, which is why three of the six findings are corrections.
+
+### #0 — THE ROUTE, AND A SECOND BUG S12 DID NOT SEE
+
+`data/brain_hunter_s13_pdf_cmap_extract.py`, pure stdlib (`zlib` + `re`) because the box has no PDF
+tooling and the freeze forbids installs. s12's diagnosed wall was real: bind each `/ToUnicode` CMap
+to its own font resource name and switch tables on the `Tf` operator, and the `a`→`^` collision
+disappears. The bug **in front of** it was cheaper and worse — a `\r?\n`-anchored `endstream` regex
+silently dropped **21 of the paper's 22 pages**, because a Flate payload routinely abuts
+`endstream` with no trailing EOL. It failed as *3.4 KB of perfectly clean text from page 4*, which
+is the failure mode worth naming: the output looked like a working extractor, not a broken one.
+Index-based slicing recovers all 22 pages, 46 KB, all 101 formulas.
+
+The extractor is a **capability, not a session tool**: PDF grounds across this desk (CFTC teardown
+PDFs, theses, regulator filings, central-bank releases) have been logged EXTRACTABLE-BUT-BLOCKED
+and abandoned. It is in `data/` under the research freeze and **is called by nothing** — recorded
+as unwired under III.16, not reported as built → **R0736**.
+
+**§13 and licence, both directions.** arXiv robots **Allows `/pdf` and `/html` and Disallows
+`/e-print` and `/src`** — the LaTeX-source route would have made all of this trivial and is barred,
+so it was not used. Appendix B asserts **WorldQuant LLC copyright over the Appendix A formulae**;
+`data/brain_hunter_s13_alpha101_paper.json` therefore stores derived structure, counts and the
+short factual operator definitions, and **no verbatim formula corpus** is committed to this repo.
+
+**Known extraction loss, stated:** glyphs from the math subset fonts carry no `ToUnicode` entry and
+extract as empty, so Tables 1–5 lose their symbol labels. Body text and all 101 formulas are
+complete. Table-borne numbers were therefore **not** mined and are not claimed.
+
+### #1 — R0729 CONFIRMED AT THE PRIMARY SOURCE
+
+The paper uses `correlation` in **70** call sites and `covariance` in exactly **2** — alphas 13 and
+16, nowhere else. `code_2` emits covariance at 47. s12's inversion finding stands against the
+arbiter, not against another port.
+
+### #2 — `floor(d)`, AND THE PORT ROUNDS — 14/14
+
+Appendix A.1 states it outright: *"non-integer number of days d is converted to floor(d)"*. `code_2`
+**rounds on 14 of the 14 windows where floor and round differ, and floors on none.** Worst case
+alpha98 `d=4.58418 → 5` instead of `4` — a **25% window error** on a short window, where it matters
+most. This was s12's next-ground item #2 and it now has an authoritative answer → **R0733**.
+
+### #3 — A CORRECTION THE DESK IS CURRENTLY ACTING ON
+
+s12 recorded binary `min`/`max` in `{71,73,77,88,92,96}` with `implemented_using_binary_minmax: []`.
+The shape is in **nine**: `{71,73,76,77,82,87,88,92,96}`. **76, 82 and 87 carry BOTH `IndClass` and
+binary min/max**, and s12 attributed them to `IndClass` alone. So the live consequence is not the
+count — it is that **s11's MT5 grouping map unblocks 15 of the 18 IndClass alphas, not 18.** Three
+stay blocked on an operator the desk does not have, and R0730's expressibility gap is 50% larger
+than recorded → **R0734**.
+
+The root cause sits upstream of every port and explains why no two ports agree here: **the paper's
+own operator table never defines a binary min/max.** It defines `min(x,d) = ts_min(x,d)`. Under the
+paper's own definitions `max(rank(...), Ts_Rank(...))` parses as a time-series window *whose length
+is an expression*. The canonical source is internally inconsistent at exactly these nine alphas.
+
+### #4 — `indneutralize` IS NOT `group_zscore`, AND IT COSTS MORE ON AN MT5 BOOK THAN ON THEIRS
+
+Canonical: *"x cross-sectionally **demeaned** within each group g"* — demean and stop. The desk's
+`wq_operators` exposes `group_rank` and `group_zscore` only, and `group_zscore` demeans **then
+divides by the within-group cross-sectional sd**. There is no demean-only operator, so the desk
+cannot express the operator that **18 of the 101** canonical alphas call — the exact 18 that s11's
+grouping map was built to unblock. The demeaning is literally the line above the `.div()`.
+
+Measured on the desk's own tape (52 Fusion symbols with ≥70% daily coverage, 5 asset-class groups,
+D1 from `_H1`, 2021-01-04 → 2026-08-26, **1,449 days**, s11's `asset_class` arm): daily
+cross-sectional Spearman between the two orderings **mean 0.914, p05 0.857, 29.3% of days below
+0.90** — the same class and comparable magnitude to s12's 0.920.
+
+The mechanism is stated rather than assumed, and it is **venue-specific**: median within-group
+cross-sectional sd spans **6.2×** (Forex 0.00172 → Crypto 0.01063). Dividing each group by a
+different constant re-interleaves the pooled cross-section, systematically amplifying the
+lowest-dispersion group and suppressing the highest. On the paper's own US-equity venue
+within-sector dispersion is broadly comparable across sectors, so the substitution is nearly
+harmless *there*. It is not here → **R0732**.
+
+**MY OWN FALSE RESULT, RECORDED.** The first pass over the full 1970–2026 span returned a Spearman
+of exactly **1.000** — and exactly 1.000 is not a finding, it is a bug report. Only ONE group
+(Crypto, 14 symbols) populated any given day, so the sd divisor was a single positive constant and
+could not reorder anything. The partial parquet sync produced a *clean-looking* null. **Population
+stated: 52 of 251 registry symbols.** Not a universe-wide measurement.
+
+### #5 — THE NEW FIND: THE "101 ALPHAS" ARE TWO CORPORA, AND THE PAPER NEVER SAYS SO
+
+Asking why a *daily-bar* paper contains 170 distinct fractional windows turned out to be the best
+question of the session. The corpus is sharply block-structured:
+
+| | n | fractional windows | `decay_linear` | `IndClass` | mean length |
+|---|---|---|---|---|---|
+| **alphas 1–57** | 57 | **0** | 3 (5%) | 1 | 98 chars |
+| **alphas 58–99** | 42 | **40** | 19 (45%) | 16 | 167 chars |
+| alphas 100–101 | 2 | 0 | 0 | 1 | 171 chars |
+
+The fractional parts are ~uniform on [0,1) — mean **0.517**, n=174, deciles roughly flat. That is
+the signature of a **continuous optimizer**, published pre-floor, not of human choice. Block B is
+also 1.7× longer, 9× more `decay_linear` and 16× more `IndClass`. A hand-built corpus and a
+machine-generated corpus, fused into one flat list of 101 and read by every port and every desk as
+homogeneous. Two consequences → **R0735**:
+
+- **PRIOR.** Block B was produced by continuous window optimisation over a fixed sample — precisely
+  the garden-of-forking-paths the desk's own multiplicity policy governs. It carries a materially
+  worse overfit prior than block A and must not be scored as one library.
+- **PROCESS** (the PROCESS MANDATE deliverable). Window *length* was optimised as a **continuous**
+  parameter, not selected from a discrete grid. A `d = 17.8256` fitted to 2010s US equities carries
+  no information about an MT5 book: copy the **structure**, never the window.
+
+### §13 AND FREEZE
+
+Public only: `arxiv.org/pdf` (robots-Allowed path, `/e-print` and `/src` Disallowed and untouched),
+`raw.githubusercontent.com` (robots 404 = ALLOW-ALL under RFC 9309), and the desk's own on-disk
+parquets. No login, no `api.worldquantbrain.com`, no platform-internal surface. **Freeze respected**
+— writes confined to `docs/research/*`, `data/*` and the ledger; `wq_operators.py` was read, never
+edited. Parquet `+00:00` stamps stripped, not converted.
+
+- **EXHAUSTED (dated):** `101 Formulaic Alphas.pdf` (arXiv:1601.00991) — **2026-08-29, body-text and
+  Appendix-A level.** All 101 formulas, the full operator table, the input-data section and the
+  licence/disclaimer are extracted to `data/brain_hunter_s13_alpha101_paper.json`. No seat re-scans
+  it for operator semantics or formula structure. **Still unmined:** Sections 1–3 (the empirical
+  study — Sharpe/turnover distributions, the four cross-sectional regressions), because Tables 1–5
+  lost their symbol labels to the math-font gap. That is a bounded, named residual, not an
+  exhaustion claim.
+- **Video:** 0 fetched, 0 locked — no video route attempted; the ground worked was PDF, repo-file
+  and on-disk tape. s5's finding on BRAIN lecture material is unchanged.
+
+### NEXT UN-EXHAUSTED GROUND (for s14, in order)
+
+1. **Sections 1–3 of the paper via math-font recovery** — the empirical study is the half nobody
+   ports, and the desk now holds the only blocker: subset fonts with no `ToUnicode`. Route is
+   `/Differences` in the font `/Encoding` array plus glyph-name→Unicode (AGL), ~30 lines on top of
+   the existing extractor. It would yield the *measured* Sharpe/turnover/holding-period
+   distributions of 101 alphas — the natural prior for anything the desk lifts from block A vs B.
+2. **Test the block A / block B prior split on the desk's own tape** — R0735 states it; nothing has
+   measured it. Do the integer-window alphas survive MT5 translation at a different rate than the
+   continuously-optimised ones? That is a directly testable claim and the seat has the corpus.
+3. **`Miasyster/QuantGPT` (456★, MIT)** — carried from s10/s11/s12, still the largest cleanly-licensed
+   unmined repo on the measured population (`data/brain_repo_population.json`).
+4. **A BRAIN-scoped arm for the github collector** — s9's free-corpus gap, open since s9 and now
+   five sessions old: this seat's mandated daily ground is collected by nothing, so every dig
+   spends live browsing on population discovery.

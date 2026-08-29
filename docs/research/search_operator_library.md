@@ -4051,3 +4051,77 @@ multiple subset fonts sharing one code space, so a single merged CMap collides (
 is **per-font CMap binding via the page resource dict / `Tf` operator** — ~40 more lines. No PDF
 tooling exists on the box (`pdftotext`, `pdfminer`, `fitz`, `PyPDF2`, `pypdf` all absent) and the
 freeze forbids installs. Graded EXTRACTABLE-BUT-BLOCKED with the exact cause, never `locked`.
+
+## THE CANONICAL OPERATOR TABLE, FROM THE PAPER ITSELF (BRAIN HUNTER s13, 2026-08-29)
+
+s12 left `101 Formulaic Alphas.pdf` as EXTRACTABLE-BUT-BLOCKED with a diagnosed route. The route
+works: `data/brain_hunter_s13_pdf_cmap_extract.py` binds each `/ToUnicode` CMap to its own font
+resource name and switches tables on the `Tf` operator, which is what the merged-CMap collision
+needed. A **second** bug was in the way and is the more general one: a `\r?\n`-anchored `endstream`
+regex silently dropped **21 of the paper's 22 pages**, because Flate payloads abut `endstream` with
+no trailing EOL. Index-based slicing recovers all 22. The extractor is pure stdlib — the box has no
+PDF tooling and the freeze forbids installs — so **every PDF ground on this desk is now open**, not
+just this one. All 101 Appendix-A formulas recovered. Math-subset glyphs carry no ToUnicode entry
+and extract empty, so Tables 1–5 lose their symbol labels; body text and formulas are complete.
+
+**§13/licence:** arXiv robots **Allows `/pdf` and `/html`, Disallows `/e-print` and `/src`** — the
+easy LaTeX-source route is barred and was not used. Appendix B of the paper asserts **WorldQuant
+LLC copyright over the Appendix A formulae**, so no verbatim formula corpus is stored in this repo;
+`data/brain_hunter_s13_alpha101_paper.json` holds derived structure, counts and the short factual
+operator definitions only.
+
+### The definitions the reimplementations paraphrase (authoritative, Appendix A.1)
+
+| operator | canonical definition | desk status |
+|---|---|---|
+| `correlation(x,y,d)` | time-serial correlation over past d days | **absent** (R0729) |
+| `covariance(x,y,d)` | time-serial covariance over past d days | **absent** (R0729) |
+| `rank(x)` | cross-sectional rank | present, universe-wide |
+| `scale(x,a)` | rescale so `sum(abs(x)) = a`, default `a=1` | absent |
+| `decay_linear(x,d)` | weighted MA, linearly decaying weights `d, d-1, …, 1`, rescaled to sum to 1 | absent |
+| `indneutralize(x,g)` | **x cross-sectionally DEMEANED within each group g** | **absent — see below** |
+| `min(x,d)` / `max(x,d)` | `= ts_min(x,d)` / `= ts_max(x,d)` — **window forms only** | n/a |
+| non-integer `d` | **"converted to `floor(d)`"**, stated explicitly | n/a |
+
+### `indneutralize` IS NOT `group_zscore`, and on an MT5 book that is expensive
+
+The canonical operator **demeans within group and stops**. `wq_operators.group_zscore` demeans and
+then divides by the within-group cross-sectional sd; the desk exposes no demean-only operator, so it
+cannot express the operator that **18 of the 101** canonical alphas call — the exact 18 that s11's
+grouping map was built to unblock. Measured on the desk's own tape (52 Fusion symbols, 5 groups,
+D1 from `_H1`, 2021-01-04 → 2026-08-26, 1,449 days, s11's `asset_class` arm): daily cross-sectional
+Spearman between the two orderings **mean 0.914, p05 0.857, 29.3% of days below 0.90**.
+
+The driver is stated rather than assumed: median within-group cross-sectional sd spans **6.2×**
+(Forex 0.00172 → Crypto 0.01063). Dividing each group by a different constant re-interleaves the
+pooled cross-section, systematically **amplifying the lowest-dispersion group and suppressing the
+highest**. On the paper's own venue within-sector dispersion is broadly comparable, so the
+substitution is nearly harmless *there* — this is a venue-specific failure of an equity-venue
+assumption, not a general one. → **R0732**.
+
+**Population stated:** 52 of 251 registry symbols (partial parquet sync). An earlier pass over the
+full 1970–2026 span returned a Spearman of exactly **1.000**, which was an artifact — only ONE group
+(Crypto, 14 symbols) populated any given day, so the sd divisor was a single positive constant and
+could not reorder anything. Recorded so it is not re-derived.
+
+### `floor(d)`, and the reimplementation rounds
+
+The paper mandates `floor(d)` for non-integer windows. `yli188/…/101Alpha_code_2.py` **ROUNDS on
+14 of the 14 windows where floor and round differ, and floors on none**. Worst case alpha98
+`d=4.58418 → 5` instead of `4`: a **25% window error** on a short window. Anyone who lifted windows
+from that file inherited it. → **R0733**.
+
+### Binary `min`/`max` blocks NINE alphas, not six — a correction to s12
+
+s12 recorded the shape in `{71,73,77,88,92,96}` and `implemented_using_binary_minmax: []`. It is
+actually in **`{71,73,76,77,82,87,88,92,96}`**: **76, 82 and 87 carry BOTH `IndClass` and binary
+min/max**, and s12 attributed them to `IndClass` alone. The operative consequence is a claim the
+desk is currently acting on: **s11's grouping map unblocks 15 of the 18 IndClass alphas, not 18** —
+the other three stay blocked on an operator the desk does not have. R0730's expressibility gap is
+confirmed at the primary source and is 50% larger than recorded. → **R0734**. → **R0734**.
+
+And the reason every reimplementation diverges at exactly these nine: **the paper's own operator
+table never defines a binary min/max.** It defines `min(x,d) = ts_min(x,d)`. Under the paper's own
+definitions, `max(rank(...), Ts_Rank(...))` parses as a time-series window whose *length is an
+expression*. The canonical source is internally inconsistent here — the ambiguity is upstream of
+every port, which is why no two ports agree.
