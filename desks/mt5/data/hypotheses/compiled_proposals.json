@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T00:20:09+00:00",
+ "built_at": "2026-08-30T01:19:57+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -59,6 +59,131 @@
    "data_source": "MT5 1-min bars XAUUSD/EURJPY (broker time, all sessions)",
    "kill": "kill if mean forward return of exhaustion events is not < random baseline by >=3bps with t-stat <= -2",
    "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "FORCED FLOW TRIGGER",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "new_york",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|new_york|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "COT report + CME DataMine",
+   "kill": "If momentum significance p>0.05 across 50 transitions, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "SPREAD EXPANSION SIGNAL",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "low_liquidity",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_liquidity|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Quandl CHRIS + FRED",
+   "kill": "If convergence fails >65% of time within 60min, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CONTRACT_TICK_LIMIT",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "SHFE official daily settlement data + CFFEX overnight futures data",
+   "kill": "No statistically significant price excess (>1.5% deviation from baseline) over 3-month rolling window",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "MARGIN_CALL_RAPID",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "high_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|high_liquidity|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "Coinalyze funding rates + Binance liquidation data + CoinGecko spot prices",
+   "kill": "Correlation coefficient <0.1 between funding spikes and subsequent spot price movements over 2-month period",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:inventory_rebalance|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:benchmark_flow|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "benchmark_flow",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
  ]

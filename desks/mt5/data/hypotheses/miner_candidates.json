@@ -1,6 +1,906 @@
 {
- "compiled_at": "2026-08-30T00:07:36+00:00",
+ "compiled_at": "2026-08-30T01:11:48+00:00",
  "hypotheses": [
+  {
+   "symbol": "AUDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "HKDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "MXNJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NOKJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "SEKJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "SGDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "ZARJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:central_bank",
+   "source_url": "https://www.boj.or.jp/en/mopo/mpmdeci/index.htm",
+   "source_title": "",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "ADAUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "DOTUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EOSUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "ETHUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "LNKUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "LTCUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NAS100",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "SOLUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "US500",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDBRL",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDCNH",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDCZK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDHKD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDIDR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDILS",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDINR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDKRW",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDRUB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDTHB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "USDZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XAGUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XALUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XBRUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XCUUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XLMUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XNGUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XNIUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XPBUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XPDUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XPTUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XTIUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XZNUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "Treasury Sec Bessent Speaks",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XAUAUD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "CPI m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDCAD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "GDP m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
   {
    "symbol": "USDCHF",
    "family": "cot_positioning",
@@ -110,6 +1010,462 @@
    "source_title": "Seasonal pattern 'sell_in_may' active (month 8)",
    "mechanism_status": "NAMED",
    "mechanism_note": "calendar-linked allocation and hedging flows can create monthly seasonality"
+  },
+  {
+   "symbol": "EURNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPNZD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "NZDSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "NZD Core Retail Sales q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURCZK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURGBP",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURHKD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURILS",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURRUB",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "EURZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XAGEUR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "XAUEUR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "EUR German Final GDP q/q",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPCHF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF UBS Economic Expectations",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPMXN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPTRY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "GBPZAR",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "GBP CBI Realized Sales",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
   {
    "symbol": "3M",
@@ -3129,9 +4485,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 39,
+   "rows": 37,
    "candidates": 0,
-   "deepening": 39
+   "deepening": 37
   },
   "mql5_signals": {
    "rows": 1,
@@ -3155,13 +4511,13 @@
   },
   "central_bank": {
    "rows": 1,
-   "candidates": 0,
-   "deepening": 13
+   "candidates": 13,
+   "deepening": 0
   },
   "forexfactory": {
    "rows": 30,
-   "candidates": 0,
-   "deepening": 62
+   "candidates": 62,
+   "deepening": 0
   },
   "cot": {
    "rows": 22,
@@ -3210,8 +4566,8 @@
   },
   "ff_calendar_vintage": {
    "rows": 72,
-   "candidates": 0,
-   "deepening": 43
+   "candidates": 38,
+   "deepening": 5
   },
   "forextsd_cdx": {
    "rows": 120,
@@ -3278,24 +4634,19 @@
    "candidates": 0,
    "deepening": 18
   },
-  "arxiv": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
   "scheduled_chatgpt": {
    "rows": 3,
    "candidates": 3,
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 9,
+   "rows": 10,
    "candidates": 0,
-   "deepening": 9
+   "deepening": 10
   }
  },
- "rows_accounted": 954,
- "executable_candidates": 260,
- "deepening_tasks": 649,
+ "rows_accounted": 952,
+ "executable_candidates": 373,
+ "deepening_tasks": 534,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

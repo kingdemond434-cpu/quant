@@ -1,0 +1,12 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "fetch_error",
+  "title": "404 Client Error: Not Found for url: https://www.fxblue.com/users",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-08-30T01:24:33+00:00",
+  "needs_selector_work": true
+ }
+]
