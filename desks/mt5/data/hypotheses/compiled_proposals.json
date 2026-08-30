@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T04:19:45+00:00",
+ "built_at": "2026-08-30T05:20:41+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -322,6 +322,46 @@
    "promotion_authority": false
   },
   {
+   "name": "GOLD_SPOT_REPRATE_ARBIT",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "new_york",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|new_york|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "LBMA Gold Price + CME COMEX GC futures + https://www.bis.org/statistics/rpms.php (repo rates)",
+   "kill": "Cumulative basis-implied repo prediction error exceeds 300bps annualized over 20-day horizon in 40%+ of observations OR futures price drift >2 std dev from spot within 48h post-trade in 50% of cases",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "session_overlap_liquidity_void",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "london",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|london|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "FREE: Dukascopy tick-level FX via HistData.com (free) + LSE/NYSE auction schedules (publicly listed)",
+   "kill": "Mean-reversion half-life <4 min OR auction-day spread change not >0.2\u00d7 non-auction days OR Sharpe <0.3 post-cost over 2019\u20132024",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
@@ -337,32 +377,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:inventory_rebalance|continuation",
+   "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "inventory_rebalance",
+    "event": "forced_deleveraging",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:cross_market_move|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "cross_market_move",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
