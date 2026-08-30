@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T02:19:31+00:00",
+ "built_at": "2026-08-30T03:20:35+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -202,17 +202,67 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "CAUSAL_LENS_SECOND_ORDER",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "volatility_shock",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "volatility_shock|new_york|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): bar range minus its 20-bar mean measures realised volatility relative to its own recent level. range IS a realised-volatility measure at bar resolution",
+   "data_source": "CBOE VIX, FRED, CME Group FedWatch",
+   "kill": "Kill: If post-blackout Sharpe < -0.2 or no significant decay vs normal (p>0.1)",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:benchmark_flow|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "benchmark_flow",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:carry_change|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:inventory_rebalance|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
