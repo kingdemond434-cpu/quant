@@ -2575,3 +2575,23 @@ The **most dangerous defect** is the **silent swallowing of order‑placement er
 The **second‑most critical** issue is the **disarmed‑live false negative**, where the rail pages but never fires, again leaving the book open while the ruin threshold is breached.  
 
 Both must be patched before any production deployment; the other findings are secondary but still warrant attention.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/sizing.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/account_profile.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/engine.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/mt5desk/financing.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.
+
+
+# DEEP REVIEW -- desks/mt5/research/shadow_forward.py -- 2026-08-30T03:50:08.496420+00:00
+0/13 seats responded on the PAID roster. RISK-PATH depth pass (LIVE_CONNECTOR_SPEC section 7 bar). Triage per panel protocol: verify every claim against the code; consensus = high prior; record each accepted finding via scripts/track_findings.py so it cannot be silently dropped.

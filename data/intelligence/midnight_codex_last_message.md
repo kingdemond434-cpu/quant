@@ -1,9 +1,9 @@
-Implemented and checkpointed.
+Implementation ledger
 
-- Commit `4df2cbc5` updates [build_mt5_midnight_state.py](/home/quant/quant-platform/scripts/build_mt5_midnight_state.py) to measure canonical gauntlet→survivor pipeline freshness, not the dormant legacy `QUEUED` loop. Added regression coverage.
-- Ran zero-capital daily chain: shadow/promoter/markout completed; markout refreshed to `2026-08-28T23:03:00Z`, correctly remains UNMEASURED with 0 matched fills.
-- Fresh midnight state now exits `0`, with no defects; 23 survivors, 50 shadow sleeves, 199 observations.
-- Tests: `13 passed` focused state-builder/daily-cycle suite.
-- Controller checkpoint written for epoch 43.
-
-Blocked dependencies: this host lacks `MetaTrader5` (bar refresh) and `export_aurum_findings`; both are explicit daily-cycle failures. Gateway remains paused; no capital, authority, or rail changed.
+- Preserved the existing dirty frontier; made no source or capital-authority changes and no commit.
+- Renewed fenced controller lease (epoch 63) and checkpointed state at 03:51 UTC.
+- Ran forward-clock reconciliation: 46 timestamp-proven late boundaries were restored backward only; no evidence was fabricated.
+- Verified `data/forward_clock_ratchet.json`: `OK`, 36 clocks, oldest 6.583 days, zero silent rebases.
+- Tests passed: `14 passed` across shadow isolation, forward-start freeze, and registry rebase suites.
+- Canonical external pipeline remains active under its systemd collision lock; it is continuing safely without a competing invocation.
+- Remaining explicit defect: forward-lane artifact still reports 20 stale attempts and one unclocked authorized EURGBP row; await current pipeline completion, then rerun its consumer artifact.
