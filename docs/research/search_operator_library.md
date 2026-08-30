@@ -4614,3 +4614,52 @@ task, and it is now closed on that axis**: the 191 formulas use exactly the voca
 above** — the library's distinctiveness is its *fields* (`amount`, `vwap`, `volume`) and its
 recursive smoother, not its operator algebra. That is a negative result and it closes item 4 of
 s30's next-ground list.
+
+---
+
+## BRAIN HUNTER s32 (2026-08-30) — Alpha158 formulas, reciprocal conventions, and near-duplicate columns
+
+Source: public MIT `GaomingOrion/qweave`, branch `master`,
+`crates/qweave-factors/src/qlib_alpha158.rs`, read as text and checked against the repository's
+public documentation. The file expands 29 rolling groups over `[5, 10, 20, 30, 60]` and contains
+no group/fundamental inputs.
+
+### Exact implementation calibers
+
+- Level-valued rolling groups divide by the **current close**: `MA`, `STD`, `BETA`, `RESI`,
+  `MAX`, `MIN`, `QTLU`, `QTLD`; `RSQR` is already unitless. In particular,
+  `BETA = slope(close,d)/close`, so a raw slope port would make a multi-asset cross-section mostly
+  a price-level comparison.
+- `ROC = delay(close,d)/close`, the reciprocal of the usual `close/delay(close,d)`. A
+  cross-sectional rank is therefore reversed relative to the conventional implementation.
+- `VMA` and `VSTD` divide a rolling volume statistic by the **current** volume. They use the
+  opposite orientation from the price-level groups: a low current bar raises the ratio.
+
+### The honest redundancy result: near-affine away from all-flat windows, not exact
+
+Let `P=sum(max(delta,0))`, `N=sum(max(-delta,0))`, `D=P+N`, and `Q=D+eps`. The source computes
+`SUMP=P/Q`, `SUMN=N/Q`, and `SUMD=(P-N)/Q`. Therefore `SUMD = SUMP-SUMN` exactly, while
+`SUMP+SUMN=D/(D+eps)` — **not exactly one**. When `D` is ordinary-sized the three are numerically
+near-affine; when the whole window is flat they all collapse to zero. The same holds for
+`VSUMP/VSUMN/VSUMD`.
+
+Across five windows, 20 named columns (`SUMN`, `SUMD`, `VSUMN`, `VSUMD`) are consequently
+near-duplicates of their `*SUMP` sibling on active windows, but the epsilon/all-flat behavior is a
+real exception and must not be erased as “exact redundancy.” A feature-selection or trial-count
+audit should measure the exceptions on Fusion bars rather than assume either independence or
+identity.
+
+The count family carries a different result: `CNTD = CNTP-CNTN`, but `CNTP+CNTN < 1` whenever
+closes tie because a flat bar contributes to neither side. That makes tie density/stale-bar rate a
+separate MT5-native liquidity and data-quality axis.
+
+### MT5 mapping and verification asset
+
+Price-only families map directly to Fusion OHLC. MT5 `volume` is broker tick count, not traded
+size, and CFD `vwap` is absent; all 40 columns in the eight volume groups plus `VWAP0` therefore
+require an explicit substitution hypothesis or a named data gap, never a silent rename.
+
+The repository commits `golden_qlib_alpha158.parquet`, `golden_alphas.parquet`, and
+`golden_gtja_alpha191.parquet` under `crates/qweave-factors/tests/fixtures/`. These are free,
+independent expected-output fixtures for any desk port. The source also documents a warm-up
+caliber: qweave requires a full non-NaN window where upstream Qlib uses `min_periods=1`.

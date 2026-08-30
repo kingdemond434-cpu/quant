@@ -11481,3 +11481,23 @@ scored this repair as a regression, which is the same blind spot as card 118.
 a producer emitting a well-formed artifact containing none of the thing it exists to collect,
 certified healthy by file arrival or by byte growth. Neither fails any emptiness check the desk
 currently runs.
+
+---
+
+### s32 (2026-08-30) — Alpha158 transfer gaps and one owned-tape axis
+
+**AXIS: tie density / stale-bar rate per symbol and window.** In Alpha158,
+`CNTP + CNTN < 1` exactly when close-to-close changes tie. Fusion exotics, share CFDs and softs
+can contain holidays, half-sessions and genuinely stale prints; the fraction of flat bars is both
+a liquidity feature and a diagnostic on every rolling statistic computed over the same window.
+The input is already owned in the MT5 parquets. Status: UNMEASURED, not zero.
+
+**GAP: true traded volume and VWAP.** Fusion MT5 `volume` is broker tick count, while Alpha158's
+eight volume groups (`CORR`, `CORD`, `VMA`, `VSTD`, `WVMA`, `VSUMP`, `VSUMN`, `VSUMD`; 40 rolling
+columns) presume volume, and `VWAP0` presumes a field the CFD feed does not expose. A tick-count
+port is a separately preregistered substitution hypothesis; absent such a test, these factors are
+unavailable rather than approximately present.
+
+**FREE VERIFICATION ASSET:** the MIT qweave repository commits golden Parquet outputs for
+Alpha158, Alpha101 and GTJA191 under `crates/qweave-factors/tests/fixtures/`. Any implementation
+can be checked against an external expected output instead of against itself.

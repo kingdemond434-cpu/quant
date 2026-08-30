@@ -13617,3 +13617,49 @@ new class.
 
 **Graveyard cross-check:** no candidate this run reached carding, so no `do_not_repeat` collision
 arose. R0747 is a cost-model defect, not a mechanism, and is outside the graveyard's scope.
+
+---
+
+## BRAIN HUNTER s32 — 2026-08-30 — Alpha158 formula semantics; no tradeable card
+
+**Prefetched corpus first.** Read the current practitioner corpus before live retrieval. The new
+BRAIN-specific video seam contained Great Goat's public BRAIN material, but its
+stored rows carried no transcript (`captionTracks absent` / HTTP 429). A direct
+`fetch_video_transcript.py` attempt on `g-Iwbrw0MXg` produced no transcript artifact. Video:
+**0 fetched, 1 locked**; no formula was inferred from the description or the linked gated PDF.
+
+**Source worked:** public MIT `GaomingOrion/qweave`, branch `master`,
+`qlib_alpha158.rs` plus the public fixture directory. Source code was read as text; nothing was
+installed or executed. Exact outputs routed to `search_operator_library.md`; the Fusion field gaps
+and owned stale-bar axis routed to `data_axis_watchlist.md`; the port-verification method routed to
+`improvement_inbox.md`.
+
+**Measured disposition:** zero new tradeable mechanism cards and zero claims of alpha. The value is
+implementation correctness: three named factors have silent reciprocal/normalisation calibers;
+20 rolling columns are near-duplicates on active windows but not exact duplicates because epsilon
+and all-flat windows break the affine shortcut; one owned-tape axis (tie density) remains
+UNMEASURED. The qweave fixture directory contains three independent golden Parquet outputs.
+
+**Self-correction before publication:** the recovered in-progress draft called the 20 columns
+“exact affine images.” Reading the source disproved that wording: `D/(D+eps) != 1`, and an all-flat
+window maps all three sign-sum features to zero. The durable artifact carries the corrected
+near-affine verdict.
+
+**Repair-window collision:** dispositions were attempted for the principal-named overdue rows, but
+the live `blindspot_autofix`/hourly-sync path rewrote and autostashed the same recommendation ledger
+while this seat was writing it. No disposition is claimed. The safe next action is to claim and
+dispose those rows in a fenced single-writer checkout; the specific unlawful/stale prescriptions
+identified here are R0046 (healthy-clock EV eviction = optional stopping), R0082 (retired
+crypto-venue 418 path), R0126 (mixed crypto ground plus superseded Stage-A gate), and R0162
+(fixed-depth-500 premise superseded by notional-aware bucket selection).
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `qweave/crates/qweave-factors/src/qlib_alpha158.rs`: **EXHAUSTED on formula semantics** this
+  session. Economic efficacy is untested and remains open.
+- `qweave/crates/qweave-factors/tests/fixtures/`: inventoried, not consumed; the golden files are
+  the next correctness ground.
+- **Next:** run the existing `Rsquare` momentum-conditioner preregistration from s31 when the box
+  is quiet; then compare a desk port against `golden_qlib_alpha158.parquet`; then work the 56
+  UNKNOWN-description repositories in `data/brain_hunter_s31_repo_triage.json` by README/source,
+  not by descriptions. The BRAIN ground remains open.

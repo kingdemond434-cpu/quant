@@ -5704,3 +5704,14 @@ has run over them, and every edge that died there is invisible (the L1.25 class)
 `tickerCode` + `exchange` for **100 of the desk's 103 US share CFDs**, from the broker's own
 published spec sheet. The desk had no name→ticker mapping; this is the join key R0691 (close-to-
 close returns on 122/251 dividend-paying symbols) needs to build a dividend adjustment.
+
+---
+
+## 2026-08-30 — BRAIN HUNTER s32 — formula names are not semantics; fixtures make ports falsifiable
+
+Alpha158 supplied three silent-error calibers (`ROC` reciprocal orientation, slope normalised by
+current close, and volume ratios divided by the current bar) that cannot be recovered safely from
+factor names. Standing method: read the implementation before translating a named factor, and use
+the repository's committed golden-output fixtures as an independent port test. The fixture does
+not validate alpha; it validates arithmetic, cheaply separating implementation error from economic
+failure.
