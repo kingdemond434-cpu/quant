@@ -126,3 +126,51 @@ def test_terminal_clocks_are_not_measured(fence):
         "XAUUSD.london_am": {"status": "RETIRED_ORPHAN", "n": 8, "forward_start": WIPED},
     }), "utf-8")
     assert fence.main() == 2, "a book of only-retired clocks is UNMEASURED, not OK"
+
+
+def test_a_retired_pass_does_not_release_the_floor(fence):
+    """THE LAUNDERING ROUTE, replayed. USDJPY.asia's floor moved 11.6h LATER on 2026-08-30 and
+    the fence reported OK, because the row read `RETIRED_ORPHAN` on an intervening pass.
+
+    `RETIRED_ORPHAN` is terminal, so that pass measured no clock for the key -- and the floor was
+    rebuilt from the measured clocks alone, which DELETED the key. `forward_reconcile` revives
+    orphan rows routinely, and the revived row arrived with `prior is None`, so its boundary was
+    re-minted at the new stamp and the re-base was invisible. Three passes are the minimum that
+    can show it: establish, disappear, come back later. The middle pass is the entire defect."""
+    _state(fence, **{"USDJPY.asia": WIPED, "GBPJPY.asia": WIPED})
+    assert fence.main() == 0, "pass 1 establishes the floor"
+    floor = json.loads(fence.FLOOR.read_text("utf-8"))["earliest_forward_start"]
+    assert floor["USDJPY.asia"] == WIPED
+
+    # GBPJPY stays live through the middle pass ON PURPOSE. With every row retired the book is
+    # UNMEASURED and returns before rewriting the floor, so the bug cannot show -- and the live
+    # desk is never in that shape. One surviving clock is what makes the pass write.
+    (fence._shadow / "shadow_state.json").write_text(json.dumps({
+        "USDJPY.asia": {"status": "RETIRED_ORPHAN", "n": 8, "forward_start": WIPED},
+        "GBPJPY.asia": {"status": "ACTIVE", "n": 8, "forward_start": WIPED},
+    }), "utf-8")
+    assert fence.main() == 0, "the surviving clock is fine; the retired one is simply unmeasured"
+    floor = json.loads(fence.FLOOR.read_text("utf-8"))["earliest_forward_start"]
+    assert floor.get("USDJPY.asia") == WIPED, (
+        "the floor was RELEASED by a pass that merely could not see the key -- the next revival "
+        "re-mints the boundary and the re-base becomes undetectable")
+
+    _state(fence, **{"USDJPY.asia": REBASED, "GBPJPY.asia": WIPED})
+    assert fence.main() == 1, ("the revived row's later boundary is a silent re-base, "
+                               "not a new floor")
+    report = _report(fence)
+    assert report["status"] == "BREACH"
+    assert [row["key"] for row in report["silent_rebases"]] == ["USDJPY.asia"]
+
+
+def test_the_floor_is_monotone_in_key_count(fence):
+    """The floor may never shrink. Measured on the live artifact, it oscillated 37 -> 19 -> 37
+    keys within hours; a set that can shrink cannot carry a ratchet, whatever it holds."""
+    _state(fence, **{"XAUUSD.asia": WIPED, "USDJPY.asia": WIPED, "GBPJPY.asia": WIPED})
+    fence.main()
+    first = set(json.loads(fence.FLOOR.read_text("utf-8"))["earliest_forward_start"])
+
+    _state(fence, **{"XAUUSD.asia": WIPED})           # the other two simply were not reached
+    fence.main()
+    second = set(json.loads(fence.FLOOR.read_text("utf-8"))["earliest_forward_start"])
+    assert first <= second, f"the floor forgot {sorted(first - second)}"

@@ -171,7 +171,20 @@ def main() -> int:
         return 2
 
     breaches, restarted, ages = [], [], []
-    new_floor: dict[str, str] = {}
+    # A RATCHET NEVER FORGETS, AND THIS ONE DID. `new_floor` started EMPTY and was rebuilt from
+    # the clocks visible on THIS pass, so any key the pass could not see was dropped from the
+    # floor outright -- and `TERMINAL` above makes that routine, because `RETIRED_ORPHAN` is in
+    # it and this desk retires and revives orphan rows continuously (`forward_reconcile`'s
+    # REVIVED_CERTIFIED). On the pass where a row read retired its floor was forgotten; on the
+    # pass where it came back `prior` was None, so the boundary was re-minted at whatever the
+    # row carried by then and the silent re-base this fence exists to catch was laundered BY THE
+    # FENCE. Measured 2026-08-30 from this file's own committed history: 37 -> 19 -> 37 -> 33 ->
+    # 19 keys inside four hours, and USDJPY.asia, USDJPY.asia#rr=1.5 and USDJPY.asia#rr=2.5 each
+    # had their floor move 11.6h LATER through exactly that route, in the artifact whose stated
+    # rule is "may only move EARLIER". Absence is never a clean verdict (L1.28a): a key not seen
+    # this pass is unmeasured, never released. Seeding from the prior floor is what makes the
+    # artifact monotone, which is the whole meaning of the word.
+    new_floor: dict[str, str] = dict(floor)
     for key, row in sorted(clocks.items()):
         start = row["forward_start"]
         ages.append((now - start).total_seconds() / 86400.0)
@@ -218,6 +231,11 @@ def main() -> int:
         "measured_at": now.isoformat(timespec="seconds"),
         "max_clock_age_days": round(max(max_age, prior_max), 3),
         "earliest_forward_start": new_floor,
+        # A floor entry may be WITHDRAWN only by a written correction, never by a pass that
+        # simply did not see the key. Carried forward verbatim so a boundary that legitimately
+        # moved later never looks unexplained to a reader a month from now: the alternative is a
+        # floor that jumps with no record, which is indistinguishable from the breach itself.
+        "corrections": list((floor_doc or {}).get("corrections") or []),
         "measuring_command": "scripts/check_forward_clock_ratchet.py",
         "rule": ("a pre-registration boundary may only move EARLIER; moving it later without a "
                  "recorded restart destroys served forward evidence and is a breach"),

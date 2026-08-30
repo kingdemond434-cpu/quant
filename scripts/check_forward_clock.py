@@ -18,15 +18,37 @@ movement is evidence destruction. Specifically, `forward_start` must never be LA
 first trade the sleeve has already recorded -- a clock cannot start after the evidence it counts.
 That one comparison catches the entire failure class without needing a previous snapshot.
 
-WHY IT REPAIRS RATHER THAN ONLY REPORTS. The repair is exactly determined: the earliest recorded
-entry under the current identity IS the moment forward evidence began, so there is no judgement
-to exercise and nothing to get wrong. Reporting alone would have left the desk with a correct
-report and a clock still pinned at zero. It refuses to guess in the one case where the right
-answer is unknowable -- a row whose trades carry no timestamps -- and says so.
+WHY IT NO LONGER REPAIRS (2026-08-30). It used to move `forward_start` back to the row's first
+recorded entry, calling that "exactly determined". Three measurements retired the repair:
 
-WHAT IT WILL NOT DO. It never moves a clock FORWARD (that would erase evidence, which is the
-disease), never resurrects a retired sleeve, and never writes status. Only `forward_start` moves,
-only backwards, only to a timestamp the row's own trades prove.
+  1. IT BACKDATED THE FORWARD WINDOW. `first_entry` is a REPLAYED trade, and `shadow_forward`
+     replays from SHADOW_START on every pass -- deliberately, keeping history as history. Its
+     own words: "THE CLOCK STARTS AT PRE-REGISTRATION, NOT AT THE FIRST TRADE EVER TAKEN ...
+     that is the precise leakage the two-stage law exists to stop." Moving the boundary back to
+     a replayed trade hands the row evidence gathered while it was still being SELECTED. L1.58
+     is unconditional: the forward window is never compressed, BACKDATED or waived. On the live
+     book this would have handed 46 clocks up to 227.4h -- 9.5 days -- of selection-era trades.
+  2. THE WRITE WAS INERT, AND SAID OTHERWISE. `desks/mt5/reports/shadow/*.json` is a REPLICA:
+     `ops/pull_desk_state.sh` scp's all four ledgers from the trading box every two minutes, and
+     the authoritative writer is there. Measured 2026-08-30: a repair written at 04:53:58 was
+     gone by 04:55:29, `forward_start_repaired_at` and all. Every "REPAIRED" line this has ever
+     printed was false, and it printed 46 of them a night.
+  3. THE TRANSIENT WRITE POISONED THE REAL FENCE. `check_forward_clock_ratchet` samples these
+     same ledgers, and in the window between the write and the next pull it recorded the
+     backdated boundary as the floor -- which by construction may only move EARLIER, so the
+     corruption is permanent. Three keys (CHFNOK.carry.asia, EURZAR/USDZAR.overnight_gap_decay)
+     carry exact-hour BAR TIMES as their floor where every honest stamp carries microseconds,
+     and the ratchet reports all three as SILENT_REBASE breaches that never happened.
+
+So it reports, and the reporting is the whole job. A boundary that genuinely moved forward is
+already caught by `check_forward_clock_ratchet` against the desk's OWN recorded stamps -- a
+source that cannot backdate, because every value in it is a boundary the desk once declared.
+
+WHAT IT WILL NOT DO. It writes nothing into any ledger: not `forward_start`, not status, not a
+repair marker. It does not resurrect a retired sleeve. Rows in a terminal state are not measured
+at all -- their clocks are frozen by design and their `first_entry` predates the boundary filter
+that `shadow_forward` now applies, so holding them to this comparison produced 31 false hits out
+of 46 and buried the 15 real ones.
 """
 from __future__ import annotations
 
@@ -49,6 +71,13 @@ _FIRST_TRADE_FIELDS = ("first_entry", "first_trade_at", "first_entry_time")
 #: broker-offset conversion (Fusion runs +3h and the boundary is converted at read time) without
 #: absorbing a genuine restamp, which lands hours-to-days late.
 _SKEW_TOLERANCE_H = 1.0
+
+#: A clock in one of these states is frozen by design and is not measured here. Kept identical to
+#: `check_forward_clock_ratchet.TERMINAL` on purpose: two fences reading the same ledgers with
+#: different ideas of which rows are live is how one of them ends up reporting the other's normal.
+_TERMINAL = {"KILL", "KILLED", "PROMOTED", "DEAD", "REJECTED", "RETIRED", "RETIRED_ORPHAN",
+             "RETIRED_GATE_FAIL", "RETIRED_UNRECONSTRUCTIBLE", "QUARANTINED_UNCERTIFIED",
+             "IDENTITY_BROKEN"}
 
 
 def _rows(path: Path) -> dict:
@@ -80,7 +109,13 @@ def _first_trade(row: dict) -> datetime | None:
 def main() -> int:
     now = datetime.now(tz=UTC)
     report: dict = {"checked_at": now.isoformat(timespec="seconds"),
-                    "churned": [], "repaired": [], "unrepairable": [], "healthy": 0}
+                    "churned": [], "repaired": [], "unrepairable": [], "healthy": 0,
+                    "skipped_terminal": 0,
+                    "writes": "NONE -- these ledgers are replicas of the trading box, re-copied "
+                              "by ops/pull_desk_state.sh every ~2 minutes; and `first_entry` is a "
+                              "REPLAYED trade, so moving a boundary back to it would backdate the "
+                              "forward window (L1.58). Repair belongs to the writer on the box.",
+                    "repair_authority": False}
 
     print(f"FORWARD CLOCK {now.isoformat(timespec='seconds')}")
 
@@ -89,15 +124,24 @@ def main() -> int:
         if not path.exists():
             continue
         try:
-            raw = json.loads(path.read_text("utf-8"))
-        except (OSError, json.JSONDecodeError):
+            json.loads(path.read_text("utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            # An unreadable ledger is UNMEASURED, never "no churn found" (L1.28a). These files
+            # are scp'd in every two minutes, so a torn read is a live possibility and reading it
+            # as a clean pass is exactly how a stopped book reports healthy.
+            report["unrepairable"].append(
+                {"ledger": name, "key": None, "n": 0,
+                 "why": f"ledger unreadable ({type(exc).__name__}: {exc}); no clock in it was "
+                        f"measured this pass"})
             continue
         rows = _rows(path)
-        dirty = False
 
         for key, row in rows.items():
             if not isinstance(row, dict):
                 continue
+            if str(row.get("status") or "").upper() in _TERMINAL:
+                report["skipped_terminal"] += 1
+                continue                      # frozen by design; see the module docstring
             n = int(row.get("n") or 0)
             if n <= 0:
                 continue                      # no evidence yet: any clock is defensible
@@ -124,27 +168,16 @@ def main() -> int:
             report["churned"].append({"ledger": name, "key": key, "n": n,
                                       "forward_start": start.isoformat(),
                                       "first_trade": first.isoformat(),
-                                      "evidence_lost_hours": round(drift_h, 1)})
-            row["forward_start"] = first.isoformat()
-            row["forward_start_repaired_at"] = now.isoformat(timespec="seconds")
-            row["forward_start_repair_reason"] = (
-                f"clock was {drift_h:.1f}h later than this row's own first trade; restored to "
-                f"the first recorded entry (churn repair)")
-            report["repaired"].append(f"{name}:{key}")
-            dirty = True
-            print(f"  REPAIRED {key}: clock was {drift_h:.1f}h AFTER its own first trade "
-                  f"(n={n}) -> restored to {first.isoformat()}")
-
-        if dirty:
-            if isinstance(raw, dict) and "sleeves" in raw:
-                raw["sleeves"] = rows
-            else:
-                raw = rows
-            path.write_text(json.dumps(raw, indent=1), "utf-8")
+                                      "evidence_lost_hours": round(drift_h, 1),
+                                      "repair_owner": "the writer on the trading box; this "
+                                                      "process holds a replica and cannot fix it"})
+            print(f"  CHURNED {key}: clock is {drift_h:.1f}h AFTER its own first trade "
+                  f"(n={n}); NOT repaired here -- see the module docstring")
 
     OUT.write_text(json.dumps(report, indent=1), "utf-8")
     print(f"  healthy {report['healthy']}, churned {len(report['churned'])}, "
-          f"repaired {len(report['repaired'])}, unrepairable {len(report['unrepairable'])}")
+          f"skipped-terminal {report['skipped_terminal']}, "
+          f"unrepairable {len(report['unrepairable'])}")
     for u in report["unrepairable"][:6]:
         print(f"    UNREPAIRABLE {u['key']}: {u['why']}")
     print(f"  -> {OUT}")
