@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-30T01:35:36.762286+00:00",
+  "generated_at": "2026-08-30T02:12:22.203405+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
@@ -24,9 +24,9 @@
   },
   "freshness": {
     "research_loop": "2026-08-29T22:31:05.070281+00:00",
-    "research_pipeline": "2026-08-30T01:32:02+00:00",
-    "external_gauntlet": "2026-08-30T00:41:47+00:00",
-    "universal_gate": "2026-08-30T01:32:02+00:00",
+    "research_pipeline": "2026-08-30T02:08:49+00:00",
+    "external_gauntlet": "2026-08-30T02:08:39+00:00",
+    "universal_gate": "2026-08-30T02:08:49+00:00",
     "allocation": "2026-08-29T22:30:45.125757+00:00",
     "markout": "2026-08-28T23:03:00+00:00",
     "markout_usable": false,
@@ -34,12 +34,12 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-08-30T01:35:36.404825+00:00",
+    "generated_at": "2026-08-30T02:12:21.794458+00:00",
     "counts": {
-      "DISPOSED_BLOCKED": 7,
+      "DISPOSED_BLOCKED": 5,
       "DISPOSED_SUPERSEDED": 10,
       "REACHABLE_MT5_STATIC": 67,
-      "UNWIRED_REVIEW": 562,
+      "UNWIRED_REVIEW": 557,
       "VENUE_SPECIFIC_REVIEW": 6
     },
     "proof_level": "STATIC_REACHABILITY_ONLY"

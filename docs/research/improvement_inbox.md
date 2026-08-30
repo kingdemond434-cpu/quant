@@ -2238,7 +2238,7 @@ read the book can be farmed.
 **THE VOCABULARY GAP THIS EXPOSES (flagged per the extraction mandate — a mechanism mapping to NONE of the
 desk's families is the interesting case).** His closing line — *"市場がボットで飽和すると、必ずボットを食い物
 にするボットが現れる"* ("when a market saturates with bots, a bot that preys on bots will inevitably appear")
-— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `CRYPTO_MECHANISMS` describes
+— is a **PREDATION / adversarial-counterparty** mechanism family. Every entry in `OFF_BOOK_MECHANISMS` describes
 *market state*; none asks **"is my own order pattern a farmable, recognisable signature?"** The desk has this
 lens for its own *process* (L1.32's "the adversary") but not as a *market* family. It is not idle: this desk's
 carry sleeve opens and closes on a schedule tied to funding phase and rank exit, which is precisely a

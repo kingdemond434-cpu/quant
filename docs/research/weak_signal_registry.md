@@ -555,7 +555,7 @@ health — these rows are its dated verdicts, published before/while the named v
 degrades. The §42 named ground "delisting unwinds" is the adjacent family; this is its
 venue-death sibling, keyed by a THIRD party's risk decision rather than the dying venue's own
 announcement (which lies late — the announcement≠treatment fence's counterparty twin).
-mechanism-vocabulary flag (mandate): maps to NONE of the 24 CRYPTO_MECHANISMS cleanly
+mechanism-vocabulary flag (mandate): maps to NONE of the 24 OFF_BOOK_MECHANISMS cleanly
 (counterparty/venue-death risk) — the interesting case, widens the feature space.
 honest limits: (a) single archive so far — Bithumb's equivalent feed is WALLED from this probe
 origin (IP-level 403 incl. robots.txt, browser-UA control same), so cross-venue confirmation of

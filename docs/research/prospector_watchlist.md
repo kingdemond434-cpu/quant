@@ -589,7 +589,7 @@ not a sleeve, so it takes an axis row rather than a card slot — carding it wou
 slot with something that can never be promoted on its own.
 
 **THE ONE LEAD HELD RATHER THAN DISCARDED — `option_flow_informedness`, flagged per the extraction
-mandate as mapping to NO entry in `CRYPTO_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
+mandate as mapping to NO entry in `OFF_BOOK_MECHANISMS`.** From `perp-screener.com/posts/btc-bot`
 (2025-12-04), stated as the author's reason for choosing options at all: *"「意志のある取引」が多いの
 では？"* — **option order flow carries more intent per unit notional than perp flow, because
 selecting a strike AND an expiry encodes direction, timing and magnitude simultaneously, whereas

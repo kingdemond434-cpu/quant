@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-30T01:35:36.404825+00:00",
+  "generated_at": "2026-08-30T02:12:21.794458+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
-    "DISPOSED_BLOCKED": 7,
+    "DISPOSED_BLOCKED": 5,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 67,
-    "UNWIRED_REVIEW": 562,
+    "UNWIRED_REVIEW": 557,
     "VENUE_SPECIFIC_REVIEW": 6
   },
   "rows": [
@@ -1174,33 +1174,6 @@
       }
     },
     {
-      "module": "libs.execution.leverage_policy",
-      "path": "libs/execution/leverage_policy.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.maker",
-      "path": "libs/execution/maker.py",
-      "status": "DISPOSED_BLOCKED",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY",
-      "disposition": {
-        "verdict": "BLOCKED",
-        "reason": "Its own docstring: maker-first for the TESTNET FUTURES batch, 'NOT THE LIVE PATH'. Binance testnet is banned-universe ground and the testnet books are retired.",
-        "date": "2026-08-26",
-        "stale": false
-      }
-    },
-    {
-      "module": "libs.execution.maker_first",
-      "path": "libs/execution/maker_first.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
       "module": "libs.execution.opportunity_surface",
       "path": "libs/execution/opportunity_surface.py",
       "status": "UNWIRED_REVIEW",
@@ -1256,26 +1229,6 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
-      "module": "libs.execution.short_order_path",
-      "path": "libs/execution/short_order_path.py",
-      "status": "DISPOSED_BLOCKED",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY",
-      "disposition": {
-        "verdict": "BLOCKED",
-        "reason": "Borrow-the-base spot shorting is a crypto-venue mechanism; MT5 CFDs short natively with broker-side margin, so there is no MT5 equivalence to prove.",
-        "date": "2026-08-26",
-        "stale": false
-      }
-    },
-    {
-      "module": "libs.execution.spot_order_path",
-      "path": "libs/execution/spot_order_path.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
       "module": "libs.execution.staging",
       "path": "libs/execution/staging.py",
       "status": "UNWIRED_REVIEW",
@@ -1283,22 +1236,8 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
-      "module": "libs.execution.sub_accounts",
-      "path": "libs/execution/sub_accounts.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
       "module": "libs.execution.tca",
       "path": "libs/execution/tca.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.wallet",
-      "path": "libs/execution/wallet.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"

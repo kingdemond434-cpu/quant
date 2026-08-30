@@ -84,7 +84,7 @@ r/Flashbots, r/Hyperliquid, exchange subreddits, r/options, r/FuturesTrading.
 
 ## Mechanism vocabulary to extract against
 
-`CRYPTO_MECHANISMS` in `libs/research/evidence_tier.py`: funding · open interest · liquidation ·
+`OFF_BOOK_MECHANISMS` in `libs/research/evidence_tier.py`: funding · open interest · liquidation ·
 basis · order flow · book imbalance · trade intensity · volatility · market regime · cross-exchange
 spread · stablecoin flows · on-chain flows · whale activity · CEX/DEX flows · MEV · arbitrage ·
 liquidation cascades · sentiment · derivatives positioning · options skew · term structure · funding
