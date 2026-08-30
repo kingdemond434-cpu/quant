@@ -72,7 +72,11 @@ export QUANT_PIPELINE_STARTED_AT="$(date -u +%FT%TZ)"
 # `git push` exits 0 on a remote reject -- this desk has been burned by exactly that. The
 # comparison is against `git hash-object` run on the box itself.
 echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk box"
-REMOTE_MODULES="desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
+# `families_orthogonal` imports the edge-queue and generic families at module import time.
+# They are runtime dependencies of both the remote discovery jobs and the writer-side forward
+# engine, so leaving either off this verified bundle makes the whole family registry disappear
+# behind an ImportError even while the top-level module hash looks current.
+REMOTE_MODULES="desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py desks/mt5/mt5desk/families_edge_queue.py desks/mt5/mt5desk/family_generic.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
 # NEVER SHIP A TRAMPLED MODULE (2026-08-27): a replayer reverts working-tree code to ancient
 # copies roughly hourly, the moneypath fence heals within 10 minutes -- but this sync fires at
 # :05, INSIDE the trample window, and shipped ancient engines to the desk twice tonight. The
