@@ -611,11 +611,11 @@
    "summary": "Forward cohort is EXACTLY 12/12 at the law's cap -- new clocks are not free. Before enrolling any of the 44 SCREEN-INTERESTING results from the 07-26 axis screens, build an EV-eviction rule (retire the weakest accruing clock on the record) or the cap silently blocks all future Stage-B enrolment.",
    "roi_bps": 0.0,
    "raised": "2026-07-30T07:25:55.648875+00:00",
-   "status": "scheduled",
-   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
+   "status": "rejected",
+   "reason": "REJECTED 2026-08-30: evicting a healthy accruing forward clock by estimated EV is optional stopping and conflicts with the canonical fixed 12-slot, evidence-clock pipeline. The lawful throughput repair is admission ordering plus same-day refill only when a clock reaches its pre-registered verdict; no healthy clock is cut to admit a newer estimate.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-11T16:02:42.640276+00:00"
+   "due": null,
+   "disposed": "2026-08-30T08:07:03.364267+00:00"
   },
   {
    "id": "R0047",

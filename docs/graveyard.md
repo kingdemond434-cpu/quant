@@ -2446,3 +2446,30 @@ now been spent lowering the cost of a signal whose gross edge cannot pay a reali
 concentrated in the last bar, and the platform's `ts_target_tvr_*` **solver** approach to the same
 constraint (routed to `improvement_inbox.md` — untested, and it targets turnover directly rather
 than sweeping a proxy for it). The kill is specific: **decay does not rescue a one-day reversal.**
+
+## 2026-08-30 — BRAIN s34: BB-16 Alpha101 A-share validation uses tomorrow's execution state
+
+**KILLED AS EVIDENCE, not as an operator library.** Public MIT
+`BB-16/worldquant_101_alphas_code` at `320b3738c9807a47c85c457e56cf1ea95e80c106`
+claims 101/101 formulas ran, 87/101 had positive IC, 61/101 had positive gross return and **8/101
+remained positive after a flat 10 bp one-way cost** on 120 A-shares over 2025-02-05–2026-02-06.
+The executable source makes the result inadmissible: `evaluate()` constructs the target as
+`close.pct_change().shift(-1)` but filters positions at day *t* using
+`buyable_mask.shift(-1)` / `shortable_mask.shift(-1)`. Those masks contain day-*t+1* open,
+pause, limit, volume, close and traded-amount state. The selected book therefore knows tomorrow's
+execution state, while its P&L also receives the close-*t*→close-*t+1* overnight move that occurs
+before the claimed next-open execution. **All 101 reported cells share the defect; none is a
+survivor or candidate.** [§33: killed -> `data/brain_hunter_s34_failure_cohorts_and_pit_audit.json`]
+
+**MT5 analogue (confirmed through `translate_to_mt5`):** industry neutralisation maps to
+asset-class/currency-risk-bucket neutralisation across the contemporaneous terminal-enumerated
+Fusion universe. A literal transfer is D1: fix the signal at close *t*, execute at the next
+actually available Fusion bid/ask, and begin P&L there. Costs are symbol-specific spread,
+commission, slippage/partial-fill markout and swap—not the source's flat 10 bp. No next-bar
+availability, spread, session or volume state may enter selection before it is observed.
+
+**Reopen condition (L1.16a):** a corrected run using point-in-time membership/groups and either
+next-open→close (or later) returns, with all 101 cells reported under executable costs. This kill
+does not retire Alpha101's operators or construction vocabulary. SOURCE: repository files named
+in the evidence artifact. DERIVES-FROM: *101 Formulaic Alphas*, declared by the repository; no
+further implementation lineage was declared in the inspected files.

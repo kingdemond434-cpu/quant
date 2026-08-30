@@ -13703,3 +13703,57 @@ notional-aware root repair at `767bb6ba`. A single-writer ledger window is still
   continue the s31 UNKNOWN repo queue with `flashlight-byte/WorldQuant-Brain-AlphaSimulator` and
   `BB-16/worldquant_101_alphas_code`; run the s31 Rsquare conditioner when compute permits. The
   BRAIN ground remains open.
+## BRAIN HUNTER s34 — 2026-08-30 — failure cohorts mapped; an 8/101 result killed by future execution state
+
+**Corpora first.** `data/intelligence/gpt_practitioner_corpus.jsonl` was searched before network
+retrieval. Five WorldQuant-specific rows were reviewed; none supplied a new usable artifact. The
+stored Great Goat material remained transcript-unavailable and was not retried, so video is
+**0 fetched, 0 locked** this session (no video route attempted).
+
+**Carry-over 1 — `brain-sim-lib` result/recordset schema, completed.** Public MIT
+`nutdnuy/brain-sim-lib`, commit `5658174f0a3630253e80cfe0828f2755679f526b`, was read as text only:
+`results.py`, `batch.py`, `models.py`, `tests/test_results.py`, Tutorial 7 and three expected CSVs.
+The schema has **17 summary columns**, **7 transport statuses**, three check-name rollups, an
+8-field retry row before its timestamp, raw submit/poll events, full alpha-detail JSON and untyped
+recordsets. It can count coarse public failure cohorts, but `summary.csv` drops check values,
+thresholds and bodies; distance-to-failure requires the raw/detail join. Method routed to
+`improvement_inbox.md`; no BRAIN threshold was imported. DERIVES-FROM: NONE declared for this
+result-store schema (checked).
+
+**Carry-over 2 — two UNKNOWN-description repos classified.** `flashlight-byte/WorldQuant-Brain-
+AlphaSimulator` is a public four-blob, 20 KB repository with **no license**. Only public repository
+metadata/tree names were read; source blobs were not mined. Verdict: **WALLED BY LICENSE**, reopen
+only if the author grants a usable license. `BB-16/worldquant_101_alphas_code` is MIT, commit
+`320b3738c9807a47c85c457e56cf1ea95e80c106`, and was read as text.
+
+**The economic result is a refutation.** BB-16 reports **8/101** Alpha101 cells positive after
+costs, but its code selects day-*t* positions with day-*t+1* buyability/shortability and then
+credits close-*t*→close-*t+1* returns. Tomorrow's execution state is lookahead, and the overnight
+return precedes the claimed next-open execution. All **101** source cells share the timing defect;
+zero entered the gauntlet. Exact evidence and MT5 mapping are in
+`data/brain_hunter_s34_failure_cohorts_and_pit_audit.json`; negative disposition is in
+`docs/graveyard.md`. The Alpha101 vocabulary remains open; only this result is dead. DERIVES-FROM:
+the repository declares the *101 Formulaic Alphas* family; no further implementation lineage was
+declared in the inspected files.
+
+**MT5/Fusion translation.** `translate_to_mt5("industry neutral ...")` returned asset-class and
+currency-risk-bucket neutralisation. Literal timeframe is D1 over every symbol enumerated from
+the Fusion terminal. A valid test fixes the signal at close *t*, executes at the next observable
+bid/ask, starts P&L there, and charges symbol-specific spread, commission, markout/partial-fill and
+swap using point-in-time session/trade state. The source's flat 10 bp is not Fusion cost evidence.
+
+**Venue discovery.** GitHub Topics plus repository/author metadata links were followed one layer
+out; they yielded zero new venues this run. That is a negative screen, not a ground verdict. No
+login, BRAIN API, credentialed material or third-party package was touched; research freeze held.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `brain-sim-lib` result/recordset schema: **EXHAUSTED on 2026-08-30**. Author graph, response-body
+  diversity and remaining tutorials stay open.
+- `BB-16/worldquant_101_alphas_code`: **EXHAUSTED on headline validation/timing semantics**.
+  Formula-by-formula semantics were not reopened. Re-enter only on a PIT-correcting commit.
+- `flashlight-byte/WorldQuant-Brain-AlphaSimulator`: **not exhausted; license-walled**. Re-enter on
+  a named license change only.
+- **Next:** continue the UNKNOWN-description queue after these classified rows; mine
+  `brain-sim-lib`'s author graph/failure examples; run the existing Rsquare conditioner when
+  shared compute is quiet. The BRAIN ground remains open.

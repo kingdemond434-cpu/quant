@@ -5746,3 +5746,25 @@ and starts a fresh preregistered window only on pass. Regression: edit one famil
 without changing symbol/family/params and prove the old cache misses and the old certificate cannot
 append. This changes no bar; it prevents stale false positives/negatives and protects untouched
 forward evidence.
+## 2026-08-30 — BRAIN HUNTER s34 — failure cohorts need typed distance-to-failure, not names alone
+
+Public MIT `nutdnuy/brain-sim-lib` at
+`5658174f0a3630253e80cfe0828f2755679f526b` exposes a useful negative-mining schema: **17** summary
+columns, **7** transport statuses, and three semicolon-delimited check-name rollups
+(`failed_checks`, `warning_checks`, `pending_checks`). Raw submit/poll JSONL retains payload and
+transport context, full alpha-detail JSON retains the response body, and optional untyped
+recordsets retain `pnl`/`sharpe`. The summary alone discards each check's numeric value, threshold
+and body, so it can count failure names but cannot measure distance to a bar or distinguish a
+near-failure from a structural one. [§33: screened ->
+`data/brain_hunter_s34_failure_cohorts_and_pit_audit.json`]
+
+**Transfer, not import:** any desk failure-cohort export should persist candidate identity,
+pipeline stage, typed failure code, observed value, governing threshold, units, evidence window,
+PIT timestamp and full raw verdict reference. BRAIN check names and submission thresholds are
+facts about its process and must never become this desk's gates. Exact measurement before any
+build: census those fields across the canonical ten-gate certificate and graveyard exports; if
+all are already durable, KEEP and close this item, otherwise UPGRADE the existing exporter and
+prove a cohort query can recover value-minus-threshold without parsing prose. This is a
+throughput repair because typed failure distance routes near-survivors and descendants without
+re-reading raw logs. SOURCE: `results.py`, `batch.py`, `models.py`, `tests/test_results.py` and
+Tutorial 7. DERIVES-FROM: NONE declared for the result-store schema (checked).
