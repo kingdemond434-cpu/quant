@@ -1,0 +1,43 @@
+{
+  "id": "REC-20260830-a9e3a7",
+  "atoms": [
+    {
+      "type": "entry",
+      "value": "stop_order",
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
+    },
+    {
+      "type": "execution",
+      "value": "market",
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
+    },
+    {
+      "type": "stop",
+      "value": "atr",
+      "source": "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY"
+    },
+    {
+      "type": "horizon",
+      "value": "intraday",
+      "source": "external.EURJPY.session_range_breakout.rr=2.0_wb=12"
+    }
+  ],
+  "mechanism_class": "relative_value",
+  "expected_orthogonality": 0.7999999999999999,
+  "estimated_edge_bps": 11.5,
+  "source_strategies": [
+    "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY",
+    "external.EURJPY.session_range_breakout.rr=2.0_wb=12"
+  ],
+  "recombination_type": "orthogonal",
+  "falsifier": "edge disappears in forward test",
+  "metadata": {
+    "group": "execution",
+    "atom_types": [
+      "entry",
+      "execution",
+      "stop",
+      "horizon"
+    ]
+  }
+}
