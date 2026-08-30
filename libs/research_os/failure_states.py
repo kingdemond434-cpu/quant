@@ -105,9 +105,10 @@ class Diagnosis:
 
     def explain(self) -> str:
         if not self.updates_mechanism_posterior and self.state == "MECHANISM_REFUTED":
-            return (f"MECHANISM_REFUTED but the measurement was {self.measurement_class or 'un'
-                    'recorded'} -- this refutes the PROXY, not {self.mechanism}. Posterior "
-                    f"unchanged; the mechanism needs a better observable before it can be judged.")
+            cls = self.measurement_class or "unrecorded"
+            return (f"MECHANISM_REFUTED but the measurement was {cls} -- this refutes the PROXY, "
+                    f"not {self.mechanism}. Posterior unchanged; the mechanism needs a better "
+                    f"observable before it can be judged.")
         return f"{self.state}: {self.reason} -> {self.next_action}"
 
 
@@ -223,7 +224,7 @@ def policy_report(diagnoses: list[Diagnosis]) -> dict[str, Any]:
         "total": len(diagnoses),
         "by_state": dict(counts),
         "may_lower_a_posterior": len(teaching),
-        "refutations_withheld": {k: v for k, v in blocked_posteriors.items()},
+        "refutations_withheld": dict(blocked_posteriors),
         "actions": dict(Counter(d.next_action for d in diagnoses)),
         "data_needs": [{"observable": n.observable, "value": round(n.value, 2),
                         "mechanisms": sorted(set(n.mechanisms_blocked)),

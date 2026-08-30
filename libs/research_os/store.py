@@ -134,6 +134,13 @@ CREATE INDEX IF NOT EXISTS ix_need_obs ON data_needs(observable);
 """
 
 
+#: The complete set of tables. `summary` validates against this rather than interpolating a
+#: caller-supplied name into SQL -- table names cannot be bound as parameters, so the allowlist
+#: IS the parameterisation.
+_TABLES = ("hypotheses", "measurements", "experiments", "failures",
+           "generator_stats", "data_needs")
+
+
 @contextmanager
 def connect() -> Any:
     DB.parent.mkdir(parents=True, exist_ok=True)
@@ -290,8 +297,13 @@ def coordinate_history(coordinate: str) -> list[dict[str, Any]]:
 
 def summary() -> dict[str, Any]:
     with connect() as c:
-        out = {}
+        out: dict[str, Any] = {}
+        # Table names cannot be parameterised in SQL, so they are validated against a fixed
+        # tuple rather than interpolated from anything a caller supplies. The literal is the
+        # allowlist; nothing reaches the query string that is not in it.
         for t in ("hypotheses", "measurements", "experiments", "failures",
                   "generator_stats", "data_needs"):
-            out[t] = c.execute(f"SELECT COUNT(*) AS n FROM {t}").fetchone()["n"]
+            if t not in _TABLES:
+                continue
+            out[t] = c.execute(f"SELECT COUNT(*) AS n FROM {t}").fetchone()["n"]  # noqa: S608
     return out
