@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-30T00:42:40.958728+00:00",
+  "generated_at": "2026-08-30T01:35:36.404825+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 67,
-    "UNWIRED_REVIEW": 560,
-    "VENUE_SPECIFIC_REVIEW": 11
+    "UNWIRED_REVIEW": 562,
+    "VENUE_SPECIFIC_REVIEW": 6
   },
   "rows": [
     {
@@ -1014,41 +1014,6 @@
       "module": "libs.execution.algos",
       "path": "libs/execution/algos.py",
       "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.binance_live",
-      "path": "libs/execution/binance_live.py",
-      "status": "VENUE_SPECIFIC_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.binance_margin_live",
-      "path": "libs/execution/binance_margin_live.py",
-      "status": "VENUE_SPECIFIC_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.binance_spot_live",
-      "path": "libs/execution/binance_spot_live.py",
-      "status": "VENUE_SPECIFIC_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.binance_spot_testnet",
-      "path": "libs/execution/binance_spot_testnet.py",
-      "status": "VENUE_SPECIFIC_REVIEW",
-      "direct_mt5_consumers": [],
-      "proof_level": "STATIC_REACHABILITY_ONLY"
-    },
-    {
-      "module": "libs.execution.binance_testnet",
-      "path": "libs/execution/binance_testnet.py",
-      "status": "VENUE_SPECIFIC_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
@@ -3549,6 +3514,20 @@
     {
       "module": "libs.research_os.adapters.price_structure",
       "path": "libs/research_os/adapters/price_structure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.brain_ab",
+      "path": "libs/research_os/brain_ab.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.credit",
+      "path": "libs/research_os/credit.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
