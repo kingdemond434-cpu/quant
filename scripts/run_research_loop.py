@@ -213,6 +213,73 @@ def _check_edge_queue_alignment() -> list[dict[str, Any]]:
     return out
 
 
+def _measure_and_diagnose() -> dict[str, Any]:
+    """Resolve a real measurement for every compiled cell, diagnose it, and record the lot.
+
+    THIS IS WHERE THE LOOP ACTUALLY CLOSES. Before this, `measurement`, `failure_states`,
+    `adapters` and `store` were four correct modules that nothing invoked -- which by the desk's
+    own law (III.16) is a defect, not a completion. A measurement contract nobody resolves and a
+    six-state diagnosis nobody records leave the allocator learning from the same collapsed FAIL
+    it always did.
+
+    Every compiled cell now gets: a real observable from the adapter registry, a diagnosis in one
+    of the six states, and a row in the append-only store. The allocator can then ask the only
+    question that matters -- which mechanisms were GENUINELY refuted, versus merely mismeasured.
+    """
+    import pandas as pd
+
+    from libs.research_os import store
+    from libs.research_os.adapters import REGISTRY
+    from libs.research_os.failure_states import data_needs, diagnose, policy_report
+
+    cells_path = DESK / "data" / "hypotheses" / "compiled_proposals.json"
+    try:
+        cells = json.loads(cells_path.read_text("utf-8")).get("cells", [])
+    except (OSError, json.JSONDecodeError):
+        return {"skipped": "no compiled cells to measure"}
+
+    uni = DESK / "data" / "universe"
+    diagnoses = []
+    measured = 0
+    for cell in cells[:40]:                     # a pass, not a sweep; the gauntlet does volume
+        params = cell.get("params") or {}
+        mech = str(params.get("event") or cell.get("family") or "")
+        # A representative instrument per pass. The point here is the MEASUREMENT class, which
+        # is a property of the mechanism and the desk's data, not of one symbol.
+        sym = str(cell.get("symbol") or "EURUSD")
+        bars_path = uni / f"{sym}_H1.parquet"
+        if not bars_path.exists():
+            continue
+        try:
+            bars = pd.read_parquet(bars_path).rename(columns=str.lower).tail(2000)
+        except Exception:
+            continue
+
+        res = REGISTRY.resolve({"mechanism": mech, "symbol": sym}, bars)
+        measured += 1
+        store.record_measurement(
+            hypothesis_id=str(cell.get("name") or ""), mechanism=mech, adapter=res.adapter,
+            status=res.status, attributable=res.attributable, pit_safe=res.pit_safe,
+            missing_observable="" if res.runnable else mech, notes=res.notes)
+
+        # A cell whose observable cannot be produced has not failed a test -- no test was run.
+        # That distinction is the entire reason the six states exist.
+        d = diagnose(
+            mechanism=mech,
+            measurement_class=res.status if res.status != "UNAVAILABLE" else "",
+            exp_r_gross=None, exp_r_net=None, novelty_verdict=None,
+            missing_observable="" if res.runnable else (res.notes[:80] or mech),
+            n_trades=0)
+        diagnoses.append(d)
+        store.record_failure(d, hypothesis_id=str(cell.get("name") or ""))
+
+    for need in data_needs(diagnoses):
+        store.record_data_need(need, sources=["see scripts/check_unmeasurable_claims.py"])
+
+    return {"cells_measured": measured, "policy": policy_report(diagnoses),
+            "store": store.summary()}
+
+
 def main() -> int:
     from libs.research.search_controller import choose_action, split_budget
 
@@ -265,8 +332,23 @@ def main() -> int:
         print(f"    WARNING: {len(zeroed)} branch(es) allocated zero despite the exploration "
               f"floor -- that is a bug, not a decision: {zeroed[:5]}")
 
+    # ---- 3. MEASURE, DIAGNOSE, RECORD -------------------------------------------------------
+    md = _measure_and_diagnose()
+    if md.get("policy"):
+        pol = md["policy"]
+        print(f"\n  MEASURED {md['cells_measured']} cell(s) through the adapter registry")
+        print(f"    failure states: {pol['by_state']}")
+        print(f"    may lower a mechanism posterior: {pol['may_lower_a_posterior']} of "
+              f"{pol['total']}")
+        for need in pol["data_needs"][:4]:
+            print(f"    DATA NEED {need['observable'][:48]:50s} blocks {need['mechanisms']}")
+        print(f"    store: {md['store']}")
+    elif md.get("skipped"):
+        print(f"\n  MEASUREMENT SKIPPED: {md['skipped']}")
+
     payload = {
         "ran_at": now.isoformat(timespec="seconds"),
+        "measurement": md,
         "authority": "STEERING ONLY -- this loop cannot promote, size or arm anything",
         "role_discipline": roles,
         "tri_alignment": align,

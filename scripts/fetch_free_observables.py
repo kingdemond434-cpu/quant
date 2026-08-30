@@ -64,6 +64,12 @@ SOURCES: dict[str, dict[str, str]] = {
         "unblocks": "macro_release (scheduled FOMC dates)",
         "kind": "calendar",
     },
+    "treasury_rates": {
+        "url": ("https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/"
+                "od/avg_interest_rates?page[size]=2000&sort=-record_date"),
+        "unblocks": "term_structure (rate level and change, free and historical)",
+        "kind": "history",
+    },
     "cftc_cot_live": {
         "url": ("https://publicreporting.cftc.gov/resource/6dca-aqww.json"
                 "?$limit=5000&$order=report_date_as_yyyy_mm_dd%20DESC"),
@@ -151,7 +157,20 @@ def fetch_cot(raw: bytes, now: datetime) -> dict[str, Any]:
             "raw": rows}
 
 
+def fetch_treasury(raw: bytes, now: datetime) -> dict[str, Any]:
+    d = json.loads(raw)
+    rows = [{"record_date": r.get("record_date"),
+             "avg_interest_rate_amt": r.get("avg_interest_rate_amt"),
+             "security_desc": r.get("security_desc")}
+            for r in d.get("data", []) if r.get("record_date")]
+    return {"fetched_at": now.isoformat(timespec="seconds"), "rows": len(rows),
+            "first": rows[-1]["record_date"] if rows else None,
+            "last": rows[0]["record_date"] if rows else None,
+            "series": rows}
+
+
 _PARSERS = {
+    "treasury_rates": fetch_treasury,
     "cboe_spx_options": fetch_cboe_options,
     "cboe_vix_history": fetch_vix_history,
     "fomc_calendar": fetch_fomc,
