@@ -93,8 +93,45 @@ def _drawdown(rs: list[float]) -> float:
     return float(np.min(curve - np.maximum.accumulate(curve)))
 
 
+def _previous_sleeves() -> dict[str, dict]:
+    """Return the writer's prior clock state, or no state when it is unreadable.
+
+    A replay rebuilds summary statistics but it must not rebuild a pre-registration
+    boundary.  Treating an unreadable prior state as a new clock is unsafe: the
+    caller will emit an unstamped row, which the central fail-closed fence reports.
+    """
+    try:
+        prior = json.loads(STATE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    rows = prior.get("sleeves") if isinstance(prior, dict) else None
+    return {str(k): v for k, v in (rows or {}).items() if isinstance(v, dict)}
+
+
+def _first_forward_trade(records: list[dict]) -> str | None:
+    """Return an auditable UTC first-trade stamp for the clock watchdog."""
+    stamps: list[pd.Timestamp] = []
+    for record in records:
+        raw = record.get("entry_time") or record.get("time") or record.get("open_time")
+        if raw is None:
+            continue
+        try:
+            stamps.append(pd.Timestamp(raw))
+        except (TypeError, ValueError):
+            continue
+    if not stamps:
+        return None
+    first = min(stamps)
+    if first.tzinfo is None:
+        first = first.tz_localize("UTC")
+    else:
+        first = first.tz_convert("UTC")
+    return first.isoformat()
+
+
 def run(now: datetime | None = None) -> dict:
     now = now or datetime.now(UTC)
+    prior_sleeves = _previous_sleeves()
     source = _source()
     authority = bool(source.get("promotion_authority"))
     gate_authority = authorized_specs(DESK)
@@ -145,7 +182,8 @@ def run(now: datetime | None = None) -> dict:
         #
         # The boundary is CONVERTED: bar stamps are on the broker clock (Fusion runs +3h) while
         # `forward_start` is true UTC. Comparing them raw moves the boundary three hours.
-        _fs = (state.get("sleeves", {}).get(name) or {}).get("forward_start")
+        _prior = prior_sleeves.get(name) or {}
+        _fs = _prior.get("forward_start")
         _bound = None
         if _fs:
             try:
@@ -194,6 +232,7 @@ def run(now: datetime | None = None) -> dict:
             # (measured 2026-08-27: rows with 6 true forward days re-stamped to day 0). A row
             # keeps an existing freeze; a row without one gets the lane preregistration.
             "forward_start": _fs or SHADOW_START.isoformat(),
+            "first_trade_at": _first_forward_trade(records) or _prior.get("first_trade_at"),
             "status": status, "timeframe": tf, "choice": choice.__dict__,
             "n": n, "n_historical": n_historical, "days": days,
             "expectancy_r": exp, "max_drawdown_r": max_dd,
