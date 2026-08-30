@@ -13847,3 +13847,47 @@ surface yielded **0 new venues**; this is a negative venue screen, not ground ex
 - **Next:** continue the s31 UNKNOWN queue with `sanqiushu/worldquant-alpha-research-playbook`
   after license verification; run the existing Rsquare conditioner when shared compute permits.
   The BRAIN ground remains open.
+
+## BRAIN HUNTER s38 — 2026-08-30 — one license wall and one empty advertised research OS
+
+**Corpora first.** Five WorldQuant rows in `data/intelligence/gpt_practitioner_corpus.jsonl` were
+reviewed before retrieval; the Great Goat rows remained transcript-unavailable and supplied no
+readable mechanism. Video: **0 fetched, 0 newly locked**; no already-failed route was retried.
+
+**Carry-over queue, legitimacy first.** Public
+`sanqiushu/worldquant-alpha-research-playbook` declares no license and its root has no license
+file. Only public repository metadata and root names were used. Verdict: **LICENSE-WALLED**, not
+exhausted; re-enter only on an explicit compatible license grant. No script, template, example or
+source blob was imported, installed or executed.
+
+**One layer deeper, measured null.** Public MIT
+`Frank880-star/ai-worldquant-research-os` at `8745f7a3f6f732c3a48296f78dd51e6c5e4576e0`
+contains a 91-byte title/description README, a 65-byte docs index, a 98-byte knowledge-folder
+README, the license and `.gitignore`: **zero substantive source files, operator definitions,
+strategy formulas, data fields/feeds or methodology specs**. Its description advertises an
+AI-powered BRAIN research platform, but the committed artifact is an empty scaffold. Treating the
+title as capability would create false inventory. Disposition: **negative screen; no import, no
+hypothesis and no data-axis card**. Evidence:
+`data/brain_hunter_s38_legitimacy_and_scaffold_screen.json`.
+
+**MT5/Fusion disposition.** `translate_to_mt5()` returned no mapping for either repository-level
+process phrase. That absence is not a clean market verdict: these are access/content screens, not
+market mechanisms. No Fusion symbol, field, timeframe, construction or target-horizon cell was
+proposed, so costs are not applicable. Any future substantive mechanism must map to the
+terminal-enumerated Fusion universe with PIT inputs and symbol-native spread, commission,
+slippage/partial-fill markout and swap before gauntlet entry. Zero desk trials and zero survivors.
+
+**Venue discovery.** GitHub owner metadata, repository metadata and the WorldQuant-BRAIN topic
+surface yielded **0 new venues**; neither owner publishes an external blog, company or social
+handle. Negative venue screen only—the ground remains open.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `sanqiushu/worldquant-alpha-research-playbook`: **not exhausted; license-walled**. Re-enter on
+  an explicit compatible license.
+- `Frank880-star/ai-worldquant-research-os` commit `8745f7a3`: **EXHAUSTED on content and
+  capability axes on 2026-08-30**. Re-enter on a substantive licensed commit.
+- **Next:** continue the s31 UNKNOWN queue with
+  `vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26`, beginning with license verification; then
+  the next permissively licensed artifact. Run the existing Rsquare conditioner when shared
+  compute permits. The BRAIN ground remains open.
