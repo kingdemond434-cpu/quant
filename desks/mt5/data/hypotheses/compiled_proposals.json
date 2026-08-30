@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T07:20:51+00:00",
+ "built_at": "2026-08-30T08:19:17+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -519,6 +519,56 @@
    "data_source": "MT5 DOM (Depth of Market) feed on XAUUSD, US100Cash, US30Cash from Fusion broker; tick-by-tick L1",
    "kill": "AUC < 0.53 OOS OR edge disappears when broker-side depth sample is incomplete (coverage flag)",
    "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "Carry_Transition_Flow",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|new_york|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "FXCM swap rates, CME SOFR, DTCC repo data, BIS locational data",
+   "kill": "Kill if carry pairs do not show increased correlation during stress events or if unwind speed does not exceed baseline by 2x",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:carry_change|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
   {
