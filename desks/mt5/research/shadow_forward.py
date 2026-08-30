@@ -27,6 +27,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mt5desk import families
 
 BASE = Path(__file__).resolve().parent.parent
+# This engine is called both as ``research.shadow_forward`` and as a script on the desk box.
+# Keep sibling desk modules ahead of the repository's unrelated ``libs/research`` package, whose
+# presence otherwise makes ``import sleeve_registry`` depend on the entry point's path order.
+sys.path.insert(0, str(BASE / "research"))
 UNI = BASE / "data" / "universe"
 SHADOW_DIR = BASE / "reports" / "shadow"
 SHADOW_DIR.mkdir(parents=True, exist_ok=True)
@@ -209,6 +213,27 @@ def per_symbol_costs(meta: dict, sym: str):
     return Costs.from_symbol(meta[sym], commission_per_lot=3.50)
 
 
+def frozen_costs(key: str):
+    """Return the cost basis frozen with ``key``, or ``None`` if it is unavailable.
+
+    The shadow engine cannot substitute current costs when its catalogue has lost a symbol:
+    doing so either stops a certified clock or silently reprices it.  A frozen identity already
+    contains the complete, cost-aware basis the clock was admitted on, so it is the only safe
+    fallback.  Missing or malformed frozen fields remain an explicit evaluation failure.
+    """
+    import sleeve_registry as registry
+    from mt5desk.engine import Costs
+
+    fields = registry.frozen_cost_fields(key)
+    required = {"spread_per_lot", "commission_per_lot", "contract_oz", "quote_per_account"}
+    if not isinstance(fields, dict) or not required.issubset(fields):
+        return None
+    try:
+        return Costs(**{name: float(fields[name]) for name in required})
+    except (TypeError, ValueError):
+        return None
+
+
 def fetch_h1(sym: str):
     """Bars from whatever source is available, with the provenance attached.
 
@@ -347,7 +372,21 @@ def main() -> None:
             # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
             # about a real strategy change. A re-measured cost is a NEW identity at the NEXT window.
-            costs = per_symbol_costs(meta, sym)
+            try:
+                costs = per_symbol_costs(meta, sym)
+            except KeyError as exc:
+                # The desk box can temporarily carry a narrower pulled catalogue than the
+                # certificate's Fusion snapshot.  A live lookup would then turn an existing,
+                # certified clock into a KeyError and forward_reconcile would keep reviving and
+                # retiring it.  Reuse only its immutable frozen basis; never invent or downgrade
+                # a cost because today's remote catalogue is incomplete.
+                costs = frozen_costs(key)
+                if costs is None:
+                    raise RuntimeError(
+                        f"{sym} absent from current universe and {key} has no complete frozen "
+                        "cost basis"
+                    ) from exc
+                slog(f"{key}: current universe lacks {sym}; using its frozen cost basis")
             try:
                 import dataclasses as _dc
 
