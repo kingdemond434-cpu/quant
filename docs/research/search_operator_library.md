@@ -2702,6 +2702,38 @@ expecting enums.
 **Also confirmed from the wild (see OP-084): `ts_zscore`, `ts_av_diff`, `ts_corr`, `group_rank` are
 real platform operators** — `ts_zscore` is one of the six this desk still lacks.
 
+### 2026-08-30 addendum — OP-083 now has executable population semantics and four falsifiers
+
+Public MIT `myacgl/ProdMemo` at `c0e2402bb199c2aef82d6377ccb44e8bde671711` gives the first
+reproducible specification found for the *population* behind BRAIN correlation diagnostics. It
+first-differences cumulative PnL over four calendar years, compares within region, separates the
+user's OS pool from `POWER_POOL:POWER_POOL_ELIGIBLE`, and persists pool size, window, algorithm
+version and a pool fingerprint. Platform production correlation is a third, distinct record and is
+cached with its own timestamp. That sharpens OP-083: **candidate-vs-prior, candidate-vs-peer pool,
+and candidate-vs-production are three denominators, never aliases.** DERIVES-FROM: NONE declared
+for the local correlation implementation (checked README and source). [§33: screened ->
+`data/brain_hunter_s35_active_book_correlation_audit.json`]
+
+Public MIT `Fin-Agentian/openalpha` at `405828e54f2be8c1d8b5facead3f537f8490727c` independently
+states the correct portfolio question—rank passing candidates by residual PnL variance against the
+ACTIVE book—but its implementation supplies four **negative controls** for any R0602 repair:
+
+1. it refuses to measure a book with fewer than two incumbents, although one incumbent is already a
+   valid candidate-vs-book comparison;
+2. it selects the 200 highest-Sharpe candidates *before* independence, deleting modest-standalone,
+   high-marginal candidates before the relevant score exists;
+3. `LinAlgError` returns `resid_frac=1.0`, awarding a failed projection maximum independence; and
+4. its PnL cache has no TTL or content revision, so a live portfolio decision can consume an
+   arbitrarily stale return panel.
+
+The MT5 analogue is candidate net-R versus every deployed Fusion sleeve and the book aggregate on
+jointly observable forward timestamps, using point-in-time bid/ask, fills, spread, commission, swap
+and markout. `translate_to_mt5("production correlation active portfolio orthogonality")` currently
+returns no row, so this explicit mapping is also a named translation-table gap; absence was not read
+as no analogue. Thresholds do not transfer. The instrument does. OpenAlpha explicitly derives from
+a private IQC 2026 harness and named legacy scripts, so it is convergence at the **method** level,
+not an independent implementation lineage.
+
 ---
 
 ## OP-084 — MEASURED: THE INDEPENDENCE CAME FROM THE **DATA**, NOT THE **MATH** (49 fields, 8 operators, 48/50 single-operator)

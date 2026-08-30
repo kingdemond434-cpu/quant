@@ -1139,11 +1139,11 @@
    "summary": "SYNTH0731 P3-15 [DI-10]: per-venue request-weight coordinator + 418 circuit breaker (shared token bucket, Retry-After capture, classify ban type on next occurrence); 418s killing shadow_8h/axis_shadows/nav_attest inside daily cycle",
    "roi_bps": 50.0,
    "raised": "2026-07-31T03:45:45.749768+00:00",
-   "status": "scheduled",
-   "reason": "EV-ranked (roi 50): shared token bucket + 418 breaker; prerequisite reading of venue ban semantics unchanged.",
-   "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-11T15:57:12.975273+00:00"
+   "status": "implemented",
+   "reason": "Verified at current HEAD: commit 963df910 added the cross-process data/BINANCE_BAN_UNTIL latch in libs/data/crypto_source.py, fails fast across short-lived callers, distinguishes HTTP 418 from 429, captures Retry-After, applies venue/default cooldowns, records code plus retry_after, and prevents retries from extending an active ban. This is the exact requested circuit-breaker path; the MT5 mandate prevents new exchange-native hunting but does not erase shared-host protection for admissible reference collectors.",
+   "commit": "963df9107dc10133f1c7e1823d794fbe77b80391",
+   "due": null,
+   "disposed": "2026-08-30T08:35:30.310660+00:00"
   },
   {
    "id": "R0083",

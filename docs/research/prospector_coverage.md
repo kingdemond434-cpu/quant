@@ -13757,3 +13757,59 @@ login, BRAIN API, credentialed material or third-party package was touched; rese
 - **Next:** continue the UNKNOWN-description queue after these classified rows; mine
   `brain-sim-lib`'s author graph/failure examples; run the existing Rsquare conditioner when
   shared compute is quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s35 — 2026-08-30 — active-book correlation specified; four picker defects killed before import
+
+**Conversion first.** Repair-window row R0082 was stale despite its exact requested implementation
+already existing: commit `963df910` added the cross-process 418/429 latch, `Retry-After` capture,
+ban-type record and fail-fast cooldown in `libs/data/crypto_source.py`. The recommendation ledger now
+records it IMPLEMENTED. The later MT5-only mandate prevents new exchange-native hunting; it does not
+erase shared-host protection for admissible reference collectors.
+
+**Corpora first.** `data/intelligence/gpt_practitioner_corpus.jsonl` was searched before network
+retrieval. Five WorldQuant-specific Great Goat rows remained transcript-unavailable and supplied no
+new readable artifact. Video is **0 fetched, 0 locked**: no video route was attempted this session.
+
+**UNKNOWN queue continuation, legitimacy before source.** Public
+`dhb520cat/wq-brain-automation` at `cde9843def1defb9f26e20a58913fa37ed75fc96` has no license;
+only repository metadata and root tree names were read. Verdict: **LICENSE-WALLED**, not exhausted;
+re-enter on a named license grant. Public MIT `myacgl/ProdMemo` at
+`c0e2402bb199c2aef82d6377ccb44e8bde671711` and MIT `Fin-Agentian/openalpha` at
+`405828e54f2be8c1d8b5facead3f537f8490727c` were read as text only, never installed or executed.
+
+**The useful result refines existing OP-083/R0602.** ProdMemo makes correlation-population identity
+explicit: four calendar years of first-differenced PnL; same-region OS and Power Pool populations;
+pool fingerprint, algorithm version and dated result; platform production correlation stored as a
+third record. Its production cache has no consumption-age bound. OpenAlpha converges on residual
+candidate PnL versus the ACTIVE book, then supplies four things the desk must not copy: fewer than
+two incumbents raises, the 200 highest Sharpes are selected before independence, `LinAlgError` earns
+maximum residual independence, and PnL cache files never expire. Exact evidence and all numeric
+trial accounting are in `data/brain_hunter_s35_active_book_correlation_audit.json`. DERIVES-FROM:
+ProdMemo declares none for its local correlation implementation; OpenAlpha explicitly names a
+private IQC 2026 harness and legacy scripts, so its method is not independent at implementation
+lineage level. Zero BRAIN thresholds were imported.
+
+**MT5/Fusion translation and economic disposition.** The analogue is candidate net-R versus every
+deployed Fusion sleeve and the book aggregate on jointly observable forward timestamps, using
+point-in-time bid/ask, fills, spread, commission, swap and markout for every terminal-enumerated
+symbol. The decision panel is daily net R after native-clock execution; no missing candidate return
+is forward-filled. `translate_to_mt5("production correlation active portfolio orthogonality")`
+returns an empty list, now named as a translation-table gap rather than read as no analogue. The
+current desk artifact is honestly weak: `data/live_cohort_pnl.npz` is absent and
+`data/portfolio_admission.json` reports 3/3 against an EMPTY BOOK. No tradeable construction or
+target-horizon cell was tried; this is methodology/failure evidence, not a survivor. R0602 remains
+the exact implementation obligation, now with four falsifiers and no duplicate row.
+
+**Venue discovery.** Owner metadata, Issues and repository graphs yielded zero new venues. This is
+a negative screen, not a ground verdict. No login, private BRAIN material, credentialed content or
+third-party runtime was touched; research freeze held.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `dhb520cat/wq-brain-automation`: **not exhausted; license-walled**.
+- `myacgl/ProdMemo` commit `c0e2402b`: **EXHAUSTED on correlation population, cache and sync
+  semantics on 2026-08-30**; re-enter on an algorithm-version or pool-membership change.
+- `Fin-Agentian/openalpha` commit `405828e5`: **EXHAUSTED on active-book picker and attention-routing
+  methodology on 2026-08-30**; source explicitly derives from a private harness.
+- **Next:** continue the s31 UNKNOWN-description queue after OpenAlpha; run the existing Rsquare
+  conditioner when shared compute permits. The BRAIN ground remains open.

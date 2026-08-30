@@ -5768,3 +5768,22 @@ prove a cohort query can recover value-minus-threshold without parsing prose. Th
 throughput repair because typed failure distance routes near-survivors and descendants without
 re-reading raw logs. SOURCE: `results.py`, `batch.py`, `models.py`, `tests/test_results.py` and
 Tutorial 7. DERIVES-FROM: NONE declared for the result-store schema (checked).
+
+## 2026-08-30 — BRAIN HUNTER s35 — R0602 repair has four pre-implementation falsifiers
+
+Do **not** copy the public `openalpha` active-book picker literally. Its stated objective is right,
+but four implementation choices would make the desk's missing candidate-vs-deployed admission test
+misrule precisely when it first matters: it refuses one incumbent, truncates to the 200 highest
+standalone Sharpes before marginal value is measured, treats a least-squares failure as maximum
+independence, and consumes an unversioned PnL cache forever. Exact evidence and MT5/Fusion mapping:
+`data/brain_hunter_s35_active_book_correlation_audit.json`. [§33: screened ->
+`data/brain_hunter_s35_active_book_correlation_audit.json`]
+
+This refines existing recommendation **R0602**; it does not create a duplicate. The exact repair
+test is now: with one incumbent, a redundant candidate is rejected; with a numerically singular
+incumbent matrix, the verdict is UNMEASURED; a lower-standalone/high-marginal candidate remains in
+the population; and changing the incumbent return-panel vintage invalidates the decision input.
+Production input is the point-in-time Fusion net-R panel (bid/ask, fills, spread, commission, swap,
+markout), not a BRAIN threshold or its PnL convention. Measured current state remains weak:
+`data/live_cohort_pnl.npz` is absent and `data/portfolio_admission.json` says 3/3 against an EMPTY
+BOOK, explicitly reducing the result to positive standalone Sharpe.
