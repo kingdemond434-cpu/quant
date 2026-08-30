@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T05:20:41+00:00",
+ "built_at": "2026-08-30T06:20:00+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -362,6 +362,106 @@
    "promotion_authority": false
   },
   {
+   "name": "Futures_Basis_Stress_Indicator",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "new_york",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|new_york|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Quandl CHRIS/CME_CL1 and CHRIS/CME_CL2 (free WTI front\u2011 and second\u2011month settlement)",
+   "kill": "No significant ATR% increase (p>0.1) after 100 signals",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "INDEX_FUTURE_SETTLEMENT_HARD_BARRIER",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "new_york",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|new_york|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Public index futures (ES, NQ, FDAX) from CME/Binance public delayed or Yahoo Finance continuous; CFD quote from MT5 broker API",
+   "kill": "Kill if Sharpe < 0.3 across 8 consecutive roll events or if broker widens spread symmetrically around roll (passing through) on more than 6/10 events",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "IDX_CFD_COLLATERAL_MISMATCH",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Eurex DAX/SPX future close (free delayed) + IG/MT5 CFD daily candle + broker swap schedule.",
+   "kill": "Kill if residual <2pts DAX or flips after 2017 ESMA-mandated daily close settlement.",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CROWD_DISPERSION",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "positioning_extreme",
+    "context": "high_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|high_liquidity|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "FreeForeely (CFTC COT), Myfxbook auto-trade stats, OANDA fxMoney",
+   "kill": "If reversal magnitude in high-dispersion buckets fails to exceed neutral by >1.5x over 100 samples per pair, kill",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "FAILURE_MODE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "low_liquidity",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "MT5 historical gaps (FX Blue gap tracker), Dukascopy tick data",
+   "kill": "If win-rate degradation exceeds 10% absolute and sample size >30 events, continue; if below 5% degradation, kill as non-material",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
@@ -377,17 +477,32 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "audit:inventory_rebalance|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "inventory_rebalance",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:benchmark_flow|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "benchmark_flow",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

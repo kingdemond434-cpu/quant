@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T05:01:24+00:00",
+ "built_at": "2026-08-30T05:44:16+00:00",
  "tasks": [
   {
    "source": "github",
@@ -642,23 +642,39 @@
   {
    "source": "ff_calendar_vintage",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "CNY CB Leading Index m/m",
-   "url": "",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "ff_calendar_vintage",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "All Jackson Hole Symposium",
-   "url": "",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "ff_calendar_vintage",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "All G20 Meetings",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "CNY Manufacturing PMI",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "CNY Non-Manufacturing PMI",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "CNY RatingDog Manufacturing PMI",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "ff_calendar_vintage",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "CNY RatingDog Services PMI",
    "url": "",
    "symbols": [],
    "mechanism_tags": []
@@ -2386,6 +2402,78 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
+   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "url": "https://github.com/Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/Syndicalistreceptionist8185/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Gregorytestate3889/MT5-Forex-Session-indicator",
+   "url": "https://github.com/Gregorytestate3889/MT5-Forex-Session-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "jeanettecapital5730/MT5-Risk-Management-EA",
+   "url": "https://github.com/jeanettecapital5730/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "7skooooo/mql5-systems-mirror",
+   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+   "url": "https://github.com/Singni725/EUROUSD-EMA-Cross-MQL5-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Abhishek-97735/Equity-Line",
    "url": "https://github.com/Abhishek-97735/Equity-Line",
    "symbols": [],
@@ -2434,6 +2522,38 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Eltano1985/tradememory-protocol",
+   "url": "https://github.com/Eltano1985/tradememory-protocol",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "youcefito/mt5-quiet-automata",
+   "url": "https://github.com/youcefito/mt5-quiet-automata",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Vandoriz/MT5-Economic-News-Filter",
    "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
    "symbols": [],
@@ -2444,6 +2564,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
    "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2484,70 +2612,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
    "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/Mt5-Forex-position-size-calculator",
-   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5094,7 +5158,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Millennium has recent 13F filing - check for position changes",
+   "title": "Two Sigma has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",
@@ -5105,7 +5169,7 @@
   {
    "source": "sec_edgar",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Baupost has recent 13F filing - check for position changes",
+   "title": "Millennium has recent 13F filing - check for position changes",
    "url": "",
    "symbols": [
     "NAS100",

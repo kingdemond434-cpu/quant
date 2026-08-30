@@ -6459,5 +6459,28 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"0ef8d68723679670": {
+"t0": "2026-08-30T06:24:16+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "mcgary6567-lab/mql5-balance-operations-guard",
+"url": "https://github.com/mcgary6567-lab/mql5-balance-operations-guard",
+"text": "Stop MetaTrader 5 Expert Advisors counting deposits and withdrawals as trading losses. A drop-in MQL5 include.",
+"symbols": [],
+"found_at": "2026-08-30T06:24:10+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-30T05:46:28Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

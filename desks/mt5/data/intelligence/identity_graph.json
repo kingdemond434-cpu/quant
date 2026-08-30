@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-30T05:24:21+00:00",
+ "rebuilt_at": "2026-08-30T06:24:18+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -486,7 +486,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 3,
+    "longevity_max_d": 4,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1145,6 +1145,21 @@
    },
    "cohorts": [
     "ca71ea8e0b3ab443"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "mcgary6567-lab": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "0ef8d68723679670"
    ],
    "scores": {
     "independent_evidence": 1,

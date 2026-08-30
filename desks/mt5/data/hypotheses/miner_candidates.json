@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-30T05:01:24+00:00",
+ "compiled_at": "2026-08-30T05:44:16+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -1019,7 +1019,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "NZD Core Retail Sales q/q",
+   "source_title": "NZD ANZ Business Confidence",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1031,7 +1031,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "NZD Core Retail Sales q/q",
+   "source_title": "NZD ANZ Business Confidence",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1043,7 +1043,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "NZD Core Retail Sales q/q",
+   "source_title": "NZD ANZ Business Confidence",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1055,7 +1055,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "NZD Core Retail Sales q/q",
+   "source_title": "NZD ANZ Business Confidence",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1067,7 +1067,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "NZD Core Retail Sales q/q",
+   "source_title": "NZD ANZ Business Confidence",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1079,7 +1079,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1091,7 +1091,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1103,7 +1103,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1115,7 +1115,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1127,7 +1127,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1139,7 +1139,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1151,7 +1151,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1163,7 +1163,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1175,7 +1175,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1187,7 +1187,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1199,7 +1199,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1211,7 +1211,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1223,7 +1223,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1235,7 +1235,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1247,7 +1247,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1259,7 +1259,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1271,79 +1271,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "EUR German Final GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFPLN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFSEK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
+   "source_title": "EUR German Prelim CPI m/m",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1355,7 +1283,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "CHF UBS Economic Expectations",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1367,7 +1295,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1379,7 +1307,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1391,7 +1319,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1403,7 +1331,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1415,7 +1343,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1427,7 +1355,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1439,7 +1367,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1451,7 +1379,7 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -1463,7 +1391,79 @@
    },
    "source": "miner:ff_calendar_vintage",
    "source_url": "",
-   "source_title": "GBP CBI Realized Sales",
+   "source_title": "GBP Bank Holiday",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFHUF",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFNOK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFPLN",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFSEK",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "CHFSGD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "CHF Retail Sales y/y",
    "mechanism_status": "NAMED",
    "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
@@ -4565,9 +4565,9 @@
    "deepening": 1
   },
   "ff_calendar_vintage": {
-   "rows": 72,
+   "rows": 110,
    "candidates": 38,
-   "deepening": 5
+   "deepening": 7
   },
   "forextsd_cdx": {
    "rows": 120,
@@ -4605,9 +4605,9 @@
    "deepening": 1
   },
   "trading_latam": {
-   "rows": 38,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 38
+   "deepening": 36
   },
   "litefinance": {
    "rows": 15,
@@ -4650,8 +4650,8 @@
    "deepening": 9
   }
  },
- "rows_accounted": 965,
+ "rows_accounted": 1001,
  "executable_candidates": 373,
- "deepening_tasks": 537,
+ "deepening_tasks": 545,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
