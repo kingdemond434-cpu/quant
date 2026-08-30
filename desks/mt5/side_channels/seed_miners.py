@@ -219,13 +219,34 @@ def mine_tradingview_scripts() -> list[dict]:
 
 # ---------------------------------------------------------------- S13 FX Blue
 def mine_fxblue() -> list[dict]:
-    html = fetch("https://www.fxblue.com/users")
-    users = sorted(set(re.findall(r'href="/users/([A-Za-z0-9_\-]{3,30})"', html)))[:40]
-    if users:
-        return [row("fxblue", "track_record", f"FX Blue user {u}",
-                    f"https://www.fxblue.com/users/{u}") for u in users]
-    return [row("fxblue", "raw_capture", "users page shape drifted",
-                "https://www.fxblue.com/users", html[:1200], needs_selector_work=True)]
+    """REPAIRED 2026-08-30 (frontier). `https://www.fxblue.com/users` is a 404 and has been for
+    at least 79 consecutive hourly runs (2026-08-27T00:22 -> 2026-08-30T06:22, 79/79 rows
+    `fetch_error`, zero content ever). The failure was invisible because a `needs_selector_work`
+    raw-capture row is CORPUS by this module's own contract, so a dead endpoint and a drifted
+    selector rendered identically -- and a 404 is neither.
+
+    FX Blue offers NO population route of its own (its sitemap lists exactly one user). The
+    working route is the one `desks/mt5/scripts/fxblue_track_record_miner.py` already documents
+    and this miner never adopted: the Wayback CDX URL index enumerates the population (5,076
+    handles cached on disk), and liveness/mechanism come from `api.fxblue.com`. This miner is the
+    cheap hourly ATTENTION layer over that population; the deep harvest stays in the dedicated
+    miner on its own timer."""
+    pop = BASE / "data" / "intelligence" / "fxblue" / "population.txt"
+    if not pop.exists():
+        return [row("fxblue", "fetch_error", "population cache absent -- run "
+                    "desks/mt5/scripts/fxblue_track_record_miner.py once to build it",
+                    "", needs_selector_work=False)]
+    users = [u for u in pop.read_text().split("\n") if u.strip()]
+    if not users:
+        return [row("fxblue", "fetch_error", "population cache is EMPTY (0 handles)", "",
+                    needs_selector_work=False)]
+    # Rotate so successive hourly runs point at different ground rather than re-reporting the
+    # first 40 handles forever (L1.61: coverage is a cycle).
+    start = (int(time.time()) // 3600) * 40 % len(users)
+    picked = (users + users)[start : start + 40]
+    return [row("fxblue", "track_record", f"FX Blue user {u.rsplit('/', 1)[-1]}",
+                f"https://api.fxblue.com/wl/view.aspx?id={u.rsplit('/', 1)[-1]}"
+                "&mode=overview&isinline=1") for u in picked]
 
 
 # ---------------------------------------------------------------- S14 Collective2

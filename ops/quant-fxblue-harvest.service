@@ -1,0 +1,15 @@
+[Unit]
+Description=FX Blue track-record harvest -- cursor rotation over the 5,077-handle population (RESEARCH §4)
+
+[Service]
+Type=oneshot
+MemoryMax=400M
+MemorySwapMax=0
+CPUWeight=40
+WorkingDirectory=/home/quant/quant-platform
+Environment=FXBLUE_STAGE=/home/quant/fxblue_scratch
+ExecStart=/home/quant/quant-platform/.venv/bin/python desks/mt5/scripts/fxblue_track_record_miner.py \
+  --limit 60 --delay 0.45 \
+  --cursor-file /home/quant/quant-platform/desks/mt5/data/intelligence/fxblue/harvest_cursor.json \
+  --out /home/quant/quant-platform/desks/mt5/data/intelligence/fxblue/track_records_auto.jsonl
+TimeoutStartSec=45m

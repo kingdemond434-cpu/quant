@@ -11432,3 +11432,52 @@ the bottleneck law that outranks a new axis: 8 symbols mispriced by 4.5×–141�
 **Note-integrity fence result:** the session note written at the top of this run was present at
 close (run (aa) lost its own note to an unattributed cause). Hash recorded at write time, re-read at
 close — **survived.**
+
+---
+
+## SESSION SUMMARY — 2026-08-30T06:33:00+00:00 (unified frontier miner)
+
+Ground: creator/track-record (RESEARCH §4). One ground, worked to the bottom; a conversion run,
+not a breadth run. Full reasoning and the named skips: `data/cro_ai_logs/frontier_unified_20260830T0632.log`.
+
+### 118. FX Blue hourly seed miner — 79 consecutive 404s, invisible behind a fail-soft contract — grade: verified-clean (repaired and verified live 2026-08-30) [§33: wired tier:1 -> desks/mt5/side_channels/seed_miners.py]
+
+`mine_fxblue` fetched `https://www.fxblue.com/users`, a 404, for 79/79 hourly runs
+(2026-08-27T00:22 → 2026-08-30T06:22): zero rows of content, ever. Invisible because the module's
+own contract degrades a drifted selector to a `needs_selector_work` raw-capture row — so a DEAD
+ENDPOINT and a DRIFTED SELECTOR render identically, and a discoveries file arriving every hour
+reads as a healthy channel to anything counting files or bytes. The working route was already
+documented in this desk's own tree (`fxblue_track_record_miner.py`: FX Blue has no population
+route, Wayback CDX is the enumerator, 5,076 handles cached on disk). Repaired to read the cached
+population and emit 40 rows/run against `api.fxblue.com/wl/view.aspx`, rotating hourly.
+**Generalises to the other fifteen Seed Drop 2 miners — that sweep is OWED, not done.**
+
+### 119. The FX Blue harvest timer — twice-deferred debt, built and armed — grade: verified-clean [§33: wired tier:1 -> ops/quant-fxblue-harvest.timer]
+
+Population 5,077; harvested by hand across seven waves to 1,056 (20.8%); a timer was named in the
+owed-next-run section of both the 08-28 and 08-29 logs and not built either time. Added
+`--cursor-file` (persistent position into a stride-7 interleave — block-SPREAD windows, because
+the population is block-structured `22-*` bulk registrations, while still reaching every handle
+once and then lapping; advanced only AFTER publication, so a crash cannot create a permanently
+skipped hole). Timer runs 60 handles/2h → full population in ~7 days, then laps.
+**First automated run verified: 60 records, 35 `has_data` with all mechanism charts, 23 shells,
+2 dead; cursor 0 → 60.**
+
+### 120. 75.3% of the practitioner corpus fed to the extractor was JavaScript — grade: verified-clean (measured, repaired, re-measured) [§33: wired tier:1 -> libs/research/public_strategy_hunter.py]
+
+`data/intelligence/gpt_practitioner_corpus.jsonl`: 4.0 MB, 430 rows, **0 chars of `text` in the
+entire file**, 92% of bytes in `description`. For the 183 site/atom/x rows the site path built
+description with `re.sub(r"<[^>]+>", " ", payload)`, which removes `<script>`/`<style>` TAGS and
+keeps everything BETWEEN them: **2,751,623 of 3,652,268 description chars (75.3%) were
+JavaScript-shaped, and 51 of 183 rows hit the 50,000-char cap** — head-of-document scripts come
+first, so on the richest pages the cap was spent on the bundle and the prose was truncated away.
+Repaired by stripping script/style/noscript/template BODIES and HTML comments before the tag
+strip. Re-measured on `man.com/maninstitute`: the extractor's first line went from
+`window.dataLayer = window.dataLayer || []...` to `Man Insights | Man Group Funds Funds Fund
+centre...`. Note the char count FELL 25,465 → 20,571: a byte-count health check would have
+scored this repair as a regression, which is the same blind spot as card 118.
+
+**CONVERGENCE (recorded once, not double-counted):** 118 and 120 are one defect in two costumes —
+a producer emitting a well-formed artifact containing none of the thing it exists to collect,
+certified healthy by file arrival or by byte growth. Neither fails any emptiness check the desk
+currently runs.

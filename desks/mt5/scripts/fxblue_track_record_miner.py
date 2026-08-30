@@ -183,6 +183,11 @@ def main() -> int:
                     "slice measures one block, not the population")
     ap.add_argument("--delay", type=float, default=0.35, help="seconds between requests (politeness)")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--cursor-file", default=None, help="UNATTENDED ROTATION (L1.61: coverage is a "
+                    "CYCLE, not a sweep). Position into a deterministic stride-7 interleave of the "
+                    "whole population; advanced by --limit after a successful run, wrapped at the "
+                    "end, so repeated timer firings cover 100% and then start over on newer data. "
+                    "Overrides --offset/--stride.")
     args = ap.parse_args()
 
     # WRITE OUTSIDE THE TRACKED TREE, PUBLISH AT THE END (defect found 2026-08-28, live).
@@ -198,7 +203,26 @@ def main() -> int:
     stage_dir.mkdir(parents=True, exist_ok=True)
     pop = enumerate_population(OUT / "population.txt")
     print(f"population: {len(pop)} handles")
-    batch = pop[args.offset :: args.stride][: args.limit]
+    cursor_path = Path(args.cursor_file) if args.cursor_file else None
+    if cursor_path is not None:
+        # The population is BLOCK-STRUCTURED (contiguous bulk-registered `22-*` runs), so a
+        # contiguous slice measures one block. Concatenating the seven stride-7 lanes gives a
+        # PERMUTATION of the whole population that is block-spread inside every window -- so any
+        # cursor slice is a spread sample AND the cycle still reaches every handle exactly once.
+        perm = [u for off in range(7) for u in pop[off::7]]
+        start = 0
+        if cursor_path.exists():
+            try:
+                raw_cur = json.loads(cursor_path.read_text()).get("cursor", 0)
+                start = int(raw_cur) % max(len(perm), 1)
+            except (ValueError, OSError, json.JSONDecodeError):
+                start = 0
+        batch = perm[start : start + args.limit]
+        if len(batch) < args.limit:  # wrap: the cycle restarts rather than stalling at the end
+            batch += perm[: args.limit - len(batch)]
+        print(f"cursor: {start}/{len(perm)} (lap {start // max(len(perm), 1)})")
+    else:
+        batch = pop[args.offset :: args.stride][: args.limit]
     out_path = Path(args.out) if args.out else OUT / "track_records.jsonl"
     stage_path = stage_dir / f"{out_path.name}.staging"
 
@@ -225,6 +249,16 @@ def main() -> int:
     with out_path.open("a", encoding="utf-8") as fh:
         fh.write(stage_path.read_text(encoding="utf-8"))
     print(f"published {stage_path} -> {out_path}")
+
+    if cursor_path is not None:
+        # Advance ONLY after publication -- a cursor advanced before the write turns a crashed run
+        # into permanently skipped ground, which is the silent-coverage-hole class (L1.51).
+        nxt = (start + args.limit) % max(len(perm), 1)
+        cursor_path.parent.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        cursor_path.write_text(json.dumps(
+            {"cursor": nxt, "population": len(perm), "advanced_utc": stamp}))
+        print(f"cursor advanced -> {nxt}/{len(perm)}")
 
     print(f"DONE offset={args.offset} n={len(batch)} data={has_data} shell={shell} dead={dead} failed={failed} -> {out_path}")
     return 0
