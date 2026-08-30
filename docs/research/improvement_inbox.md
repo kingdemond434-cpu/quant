@@ -5647,3 +5647,60 @@ desk is running `overnight_gap_decay_*` shadow ledgers now. Candidate axis and c
 door.** All `fusionmarkets.com` legal/spec paths return 1,453,459 bytes on any input; the real
 paths are capitalised and the tables are Next.js flight-encoded JSON, not HTML. The dead
 `pricing/swap-rates` scrape should be re-pointed at this extractor before the source is called dead.
+
+## 2026-08-30 — free-data ab — `median_spread_pts` is mispriced on 8 symbols, and 4 of them are OVERSTATED (silent gate false-negatives)
+
+**Field:** `median_spread_pts` in `desks/mt5/data/universe/universe.json`. `cost_surface.py`'s own
+docstring: *"the number every gate, certificate, stress scenario and forward"* uses. 19 non-test
+readers (`run_hunt12/13/14/15/22/23`, `calibrate_engine`, `execution_resolver`, `swap_exposure`,
+`alpha_habitat`, `cost_surface`, `curve_strategy_screen`, `carry_state`). **It has never been
+diffed against an external source.**
+
+**Ground truth now available, free and keyless:** forexbenchmark.com, an independent 30-day all-in
+(spread + commission) measurement of **FusionMarkets specifically**, 54 FX/metals symbols. Card and
+endpoint in `data/data_universe_map.json` → `forexbenchmark_broker_spread_benchmark`. Artifact:
+`data/free_data/forexbenchmark_fusion_spreads_20260830.json`.
+
+**Control already run — do not re-derive the false version.** The naive diff says 35/51 symbols are
+wrong. That is an artifact of comparing an all-in number to a raw-spread field: adding
+`7.00 / (tick_value * 10)` pips of commission moves agreement from **16/51 to 43/51** and the median
+ratio from 0.35 to 1.16. **The registry field is raw-by-design; most consumers are fine.**
+
+**The 8 that survive the control:**
+
+| symbol | independent all-in (pips) | desk + commission | ratio |
+|---|---|---|---|
+| USDINR | 632.21 | 4.48 | **0.01** (141× understated) |
+| USDRUB | 23,173.24 | 2,163.27 | 0.09 |
+| XAGUSD | 2.61 | 0.56 | 0.22 |
+| USDCZK / USDNOK | 164.63 / 50.47 | 65.30 / 20.31 | 0.40 |
+| GBPCHF | 0.795 | 20.56 | **25.9× overstated** |
+| NZDJPY | 1.138 | 16.00 | 14.1× |
+| CADCHF | 0.955 | 10.91 | 11.4× |
+| AUDCHF | 1.133 | 12.06 | 10.6× |
+
+**Why the overstatements are the urgent half.** An understated cost produces a false positive that
+dies loudly on a forward clock. **An overstated cost kills the edge AT the gate and leaves no
+record** — four CHF/JPY crosses have been charged 10–26× their true cost on every backtest the desk
+has run over them, and every edge that died there is invisible (the L1.25 class).
+
+**Proposed fix (three parts, none applied — this was a research-freeze run):**
+1. **A fence** — `check_cost_reference.py`: pull the forexbenchmark table, apply the commission
+   control, and fail on any symbol where `|log(desk+comm / independent)| > log(3)`. Today it reds on
+   8 of 51. Floor it at 8 and ratchet down. This is the instrument the field has never had (L1.46).
+2. **Repair the 16 zeros** in `universe.json` (EURUSD, GBPUSD, USDJPY, AUDUSD, USDCHF, USDCAD,
+   AUDCAD, AUDJPY, AUDSGD, EURAUD, EURCAD, EURCHF, EURGBP, GBPCAD, HKDJPY, NZDCAD, NZDUSD, USDHKD…).
+   R0728 recorded this for two symbols; it is 16 on the symbols with an external reference, and the
+   call sites paper over it with an inconsistent per-site `max(..., 0.05)` floor — a fabricated
+   number that differs by caller.
+3. **Add a swap field to the registry.** `universe.json` carries no carry cost at all, so a
+   spread-ranked screen rates **USDINR as an ordinary exotic when its combined broker take is
+   −199.9 %/yr** (measured from `carry_state.json`, `swap_mode 1`, validated against a G10 control
+   that clusters at −1.1 to −1.3 %/yr across 172 sides). USDBRL −71.9, USDTRY −69.5, USDIDR −66.9,
+   USDKRW −40.9. The non-deliverable currencies price non-deliverability into the **swap**, and the
+   desk's cost model cannot see it.
+
+**Also free and adopted this run:** `data/free_data/fusion_us_share_cfd_ticker_map.json` — real
+`tickerCode` + `exchange` for **100 of the desk's 103 US share CFDs**, from the broker's own
+published spec sheet. The desk had no name→ticker mapping; this is the join key R0691 (close-to-
+close returns on 122/251 dividend-paying symbols) needs to build a dividend adjustment.

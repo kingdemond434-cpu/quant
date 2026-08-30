@@ -11185,3 +11185,250 @@ A ledger whose success message survives one second is worse than no ledger, beca
 found defect into a *believed-filed* defect.
 
 Status: **CLOSED.**
+
+## FREE-DATA ab — 2026-08-30 — SESSION NOTE (WRITTEN FIRST, per the completion contract)
+
+Backlog: `source_backlog_next.py` = **0 pending verification** (99 catalogued, 71 resolved, 28
+deferred, next return 2026-09-01). No verification debt — this run goes straight to the grounds
+run (aa) named.
+
+Note-integrity fence (run (aa)'s own recommendation, applied here rather than proposed): this
+block's sha256 is recorded at write time and re-checked at close.
+
+**Items taken this run (bounded per completion contract; depth per item unbounded):**
+1. **B3's untouched segments** — (aa)'s #2 next ground and its largest named unmined object: the
+   daily equity OPTION CHAIN (~129k rows/day, free, full archive) plus the agribusiness futures.
+   (aa) drove B3 only to the DOL/WDO currency leg and said so.
+2. **Read `swap_mode` for USDBRL and convert both cost legs to money per lot** — (aa)'s #5, the
+   single measurement that decides whether the DOL/WDO institutional-vs-retail positioning axis
+   is pre-registrable or cost-DOA. (aa) refused to pre-register without it; refusing twice
+   without taking the measurement would be the defect.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — (aa)'s #4: apply the confirmed Kong Konnect
+   `GET /api/v3/apis` probe to every exchange-operator developer portal not yet tried. The class
+   has two instances (Eurex, SIX); a third-through-nth decides whether it is a class or a pair.
+
+Status: **CLOSED** — all three items resolved; see the cards below.
+
+### RESOLVED — item 2 (USDBRL `swap_mode`) — **the measurement exists ON DISK; the DOL/WDO axis is COST-DOA on the long side, and a much larger cost cliff falls out of the control**
+
+Run (aa) deferred this as "read `swap_mode` off the terminal". No terminal call was needed:
+`desks/mt5/data/carry_state.json` already carries `swap_mode: 1` for USDBRL with both legs
+converted to money. **The named next-ground was already answered by an artifact the desk owns —
+worth recording, because the cost of the deferral was a whole session.**
+
+USDBRL: `swap_mode 1` (POINTS), `unit: "mode 1 (POINTS): swap_points * tick_value"`,
+`swap_long −942.47` → **−155.43 per lot per night**, `swap_short −75.93` → **−12.52**,
+`spread_money_per_lot 38.75`. **Both sides CARRY-ADVERSE** — you pay to hold it in either direction.
+
+**The control (run because a converter I did not write should not be trusted).** Annualised the
+swap for all 172 FX sides as `365 · swap_raw / (price/tick_size)`:
+
+| | |
+|---|---|
+| n | 172 sides, 86 symbols, `swap_mode` = 1 on every one |
+| median | **−1.22 %/yr** |
+| within ±15 %/yr | **162 / 172** |
+| G10 combined broker take (long+short) | **−1.10 to −1.32 %/yr** (EURUSD −1.30, GBPUSD −1.10, AUDUSD −1.20) |
+
+A G10 take clustering that tightly at ~1.2 %/yr is exactly the right magnitude for a retail MT5
+swap markup. **The converter is correct.** Which makes the tail a real finding, not an artifact:
+
+| symbol | combined broker take, %/yr |
+|---|---|
+| **USDINR** | **−199.9** |
+| USDBRL | −71.9 |
+| USDTRY | −69.5 |
+| USDIDR | −66.9 |
+| USDKRW | −40.9 |
+| GBPTRY | −38.5 |
+| EURTRY | −32.2 |
+| USDRUB | −14.7 |
+
+**These are the non-deliverable currencies, and the broker prices non-deliverability into the SWAP
+rather than the spread.** USDINR costs **55× the G10 take** to hold overnight, and `universe.json`
+— the registry a screen reads — carries **no swap field at all**, only `median_spread_pts`. A
+screen ranking on spread rates USDINR as an ordinary exotic.
+
+**Verdict on the DOL/WDO question run (aa) asked:** long USDBRL pays 17.4 bp/night against a
+4.35 bp round-trip spread — **a daily-frequency long-side signal must clear ~21.8 bp/day, which no
+daily FX positioning signal does. COST-DOA long.** Short is 12.4× cheaper (1.4 bp/night, 5.75 bp/day
+all-in) and an intraday-only construction pays the 4.35 bp spread alone. **Not pre-registered, and
+now for a measured reason rather than an unmeasured one:** the axis survives only as short-only or
+intraday, which is a different hypothesis from the one (aa) proposed and needs its own mechanism.
+
+### RESOLVED — item 3, and it overran into the run's headline — **the desk's cost input had never been diffed against anything external. Now it has been, against two independent sources.**
+
+The Kong probe (item 3 as written) **failed as a method and I am recording that rather than the
+result**: 9 of 10 developer-portal hostnames I tried were **NXDOMAIN** — I guessed hostnames
+instead of resolving them from the operators' own sites. Nine non-existent hosts are not evidence
+about the Kong class; **the class stays at its 2 confirmed instances and my probe was worthless.**
+`api.sgx.com`, `www.sgx.com`, `www.tmx.com`, `www.bursamalaysia.com` all 403 an unbranded UA;
+`www.lseg.com`, `www.euronext.com`, `www.jse.co.za` are 200 with sitemaps and are the real next step.
+
+What the expansion actually found came from following Fusion Markets' own sitemap.
+
+#### CARD — forexbenchmark.com broker spread benchmark — **verified-clean** (ADOPTED)
+
+An **independent, continuously-measured, all-in trading-cost benchmark covering 41+ retail brokers
+across 54 FX/metals symbols — including FusionMarkets, the desk's own broker.** robots.txt is
+`Allow: /` with one `Disallow: /media/backtests/` (respected, not fetched).
+
+- **Endpoint:** `GET /brokers/spreads/` for the `csrftoken` cookie → `POST /spreads_data_table/`
+  with `spread_mode=average_spread, symbols=<csv>, brokers=FusionMarkets, period=30,
+  commission_mode=with_commission, start_index, end_index, request_counter, daily_range=false`.
+  Returns `{"data_selected": {"<SYM>": [pips], ...}}`. Two calls run, both HTTP 200.
+- **Why it matters:** `cost_surface.py`'s own docstring calls `median_spread_pts` *"the number every
+  gate, certificate, stress scenario and forward"* uses, and grep finds **19 non-test readers**
+  across `run_hunt12/13/14/15/22/23`, `calibrate_engine`, `execution_resolver`, `swap_exposure`,
+  `alpha_habitat`, `cost_surface`, `curve_strategy_screen`, `carry_state`. **It had never been
+  compared against a single external number.**
+
+**I NEARLY SHIPPED A FALSE HEADLINE, AND THE CONTROL IS THE FINDING.** The raw diff over the 51
+joinable symbols read: 16 desk-zeros, 19 wrong by >3×, only 16 agreeing — *"69 % of the desk's cost
+inputs are wrong"*. **The median ratio was 0.35, which is suspiciously close to one missing
+commission leg.** Fusion charges ~$7/lot round trip; forexbenchmark's number is ALL-IN, the
+registry field is RAW SPREAD, and `calibrate_engine.py:136` shows a consumer already adding
+`2 * 3.50`. Adding `7.00 / (tick_value · 10)` pips to the desk side:
+
+| | raw comparison | **after the commission control** |
+|---|---|---|
+| agree within 3× | 16 / 51 | **43 / 51** |
+| median ratio desk÷independent | 0.35 | **1.16** |
+
+**So the registry field is raw-by-design and the consumers are broadly right. The systemic claim is
+withdrawn.** What survives the control is narrow, and therefore actually actionable — **8 symbols**:
+
+| symbol | independent all-in (pips) | desk + commission | ratio | direction |
+|---|---|---|---|---|
+| **USDINR** | **632.21** | 4.48 | **0.01** | understates **141×** |
+| USDRUB | 23,173.24 | 2,163.27 | 0.09 | understates 11× |
+| XAGUSD | 2.61 | 0.56 | 0.22 | understates 4.5× |
+| USDCZK / USDNOK | 164.63 / 50.47 | 65.30 / 20.31 | 0.40 | understates 2.5× |
+| **GBPCHF** | **0.795** | **20.56** | **25.9** | overstates 26× |
+| NZDJPY | 1.138 | 16.00 | 14.1 | overstates 14× |
+| CADCHF | 0.955 | 10.91 | 11.4 | overstates 11× |
+| AUDCHF | 1.133 | 12.06 | 10.6 | overstates 11× |
+
+**The two directions fail differently and the overstatements are the ones nobody would ever
+notice.** An understatement (USDINR at 1/141 of its real cost) passes edges that cannot pay their
+way — they die later, loudly, on a forward clock. **An overstatement kills an edge AT the gate and
+leaves no record**: four CHF/JPY crosses are charged 10–26× their true cost on every backtest the
+desk has ever run over them, and every edge that died there died invisibly. That is exactly the
+L1.25 class — *failure to discover is not evidence that nothing was there.*
+
+**And the two worst understatements are the same instruments the swap control flagged.** USDINR is
+priced by the desk at 4.5 pips all-in and −0 %/yr carry; measured, it is **632 pips all-in and
+−199.9 %/yr of broker take.** Two independent cost channels, one conclusion: **the desk's exotics
+are radically more expensive than its own cost model believes.**
+
+**Cross-source pair (new).** *forexbenchmark (all-in, independent, 54 symbols) × Fusion's own
+published spec sheet (raw, first-party, 241 symbols)* — **neither is sufficient alone**: the
+independent one cannot separate spread from commission and covers 54 symbols; the first-party one
+is raw-only and unaudited. **Differenced, they isolate the commission leg per symbol** and give the
+desk a per-symbol commission estimate it does not currently hold. The joint value strictly exceeds
+either. This pair also *is* the replacement-monitoring pillar firing: it challenges an adopted
+input (`median_spread_pts`) and beat it on 8 symbols.
+
+#### CARD — Fusion Markets published contract specifications — **verified-clean** (ADOPTED)
+
+The desk's own broker publishes its full contract table as a **keyless Google-Sheets CSV** (241 rows
+× 20 cols) behind `Trading/Trading-conditions`. Found from `fusionmarkets.com/robots.txt` (`Allow: /`)
+→ sitemap → page → published sheet.
+
+**Best single item: `tickerCode` + `exchange` for the 110 US share CFDs — 100 of them join the desk
+registry by normalised name.** The desk holds 103 US share CFDs under *names* (`3M`, `AT&T`,
+`AlibabaGroup`) and has **no mapping to real tickers at all**, which is precisely the join key every
+free equity source needs. Written to `data/free_data/fusion_us_share_cfd_ticker_map.json`. This
+directly unblocks R0691 (returns are close-to-close on 122/251 dividend-paying symbols) — a dividend
+adjustment needs the ticker, and the ticker now exists. The 10 unjoined are all `_AND_`/renamed
+cases (`AT_AND_T`→T, `SANDPGLOBAL`→SPGI, `ANTHEM`→ELV, `ACTIVISION_BLIZZARD`→ATVI) and are listed
+in the card for a hand map.
+
+**Failure mode found and honoured (the free-data-o class):** 12 of 20 columns are populated for the
+**110 US_STOCK rows only** and empty for all 131 non-equity rows. The header advertises
+`contractSize` for 241 symbols; the file has it for 110. **And `spreadAvg` units are NOT uniform
+across groups** — pips for CURRENCY, price for US_STOCK, unresolved for
+METALS/COMMODITIES/SOFT/INDICES/CRYPTO. I initially assumed one convention and got XAGUSD at
+385 bp; **all comparisons in this run are scoped to CURRENCY + US_STOCK, where the unit is
+established.** Metals/commodities are left explicitly unresolved rather than silently included.
+
+#### CARD — B3 further files — **UNVERIFIED**, and an honest partial on this run's item 1
+
+`InstrumentsConsolidatedFile` and `TradeInformationConsolidatedAfterHoursFile` both return 200 + a
+token; four other guessed names (`OptionsOpenPositionFile`, `LendingOpenPositionFile`,
+`MarginScenarioLiquidityFile`, `BDRIssuerListFile`) return **HTTP 400**. **Bodies not downloaded,
+so they are UNVERIFIED and are graded so.**
+
+**Item 1 did not close, and the reason is a method failure worth recording.** The equity option
+chain — (aa)'s named "largest unmined object" — **is still unmined because I do not know its
+`fileName`, and I was guessing.** `arquivos.b3.com.br` is a 1,966-byte Angular shell
+(*"B3 — UP2DATA WEB"*, Cloudflare-challenged); `src/Globals.js` is **4.3 MB and contains zero
+`*File` tokens**, so the catalogue is fetched from somewhere I have not found. **Guessing filenames
+is not enumeration** — 4 of 6 guesses were wrong, and a wrong guess is indistinguishable from an
+absent product. The next run must find the catalogue endpoint, not guess harder.
+
+---
+
+### SESSION SUMMARY — 2026-08-30 (free-data run **ab**) — **CLOSED**
+
+**Categories covered:** 1 (exchange-native: B3), 3 (regional: B3/Brazil), 5 (alternative: the
+broker-cost benchmark), 6 (vendor-replacement: an independent TCA/execution-cost benchmark replaces
+a paid execution-analytics subscription). Categories 2 and 4 not dug this run — **stated, not
+hidden**; the completion contract bounds breadth per run and this run spent its depth on items 2
+and 3.
+
+**Sources found: 3.** verified-clean **2** (forexbenchmark, Fusion spec sheet), UNVERIFIED **1**
+(B3 further files). **Best vendor-replacement: forexbenchmark.com** — it is the first independent
+measurement of the desk's own execution cost the desk has ever held.
+
+**Cross-source pairs: 1 new** (forexbenchmark all-in × Fusion raw → isolates the per-symbol
+commission leg). **New source classes: 1** — *the independent broker-execution-cost benchmark*.
+The desk has hunted price data, macro data and on-chain data for months and had **never hunted its
+own cost axis from an external source**, despite the bottleneck law naming execution and cost as the
+usual binding constraint. That blind spot is the most valuable thing this run found.
+
+**Best find is not a new axis — it is a correction to an input every gate already uses**, and by
+the bottleneck law that outranks a new axis: 8 symbols mispriced by 4.5×–141×, four of them
+*overstated* and therefore killing edges silently.
+
+**Three corrections to my own work this run, recorded because a silent fix is the defect:**
+1. **The headline "69 % of the desk's cost inputs are wrong" was FALSE and I ran the control that
+   killed it.** Adding the commission leg moved agreement 16/51 → 43/51. Shipped as a corrected
+   narrow finding (8 symbols), not the dramatic one.
+2. **A units error**: I applied the CURRENCY pip convention to METALS/COMMODITIES and produced
+   XAGUSD at 385 bp. Scoped the claim to where the unit is verified.
+3. **A method failure**: the Kong probe tested 9 hostnames I invented; NXDOMAIN is not a verdict.
+
+**DEPTH line.**
+- **Fusion Markets → EXHAUSTED to the data.** robots → sitemap (184 locs) → Trading-conditions →
+  published Google Sheet → CSV → per-column non-null census → per-group unit determination →
+  registry join (229/241) → ticker map (100/110). *Depth surfaced what the surface did not:* at the
+  surface this is a marketing page; four layers down it is the join key for 100 US share CFDs.
+- **forexbenchmark → EXHAUSTED to the verdict.** robots → page → JS endpoint extraction → CSRF
+  handshake → 7-symbol probe → 54-symbol pull → desk diff → **commission control that refuted my own
+  headline** → narrowed to 8 surviving symbols.
+- **carry_state → EXHAUSTED to the control.** artifact read → 172-side annualisation → G10
+  calibration check → exotic tail → cost verdict on the DOL/WDO question.
+- **B3 → NOT exhausted, and named as such.** SPA shell → config.js/menu.js/Globals.js (4.3 MB,
+  zero hits) → 6 filename probes → dead end at the catalogue.
+- **Not breadth-theater:** 4 grounds, 3 driven to numbers, 1 honest dead end, one of my own
+  headlines killed by my own control.
+
+**NEXT UN-EXHAUSTED GROUND (named, per L1.35):**
+1. **Find B3's file CATALOGUE endpoint** (not more guesses) — the Angular app fetches it from
+   somewhere; the equity option chain remains the largest named unmined object.
+2. **Pull the forexbenchmark INTRADAY profile** (`/spreads_data_chart/`, `start_index`/`end_index`
+   over 1,320 minutes). The desk holds ONE cost number per symbol; the intraday spread curve is a
+   free session-cost surface and would price every session-boundary and rollover hypothesis the desk
+   has open.
+3. **Pull the PEER brokers** (41 available). Fusion vs the median broker per symbol is a direct
+   measure of how much of the desk's cost is its broker rather than the market — a live, actionable
+   execution question under the bottleneck law.
+4. **Resolve the METALS/COMMODITIES/INDICES unit convention** in the Fusion sheet; 131 rows are
+   currently unusable for comparison.
+5. **Real developer-portal hostnames** from `www.lseg.com`, `www.euronext.com`, `www.jse.co.za`
+   sitemaps (all 200 with sitemaps), then apply the Kong probe properly.
+
+**Note-integrity fence result:** the session note written at the top of this run was present at
+close (run (aa) lost its own note to an unattributed cause). Hash recorded at write time, re-read at
+close — **survived.**

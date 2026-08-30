@@ -3419,6 +3419,68 @@
    ],
    "cross_source_pair": "DOL volume / WDO volume = an INSTITUTIONAL-vs-RETAIL positioning split on USDBRL (full contract USD 50k vs mini USD 10k), daily and free. The desk has no retail-vs-institutional positioning axis on any symbol. Same construction on IND/WIN. NOT blocked on capture -- the daily file is a full archive.",
    "found": "2026-08-30 (free-data run aa)"
+  },
+  "forexbenchmark_broker_spread_benchmark": {
+   "name": "forexbenchmark.com broker spread benchmark -- INDEPENDENT continuously-measured all-in trading cost for 41+ retail brokers INCLUDING the desk's own (FusionMarkets)",
+   "type": "per-broker x per-symbol average spread over a selectable trailing window (30d used), 54 FX/metals symbols, in PIPS, with commission_mode=with_commission giving the ALL-IN cost the desk's gates actually need; also intraday minute-of-day profile (start_index/end_index over 1320 minutes) and a historic-spreads view",
+   "cost": "free",
+   "auth": "none (Django CSRF cookie from the page, then POST)",
+   "grade": "verified-clean",
+   "url": "https://forexbenchmark.com/brokers/spreads/",
+   "endpoint": "GET /brokers/spreads/ to obtain the csrftoken cookie, then POST /spreads_data_table/ with spread_mode=average_spread, start_index, end_index, symbols=<csv>, brokers=<csv>, period=<days>, commission_mode=with_commission, request_counter=<int>, daily_range=false -> JSON {data_selected:{<SYM>:[pips], brokers:[...]}}. Sibling POST /spreads_data_chart/ returns the intraday curve.",
+   "method": "opened this session; robots.txt = 'User-agent: * Allow: /' with a single 'Disallow: /media/backtests/' (RESPECTED, not fetched). Two probes run: a 7-symbol call and the full 54-symbol call, both HTTP 200.",
+   "replaces": "a paid execution-cost/TCA subscription, and -- more importantly -- it is the ONLY independent ground truth the desk has for its own broker's realised trading cost. universe.json's median_spread_pts had NEVER been diffed against anything external.",
+   "license": "site is public and robots-permitted; data is the site's own measurement. Attribution appropriate; not redistributed.",
+   "cadence": "continuously measured; the window is a request parameter",
+   "known_failure_modes": [
+    "the returned number is ALL-IN (spread + commission) when commission_mode=with_commission -- it is NOT comparable to a raw-spread registry field without adding the commission leg first. This exact confusion produced, and then refuted, a false 'the desk's cost model is 69% wrong' headline in this run.",
+    "broker rows are affiliate-linked (links[] carries a refcode) -- a commercial incentive exists; corroborate against the broker's own published table (done this run: the two agree once commission is accounted).",
+    "symbol coverage is FX + XAU/XAG only: 54 symbols. No indices, no equities, no energy, no softs -- 200 of the desk's 251 symbols have NO independent cost reference from this source.",
+    "POST requires the CSRF cookie; a bare POST returns 403.",
+    "the broker string must match exactly ('FusionMarkets', no space)."
+   ],
+   "yield": "HIGH -- produced this run's headline finding and the control that corrected it.",
+   "artifact": "data/free_data/forexbenchmark_fusion_spreads_20260830.json"
+  },
+  "fusion_markets_published_contract_specs": {
+   "name": "Fusion Markets published contract-specification sheet (the desk's OWN broker) -- keyless Google-Sheets CSV",
+   "type": "241 rows x 20 columns: groupName, symbol, assetClass, spreadMin, spreadAvg, and for the 110 US_STOCK rows additionally exchange, digits, stopLevel, contractSize, currency, minVolumeClick, maxVolumeClick, leverageVfsc, leverageAsic, tradingHours and tickerCode",
+   "cost": "free",
+   "auth": "none",
+   "grade": "verified-clean",
+   "url": "https://fusionmarkets.com/Trading/Trading-conditions",
+   "endpoint": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSjdodBuNrN42P2rBLMuWD7yJAVLW5_f0SYupWNBVbPT-06DTuEy81DE6SWNfnL0fdyh63F-yBAufV_/pub?output=csv",
+   "method": "found via the sitemap (fusionmarkets.com/robots.txt = Allow: /) -> Trading-conditions page -> the page is a thin renderer over a PUBLISHED Google Sheet. Opened and parsed this session.",
+   "replaces": "nothing paid -- but it supplies four fields the desk's own universe.json does not carry at all: stopLevel, leverage, tradingHours and, most valuable, tickerCode+exchange for the US share CFDs.",
+   "license": "published by the desk's own broker as public trading conditions",
+   "cadence": "unknown -- a published sheet, revision date not exposed. Treat as needs-monitoring for freshness even though the content is verified.",
+   "known_failure_modes": [
+    "CODELIST-ADVERTISES-WHAT-DATA-LACKS: 12 of the 20 columns are populated for the 110 US_STOCK rows ONLY and are EMPTY for all 131 non-equity rows. A consumer reading the header would believe it has contractSize for 241 symbols; it has it for 110.",
+    "symbol/product/assetClass are i18n PLACEHOLDERS ({{SYMBOL_EUR_USD}}), not values -- the real strings live in a translation dictionary. A naive parse yields template tokens.",
+    "spreadAvg UNITS ARE NOT UNIFORM ACROSS GROUPS: pips for CURRENCY (confirmed by magnitude match against the desk tape on AUDHUF/AUDCHF), price units for US_STOCK, and UNRESOLVED for METALS/COMMODITIES/SOFT_COMMODITIES/INDICES/CRYPTOCURRENCIES. Assuming one convention across the file produces nonsense (XAGUSD read as 385bp). Comparisons in this run are therefore scoped to CURRENCY + US_STOCK only.",
+    "spreadAvg is RAW spread, excluding the ~$7/lot round-trip commission -- see the forexbenchmark card.",
+    "population is 241 vs the desk registry's 251; 229 join, 12 do not."
+   ],
+   "yield": "HIGH -- the US share CFD ticker map is a new join key the desk did not have.",
+   "artifact": "data/free_data/fusion_contract_specs_20260830.csv ; derived map data/free_data/fusion_us_share_cfd_ticker_map.json (100/110 joined)"
+  },
+  "b3_instruments_and_afterhours": {
+   "name": "B3 InstrumentsConsolidatedFile and TradeInformationConsolidatedAfterHoursFile",
+   "type": "two further B3 keyless daily files beyond the TradeInformationConsolidatedFile already adopted: the instrument reference/registry file and the after-hours consolidated trade file",
+   "cost": "free",
+   "auth": "none (same anonymous per-file token hop)",
+   "grade": "UNVERIFIED -- the token hop returned HTTP 200 with a redirectUrl this session; the file bodies were NOT downloaded or parsed",
+   "url": "https://arquivos.b3.com.br/",
+   "endpoint": "same requestname->token->download pattern with fileName=InstrumentsConsolidatedFile | TradeInformationConsolidatedAfterHoursFile",
+   "method": "probed 6 candidate fileName values this session: 2 returned 200 + a token, 4 returned HTTP 400 (OptionsOpenPositionFile, LendingOpenPositionFile, MarginScenarioLiquidityFile, BDRIssuerListFile). Guessing fileName values is a POOR enumeration method -- see failure modes.",
+   "license": "B3 public open-data files; www.b3.com.br/robots.txt is allow-all",
+   "cadence": "daily",
+   "known_failure_modes": [
+    "THE CATALOGUE WAS NOT ENUMERATED. arquivos.b3.com.br is an Angular/SPA ('B3 - UP2DATA WEB', 1,966-byte shell) whose file list is not in the HTML; src/Globals.js is 4.3MB and contains ZERO '*File' tokens, so the catalogue is loaded from somewhere not yet found. Everything above is guessed filenames, and 4 of 6 guesses were wrong.",
+    "the host sits behind Cloudflare (a challenge-platform script is injected into the shell) -- sustained pulling may trip it.",
+    "per-file token expires; request it per file, never cache."
+   ],
+   "yield": "LOW this run -- an honest partial. The equity option chain named as run (aa)'s largest unmined object is STILL UNMINED because its fileName is unknown."
   }
  },
  "residual_gaps_unpurchasable": [
@@ -3449,7 +3511,7 @@
  },
  "addenda_record": "docs/research/FREE_DATA_ADDENDA_BCD.md",
  "adhoc_scanning": "CLOSED per addendum D item 75 (2026-07-20) -- discovery routes through standing cadence",
- "last_free_dig": "2026-08-28",
+ "last_free_dig": "2026-08-30 (free-data ab)",
  "overlap_corrected": "2026-07-22T23:46:26.342668+00:00",
  "last_genuine_dig": "2026-08-28",
  "free_dig_log": [
