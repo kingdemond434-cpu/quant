@@ -4695,3 +4695,87 @@ The repository commits `golden_qlib_alpha158.parquet`, `golden_alphas.parquet`, 
 `golden_gtja_alpha191.parquet` under `crates/qweave-factors/tests/fixtures/`. These are free,
 independent expected-output fixtures for any desk port. The source also documents a warm-up
 caliber: qweave requires a full non-NaN window where upstream Qlib uses `min_periods=1`.
+
+---
+
+## BRAIN HUNTER s39 (2026-08-30) — three price-only distribution/state transforms from `alpha-gauntlet`
+
+Source: public MIT `openclaw-pza/alpha-gauntlet` at
+`c05298cb966e655a5efcf689468371365f6fbcc3`, read as text only. `NOTICE` declares derivation from
+QuantaAlpha (MIT) for its extended WQ operator/DSL/re-skin layer and from Kakushadze's public
+Alpha101 paper for formulas. The three shapes below live outside that formula layer and are exact
+code semantics, not copied performance claims.
+
+### `downside_var_ratio_168h` — realised downside semivariance share
+
+For H1 close (C_t), set (r_t=\Delta\log C_t). Over the trailing 168 observed bars, with at
+least 120 present:
+
+```
+sum(min(r, 0)^2) / (sum(r^2) + 1e-12)
+```
+
+It computes the fraction of realised variance carried by negative returns, bounded near [0,1].
+The source attaches a rebound intuition; that sign is ore and is **not** imported.
+
+**MT5 analogue:** compute from PIT H1 `close` on every currently tradable terminal-enumerated
+Fusion symbol, then rank only symbols with a bar genuinely available at the common decision time.
+Do not forward-fill a closed share/soft session into a fresh FX/index cross-section. No new data is
+needed. `translate_to_mt5("downside semivariance share")` currently returns `[]`; this explicit
+mapping is therefore a documentation-level extension under the research freeze, not a hidden
+fallback to another venue.
+
+### `tail_ratio_168h` — non-parametric return-tail asymmetry
+
+Over 168 simple H1 returns, with at least 120 present:
+
+```
+rolling_quantile(return, 0.95) / (abs(rolling_quantile(return, 0.05)) + 1e-12)
+```
+
+It compares positive and negative realised tail sizes without fitting a distribution. The source's
+"lottery-like overpriced" direction is explicitly refused: the operator computes shape; the Fusion
+gauntlet must learn whether either sign pays.
+
+**MT5 analogue:** same terminal-enumerated H1 ground and PIT mixed-calendar rule as semivariance.
+The input is only `time, close, symbol-session availability`; no volume substitute is involved.
+`translate_to_mt5("tail ratio")` returns `[]`, so the mapping is recorded here rather than
+fabricated by the function.
+
+### `ou_rev_press` — deviation multiplied by relative mean-reversion speed
+
+Over a right-aligned 168-bar window, source arithmetic is:
+
+```
+logp  = log(close)
+mu    = rolling_mean(logp, 168)
+y     = logp - mu
+b     = rolling_cov(diff(y), lag(y), 168) / rolling_var(lag(y), 168)
+theta = -log(1+b) for -1 < b < 0; 0 for b >= 0; NaN for b <= -1
+z     = (logp-mu) / rolling_std(logp, 168)
+score = -tanh(z) * sqrt(clip(theta / rolling_median(theta, 168), 0, 5))
+```
+
+This is a **relative pressure score**, not an OU half-life estimate: the source itself records
+small-sample upward bias in theta. Trending states mute to zero; oscillatory-divergent estimates
+become missing rather than fake super-fast reversion.
+
+**MT5 analogue:** H1 price-only state per terminal-enumerated Fusion symbol, optionally ranked at
+the same PIT common decision time. `translate_to_mt5("OU reversion pressure")` returns `[]`; no
+data gap exists for the transform, but its sign and horizon remain unmeasured. Source comments
+claim positive h1/h4/h24 t-statistics; those are external ore with no accepted result cells here.
+
+### One cost door, one policy door
+
+Any future construction must declare each target horizon as a counted trial and charge fresh
+symbol-native spread, commission, realised slippage/partial-fill markout and rollover swap. The
+current registry demonstrates why no common scalar is valid: at read time EURUSD spread was 1
+point with swaps -7.16/+3.04, US500 spread 36 with swaps -5.90/+1.54, and XAUUSD spread 20
+(realised-fill median 14.5) with swaps -67.06/+32.75. Those are consumption-time examples, not
+frozen backtest inputs.
+
+The repository's Bonferroni candidate-count threshold and attempt-inflated champion ratchet are
+**not imported**. They would add private gates before/around the canonical ten; L1.60 allows the
+operator language to expand and reserves every verdict for the one canonical pipeline. Evidence:
+`data/brain_hunter_s39_alpha_gauntlet_operator_screen.json`. Three operator specifications, zero
+desk constructions, zero target-horizon cells, zero survivors.

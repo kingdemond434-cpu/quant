@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s39",
+  "date": "2026-08-30",
+  "authority": "research evidence only; zero promotion, capital, gate-change or execution authority",
+  "corpora_first": {
+    "artifact": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_executable_evidence": 0,
+    "note": "Four Great Goat rows remained transcript-unavailable and the AgonAlpha row remained metadata-only; no readable new mechanism was taken from the corpus."
+  },
+  "legitimacy_screens": [
+    {
+      "repository": "https://github.com/vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26",
+      "commit": "20603955ee43f570f116c4ef8a90d2d8c35d6026",
+      "license": null,
+      "scope_read": "public GitHub repository metadata and root tree names only",
+      "root_tree": [
+        "README.md",
+        "Results.csv",
+        "ace_lib.py",
+        "helpful_functions.py",
+        "main.py"
+      ],
+      "verdict": "LICENSE_WALLED",
+      "mechanism_extraction": "NOT_PERMITTED_WITHOUT_LICENSE",
+      "reopen_condition": "an explicit license grant compatible with commercial derivative research",
+      "exhaustion": "NOT_EXHAUSTED"
+    },
+    {
+      "repository": "https://github.com/openclaw-pza/alpha-gauntlet",
+      "commit": "c05298cb966e655a5efcf689468371365f6fbcc3",
+      "license": "MIT",
+      "access": "public GitHub API/raw files read as text only; nothing installed or executed",
+      "files_read": [
+        "LICENSE",
+        "NOTICE",
+        "README.md",
+        "docs/methodology.md",
+        "docs/factor_library.md",
+        "alphagauntlet/factor_eval.py",
+        "alphagauntlet/wavelet_factors.py",
+        "alphagauntlet/wq101/pit_check.py"
+      ],
+      "derives_from": [
+        "QuantaAlpha (MIT) for extended operators, DSL and re-skin logic",
+        "Kakushadze 101 Formulaic Alphas for public formula families",
+        "TA-Lib (BSD) for technical indicators"
+      ],
+      "verdict": "OPERATOR_SEMANTICS_CARRIER"
+    }
+  ],
+  "operator_extractions": [
+    {
+      "name": "downside_var_ratio_168h",
+      "computes": "sum(min(diff(log(close)),0)^2, 168) / (sum(diff(log(close))^2, 168) + 1e-12), requiring at least 120 observations",
+      "mt5_analogue": "H1 close-derived downside semivariance share, ranked across contemporaneously fresh terminal-enumerated Fusion symbols",
+      "translate_to_mt5_result": [],
+      "required_fields": ["time", "close", "symbol trading-session availability"],
+      "data_gap": "none for the transform; cross-symbol calendar alignment must be point-in-time and cannot forward-fill closed markets",
+      "evidence_disposition": "operator specification only; the source's positive directional intuition is ore, not MT5 evidence"
+    },
+    {
+      "name": "tail_ratio_168h",
+      "computes": "rolling 95th percentile of simple H1 returns divided by the absolute rolling 5th percentile plus 1e-12, over 168 observations with at least 120",
+      "mt5_analogue": "H1 return-tail asymmetry ranked across contemporaneously fresh terminal-enumerated Fusion symbols",
+      "translate_to_mt5_result": [],
+      "required_fields": ["time", "close", "symbol trading-session availability"],
+      "data_gap": "none for the transform; mixed-session quantiles must use each symbol's observed bars and a declared common decision timestamp",
+      "evidence_disposition": "operator specification only; no lottery-premium sign is assumed on the Fusion universe"
+    },
+    {
+      "name": "ou_rev_press",
+      "computes": "over a right-aligned 168-bar window, demean log(close) by its rolling mean; regress its change on its lag to obtain b; theta=-log(1+b) for -1<b<0, theta=0 for b>=0 and NaN for b<=-1; output -tanh(deviation_z)*sqrt(clip(theta/rolling_median(theta),0,5))",
+      "mt5_analogue": "H1 price-only mean-reversion pressure per terminal-enumerated Fusion symbol, optionally cross-sectionally ranked at a point-in-time common decision timestamp",
+      "translate_to_mt5_result": [],
+      "required_fields": ["time", "close", "symbol trading-session availability"],
+      "data_gap": "none for the transform; the source admits small-sample theta bias, so theta is relative state rather than an absolute half-life estimate",
+      "evidence_disposition": "operator specification only; source comments claiming positive h1/h4/h24 t-statistics are not reproduced evidence"
+    }
+  ],
+  "mt5_scope_and_costs": {
+    "universe_registry": "desks/mt5/data/universe/universe.json",
+    "registry_symbols_at_read": 248,
+    "timeframe": "H1",
+    "point_in_time_rule": "use only bars closed and available for each symbol at the decision timestamp; never forward-fill a closed venue into a fresh peer cross-section",
+    "cost_rule": "any future target-horizon cell must enter the canonical gauntlet with symbol-native bid/ask spread, commission, realized slippage/partial-fill markout and rollover swap",
+    "cost_examples_at_read": {
+      "EURUSD": {"spread_pts_at_collection": 1.0, "swap_long": -7.16, "swap_short": 3.04},
+      "US500": {"spread_pts_at_collection": 36.0, "swap_long": -5.9, "swap_short": 1.54},
+      "XAUUSD": {"median_spread_pts": 14.5, "spread_pts_at_collection": 20.0, "swap_long": -67.06, "swap_short": 32.75}
+    },
+    "warning": "examples demonstrate unit heterogeneity and are not frozen backtest inputs; costs must be read fresh at consumption time"
+  },
+  "policy_refusals": [
+    {
+      "source_feature": "Bonferroni threshold recomputed from candidate count",
+      "reason": "L1.60 fixes multiplicity inside the canonical deflated_sharpe gate; no producer or private screen may add a stricter bar"
+    },
+    {
+      "source_feature": "attempt-count-inflated strict-greater-than champion ratchet",
+      "reason": "a second promotion gate is forbidden; source champion logic has no authority over the canonical ten-gate to forward pipeline"
+    },
+    {
+      "source_feature": "hard-coded small crypto pool and crypto directional priors",
+      "reason": "the active hunted ground is the terminal-enumerated Fusion MT5 universe; source universe and claimed signs do not transfer"
+    }
+  ],
+  "venue_discovery": {
+    "routes": [
+      "GitHub repository metadata",
+      "GitHub owner metadata",
+      "repository NOTICE/derives-from graph",
+      "issues and recent commit history"
+    ],
+    "new_venues_found": 0,
+    "note": "Both owners expose no external blog, company or social handle; alpha-gauntlet has no issues. Negative venue screen only."
+  },
+  "trial_accounting": {
+    "desk_constructions_run": 0,
+    "desk_target_horizon_cells_run": 0,
+    "external_result_cells_accepted": 0,
+    "alpha_survivors": 0,
+    "new_tradeable_cards": 0,
+    "operator_specs_added": 3
+  },
+  "video": {
+    "fetched": 0,
+    "newly_locked": 0,
+    "note": "No video route was attempted; previously failed corpus routes were not relabelled."
+  },
+  "economic_disposition": "Three exact price-only transform specifications expand the MT5 hypothesis language at near-zero future implementation cost, but their expected-log-wealth contribution is unmeasured until preregistered Fusion-native cells pass the canonical pipeline. One no-license repository was stopped before contamination. Confidence is high in code semantics at the pinned commit and zero in the source's claimed market signs on Fusion."
+}

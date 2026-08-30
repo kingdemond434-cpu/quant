@@ -13891,3 +13891,48 @@ handle. Negative venue screen only—the ground remains open.
   `vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26`, beginning with license verification; then
   the next permissively licensed artifact. Run the existing Rsquare conditioner when shared
   compute permits. The BRAIN ground remains open.
+
+## BRAIN HUNTER s39 — 2026-08-30 — three price-only transforms; two foreign gate systems refused
+
+**Corpora first.** Five WorldQuant rows in `data/intelligence/gpt_practitioner_corpus.jsonl` were
+reviewed before retrieval. Four Great Goat rows remained transcript-unavailable and AgonAlpha was
+metadata-only; no readable mechanism came from the corpus. Video: **0 fetched, 0 newly locked**.
+
+**Carry-over legitimacy screen.** Public
+`vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26` at `20603955` has no declared license and no
+license file. Only public repository metadata and root names were read. Verdict:
+**LICENSE-WALLED**, not exhausted; re-enter only on an explicit compatible license. No source,
+README body, result or formula was adopted.
+
+**Next permissive semantics carrier.** Public MIT `openclaw-pza/alpha-gauntlet` at `c05298cb` was
+read as text only—license/NOTICE, methodology, factor reference, factor arithmetic, OU arithmetic
+and PIT truncation test. Nothing was installed or executed. Its exact new price-only transforms
+are routed to `search_operator_library.md`: **downside semivariance share**, **P95/|P05| tail
+asymmetry**, and **OU deviation × relative reversion speed**. Each uses H1 close only and maps to
+the terminal-enumerated Fusion universe under a mixed-session PIT rule. The current
+`translate_to_mt5()` table returns no hit for all three, so the mappings are explicit research
+specifications; no crypto fallback or invented field was used. Evidence:
+`data/brain_hunter_s39_alpha_gauntlet_operator_screen.json`.
+
+**Economic and policy disposition.** These are operator shapes, not alphas. The source's claimed
+directions and h1/h4/h24 statistics remain ore; **zero constructions and zero target-horizon cells
+were run, zero tradeable cards and zero survivors were created**. Any later candidate must count
+each cell and pay current per-symbol spread, commission, realised slippage/partial-fill markout and
+swap. The repository's candidate-count Bonferroni threshold and attempt-inflated champion ratchet
+were refused because each would create a private gate outside the canonical ten.
+
+**Derivation and venue expansion.** `NOTICE` declares QuantaAlpha (MIT), Kakushadze Alpha101 and
+TA-Lib as upstreams. The repository/owner metadata, NOTICE graph, empty issue surface and recent
+commit history yielded **0 new venues**; neither owner exposes a blog, company or social handle.
+This is a negative venue screen, not a ground verdict.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `vahangevorgyan1/WorldQuant-Alpha-Research-28_02_26`: **not exhausted; license-walled**.
+- `openclaw-pza/alpha-gauntlet` commit `c05298cb`: factor definitions, OU arithmetic, methodology,
+  PIT-check and provenance axes **EXHAUSTED on 2026-08-30**. The large Alpha101 transcription is
+  already covered by prior artifacts and was not re-mined.
+- **Next:** continue the s31 queue with the next unclassified artifact after the walled repository,
+  beginning at `YungTingKai/Worldquant-BRAIN-alpha-generator-` for legitimacy, then the next
+  permissively licensed semantics carrier. Run the existing Rsquare conditioner when shared
+  compute permits. The BRAIN ground remains open.
