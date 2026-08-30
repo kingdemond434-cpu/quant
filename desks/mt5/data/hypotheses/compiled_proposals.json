@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T03:20:35+00:00",
+ "built_at": "2026-08-30T04:19:45+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -222,32 +222,117 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "LIQUIDITY_STRESS_TRANSITION",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
+    "event": "liquidity_shock",
+    "context": "overlap",
+    "direction": "reversal",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "liquidity_shock|overlap|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Free: St. Louis Fed FRED (SPREAD series), CBOE bid/ask data",
+   "kill": "Kill if spread normalization occurs within 30 minutes OR position loses 1.5% without liquidity recovery",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "COILING_BREAKOUT_TRANSITION",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
+    "event": "liquidity_shock",
+    "context": "low_vol",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_vol|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Free: TradingView historical data via public API, TrueFX for FX pairs",
+   "kill": "Kill if price retraces 50% of breakout distance within 15 bars OR shows reversal pattern confirmation",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "asia_session_imbalance_lock",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "coordinate": "session_transition|asia|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "MT5 tick data for AUDJPY, NZDJPY, USDJPY 00:00-09:00 UTC vs NY close",
+   "kill": "Sharpe <0 over 3y out-of-sample OR no persistence vs random bootstrap",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "MA_CROSS_VOLATILITY_SPIKE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "low_liquidity",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "OANDA API + FRED VIX data",
+   "kill": "Kill if false signal rate > 65% compared to normal periods",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "BOLLINGER_WALK_SIGNAL_DECAY",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "positioning_extreme",
+    "context": "overlap",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|overlap|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "QuantConnect free data + Dukascopy",
+   "kill": "Kill if signal half-life < 30min in overlap sessions",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
@@ -263,6 +348,21 @@
     "quality_atr": 1.0
    },
    "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:cross_market_move|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
