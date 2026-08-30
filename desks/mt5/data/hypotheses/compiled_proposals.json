@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T01:19:57+00:00",
+ "built_at": "2026-08-30T02:19:31+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -142,6 +142,66 @@
    "promotion_authority": false
   },
   {
+   "name": "REGIME_SHIFT_CONFIRMATION",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "london",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|london|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "TrueFX_FED & FXCM_DUKASCOPY",
+   "kill": "If next-session realized range > 80% of historical average 3 consecutive days, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "STRUCTURAL_SEG_CFD_DIV_DRIFT",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "low_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_liquidity|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "ETF holdings, regulator filings, CFD provider terms",
+   "kill": "Drift reverses within 2 days post-payment in >85% of events",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "FORCED_FLOW_PERSISTENCE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "low_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|low_liquidity|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "Myfxbook MT5 community history + Dukascopy correlation matrices",
+   "kill": "Kill if flow reversal rate exceeds 40% across 3 correlated pairs within 15 minutes post-trigger in 4 consecutive days",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
@@ -153,36 +213,6 @@
     "quality_atr": 1.0
    },
    "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:inventory_rebalance|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "inventory_rebalance",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:benchmark_flow|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
