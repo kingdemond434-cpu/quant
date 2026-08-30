@@ -1,5 +1,20 @@
 {
  "after": {
+  "active_forward_clocks": 37,
+  "external_screen_survivors": 16899,
+  "queue_by_status": {
+   "AWAITING_CANONICAL_GAUNTLET": 724,
+   "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
+   "DONE": 10,
+   "GAUNTLET_PASSED": 16,
+   "GAUNTLET_REJECTED": 16054,
+   "PENDING": 17
+  },
+  "queue_total": 16914,
+  "universal_certificates": 42
+ },
+ "authority": "ORCHESTRATION_ONLY; no gate, certificate, promotion, sizing or order authority",
+ "before": {
   "active_forward_clocks": 36,
   "external_screen_survivors": 16899,
   "queue_by_status": {
@@ -11,26 +26,12 @@
    "PENDING": 17
   },
   "queue_total": 16914,
-  "universal_certificates": 41
- },
- "authority": "ORCHESTRATION_ONLY; no gate, certificate, promotion, sizing or order authority",
- "before": {
-  "active_forward_clocks": 36,
-  "external_screen_survivors": 16175,
-  "queue_by_status": {
-   "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
-   "DONE": 10,
-   "GAUNTLET_PASSED": 16,
-   "GAUNTLET_REJECTED": 16054,
-   "PENDING": 17
-  },
-  "queue_total": 16190,
-  "universal_certificates": 41
+  "universal_certificates": 42
  },
  "candidate_conservation": {
   "accounted": 16175,
   "balanced": false,
-  "blocked": 12998,
+  "blocked": 12964,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
   "discovered": 16899,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
@@ -138,16 +139,16 @@
    "EURJPY.discovered.p=9569bd449600a16a"
   ],
   "queued": 0,
-  "rejected": 3157,
+  "rejected": 3190,
   "resumable_deferred": 0,
-  "tested": 20
+  "tested": 21
  },
  "checkpoint": "data/intelligence/midnight_completion_checkpoint.json",
  "complete": false,
  "diagnostic_findings": [
   "candidate_conservation"
  ],
- "generated_at": "2026-08-29T23:49:02.069103+00:00",
+ "generated_at": "2026-08-30T00:10:43.737531+00:00",
  "hard_failures": [
   "forward_clock_reconciliation",
   "forward_lane_heal"
@@ -157,7 +158,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 205.0,
+  "mem_available_mb": 860.5,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -171,13 +172,13 @@
     "start",
     "quant-external-pipeline.service"
    ],
-   "cpu_seconds": 86.681825,
+   "cpu_seconds": 0.0,
    "diagnostic_finding": false,
-   "duration_seconds": 2091.211,
+   "duration_seconds": 538.266,
    "name": "canonical_external_pipeline",
    "passes": [
     {
-     "cpu_seconds": 86.681825,
+     "cpu_seconds": 0.0,
      "outstanding_after": 0,
      "returncode": 0
     }
@@ -193,20 +194,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/promote_external_to_queue.py"
    ],
-   "cpu_seconds": 1.605972,
+   "cpu_seconds": 0.658153,
    "diagnostic_finding": false,
-   "duration_seconds": 5.91,
+   "duration_seconds": 2.287,
    "name": "external_queue_projection",
    "passes": [
     {
-     "cpu_seconds": 1.605972,
+     "cpu_seconds": 0.658153,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "external->queue: 724 promoted (724 fresh of 16899 banked); queue now 16914 cards\n"
+   "stdout_tail": "external->queue: 0 promoted (0 fresh of 16899 banked); queue now 16914 cards\n"
   },
   {
    "accepted": true,
@@ -215,20 +216,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/reconcile_external_queue.py"
    ],
-   "cpu_seconds": 2.088716,
+   "cpu_seconds": 1.881197,
    "diagnostic_finding": false,
-   "duration_seconds": 4.429,
+   "duration_seconds": 2.561,
    "name": "external_queue_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 2.0887160000000002,
+     "cpu_seconds": 1.8811969999999998,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "{\n \"reconciled_at\": \"2026-08-29T23:47:14.893576+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 724,\n  \"blocked\": 0,\n  \"ignored\": 16190\n }\n}\n"
+   "stdout_tail": "{\n \"reconciled_at\": \"2026-08-30T00:09:11.476912+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 724,\n  \"blocked\": 0,\n  \"ignored\": 16190\n }\n}\n"
   },
   {
    "accepted": true,
@@ -237,20 +238,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/build_gauntlet_survivors.py"
    ],
-   "cpu_seconds": 0.070914,
+   "cpu_seconds": 0.065851,
    "diagnostic_finding": false,
-   "duration_seconds": 0.935,
+   "duration_seconds": 0.548,
    "name": "certificate_projection",
    "passes": [
     {
-     "cpu_seconds": 0.07091400000000014,
+     "cpu_seconds": 0.06585099999999988,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "gauntlet survivors: 41 candidate(s) written from real MT5 evidence; 20 carry all eight gates, 21 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-08-29T23:47:18+00:00 -> data/gauntlet_survivors.json\n"
+   "stdout_tail": "gauntlet survivors: 42 candidate(s) written from real MT5 evidence; 20 carry all eight gates, 22 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-08-30T00:09:13+00:00 -> data/gauntlet_survivors.json\n"
   },
   {
    "accepted": true,
@@ -261,13 +262,13 @@
     "start",
     "quant-desk-pull.service"
    ],
-   "cpu_seconds": 0.550721,
+   "cpu_seconds": 0.939521,
    "diagnostic_finding": false,
-   "duration_seconds": 16.133,
+   "duration_seconds": 18.284,
    "name": "fusion_state_pull",
    "passes": [
     {
-     "cpu_seconds": 0.5507209999999998,
+     "cpu_seconds": 0.939521,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -283,13 +284,13 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/forward_reconcile.py"
    ],
-   "cpu_seconds": 1.200393,
+   "cpu_seconds": 1.313193,
    "diagnostic_finding": false,
-   "duration_seconds": 3.962,
+   "duration_seconds": 2.426,
    "name": "forward_identity_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 1.200393000000001,
+     "cpu_seconds": 1.3131930000000005,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -305,13 +306,13 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock.py"
    ],
-   "cpu_seconds": 0.071401,
+   "cpu_seconds": 0.050344,
    "diagnostic_finding": false,
-   "duration_seconds": 1.213,
+   "duration_seconds": 0.443,
    "name": "forward_clock_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 0.07140099999999894,
+     "cpu_seconds": 0.050343999999999944,
      "outstanding_after": null,
      "returncode": 1
     }
@@ -327,20 +328,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/heal_forward_lane.py"
    ],
-   "cpu_seconds": 1.056479,
+   "cpu_seconds": 0.988528,
    "diagnostic_finding": false,
-   "duration_seconds": 4.836,
+   "duration_seconds": 4.076,
    "name": "forward_lane_heal",
    "passes": [
     {
-     "cpu_seconds": 1.0564790000000013,
+     "cpu_seconds": 0.9885279999999996,
      "outstanding_after": null,
      "returncode": 1
     }
    ],
    "returncode": 1,
    "stderr_tail": "",
-   "stdout_tail": "FORWARD LANE 2026-08-29T23:47:44+00:00\n  blocked sleeves: 7\n  STALE (3) -- error predates the engine's last pass (2026-08-29T23:45:31+00:00), so it does NOT describe the current cause. Not acted on; the row is being skipped without recording an attempt, which is the real defect:\n    EURCHF.discovered.asia#band=[0.9, 1.0]_feature   err@2026-08-29T22:17:51\n    EURCHF.discovered.asia#band=[0.75, 0.9]_featur   err@2026-08-29T22:19:31\n    EURCHF.discovered.asia#band=[0.75, 0.9]_featur   err@2026-08-29T22:21:34\n  HEALED research.carry_state (4 sleeves): desks/mt5/research/carry_state.py: SHIPPED, box now matches HEAD (955aa3c5)\n\n  authorized runs: 35, with a forward clock: 35, idle: 0\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
+   "stdout_tail": "FORWARD LANE 2026-08-30T00:09:37+00:00\n  blocked sleeves: 7\n  STALE (3) -- error predates the engine's last pass (2026-08-30T00:06:20+00:00), so it does NOT describe the current cause. Not acted on; the row is being skipped without recording an attempt, which is the real defect:\n    EURCHF.discovered.asia#band=[0.9, 1.0]_feature   err@2026-08-29T22:17:51\n    EURCHF.discovered.asia#band=[0.75, 0.9]_featur   err@2026-08-29T22:19:31\n    EURCHF.discovered.asia#band=[0.75, 0.9]_featur   err@2026-08-29T22:21:34\n  HEALED research.carry_state (4 sleeves): desks/mt5/research/carry_state.py: SHIPPED, box now matches HEAD (955aa3c5)\n\n  authorized runs: 36, with a forward clock: 35, idle: 1\n    IDLE EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1 -- authorized to run forward, no clock exists\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
   },
   {
    "accepted": true,
@@ -353,7 +354,7 @@
    ],
    "cpu_seconds": null,
    "diagnostic_finding": false,
-   "duration_seconds": 61.435,
+   "duration_seconds": 55.757,
    "name": "zero_capital_shadow_forward",
    "passes": [
     {
@@ -373,13 +374,13 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/portfolio_evidence.py"
    ],
-   "cpu_seconds": 0.322252,
+   "cpu_seconds": 0.211593,
    "diagnostic_finding": false,
-   "duration_seconds": 1.868,
+   "duration_seconds": 1.211,
    "name": "mechanism_independence",
    "passes": [
     {
-     "cpu_seconds": 0.3222519999999989,
+     "cpu_seconds": 0.2115929999999997,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -395,20 +396,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_sameday_pipeline.py"
    ],
-   "cpu_seconds": 0.076266,
+   "cpu_seconds": 0.072013,
    "diagnostic_finding": false,
-   "duration_seconds": 1.197,
+   "duration_seconds": 0.727,
    "name": "same_day_fence",
    "passes": [
     {
-     "cpu_seconds": 0.07626600000000039,
+     "cpu_seconds": 0.07201300000000099,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "same-day pipeline: ok (41 certificate(s), 36 live forward clock(s), 32 retired row(s) preserved)\n"
+   "stdout_tail": "same-day pipeline: ok (42 certificate(s), 37 live forward clock(s), 32 retired row(s) preserved)\n"
   },
   {
    "accepted": true,
@@ -417,20 +418,20 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_cert_yield.py"
    ],
-   "cpu_seconds": 0.266826,
+   "cpu_seconds": 0.271532,
    "diagnostic_finding": false,
-   "duration_seconds": 1.529,
+   "duration_seconds": 1.051,
    "name": "certificate_yield_fence",
    "passes": [
     {
-     "cpu_seconds": 0.266826,
+     "cpu_seconds": 0.27153199999999966,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "20 cell(s) passed all ten gates in the latest sweep.\n  submitted=2361 judged=3177 unmeasured=0 passed=20 trials=597\n  binding gate: {'in_sample_screen': 1071, 'deflated_sharpe': 907, 'economic_prior': 816, 'observations': 363}\n  ONE CURABLE GATE AWAY: 613 cell(s) passed EVERY validity gate and failed only power gate(s):\n    CHFSGD    overnight_gap_decay  days=375 oos_sharpe=0.5423 fails=deflated_sharpe (hurdle 0.3786)\n    USDSGD    overnight_gap_decay  days=387 oos_sharpe=0.5123 fails=deflated_sharpe (hurdle 0.3786)\n    CHFJPY    overnight_gap_decay  days=602 oos_sharpe=0.503 fails=deflated_sharpe (hurdle 0.3786)\n    EURCHF    discovered           days=633 oos_sharpe=0.4929 fails=deflated_sharpe (hurdle 0.3786)\n    USDSEK    overnight_gap_decay  days=467 oos_sharpe=0.49 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
+   "stdout_tail": "21 cell(s) passed all ten gates in the latest sweep.\n  submitted=2395 judged=3211 unmeasured=0 passed=21 trials=597\n  binding gate: {'in_sample_screen': 1082, 'deflated_sharpe': 911, 'economic_prior': 816, 'observations': 381}\n  ONE CURABLE GATE AWAY: 617 cell(s) passed EVERY validity gate and failed only power gate(s):\n    CHFSGD    overnight_gap_decay  days=375 oos_sharpe=0.5423 fails=deflated_sharpe (hurdle 0.3786)\n    USDSGD    overnight_gap_decay  days=387 oos_sharpe=0.5123 fails=deflated_sharpe (hurdle 0.3786)\n    CHFJPY    overnight_gap_decay  days=602 oos_sharpe=0.503 fails=deflated_sharpe (hurdle 0.3786)\n    EURCHF    discovered           days=633 oos_sharpe=0.4929 fails=deflated_sharpe (hurdle 0.3786)\n    USDSEK    overnight_gap_decay  days=467 oos_sharpe=0.49 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
   },
   {
    "accepted": true,
@@ -439,21 +440,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock_ratchet.py"
    ],
-   "cpu_seconds": 0.076749,
+   "cpu_seconds": 0.071046,
    "diagnostic_finding": false,
-   "duration_seconds": 2.376,
+   "duration_seconds": 0.91,
    "name": "forward_clock_fence",
    "passes": [
     {
-     "cpu_seconds": 0.07674899999999951,
+     "cpu_seconds": 0.07104599999999905,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "FORWARD CLOCK RATCHET: 18 clock(s), oldest 6.42d (bar 14d, 7.58d to go)\n"
+   "stdout_tail": "FORWARD CLOCK RATCHET: 19 clock(s), oldest 6.43d (bar 14d, 7.57d to go)\n"
   }
  ],
- "started_at": "2026-08-29T23:12:10.670454+00:00"
+ "started_at": "2026-08-30T00:00:07.661647+00:00"
 }

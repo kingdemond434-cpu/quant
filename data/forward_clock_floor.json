@@ -8,6 +8,7 @@
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": "2026-08-29T13:34:35.776904+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": "2026-08-29T13:34:35.776912+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": "2026-08-29T13:34:35.776919+00:00",
+  "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": "2026-08-30T00:10:11.604282+00:00",
   "EURNOK.overnight_gap_decay.asia": "2026-08-29T13:34:35.776957+00:00",
   "EURZAR.overnight_gap_decay.asia": "2026-08-27T01:00:00+00:00",
   "GBPCHF.overnight_gap_decay.asia": "2026-08-29T13:34:35.776965+00:00",
@@ -19,8 +20,8 @@
   "USDZAR.overnight_gap_decay.asia": "2026-08-27T01:00:00+00:00",
   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00"
  },
- "max_clock_age_days": 6.415,
- "measured_at": "2026-08-29T23:48:59+00:00",
+ "max_clock_age_days": 6.43,
+ "measured_at": "2026-08-30T00:10:42+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

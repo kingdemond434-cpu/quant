@@ -5430,6 +5430,48 @@
       "updated": "2026-08-29T18:15:28.795828+00:00",
       "resolve_by": "2026-08-30T18:15:28.716395+00:00",
       "claim": "Will XRPUSDT trade ABOVE 1.3872 in 24 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q1": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.871107+00:00",
+      "resolve_by": "2026-08-30T04:06:03.863488+00:00",
+      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q2": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.893044+00:00",
+      "resolve_by": "2026-08-30T12:06:03.863488+00:00",
+      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q3": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.910942+00:00",
+      "resolve_by": "2026-08-31T00:06:03.863488+00:00",
+      "claim": "Will SOLUSDT trade ABOVE 104.1 in 24 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q4": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.929799+00:00",
+      "resolve_by": "2026-08-30T04:06:03.863488+00:00",
+      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q5": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.948951+00:00",
+      "resolve_by": "2026-08-30T12:06:03.863488+00:00",
+      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?"
+    },
+    "probe:2026-08-30T00:06:03.863488+00:00:q6": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-08-30T00:06:03.964662+00:00",
+      "resolve_by": "2026-08-31T00:06:03.863488+00:00",
+      "claim": "Will XRPUSDT trade ABOVE 1.3872 in 24 hours' time?"
     }
   }
 }
