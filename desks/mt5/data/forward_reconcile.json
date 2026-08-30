@@ -1,22 +1,110 @@
 {
- "checked_at": "2026-08-29T01:44:24+00:00",
- "enrolled": 24,
+ "checked_at": "2026-08-30T05:38:58+00:00",
+ "enrolled": 19,
  "enrolment_readable": true,
- "certified_clocks": 17,
- "certified_pairs": 8,
- "identity_unfrozen": 0,
+ "certified_clocks": 15,
+ "certified_pairs": 21,
+ "identity_unfrozen": 4,
  "actions": [
   {
-   "key": "xau_m5_anti_breakout_overlap",
-   "action": "AUTHORITY_REVOKED"
+   "key": "EURZAR.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "xau_m5_anti_momentum_ny",
-   "action": "AUTHORITY_REVOKED"
+   "key": "USDZAR.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
   },
   {
-   "key": "xau_m15_anti_breakout",
-   "action": "AUTHORITY_REVOKED"
+   "key": "CADCHF.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CHFDKK.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "CHFNOK.carry.asia#input_symbol=CHFNOK",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
+   "action": "IDENTITY_UNFROZEN",
+   "why": "running clock with no frozen identity in sleeve_registry.json; its parameters can drift mid-window and nothing would notice. Reported, never retired -- freezing is the engine's job, not the reconciler's."
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "EURNOK.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPCHF.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPMXN.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPNOK.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPSEK.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "GBPZAR.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "USDMXN.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
+  },
+  {
+   "key": "AUDCHF.overnight_gap_decay.asia",
+   "action": "RETIRED_ORPHAN"
   }
  ]
 }

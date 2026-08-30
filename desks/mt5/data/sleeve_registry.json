@@ -868,9 +868,273 @@
     "contract_oz": 100000.0,
     "quote_per_account": 19.7355
    }
+  },
+  "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ru_24",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "788367e964c44a0be9f1"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T22:33:05+00:00",
+   "forward_start": "2026-08-29T13:34:35.776934+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_12",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "253ec84c0f2e49bc16a2"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T22:36:18+00:00",
+   "forward_start": "2026-08-29T13:34:35.776942+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_24",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "86a8de09a65c2e7b53b0"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-29T22:38:09+00:00",
+   "forward_start": "2026-08-29T13:34:35.776950+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.0,
+      0.1
+     ],
+     "feature": "hour",
+     "horizon": 6,
+     "side": 1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "fafe0981259e665ae2ff"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-30T05:45:19+00:00",
+   "forward_start": "2026-08-29T13:34:35.776927+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_12",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "be329fa010dc93badddd"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-30T05:45:19+00:00",
+   "forward_start": "2026-08-29T13:34:35.776904+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_24",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "7e6f92d6c4e202902b03"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-30T05:45:19+00:00",
+   "forward_start": "2026-08-29T13:34:35.776912+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "hour",
+     "horizon": 3,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "93a6d0e6e4a2ec36",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "c07134e0a7c5b7a9e122"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-30T05:45:20+00:00",
+   "forward_start": "2026-08-29T13:34:35.776919+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93762
+   }
+  },
+  "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURGBP",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_12",
+     "horizon": 3,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "b6d05108a1a6fc0c",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "0983ac912c9f895c101c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-30T05:45:20+00:00",
+   "forward_start": "2026-08-30T05:45:20.371210+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.85597
+   }
   }
  },
- "updated_at": "2026-08-29T14:37:56+00:00",
+ "updated_at": "2026-08-30T05:45:20+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",

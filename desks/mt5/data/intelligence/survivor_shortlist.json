@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-30T08:43:51+00:00",
+ "updated_at": "2026-08-30T13:23:25+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -28,7 +28,7 @@
    "trades": 2965.0,
    "win_pct": 2280.0,
    "algo_pct": 96.0,
-   "subscribers": 26.0,
+   "subscribers": 25.0,
    "author": "/en/users/datbh",
    "author_other_signals": [
     {
@@ -84,7 +84,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -128,12 +128,87 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
+   "url": "https://www.mql5.com/en/signals/2222743",
+   "symbols": [
+    "BTCUSD",
+    "EURUSD",
+    "USDJPY",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "found_at": "2026-08-30T13:23:25+00:00",
+   "platform": "mt5",
+   "phenotypes": [
+    "max_growth",
+    "low_dd_high_return",
+    "long_lived",
+    "algo_survivor",
+    "gold",
+    "multi_fx"
+   ],
+   "ev_score": 49.559,
+   "growth_pct": 3110.55,
+   "weeks": 132.0,
+   "pf": 1.31,
+   "max_dd_pct": null,
+   "trades": 5278.0,
+   "win_pct": 2096.0,
+   "algo_pct": 82.0,
+   "subscribers": 0.0,
+   "author": "/en/users/liehtw",
+   "author_other_signals": [
+    {
+     "sid": "2153920",
+     "title": "'MCA100' by LU KUEI LIEH",
+     "growth": "2025%",
+     "curve_points": 20,
+     "curve_dd": -4.0
+    },
+    {
+     "sid": "2340704",
+     "title": "'XAUUSD AND XAUEUR' by LU KUEI LIEH",
+     "growth": "334%",
+     "curve_points": 20,
+     "curve_dd": -8.0
+    },
+    {
+     "sid": "2299696",
+     "title": "'Chicken dinner' by LU KUEI LIEH",
+     "growth": "2689%",
+     "curve_points": 20,
+     "curve_dd": -7.0
+    }
+   ],
+   "hour_histogram": {
+    "02": 1,
+    "20": 1,
+    "13": 1,
+    "03": 1,
+    "11": 3,
+    "15": 2,
+    "09": 1,
+    "01": 1,
+    "23": 1,
+    "21": 1,
+    "05": 1,
+    "04": 2,
+    "06": 1,
+    "17": 2,
+    "12": 1,
+    "07": 2,
+    "14": 1
+   }
+  },
+  {
+   "source": "mql5_survivors",
+   "kind": "track_record",
+   "title": "",
    "url": "https://www.mql5.com/en/signals/2262642",
    "symbols": [
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -206,7 +281,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -223,7 +298,7 @@
    "trades": 2153.0,
    "win_pct": 1727.0,
    "algo_pct": 92.0,
-   "subscribers": 15.0,
+   "subscribers": 19.0,
    "author": "/en/users/gutiv",
    "author_other_signals": [
     {
@@ -280,7 +355,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -296,7 +371,7 @@
    "trades": 4037.0,
    "win_pct": 3327.0,
    "algo_pct": 100.0,
-   "subscribers": 65.0,
+   "subscribers": 66.0,
    "author": "/en/users/mo2002",
    "author_other_signals": [
     {
@@ -335,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -408,7 +483,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -459,7 +534,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -478,7 +553,7 @@
    "trades": 1085.0,
    "win_pct": 897.0,
    "algo_pct": 96.0,
-   "subscribers": 29.0,
+   "subscribers": 31.0,
    "author": "/en/users/datbh",
    "author_other_signals": [
     {
@@ -538,7 +613,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -600,7 +675,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -683,7 +758,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -733,7 +808,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -796,7 +871,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -839,7 +914,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -885,7 +960,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -901,7 +976,7 @@
    "trades": 850.0,
    "win_pct": 613.0,
    "algo_pct": 99.0,
-   "subscribers": 38.0,
+   "subscribers": 39.0,
    "author": "/en/users/strueli",
    "author_other_signals": [
     {
@@ -964,7 +1039,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1010,7 +1085,7 @@
    "symbols": [
     "AUDCAD"
    ],
-   "found_at": "2026-08-30T08:43:51+00:00",
+   "found_at": "2026-08-30T13:23:25+00:00",
    "platform": "mt5",
    "phenotypes": [
     "high_pf",
@@ -1061,81 +1136,6 @@
     "14": 1,
     "03": 1,
     "19": 2
-   }
-  },
-  {
-   "source": "mql5_survivors",
-   "kind": "track_record",
-   "title": "",
-   "url": "https://www.mql5.com/en/signals/2222743",
-   "symbols": [
-    "BTCUSD",
-    "EURUSD",
-    "USDJPY",
-    "XAUEUR",
-    "XAUUSD"
-   ],
-   "found_at": "2026-08-30T08:33:44+00:00",
-   "platform": "mt5",
-   "phenotypes": [
-    "max_growth",
-    "low_dd_high_return",
-    "long_lived",
-    "algo_survivor",
-    "gold",
-    "multi_fx"
-   ],
-   "ev_score": 49.559,
-   "growth_pct": 3110.55,
-   "weeks": 132.0,
-   "pf": 1.31,
-   "max_dd_pct": null,
-   "trades": 5278.0,
-   "win_pct": 2096.0,
-   "algo_pct": 82.0,
-   "subscribers": 0.0,
-   "author": "/en/users/liehtw",
-   "author_other_signals": [
-    {
-     "sid": "2153920",
-     "title": "'MCA100' by LU KUEI LIEH",
-     "growth": "2025%",
-     "curve_points": 20,
-     "curve_dd": -4.0
-    },
-    {
-     "sid": "2340704",
-     "title": "'XAUUSD AND XAUEUR' by LU KUEI LIEH",
-     "growth": "334%",
-     "curve_points": 20,
-     "curve_dd": -8.0
-    },
-    {
-     "sid": "2299696",
-     "title": "'Chicken dinner' by LU KUEI LIEH",
-     "growth": "2689%",
-     "curve_points": 20,
-     "curve_dd": -7.0
-    }
-   ],
-   "hour_histogram": {
-    "02": 1,
-    "20": 1,
-    "13": 1,
-    "03": 1,
-    "11": 3,
-    "15": 2,
-    "09": 1,
-    "01": 1,
-    "23": 1,
-    "21": 1,
-    "05": 1,
-    "04": 2,
-    "06": 1,
-    "17": 2,
-    "12": 1,
-    "07": 2,
-    "14": 1
    }
   },
   {

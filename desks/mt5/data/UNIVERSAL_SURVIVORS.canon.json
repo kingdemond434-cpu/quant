@@ -1,5 +1,5 @@
 {
-  "n": 23,
+  "n": 42,
   "survivors": {
     "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
       "hunt": "hunt16.json",
@@ -1348,7 +1348,7 @@
       "hunt": "external_discoveries",
       "cell": "EURZAR.overnight_gap_decay.p=44136fa355b3678a",
       "sym": "EURZAR",
-      "days": 552,
+      "days": 560,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -1357,17 +1357,20 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.8386
+          "sharpe": 0.693
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9957,
-          "sr0": 0.7024,
-          "n_trials": 2821
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0028
+          "pbo": 0.0009
         },
         "reality_check_spa": {
           "passed": true,
@@ -1375,28 +1378,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.8619,
+          "mean_oos_sharpe": 0.7308,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.8398,
+          "oos_sharpe": 0.7358,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.4152
+          "exp_x3": 0.2808
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.8398
+          "lockbox_sharpe": 0.7358
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.4173
+          "ev": 0.3627
         }
       },
-      "gated_at": "2026-08-27T00:36:31.443596+00:00",
+      "gated_at": "2026-08-30T05:10:04.397186+00:00",
       "shadow_spec": {
         "symbol": "EURZAR",
         "selector": "asia",
@@ -1411,7 +1414,7 @@
       "hunt": "external_discoveries",
       "cell": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
       "sym": "USDZAR",
-      "days": 501,
+      "days": 488,
       "gates": {
         "economic_prior": {
           "passed": true,
@@ -1420,17 +1423,20 @@
         },
         "in_sample_screen": {
           "passed": true,
-          "sharpe": 0.781
+          "sharpe": 0.6895
         },
         "deflated_sharpe": {
           "passed": true,
-          "dsr": 0.9771,
-          "sr0": 0.6661,
-          "n_trials": 3745
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
         },
         "pbo": {
           "passed": true,
-          "pbo": 0.0024
+          "pbo": 0.0009
         },
         "reality_check_spa": {
           "passed": true,
@@ -1438,28 +1444,28 @@
         },
         "cpcv": {
           "passed": true,
-          "mean_oos_sharpe": 0.793,
+          "mean_oos_sharpe": 0.7012,
           "folds": 15
         },
         "walk_forward": {
           "passed": true,
-          "oos_sharpe": 0.8095,
+          "oos_sharpe": 0.7172,
           "stability": 1.0
         },
         "stress_costs": {
           "passed": true,
-          "exp_x3": 0.3775
+          "exp_x3": 0.2441
         },
         "lockbox": {
           "passed": true,
-          "lockbox_sharpe": 0.8095
+          "lockbox_sharpe": 0.7172
         },
         "expected_value": {
           "passed": true,
-          "ev": 0.3796
+          "ev": 0.332
         }
       },
-      "gated_at": "2026-08-26T18:06:23.075391+00:00",
+      "gated_at": "2026-08-30T05:10:04.397304+00:00",
       "shadow_spec": {
         "symbol": "USDZAR",
         "selector": "asia",
@@ -1468,6 +1474,1326 @@
         "hunt": "external_discoveries",
         "condition": null,
         "params": {}
+      }
+    },
+    "external.CHFNOK.carry.p=98d776f3e210d3e2": {
+      "hunt": "external_discoveries",
+      "cell": "CHFNOK.carry.p=98d776f3e210d3e2",
+      "sym": "CHFNOK",
+      "days": 1119,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "broker-native swap differential is a directly measured carry premium",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4348
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9554,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4476,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5914,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.4168
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5914
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.5386
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.396794+00:00",
+      "shadow_spec": {
+        "symbol": "CHFNOK",
+        "selector": "asia",
+        "family": "carry",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "input_symbol": "CHFNOK"
+        }
+      }
+    },
+    "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "AUDCHF",
+      "days": 613,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5156
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9979,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5663,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6147,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2425
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6147
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2425
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397068+00:00",
+      "shadow_spec": {
+        "symbol": "AUDCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "CADCHF",
+      "days": 543,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6363
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6538,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7452,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2269
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7452
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2269
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397112+00:00",
+      "shadow_spec": {
+        "symbol": "CADCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "CHFDKK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "CHFDKK",
+      "days": 834,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4771
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9962,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.507,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5268,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1292
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5268
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.1762
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397132+00:00",
+      "shadow_spec": {
+        "symbol": "CHFDKK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "EURNOK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "EURNOK",
+      "days": 687,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4961
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9669,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5193,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5351,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3783
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5351
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4792
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397160+00:00",
+      "shadow_spec": {
+        "symbol": "EURNOK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPCHF.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPCHF",
+      "days": 426,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6538
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6809,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7771,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2685
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7771
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2685
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397209+00:00",
+      "shadow_spec": {
+        "symbol": "GBPCHF",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPMXN.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPMXN",
+      "days": 677,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5944
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6231,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7654,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2707
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7654
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3511
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397226+00:00",
+      "shadow_spec": {
+        "symbol": "GBPMXN",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPNOK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPNOK",
+      "days": 764,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.511
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.998,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5287,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5335,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3112
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5335
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4528
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397236+00:00",
+      "shadow_spec": {
+        "symbol": "GBPNOK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPSEK.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPSEK",
+      "days": 704,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5694
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9998,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5966,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7007,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2618
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7007
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.3915
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397248+00:00",
+      "shadow_spec": {
+        "symbol": "GBPSEK",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "GBPZAR.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "GBPZAR",
+      "days": 608,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6193
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.6373,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6364,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.3307
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6364
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4158
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397260+00:00",
+      "shadow_spec": {
+        "symbol": "GBPZAR",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
+      "hunt": "external_discoveries",
+      "cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
+      "sym": "USDMXN",
+      "days": 457,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "price only",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5679
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.633495
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0009
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5718,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6273,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.1927
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6273
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2563
+        }
+      },
+      "gated_at": "2026-08-30T05:10:04.397288+00:00",
+      "shadow_spec": {
+        "symbol": "USDMXN",
+        "selector": "asia",
+        "family": "overnight_gap_decay",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {}
+      }
+    },
+    "external.EURCHF.discovered.p=6c7943b997558157": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=6c7943b997558157",
+      "sym": "EURCHF",
+      "days": 2085,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4272
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9948,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.432,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.4354,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2029
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.4354
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2029
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380904+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_12",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=a5bbf78b5c8595c0": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=a5bbf78b5c8595c0",
+      "sym": "EURCHF",
+      "days": 1757,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.503
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5069,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5034,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2307
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5034
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2307
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380917+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_24",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=9bc1f7c40f200e78": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=9bc1f7c40f200e78",
+      "sym": "EURCHF",
+      "days": 2237,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5368
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5393,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.6599,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2823
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.6599
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2823
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380926+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "hour",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 3,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=c14e361e680e6d0b": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=c14e361e680e6d0b",
+      "sym": "EURCHF",
+      "days": 2236,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.4528
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9996,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.4539,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5068,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.2019
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5068
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.2019
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380935+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "hour",
+          "band": [
+            0.0,
+            0.1
+          ],
+          "horizon": 6,
+          "side": 1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=c7d53510458ba32c": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=c7d53510458ba32c",
+      "sym": "EURCHF",
+      "days": 705,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance above a rolling trough measures chase intensity -- late-crowd entries whose stops sit below, an exhaustible flow with a known unwind path",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5034
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 0.9999,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.5057,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.4946,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.22
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.4946
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.22
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380945+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "ru_24",
+          "band": [
+            0.9,
+            1.0
+          ],
+          "horizon": 1,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=e266baf78567bef3": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=e266baf78567bef3",
+      "sym": "EURCHF",
+      "days": 2073,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.6964
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.697,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7156,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.4859
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7156
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.4859
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380973+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_12",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 6,
+          "side": -1
+        }
+      }
+    },
+    "external.EURCHF.discovered.p=16bd35526c7f3515": {
+      "hunt": "external_discoveries",
+      "cell": "EURCHF.discovered.p=16bd35526c7f3515",
+      "sym": "EURCHF",
+      "days": 1746,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.7715
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.772,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.7584,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.5498
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.7584
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.5498
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380983+00:00",
+      "shadow_spec": {
+        "symbol": "EURCHF",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_24",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 6,
+          "side": -1
+        }
+      }
+    },
+    "external.EURGBP.discovered.p=8e61ea22743f15b7": {
+      "hunt": "external_discoveries",
+      "cell": "EURGBP.discovered.p=8e61ea22743f15b7",
+      "sym": "EURGBP",
+      "days": 2088,
+      "gates": {
+        "economic_prior": {
+          "passed": true,
+          "message": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed",
+          "mechanism_status": "NAMED"
+        },
+        "in_sample_screen": {
+          "passed": true,
+          "sharpe": 0.5886
+        },
+        "deflated_sharpe": {
+          "passed": true,
+          "dsr": 1.0,
+          "sr0": 0.3786,
+          "n_trials": 597,
+          "variance_of_sharpes": 0.014863,
+          "variance_basis": "fixed_variance_of_sharpes(0.014863)",
+          "variance_measured_this_sweep": 0.624888
+        },
+        "pbo": {
+          "passed": true,
+          "pbo": 0.0008
+        },
+        "reality_check_spa": {
+          "passed": true,
+          "p_value": 0.0
+        },
+        "cpcv": {
+          "passed": true,
+          "mean_oos_sharpe": 0.589,
+          "folds": 15
+        },
+        "walk_forward": {
+          "passed": true,
+          "oos_sharpe": 0.5949,
+          "stability": 1.0
+        },
+        "stress_costs": {
+          "passed": true,
+          "exp_x3": 0.351
+        },
+        "lockbox": {
+          "passed": true,
+          "lockbox_sharpe": 0.5949
+        },
+        "expected_value": {
+          "passed": true,
+          "ev": 0.351
+        }
+      },
+      "gated_at": "2026-08-30T03:46:46.380873+00:00",
+      "shadow_spec": {
+        "symbol": "EURGBP",
+        "selector": "asia",
+        "family": "discovered",
+        "is_universe": true,
+        "hunt": "external_discoveries",
+        "condition": null,
+        "params": {
+          "feature": "dd_12",
+          "band": [
+            0.75,
+            0.9
+          ],
+          "horizon": 3,
+          "side": -1
+        }
       }
     }
   },
@@ -1502,5 +2828,5 @@
     "expected_value_min_exclusive": 0.0
   },
   "note": "UNIVERSAL 10-GATE PASS ONLY.",
-  "swept_at": "2026-08-29T12:45:23.463173+00:00"
+  "swept_at": "2026-08-30T05:10:04.445079+00:00"
 }

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T08:19:17+00:00",
+ "built_at": "2026-08-30T13:20:19+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -542,6 +542,86 @@
    "promotion_authority": false
   },
   {
+   "name": "mtf_liquidation_cascade_detector",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "high_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|high_liquidity|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "MT5 GBPCAD CFD ticks vs ICE GBPCAD future ticks via free EOD/intraday delayed feed",
+   "kill": "Sharpe<0.2 net of costs over 3 years or hit rate below 52% with 800 trades",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "COMMODITY_ETF_ROLL_PRESSURE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|new_york|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "ETF prospectus roll calendars (free) + CME/ICE delayed futures (free)",
+   "kill": "KILL: Win rate <52% or avg hold >3 days on 200+ roll events",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "session_range_breakout_asymmetry",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "london",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|london|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "Existing session_range_breakout signals + ADX computed from OHLC in /broker historical ticks",
+   "kill": "Kill if gated CAGR uplift < 1.5% absolute AND Sharpe uplift < 0.05 over OOS folds, or if <60% of symbols show positive marginal lift",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "LIQ_INVENTORY_SHOCK",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "high_liquidity",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|high_liquidity|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "CFTC COT weekly reports (cftc.gov) + TrueFX tick data",
+   "kill": "No significant spread widening (>0.5\u202fbps) for three consecutive months",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
@@ -572,17 +652,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:inventory_rebalance|continuation",
+   "name": "audit:liquidity_shock|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "inventory_rebalance",
+    "event": "liquidity_shock",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

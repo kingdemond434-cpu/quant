@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-30T07:57:32+00:00",
+ "compiled_at": "2026-08-30T13:28:16+00:00",
  "hypotheses": [
   {
    "symbol": "AUDJPY",
@@ -4485,14 +4485,14 @@
  ],
  "per_source": {
   "github": {
-   "rows": 37,
+   "rows": 41,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 41
   },
   "mql5_signals": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "mql5_forum": {
    "rows": 2,
@@ -4540,14 +4540,14 @@
    "deepening": 1
   },
   "darwinex": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "tradingview_scripts": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "fxblue": {
    "rows": 40,
@@ -4560,14 +4560,14 @@
    "deepening": 1
   },
   "forexpeacearmy": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "ff_calendar_vintage": {
-   "rows": 110,
+   "rows": 220,
    "candidates": 38,
-   "deepening": 7
+   "deepening": 14
   },
   "forextsd_cdx": {
    "rows": 120,
@@ -4575,9 +4575,9 @@
    "deepening": 120
   },
   "quant_se": {
-   "rows": 30,
+   "rows": 60,
    "candidates": 0,
-   "deepening": 30
+   "deepening": 60
   },
   "arxiv_qfin": {
    "rows": 25,
@@ -4600,19 +4600,19 @@
    "deepening": 45
   },
   "propfirm_boards": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "trading_latam": {
-   "rows": 38,
+   "rows": 35,
    "candidates": 0,
-   "deepening": 38
+   "deepening": 35
   },
   "litefinance": {
-   "rows": 15,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 15
+   "deepening": 30
   },
   "instaforex_copy": {
    "rows": 4,
@@ -4620,9 +4620,9 @@
    "deepening": 4
   },
   "amarkets": {
-   "rows": 113,
+   "rows": 112,
    "candidates": 0,
-   "deepening": 113
+   "deepening": 112
   },
   "fbs_tape": {
    "rows": 1,
@@ -4645,18 +4645,13 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 9,
+   "rows": 10,
    "candidates": 0,
-   "deepening": 9
-  },
-  "youtube": {
-   "rows": 21,
-   "candidates": 0,
-   "deepening": 21
+   "deepening": 10
   }
  },
- "rows_accounted": 1063,
+ "rows_accounted": 1203,
  "executable_candidates": 373,
- "deepening_tasks": 595,
+ "deepening_tasks": 574,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
