@@ -13813,3 +13813,37 @@ third-party runtime was touched; research freeze held.
   methodology on 2026-08-30**; source explicitly derives from a private harness.
 - **Next:** continue the s31 UNKNOWN-description queue after OpenAlpha; run the existing Rsquare
   conditioner when shared compute permits. The BRAIN ground remains open.
+
+## BRAIN HUNTER s37 — 2026-08-30 — conditional denominator flips a verdict; censored-trial workflow refused
+
+**Corpora first.** Five WorldQuant rows in `data/intelligence/gpt_practitioner_corpus.jsonl` were
+reviewed before retrieval. Four Great Goat rows remained transcript-unavailable and AgonAlpha was
+metadata-only. Video: **0 fetched, 0 newly locked**; no already-failed route was retried.
+
+**Carry-over queue and legitimacy.** `KCDC-0/Quant-Finance` has no license; only public repository
+metadata/root names were read and it is **LICENSE-WALLED**, not exhausted. Public MIT
+`ljb189/wq-alpha-skill` at `62c91e5920bfd53284a7be4407fda9d01ca05df0` was read as text only.
+Nothing was installed or run; no credentialed BRAIN material was touched.
+
+**Economic disposition:** R117's robustness denominator is conditioned on upstream survival:
+reported **3/8 (37.5%, `marginal`)** versus **3/12 (25%, `overfit`)** on the full preregistered
+population under the source's own rules. Its serial early-stop censors later trials, and its
+parameter memory overwrites prior observations at `name × value`. All three process imports are
+refused; append-only full-population accounting survives as methodology. Evidence and exact MT5
+scope: `data/brain_hunter_s37_conditional_denominator_audit.json`. Zero desk constructions, zero
+target-horizon cells, zero survivors and zero tradeable cards.
+
+**Data/venue expansion.** The source named a PIT short-volume/EPS/text-state panel, routed as a
+Fusion US-share-CFD D1 data gap with executable cost and vintage constraints in
+`docs/research/data_axis_watchlist.md`. GitHub owner/repository metadata and the existing Topics
+surface yielded **0 new venues**; this is a negative venue screen, not ground exhaustion.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `KCDC-0/Quant-Finance`: **not exhausted; license-walled**. Re-enter on an explicit compatible
+  license.
+- `ljb189/wq-alpha-skill` commit `62c91e59`: **EXHAUSTED on robustness denominator, early-stop and
+  sensitivity-memory semantics on 2026-08-30**. Its formula results are ore, not MT5 evidence.
+- **Next:** continue the s31 UNKNOWN queue with `sanqiushu/worldquant-alpha-research-playbook`
+  after license verification; run the existing Rsquare conditioner when shared compute permits.
+  The BRAIN ground remains open.

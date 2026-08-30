@@ -5787,3 +5787,33 @@ Production input is the point-in-time Fusion net-R panel (bid/ask, fills, spread
 markout), not a BRAIN threshold or its PnL convention. Measured current state remains weak:
 `data/live_cohort_pnl.npz` is absent and `data/portfolio_admission.json` says 3/3 against an EMPTY
 BOOK, explicitly reducing the result to positive standalone Sharpe.
+
+## 2026-08-30 — BRAIN HUNTER s37 — robustness denominators start before selection; sensitivity memory is append-only
+
+Public MIT `ljb189/wq-alpha-skill` at
+`62c91e5920bfd53284a7be4407fda9d01ca05df0` supplies a useful failure specimen, not a workflow to
+import. Its R117 report starts with 12 candidates, passes 8 through IS and 3 through submission,
+then calls the robustness pass rate **3/8 = 37.5%**. The function can only see IS-pass rows with a
+parsed submission check; the full preregistered rate is **3/12 = 25%**. Under the source's own
+30% pass-rate and 0.05 margin rules, that denominator changes the label from `overfit` to
+`marginal` (reported mean margin 0.00207). [§33: screened ->
+`data/brain_hunter_s37_conditional_denominator_audit.json`]
+
+**KEEP/strengthen the desk's existing full-trial rule:** every robustness, survivor-yield and
+failure-cohort denominator begins with the frozen preregistered population and carries explicit
+stage attrition. Missing/timeout rows remain typed outcomes, never disappear from the denominator.
+The same source's parameter memory is a second negative transfer: it assigns one record to
+`parameter_name × value`, so a later expression/field/round silently overwrites the earlier one.
+Any desk sensitivity view must be an append-only set of full experiment identities; aggregation is
+a derived view with candidate, field, setting, data-vintage and outcome strata visible. No build is
+raised here because this session did not measure the desk committing either defect; the exact
+determining measurement is a census of canonical trial/cohort exports for preregistered-N,
+stage-attrition and duplicate `parameter × value` identities before an implementation change.
+
+**MT5 scope:** this is methodology over every terminal-enumerated Fusion symbol, not an alpha.
+Source equity fields apply only to Fusion US-share CFDs at D1 with PIT corporate identity, peer
+group, EPS/short-volume/text vintages, next-available bid/ask execution, spread, commission,
+slippage/partial-fill markout and swap. `translate_to_mt5("industry neutral ...")` returned
+asset-class/currency-risk-bucket neutralisation; its other process terms returned no table match
+and are recorded as methodology, not fabricated mappings. Zero constructions and zero desk
+target-horizon cells were tried.

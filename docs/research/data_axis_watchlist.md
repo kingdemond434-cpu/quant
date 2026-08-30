@@ -11501,3 +11501,26 @@ unavailable rather than approximately present.
 **FREE VERIFICATION ASSET:** the MIT qweave repository commits golden Parquet outputs for
 Alpha158, Alpha101 and GTJA191 under `crates/qweave-factors/tests/fixtures/`. Any implementation
 can be checked against an external expected output instead of against itself.
+
+## 2026-08-30 — BRAIN s37: PIT short-volume + text-state panel for Fusion US share CFDs (GAP)
+
+**Ore/source:** public MIT `ljb189/wq-alpha-skill` commit `62c91e5920bfd53284a7be4407fda9d01ca05df0`
+uses monthly short volume, EPS, negative-word count, negative-sentiment count and an equity-mood
+indicator inside peer-group transforms. Its reported alpha verdict is inadmissible here (conditional
+denominator; see `data/brain_hunter_s37_conditional_denominator_audit.json`), but the named data
+axes survive as a gap. [§33: screened -> evidence artifact; no alpha card]
+
+- **Exact MT5 ground:** terminal-enumerated Fusion **US share CFDs**, D1; broker symbol joined to a
+  PIT issuer identifier. No equity field is projected onto FX, metals, indices, energy or softs.
+- **Required fields/vintages:** exchange/FINRA short-volume publication available timestamp,
+  filed/reported EPS value and availability timestamp, source-document timestamp plus frozen text
+  and sentiment-model version, and a PIT peer grouping. OHLCV comes from Fusion; signal is fixed
+  only after all external fields are published.
+- **Execution truth:** next actually available Fusion bid/ask after the D1 decision; charge
+  symbol-specific spread, commission, slippage/partial-fill markout and swap across rollover.
+- **Translation:** `translate_to_mt5("industry neutral")` returns asset-class/currency-risk-bucket
+  neutralisation. Short-volume and text-state terms return no mapping, so they remain explicit
+  data gaps rather than assumed substitutes.
+- **Disposition:** free-frontier search only—official public archives or forward self-recording;
+  no commercial vendor. No strategy test is authorized until licence, issuer join and PIT vintage
+  coverage are measured.

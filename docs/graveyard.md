@@ -2473,3 +2473,34 @@ next-open→close (or later) returns, with all 101 cells reported under executab
 does not retire Alpha101's operators or construction vocabulary. SOURCE: repository files named
 in the evidence artifact. DERIVES-FROM: *101 Formulaic Alphas*, declared by the repository; no
 further implementation lineage was declared in the inspected files.
+
+## 2026-08-30 — BRAIN s37: conditional robustness denominator, censored trials and last-write sensitivity memory
+
+**Source:** public MIT `ljb189/wq-alpha-skill` at
+`62c91e5920bfd53284a7be4407fda9d01ca05df0`, read as text only. No BRAIN credential/API or
+third-party runtime was touched. DERIVES-FROM: WorldQuant BRAIN workflow; no code lineage was
+declared in the inspected README/source.
+
+**KILLED — conditional robustness rate.** R117 declares 12 candidates, 8 IS passes and 3
+submission passes. `evaluate_robustness()` receives only submission-check rows from those IS
+passes, reports **3/8 = 37.5%**, and labels the cohort `marginal`; the preregistered-population rate
+is **3/12 = 25%**. With its own mean-margin result 0.00207 against 0.05, the source's own rules
+would label the full cohort `overfit`. Upstream failures/timeouts are structurally unable to hurt
+the displayed denominator. Reopen only if the denominator begins at every preregistered candidate
+and stage attrition stays explicit.
+
+**KILLED — serial early stopping as research policy.** Five consecutive IS failures plus any
+failure name recurring three times stops later candidates. That is a private pre-gate whose
+verdict depends on ordering and whose skipped cells are never trials. Reopen only as compute
+scheduling that resumes every cell and reports every outcome; never as a rejection or truncation.
+
+**KILLED — `parameter_name × value` as memory identity.** `update_param_sensitivity()` overwrites
+one metrics/result object at that key, erasing expression, fields, settings, round and prior
+observations. Reopen only as append-only full-experiment identities with aggregation derived after
+the fact. Evidence: `data/brain_hunter_s37_conditional_denominator_audit.json`.
+
+**MT5 disposition:** these are process refutations, not tradeable formulas. The exact analogue is
+full-population accounting over every terminal-enumerated Fusion candidate. The source's equity
+inputs are merely data-gap ore for Fusion US-share CFDs at D1, PIT-vintaged and executed at the
+next real bid/ask with spread, commission, slippage/partial-fill markout and swap. Zero desk cells
+were tried and zero alpha cards were raised.

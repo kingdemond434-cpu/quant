@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s37",
+  "date": "2026-08-30",
+  "authority": "research evidence only; zero promotion, capital, gate-change or execution authority",
+  "source": {
+    "repository": "https://github.com/ljb189/wq-alpha-skill",
+    "commit": "62c91e5920bfd53284a7be4407fda9d01ca05df0",
+    "license": "MIT",
+    "derives_from": "WorldQuant BRAIN platform workflow; no implementation lineage declared in the inspected README or source",
+    "access": "public GitHub API/raw files read as text only; repository code was not installed or executed"
+  },
+  "corpora_first": {
+    "artifact": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_executable_evidence": 0,
+    "note": "Four Great Goat video rows remained transcript-unavailable; the AgonAlpha row was metadata-only."
+  },
+  "legitimacy_screen": {
+    "repository": "KCDC-0/Quant-Finance",
+    "license": null,
+    "verdict": "LICENSE_WALLED",
+    "scope_read": "GitHub repository metadata and root file names only",
+    "reopen_condition": "an explicit license grant compatible with commercial derivative research"
+  },
+  "audits": [
+    {
+      "finding": "conditional_robustness_denominator",
+      "source_locations": [
+        "wq_alpha_skill.py:evaluate_robustness",
+        "wq_alpha_skill.py:passed_is/submission_results workflow",
+        "results/r117_report.json"
+      ],
+      "reported_population": {
+        "total_candidates": 12,
+        "is_passed": 8,
+        "submission_passed": 3,
+        "robustness_denominator": 8,
+        "reported_pass_rate": 0.375,
+        "reported_avg_margin": 0.002066666666666587,
+        "reported_level": "marginal"
+      },
+      "full_preregistered_population": {
+        "denominator": 12,
+        "pass_rate": 0.25,
+        "level_under_source_own_rules": "overfit"
+      },
+      "mechanism": "The robustness function receives only IS-pass rows with a parsed submission check. IS failures and missing checks cannot enter its denominator, so upstream attrition can improve the displayed pass rate and change the verdict.",
+      "disposition": "REJECT_PROCESS_IMPORT"
+    },
+    {
+      "finding": "serial_early_stop_censors_trials",
+      "source_location": "wq_alpha_skill.py:should_early_stop/run_full_workflow",
+      "rule": "stop after five consecutive IS failures when any failure name appears at least three times",
+      "mechanism": "Later preregistered candidates are skipped rather than reported as tried outcomes. Ordering therefore changes which cells exist, and the negative cohort is censored by a private pre-gate.",
+      "disposition": "REJECT_PROCESS_IMPORT"
+    },
+    {
+      "finding": "parameter_memory_last_write_wins",
+      "source_location": "wq_alpha_skill.py:update_param_sensitivity",
+      "mechanism": "data[param_name][str(param_value)] is assigned one metrics/result object. Re-use of the same value under another expression, field set, round or setting overwrites the prior observation and destroys context needed to separate parameter effects from candidate effects.",
+      "disposition": "REJECT_IMPLEMENTATION; KEEP_APPEND_ONLY_IDEA"
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_queries": {
+      "industry neutral field crowding short interest": [
+        [
+          "industry neutral",
+          "neutralize by MT5 asset class and currency-risk bucket"
+        ]
+      ],
+      "parameter sensitivity product correlation winner curse": [],
+      "trade_when volume threshold": []
+    },
+    "methodology_analogue": "Every candidate over every terminal-enumerated Fusion symbol must retain its full preregistered population, frozen expression/code/config/data identity and typed outcome. No IS-survivor-conditioned denominator and no last-write parameter aggregate may make a gate or research verdict.",
+    "source_formula_data_axes": {
+      "instrument_scope": "Fusion-listed US share CFDs only for the equity-specific fields; cross-asset operator methodology may span the contemporaneous terminal-enumerated universe",
+      "timeframe": "D1, point-in-time as of the decision close; execution no earlier than the next available Fusion bid/ask",
+      "fields_present": [
+        "OHLCV",
+        "peer group",
+        "monthly short volume",
+        "EPS",
+        "negative-word count",
+        "negative-sentiment count",
+        "equity-mood indicator"
+      ],
+      "fusion_costs_required": [
+        "symbol-specific spread",
+        "commission",
+        "slippage and partial-fill markout",
+        "overnight swap when held across rollover"
+      ],
+      "point_in_time_constraints": "terminal membership, corporate identifier, peer group, EPS vintage, short-volume publication timestamp and text/sentiment publication timestamp must all be known before signal time",
+      "verdict": "DATA_GAP_AND_ORE_ONLY; no tradeable mechanism card raised"
+    }
+  },
+  "trial_accounting": {
+    "desk_constructions_run": 0,
+    "desk_target_horizon_cells_run": 0,
+    "external_report_cells_audited": 12,
+    "alpha_survivors": 0,
+    "new_tradeable_cards": 0
+  },
+  "economic_disposition": "Validated negative information: prevents a conditional-denominator false upgrade, censored trial history and overwritten sensitivity memory from entering the MT5 research system. Expected-log-wealth effect is positive but unmeasured; confidence high on the code-path findings and zero on the source alphas' MT5 profitability."
+}
