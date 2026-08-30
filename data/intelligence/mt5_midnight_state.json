@@ -1,33 +1,33 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-30T04:23:09.501910+00:00",
+  "generated_at": "2026-08-30T07:44:25.920342+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 251,
-    "metadata_mtime": "2026-08-30T04:23:09.730106+00:00",
+    "metadata_mtime": "2026-08-30T07:43:11.511406+00:00",
     "newest_h1_mtime": "2026-08-29T22:30:38.918283+00:00"
   },
   "conversion": {
     "research_queue": {
-      "AWAITING_CANONICAL_GAUNTLET": 2245,
+      "AWAITING_CANONICAL_GAUNTLET": 1266,
       "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
       "DONE": 10,
       "GAUNTLET_PASSED": 16,
-      "GAUNTLET_REJECTED": 16778,
+      "GAUNTLET_REJECTED": 19023,
       "PENDING": 17
     },
     "universal_survivors": 42,
-    "shadow_sleeves": 68,
-    "shadow_observations": 214,
+    "shadow_sleeves": 69,
+    "shadow_observations": 199,
     "shadow_last_run": "2026-08-30"
   },
   "freshness": {
     "research_loop": "2026-08-29T22:31:05.070281+00:00",
-    "research_pipeline": "2026-08-30T04:20:32+00:00",
-    "external_gauntlet": "2026-08-30T03:46:46+00:00",
-    "universal_gate": "2026-08-30T04:20:32+00:00",
+    "research_pipeline": "2026-08-30T07:42:03+00:00",
+    "external_gauntlet": "2026-08-30T05:10:04+00:00",
+    "universal_gate": "2026-08-30T07:42:03+00:00",
     "allocation": "2026-08-29T22:30:45.125757+00:00",
     "markout": "2026-08-28T23:03:00+00:00",
     "markout_usable": false,
@@ -35,15 +35,17 @@
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-08-30T04:23:09.199351+00:00",
+    "generated_at": "2026-08-30T07:44:25.771029+00:00",
     "counts": {
-      "DISPOSED_BLOCKED": 5,
+      "DISPOSED_BLOCKED": 7,
       "DISPOSED_SUPERSEDED": 10,
       "REACHABLE_MT5_STATIC": 67,
-      "UNWIRED_REVIEW": 557,
-      "VENUE_SPECIFIC_REVIEW": 6
+      "UNWIRED_REVIEW": 562,
+      "VENUE_SPECIFIC_REVIEW": 11
     },
     "proof_level": "STATIC_REACHABILITY_ONLY"
   },
-  "defects": []
+  "defects": [
+    "execution markout stale; current costs remain unmeasured"
+  ]
 }

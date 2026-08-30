@@ -59,10 +59,13 @@
   "XAUUSD.asia#rr=1.5": "2026-08-27T03:34:48.973309+00:00",
   "XAUUSD.asia#rr=1.5_wait_bars=8": "2026-08-27T03:34:49.147736+00:00",
   "XAUUSD.asia#rr=2.5": "2026-08-27T03:34:49.090008+00:00",
-  "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00"
+  "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00",
+  "xau_m15_anti_breakout": "2026-08-30T07:30:13.876469+00:00",
+  "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
+  "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 6.64,
- "measured_at": "2026-08-30T05:12:49+00:00",
+ "max_clock_age_days": 6.745,
+ "measured_at": "2026-08-30T07:44:08+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

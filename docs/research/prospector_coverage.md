@@ -13663,3 +13663,43 @@ crypto-venue 418 path), R0126 (mixed crypto ground plus superseded Stage-A gate)
   is quiet; then compare a desk port against `golden_qlib_alpha158.parquet`; then work the 56
   UNKNOWN-description repositories in `data/brain_hunter_s31_repo_triage.json` by README/source,
   not by descriptions. The BRAIN ground remains open.
+---
+
+## BRAIN HUNTER s33 — 2026-08-30 — full-payload experiment identity; zero alpha cards
+
+**Corpora first.** The prefetched `data/intelligence/` corpus was searched before live retrieval;
+it contained no usable new WorldQuant/BRAIN artifact. The next UNKNOWN-description repository
+from s31 was then worked from public GitHub only.
+
+**Source and boundary.** `nutdnuy/brain-sim-lib`, MIT, commit
+`5658174f0a3630253e80cfe0828f2755679f526b`; `models.py`, `payloads.py`, `cache.py`, `batch.py`,
+`client.py`, and `docs/brain-settings-and-datafields.md` were read as text. No package was
+installed or run; no credentials, authenticated content or BRAIN API were touched. The GitHub
+Topics page was the venue-discovery route that confirmed this previously UNKNOWN repo as a
+current public BRAIN tooling node. Verdict: **RICH for process semantics, THIN for operator
+semantics**.
+
+**Disposition.** Zero new mathematical operators, zero tradeable mechanisms, zero gauntlet
+candidates. The durable result is one measured evidence-integrity repair in
+`improvement_inbox.md`: the source hashes the complete experiment payload, while the desk's
+external lane leaves code/config/data out of all **20,410** docket identities and **42**
+certificate shadow specs. Reproducer and result:
+`data/brain_hunter_s33_identity_audit.py` → `data/brain_hunter_s33_identity_audit.json`.
+
+**Repair window.** The fenced CLI accepted reasoned dispositions for R0046/R0082/R0126/R0162,
+but the concurrent ledger writer restored all four scheduled rows afterwards. Artifact outranks
+process exit: **no conversion is claimed**. The exact ready dispositions remain: R0046 rejects
+healthy-clock optional stopping; R0082 rejects retired crypto-venue work; R0126 rejects mixed
+forbidden ground plus a superseded private Stage-A gate; R0162 points to the already-landed
+notional-aware root repair at `767bb6ba`. A single-writer ledger window is still required.
+
+**Video:** 0 fetched, 0 locked — no video route was attempted this run.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `brain-sim-lib` source modules named above: **EXHAUSTED on payload/cache identity semantics** on
+  2026-08-30. Its tutorials, recordset schema and author graph remain open.
+- **Next:** inspect `brain-sim-lib` recordset/result schemas for public failure-cohort fields; then
+  continue the s31 UNKNOWN repo queue with `flashlight-byte/WorldQuant-Brain-AlphaSimulator` and
+  `BB-16/worldquant_101_alphas_code`; run the s31 Rsquare conditioner when compute permits. The
+  BRAIN ground remains open.

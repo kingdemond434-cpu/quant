@@ -5715,3 +5715,34 @@ factor names. Standing method: read the implementation before translating a name
 the repository's committed golden-output fixtures as an independent port test. The fixture does
 not validate alpha; it validates arithmetic, cheaply separating implementation error from economic
 failure.
+## 2026-08-30 — BRAIN HUNTER s33 — freeze the executable experiment, not its label (UPGRADE)
+
+**Source/process.** Public MIT `nutdnuy/brain-sim-lib` at
+`5658174f0a3630253e80cfe0828f2755679f526b`, read as text only. Its useful construct is not a
+BRAIN threshold: `payloads.py` hashes canonical JSON containing the expression and **every**
+`SimulationSettings` field, and `cache.py` keys completed experiments by that hash. A changed
+setting is a changed experiment. Nothing was installed or executed and no BRAIN account/API was
+touched.
+
+**MT5 analogue and measured defect.** The external lane does not freeze the equivalent payload:
+`merge_hypotheses._identity` is `symbol + family + params`; `external_gauntlet._cache_key` adds
+only the last complete day; certificates/shadow specs again carry only symbol, selector, family
+and params. The local audit in `data/brain_hunter_s33_identity_audit.json` measured **20,410 / 20,410**
+docket rows and **42 / 42** certificate shadow specs missing all three already-declared identity
+fields: `code_hash`, `config_hash`, `data_snapshot`. The current cache contains one `.npz` whose
+mtime is 2026-08-27 00:44 UTC; **33** commits have touched the gauntlet/shadow/family path since
+then. That commit count is exposure, not proof that every commit changed signal semantics. The
+structural failure is enough: a family-code/config change can reuse an intraday series or append
+forward observations under semantics different from the certificate, while
+`ResearchArtifact.fingerprint()` elsewhere in this repo explicitly says code/config/data are part
+of strategy identity.
+
+**Economic disposition: UPGRADE, exact patch owed outside this research-only freeze.** Create one
+canonical external-spec fingerprint over symbol, family, params, family-constructor source hash,
+resolved-input/config hash and data snapshot. Use it in merge identity, gauntlet cache keys,
+certificates and shadow rows. `shadow_forward` must compare the live fingerprint with the
+certificate before every replay: mismatch stops the old clock, re-gauntlets the changed candidate
+and starts a fresh preregistered window only on pass. Regression: edit one family constructor
+without changing symbol/family/params and prove the old cache misses and the old certificate cannot
+append. This changes no bar; it prevents stale false positives/negatives and protects untouched
+forward evidence.
