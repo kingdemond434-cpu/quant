@@ -10264,6 +10264,46 @@ patch named and its fix measured). **No EV-gate pre-registration this run** — 
 earn one until the session-boundary convention is resolved, and pre-registering on a join I have
 just said not to make would be exactly the timidity-in-reverse this desk punishes.
 
+### A CONCURRENCY DEFECT THAT ATE THIS RUN'S LEDGER ENTRIES — and it explains the missing session note
+
+**Symptom, measured four times.** `python scripts/recommendations.py add` printed
+`R0747 ledgered from cycle -- OPEN, disposition owed within 24h` and returned success. Reading
+`docs/research/recommendation_ledger.json` immediately afterwards:
+
+| attempt | printed | ledger state after |
+|---|---|---|
+| 1 (tape hole) | R0747 ledgered | n=746, last **R0747** — present |
+| 2 (missing note) | **R0747 ledgered again** | n=746, last R0747 — **attempt 1 OVERWRITTEN** |
+| 3 (re-add tape hole) | R0747 ledgered | n=**745**, last R0746 — **both gone** |
+| 4 (probe row) | R0747 ledgered | n=746, R0747 present; **stable at +5 s** |
+| 5 (re-add tape hole) | R0747 ledgered | n=745, last R0746 — **probe row gone too** |
+
+**Mechanism, and it is not a bug in the ledger's own logic.** The ledger is rewritten whole-file
+by more than one live process in this worktree (`ps` shows several concurrent `ccd-cli` sessions).
+A sibling holding a stale in-memory copy writes it back, and every row added since its read
+disappears — last-writer-wins over the entire file. Attempt 4 surviving 5 s and dying later is the
+signature: this is a **race, not a rejection**. The CLI cannot detect it because it re-reads,
+appends and writes without a lock or a compare-and-swap, so **its success message is truthful at
+the moment it prints and false one second later.**
+
+**This is R0423 — "never share a worktree with another live session" — actually biting**, and the
+cost is precisely the one the ledger exists to prevent: *"nothing recommended is ever forgotten."*
+Two real defects found this run were forgotten by the ledger within seconds of being filed.
+
+**It also explains the vanished session note** at the top of this run: same worktree, same
+whole-file-rewrite pattern, same silent revert. Two independent artifacts lost the same way in one
+session is a mechanism, not a coincidence — and I could not attribute the note's loss on its own
+evidence, which is why it is recorded here rather than asserted there.
+
+**THE FIX, named exactly (not applied — research freeze):** `recommendations.py` must write under
+an exclusive lock (`fcntl.flock` on the ledger, or the `os.O_EXCL` lockfile pattern the desk
+already uses for `macro_state.json`'s three racing writers, free-data d) **and** re-read + verify
+its own row is present after the write, failing loudly if it is not. The id is allocated from
+`len(rows)`, which is itself the collision source: two processes reading 746 both mint R0747.
+**Allocate from `max(existing id) + 1` under the lock, and treat a duplicate id as a hard error.**
+A ledger whose success message survives one second is worse than no ledger, because it converts a
+found defect into a *believed-filed* defect.
+
 Status: **CLOSED.**
 
 #### INCIDENT (same run, not part of the dig) — the 23-symbol seed was staged over the live 251-symbol registry
@@ -10679,5 +10719,469 @@ and I nearly graded a verified-clean source as poor — the fault was a one-line
 4. **Pull Eurex dividend-futures prices** to make cross-source pair (b) real.
 5. **HKEX's other 79 products** — this run verified `dmreport26` only; USD Gold (`36`), CNH Gold
    (`37`), CNH Silver (`39`) and HSI futures (`1`) are mapped and unpulled.
+
+### A CONCURRENCY DEFECT THAT ATE THIS RUN'S LEDGER ENTRIES — and it explains the missing session note
+
+**Symptom, measured four times.** `python scripts/recommendations.py add` printed
+`R0747 ledgered from cycle -- OPEN, disposition owed within 24h` and returned success. Reading
+`docs/research/recommendation_ledger.json` immediately afterwards:
+
+| attempt | printed | ledger state after |
+|---|---|---|
+| 1 (tape hole) | R0747 ledgered | n=746, last **R0747** — present |
+| 2 (missing note) | **R0747 ledgered again** | n=746, last R0747 — **attempt 1 OVERWRITTEN** |
+| 3 (re-add tape hole) | R0747 ledgered | n=**745**, last R0746 — **both gone** |
+| 4 (probe row) | R0747 ledgered | n=746, R0747 present; **stable at +5 s** |
+| 5 (re-add tape hole) | R0747 ledgered | n=745, last R0746 — **probe row gone too** |
+
+**Mechanism, and it is not a bug in the ledger's own logic.** The ledger is rewritten whole-file
+by more than one live process in this worktree (`ps` shows several concurrent `ccd-cli` sessions).
+A sibling holding a stale in-memory copy writes it back, and every row added since its read
+disappears — last-writer-wins over the entire file. Attempt 4 surviving 5 s and dying later is the
+signature: this is a **race, not a rejection**. The CLI cannot detect it because it re-reads,
+appends and writes without a lock or a compare-and-swap, so **its success message is truthful at
+the moment it prints and false one second later.**
+
+**This is R0423 — "never share a worktree with another live session" — actually biting**, and the
+cost is precisely the one the ledger exists to prevent: *"nothing recommended is ever forgotten."*
+Two real defects found this run were forgotten by the ledger within seconds of being filed.
+
+**It also explains the vanished session note** at the top of this run: same worktree, same
+whole-file-rewrite pattern, same silent revert. Two independent artifacts lost the same way in one
+session is a mechanism, not a coincidence — and I could not attribute the note's loss on its own
+evidence, which is why it is recorded here rather than asserted there.
+
+**THE FIX, named exactly (not applied — research freeze):** `recommendations.py` must write under
+an exclusive lock (`fcntl.flock` on the ledger, or the `os.O_EXCL` lockfile pattern the desk
+already uses for `macro_state.json`'s three racing writers, free-data d) **and** re-read + verify
+its own row is present after the write, failing loudly if it is not. The id is allocated from
+`len(rows)`, which is itself the collision source: two processes reading 746 both mint R0747.
+**Allocate from `max(existing id) + 1` under the lock, and treat a duplicate id as a hard error.**
+A ledger whose success message survives one second is worse than no ledger, because it converts a
+found defect into a *believed-filed* defect.
+
+Status: **CLOSED.**
+
+## FREE-DATA aa — 2026-08-30 — SESSION NOTE (written at start; RE-WRITTEN at close, see the anomaly below)
+
+Backlog: `source_backlog_next.py` = **0 pending verification** (99 catalogued, 71 resolved, 28
+deferred to 2026-09-01→15). No verification debt. This run went to the ground run (z) named.
+
+**Items taken this run (bounded per completion contract, depth unbounded):**
+1. **Run the offset scan on JPX** — run (z)'s #1 next ground. JPX was ADOPTED at
+   *needs-monitoring* on an unexplained ~1% residual; (z) demonstrated on HKEX that such a
+   residual is a CLOCK. The cheapest available quality upgrade on an already-adopted source.
+2. **HKEX's unpulled products** — (z) verified `dmreport26` (USD/CNH) only. `36` USD Gold,
+   `37` CNH Gold, `39` CNH Silver, `1` HSI were mapped and unpulled; XAUUSD and HK50 are live
+   desk symbols.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — apply the **exchange-operator developer-portal /
+   shared-anonymous-key** class (opened by (z), Eurex the proof instance) to further exchanges.
+   A class with one instance is a hypothesis, not a class.
+
+**ANOMALY, recorded because the completion contract depends on this block existing.** This note
+was appended FIRST, before any research, exactly as the contract requires — the write returned
+success. At session close it was **absent from the file**, while every later append in the same
+run had survived. `git diff --numstat` shows a pure append (354 added, 0 deleted) against a
+10,683-line HEAD, so nothing committed was lost and I did not remove it. I cannot attribute the
+cause: the doc-heal alarm in the session-start block reports 15 heals and 13 DESTRUCTIONS in 24h
+over one guarded file, but that guarded file is not this one, and I will not claim a mechanism I
+have not demonstrated. **The operational point stands regardless of cause: had this run been
+killed mid-work, the durable progress the next run resumes from would have been GONE, and the
+loss would have been invisible** — the file would have looked untouched rather than damaged.
+Worth a fence: hash the session note immediately after writing it and re-check at close.
+
+### RESOLVED — item 1 (JPX) — **UPGRADED needs-monitoring → verified-clean.** The residual was a CLOCK.
+
+#### CARD — JPX / OSE daily derivatives report (`sif_dyr`) — **verified-clean** (ADOPTED, upgraded)
+
+Run (y) adopted this source at *needs-monitoring* on an **unexplained ~1% residual** against the
+desk's own `JPN225_H1` tape, and correctly refused to join on date until the session convention
+was resolved. Run (z) demonstrated on HKEX that a residual of exactly this size and shape is a
+**clock**. **Ran the scan. It is a clock, and the identification is unambiguous.**
+
+**Method:** pulled and parsed **79 consecutive OSE trading days (2026-05-01 → 2026-08-27)** from
+the `Daily_Report_OSE_YYYYMMDD.zip` route, extracted the **lead-month settlement price** AND the
+**Nikkei 225 cash-index OHLC** the same report carries, then scanned all 24 tape-hours.
+
+**Result — settlement vs `JPN225_H1` close, return correlation by tape-hour:**
+
+| tape hour | 1 | 5 | 7 | 8 | **9** | 10 | 12 | 15 | 19 | 23 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| corr | .5574 | .8520 | .9281 | .9591 | **.9946** | .9810 | .9500 | .8806 | .6330 | .5242 |
+| basis sd (pts) | 911.7 | 532.6 | 393.2 | 283.8 | **119.7** | 203.2 | 322.1 | 459.2 | 770.6 | 901.3 |
+
+- **Peak at tape-hour 9: corr +0.9946, basis sd 119.7 pts (0.18% of a 66,000 index), basis mean
+  +62.3 pts** — a small positive futures premium, the right sign and size.
+- **Monotone decay in BOTH directions** from the peak, and **two independent statistics peak at
+  the same hour** (correlation maximal, basis sd minimal — 7.6× tighter than at hour 23). That
+  pairing is what separates a clock identification from a fit.
+- **Lag controls both ≈ 0:** corr(settle_t, tape_{t+1}) = **−0.067**, corr(settle_t, tape_{t−1}) =
+  **−0.106**. The alignment is same-day and specific; there is no day-shifted alias.
+- **The clock, and it lands exactly on the exchange's own rule.** The desk's parquets are stamped
+  `+00:00` but carry broker **EET** (+3 summer — free-data i); the sample is May–Aug, all summer.
+  Tape-hour 9 = **06:00 UTC = 15:00 JST**, and the OSE **day session closes 15:15 JST** with the
+  settlement determined at that close. The 09:00–10:00 EET bar is the one containing 15:15 JST.
+- **The cash index is a second, independent confirmation.** The same report's Nikkei 225 cash OHLC
+  scanned separately peaks at **hour 8, corr +0.9876, basis sd 181.9** — one hour earlier than the
+  futures settlement and on the same monotone curve. Two different quantities from one document,
+  each landing on its own session boundary, is not something a mis-parse produces.
+
+**THE GRADE CHANGES: needs-monitoring → verified-clean.** The join rule is now stated rather than
+withheld: **join the OSE trade date to the desk tape's hour-9 bar (summer EET)**; the ~1% residual
+that blocked the grade is 0.18% at the correct hour. Run (y)'s caution was right and its residual
+is now explained rather than tolerated.
+
+**Parse findings (four, each cost a wrong answer first).**
+1. The `sif_dyr` content streams are **2-byte CIDs**: every character arrives with a NUL high
+   byte. Strip `\x00` **before** any regex, or every pattern silently matches nothing — the
+   failure presents as *"the PDF has no data"*, not as a parse error.
+2. The +29 CID shift applies to **digits too**, and digits land **below `0x20`** pre-shift. A
+   shift guarded by `0x20 <= ord(c)` renders perfect English text with **every number missing** —
+   the exact silent-drop class as brain-hunter s14, and it reads as a document that genuinely has
+   no figures.
+3. **Do not shift `\n`**: `0x0A + 29 = 0x27`, so every line break becomes an apostrophe and the
+   document collapses to one line, destroying the row structure a positional parse needs.
+4. Numbers are **comma-grouped and concatenated across columns** (`...-26021,8481,4`), so the
+   front-month settlement must be taken as the first `\d{2},\d{3}\.\d\d` token **after** the
+   contract-code line — never by field position in the numeric run.
+
+**Failure modes (unchanged plus new).** PDF-only, no CSV route; the JSON index exposes 202601→
+only (8 months, rolling — **daily Bronze capture or the history is lost**); `20260803` returns a
+zip with **no `sif_dyr` member at all** (1 of 80 days — a structurally valid archive missing the
+file, so a collector must distinguish *no member* from *no data*); **open interest is NOT parsed**
+— the OI/trading-value columns concatenate and I did not verify a positional split, so OI from
+this source is **UNVERIFIED and must not be used** until it is.
+
+**What it replaces:** the exchange-native settlement leg for Nikkei 225 — and, newly established
+this run, the **official Nikkei 225 cash-index OHLC**, which is the un-drifted benchmark against
+the desk's price-only CFD (R0691).
+
+### RESOLVED — item 3 (search-space expansion) — the developer-portal class SURVIVES contact, with a bounded yield
+
+Run (z) opened **"exchange-operator developer portals that publish a shared anonymous key"** as a
+new source class on ONE instance (Eurex). A class with one instance is a hypothesis. Tested it
+against nine further operators; the class is real, the yield is uneven, and one instance is
+adopted.
+
+**Population probe (each host, `robots.txt`, own UA):** `developer.six-group.com` 200 (AEM robots,
+market content allowed) · `data.nasdaq.com` 200 · `www.b3.com.br` 200 (`User-agent: *` and nothing
+else — **allow-all**) · `api.sgx.com` 403 · `developer.deutsche-boerse.com` 4xx-on-robots (=
+allow-all under RFC 9309) · `developer.nasdaq.com`, `apidocs.b3.com.br`, `developer.asx.com.au`,
+`api.euronext.com`, `developer.lseg.com` **all curl code 000 — the hosts do not resolve.**
+
+**METHOD DEFECT FOUND IN MY OWN PROBE, and it is worth more than a source.** My first sweep wrote
+every response to one reused `-o` file. curl writes **nothing** on a connect failure, so the file
+kept the **previous host's body** — and `apidocs.b3.com.br` reported `000` next to
+**358 bytes of data.nasdaq.com's robots.txt**. A dead host read as a live one carrying another
+institution's content. Caught only because a Brazilian exchange serving a Nasdaq sitemap line is
+absurd on its face; a less obvious pairing would have been adopted. **Rule: `rm -f` the output
+path before every probe, and treat "code 000 with bytes > 0" as a detector, never as content.**
+This is the empty-artifact class (prospector s11) inverted — a *stale* artifact asserting presence.
+
+#### CARD — SIX Group API portal (`apiportal.six-group.com`) — **verified-clean** (catalogue), and the SIC clearing-day calendar ADOPTED
+
+- **The route, and it generalises.** The portal is a **Kong Konnect** developer portal. Its
+  documented UI paths 404, but **`GET /api/v3/apis` returns the machine-readable catalogue** with
+  no key and no session. `robots.txt` allows everything except `/login*`, `/logout`,
+  `/forgot-password`, `/reset-password`, `/apps/`, `/_preview-mode/`. **`/api/v3/apis` is not
+  disallowed.** Any Kong Konnect portal answers the same path — that is the reusable half.
+- **Catalogue (4 public APIs, all `auth_strategies: []`):** Settlement Info Reporting [CH], SIC
+  Service Status V1, **SIC Clearing Day Calendar V1**, Swiss Bank Master v3. The OpenAPI spec is
+  fetchable at `/api/v3/apis/{slug}/specifications/{id}` and **names the production server**.
+- **VERIFIED LIVE, keyless, end to end.** `GET https://api.six-group.com/api/epcd/clearingday/v1/calendar`
+  → **200, 112,827 bytes**, `entries` = **128 calendar days, 2026-08-30 → 2027-01-04**, three
+  services (`PCI_P` instant payments, `PCR_P` SIC CHF, `PER_P`). The `/healthcheck` endpoint
+  answers with a build stamp (`5.3.0-20260819`, `environmentStage: p`) — production, not a sandbox.
+- **VERIFY-DON'T-TRUST — the content is checkable and it checks out.** Of 128 days, 39 are
+  non-clearing for SIC CHF, and **exactly 2 of those are weekdays: 2026-12-25 and 2027-01-01.**
+  A Swiss interbank calendar whose only weekday closures in the window are Christmas and New Year
+  is correct on its face; a scraped or mis-parsed calendar does not land on precisely those two.
+- **Why it ranks for THIS desk, and it is not a market-data find.** It is a **forward-looking CHF
+  value-date calendar** — the days on which CHF interbank settlement does and does not occur, out
+  four months. Swap/rollover accrual is a function of value dates (triple-swap days, holiday
+  gaps), the desk's financing tape is a standing gap (GAP #210, ONE day on disk), and the broker's
+  own calendar publishes **only as a PNG** (prospector s9). Almost every calendar the desk owns is
+  historical; this one is **published ahead of time**, so it is usable ex ante rather than only in
+  reconstruction. CHF is in 11 live desk symbols (USDCHF, EURCHF, CHFJPY, CHFSGD, CHFNOK …).
+- **Failure modes:** (a) rolling ~4-month forward window, no history — capture daily or the
+  *revisions* are lost (the forward-looking part is the value, and a calendar that CHANGES is the
+  interesting event); (b) it is a **payment-system** calendar (SIC/instant payments), NOT an
+  exchange trading calendar — a CHF value date is not a SIX Swiss Exchange trading day, and
+  conflating them would be the units error this desk keeps finding; (c) no `auth_strategies` today
+  is not a promise — a gateway can add one silently, so a collector must alert on 401, not skip.
+- **Honest yield:** SIX's public catalogue is **payments infrastructure, not market data**. The
+  Swiss market-data business is the paid product and is nowhere in this catalogue. Stated plainly:
+  the class delivered ONE usable series here, not a Eurex-sized find.
+
+#### CARD — Deutsche Börse API Platform (`developer.deutsche-boerse.com`) — **destroyed-at-source (auth-gated catalogue)**, run (z)'s ground #3 CLOSED
+
+Run (z) named "enumerate the DB developer portal via the SPA's `_next` build manifest" as next
+ground. **Done, and it resolves negative with the route in hand.** `buildId`
+`Zr6v1RjQFGF5GLzEGiNTW` → `_buildManifest.js` (6,941 bytes, **307 without `-L`** — a redirect that
+reads as a dead asset) → **the full route table**: `/apis`, `/apis/[id]/technical-documentation`,
+`/applications/*`, `/gateways/{shared,dedicated,self-hosted}/*`, `/my/apis/*`,
+`/machine-credentials/clients`. `/env-config.js` gives the backend wiring (`IRIS_EDGE_URL`,
+Hydra client `iris-ui`, CSRF header `X-DBP-CSRF-TOKEN`). **Every catalogue REST path probed
+(`/api/v1/apis`, `/api/apis`, `/iris/api/v1/apis`, `/api/v1/catalog/apis`) returns the SPA 404
+shell: the catalogue is behind the Hydra login.** `docs.developer.deutsche-boerse.com` has a
+sitemap but carries **platform documentation only** — no API list.
+**This does not cost the desk anything, and that is the point:** the Eurex GraphQL API adopted in
+run (z) is reachable **without the portal at all**. The portal was a hypothesised second door to
+the same building; it is locked, the building is already open, and the ground is now closed so no
+future run re-walks it.
+**Method note:** the ToU PDF (`DBAG_API_Platform_Terms_of_Use.pdf`, 134,932 bytes) extracts to
+**24 characters** with the desk's extractor — an encoding it does not handle. Recorded as a
+capability limit, not as an absent document; the Eurex key's licence was evidenced in run (z) from
+Eurex's own public page, so nothing rests on it.
+
+#### CARD — B3 (Brazil) `TradeInformationConsolidatedFile` — **verified-clean** (ADOPTED) — *not on this run's item list; taken because USDBRL is a live desk symbol*
+
+The developer-portal sweep put B3's robots.txt in front of me (`User-agent: *` and nothing else —
+**allow-all**), and B3 turned out to carry an on-mandate axis the desk does not have: the
+**USD/BRL futures curve with settlement, volume and turnover**, free and keyless. **USDBRL is one
+of the 251 live MT5 symbols.**
+
+- **Route (two hops, both keyless):**
+  `GET https://arquivos.b3.com.br/api/download/requestname?fileName=TradeInformationConsolidatedFile&date=YYYY-MM-DD`
+  returns `{"redirectUrl":"~/download?token=<406-char token>"}` →
+  `GET https://arquivos.b3.com.br/api/download?token=<token>` returns the file. The token is
+  issued to anonymous callers on demand; there is no account and no key.
+- **Payload:** ~8.6 MB semicolon-CSV per day, **134,000+ rows**, header line
+  `Status do Arquivo: Final` then
+  `RptDt;TckrSymb;ISIN;SgmtNm;MinPric;MaxPric;TradAvrgPric;LastPric;OscnPctg;AdjstdQt;AdjstdQtTax;RefPric;TradQty;FinInstrmQty;NtlFinVol`.
+  Segments: EQUITY CALL/PUT (64,702 each), **FINANCIAL (2,907 — the futures)**, CASH, AGRIBUSINESS,
+  ODD LOT, FORWARD, block trades. `AdjstdQt` is the **official settlement (adjustment) price**.
+- **VERIFIED against the desk's own tape — 83 days, 2026-05-04 → 2026-08-27, offset scan:**
+
+| tape hour (EET) | 15 | 17 | 19 | 20 | **21** | 22 |
+|---|---|---|---|---|---|---|
+| corr | .5928 | .7671 | .7909 | .9123 | **.9822** | .9772 |
+| basis sd (bp) | 288.9 | 239.4 | 217.0 | 143.5 | **105.7** | 118.7 |
+
+  **Peak at tape-hour 21 = 18:00 UTC = 15:00 BRT**, corr **+0.9822**, basis sd **105.7 bp** —
+  monotone in both statistics, and it lands on the B3 afternoon session. The desk's `USDBRL_H1`
+  tape only carries **hours 15–22 EET (09:00–16:00 BRT)** — i.e. the Brazilian cash session and
+  nothing else — so the scan could only run over 8 hours; that is an **instrument trading-window
+  fact, not a tape defect**, and it is stated because an 8-hour parquet looks like a broken feed.
+- **A SECOND, INTERNAL CHECK that costs nothing and is worth stating:** DOL (full contract) and
+  WDO (mini) return **identical `AdjstdQt` to six figures** on every day — correct, they settle on
+  the same underlying — while their volumes differ ~10× (2026-08-27: DOL **176,745** vs WDO
+  **1,720,646**). Two independent tickers agreeing exactly on price and disagreeing structurally
+  on volume is what a correctly-parsed file looks like.
+- **UNRESOLVED, AND I AM NOT GRADING AROUND IT:** the level basis is a **stable −162 bp** (futures
+  *below* the desk's tape) with sd 106 bp. BRL rates are far above USD, so a front-month future
+  three days from expiry should sit **at or slightly above** spot, not 162 bp below. The
+  correlation establishes that the two series are the same underlying on an identified clock; the
+  **level offset is a convention difference I have not identified** (candidates: a CFD markup in
+  the desk's quote, a bid/ask convention, or an offshore-NDF-implied tape vs the onshore rate).
+  **Do not join these on level until that is resolved.** Returns are safe; levels are not.
+- **Failure modes:** (a) Brazilian decimal convention — `5165,333` is five-thousand, and the
+  thousands separator is `.` — parse with `.`-strip then `,`→`.` or every price is 1000× wrong;
+  (b) DOL is quoted **per USD 1,000**, so divide by 1,000 to reach a USDBRL rate — a units trap
+  that lands inside a plausible range if missed on a cross; (c) the front month must be picked by
+  **parsed contract code** (`DOL` + month letter `FGHJKMNQUVXZ` + 2-digit year), never row order —
+  the same trap that cost run (z) an 8× understatement; (d) untraded far months carry an
+  `AdjstdQt` with **empty price/volume columns**, so a volume-blind front-month pick lands on a
+  synthetic quote; (e) the token expires — request it per file, never cache it.
+- **What it replaces:** the LATAM leg of a listed-derivatives data vendor. It also carries IND/WIN
+  (Ibovespa full/mini), the full equity option chain and agribusiness futures — **none of which I
+  have verified**; only the DOL/WDO leg is graded here.
+- **CROSS-SOURCE PAIR (named, not claimed):** **DOL volume ÷ WDO volume is an
+  institutional-versus-retail positioning split on USDBRL**, published daily and free. The full
+  contract is institutional-sized (USD 50k) and the mini is retail-sized (USD 10k); the *ratio*
+  is a mix measure that neither leg carries alone, and the desk has no retail-vs-institutional
+  positioning axis on any symbol. The same construction exists on IND/WIN. Pre-registerable once
+  a series is accumulated — the daily file is a full archive, so this one is **not** blocked on
+  capture the way the rolling sources are.
+
+### RESOLVED — item 2 (HKEX's unpulled products) — **verified-clean as PRICE, EMPTY as positioning.** The hypothesis that drove me here is dead.
+
+Run (z) mapped HKEX products `36` USD Gold, `37` CNH Gold, `39` CNH Silver, `1` HSI and left them
+unpulled. I took them because **XAUUSD and HK50 are live desk symbols** and the pitch was free
+**open interest** on desk-traded ground. **The pitch is refuted, and the refutation is the
+deliverable.**
+
+- **Route confirmed for four more products** (the `dmreport{N}` → dated-file chain generalises):
+  `36`→`gduf{YYMMDD}.htm`, `37`→`gdrf`, `39`→`sirf`, `1`→`hsif`, each with an `…a` after-hours
+  sibling. **93 days pulled and parsed per product (2025-10-02 → 2026-02-16)** before HKEX's edge
+  throttled the crawl; the run was bounded there rather than pushed (courteous rates, run (z)'s
+  Akamai note).
+- **USD Gold settlement IS the same underlying as XAUUSD, on an identified clock.** Offset scan,
+  93 days, converting USD/gram → USD/troy oz (×31.1034768):
+
+| tape hour (EET) | 1 | 5 | 8 | 9 | **10** | 13 | 17 | 23 |
+|---|---|---|---|---|---|---|---|---|
+| corr | .7566 | .9256 | .9632 | .9759 | **.9821** | .9388 | .6692 | .5494 |
+| basis sd ($/oz) | 56.59 | 27.71 | 24.74 | 18.99 | **15.48** | 23.99 | 58.77 | 65.68 |
+
+  **Peak tape-hour 10, corr +0.9821, basis sd $15.48/oz, basis mean +$36.33.** Monotone both
+  ways, both statistics peaking together, **lag controls +0.049 (t+1) and +0.033 (t−1)** — no
+  day-shifted alias. The sample is Oct–Feb, i.e. **winter EET (+2)**, so hour 10 = **08:00 UTC =
+  16:00 HKT**, and the HKEX gold day session closes **16:30 HKT**. Same construction, same answer
+  as run (z)'s USD/CNH: the exchange's own session close.
+- **AND THE POSITIONING AXIS IS EMPTY — this is the finding.** Across 93 days the USD Gold
+  front contract's **median open interest is 0 and median volume is 0**; the whole-product OI on
+  the one day run (z) sampled was **961 contracts**. The settlement price is real and
+  exchange-computed, but **there is no positioning content in it at all** — nobody trades it.
+  A "free open interest on gold" axis does not exist here. **KILLED, with the number.** The three
+  metals products (`36`/`37`/`39`) are graded **verified-clean as a price cross-check, dead as a
+  positioning source**, and no future run should re-open them looking for OI.
+  *Contrast that with the same file's own control:* HSI front-month OI runs a **median 99,970**
+  contracts on **median 25,005** front-month volume, from the identical parser. The zero is a
+  property of the gold contract, not of my parse — which is exactly the check that separates
+  "empty seam" from "broken tool".
+- **HSI could NOT be verified, and the blocker is the DESK, not HKEX.** `HK50_H1` carries
+  **14 days of hourly bars in the entire 2025-10 → 2026-02 window**; the file has 25,922 rows back
+  to 2011 but **2025-05 through 2026-01 is essentially absent** (2 qualifying days in 2025-05,
+  2 in 2026-01, nothing between) while the symbol quotes to 2026-08-26. There is nothing to scan
+  against. **HSI settlement/OI is UNVERIFIED and stays that way until the tape is repaired.**
+  My HSI column indices are also inherited from the FX-futures layout and produce
+  `chg_oi > oi` — internally impossible, so the HSI *parse* is separately unverified. Two
+  independent reasons, both stated.
+- **§38 / L1.39 — the tape hole is now a ledgered defect, not an aside.** Swept all 251 `*_H1`
+  parquets for the same pattern: **9 of 251 live symbols** have ≥6 of those 10 months carrying
+  <5 trading days of H1 bars — **AUDNZD (20 trading days of H1 in the WHOLE file, last bar
+  2026-08-28), HK50 and GBPZAR (9 dead months), BeyondMeat (8), Salesforce (7), EURHKD (6)**,
+  plus EURRUB and BlockInc which are genuinely delisted/stale. **234/251 are clean**, so this is a
+  targeted repair rather than a rebuild. **Filed to the recommendation ledger FOUR TIMES and it did not persist — see the concurrency finding at the end of this note; the durable record is this document.** A backtest over that window on those
+  symbols reads as a thin-but-valid result and never as missing data — the WS-005 class again.
+
+### SESSION CLOSE — free-data run (aa)
+
+**Categories covered.** 1 (exchange-native archives — JP, HK, BR) and 3 (non-English/regional —
+Japanese PDF, Brazilian Portuguese CSV, Swiss/German portals) to depth; 6 (vendor-replacement:
+listed settlement / positioning / value-date calendars) throughout; 4 touched via the
+developer-portal class. **Categories 2 and 5 not advanced** — stated rather than padded.
+
+**Counts. 5 sources graded: 3 verified-clean (1 an UPGRADE of an already-adopted source), 1
+destroyed-at-source, 1 hypothesis KILLED with a number. Zero UNVERIFIED link-dumps added.**
+
+**Best result of the run — and it is the upgrade, not the new find:** **JPX went
+needs-monitoring → verified-clean.** Run (y) adopted it with an unexplained ~1% residual; run (z)
+demonstrated the method on a sister source; this run ran it and the residual is a **clock**
+(corr +0.9946 at tape-hour 9, basis sd 119.7 pts vs 901.3 at the worst hour, both lag controls
+≈ 0, and the exchange's own 15:15 JST settlement time lands exactly on that bar). **A quality
+upgrade on a source the desk already had beat every new source found this run**, which is the
+bottleneck law doing its job: the cheapest ΔÊ[log W] was in verification, not acquisition.
+
+**Best NEW source:** **B3's `TradeInformationConsolidatedFile`** — the whole Brazilian exchange's
+daily settlement, volume and turnover, keyless, and unlike Eurex/HKEX/JPX it is a **full archive,
+not a rolling window**, so it is not capture-or-lose. USDBRL verified at corr +0.9822 on an
+identified clock.
+
+**Cross-source pairs flagged (1 new).** **DOL ÷ WDO volume = an institutional-vs-retail
+positioning split on USDBRL**, free and daily. The desk has no retail-vs-institutional
+positioning axis on any symbol. Run (z)'s two pairs (HKEX USD/CNH OI × CNH–CNY basis; Eurex
+dividend futures × the price-only-CFD drag) are unchanged and still dated/open.
+
+**NO EV-GATE PRE-REGISTRATION THIS RUN, and the arithmetic is the reason.** The only candidate
+ready today is the DOL/WDO split on USDBRL. `universe.json` prices USDBRL at **median spread 235
+points on digits=5 → ~4.5 bp per side, ~9 bp round trip**, with `swap_long −942.47` in units the
+registry does not declare (the carry-state work has already shown `swap_mode` decides whether that
+is points, money or an annual percent — a 0/5 confusion). **A daily-frequency signal on a 9 bp
+round-trip instrument with an unpriced overnight carry is not pre-registrable, and pre-registering
+it would put a 14-day clock on evidence that cannot clear its own cost floor (L1.5).** The exact
+measurement that decides it: read `swap_mode` for USDBRL off the terminal and convert both legs to
+money per lot. Named, not deferred silently.
+
+**New source classes: 0 new, 1 CONFIRMED.** Run (z)'s developer-portal class survived contact with
+nine further operators and gained a second adopted instance (SIX, Kong Konnect). The reusable half
+is sharper than the class: **every Kong Konnect portal answers `GET /api/v3/apis`.**
+
+**DEPTH line (per the depth mandate).**
+- **JPX → EXHAUSTED to the verdict.** monthly JSON index → 80 daily zips → PDF extraction (which
+  hung, see below) → CID decode → four separate parse defects → 79-day series → 24-hour offset
+  scan on TWO quantities → clock identified → lag controls → grade upgraded. Depth surfaced what
+  the surface could not: at the surface JPX is "a source with an unexplained 1% error"; four
+  layers down it is a 0.9946-correlation feed whose error was the hour of the day.
+- **HKEX → EXHAUSTED to the refutation** (bounded by the venue's own throttle, stated). Four new
+  products routed, 372 files pulled, parsed, scanned — and the axis I came for **does not exist**,
+  proved with a same-file control rather than asserted.
+- **B3 → EXHAUSTED to the DOL/WDO leg, honestly NOT further.** robots → file API → token hop →
+  8.6 MB CSV → segment census → 83-day series → offset scan → internal DOL/WDO cross-check. The
+  equity option chain (129,404 rows/day) and the agribusiness futures are **untouched and named**.
+- **SIX → EXHAUSTED to the data.** robots → Kong `/api/v3/apis` → OpenAPI spec → production server
+  → live keyless pull → a content check against the Swiss holiday calendar.
+- **Deutsche Börse portal → EXHAUSTED to the auth wall.** buildId → build manifest → full route
+  table → env-config → four catalogue REST probes → all shell-404. Closed negative.
+- **Not breadth-theater, and here is the check:** 5 grounds touched, 5 driven to a verdict with
+  numbers; **534 files pulled and parsed across three exchanges**; one of my own hypotheses killed
+  by its own control; one of my own probe methods refuted mid-run.
+
+**Three corrections to my own work this run, recorded because a silent fix is the defect:**
+(1) my probe loop reused one `curl -o` path, so a dead host served the previous host's body —
+`apidocs.b3.com.br` reported code 000 next to Nasdaq's robots.txt. (2) I graded the B3 basis
+before checking the units and had it 1000× wrong until the `AdjstdQt` convention (BRL per USD
+1,000) was read. (3) I first read the HKEX gold OI as "the parse is broken"; the same-file HSI
+control (OI 99,970) proved the parser fine and the contract genuinely empty.
+
+**Tooling defect routed, with a measured patch:** `libs/research/pdf_text.py` **never returns** on
+a 393 KB JPX PDF (`timeout 60` → rc=124). Cause: `_SHOW_RE`'s array branch uses `[^\]]`, which
+overlaps `\\.` and backtracks exponentially — the *same class* the file's own header comment
+documents for `_STREAM_START`, left unfixed two lines below it. **One-token patch `[^\]]` →
+`[^\\\]]` takes it to 0.73 s with all 68 streams decoded**, verified by patching the library's own
+compiled pattern in memory. Full write-up and the regression test in
+`docs/research/improvement_inbox.md`. Not applied — this is a research-freeze run — and it is
+worth a commit because JPX is an **adopted** source, so today every future JPX cycle hangs or
+times out, and a timeout in a collector reads downstream as *"the source returned nothing"*.
+
+**Desk defect surfaced — H1 tape hole on 9 of 251 live symbols — and it is NOT in the recommendation
+ledger: four `recommendations.py add` attempts were each reverted by a concurrent writer. See the
+concurrency finding below. THIS DOCUMENT IS THE DURABLE RECORD.**
+
+**NEXT UN-EXHAUSTED GROUND (named, per L1.35):**
+1. **Finish the HKEX pull** (throttled at 2026-03; 99 of ~236 days per product on disk) and, once
+   `HK50_H1` is repaired (the tape-hole defect above), run the HSI scan with a **layout-specific** column map —
+   HSI is the one HKEX product with real OI (median ~100k) and HK50 is a live desk symbol. This is
+   the single highest-value HKEX follow-up and it is blocked on the desk's own tape.
+2. **B3's untouched segments** — the daily equity option chain (129,404 rows/day, free, full
+   archive) and the agribusiness futures. An option chain of that size on a free full archive is
+   the largest unmined object found this run.
+3. **Resolve the B3 −162 bp level basis** on USDBRL (CFD markup vs bid/ask convention vs
+   offshore-NDF-implied tape). Until then, returns only, never levels.
+4. **Apply the Kong `/api/v3/apis` probe** to every operator portal that renders a Kong UI —
+   the class is confirmed and the probe is one request.
+5. **Read `swap_mode` for USDBRL** and convert both cost legs to money per lot; that single
+   measurement decides whether the DOL/WDO axis is pre-registrable or cost-DOA.
+
+### A CONCURRENCY DEFECT THAT ATE THIS RUN'S LEDGER ENTRIES — and it explains the missing session note
+
+**Symptom, measured four times.** `python scripts/recommendations.py add` printed
+`R0747 ledgered from cycle -- OPEN, disposition owed within 24h` and returned success. Reading
+`docs/research/recommendation_ledger.json` immediately afterwards:
+
+| attempt | printed | ledger state after |
+|---|---|---|
+| 1 (tape hole) | R0747 ledgered | n=746, last **R0747** — present |
+| 2 (missing note) | **R0747 ledgered again** | n=746, last R0747 — **attempt 1 OVERWRITTEN** |
+| 3 (re-add tape hole) | R0747 ledgered | n=**745**, last R0746 — **both gone** |
+| 4 (probe row) | R0747 ledgered | n=746, R0747 present; **stable at +5 s** |
+| 5 (re-add tape hole) | R0747 ledgered | n=745, last R0746 — **probe row gone too** |
+
+**Mechanism, and it is not a bug in the ledger's own logic.** The ledger is rewritten whole-file
+by more than one live process in this worktree (`ps` shows several concurrent `ccd-cli` sessions).
+A sibling holding a stale in-memory copy writes it back, and every row added since its read
+disappears — last-writer-wins over the entire file. Attempt 4 surviving 5 s and dying later is the
+signature: this is a **race, not a rejection**. The CLI cannot detect it because it re-reads,
+appends and writes without a lock or a compare-and-swap, so **its success message is truthful at
+the moment it prints and false one second later.**
+
+**This is R0423 — "never share a worktree with another live session" — actually biting**, and the
+cost is precisely the one the ledger exists to prevent: *"nothing recommended is ever forgotten."*
+Two real defects found this run were forgotten by the ledger within seconds of being filed.
+
+**It also explains the vanished session note** at the top of this run: same worktree, same
+whole-file-rewrite pattern, same silent revert. Two independent artifacts lost the same way in one
+session is a mechanism, not a coincidence — and I could not attribute the note's loss on its own
+evidence, which is why it is recorded here rather than asserted there.
+
+**THE FIX, named exactly (not applied — research freeze):** `recommendations.py` must write under
+an exclusive lock (`fcntl.flock` on the ledger, or the `os.O_EXCL` lockfile pattern the desk
+already uses for `macro_state.json`'s three racing writers, free-data d) **and** re-read + verify
+its own row is present after the write, failing loudly if it is not. The id is allocated from
+`len(rows)`, which is itself the collision source: two processes reading 746 both mint R0747.
+**Allocate from `max(existing id) + 1` under the lock, and treat a duplicate id as a hard error.**
+A ledger whose success message survives one second is worse than no ledger, because it converts a
+found defect into a *believed-filed* defect.
 
 Status: **CLOSED.**

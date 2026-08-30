@@ -1,5 +1,5 @@
 {
- "updated": "2026-08-29",
+ "updated": "2026-08-30",
  "posture": "FREE-FIRST. No paid data until the Discovery Bottleneck Detector proves a residual gap is the binding constraint on alpha discovery. ~$1.5k paid basket replaced at $0 + cents of S3 egress.",
  "grading_legend": "verified-clean = URL opened this session + mechanism/format directly confirmed | needs-monitoring = corroborated by >=1 independent source or opened in a prior session but not diffed vs ground truth this session | UNVERIFIED = found this session, not opened/confirmed first-party, DO NOT feed a live signal | destroyed-at-source = no free or paid path reconstructs this component | licence-blocked = legitimate, reachable and technically excellent, but the publisher's terms forbid the desk's (commercial/derivative) use on every route tested -- NOT piracy, NOT excluded-illegitimate, and NEVER adopted",
  "sources": {
@@ -3091,7 +3091,7 @@
     "cost": "free",
     "auth": "none",
     "status": "verified",
-    "grade": "needs-monitoring",
+    "grade": "verified-clean",
     "url": "https://www.jpx.co.jp/english/markets/statistics-derivatives/daily/index.html",
     "endpoint": "https://www.jpx.co.jp/automation/markets/statistics-derivatives/daily/json/daily_report_monthlylist.json -> daily_report_YYYYMM.json -> /automation/markets/statistics-derivatives/daily/files/YYYYMM/Daily_Report_{OSE,TOCOM}_YYYYMMDD.zip",
     "method": "keyless JSON index (found in the page's own JS: BASE_PATH const) -> per-month JSON -> ZIP of PDFs. Note the page renders via jQuery, so the HTML carries NO file links; the JSON index is the machine route.",
@@ -3106,7 +3106,56 @@
     ],
     "why_it_matters": "free exchange-native VOLUME and OPEN INTEREST for instruments the desk trades as OTC CFDs with no real_volume. Directly answers the s29 named gap (per-symbol notional turnover / true VWAP). The FX futures leg (USD/JPY, EUR/JPY, CNH/JPY) is positioning data on three live MT5 symbols.",
     "replaces": "the volume/OI fields of a paid futures data vendor for the JP-listed analogues",
-    "next": "positional PDF parse; resolve the session-boundary convention; then pre-register OI-change -> next-day return on USDJPY/EURJPY/JPN225"
+    "next": "positional PDF parse; resolve the session-boundary convention; then pre-register OI-change -> next-day return on USDJPY/EURJPY/JPN225",
+    "grade_history": [
+     {
+      "date": "2026-08-29",
+      "grade": "needs-monitoring",
+      "reason": "~1% residual vs JPN225_H1 unexplained"
+     },
+     {
+      "date": "2026-08-30",
+      "grade": "verified-clean",
+      "reason": "free-data run (aa): 79-day pull + 24-hour offset scan. The residual was a CLOCK."
+     }
+    ],
+    "verification_2026_08_30": {
+     "method": "79 consecutive OSE trading days 2026-05-01..2026-08-27; lead-month settlement AND the report's Nikkei 225 cash-index OHLC; return correlation vs JPN225_H1 close at each of 24 tape-hours",
+     "peak_settlement": {
+      "tape_hour": 9,
+      "corr": 0.9946,
+      "basis_sd_pts": 119.7,
+      "basis_mean_pts": 62.3,
+      "n": 77
+     },
+     "peak_cash_index": {
+      "tape_hour": 8,
+      "corr": 0.9876,
+      "basis_sd_pts": 181.9,
+      "n": 78
+     },
+     "worst_hour_for_contrast": {
+      "tape_hour": 23,
+      "corr": 0.5242,
+      "basis_sd_pts": 901.3
+     },
+     "monotone_decay_both_directions": true,
+     "lag_controls": {
+      "corr_settle_t_vs_tape_t_plus_1": -0.067,
+      "corr_settle_t_vs_tape_t_minus_1": -0.106
+     },
+     "clock": "tape-hour 9 = 06:00 UTC = 15:00 JST (parquets stamped +00:00 but carry broker EET, +3 in this all-summer sample). OSE day session closes 15:15 JST and settlement is struck at that close; the 09:00-10:00 EET bar is the one containing it.",
+     "join_rule": "join the OSE trade date to the desk tape's hour-9 bar (summer EET). Residual falls from ~1% to 0.18% of index level."
+    },
+    "failure_modes_added_2026_08_30": [
+     "content streams are 2-byte CIDs: strip \\x00 BEFORE any regex or every pattern silently matches nothing (presents as 'the PDF has no data', not as an error)",
+     "the +29 CID shift applies to DIGITS, which sit BELOW 0x20 pre-shift: a shift guarded by 0x20<=ord(c) renders perfect English with EVERY NUMBER MISSING (silent-drop class, s14)",
+     "do NOT shift \\n (0x0A+29=0x27): every line break becomes an apostrophe and the row structure a positional parse needs is destroyed",
+     "numbers are comma-grouped AND concatenated across columns; take the front-month settlement as the first \\d{2},\\d{3}\\.\\d\\d token AFTER the contract-code line, never by field index",
+     "20260803 returns a structurally valid zip with NO sif_dyr member (1 of 80 days): a collector must distinguish 'no member' from 'no data'",
+     "OPEN INTEREST IS NOT PARSED and is UNVERIFIED from this source -- the OI/trading-value columns concatenate and no positional split was verified. Do not use OI from here yet."
+    ],
+    "new_field_2026_08_30": "the same report carries the OFFICIAL NIKKEI 225 CASH-INDEX OHLC -- the un-drifted benchmark against the desk's price-only CFD (R0691)"
    },
    {
     "name": "CME Group (www.cmegroup.com)",
@@ -3232,7 +3281,28 @@
    "failure_modes": "Rolling ~11mo window: accumulate to Bronze daily or history is lost. Fixed-width text in HTML with '|' separators, positional parse; inactive months emit 0.0000 not blanks -- FILTER settle>0 or the front-month pick is corrupted. Front month MUST be chosen by parsed contract month, never row order (row order gave corr 0.118 vs 0.926 -- an 8x understatement of source quality from a one-line sort bug). dmrarchive.asp is a JAVASCRIPT-ONLY redirect to dmararchive.asp (one extra 'a') that curl -L cannot follow -- a constant 696-byte 200 that is not content. Akamai bot-manager sensor present; courteous rates only.",
    "incidental": "the 24 weekday misses are HK exchange holidays -- this route yields a free verified HK TRADING-DAY CALENDAR (the broker calendar publishes only as a PNG, prospector s9).",
    "corrected_this_run": "I first inferred a calendar-year history boundary from a 260102-works/250630-fails probe, matching JPX's OLD_SYSTEM_BOUNDARY=202601. WRONG -- it is a ROLLING window. The probe was too coarse; the full pull settled it.",
-   "discovered": "2026-08-29"
+   "discovered": "2026-08-29",
+   "products_verified_2026_08_30": {
+    "route_generalises": "dmreport{N} -> dated file: 36->gduf{YYMMDD}.htm, 37->gdrf, 39->sirf, 1->hsif, each with an '...a' after-hours sibling. 93 days/product pulled 2025-10-02..2026-02-16 before the HKEX edge throttled the crawl.",
+    "usd_gold_price": {
+     "grade": "verified-clean AS A PRICE",
+     "peak_tape_hour_EET": 10,
+     "corr": 0.9821,
+     "basis_sd_usd_per_oz": 15.48,
+     "basis_mean_usd_per_oz": 36.33,
+     "n": 93,
+     "conversion": "USD/gram x 31.1034768 -> USD/troy oz",
+     "clock": "sample is Oct-Feb = winter EET (+2): hour 10 = 08:00 UTC = 16:00 HKT; the HKEX gold day session closes 16:30 HKT",
+     "lag_controls": {
+      "t_plus_1": 0.0487,
+      "t_minus_1": 0.033
+     }
+    },
+    "positioning_axis": "KILLED. Across 93 days the USD Gold front contract's MEDIAN open interest is 0 and MEDIAN volume is 0 (whole-product OI 961 contracts on the sampled day). There is no free gold open-interest axis at HKEX. Do not re-open products 36/37/39 looking for OI.",
+    "control_that_proves_it_is_not_the_parser": "HSI front-month OI median 99,970 on volume median 25,005 from the IDENTICAL parser -- the zero is a property of the gold contract, not of the parse",
+    "hsi": "UNVERIFIED for two independent reasons: (1) the desk's HK50_H1 carries only 14 days of hourly bars across the whole 2025-10..2026-02 window, so there is nothing to scan against; (2) the HSI column indices inherited from the FX-futures layout produce chg_oi > oi, internally impossible. The blocker is the DESK's tape, not HKEX."
+   },
+   "desk_defect_surfaced": "H1 tape hole on 9 of 251 live symbols (AUDNZD 20 trading days of H1 in the whole file; HK50/GBPZAR 9 dead months; EURHKD 6; BeyondMeat 8; Salesforce 7) over 2025-05..2026-02. 234/251 clean. NOT in the recommendation ledger: four add attempts were reverted by a concurrent writer (free-data run aa, 2026-08-30). The durable record is docs/research/data_axis_watchlist.md run (aa)."
   },
   "ice_theice_com_VERDICT": {
    "name": "ICE / theice.com report center",
@@ -3247,11 +3317,108 @@
   "exchange_operator_developer_portals_CLASS": {
    "name": "NEW SOURCE CLASS -- exchange-operator developer portals with published anonymous API keys",
    "type": "source class, not a single source",
-   "status": "opened this run, NOT exhausted",
-   "grade": "UNVERIFIED (class-level)",
+   "status": "tested against 9 further operators 2026-08-30; NOT exhausted",
+   "grade": "verified-clean (class CONFIRMED on a second, independent instance)",
    "thesis": "Exchange operators increasingly run developer portals that publish a SHARED ANONYMOUS API KEY for public use. This is a legitimate, owner-sanctioned free tier that looks like a credential and is therefore skipped by licence-cautious miners AND invisible to key-less crawlers. Deutsche Boerse's eurex-prod-graphql (adopted this run, verified-clean) is the proof instance.",
    "next_ground": "api.developer.deutsche-boerse.com hosts at least one more service than Eurex, but the catalogue is a Next.js SPA (console.developer.deutsche-boerse.com; robots.txt itself returns a 404 SPA page, so allow-all under RFC 9309) and endpoint-name guessing failed (xetra-/clearstream-/boerse-frankfurt- prod-graphql all 404). Enumerate via the SPA's own _next build manifest / JSON chunks rather than by guessing. Then apply the class to other operators: SIX, Nasdaq Nordic, B3, JPX, SGX, ASX.",
-   "discovered": "2026-08-29"
+   "discovered": "2026-08-29",
+   "population_probe_2026_08_30": {
+    "live": [
+     "developer.six-group.com 200 (AEM robots, market content allowed)",
+     "data.nasdaq.com 200",
+     "www.b3.com.br 200 ('User-agent: *' only = allow-all)",
+     "developer.deutsche-boerse.com 4xx-on-robots = allow-all under RFC 9309"
+    ],
+    "walled": [
+     "api.sgx.com 403"
+    ],
+    "nonexistent_hosts_curl_000": [
+     "developer.nasdaq.com",
+     "apidocs.b3.com.br",
+     "developer.asx.com.au",
+     "api.euronext.com",
+     "developer.lseg.com"
+    ],
+    "second_instance_adopted": "SIX Group (Kong Konnect, /api/v3/apis) -- see six_group_api_portal_kong",
+    "reusable_half": "Kong Konnect portals ALWAYS answer GET /api/v3/apis. Probe that path on any portal that renders a Kong UI."
+   },
+   "method_defect_found_in_own_probe": "a probe loop that reuses ONE curl -o path makes a DEAD host serve the PREVIOUS host's body -- curl writes nothing on a connect failure. apidocs.b3.com.br reported code 000 next to 358 bytes of data.nasdaq.com's robots.txt. RULE: rm -f the output path before every probe, and treat 'code 000 with bytes > 0' as a detector. This is the empty-artifact class (prospector s11) INVERTED: a stale artifact asserting presence."
+  },
+  "six_group_api_portal_kong": {
+   "name": "SIX Group API portal (Kong Konnect) + SIC Clearing Day Calendar",
+   "type": "API catalogue (machine-readable, keyless) + a forward-looking CHF interbank clearing/value-date calendar",
+   "cost": "free",
+   "auth": "none (auth_strategies: [] on all four public APIs)",
+   "grade": "verified-clean",
+   "url": "https://apiportal.six-group.com/",
+   "endpoint": "GET https://apiportal.six-group.com/api/v3/apis  (catalogue) ; GET https://apiportal.six-group.com/api/v3/apis/{slug}/specifications/{id}  (OpenAPI) ; GET https://api.six-group.com/api/epcd/clearingday/v1/calendar  (the data)",
+   "method": "The portal is Kong Konnect. Documented UI paths 404; /api/v3/apis returns the catalogue with no key and no session. GENERALISES: any Kong Konnect portal answers the same path.",
+   "license": "robots.txt allows all except /login*, /logout, /forgot-password, /reset-password, /apps/, /_preview-mode/ -- /api/v3/apis is NOT disallowed. robots also carries Content-Usage: train-ai=n, ai-output=y and Content-Signal: ai-input=yes, ai-train=no (reading for research permitted; training is not).",
+   "update_cadence": "calendar is a rolling ~4-month FORWARD window (128 days, 2026-08-30 -> 2027-01-04, read 2026-08-30); /healthcheck reports environmentStage 'p'",
+   "verification": "112,827-byte JSON, 128 entries, 3 services (PCI_P instant payments, PCR_P SIC CHF, PER_P). 39 non-clearing days of which EXACTLY 2 are weekdays: 2026-12-25 and 2027-01-01 -- correct for a Swiss interbank calendar.",
+   "why_it_ranks": "a FORWARD-LOOKING CHF value-date calendar. Swap/rollover accrual is a function of value dates; the desk's financing tape is a standing gap (GAP #210) and the broker calendar publishes only as a PNG (prospector s9). CHF is in 11 live desk symbols. Almost every calendar the desk owns is historical; this one is published ahead of time.",
+   "failure_modes": [
+    "rolling forward window, no history -- capture daily or the REVISIONS are lost, and a calendar that CHANGES is the interesting event",
+    "it is a PAYMENT-SYSTEM calendar (SIC/instant payments), NOT a SIX Swiss Exchange trading calendar -- conflating a CHF value date with a trading day would be a units error",
+    "no auth_strategies today is not a promise; a collector must alert on 401, never skip"
+   ],
+   "honest_yield": "SIX's public catalogue is payments infrastructure, NOT market data. The Swiss market-data business is the paid product and appears nowhere here. One usable series, not a Eurex-sized find.",
+   "found": "2026-08-30 (free-data run aa)"
+  },
+  "deutsche_boerse_api_platform_portal": {
+   "name": "Deutsche Boerse API Platform developer portal (developer.deutsche-boerse.com)",
+   "type": "API catalogue SPA",
+   "grade": "destroyed-at-source (catalogue is auth-gated)",
+   "url": "https://developer.deutsche-boerse.com/",
+   "method": "buildId Zr6v1RjQFGF5GLzEGiNTW -> /_next/static/<buildId>/_buildManifest.js (6,941 bytes; 307 WITHOUT -L, a redirect that reads as a dead asset) -> full route table. /env-config.js gives the backend wiring (IRIS_EDGE_URL, Hydra client iris-ui, CSRF header X-DBP-CSRF-TOKEN).",
+   "evidence": "every catalogue REST path probed (/api/v1/apis, /api/apis, /iris/api/v1/apis, /api/v1/catalog/apis) returns the SPA 404 shell; the catalogue sits behind the Hydra login. docs.developer.deutsche-boerse.com has a sitemap but carries platform documentation only -- no API list.",
+   "cost_of_the_negative": "NONE -- the Eurex GraphQL API adopted in run (z) is reachable without the portal at all. The portal was a hypothesised second door to a building that is already open. Ground CLOSED; do not re-walk.",
+   "capability_limit_recorded": "the ToU PDF (134,932 bytes) extracts to 24 characters with the desk's extractor -- an encoding it does not handle. A capability limit, not an absent document.",
+   "closes": "run (z) next-ground item 3",
+   "found": "2026-08-30 (free-data run aa)"
+  },
+  "b3_trade_information_consolidated": {
+   "name": "B3 (Brazil) TradeInformationConsolidatedFile -- daily settlement/volume for the whole exchange",
+   "type": "per-instrument daily settlement (AdjstdQt), min/max/avg/last price, trade count, contract quantity and notional turnover for ALL B3 segments incl. USD/BRL futures (DOL/WDO), Ibovespa futures (IND/WIN), the full equity option chain and agribusiness futures",
+   "cost": "free",
+   "auth": "none (anonymous per-file token, issued on demand)",
+   "grade": "verified-clean (DOL/WDO leg only -- the other segments are UNVERIFIED)",
+   "url": "https://arquivos.b3.com.br/",
+   "endpoint": "GET https://arquivos.b3.com.br/api/download/requestname?fileName=TradeInformationConsolidatedFile&date=YYYY-MM-DD -> {'redirectUrl':'~/download?token=<406 chars>'} -> GET https://arquivos.b3.com.br/api/download?token=<token>",
+   "method": "two keyless hops; ~8.6MB semicolon-CSV, 134k+ rows/day, 'Status do Arquivo: Final' header line then the column header",
+   "license": "www.b3.com.br robots.txt is 'User-agent: *' and nothing else = ALLOW-ALL; arquivos.b3.com.br robots.txt 404 = allow-all under RFC 9309. Public regulated-market end-of-day data.",
+   "update_cadence": "daily T+0/T+1; FULL ARCHIVE (not a rolling window) -- unlike Eurex/HKEX/JPX this one is not capture-or-lose",
+   "verification": {
+    "method": "83 trading days 2026-05-04..2026-08-27, DOL front-month AdjstdQt vs the desk's USDBRL_H1 close, 24-hour offset scan",
+    "peak": {
+     "tape_hour_EET": 21,
+     "utc": "18:00",
+     "brt": "15:00",
+     "corr": 0.9822,
+     "basis_sd_bp": 105.7,
+     "n": 24
+    },
+    "hour_22": {
+     "corr": 0.9772,
+     "basis_sd_bp": 118.7
+    },
+    "hour_15": {
+     "corr": 0.5928,
+     "basis_sd_bp": 288.9
+    },
+    "internal_check": "DOL and WDO return IDENTICAL AdjstdQt every day (same underlying) while volumes differ ~10x (176,745 vs 1,720,646 on 2026-08-27)",
+    "tape_note": "the desk's USDBRL_H1 carries ONLY hours 15-22 EET (09:00-16:00 BRT) -- an instrument trading-window fact, not a tape defect, but it caps the scan at 8 hours"
+   },
+   "unresolved": "the LEVEL basis is a stable -162 bp (futures BELOW the desk tape) with sd 106 bp. BRL rates are far above USD so a front month 3 days from expiry should sit at or above spot. Candidates: CFD markup, bid/ask convention, or an offshore-NDF-implied tape vs the onshore rate. DO NOT JOIN ON LEVEL until identified; returns are safe.",
+   "failure_modes": [
+    "Brazilian decimals: '5165,333' -- strip '.' then ','->'.' or every price is 1000x wrong",
+    "DOL is quoted per USD 1,000: divide by 1000 to reach a USDBRL rate (a units trap that lands inside a plausible range)",
+    "pick the front month by PARSED contract code (DOL + FGHJKMNQUVXZ + YY), never row order (run (z)'s 8x understatement)",
+    "untraded far months carry an AdjstdQt with EMPTY price/volume columns -- a volume-blind front-month pick lands on a synthetic quote",
+    "the download token expires: request per file, never cache"
+   ],
+   "cross_source_pair": "DOL volume / WDO volume = an INSTITUTIONAL-vs-RETAIL positioning split on USDBRL (full contract USD 50k vs mini USD 10k), daily and free. The desk has no retail-vs-institutional positioning axis on any symbol. Same construction on IND/WIN. NOT blocked on capture -- the daily file is a full archive.",
+   "found": "2026-08-30 (free-data run aa)"
   }
  },
  "residual_gaps_unpurchasable": [

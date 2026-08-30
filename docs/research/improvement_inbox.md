@@ -5569,3 +5569,48 @@ revisited — it is the named next ground, and the method is now demonstrated on
 contract by *row order* instead of by *parsed contract month* gave correlation 0.118 against the
 correct 0.926. A source-quality verdict is only as good as the join key; a bad join reads exactly
 like a bad source, and the bad source gets graded and abandoned.
+
+---
+
+## 2026-08-30 — free-data run (aa) — `libs/research/pdf_text.py` HANGS on a 393KB PDF; one-token patch, MEASURED
+
+**Defect (CONFIRMED, not suspected).** `libs.research.pdf_text.extract()` does not return on
+`sif_dyr_20260827.pdf` (393 KB, JPX/OSE daily report, the source the desk ADOPTED on 2026-08-29).
+Measured: `timeout 60` → **rc=124** (two further runs killed at 120s and 180s). The file is not
+exotic — it is a stock AGPL-free exchange PDF and the desk's own adopted feed.
+
+**Root cause — catastrophic backtracking, and it is the SAME class the file's own comment already
+documents for `_STREAM_START`.** In `_SHOW_RE` (line ~50) the array branch is:
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\]])*)\]\s*TJ"
+```
+
+`\\.` and `[^\]]` **overlap**: a backslash matches both alternatives, so every `[` with no
+matching `]` costs exponential time in the number of backslashes before it — and compressed PDF
+content streams are full of both. The `lit` branch on the line above is already written correctly
+(`[^\\()]` excludes the backslash); only the `arr` branch was missed.
+
+**THE PATCH — one token, `[^\]]` → `[^\\\]]`:**
+
+```
+rb"|\[(?P<arr>(?:\\.|[^\\\]])*)\]\s*TJ"
+```
+
+**Measured after the patch (isolated: library code unchanged except this one class, verified by
+`orig != patched`): 0.73 s, 90,840 chars, `{'streams': 68, 'decoded': 68, 'failed': 0}`.**
+From >60 s (never finishes) to 0.73 s, zero streams lost.
+
+**Why this is worth a commit rather than a note.** This is a research-freeze run so I did not
+touch `libs/`, but the blast radius is real: the JPX/OSE daily report is an **adopted** source and
+this is the only PDF extractor on the box, so every future JPX cycle either hangs or silently
+falls to a timeout — and a timeout in a collector reads downstream as *"the source returned
+nothing"*, i.e. exactly the empty-artifact-asserts-absence class (prospector s11). The regression
+test writes itself: extract this PDF (or any 300KB+ PDF with unbalanced `[` in a content stream)
+under a 10 s budget and assert `failed == 0`.
+
+**Related, and unfixed:** the fix comment in the file's header explains this exact hazard for
+`_STREAM_START` ("the obvious regex … goes quadratic on real PDFs … fixtures could not show that;
+the positive control did") and the sibling regex two lines below it still carries the bug. **A
+fix applied to one reader and not swept to its siblings** — the same shape as free-data s8's
+macro-reader finding. Worth grepping for other `(?:\\.|[^X])*` alternations in the repo.
