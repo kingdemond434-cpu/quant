@@ -189,7 +189,7 @@ class Bars:
 
 
 def broker_utc_offset_hours(mt5_mod) -> float:
-    """Measured offset between the broker's clock and true UTC, in hours.
+    """Return the offset required to compare MT5 Python timestamps with UTC.
 
     THE DEFECT THIS MEASURES. `copy_rates_*` returns the broker SERVER's wall time, not UTC.
     Stamping it `utc=True` -- as this file did -- labels every bar with a time it does not have.
@@ -202,22 +202,17 @@ def broker_utc_offset_hours(mt5_mod) -> float:
         they were fitted and gauntleted on these labels, so the STRATEGIES are unaffected -- but
         the label "07:00 UTC" names an hour that is really 04:00 UTC.
 
-    The fix is to record the offset rather than silently re-label history: the bars stay on the
-    broker clock (which is what the sessions mean), and everything that must compare against a
-    real clock converts explicitly through this number. Rounded to a quarter hour because broker
-    offsets are whole or half hours; the residue is network latency, not a real offset.
+    `MetaTrader5` exposes ``tick.time`` as a Unix timestamp.  Unix timestamps are UTC, so its
+    numeric value cannot reveal a broker-wall-clock offset.  Subtracting it from ``now`` was
+    therefore measuring *tick age*, not timezone: over a weekend it wrote offsets such as -29h,
+    shifted a forward boundary backwards, and counted historical trades as forward evidence.
+
+    The bar reader uses the same UTC epoch conversion.  There is consequently no conversion to
+    apply at this API boundary.  Keep this named function so callers declare the comparison, but
+    return the only honest value rather than turning a stale quote into a clock transform.
     """
-    from datetime import datetime as _dt
-    from datetime import timezone as _tz
-    try:
-        tick = mt5_mod.symbol_info_tick("XAUUSD") or mt5_mod.symbol_info_tick("EURUSD")
-        if tick is None or not getattr(tick, "time", 0):
-            return 0.0
-        broker = _dt.fromtimestamp(tick.time, _tz.utc)
-        delta = (broker - _dt.now(_tz.utc)).total_seconds() / 3600.0
-        return round(delta * 4) / 4
-    except Exception:
-        return 0.0
+    del mt5_mod
+    return 0.0
 
 
 def _terminal_candidates() -> list[str]:

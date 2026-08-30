@@ -77,6 +77,19 @@ def test_shadow_forward_no_longer_imports_MetaTrader5_directly():
         assert chunk.rstrip().endswith("try:"), "MetaTrader5 must stay an optional import"
 
 
+def test_mt5_tick_age_cannot_become_a_broker_timezone_offset() -> None:
+    """A weekend quote is old information, never a -29h clock conversion."""
+    class StaleTick:
+        time = 0
+
+    class MT5:
+        @staticmethod
+        def symbol_info_tick(_symbol):
+            return StaleTick()
+
+    assert H.broker_utc_offset_hours(MT5()) == 0.0
+
+
 def test_the_cache_alone_can_serve_shadow(monkeypatch, tmp_path):
     """The property that matters: bars with no terminal, no login, no account."""
     monkeypatch.setattr(H, "from_mt5", lambda s, t: None)
