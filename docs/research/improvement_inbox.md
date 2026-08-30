@@ -5614,3 +5614,36 @@ under a 10 s budget and assert `failed == 0`.
 the positive control did") and the sibling regex two lines below it still carries the bug. **A
 fix applied to one reader and not swept to its siblings** — the same shape as free-data s8's
 macro-reader finding. Worth grepping for other `(?:\\.|[^X])*` alternations in the repo.
+
+## 2026-08-30 — PROSPECTOR s21 — the vendor changelog is a source of DATED SEMANTICS, and the desk had none of it
+
+**1. R0747 (scheduled 2026-08-31) — financing charges 469 nights per 365 days.** Full evidence in
+`prospector_coverage.md` (s21). The structural point for this inbox: `rollover_nights()` is the
+function that prices every overnight hold on the desk, it is wired into `swap_exposure.py`, and
+**no test asserts the number it returns.** The module's docstring reasons the weekend correctly and
+names "2/7 — about 29%" as the error to avoid; the loop then commits it with the sign flipped.
+A docstring that states the intent is not a test of the intent, and here the two disagree by 28.5%.
+
+**2. Four dated drawdown-definition changes (2010 b299, 2023 b4040, 2026-04-16 b5800, 2026-04-24
+b5830), two of them eight days apart and in opposite directions.** Any MT5-sourced track record is
+on one of five definitions depending on when it was scraped. This must be applied at ingest as a
+dated step function by the six track-record seeds returning 2026-09-03/05, not rediscovered once
+per seed.
+
+**3. NEW METHOD, generalisable beyond this vendor — mine the CHANGELOG, not only the reference.**
+A vendor's field reference tells you what a field is *now*; its build archive tells you *when the
+field was born and when its meaning changed*. Both of this run's findings came out of the archive
+and neither is visible from the reference page s20 read. Standing addition to the source-grading
+habit: when a source is graded, ask whether it publishes a dated change history, and mine that too.
+Applies immediately to every institutional source the desk holds.
+
+**4. The desk's universe registry declares NO trading-session or intraday-BREAK field** (15 fields
+censused across 251 symbols). The broker publishes both, free, as structured JSON —
+`data/broker/fusion_trading_conditions.json`, Session Times 30 × 17. Scheduled index-CFD breaks
+(e.g. `AUS200 daily 05:30–06:10`) are holes a gap/overnight feature reads as market events, and the
+desk is running `overnight_gap_decay_*` shadow ledgers now. Candidate axis and candidate control.
+
+**5. Route lesson: a constant-byte 404 across every input is an SPA shell, and the sitemap is the
+door.** All `fusionmarkets.com` legal/spec paths return 1,453,459 bytes on any input; the real
+paths are capitalised and the tables are Next.js flight-encoded JSON, not HTML. The dead
+`pricing/swap-rates` scrape should be re-pointed at this extractor before the source is called dead.

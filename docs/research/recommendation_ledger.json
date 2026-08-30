@@ -9675,6 +9675,20 @@
    "commit": null,
    "due": "2026-08-30",
    "disposed": "2026-08-29T18:04:49.798618+00:00"
+  },
+  {
+   "id": "R0747",
+   "source": "cycle",
+   "summary": "PROSPECTOR s21 (VERIFIED vs MetaQuotes build archive + MEASURED against the live function): desks/mt5/mt5desk/financing.py:rollover_nights() DOUBLE-COUNTS THE WEEKEND -- it charges 469 financing nights per 365 days (+28.5%). It walks calendar days with NO weekend guard (no weekday()>=5 or calendar check anywhere in the module), charging 1 night on the Saturday stamp and 1 on the Sunday stamp, on top of the TRIPLE_SWAP_NIGHTS=3 stamp that already carries those same two weekend nights. Measured on the live function: full week Mon->Mon = 9 nights charged vs 7 due; Sat 22:00 stamp = 1 (due 0); Sun 22:00 stamp = 1 (due 0); 365d = 469 (due 365). The vendor refutes it directly: MT5 build ~3210 (Mar 2022) added SYMBOL_SWAP_SUNDAY..SATURDAY to ENUM_SYMBOL_INFO_DOUBLE, documented verbatim as '1 - single swap, 3 - triple swap, 0 - NO SWAP' -- 0 is what brokers set on Sat/Sun and is the whole reason the triple stamp exists. The module's own docstring states the intent correctly ('the weekend is two extra nights on top of the one that stamp would carry anyway') and even names the magnitude ('2/7 -- about 29%') as the error it was written to AVOID; the loop then adds the weekend a second time. WHY IT SURVIVED: rollover_nights is wired on the money path (desks/mt5/research/swap_exposure.py:168) and NO test in tests/ asserts a night count -- the only reference is a docstring line in test_carry_state.py:89 about None disabling the rule. The one number the function exists to produce has never been asserted. DIRECTION: overcharging financing 28.5% makes every carry/swap-harvest/multi-day-hold candidate look worse than it is -- a FALSE-NEGATIVE generator at the ten gates that can only ever kill profitable candidates, i.e. timidity in the cost model (L1.28/L2a). It sits one commit from b79e956c ('the desk charged overnight financing at zero on 17 live sleeves') -- same module, opposite error. PATCH: in rollover_nights, skip the stamp when stamp.weekday() >= 5 (or better, drive the per-day multiplier from the seven SYMBOL_SWAP_<DAY> fields, which R0746 should add to the contract-terms block); AND add the missing test asserting full-week==7, Sat==0, Sun==0, 365d==365 in the SAME commit as the fix. Money path; PROSPECTOR is research-frozen and may not land it.",
+   "roi_bps": null,
+   "rank": 95.0,
+   "roi_basis": "rank",
+   "raised": "2026-08-30T06:09:07.105368+00:00",
+   "status": "scheduled",
+   "reason": "Money path (desks/mt5/mt5desk/financing.py + a new test asserting the night count); this PROSPECTOR seat is research-frozen to docs/research/* and data/* and may not land it. The patch is one weekday guard plus the test that would have caught it, in one commit. Due 2026-08-31 and not later: unlike R0745 this is not a point-in-time window -- the arithmetic is ALREADY wrong on every backtest and every swap_exposure assessment the desk runs, so each day of delay is another day of carry candidates screened against a 28.5% overcharge. Evidence, the empirical measurement and the vendor quote are at docs/research/prospector_coverage.md (2026-08-30, PROSPECTOR s21).",
+   "commit": null,
+   "due": "2026-08-31",
+   "disposed": "2026-08-30T06:09:20.449805+00:00"
   }
  ]
 }

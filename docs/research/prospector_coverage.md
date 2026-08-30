@@ -13390,3 +13390,230 @@ are NOT read and remain open).
 7. **The BRAIN-scoped collector arm — TWENTY-FOUR sessions old**, and the video-roster gap. Both
    belong to a seat that is not research-frozen. A seat that cannot fix its own input has been
    reporting the input's absence as a result for over three weeks.
+
+---
+
+## PROSPECTOR s21 — 2026-08-30 (session note written FIRST, per the COMPLETION CONTRACT)
+
+Backlog verified clear before hunting: `source_backlog_next.py` reports **99 catalogued, 0 pending
+verification, 0 pending a legitimacy decision, 28 deferred** (next returns 2026-09-01). No
+verification work exists this cycle, so the run resumes s20's named ground rather than opening
+arbitrary new ground.
+
+**ITEMS TAKEN THIS RUN (bounded; depth per item unbounded):**
+
+1. **s20 ground #1 — the MetaQuotes build release-notes archive, builds ~1459 (2017) → 5100
+   (2025-06).** ~9 years the live index does not cover. Hunt the *introduction* of symbol
+   properties (each is the dated birth of a free axis) and further execution/report semantics
+   changes of the Build-5830 class.
+2. **The R0745/R0746 standing check** — s20 found `tape.py:124` reading `freeze_level` where the
+   vendor publishes `trade_freeze_level`, and the whole value of that finding was that it be fixed
+   BEFORE the hourly block first executes. Re-measure today: is it landed, and has the block run?
+3. **SEARCH-SPACE EXPANSION (the ≥25% reserve)** — one source class this desk has never opened,
+   named before searching so the run cannot retro-fit it.
+
+_(rows below are updated as each item resolves; if this run is killed, s22 resumes from here)_
+
+### RESULTS
+
+**ITEM 2 — R0745/R0746: STILL UNLANDED, STILL COSTLESS, DUE TODAY. Re-measured, not assumed.**
+
+- `desks/mt5/mt5desk/tape.py:124` still reads `_opt_int(info, "freeze_level")`. Unchanged.
+- `git log -- desks/mt5/mt5desk/tape.py` → last commit is still `96d028c8` (the CRO cycle that
+  introduced it). No fix has landed.
+- The tape still holds **one** file, `contract_terms/2026-08-27.parquet`, **1,908 rows × 11
+  columns** — columns censused directly: `contract_size, currency_margin, currency_profit,
+  observed_at, swap_long, swap_mode, swap_rollover3days, swap_long, swap_short, symbol, tick_size,
+  tick_value`. **The nine-field block has still written zero rows.**
+
+So the window s20 opened is still open and the loss is still zero — but the due date is **today**
+and this seat is still research-frozen. Both rows stand as `scheduled`; nothing about them has
+changed except that one of the days between finding and expiry has been spent.
+
+**ITEM 1 — THE METAQUOTES BUILD ARCHIVE, DUG. The residual was 17 years, not 9, and it was never
+on the mirror.**
+
+s20 graded the residual "~9 further years, unopened, on the `metaquotes.net` mirror". **Both halves
+are wrong and the correction is the useful part:** the full archive is paginated on the SAME host
+the seat already had — `/en/releasenotes/page2` … `/page17`, discoverable in the index s20 fetched.
+No mirror was ever needed. Pages fetched and text-extracted by script (not through context):
+`page1` = 2026-08 → 2024-12, descending to `page17` = **21 November 2009**. **Seventeen years, and
+the whole of it is now on disk.** §13: `metatrader5.com/robots.txt` disallows only `/*/search*` for
+`User-agent: *`; ClaudeBot is not named. Clean.
+
+**FINDING 1a — the drawdown-definition discontinuity is FOUR dated events, not one.** s20
+pre-registered Build 5830 as a condition on every deferred track-record seed. The archive shows it
+is a recurring class, and one of the others is **eight days from it**:
+
+| Date | Build | Change to the reported drawdown |
+|---|---|---|
+| 30 July 2010 | 299 | tester drawdowns now calculated **accounting for withdrawn funds** |
+| 20 October 2023 | 4040 | "Fixed display of the first value on the growth graph **and drawdown calculations**" |
+| **16 April 2026** | **5800** | "Fixed balance drawdown calculation in trading reports. **Previously, withdrawals could be incorrectly included.**" |
+| 24 April 2026 | 5830 | balance drawdown **revised to include commissions and swaps** (s20's row) |
+
+**Two definition changes eight days apart, in opposite directions on the same statistic** —
+5800 removes withdrawals, 5830 adds commissions and swaps. A track record scraped in that window
+is on a third definition that existed for eight days. The condition s20 wrote must therefore be a
+**dated step function, not a single cut point**, and it must be applied at ingest to Myfxbook
+(S10), Darwinex (S11), Collective2 (S14), FPA (S16), ForexFactory (S17) and the prop-firm
+leaderboards (S24) — all six returning 2026-09-03/05.
+
+**FINDING 1b — the symbol-property BIRTH-DATE map, which is what the ground was hunted for.**
+Every field R0746 asks the desk to start recording has a dated birth, extracted from the archive:
+
+| Property | Page / era | Bears on |
+|---|---|---|
+| `SYMBOL_TRADE_TICK_VALUE_PROFIT` / `_LOSS` | p14, **2010** | R0746's asymmetric-tick-value item — available for 16 years, never read |
+| `SYMBOL_START_TIME` / `_EXPIRATION_TIME` / `_FILLING_MODE` / `_EXPIRATION_MODE` / `SPREAD_FLOAT` | p15, **2010** | R0746 |
+| `SYMBOL_TRADE_EXEMODE`, `TRADE_FREEZE_LEVEL`, `TRADE_STOPS_LEVEL`, `MARGIN_HEDGED` | p6, **2016** | R0745/R0746; 22 `margin calculat` hits on p6 = a 2016 margin overhaul |
+| `SYMBOL_TRADE_LIQUIDITY_RATE` | p5, **2017–18** | the LIQUIDITY-TIER axis BRAIN s24 killed **by proxy** |
+| `SYMBOL_PRICE_VOLATILITY`, `SYMBOL_SECTOR`/`INDUSTRY`/`COUNTRY`/`CATEGORY`/`EXCHANGE` | p4, **2020** | free exogenous groupings — the `path` argument of s20, with siblings |
+| `SYMBOL_SUBSCRIPTION_DELAY` | p3, **2022** | **partially refutes s20** (below) |
+| `SYMBOL_SWAP_SUNDAY … SATURDAY` | p3, **2022** | **the finding of this run** |
+
+**s20's DELAY conclusion is half-refuted by its own ground.** s20 closed the s22 backlog row with
+"DELAY = `trade_exemode`". There is a literal `SYMBOL_SUBSCRIPTION_DELAY` in
+`ENUM_SYMBOL_INFO_INTEGER` (build ~3210, 2022). Read in full, however, the vendor scopes it to
+"subscription-based trading symbols… usually applicable to data provided in trial mode", requires
+Market Watch selection, else `ERR_MARKET_NOT_SELECTED (4302)`. **Verdict: the constant exists and
+s20 should have named it, but it is almost certainly null on a live Fusion account.** Graded
+CLAIM-pending-one-read, not carded — it costs one field in the R0746 block to settle for good.
+
+### FINDING 1c — THE RUN'S CONVERSION: THE DESK CHARGES 469 NIGHTS OF FINANCING PER 365 DAYS
+
+The weekday-swap constants are not an axis to record — they are a **refutation of arithmetic
+already running on the money path.** The vendor's own text, verbatim:
+
+> New properties in the ENUM_SYMBOL_INFO_DOUBLE enumeration: SYMBOL_SWAP_SUNDAY … SYMBOL_SWAP_SATURDAY.
+> Use the values to obtain swap calculation rates for specific days of the week.
+> **1 — single swap, 3 — triple swap, 0 — no swap.**
+
+`0 — no swap` is the operative clause. Saturday and Sunday are the days brokers set to 0, which is
+the entire reason the triple stamp exists. `desks/mt5/mt5desk/financing.py:rollover_nights()` walks
+**calendar days** with no weekend guard (grepped: no `weekday() >= 5`, no calendar check anywhere in
+the module) and charges 1 night per stamp, 3 on the triple day. **Measured, not read** —
+
+```
+full week (Mon→Mon)   : 9 nights charged   (due: 7)
+Fri→Mon weekend hold  : 3 nights charged
+Sat 22:00 stamp       : 1 night  charged   (due: 0)
+Sun 22:00 stamp       : 1 night  charged   (due: 0)
+365 days held         : 469 nights charged (due: 365)  → +28.5%
+```
+
+**The weekend is counted twice: once inside the triple stamp, once again as two calendar nights.**
+The module's own docstring proves the intent — "*the weekend is two extra nights on top of the one
+that stamp would carry anyway*" — and then the loop adds them a second time. It even names the
+magnitude, "*2/7 — about 29%*", as the error it was written to AVOID, with the sign inverted from
+what the code does.
+
+**Why it survived, and it is the same shape as s20's misspelling:** `rollover_nights` is the
+function that sets every financing charge on this desk, it is wired
+(`desks/mt5/research/swap_exposure.py:168`), and **no test asserts a night count anywhere in
+`tests/`** — the only reference is a docstring line in `test_carry_state.py:89` about `None`
+disabling the rule. The one number the function exists to produce has never been asserted.
+
+**Direction, and why it is a scored defect rather than a conservative error:** overcharging
+financing 28.5% makes every carry, swap-harvest and multi-day hold look worse than it is. It is a
+**false-negative generator at the ten gates** — it kills profitable candidates silently and can
+never kill an unprofitable one. Under L1.28/L2a that is timidity in the cost model, and it sits
+directly on top of the carry-state work committed this week (`b79e956c`, "the desk charged
+overnight financing at zero on 17 live sleeves") — the same module, the opposite error, one commit
+apart.
+
+→ **R0747**, patch named to the line; money path, so this seat may not land it.
+
+**ITEM 3 — SEARCH-SPACE EXPANSION: new class opened, real yield, honestly partial as a §38 replacement.**
+
+**Class: the broker's own EMBEDDED STRUCTURED PAYLOAD** (as distinct from its operational-notice
+archive, already dug at R0691, and from its HTML pricing tables, whose scrape route died —
+`fusionmarkets.com/pricing/swap-rates`). Grepped before opening: no prior reference in
+`prospector_coverage.md`, `source_backlog.md` or `improvement_inbox.md`.
+
+**The route matters more than the page.** Every legal/spec path 404s with a **constant 1,453,459
+bytes on every input** — the SPA-shell signature. `sitemap.xml` (200, 184 URLs) is the door, and
+the real paths are **capitalised** (`/Trading/Trading-conditions`), which is why the lowercase
+probes read as absent. The tables are **not in the HTML at all**: they are Next.js flight-encoded
+JSON, recovered by one global unescape plus a bracket-matched scan. §13: `Allow: /`, clean.
+
+Yield, persisted to `data/broker/fusion_trading_conditions.json`:
+
+- **Session Times — 30 instruments × 17 columns**: per-instrument session windows AND **daily
+  BREAK windows**, across five timezone columns. **The desk's 251-symbol universe registry declares
+  no session or break field of any kind** (fields censused this run). Every scheduled index-CFD
+  break — e.g. `AUS200 … Daily 05:30 - 06:10` — is a hole in the bar series that a gap or
+  overnight-reaction feature reads as a market event. The desk currently has
+  `overnight_gap_decay_*` shadow ledgers running.
+- **Contract Specifications (10)** and **Margins & Leverage (7)** — vendor-primary, and the
+  independent check on the registry's own `contract_size`/`tick_value`.
+- This is **also** the answer to s9's finding that the broker holiday calendar publishes only as a
+  PNG: the *sessions and breaks* publish as JSON even though the *holidays* do not.
+
+**§38 EXCLUSION → REPLACEMENT, graded honestly: PARTIAL.** The dead `swap-rates` scrape is **not**
+replaced — no swap table appears in this payload. What is replaced is the *route class*: the
+broker's structured data is reachable via sitemap + flight-payload extraction rather than HTML
+scraping, and that route should be re-pointed at the swap page before the source is called dead.
+**Residual: the swap-rate table specifically. NOT closed.**
+
+### DEPTH LINE (per the depth mandate)
+
+- **MetaQuotes archive — EXHAUSTED on this run's two axes.** Surface → all 17 index pages fetched
+  and text-extracted → keyword census across the full 2009–2026 corpus → per-page constant
+  extraction → **followed into the desk's own code** (`financing.py` → `swap_exposure.py` caller →
+  `tests/` coverage → empirical measurement of the live function). The depth is what produced the
+  finding: the surface said "new symbol properties for weekday swaps", and only the walk into the
+  desk's arithmetic turned that into a measured 28.5% overcharge.
+- **Fusion — comments/forks/citations N/A** (vendor site); depth taken instead through the
+  *transport*: 404-shell detection → sitemap enumeration → case correction → flight-payload decode.
+  Three layers past where a 404 would have stopped the run.
+- **Honest self-grade:** item 3 was opened and mined but NOT exhausted — 184 sitemap URLs, 1 read.
+
+### HONEST VERDICT
+
+**Zero new tradeable alpha cards, and none was expected from this ground.** What the run produced:
+one **VERIFIED, measured, money-path arithmetic defect** (469 nights per 365 days, +28.5%
+financing, on a function with no test asserting its output); one **17-year birth-date map** for
+every field R0746 wants; the drawdown discontinuity upgraded from one event to **four**, two of
+them eight days apart; **one correction to my own last session's residual grade** (the archive was
+never on the mirror and is 17 years, not 9) and **one half-refutation of my own last session's
+DELAY conclusion**; one new source class with a persisted artifact and a partial §38 residual left
+open rather than papered over.
+
+The run's transferable habit is s20's, applied one level deeper and confirming itself: **s20 said
+"census the vendor's field list before grading the producer complete." This run says census the
+vendor's CHANGELOG too — a field's semantics have a birth date, and the desk's arithmetic can be
+wrong about a quantity it reads correctly.** Both of this run's real findings came from reading the
+vendor's own words about a number the desk already had.
+
+### NEXT UN-EXHAUSTED GROUND (for s22, in order)
+
+1. **The remaining 183 Fusion sitemap URLs**, and specifically **re-point the dead swap-rates route
+   at the flight-payload extractor** — the §38 residual this run left open. `/Trading/Forex-cfd-spreads`,
+   `/Trading/Swap-Free-Accounts` and the six asset-class pages are the highest-value of them.
+2. **The MetaQuotes archive on its THIRD axis.** This run mined it for symbol properties and for
+   report semantics. Untouched: **execution/order-handling semantics** (filling modes, requote and
+   slippage handling, partial fills) and **tester semantics** — every one is a dated change to what
+   a backtest MEANS, and the desk's whole gauntlet runs on backtests. The corpus is on disk at
+   `/tmp/rn_p*.txt`; re-extract rather than re-fetch.
+3. **`SYMBOL_SUBSCRIPTION_DELAY` settled for good** — one field in the R0746 block ends a
+   CLAIM-grade open question that has now cost two sessions.
+4. The six track-record seeds returning 2026-09-03/05, now carrying the **four-event** drawdown
+   step function rather than s20's single cut point.
+
+### SOURCE-FAMILY VISITS AND YIELD (s21, for source-yield learning)
+
+| Source family | Visited | Depth reached | Yield |
+|---|---|---|---|
+| MetaQuotes build release-notes archive, 2009-11 → 2026-08 (17 pages, whole corpus on disk) | ✅ | **EXHAUSTED on 2 of 3 axes** (symbol properties, report semantics) | **R0747** (the run's conversion) + 17-yr birth-date map + 4-event drawdown step function + 1 self-correction + 1 self-refutation |
+| Broker embedded structured payload — `fusionmarkets.com` flight JSON (**NEW CLASS**) | ✅ | mined, **NOT exhausted** (1 of 184 sitemap URLs) | `data/broker/fusion_trading_conditions.json`: Session Times 30×17 incl. daily breaks, Contract Specs, Margins. §38 replacement **PARTIAL** — swap table still missing |
+| Source backlog (verification queue) | ✅ | n/a | **0 pending**, 0 legitimacy-pending, 28 deferred (next 2026-09-01). No verification work existed this cycle. |
+| Video | ❌ | — | 0 fetched, 0 locked — no video route attempted this run, so nothing is logged to `video_locked_log.md` (a negative is only logged for a route actually tried). |
+
+**Prior-art check before opening item 3:** grepped `prospector_coverage.md`, `source_backlog.md`
+and `improvement_inbox.md` — the broker's *operational-notice* archive was dug (R0691) and its
+*HTML pricing* scrape is dead; the *embedded structured payload* had no prior reference. Genuinely
+new class.
+
+**Graveyard cross-check:** no candidate this run reached carding, so no `do_not_repeat` collision
+arose. R0747 is a cost-model defect, not a mechanism, and is outside the graveyard's scope.
