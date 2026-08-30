@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-30T00:10:54.445728+00:00",
+  "generated_at": "2026-08-30T00:42:40.958728+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 67,
-    "UNWIRED_REVIEW": 557,
+    "UNWIRED_REVIEW": 560,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -3533,6 +3533,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research_os.adapters.market_structure",
+      "path": "libs/research_os/adapters/market_structure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research_os.adapters.owned_data",
       "path": "libs/research_os/adapters/owned_data.py",
       "status": "UNWIRED_REVIEW",
@@ -3540,8 +3547,22 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research_os.adapters.price_structure",
+      "path": "libs/research_os/adapters/price_structure.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research_os.failure_states",
       "path": "libs/research_os/failure_states.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research_os.mutation",
+      "path": "libs/research_os/mutation.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"

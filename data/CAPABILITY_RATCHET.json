@@ -1,7 +1,7 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-08-30T00:00:11.557243+00:00",
+ "generated": "2026-08-30T00:37:48.917625+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
@@ -11,7 +11,7 @@
  "measured_mean": 7.84,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
  "last_raise_at": "2026-08-29T18:24:40.542294+00:00",
- "days_since_raise": 0.23,
+ "days_since_raise": 0.26,
  "n_raises": 17,
  "binding_constraint": {
   "state": "MEASURED",
@@ -146,8 +146,8 @@
    "score": 6.8,
    "high_water": 9.0,
    "movement": "FELL",
-   "cause": "statistical_validation.forecasts_resolved 7.0 -> 6.7 (data/calibration_status.json): status OVERDUE: 3 forecast(s) past their grading deadline -- score them; brier 0.2826, 3 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
-   "binding_constraint": "forecasts_resolved at 6.7 -- +60 logged forecasts scored against an outcome (396 -> 456 of 592) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
+   "cause": "statistical_validation.forecasts_resolved 7.0 -> 6.6 (data/calibration_status.json): status OVERDUE: 5 forecast(s) past their grading deadline -- score them; brier 0.2826, 5 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
+   "binding_constraint": "forecasts_resolved at 6.6 -- +59 logged forecasts scored against an outcome (396 -> 455 of 598) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
    "ceiling": "the validation stack's own tests kill every mutant of it, over complete (never truncated) runs -- the desk cannot fool itself about whether an edge is real",
    "artifacts": [
     "data/mutation_score.json",
@@ -173,10 +173,10 @@
     {
      "key": "forecasts_resolved",
      "state": "MEASURED",
-     "score": 6.7,
+     "score": 6.6,
      "artifact": "data/calibration_status.json",
-     "detail": "status OVERDUE: 3 forecast(s) past their grading deadline -- score them; brier 0.2826, 3 overdue",
-     "constraint": "+60 logged forecasts scored against an outcome (396 -> 456 of 592) buys the next point"
+     "detail": "status OVERDUE: 5 forecast(s) past their grading deadline -- score them; brier 0.2826, 5 overdue",
+     "constraint": "+59 logged forecasts scored against an outcome (396 -> 455 of 598) buys the next point"
     }
    ]
   },
@@ -301,7 +301,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_drills.py is FRESH (age 20.3h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
+     "detail": "scripts/run_drills.py is FRESH (age 20.88h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -479,7 +479,7 @@
    "score": 6.5,
    "high_water": 7.5,
    "movement": "FELL",
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 5.0 (data/conversion_status.json): status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.35d; self_improvement.ledger_dispositioned 6.1 -> 5.8 (docs/research/recommendation_ledger.json): 435 dispositioned of 745 raised (310 still open or scheduled) -- a reasoned rejection counts, silence does not",
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 5.0 (data/conversion_status.json): status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.38d; self_improvement.ledger_dispositioned 6.1 -> 5.8 (docs/research/recommendation_ledger.json): 435 dispositioned of 745 raised (310 still open or scheduled) -- a reasoned rejection counts, silence does not",
    "binding_constraint": "conversion_flow_7d at 5.0 -- +10 of the last 7 days' arrivals dispositioned (50 -> 60 of 100) buys the next point",
    "ceiling": "every ledger row reaching a terminal verdict and 7-day conversion keeping pace with 7-day arrivals -- found equals fixed",
    "artifacts": [
@@ -502,7 +502,7 @@
      "state": "MEASURED",
      "score": 5.0,
      "artifact": "data/conversion_status.json",
-     "detail": "status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.35d",
+     "detail": "status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.38d",
      "constraint": "+10 of the last 7 days' arrivals dispositioned (50 -> 60 of 100) buys the next point"
     },
     {
@@ -510,7 +510,7 @@
      "state": "MEASURED",
      "score": 8.0,
      "artifact": "data/instrumentation_coverage.jsonl",
-     "detail": "16 instrumented, 4 owed at 2026-08-29T23:14:31.876573+00:00 over 226 recorded sweeps",
+     "detail": "16 instrumented, 4 owed at 2026-08-30T00:23:25.449362+00:00 over 227 recorded sweeps",
      "constraint": "+10 % of declared instrumentation points wired (80 -> 90 of 100) buys the next point"
     },
     {
@@ -518,7 +518,7 @@
      "state": "MEASURED",
      "score": 7.0,
      "artifact": "data/instrumentation_chase.json",
-     "detail": "4.0 gap(s) carrying a cycle counter at 2026-08-29T23:14:31.880371+00:00 -- the counter never resets except by closing the gap",
+     "detail": "4.0 gap(s) carrying a cycle counter at 2026-08-30T00:23:25.451121+00:00 -- the counter never resets except by closing the gap",
      "constraint": "-1 instrumentation gaps standing open across cycles (4 -> 3, back under the 4 rung) buys the next point"
     }
    ]
@@ -619,8 +619,8 @@
    "score": 9.7,
    "high_water": 9.7,
    "movement": "FLATLINE",
-   "cause": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1804 -> 1949, the whole remaining gap) is the last +0.7 to 10/10",
-   "binding_constraint": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1804 -> 1949, the whole remaining gap) is the last +0.7 to 10/10",
+   "cause": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1806 -> 1951, the whole remaining gap) is the last +0.7 to 10/10",
+   "binding_constraint": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1806 -> 1951, the whole remaining gap) is the last +0.7 to 10/10",
    "ceiling": "the pager provably delivers between incidents, on more than one channel, with the canary auditing the ledger rather than the code",
    "artifacts": [
     "data/alert_delivery.jsonl",
@@ -632,15 +632,15 @@
      "state": "MEASURED",
      "score": 9.3,
      "artifact": "data/alert_delivery.jsonl",
-     "detail": "1804/1949 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
-     "constraint": "+145 logged page attempts that DELIVERED (1804 -> 1949, the whole remaining gap) is the last +0.7 to 10/10"
+     "detail": "1806/1951 ledger attempts delivered; last row channel ntfy ok=True -- http 200",
+     "constraint": "+145 logged page attempts that DELIVERED (1806 -> 1951, the whole remaining gap) is the last +0.7 to 10/10"
     },
     {
      "key": "alert_channels_not_silent",
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/ALERT_CHANNELS_SILENT",
-     "detail": "no silence flag, and the canary ran 3.72h ago (bound 6h) -- a live canary that is not complaining",
+     "detail": "no silence flag, and the canary ran 4.35h ago (bound 6h) -- a live canary that is not complaining",
      "constraint": "AT CEILING -- a page has landed inside the canary's own lookback AND the canary is itself alive; HOLDING it means keeping the canary on its cadence, because a silent canary and a working pager look identical from here"
     }
    ]
@@ -673,7 +673,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.59h against its own 3.0h tolerance); evidence data/cost_hunt.json",
+     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.17h against its own 3.0h tolerance); evidence data/cost_hunt.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -681,7 +681,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_identification.py is FRESH (age 0.64h against its own 3.0h tolerance); evidence data/cost_surface.json",
+     "detail": "scripts/run_cost_identification.py is FRESH (age 0.22h against its own 3.0h tolerance); evidence data/cost_surface.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -930,7 +930,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_moat_backup.py is FRESH (age 20.05h against its own 72.0h tolerance); evidence data/backup_status.json",
+     "detail": "scripts/run_moat_backup.py is FRESH (age 20.64h against its own 72.0h tolerance); evidence data/backup_status.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -1225,7 +1225,7 @@
      "state": "MEASURED",
      "score": 9.4,
      "artifact": "docs/research/CONSTITUTION_RATCHET.json",
-     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-08-29T23:10:23.952884+00:00",
+     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-08-30T00:20:21.930423+00:00",
      "constraint": "+0.593 of full aggression, meaned over the constitution's own marks (9.407 -> 10, the whole remaining gap) is the last +0.6 to 10/10"
     },
     {
@@ -1285,7 +1285,7 @@
    "movement": "FELL",
    "score": 6.8,
    "high_water": 9.0,
-   "cause": "statistical_validation.forecasts_resolved 7.0 -> 6.7 (data/calibration_status.json): status OVERDUE: 3 forecast(s) past their grading deadline -- score them; brier 0.2826, 3 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
+   "cause": "statistical_validation.forecasts_resolved 7.0 -> 6.6 (data/calibration_status.json): status OVERDUE: 5 forecast(s) past their grading deadline -- score them; brier 0.2826, 5 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
   },
   {
    "aspect": "research_discipline",
@@ -1327,7 +1327,7 @@
    "movement": "FELL",
    "score": 6.5,
    "high_water": 7.5,
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 5.0 (data/conversion_status.json): status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.35d; self_improvement.ledger_dispositioned 6.1 -> 5.8 (docs/research/recommendation_ledger.json): 435 dispositioned of 745 raised (310 still open or scheduled) -- a reasoned rejection counts, silence does not"
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 5.0 (data/conversion_status.json): status REPAIR-MODE: 50.0 dispositioned vs 100.0 raised in 7d; backlog 310, oldest 34.38d; self_improvement.ledger_dispositioned 6.1 -> 5.8 (docs/research/recommendation_ledger.json): 435 dispositioned of 745 raised (310 still open or scheduled) -- a reasoned rejection counts, silence does not"
   },
   {
    "aspect": "ops_autonomy",
@@ -1423,7 +1423,7 @@
   {
    "aspect": "alerting_pager",
    "score": 9.7,
-   "binding_constraint": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1804 -> 1949, the whole remaining gap) is the last +0.7 to 10/10"
+   "binding_constraint": "pager_deliveries_ok at 9.3 -- +145 logged page attempts that DELIVERED (1806 -> 1951, the whole remaining gap) is the last +0.7 to 10/10"
   },
   {
    "aspect": "dependency_environment",
