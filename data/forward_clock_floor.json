@@ -67,8 +67,8 @@
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 8.338,
- "measured_at": "2026-08-31T21:57:41+00:00",
+ "max_clock_age_days": 8.375,
+ "measured_at": "2026-08-31T22:51:45+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

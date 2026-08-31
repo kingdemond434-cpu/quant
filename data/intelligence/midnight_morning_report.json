@@ -18,84 +18,84 @@
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.003033,
+  "measured_cpu_hours": 0.041358,
   "stage_rows": [
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 10906.916,
+    "cpu_seconds": 141.365036,
+    "duration_seconds": 2741.944,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.216324,
-    "duration_seconds": 6.938,
+    "cpu_seconds": 1.40532,
+    "duration_seconds": 11.296,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.040941,
-    "duration_seconds": 26.421,
+    "cpu_seconds": 2.828983,
+    "duration_seconds": 11.338,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.07205,
-    "duration_seconds": 3.967,
+    "cpu_seconds": 0.061857,
+    "duration_seconds": 1.717,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.665932,
-    "duration_seconds": 62.354,
+    "cpu_seconds": 0.233343,
+    "duration_seconds": 9.648,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.040296,
-    "duration_seconds": 9.37,
+    "cpu_seconds": 1.159618,
+    "duration_seconds": 4.97,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.058456,
-    "duration_seconds": 3.751,
+    "cpu_seconds": 0.076345,
+    "duration_seconds": 1.924,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.060581,
-    "duration_seconds": 9.602,
+    "cpu_seconds": 0.949162,
+    "duration_seconds": 4.239,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.046828,
-    "duration_seconds": 12.897,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 7.117,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.221658,
-    "duration_seconds": 3.294,
+    "cpu_seconds": 0.285903,
+    "duration_seconds": 2.445,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.077729,
-    "duration_seconds": 2.736,
+    "cpu_seconds": 0.077982,
+    "duration_seconds": 2.251,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.338827,
-    "duration_seconds": 4.23,
+    "cpu_seconds": 0.376484,
+    "duration_seconds": 1.942,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.079866,
-    "duration_seconds": 3.094,
+    "cpu_seconds": 0.067386,
+    "duration_seconds": 1.678,
     "name": "forward_clock_fence"
    }
   ]
@@ -212,31 +212,16 @@
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
   "source_unmeasured": 0,
-  "stale": 12,
-  "stale_keys": [
-   "USDZAR.overnight_gap_decay.asia",
-   "CHFNOK.carry.asia#input_symbol=CHFNOK",
-   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1",
-   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1",
-   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1",
-   "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1",
-   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1",
-   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1",
-   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1",
-   "USDMXN.overnight_gap_decay.asia",
-   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1",
-   "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1"
-  ]
+  "stale": 0,
+  "stale_keys": []
  },
- "generated_at": "2026-08-31T21:57:47.279706+00:00",
+ "generated_at": "2026-08-31T22:51:48.970914+00:00",
  "headline": {
   "candidates_discovered": 23257,
   "candidates_lost": 0,
   "certificates_added": 0,
   "forward_clocks": 72,
-  "hard_failures": [
-   "forward_lane_heal"
-  ]
+  "hard_failures": []
  },
  "mechanism_independence": {
   "allocation": {
@@ -346,7 +331,7 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 17,
-  "measured_at": "2026-08-31T21:57:22+00:00",
+  "measured_at": "2026-08-31T22:51:34+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
@@ -357,7 +342,7 @@
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 452.7,
+  "mem_available_mb": 598.0,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,

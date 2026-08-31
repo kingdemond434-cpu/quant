@@ -17,9 +17,13 @@
   "active_forward_clocks": 39,
   "external_screen_survivors": 23257,
   "queue_by_status": {
-   "DONE": 10
+   "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
+   "DONE": 10,
+   "GAUNTLET_PASSED": 16,
+   "GAUNTLET_REJECTED": 23164,
+   "PENDING": 17
   },
-  "queue_total": 10,
+  "queue_total": 23300,
   "universal_certificates": 45
  },
  "candidate_conservation": {
@@ -41,19 +45,15 @@
  "deferred_stages": [
   "canonical_external_pipeline"
  ],
- "diagnostic_findings": [
-  "same_day_fence"
- ],
- "generated_at": "2026-08-31T21:57:44.133091+00:00",
- "hard_failures": [
-  "forward_lane_heal"
- ],
+ "diagnostic_findings": [],
+ "generated_at": "2026-08-31T22:51:46.864527+00:00",
+ "hard_failures": [],
  "morning_report": "data/intelligence/midnight_morning_report.json",
  "needs_controller": true,
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 452.7,
+  "mem_available_mb": 598.0,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -67,10 +67,10 @@
     "start",
     "quant-external-pipeline.service"
    ],
-   "cpu_seconds": 0.0,
+   "cpu_seconds": 141.365036,
    "deferred_resource": true,
    "diagnostic_finding": false,
-   "duration_seconds": 10906.916,
+   "duration_seconds": 2741.944,
    "name": "canonical_external_pipeline",
    "passes": [
     {
@@ -79,7 +79,7 @@
      "returncode": 0
     },
     {
-     "cpu_seconds": 0.0,
+     "cpu_seconds": 141.365036,
      "outstanding_after": 19385,
      "returncode": 0
     }
@@ -95,14 +95,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/promote_external_to_queue.py"
    ],
-   "cpu_seconds": 1.216324,
+   "cpu_seconds": 1.40532,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 6.938,
+   "duration_seconds": 11.296,
    "name": "external_queue_projection",
    "passes": [
     {
-     "cpu_seconds": 1.216324,
+     "cpu_seconds": 1.4053200000000001,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -118,21 +118,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/reconcile_external_queue.py"
    ],
-   "cpu_seconds": 3.040941,
+   "cpu_seconds": 2.828983,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 26.421,
+   "duration_seconds": 11.338,
    "name": "external_queue_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 3.040941,
+     "cpu_seconds": 2.828983,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "{\n \"reconciled_at\": \"2026-08-31T21:54:55.522422+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 0,\n  \"blocked\": 0,\n  \"ignored\": 23300\n }\n}\n"
+   "stdout_tail": "{\n \"reconciled_at\": \"2026-08-31T22:50:45.126924+00:00\",\n \"authority\": \"EXTERNAL_GAUNTLET_ONLY; queue rows have no promotion authority\",\n \"queue_path\": \"desks/mt5/data/research_queue.json\",\n \"docket_path\": \"desks/mt5/data/hypotheses/external_survivors.json\",\n \"report_path\": \"desks/mt5/reports/universal_gates_external.json\",\n \"counts\": {\n  \"passed\": 0,\n  \"rejected\": 0,\n  \"awaiting\": 0,\n  \"blocked\": 0,\n  \"ignored\": 23300\n }\n}\n"
   },
   {
    "accepted": true,
@@ -141,21 +141,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/build_gauntlet_survivors.py"
    ],
-   "cpu_seconds": 0.07205,
+   "cpu_seconds": 0.061857,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.967,
+   "duration_seconds": 1.717,
    "name": "certificate_projection",
    "passes": [
     {
-     "cpu_seconds": 0.07204999999999995,
+     "cpu_seconds": 0.06185699999999983,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "gauntlet survivors: 45 candidate(s) written from real MT5 evidence; 20 carry all eight gates, 25 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-08-31T21:55:20+00:00 -> data/gauntlet_survivors.json\n"
+   "stdout_tail": "gauntlet survivors: 45 candidate(s) written from real MT5 evidence; 20 carry all eight gates, 25 have at least one gate UNMEASURED (which the promotion gate counts as failed)\n  written at 2026-08-31T22:50:55+00:00 -> data/gauntlet_survivors.json\n"
   },
   {
    "accepted": true,
@@ -166,14 +166,14 @@
     "start",
     "quant-desk-pull.service"
    ],
-   "cpu_seconds": 3.665932,
+   "cpu_seconds": 0.233343,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 62.354,
+   "duration_seconds": 9.648,
    "name": "fusion_state_pull",
    "passes": [
     {
-     "cpu_seconds": 3.665932,
+     "cpu_seconds": 0.23334300000000052,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -189,14 +189,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/forward_reconcile.py"
    ],
-   "cpu_seconds": 1.040296,
+   "cpu_seconds": 1.159618,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 9.37,
+   "duration_seconds": 4.97,
    "name": "forward_identity_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 1.0402959999999997,
+     "cpu_seconds": 1.159618,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -212,44 +212,44 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock.py"
    ],
-   "cpu_seconds": 0.058456,
+   "cpu_seconds": 0.076345,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.751,
+   "duration_seconds": 1.924,
    "name": "forward_clock_reconciliation",
    "passes": [
     {
-     "cpu_seconds": 0.05845600000000051,
+     "cpu_seconds": 0.07634499999999989,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "FORWARD CLOCK 2026-08-31T21:56:47+00:00\n  healthy 31, churned 0, skipped-terminal 33, unrepairable 0\n  -> /home/quant/quant-platform/data/forward_clock_health.json\n"
+   "stdout_tail": "FORWARD CLOCK 2026-08-31T22:51:16+00:00\n  healthy 33, churned 0, skipped-terminal 33, unrepairable 0\n  -> /home/quant/quant-platform/data/forward_clock_health.json\n"
   },
   {
-   "accepted": false,
+   "accepted": true,
    "certificate_delta": 0,
    "command": [
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/heal_forward_lane.py"
    ],
-   "cpu_seconds": 1.060581,
+   "cpu_seconds": 0.949162,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 9.602,
+   "duration_seconds": 4.239,
    "name": "forward_lane_heal",
    "passes": [
     {
-     "cpu_seconds": 1.060581,
+     "cpu_seconds": 0.9491620000000003,
      "outstanding_after": null,
-     "returncode": 1
+     "returncode": 0
     }
    ],
-   "returncode": 1,
+   "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "FORWARD LANE 2026-08-31T21:56:54+00:00\n  blocked sleeves: 0\n\n  STALLED (12) -- alive-looking rows that are not accruing: {'STALE_ATTEMPT': 12}\n    STALE_ATTEMPT  USDZAR.overnight_gap_decay.asia            engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  CHFNOK.carry.asia#input_symbol=CHFNOK      engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.75, 0.9]_   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.75, 0.9]_   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.75, 0.9]_   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.0, 0.1]_f   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.9, 1.0]_f   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.75, 0.9]_   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  EURCHF.discovered.asia#band=[0.75, 0.9]_   engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n    STALE_ATTEMPT  USDMXN.overnight_gap_decay.asia            engine last evaluated this row 3.1h ago; the hourly cycle is not reach\n\n  authorized runs: 39, with a forward clock: 39, idle: 0\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
+   "stdout_tail": "FORWARD LANE 2026-08-31T22:51:20+00:00\n  blocked sleeves: 0\n\n  authorized runs: 39, with a forward clock: 39, idle: 0\n\n  -> /home/quant/quant-platform/data/forward_lane_health.json\n"
   },
   {
    "accepted": true,
@@ -260,14 +260,14 @@
     "start",
     "shadow-forward.service"
    ],
-   "cpu_seconds": 0.046828,
+   "cpu_seconds": 0.0,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 12.897,
+   "duration_seconds": 7.117,
    "name": "zero_capital_shadow_forward",
    "passes": [
     {
-     "cpu_seconds": 0.04682800000000009,
+     "cpu_seconds": 0.0,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -283,14 +283,14 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "desks/mt5/research/portfolio_evidence.py"
    ],
-   "cpu_seconds": 0.221658,
+   "cpu_seconds": 0.285903,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.294,
+   "duration_seconds": 2.445,
    "name": "mechanism_independence",
    "passes": [
     {
-     "cpu_seconds": 0.2216579999999997,
+     "cpu_seconds": 0.28590300000000024,
      "outstanding_after": null,
      "returncode": 0
     }
@@ -306,21 +306,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_sameday_pipeline.py"
    ],
-   "cpu_seconds": 0.077729,
+   "cpu_seconds": 0.077982,
    "deferred_resource": false,
-   "diagnostic_finding": true,
-   "duration_seconds": 2.736,
+   "diagnostic_finding": false,
+   "duration_seconds": 2.251,
    "name": "same_day_fence",
    "passes": [
     {
-     "cpu_seconds": 0.07772899999999971,
+     "cpu_seconds": 0.07798200000000044,
      "outstanding_after": null,
-     "returncode": 1
+     "returncode": 0
     }
    ],
-   "returncode": 1,
+   "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "SAME-DAY PIPELINE BREACH 2026-08-31T21:57:28+00:00\n\n  - IDLE-CLOCK: 12 live clock(s) have not been refreshed in over 3.0h -- the shadow cycle replays every 15 minutes, so this means the cycle is failing or the engine is skipping them. Evidence stops accruing while the day counter keeps running, which is the worst combination: the clock matures on stale data. Rows: AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1 (3.1h), CHFNOK.carry.asia#input_symbol=CHFNOK (3.1h), EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1 (3.1h), EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1 (3.1h), EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1 (3.1h), EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1 (3.1h) ...\n\nrepair-invoke: SKIPPED (same-day pipeline breach) -- gap-wirer fired 290min ago, cooldown 360min. The breach stands and this fence still exits non-zero; only the actuator is rate-limited.\n"
+   "stdout_tail": "same-day pipeline: ok (45 certificate(s), 39 live forward clock(s), 33 retired row(s) preserved)\n"
   },
   {
    "accepted": true,
@@ -329,21 +329,21 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_cert_yield.py"
    ],
-   "cpu_seconds": 0.338827,
+   "cpu_seconds": 0.376484,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 4.23,
+   "duration_seconds": 1.942,
    "name": "certificate_yield_fence",
    "passes": [
     {
-     "cpu_seconds": 0.3388270000000002,
+     "cpu_seconds": 0.3764839999999996,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "MACHINERY, not candidates: the last sweep is 3.2h old (hourly cadence). Nothing can certify because nothing is judging.\n  submitted=2941 judged=3757 unmeasured=0 passed=21 trials=597\n  binding gate: {'in_sample_screen': 1184, 'deflated_sharpe': 1181, 'economic_prior': 816, 'observations': 553, 'cpcv': 2}\n  ONE CURABLE GATE AWAY: 903 cell(s) passed EVERY validity gate and failed only power gate(s):\n    CHFSGD    overnight_gap_decay  days=375 oos_sharpe=0.5425 fails=deflated_sharpe (hurdle 0.3786)\n    EURRUB    carry                days=240 oos_sharpe=0.5358 fails=deflated_sharpe (hurdle 0.3786)\n    USDSGD    overnight_gap_decay  days=388 oos_sharpe=0.514 fails=deflated_sharpe (hurdle 0.3786)\n    CHFJPY    overnight_gap_decay  days=602 oos_sharpe=0.5032 fails=deflated_sharpe (hurdle 0.3786)\n    EURCHF    discovered           days=633 oos_sharpe=0.4929 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
+   "stdout_tail": "MACHINERY, not candidates: the last sweep is 4.1h old (hourly cadence). Nothing can certify because nothing is judging.\n  submitted=2941 judged=3757 unmeasured=0 passed=21 trials=597\n  binding gate: {'in_sample_screen': 1184, 'deflated_sharpe': 1181, 'economic_prior': 816, 'observations': 553, 'cpcv': 2}\n  ONE CURABLE GATE AWAY: 903 cell(s) passed EVERY validity gate and failed only power gate(s):\n    CHFSGD    overnight_gap_decay  days=375 oos_sharpe=0.5425 fails=deflated_sharpe (hurdle 0.3786)\n    EURRUB    carry                days=240 oos_sharpe=0.5358 fails=deflated_sharpe (hurdle 0.3786)\n    USDSGD    overnight_gap_decay  days=388 oos_sharpe=0.514 fails=deflated_sharpe (hurdle 0.3786)\n    CHFJPY    overnight_gap_decay  days=602 oos_sharpe=0.5032 fails=deflated_sharpe (hurdle 0.3786)\n    EURCHF    discovered           days=633 oos_sharpe=0.4929 fails=deflated_sharpe (hurdle 0.3786)\n  -> /home/quant/quant-platform/data/cert_yield.json\n"
   },
   {
    "accepted": true,
@@ -352,22 +352,22 @@
     "/home/quant/quant-platform/.venv/bin/python",
     "scripts/check_forward_clock_ratchet.py"
    ],
-   "cpu_seconds": 0.079866,
+   "cpu_seconds": 0.067386,
    "deferred_resource": false,
    "diagnostic_finding": false,
-   "duration_seconds": 3.094,
+   "duration_seconds": 1.678,
    "name": "forward_clock_fence",
    "passes": [
     {
-     "cpu_seconds": 0.0798659999999991,
+     "cpu_seconds": 0.06738599999999995,
      "outstanding_after": null,
      "returncode": 0
     }
    ],
    "returncode": 0,
    "stderr_tail": "",
-   "stdout_tail": "FORWARD CLOCK RATCHET: 39 clock(s), oldest 8.34d (bar 14d, 5.66d to go)\n"
+   "stdout_tail": "FORWARD CLOCK RATCHET: 39 clock(s), oldest 8.38d (bar 14d, 5.62d to go)\n"
   }
  ],
- "started_at": "2026-08-31T18:52:47.590645+00:00"
+ "started_at": "2026-08-31T22:04:24.844812+00:00"
 }

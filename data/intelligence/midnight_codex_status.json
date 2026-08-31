@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-31T21:58:24.801434+00:00",
+ "updated_at": "2026-08-31T22:52:11.022264+00:00",
  "status": "RUNNING_CONTROLLER",
  "reason": "Codex holds the fenced lease and is processing the current frontier",
  "controller_rc": -1,
