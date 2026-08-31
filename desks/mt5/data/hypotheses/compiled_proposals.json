@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T07:20:32+00:00",
+ "built_at": "2026-08-31T08:20:56+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1142,18 +1142,43 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "LIQUIDITY_MELT_SWITCH",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
+    "event": "cross_market_move",
+    "context": "high_liquidity",
+    "direction": "divergence",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "cross_market_move|high_liquidity|magnitude|divergence|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "FED H.4.1, BIS Locational Banking Statistics, DTCC FX swap data",
+   "kill": "If 4-month rolling correlation between CB balance sheet acceleration and basis widening does not exceed 0.35 with p-value < 0.05 over full sample, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "USDCAD_Western_Reserve_Gap",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "month_end",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|month_end|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Bank of Canada FX statistics, Statistics Canada government finance data",
+   "kill": "If USDCAD mean reversion within 30 days exceeds 95% in 3 consecutive quarters, kill",
+   "lens": "STRUCTURAL SEGMENTATION",
    "promotion_authority": false
   },
   {
@@ -1168,21 +1193,6 @@
     "quality_atr": 1.0
    },
    "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:liquidity_shock|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "liquidity_shock",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

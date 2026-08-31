@@ -23617,5 +23617,733 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"c706ae8b6524469f": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_expert_1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_expert_1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"47f6b6993605bf4b": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_flex_ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_flex_ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"72e31c83b93ac674": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_fox",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_fox&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2d954a5f4fa26eab": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_gold_investor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_gold_investor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c98d178511a71541": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_gold_investor_",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_gold_investor_&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"625474136527838e": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_gump_ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_gump_ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7b40414ac8d886aa": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_incontrol",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_incontrol&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1df661af78806c24": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_invest",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_invest&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2855076d31e0fbb1": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_m",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_m&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3bd6f5510d914af7": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_pip_shooter",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_pip_shooter&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"72a63f705ae641c7": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_quant_ea_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_quant_ea_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ba28c7732c6bdcff": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_razer_ea_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_razer_ea_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"852e80a391ca5b2b": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_spectre",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_spectre&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9f7bce33e8edc1de": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_steam",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_steam&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"90b8f52f34afc2f0": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forex_warrior",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forex_warrior&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bf76d2d0004ff979": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexai",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexai&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7581c52cf9b19aac": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexalpha",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexalpha&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fb664bb237b62f5c": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexalpha2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexalpha2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"37bd8c7633512ada": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexapollolive",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexapollolive&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9960c648dcdabe88": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbycom",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"56ad1c59fb27f713": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbycom-4",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-4&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c819d6ea993198ec": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbycom-6",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-6&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0e85c849bdec9ee3": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbycom-signals",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-signals&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e0a716ad31339e43": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbyexness",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbyexness&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"07b02978273aaee7": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexarbysf",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexarbysf&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"210a9374f7ebf096": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexautomator",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexautomator&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1beca11b8c76fe4b": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexautomator_gold",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexautomator_gold&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e59c8e274234d822": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbacklash",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbacklash&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5c2e1bd9626597b3": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbacklash2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbacklash2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a69ec80017e40925": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbigben-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbigben-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4bd4c7d10b4a1df7": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbigbenea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbigbenea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0036828d1fc471d4": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbot28",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a2e5a1d995929185": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbot28_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7406b5b3e58f5957": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexbot28_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ec897e85f1e0dbba": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcapt_extreme",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcapt_extreme&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"90aa1bc145d00c41": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcapt_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcapt_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2cd1b7fe3f127e56": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcleaner",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcleaner&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"46b19e0abe865129": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcombo_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcombo_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5884ce4180de620b": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcpt-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcpt-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1094f97a21034c8b": {
+"t0": "2026-08-31T08:24:24+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexcyborg",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T08:24:06+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

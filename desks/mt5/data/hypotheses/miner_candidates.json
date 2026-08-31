@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-31T06:15:15+00:00",
+ "compiled_at": "2026-08-31T07:32:55+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -3129,9 +3129,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 24,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 24
+   "deepening": 30
   },
   "mql5_signals": {
    "rows": 1,
@@ -3149,12 +3149,12 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 22,
+   "rows": 23,
    "candidates": 0,
-   "deepening": 22
+   "deepening": 23
   },
   "forexfactory": {
-   "rows": 49,
+   "rows": 46,
    "candidates": 0,
    "deepening": 107
   },
@@ -3179,9 +3179,9 @@
    "deepening": 33
   },
   "trading_latam": {
-   "rows": 35,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 35
+   "deepening": 36
   },
   "litefinance": {
    "rows": 15,
@@ -3244,9 +3244,9 @@
    "deepening": 13
   },
   "forextsd_cdx": {
-   "rows": 120,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 120
+   "deepening": 1
   },
   "quant_se": {
    "rows": 30,
@@ -3269,9 +3269,9 @@
    "deepening": 0
   },
   "github_topics": {
-   "rows": 1,
+   "rows": 45,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 45
   },
   "propfirm_boards": {
    "rows": 1,
@@ -3282,10 +3282,15 @@
    "rows": 3,
    "candidates": 3,
    "deepening": 0
+  },
+  "youtube": {
+   "rows": 25,
+   "candidates": 0,
+   "deepening": 25
   }
  },
- "rows_accounted": 965,
+ "rows_accounted": 920,
  "executable_candidates": 260,
- "deepening_tasks": 655,
+ "deepening_tasks": 582,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
