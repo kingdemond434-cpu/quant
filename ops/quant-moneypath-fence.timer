@@ -2,6 +2,11 @@
 Description=Money-path fence every 10 minutes
 
 [Timer]
+# 2026-08-31: 21 units were starting in the same minute (:00/:30) on a 3.7GB swapless
+# box, and units that fit easily alone were OOM-killed by the herd -- quant-queue-guard
+# peaks at 21MB against a 200M cap and still died 284x/day. This spreads the starts; it
+# does not change cadence. Kept well under this timer's own period so runs never overlap.
+RandomizedDelaySec=110
 OnCalendar=*:0/5
 Persistent=true
 

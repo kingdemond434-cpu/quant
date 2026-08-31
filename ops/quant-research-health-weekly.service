@@ -1,0 +1,11 @@
+[Unit]
+Description=Research-loop health WEEKLY deep audit (7d yield per stage, certs delta)
+
+[Service]
+MemoryMax=600M
+MemorySwapMax=0
+CPUWeight=50
+Type=oneshot
+WorkingDirectory=/home/quant/quant-platform
+ExecStart=/bin/sh -c '.venv/bin/python scripts/check_research_health.py --weekly >> data/cro_ai_logs/research_health.log 2>&1'
+TimeoutStartSec=20m

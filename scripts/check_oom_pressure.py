@@ -113,7 +113,7 @@ def _swap_total_mb() -> float | None:
 def _ceiling_mb(unit: str) -> float | None:
     """The unit's own MemoryMax in MB, or None when it is unbounded/unreadable. An unbounded
     unit can never be self-limited, so its kills are global by construction."""
-    scope = "--user" if not unit.startswith("memecoin-") else "--user"
+    scope = "--user"  # memecoin-* are user units too; no root-scoped unit is readable here
     _rc, out = _run(["systemctl", scope, "show", f"{unit}.service", "-p", "MemoryMax",
                      "--value"], timeout=30)
     raw = out.strip()
@@ -181,7 +181,7 @@ def main() -> int:
         print("oom pressure: UNMEASURED -- journal unreadable; this is not a clean verdict")
         return 2
 
-    kills_24h, peaks_24h = count_kills(text_24h)
+    kills_24h, _peaks_24h = count_kills(text_24h)
     kills_7d, peaks_7d = count_kills(text_7d)
 
     rows = []

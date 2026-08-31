@@ -1,8 +1,8 @@
 [Unit]
-Description=Research-loop health fence hourly at :33
+Description=Research-loop health fence every 30 min at :03 and :33
 
 [Timer]
-OnCalendar=*:33
+OnCalendar=*:03,33
 Persistent=true
 
 [Install]
