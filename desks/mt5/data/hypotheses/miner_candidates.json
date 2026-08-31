@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-31T02:09:15+00:00",
+ "compiled_at": "2026-08-31T03:50:19+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -3129,104 +3129,59 @@
  ],
  "per_source": {
   "github": {
-   "rows": 37,
+   "rows": 23,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 23
   },
   "mql5_signals": {
-   "rows": 1,
+   "rows": 6,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 6
   },
   "mql5_forum": {
-   "rows": 2,
-   "candidates": 0,
-   "deepening": 2
-  },
-  "quantconnect": {
    "rows": 1,
    "candidates": 0,
    "deepening": 1
   },
   "reddit": {
-   "rows": 36,
-   "candidates": 0,
-   "deepening": 36
-  },
-  "central_bank": {
-   "rows": 2,
-   "candidates": 0,
-   "deepening": 13
-  },
-  "forexfactory": {
-   "rows": 40,
-   "candidates": 0,
-   "deepening": 62
-  },
-  "cot": {
-   "rows": 22,
-   "candidates": 7,
-   "deepening": 0
-  },
-  "seasonality": {
-   "rows": 38,
-   "candidates": 2,
-   "deepening": 37
-  },
-  "shipping": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "myfxbook_outlook": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "darwinex": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "tradingview_scripts": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "fxblue": {
-   "rows": 40,
-   "candidates": 0,
-   "deepening": 40
-  },
-  "collective2": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "forexpeacearmy": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "ff_calendar_vintage": {
-   "rows": 112,
-   "candidates": 0,
-   "deepening": 45
-  },
-  "forextsd_cdx": {
-   "rows": 1,
-   "candidates": 0,
-   "deepening": 1
-  },
-  "quant_se": {
    "rows": 30,
    "candidates": 0,
    "deepening": 30
   },
-  "arxiv_qfin": {
-   "rows": 25,
+  "forexfactory": {
+   "rows": 48,
    "candidates": 0,
-   "deepening": 25
+   "deepening": 107
+  },
+  "cot": {
+   "rows": 11,
+   "candidates": 7,
+   "deepening": 0
+  },
+  "sec_edgar": {
+   "rows": 10,
+   "candidates": 0,
+   "deepening": 10
+  },
+  "arxiv": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "seasonality": {
+   "rows": 34,
+   "candidates": 2,
+   "deepening": 33
+  },
+  "amarkets": {
+   "rows": 113,
+   "candidates": 0,
+   "deepening": 113
+  },
+  "arxiv_qfin": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
   },
   "bis_speeches": {
    "rows": 40,
@@ -3238,64 +3193,94 @@
    "candidates": 248,
    "deepening": 0
   },
-  "github_topics": {
-   "rows": 45,
-   "candidates": 0,
-   "deepening": 45
-  },
-  "propfirm_boards": {
+  "collective2": {
    "rows": 1,
    "candidates": 0,
    "deepening": 1
   },
-  "trading_latam": {
-   "rows": 38,
+  "darwinex": {
+   "rows": 1,
    "candidates": 0,
-   "deepening": 38
-  },
-  "litefinance": {
-   "rows": 15,
-   "candidates": 0,
-   "deepening": 15
-  },
-  "instaforex_copy": {
-   "rows": 4,
-   "candidates": 0,
-   "deepening": 4
-  },
-  "amarkets": {
-   "rows": 112,
-   "candidates": 0,
-   "deepening": 112
+   "deepening": 1
   },
   "fbs_tape": {
    "rows": 1,
    "candidates": 0,
    "deepening": 1
   },
+  "ff_calendar_vintage": {
+   "rows": 112,
+   "candidates": 0,
+   "deepening": 13
+  },
+  "forexpeacearmy": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "forextsd_cdx": {
+   "rows": 120,
+   "candidates": 0,
+   "deepening": 120
+  },
+  "fxblue": {
+   "rows": 40,
+   "candidates": 0,
+   "deepening": 40
+  },
+  "github_topics": {
+   "rows": 45,
+   "candidates": 0,
+   "deepening": 45
+  },
+  "instaforex_copy": {
+   "rows": 4,
+   "candidates": 0,
+   "deepening": 4
+  },
+  "litefinance": {
+   "rows": 15,
+   "candidates": 0,
+   "deepening": 15
+  },
   "mql5_survivors": {
    "rows": 18,
    "candidates": 0,
    "deepening": 18
   },
-  "arxiv": {
-   "rows": 2,
+  "myfxbook_outlook": {
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
+  },
+  "propfirm_boards": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "quant_se": {
+   "rows": 30,
+   "candidates": 0,
+   "deepening": 30
+  },
+  "trading_latam": {
+   "rows": 36,
+   "candidates": 0,
+   "deepening": 36
   },
   "scheduled_chatgpt": {
    "rows": 3,
    "candidates": 3,
    "deepening": 0
   },
-  "sec_edgar": {
-   "rows": 10,
+  "tradingview_scripts": {
+   "rows": 1,
    "candidates": 0,
-   "deepening": 10
+   "deepening": 1
   }
  },
- "rows_accounted": 930,
+ "rows_accounted": 996,
  "executable_candidates": 260,
- "deepening_tasks": 574,
+ "deepening_tasks": 662,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

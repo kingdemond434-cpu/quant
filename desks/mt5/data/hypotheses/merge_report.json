@@ -1,11 +1,11 @@
 {
- "merged_at": "2026-08-31T02:05:07+00:00",
- "pipeline_started_at": "2026-08-31T01:12:19+00:00",
+ "merged_at": "2026-08-31T04:24:24+00:00",
+ "pipeline_started_at": "2026-08-31T03:42:17+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
-  "miner_candidates.json": 373,
+  "miner_candidates.json": 260,
   "edge_search_results.json": -2,
-  "orthogonal_candidates.json": 543,
+  "orthogonal_candidates.json": -2,
   "coverage_search_results.json": -2,
   "requeue_named.json": -2
  },
@@ -13,11 +13,11 @@
   "external_backtest_results.json": "FRESH",
   "miner_candidates.json": "FRESH",
   "edge_search_results.json": "STALE_SKIPPED",
-  "orthogonal_candidates.json": "FRESH",
+  "orthogonal_candidates.json": "STALE_SKIPPED",
   "coverage_search_results.json": "STALE_SKIPPED",
   "requeue_named.json": "STALE_SKIPPED"
  },
- "total": 23227,
+ "total": 23229,
  "families": {
   "asia_momentum": 15,
   "calendar_month": 2,
@@ -32,13 +32,13 @@
   "generic": 10,
   "hedging_demand_close": 3,
   "liquidity_gamma_reversal": 21,
-  "lvc_asia_london": 15,
+  "lvc_asia_london": 16,
   "overnight_gap_decay": 232,
   "pca_residual": 241,
   "relative_value": 390,
   "session_handoff": 17,
   "session_range_breakout": 126,
-  "turn_of_month": 176,
+  "turn_of_month": 177,
   "vol_mean_reversion": 148,
   "vol_transition": 113
  },

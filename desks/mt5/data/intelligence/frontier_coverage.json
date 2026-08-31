@@ -106,16 +106,16 @@
    "queries_exercised": 30,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-30T07:22:02+00:00",
+   "last_swept": "2026-08-31T03:22:02+00:00",
    "native_terms_available": 10
   },
   "en": {
    "region": "global",
    "open_frontier": false,
-   "queries_exercised": 18,
+   "queries_exercised": 21,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-30T02:22:03+00:00",
+   "last_swept": "2026-08-31T04:22:04+00:00",
    "native_terms_available": 20
   }
  }

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T02:19:09+00:00",
+ "built_at": "2026-08-31T04:19:17+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1042,48 +1042,63 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "QE_BALANCE_SHEET_COMPRESSION",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
+    "event": "liquidity_shock",
+    "context": "high_vol",
+    "direction": "divergence",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "liquidity_shock|high_vol|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "BIS quarterly FX turnover (bis.org), ECB/Fed regulatory filings, bank quarterly reports (public)",
+   "kill": "No statistically significant spread widening (p<0.05) in 3 consecutive quarters",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "METAL_SHORTSqueeze_LIQUIDITY",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
-    "context": "asia",
+    "event": "positioning_extreme",
+    "context": "high_liquidity",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "positioning_extreme|high_liquidity|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "CFTC COT + Quandl (free tier) + Kitco API",
+   "kill": "If 5/5 recent events show no follow-through continuation OR median exit loss > 1.5% of range",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   },
   {
-   "name": "audit:inventory_rebalance|continuation",
+   "name": "NAME: XAUUSD_HK_ICD_Barrier",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "inventory_rebalance",
-    "context": "asia",
-    "direction": "continuation",
+    "event": "liquidity_shock",
+    "context": "new_york",
+    "direction": "convergence",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "liquidity_shock|new_york|magnitude|convergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "DATA SOURCE: HKEX daily settlement prices plus COMEX GC1 Comdty",
+   "kill": "KILL CONDITION: Basis converges within 30 minutes at 1600 Hong Kong time on 75% of trading days over 3 months",
+   "lens": "STRUCTURAL SEGMENTATION",
    "promotion_authority": false
   }
  ]
