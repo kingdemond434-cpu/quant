@@ -66,7 +66,7 @@ class Capability:
 
 def _signed(path: str, params: dict[str, Any], *, method: str = "GET") -> Any:
     """Reuse the live connector's keyfile + signer -- one credential path, no second copy."""
-    from libs.execution import binance_live
+    import libs.execution.binance_live as binance_live
     return binance_live._signed(path, params, method=method)
 
 
@@ -78,7 +78,7 @@ def probe(*, write_state: bool = True) -> Capability:
     one 'unavailable' would hide the difference between a launch-day gap and a Binance
     verification task -- different owners, different fixes.
     """
-    from libs.execution import binance_live
+    import libs.execution.binance_live as binance_live
     now = datetime.now(tz=UTC).isoformat()
     if not binance_live.has_keys():
         cap = Capability(False, "NO-KEYS: no live credential on this box -- probe cannot run",

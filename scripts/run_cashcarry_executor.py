@@ -25,9 +25,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import libs.execution.binance_spot_testnet as spot
+import libs.execution.binance_testnet as fut
 from libs.data.crypto_source import current_funding
-from libs.execution import binance_spot_testnet as spot
-from libs.execution import binance_testnet as fut
 from libs.execution import excitation, execution_tape
 from libs.execution.carry_accounting import (
     attribute_non_funding,
