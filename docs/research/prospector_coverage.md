@@ -14098,3 +14098,151 @@ constructions, 0 target-horizon cells, 0 tradeable cards and 0 survivors**.
   and then failure-memory/experiment-identity semantics; follow the `gplearn` author/citation graph
   for failure-preserving alternatives; run the existing Rsquare conditioner when shared compute is
   quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s43 — 2026-08-31 — the durable history is created only after the run survives
+
+**Conversion and corpora first.** R0126 was rejected with a recorded reason: it bundles forbidden
+BitMEX/cross-venue crypto ground with MT5-relevant macro axes and routes both through a superseded
+private Stage-A screen. Any live remainder must return as an individual Fusion hypothesis through
+the canonical ten gates. Five WorldQuant rows in the prefetched practitioner corpus were reviewed;
+none carried usable new text. Video: **0 fetched, 0 newly locked**.
+
+**Named ground, legitimacy first.** Public `Liu-Ming-Yu/alpha-forge` declares Apache-2.0 at commit
+`922d8d3443afb1518428ed9360318efd934e3c33`. Ten formulaic-mining/provenance/serialization files
+plus the operator CLI were read as text (**2,499 source lines**); nothing was installed or run.
+
+The source promises one provenance row per generated expression, including rejected candidates.
+That history is accumulated entirely in memory, however, and `scripts/mine_alphas.py` writes it
+only after `mine_alphas()` returns, opening the destination with `"w"`. Any evaluation exception,
+OOM or interruption erases every preceding trial. Five static findings were dispositioned:
+
+1. **FAILURE MEMORY ERASES ON CRASH** — no prewritten candidate row, typed exception row or
+   restart reconciliation exists.
+2. **EXPERIMENT IDENTITY IS INCOMPLETE** — expression/seed/operator-version strings do not bind
+   code, data, terminal roster, window, horizon, search/gate config or costs.
+3. **THE UNIVERSE SILENTLY CONTRACTS** — missing/empty instrument stores are skipped and only the
+   surviving loaded count is printed.
+4. **THE “WALK-FORWARD” IS INNER SELECTION EVIDENCE** — its fold aggregate both chooses
+   evolutionary parents and admits candidates; there is no untouched outer selection holdout.
+5. **INDEPENDENCE RESETS EACH RUN** — the baseline loader is explicitly unused, and no-baseline
+   correlation is accepted.
+
+These findings **reject the source's mining results as capital evidence** and strengthen the one
+existing s33/s41/s42 candidate-conservation repair; they do not add a competing gate. Exact traces
+and falsifiers: `data/brain_hunter_s43_alpha_forge_failure_memory_screen.json`. This session ran
+**0 desk constructions, 0 target-horizon cells, 0 tradeable cards and 0 survivors**. No factor,
+symbol, direction or horizon crossed into MT5, so none was invented; any later Fusion cell must bind
+PIT bid/ask, spread, commission, realised slippage/partial-fill markout, swap and contract terms.
+
+**Venue expansion, one layer outward.** The author's public GitHub profile exposed the previously
+unrecorded `https://catdograbbits.com/` author hub (**RICH for research-process ground; its current
+Alpha Forge material is duplicative**). It publishes EN/ZH routes covering trajectory evaluation,
+LLM agents and governed quant infrastructure. Its robots content signal permits search/reference,
+forbids training, and was used reference-only. No other external venue appeared.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `alpha-forge` commit `922d8d34`: formulaic search, failure-memory, experiment-identity,
+  walk-forward-label and cross-run-baseline axes **EXHAUSTED on 2026-08-31**. Its campaign engine,
+  text-event evidence and execution stack remain open and were not treated as BRAIN semantics.
+- `catdograbbits.com`: first pass complete, **not exhausted**; trajectory-evaluation and agent-hub
+  sections remain open under the site's reference-only signal.
+- **Next:** follow `alpha-forge`'s Qlib/RD-Agent lineage to the nearest failure-preserving search
+  implementation; then mine the public `gplearn` author/citation graph for append-before-evaluate
+  or checkpointed symbolic-search alternatives; run the existing Rsquare conditioner when shared
+  compute is quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s44 — 2026-08-31 — the checkpoint itself is inside the failure model
+
+**Repair and corpora first.** Twelve overdue recommendations named by the repair-window payload
+(R0011, R0028, R0074, R0076, R0078, R0110, R0129, R0150, R0151, R0162, R0165, R0167) were claimed
+and dispositioned by reasoned rejection against fresh code/state evidence. The designs targeted
+the retired crypto operation, duplicated current instruments, conflated distinct producer/consumer
+denominators, or encoded stale fixed cadence quotas. Five WorldQuant rows in
+`data/intelligence/gpt_practitioner_corpus.jsonl` were reviewed first; all remained text-empty and
+no failed route was retried. Video: **0 fetched, 0 newly locked**.
+
+**Named inherited ground, text only.** Public MIT `microsoft/RD-Agent` at commit `6762f84f` is the
+nearest implementation on alpha-forge's declared Qlib/RD-Agent lineage. Nine workflow, logging,
+experiment and failure-memory files were read as text. No third-party agent tooling or pickle was
+installed, imported or run.
+
+The implementation supplies one positive and three limiting results. It logs a hypothesis and
+experiment before evaluation, snapshots each successful step, and routes declared factor/coder
+failures through feedback into the trace: independent convergence on s41-s43's append-before-
+evaluate and typed-terminal-outcome repair. But undeclared exceptions re-raise before a terminal
+record; checkpoints are written directly to their final path with non-atomic `pickle.dump`; restart
+blindly loads the latest pickle; and checkout deliberately truncates later checkpoints and logs.
+The result is **partial failure preservation, not an append-only evidence ledger**. Controller
+rollback and immutable trial history must be separate artifacts.
+
+Exact traces and falsifier: `data/brain_hunter_s44_rdagent_failure_memory_screen.json`.
+`translate_to_mt5()` returned no mapping for the four process phrases; they are universal research
+integrity over terminal-enumerated Fusion candidates, not fabricated market features. No factor,
+symbol, direction or horizon crossed into MT5. This session ran **0 desk constructions, 0 target-
+horizon cells, 0 tradeable cards and 0 survivors**.
+
+**Venue discovery.** Repository metadata exposed `https://rdagent.azurewebsites.net/`, previously
+unrecorded here. Root and robots both returned **HTTP 403 Site Disabled**: **DEAD**, not mined and
+not routed around.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `microsoft/RD-Agent` commit `6762f84f`: workflow checkpointing, typed factor failure, trace,
+  logger/storage and restart-truncation axes **EXHAUSTED on 2026-08-31**. Re-enter on a substantive
+  checkpoint/storage change; model/factor proposal semantics remain open.
+- `rdagent.azurewebsites.net`: **DEAD on 2026-08-31**; recheck only on a named reactivation.
+- **Next:** mine public `gplearn` author/citation descendants for an atomic, append-before-evaluate
+  symbolic-search ledger; then inspect RD-Agent's factor proposal semantics only if it supplies a
+  novel mechanism rather than another private gate. Run the existing Rsquare conditioner when
+  shared compute is quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s45 — 2026-08-31 — warm start is not a durable trial ledger
+
+**Repair and corpora first.** Three overdue recommendations were converted by reasoned rejection:
+R0193 (crypto liquidation/COT-BTC/stablecoin bundle), R0203 (retired Binance/Bybit moat) and R0231
+(superseded Binance money-path review). Each surviving MT5-relevant idea must return as an
+individual Fusion hypothesis through the canonical pipeline rather than keeping its retired venue
+bundle alive. Five WorldQuant rows in `data/intelligence/gpt_practitioner_corpus.jsonl` were
+reviewed first; all remained text-empty. Video: **0 fetched, 0 newly locked**.
+
+**Inherited ground, legitimacy first, text only.** Public BSD-3-Clause
+`trevorstephens/gplearn` was inspected at commit `0390aea8`. The public fork endpoint reported 326
+forks; this run sampled 100 metadata rows (all inherited BSD-3-Clause), then inspected six selected
+source compares spanning the nonzero-star head and fresh 2026 rows. This was a bounded fork slice,
+not a claim over all 326 forks. No code was installed, imported or executed and no pickle was
+loaded.
+
+The upstream fit loop completes a whole parallel generation before appending it to `_programs`,
+then writes `run_details_`; it has no exception-to-terminal-outcome path. `warm_start` therefore
+reuses completed in-memory generations, not durable trial records. The repository's own autosave
+issue documents the consequence: an interrupted multi-hour fit loses prior calculation. The
+maintainer's workaround—an outer loop combining warm start and pickle—bounds recovery at completed
+fit calls but still does not prewrite candidate identities, type failures, checksum state, or
+separate rollback checkpoints from immutable trial history. None of the six inspected fork compares
+added checkpoint/autosave semantics.
+
+**Economic/MT5 disposition.** This is a **negative screen**: reject gplearn state, user-managed
+pickle and the inspected forks as candidate-conservation evidence. Keep only the weak convergence
+on generation-bounded recovery. The exact repair remains the s33/s41-s44 design: append-before-
+evaluate candidate rows, typed terminal outcomes, and atomically committed checksum-valid
+controller checkpoints in a separate artifact. `translate_to_mt5()` returned no mapping for the
+four process phrases; they are universal integrity controls over terminal-enumerated Fusion cells,
+not market features. This session ran **0 desk constructions, 0 target-horizon cells, 0 tradeable
+cards and 0 survivors**. Exact census, traces and residual limits:
+`data/brain_hunter_s45_gplearn_durability_screen.json`.
+
+**Venue discovery.** The upstream GitHub issue and ReadTheDocs pages were adjacent source surfaces,
+not newly discovered venues: **0 new external venues**.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `trevorstephens/gplearn` commit `0390aea8`: fit-loop, `run_details_`, warm-start, documented
+  persistence and autosave-issue axes **EXHAUSTED on 2026-08-31**.
+- The selected six-fork compare slice is **EXHAUSTED on 2026-08-31**; the residual fork population
+  is explicitly not exhausted.
+- **Next:** inspect recent permissively licensed forks outside this slice for substantive recovery,
+  journaling or interruption diffs; then follow symbolic-regression citation descendants that
+  publish append-only experiment stores and test whether rollback and immutable trial history are
+  actually separate. RD-Agent factor proposals remain conditional next-ground only if they supply
+  a novel mechanism rather than another private gate. The BRAIN ground remains open.

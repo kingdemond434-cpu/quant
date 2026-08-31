@@ -142,11 +142,13 @@
    "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
    "roi_bps": 0,
    "raised": "2026-07-26T15:27:35.842054+00:00",
-   "status": "scheduled",
-   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
+   "status": "rejected",
+   "reason": "The row's action is unbounded and venue-stale: its evidence and target were crypto endpoint btc126, while the operative universe forbids hunting crypto-exchange-native ground. OP-031 remains a reusable search method, but 'every OTHER endpoint' names no Fusion/MT5 producer, consumer, licence finding, or measurable retrieval gap. Implementing a generic sweep would optimize old inventory rather than the current MT5 conversion bottleneck; a new row must name a concrete legal MT5 endpoint and consumer.",
    "commit": null,
-   "due": "2026-08-27",
-   "disposed": "2026-08-11T16:02:19.761368+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:30.287997+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142617+00:00"
   },
   {
    "id": "R0012",
@@ -379,11 +381,13 @@
    "summary": "institutional_knowledge.md is 596 lines against the constitution's ~200-line ACTIVE-lessons cap ('compress before adding'). I added this cycle's lessons without compressing -- stating it rather than hiding it. Distil aged entries into _PRIORS multipliers and one-line rules at the monthly memory-compression item; archive, never delete.",
    "roi_bps": 5,
    "raised": "2026-07-28T20:27:23.876601+00:00",
-   "status": "scheduled",
-   "reason": "Debt is real and STILL GROWING: 780 lines / 96 bolded active-lesson bullets, up 184 lines since the row was raised at 596, and the compression session has never happened. TWO CLAIMS IN THE PRIOR TRIAGE ARE STALE and must not be relied on: (1) the '~200-line cap' is NOT in the constitution -- CONSTITUTION.md:1237 only names the file as a Research Memory component; the cap is the file's own self-referential note at :412. (2) max_audit.py:1391-1400 desk-memory-overflow currently reports 0 lost / 37 demoted, so it is NOT firing. Work is editorial, not structural: distil aged entries into _PRIORS multipliers and graduate the rest into docs/desk_lessons.jsonl via the learn.py audit, ARCHIVING NEVER DELETING, at the monthly memory-consolidation cadence.",
-   "commit": "619cf52",
-   "due": "2026-08-31",
-   "disposed": "2026-08-05T09:08:10.950179+00:00"
+   "status": "rejected",
+   "reason": "Premise refuted by its own later measurement: the ~200-line limit is a self-note, not constitutional, and max_audit measured 0 lost lessons / 37 correctly demoted. Compression for line-count alone is governance-as-product and has no measured growth or ruin benefit; archive/priors mechanisms already preserve aged knowledge. Re-open only on measured retrieval loss, contradiction rate, or decision latency.",
+   "commit": null,
+   "due": null,
+   "disposed": "2026-08-31T18:22:32.756008+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142659+00:00"
   },
   {
    "id": "R0029",
@@ -1014,11 +1018,11 @@
    "summary": "SYNTH0731 P1-5 [exec#7/T5 + DM M10]: read-implies-writer census + max_audit class assertion (~40 lines; 7 new phantom-path instances in 24h) + glob-scope audit of all ~15 self-measurement organs (3/3 audited so far had scope defects)",
    "roi_bps": 100,
    "raised": "2026-07-31T03:45:45.200921+00:00",
-   "status": "scheduled",
-   "reason": "NOT BUILT, and this cycle produced direct evidence FOR it rather than against. The tape contamination found today (50bd5ef4) is the mirror image of the phantom-path class this row targets: not a read with no writer, but a WRITE with no intended reader -- a test writing live state through a module-level default its caller could not redirect. The census should therefore be built to walk both directions, and the glob-scope audit of the ~15 self-measurement organs is the same walk. Held with a near due; the widened scope is the reason it is not a 40-line paste.",
+   "status": "rejected",
+   "reason": "Superseded by narrower live instruments: libs/ops/claim_registry.py records publishers, data/freshness_contracts.jsonl records actual consumer edges, libs/ops/denominator.py guards scope loss, and the capability-reuse audit walks reachability. A second broad census and fixed ~15-organ glob audit would duplicate these registries and reintroduce a hand-maintained scope; defects should be repaired from the existing producer-consumer evidence.",
    "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-13T04:29:56.871375+00:00",
+   "due": null,
+   "disposed": "2026-08-31T18:22:35.453441+00:00",
    "schedule_history": [
     {
      "was_due": "2026-08-12",
@@ -1027,7 +1031,9 @@
      "rescheduled": "2026-08-13T04:29:56.871353+00:00",
      "why": "NOT BUILT, and this cycle produced direct evidence FOR it rather than against. The tape contamination found today (50bd5ef4) is the mirror image of the phantom-path class this row targets: not a read with no writer, but a WRITE with no intended reader -- a test writing live state through a module-level default its caller could not redirect. The census should therefore be built to walk both directions, and the glob-scope audit of the ~15 self-measurement organs is the same walk. Held with a near due; the widened scope is the reason it is not a 40-line paste."
     }
-   ]
+   ],
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142674+00:00"
   },
   {
    "id": "R0075",
@@ -1047,11 +1053,13 @@
    "summary": "SYNTH0731 P1-7 [E-14/DI-2/DI-9]: zero-dollar free-tier LLM fallback lane w/ licence gate + page-on-402/quota alert class + anthropic_api_key fallback file (principal funds OpenRouter per PRINCIPAL_ACTION). Tier dead day 9-10, idles 6+ organs incl 13-seat panel + strategic director",
    "roi_bps": 120,
    "raised": "2026-07-31T03:45:45.333831+00:00",
-   "status": "scheduled",
-   "reason": "Blocked-adjacent: the licence-gated free-tier lane matters most while credits lapse (today). Scheduled behind R0072; the page-on-402 alert class already exists via second_family_log available:false rows.",
+   "status": "rejected",
+   "reason": "Superseded: libs/ops/llm_route.py implements ordered paid/free fallback with free tiers retained at the tail, libs/research/free_panel.py provides the zero-dollar roster, scripts/check_llm_routing.py fences routing, and the DeepSeek factory has its own free-tier lane. The proposed anthropic fallback file is vendor-specific duplication and the old page-on-402 requirement is already represented by funding/routing state.",
    "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-11T15:56:45.640320+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:38.707480+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142679+00:00"
   },
   {
    "id": "R0077",
@@ -1071,11 +1079,13 @@
    "summary": "SYNTH0731 P2-10 [val V7/V8/X8]: Stage-B honesty — anytime_valid e-process as ELIGIBLE condition (or pre-committed looks 40/90d); ledgered RETIRED-with-reason writer so attrition never lowers survivor bars; append-only forward-verdict history JSONL. Realized alpha ~4.9x nominal on the only path to capital",
    "roi_bps": 90.0,
    "raised": "2026-07-31T03:45:45.483084+00:00",
-   "status": "scheduled",
-   "reason": "EV-ranked (roi 90). Part landed already (anytime_valid e-process published per-axis by run_axis_shadows: e_value/peek_safe fields verified in web/axis_shadows.json this cycle); remaining: RETIRED-with-reason writer so attrition never lowers the survivor bar.",
+   "status": "rejected",
+   "reason": "Superseded by the canonical MT5 forward pipeline. Peek-safe evidence is live through libs/research/anytime_valid.py and its forward consumers; desks/mt5/research/forward_reconcile.py now writes terminal RETIRED_* status, retired_at and retire_reason while preserving trades/day counts, and promoter.py writes the same fields for statistical retirements. The old axis-shadow-specific append-only proposal would create a second forward/retirement ledger, forbidden by the one-shadow/one-forward law.",
    "commit": null,
-   "due": "2026-08-22",
-   "disposed": "2026-08-11T15:56:53.048057+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:23:32.799134+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142684+00:00"
   },
   {
    "id": "R0079",
@@ -1502,11 +1512,13 @@
    "summary": "POST-TWIN FREQUENCY RAISES (armed, fire when the research twin's first artifacts land on master): (1) brain 4->6 slots/day on the primary (the twin removes the 15-19pct audit load + all mining from its seat -- conversion capacity is the binding constraint and this raises it 50pct); (2) deep sweep full-8 from weekly to 2x/week on the twin's free seat, gated on measured marginal-new-finding yield (X8 rule); (3) kimi 8->12x/day once OpenRouter funded IF month-one metering shows marginal sessions still yield (hunter frequency is budget-bound not information-bound -- external space always has more)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T09:28:53.248726+00:00",
-   "status": "scheduled",
-   "reason": "ALL THREE RAISES SHARE ONE MEASURED BINDING CONSTRAINT, AND IT IS NOT THE SCHEDULE: it is LLM budget. The arming condition did fire (twin artifacts on master 2026-08-04), so this is not a wait on the twin. Measured today: data/cro_ai_logs/recommendation_worker_20260805.log carries TWO credit-exhaustion events ('out of usage credits - resets 6am (UTC)' at 03:43, 'Run /usage-credits to keep using Fable 5' at 06:36), and the desk's own scripts/quota_verdict.py:100 states the CURRENT cadence is already unsustainable -- 'the full schedule (4 cycles/day + 7 miners/day at xhigh) is quota-starved on Pro -- organs are dying at the auth-check, not running'. Raising brain 4->6 against a quota that empties before its reset converts 2 extra cycles into 2 extra stub-deaths and LOWERS conversion; that is the bottleneck law (L1.13), not timidity -- the raise is right and wanted, the resource is absent. Raise (3) is worse off still: kimi cannot run at its CURRENT 8x/day (OpenRouter balance -/bin/bash.59, BLOCKED-OPERATOR), so 12x is meaningless. Raise (2) is the one non-budget item and it is genuinely unmeasured: the manifest carries a dated 2026-07-31 ruling that 2x/wk 'would re-audit unchanged state at enormous quota cost', and this row's own X8 marginal-new-finding gate has never been computed. PER THE CONSTITUTION, THE PURCHASE IS SURFACED RATHER THAN THE CADENCE DECLINED: the unblocker is R0360 -- either upgrade the subscription or place the metered API key at data/secrets/anthropic_api_key, which I verified does NOT exist while ops/brain_env.sh:98 gates the entire fallback on it, so a credit outage currently takes down every LLM organ with no escape. Due 2026-08-19; fires on the funding decision, and raise (2) additionally needs the X8 yield measured from the per-sweep new-finding counts in docs/research/deep_sweep/.",
+   "status": "rejected",
+   "reason": "The fixed 4->6 and 8->12 counts are stale quota-shaped ceilings and conflict with the consolidated no-quota/cadence-as-evidence rules. Current scheduling is driven by measured quota state, marginal yield and event-triggered catch-up; the old twin/OpenRouter trigger no longer defines the controller topology. Any raise must come from current marginal validated value per cost, not resurrect these historical literals.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T08:57:59.784867+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:43.216817+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142693+00:00"
   },
   {
    "id": "R0111",
@@ -1738,11 +1750,11 @@
    "summary": "Stage-A screen the 12-item reopened+new queue (research_agenda.queue_ranked_by_expected_research_roi, EV order): screens via libs.research.axis_screen, declared alignment, full trial accounting; covers 6 of 9 clock-starved axes (etf_flows, wikipedia, fx, index, fed, crossasset) + bitmex decade + cross-venue funding dispersion. Target: first 4 screens by 2026-08-04.",
    "roi_bps": 40.0,
    "raised": "2026-07-31T13:41:27.934842+00:00",
-   "status": "scheduled",
-   "reason": "UNBLOCKED THIS CYCLE: its stated dependency R0127 (the target/horizon harness) was verified BUILT and shipped 2026-08-05 in 13cd116 -- libs/research/axis_screen.py:396 target_horizon_sweep with per-cell trial accounting -- and had simply never been disposed, so R0126 has been carried as blocked against a blocker that cleared eight days ago. Now a screening slot, not a dependency wait. Note L1.62 also landed since: panel cells must declare a MEASURED cross-sectional basis, so these screens run through measure_panel_breadth or they cannot be marked powered.",
+   "status": "rejected",
+   "reason": "Rejected as a stale bundled prescription. It mixes forbidden crypto-exchange-native ground (BitMEX and cross-venue funding dispersion) with MT5-relevant axes, and it routes them through the superseded private Stage-A threshold path. Under LAWS L1.60, any still-valid ETF/FX/index/Fed/cross-asset hypothesis must be separately preregistered on terminal-enumerated Fusion instruments and sent through the canonical ten-gate pipeline; preserving this mixed batch would both violate the venue mandate and insert a noncanonical gate.",
    "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-13T04:28:52.919696+00:00",
+   "due": null,
+   "disposed": "2026-08-31T13:07:47.708062+00:00",
    "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)",
    "schedule_history": [
     {
@@ -1752,7 +1764,9 @@
      "rescheduled": "2026-08-13T04:28:52.919656+00:00",
      "why": "UNBLOCKED THIS CYCLE: its stated dependency R0127 (the target/horizon harness) was verified BUILT and shipped 2026-08-05 in 13cd116 -- libs/research/axis_screen.py:396 target_horizon_sweep with per-cell trial accounting -- and had simply never been disposed, so R0126 has been carried as blocked against a blocker that cleared eight days ago. Now a screening slot, not a dependency wait. Note L1.62 also landed since: panel cells must declare a MEASURED cross-sectional basis, so these screens run through measure_panel_breadth or they cannot be marked powered."
     }
-   ]
+   ],
+   "claimed_by": "codex-brain-hunter-s43",
+   "claimed_at": "2026-08-31T13:07:43.899589+00:00"
   },
   {
    "id": "R0127",
@@ -1786,12 +1800,14 @@
    "summary": "collector-scaffold libs/research/collector_kit.py (fetch-retry, MANDATORY UTC alignment declaration, diff-verify, z20 warmup, Stage-A call) -- scheduled 2026-08-03, careful build",
    "roi_bps": 50.0,
    "raised": "2026-07-31T13:43:42.483458+00:00",
-   "status": "scheduled",
-   "reason": "Module genuinely ABSENT: full listing of libs/research/ shows 70 modules, none named collector_kit, and repo-wide find returns nothing. The need is MEASURED, not speculative: only 2 of 22 scripts/collect_*.py declare an alignment contract (grep for alignment_declaration hits only collect_perpdex_funding.py and build_axis_screen_reports.py), so 20 collectors carry no UTC alignment declaration -- the exact defect class that produced the bithumb IC-0.72 fake and the KST-vs-UTC candle lookahead the screen harness now carries two separate rails against. The pieces exist but are scattered: fetch-retry at libs/data/venue_http.py:50,80, the screen call at axis_screen.py:25, the z20 warmup loop re-derived by every caller at :68-72. This is assembly plus the mandatory-declaration discipline, not new science. Sequenced after R0126/R0127 so the queue campaign runs through it; work is the module plus porting one collector onto it as proof.",
+   "status": "rejected",
+   "reason": "The measured population was 20 legacy collect_*.py paths from the retired crypto-exchange operation, so the proposed universal scaffold targets a forbidden/stale venue architecture. MT5 collectors now have heterogeneous official-source clocks and consumer-specific PIT contracts; forcing fetch, z20 and Stage-A into one helper would conflate collection with screening. Re-open only from a current Fusion collector defect naming its producer, timestamp convention and consumer.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T09:05:08.049540+00:00",
-   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)"
+   "due": null,
+   "disposed": "2026-08-31T18:22:46.534280+00:00",
+   "note": "renumbered twice 2026-07-31 (two concurrent sessions allocating ids; origin rows kept theirs both times)",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142699+00:00"
   },
   {
    "id": "R0130",
@@ -2075,11 +2091,13 @@
    "summary": "tier1 panel rider (nvidia free seat, 07-31): raw-repo-access A/B for the tier1 mission -- one panel run with read-only repo access on ONE component (libs/execution/staging.py + promotion path) vs the sanitized dossier; adopt raw access iff >=2 material findings missed by sanitized AND <=1 false positive. Blocked on the same OpenRouter top-up as the payload A/B; fold both into the first funded run.",
    "roi_bps": 2.0,
    "raised": "2026-07-31T16:57:37.379598+00:00",
-   "status": "scheduled",
-   "reason": "Blocked on OpenRouter funding, verified fresh this cycle: the shared second-family path returned HTTP 402 Payment Required at 2026-08-11T20:47Z (data/second_family_log.json row 46). The A/B needs paid panel seats; the funding ask is already on the principal page. Re-dated past the funding decision, not silently carried.",
+   "status": "rejected",
+   "reason": "The sanitized-dossier-versus-paid-panel experiment is obsolete: the active reasoning controller already has direct read-only repository access and can inspect selected files without routing raw repository state through an external model. It also has no measured survivor or validation-throughput path and was estimated at only 2 bps. Direct local review dominates the funded OpenRouter A/B and avoids exposing unrelated repository/secrets surfaces.",
    "commit": null,
-   "due": "2026-08-25",
-   "disposed": "2026-08-11T20:49:26.945682+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:49.709765+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142706+00:00"
   },
   {
    "id": "R0151",
@@ -2087,11 +2105,13 @@
    "summary": "tier1 panel rider (07-31) + meta-blindspots memory agree: the Frankenstein synthesizer has ~30 logged cycles with no documented improvement in discovery rate/validation throughput/survivor quality, and its output routes to a write-only inbox. Verify gen_diversity metrics before/after wiring commit 8da8acd; if flat, RETIRE it (L2.9 exit) -- complexity without evidence.",
    "roi_bps": 2.0,
    "raised": "2026-07-31T16:57:37.455531+00:00",
-   "status": "scheduled",
-   "reason": "Needs a yield measurement over the synthesizer's ~30 logged cycles before retire-or-rewire; that is a read-and-count session, not a patch. Re-dated once with the concrete first step named: count implemented changes traceable to synthesizer output in the ledger, then KEEP/RETIRE per L2.9.",
+   "status": "rejected",
+   "reason": "The retirement trigger was tested and did not fire: data/decision_ledger.json records live gen_diversity with mechanism_entropy 0.5066, cross-generator duplication 0.0717, n=200, verdict OK. The actual silent zero-generation blind spot was repaired separately in L1.25a/check_exploration. Retiring a measured-diverse synthesis lane would regress capability to cure a different, already-instrumented absence-of-batches defect.",
    "commit": null,
-   "due": "2026-08-20",
-   "disposed": "2026-08-11T20:49:36.785880+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:52.798966+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142710+00:00"
   },
   {
    "id": "R0152",
@@ -2237,11 +2257,13 @@
    "summary": "Schema-version field in freshness contracts: _rt_bps hardcodes depth key 500; a recorder bucket change silently defaults every symbol to 39.5bps -- version the contract so drift fires the fence",
    "roi_bps": 10.0,
    "raised": "2026-07-31T17:55:39.086212+00:00",
-   "status": "scheduled",
-   "reason": "Hardening with no active bleed: cost_model bucket keys are unchanged and the new forensics gate-mirror (e233323) reads them dynamically rather than hardcoding 500, which removes one of the row's two named consumers. Remaining work is the schema-version field in freshness contracts proper. Re-dated behind this window's crown-jewel repairs (R0282) and welded-rail restore.",
+   "status": "rejected",
+   "reason": "Venue-stale and superseded. The named _rt_bps/500/39.5 path is the retired cash-carry crypto executor, outside the sole MT5/Fusion destination; current size-bucket lookup is already dynamic and pinned by tests/execution/test_rt_bps_size_bucket.py. Adding schema machinery to a forbidden money path has zero current MT5 economic disposition.",
    "commit": null,
-   "due": "2026-08-18",
-   "disposed": "2026-08-11T20:49:44.924618+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:55.792232+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142717+00:00"
   },
   {
    "id": "R0163",
@@ -2273,11 +2295,13 @@
    "summary": "Enumerate ALL kind=state valid-until-changed files (cashcarry_positions, kill files, stage) and bind each to its guardian cadence via read_fresh state contracts (stage_state done as exemplar)",
    "roi_bps": 15.0,
    "raised": "2026-07-31T17:55:39.348457+00:00",
-   "status": "scheduled",
-   "reason": "Governance enumeration (kind=state files -> guardian cadences) with no live incident attached; this repair window drained money-path and instrument defects first (welded sharpe rail, recorder hang supervision, entry-gate detector). Scope named: cashcarry_positions, kill files, stage, plus the freshness-contract registry as the enumeration substrate.",
+   "status": "rejected",
+   "reason": "The named cashcarry_positions, legacy kill and stage files belong to the retired crypto execution path; extending guardian contracts there does not protect the current MT5/Fusion book, and the Tier-3 deadman is principal-gated. libs/ops/fresh.py already enforces guardian-required kind=state semantics. Current MT5 state gaps must be rowed from their own live consumer, not kept alive through this obsolete enumeration.",
    "commit": null,
-   "due": "2026-08-21",
-   "disposed": "2026-08-11T20:49:56.690654+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:22:57.882146+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142721+00:00"
   },
   {
    "id": "R0166",
@@ -2297,11 +2321,13 @@
    "summary": "Absorb the five producer-side max-age registries (max_audit, check_ratchets, check_miner_runway, check_exploration, data_health) into the freshness contract registry + re-rank check_organ_liveness by consumer blast radius from the edge list (L1.12 delete the hand lists)",
    "roi_bps": 20.0,
    "raised": "2026-07-31T17:55:39.522439+00:00",
-   "status": "scheduled",
-   "reason": "Five-registry consolidation into consumption-time freshness contracts is a multi-session refactor across max_audit, check_ratchets, check_miner_runway, check_exploration, data_health; doing it as a drive-by inside a repair window risks the exact silent-consumer breaks L1.44 exists to prevent. Re-dated with scope frozen.",
+   "status": "rejected",
+   "reason": "Premise rejected by the implemented design itself: libs/ops/fresh.py explicitly distinguishes producer-side liveness registries ('did the producer run?') from the self-building consumer contract registry ('is a decision steering on stale output?'). Absorbing the former into the latter would erase unwired/dead producers with no active consumer and conflate two different denominators. Consumer blast radius is already derived from actual contracts; keep both instruments rather than delete one into the other.",
    "commit": null,
-   "due": "2026-08-25",
-   "disposed": "2026-08-11T20:50:25.379415+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:23:35.043075+00:00",
+   "claimed_by": "codex-brain-hunter",
+   "claimed_at": "2026-08-31T18:21:11.142725+00:00"
   },
   {
    "id": "R0168",
@@ -2628,12 +2654,14 @@
    "summary": "watchlist cards 23-25 build batch (litminer run4 LIT-e, dues 08-07/08-10): (23) BIS WP1087 carry->liquidation screen construction on ingested axes + COT-BTC contract extension via existing run_cot_screen.py (novelty-gated vs 41y COT kill: different construction); (24) regulatory-event timeline build for the existing event gate (pre-registered null classes: general warnings, CBDC); (25) stablecoin run-signature episodic conditioning variables (sr1073 primary; mint/burn pair + safe-coin premium). Screens themselves stay Stage-A, zero promotion",
    "roi_bps": 45.0,
    "raised": "2026-07-31T19:24:01.294036+00:00",
-   "status": "scheduled",
-   "reason": "Two of three data legs LANDED 2026-08-11 by the brain-hunter seat (s33 convert-first): (23) data/cot_btc_panel.json -- CFTC legacy annual archives 2017-2026 pulled direct, CME BITCOIN 435w 2018-04-10..2026-08-04 + CBOE 2017-2019 + micro/nano/perp-style Coinbase-Derivatives contracts, nonreportables net-over-OI included (the carry-DEMAND variable); (25) data/stablecoin_run_variables.json -- USDT 3178d + USDC 2892d circulating with d1/d7/burn_z63, sanity probes pass (Terra worst USDT d7 -10.2pct, SVB worst USDC d7 -15.2pct), price leg declared ABSENT per L1.55 (CoinGecko unreachable from this box). REMAINING on this row: (23) Stage-A screen construction carry_z vs forward liquidation intensity h in {5d,20d} (novelty-gate re-run at screen time); (24) regulatory-event timeline RECONSTRUCTION -- failed search documented 2026-08-11: BIS QR page links PDF only, no annex dataset exists publicly; (25) mint/burn PAIR + safe-coin premium off the 4-venue tape. Screens stay Stage-A, zero promotion authority.",
+   "status": "rejected",
+   "reason": "Current MT5/Fusion universe order invalidates every remaining leg of this bundled row: COT-BTC, liquidation-intensity, stablecoin mint/burn and safe-coin-premium constructions are crypto-exchange-native hunted ground, and the regulatory-event leg was already documented as lacking a public annex dataset. No exact Fusion hypothesis survives the bundle. Preserve the historical data artifacts as provenance only; any macro event or COT mechanism must be re-carded as an individual Fusion-symbol hypothesis through the canonical ten gates.",
    "commit": null,
-   "due": "2026-08-24",
-   "disposed": "2026-08-11T15:15:20.608281+00:00",
-   "note": "renumbered from R0182 after sibling-session ID race, merge 2026-07-31"
+   "due": null,
+   "disposed": "2026-08-31T18:51:36.218613+00:00",
+   "note": "renumbered from R0182 after sibling-session ID race, merge 2026-07-31",
+   "claimed_by": "codex-brain-hunter-s45",
+   "claimed_at": "2026-08-31T18:51:30.968635+00:00"
   },
   {
    "id": "R0194",
@@ -2755,11 +2783,13 @@
    "summary": "BLIND-REDISCOVERY 2026-07-31 / DEFECT: data/moat/ is 7.1 GB (82% of all desk data on disk) of self-recorded Binance-fut + Binance-spot + Bybit L2 depth and full trade tape across 80 symbol-feeds since 2026-07-17, and it has ZERO return-predictive screens, NO entry in data/data_assets.json, and one consumer (micro_factory.py -> 1.8 KB micro_features.json, last written 2026-07-27). It is simultaneously the largest object on disk and the ONLY unreplicable asset the desk owns (L1.11 names it as the moat). Irreplaceable: the 07-17..07-31 book cannot be re-earned. Largest single unconverted denominator in the DATA-TO-ALPHA CONVERSION RATIO. ACTION: catalogue it in data_assets.json and run the first return-predictive screen against it (BR-07 is a ready-made design).",
    "roi_bps": 300.0,
    "raised": "2026-07-31T20:16:50.525751+00:00",
-   "status": "scheduled",
-   "reason": "PARTIALLY ADDRESSED SINCE IT WAS WRITTEN, and the remainder is real. The 'ZERO return-predictive screens' half is no longer true: the moat L2 screen ran under R0003 (450 cells, 45 symbols) and data/moat_screen_coverage.json records runs=471 with cells_total=1356, screened=585. What genuinely remains: no entry in data/data_assets.json for the largest object the desk owns, and the coverage denominator is unreconciled (three different figures -- 54.68pct, 17.18pct, 14.84pct -- with 551 cells marked unscreenable, already rowed as R0047 with an explicit instruction NOT to close it by shrinking the denominator). Scheduled on the data_assets registration, which is the part that is small, unambiguous, and currently missing.",
+   "status": "rejected",
+   "reason": "The named 7.1 GB moat is retired Binance/Bybit spot/perpetual L2 and trade tape, explicitly outside the sole MT5/Fusion hunted universe. Registering or screening it as the desk moat would restore the retired venue as research ground and contaminate the active denominator. The reusable obligation is already carried by the MT5-native moat tape and terminal-enumerated Fusion universe; preserve this archive only as historical provenance, never as an alpha-search asset.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T13:55:24.395184+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:51:40.274722+00:00",
+   "claimed_by": "codex-brain-hunter-s45",
+   "claimed_at": "2026-08-31T18:51:30.968691+00:00"
   },
   {
    "id": "R0204",
@@ -3109,11 +3139,13 @@
    "summary": "scripts/deep_review.py (L1.7 adversarial validation, 13-seat second-family panel) is exempted as human-invoked, but LIVE_CONNECTOR_SPEC section-7 REQUIRES it on all 5 money-path files before the Gate-0 key request and GAP_REGISTER still lists it OPEN. Execution-path exists; the obligation is unmet.",
    "roi_bps": null,
    "raised": "2026-08-01T01:55:35.766676+00:00",
-   "status": "scheduled",
-   "reason": "PARTIALLY DISCHARGED AND THE BLOCKER RE-DIAGNOSED; remaining work scheduled. The triage carded this BLOCKED-OPERATOR on 'data/secrets/ does not exist in this tree; only the principal can fund the panel keys'. Both halves were false: the directory exists and llm_panel.json has held 13 providers since 2026-07-23 (the earlier check was an ls|head that truncated before the l's). THE REAL BLOCKER WAS A BROKEN CALL, fixed in 638f70c: commit 0debac3 changed _ask's 4th parameter from system to a messages list and orphaned two callers, so all 13 seats raised TypeError and one()'s except Exception rendered it as thirteen FAILED lines -- indistinguishable from an outage, which is why it read as a credit problem for weeks. capacity_test.py was orphaned identically. DELIVERED: the organ's first output in its life -- docs/research/deep_review_inbox.md, 3 of the 5 money-path files (staging.py, binance_spot_live.py, run_deadman_switch.py) at 3/4 free seats, committed in 4de68c0; binance_live.py running. Two findings verified against the code and recorded: F0024 (s1_entry_met gates REAL CAPITAL on bool(str) so a consent recorded as 'false' reads as granted -- latent only, stage_state.json has no such key) and F0025/R0401 (the dead-man switch pages on a STALE equity feed but not an ABSENT one, because the blindness detector is guarded on eq is not None -- Tier-3, principal sign-off required, not edited). NOT CLOSED, because two things are genuinely outstanding: run_cashcarry_executor.py (2063 lines) is unreviewed and may exceed free-seat context, and the full 13-seat paid roster returns HTTP 402, so every pass so far is 3 free seats rather than the depth the section-7 bar describes. Due 2026-08-19: waits on OpenRouter credit for the paid roster, and on a chunking strategy for the executor. The Gate-0 key request must not proceed on the thin pass alone.",
+   "status": "rejected",
+   "reason": "The row targets five retired crypto money-path files and a Gate-0 key request for the superseded Binance operation. Under the operative MT5/Fusion universe it has no live consumer, and the Tier-3 dead-man remains principal-gated and explicitly not autonomously modifiable. Re-running or funding the old panel review would spend scarce conversion capacity on a dead execution path. Any MT5 money-path review must be raised against the actual Fusion files and current consumer graph as a new scoped row.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T18:09:22.316739+00:00"
+   "due": null,
+   "disposed": "2026-08-31T18:51:44.078283+00:00",
+   "claimed_by": "codex-brain-hunter-s45",
+   "claimed_at": "2026-08-31T18:51:30.968706+00:00"
   },
   {
    "id": "R0232",

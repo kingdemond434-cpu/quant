@@ -2504,3 +2504,23 @@ full-population accounting over every terminal-enumerated Fusion candidate. The 
 inputs are merely data-gap ore for Fusion US-share CFDs at D1, PIT-vintaged and executed at the
 next real bid/ask with spread, commission, slippage/partial-fill markout and swap. Zero desk cells
 were tried and zero alpha cards were raised.
+# 2026-08-31 — gplearn warm-start/pickle is not a durable trial ledger (BRAIN hunter s45)
+
+**Source:** `trevorstephens/gplearn` commit `0390aea8639ce5f6c0b388400e07b58c05acad6a`
+(BSD-3-Clause), official advanced documentation and public issue 279. Text-only inspection; no
+third-party code or pickle was run. DERIVES-FROM: **NONE (checked; upstream repository)**.
+
+**KILLED AS CANDIDATE-CONSERVATION EVIDENCE.** The fit loop returns a whole parallel generation
+before appending it to `_programs` and only then appends `run_details_`; it has no failed-terminal
+row path. `warm_start` reuses completed in-memory generations. User-managed pickle in an outer loop
+can bound recovery at a completed fit call, but it does not prewrite trial identities, preserve a
+typed failure for every candidate, checksum/atomically commit state, or keep controller rollback
+separate from immutable experiment history. Six selected fork compares supplied no autosave or
+checkpoint repair. Exact bounded census and residual population:
+`data/brain_hunter_s45_gplearn_durability_screen.json`.
+
+**What survives:** only the weak process shape “persist after each completed generation.” The desk
+repair remains stronger: append-before-evaluate candidate rows plus typed terminal outcomes, with
+atomic checksum-valid controller checkpoints stored separately. No alpha, operator, symbol or
+threshold transfers from this result. `[§33: screened ->
+data/brain_hunter_s45_gplearn_durability_screen.json]`
