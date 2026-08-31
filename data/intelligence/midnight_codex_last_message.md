@@ -1,9 +1,10 @@
-Implementation ledger
+Implemented and committed `12dfff8c`:
 
-- Preserved the existing dirty frontier; made no source or capital-authority changes and no commit.
-- Renewed fenced controller lease (epoch 63) and checkpointed state at 03:51 UTC.
-- Ran forward-clock reconciliation: 46 timestamp-proven late boundaries were restored backward only; no evidence was fabricated.
-- Verified `data/forward_clock_ratchet.json`: `OK`, 36 clocks, oldest 6.583 days, zero silent rebases.
-- Tests passed: `14 passed` across shadow isolation, forward-start freeze, and registry rebase suites.
-- Canonical external pipeline remains active under its systemd collision lock; it is continuing safely without a competing invocation.
-- Remaining explicit defect: forward-lane artifact still reports 20 stale attempts and one unclocked authorized EURGBP row; await current pipeline completion, then rerun its consumer artifact.
+- [`scripts/run_midnight_completion.py`](/home/quant/quant-platform/scripts/run_midnight_completion.py) now labels unchanged, resource-fenced catch-up debt as `DEFERRED_RESOURCE`, not a hard pipeline failure. It remains incomplete and owed.
+- Added regression coverage in [`test_midnight_completion.py`](/home/quant/quant-platform/tests/scripts/test_midnight_completion.py).
+
+Proof: 4 targeted tests passed; syntax compilation and constitution-core verification passed.
+
+Runtime evidence: remote workers are live—edge search PID 3180 (~4.1 GB), gauntlet PID 7628, orthogonal sweep PID 7752—with only 64 MB free. Serial admission is correct; competing starts would risk the MT5 terminal.
+
+Checkpoint recorded at epoch 121. Blockers remain explicit: 19,917 deferred cells await the live worker, and the authority ratchet reports queue/cohort count regressions; its repair actuator is rate-limited, so shared artifacts were not overwritten.

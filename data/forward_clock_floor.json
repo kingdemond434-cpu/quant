@@ -36,7 +36,9 @@
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": "2026-08-29T13:34:35.776912+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1": "2026-08-29T13:34:35.776950+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": "2026-08-29T13:34:35.776919+00:00",
+  "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1": "2026-08-30T21:44:00.438329+00:00",
   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1": "2026-08-29T13:34:35.776934+00:00",
+  "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1": "2026-08-30T22:52:18.923202+00:00",
   "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": "2026-08-30T05:12:19.895642+00:00",
   "EURJPY.asia": "2026-08-27T03:34:48.393594+00:00",
   "EURJPY.asia#rr=1.5": "2026-08-27T03:34:48.334302+00:00",
@@ -64,8 +66,8 @@
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 6.745,
- "measured_at": "2026-08-30T07:44:08+00:00",
+ "max_clock_age_days": 7.465,
+ "measured_at": "2026-08-31T01:00:48+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

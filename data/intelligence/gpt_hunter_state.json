@@ -69,6 +69,7 @@
   "https://collective.flashbots.net/#163746c2b577dc848cb6f2bb3ff716fb81d631430527d9b57d0733e382afbe08",
   "https://collective.flashbots.net/#365da9f6f9ce3de7f385bbb4f37274c357e9c59c2cc33dfade4598fc1626d4dd",
   "https://collective.flashbots.net/#531ffb857feabb690071e9124bc36d4fc22508fa6e3eb2f6aac44444508853f4",
+  "https://collective.flashbots.net/#7af1214eb8ed46ece7649c9be180030f1a8050ec4c5a5f98395f8cc6d424dee2",
   "https://collective.flashbots.net/#8c64cf15a82dc5f200abe4d053cd5ac1aa4a573954100bb150b1c1fb9a77c71a",
   "https://collective.flashbots.net/#c1cb239872eb63d89451576b8655d3f8fd1728120507d47be4f1ddbab1bd5497",
   "https://collective.flashbots.net/#d2f702c6cf7f2364164383a9d8a6ebae558d51319416fe844b3e9bb155e9262a",
@@ -76,12 +77,15 @@
   "https://ethresear.ch/latest.json#3cc45ef2f6d73d8e5434fd3b9eb53d0aecec965b11f46275f1e9118cf857a9ab",
   "https://ethresear.ch/latest.json#4374add043c3b27961588a874aa062c738ddef2fc89e9d0601b1f33f5be804b9",
   "https://ethresear.ch/latest.json#8251f341d29a480e18b2d6eb557cb5fc6b39d6e57d030255198e5d4dee256cd2",
+  "https://ethresear.ch/latest.json#9b81bfc98d31d4d2501f8ab0d8c763ead419ffbaa6e7d3272b909d09495494ae",
   "https://ethresear.ch/latest.json#b94804d8730c69ae1330e7a9bc12197343ec2b9f20290d320f4f285a583e75ab",
   "https://ethresear.ch/latest.json#d03bcb1298ca0848e7c4948bfdc7de60d04bea4b858bd687912a90295b65e915",
   "https://ethresear.ch/latest.json#dc2b98b26abe73393b1285824d9dc751c296f97351063a72d4b36f317ee384b6",
   "https://ethresear.ch/latest.json#fbfdd65eab3bf99780be02503c8c497e0c400be5836a2f2f11b2b786b45a7bcf",
   "https://github.com/judder659/Forven#ba352cb37d866f8518a63dc07c95baf76ed158c1161e8674b93893ec8a4e932d",
   "https://github.com/judder659/Forven#eb5022b237f345e522cc2d9ffc20a1b378ac048d98b69c5245025c6eb8f2eaff",
+  "https://github.com/judder659/Forven#f4846f4eed0f9acc84658d72b6aa88769672eac7c302848abed4ccac9ade9c96",
+  "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3#25c577f754aecd26241d3cb646f5b39587dc517a0a7f9a10455bf26843b6cff3",
   "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3#2d0475b22977904c2a5ac6b92ec2c9bff104cdb281d0aa6dfc1d10de57bf071f",
   "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3#3bf65a049e4f473e01dc5f4eabd8ab73db05ee44fd9c5c842064560702fa2cbd",
   "https://habr.com/ru/search/?q=%D0%B0%D0%BB%D0%B3%D0%BE%D1%82%D1%80%D0%B5%D0%B9%D0%B4%D0%B8%D0%BD%D0%B3#43fb9e825f5b8ceea3fd3236a616da8c4d8966e4bbe759bbb186f152aab01db1",
@@ -93,11 +97,13 @@
   "https://huggingface.co/datasets?search=market+microstructure#3d96390201d9f9806e60f3b7d8eedb63a0bfd65a6e4a67fe3fafe2fc890bdd0e",
   "https://huggingface.co/datasets?search=market+microstructure#5ef0be96c5a8b661edf7a285d5a210e92676affda0a497007571fc3c9a9c5758",
   "https://huggingface.co/datasets?search=market+microstructure#6e8fb599b4b8114b3c6da1d81cf9776506474c5c31782d2f1ed7ee7820d9de50",
+  "https://huggingface.co/datasets?search=market+microstructure#80a6747370c4e53d081f3aa62255552abb5c6600b70b38aab3a391fd3b96679a",
   "https://huggingface.co/datasets?search=market+microstructure#aa12fd2a8212a86660dc966d38238fdddf4e4ac23d384fff0d2b568f8e32661d",
   "https://huggingface.co/datasets?search=market+microstructure#c661329ec77351fdbf61ca09bb587387c37dbfeef1f862cbc7e73374d12a3a2d",
   "https://huggingface.co/datasets?search=market+microstructure#cda20e1f46ca068fbbe206ebc3d76f573f3e4ca9ab5a610f0063a0f74290e127",
   "https://jumpcrypto.com/writing/#cf06a8b987576e769e4ed06ea8ad180fdec25f9686267ded5bd7a5d56cf01d98",
   "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95#11e2d837dadb87bd6893d5d521654dfd87a29930b6fb72bb2af9d9729506d20b",
+  "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95#1a19fed43ffaa60c42383e4b0abb9f3c162051e3dbe7984fde3c819e409ca726",
   "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95#1d892715bedcea08d0d7f3f382492d3cbf5ec30cbc7b87c0eca4f369bad08ff9",
   "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95#1fc1eb5ef4945fd4b4574bd3596298abf3cd8dd8d37887655ddf89ad962e7be4",
   "https://qiita.com/tags/%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%E5%8F%96%E5%BC%95#2a59cb722cd0d3f2f85a46d5174a84a4e4fd2acaca8073a6284fed6a7a1adadc",
@@ -107,12 +113,14 @@
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#07ee02a74fa0a8c55151c1e70880a28d50e4d3e8a92b17864236a63d61c051b2",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#0b9eb270e5bf8ea5badd62cedc672b547cb3aa56b367ee4bd40c2df34af25c8f",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#6313489d433bc945e7d42dcfcfc264847777f1f15372b5aedbd95470bc6d7157",
+  "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#69147e9990b449870b998c6c99bd7e341131fa91b58685766f7b71a2bc8e4d00",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#849ef6d5c3b4fbf9f187aaf32fa6a2b7973db2a9478982fe30e80117fbc6fb49",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#ccb2760666f0f8e91dc06f0e5fbd2f99f73959495da016e1892577e5cbe77949",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#d7e30336204ce74d989de5c9ddf4197f44d4bd9beef000fa2e416c885b5944d1",
   "https://search.bilibili.com/all?keyword=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93#e537caedf43d633204b7955dbe4b5c0406f67f18be2ae77c8642b673d4dc60a7",
   "https://writings.flashbots.net/#ff125e7a3c3f507b51f7bf3106fd858a037353bda36b5b5a0261f1027fffd003",
   "https://www.aqr.com/Insights/Research#1847245a424d601fa90f5422e6868195f14f77a9135bfa1855f4d6186bbaa21e",
+  "https://www.aqr.com/Insights/Research#5e9199b8343703d8131b562ed549f054feac847b7f865f6e47cb4b58559528be",
   "https://www.aqr.com/Insights/Research#5f44cf52fd5b17cab1c92e09fe60d04d037613e51f3f75ec1e5f899cee5865d4",
   "https://www.aqr.com/Insights/Research#867763a5c84e034e9baef65561ca2120dda23c668860605ae0eb544c888a13ee",
   "https://www.aqr.com/Insights/Research#9298a19ad71c074b71945a6c16e3513c68fdc7b2e7ad5645bcee7f04febb959a",
@@ -122,6 +130,7 @@
   "https://www.kaggle.com/datasets?search=algorithmic+trading#20ea4ee2a88d0bcf23aa993685d603319c62dc18999cb1670de3f6e770ab2cbf",
   "https://www.kaggle.com/datasets?search=algorithmic+trading#3a5847d3993cdb362fa0c2c00ec2b167169345654aea919ca0f9f87bc20283c3",
   "https://www.kaggle.com/datasets?search=algorithmic+trading#4577424cc758d373d061dad2bb781ec736f74a880a9bf903bf798386530e80a0",
+  "https://www.kaggle.com/datasets?search=algorithmic+trading#4ff65d4c9d6fe26ede5b3f467fcd0011eece28e1cc15c87c8dcf218bc2282733",
   "https://www.kaggle.com/datasets?search=algorithmic+trading#50497846d37bc4195dc158a2f276d3516c10531890f8a58f58a2066791429f64",
   "https://www.kaggle.com/datasets?search=algorithmic+trading#887725e1f7b39eb0d9012eb51d869b96b5a3b5e2063ae55ffe4ad0e52a7d1f87",
   "https://www.kaggle.com/datasets?search=algorithmic+trading#9a87a3f7bb97306ebdafb923f1d827953ee3385c700c7ad20d89754963fb193d",
@@ -133,6 +142,7 @@
   "https://www.man.com/maninstitute#baad3abe0f2b4c9963029894867948d0cd28fcbed60852029d6ee80372fe6ba1",
   "https://www.man.com/maninstitute#d1f4062fe2464099d334bcf44b620206a045d839679477dada8fd7171005370d",
   "https://www.man.com/maninstitute#d91f61f9f2df441966111c5837310e892066e3523c91367e425225477f89074b",
+  "https://www.man.com/maninstitute#dc21b63cba9028be48e30b9521651d927beddd44435353be644488295eed96d6",
   "https://www.paradigm.xyz/writing#30e93c12fadbb9562823e7d9c455c257d3d8b8dea0487ff9e9ac87e4f665bb68",
   "https://www.paradigm.xyz/writing#87dd45c98623af9d22688f79c2322ec1418f316aa780a44610acfedddeb0a931",
   "https://www.paradigm.xyz/writing#a9d3e6e4b6f62f8ddb4dcf1312a2e410b02cc631240973e03fc8d78ce7daefbf",
@@ -140,12 +150,14 @@
   "https://www.quantconnect.com/forum/discussions/1/research/#3d89d7dc3fd56921d334dc8298655064540e30ea5728d933dd1610f9f0981d8f",
   "https://www.quantconnect.com/forum/discussions/1/research/#42930d9c9eeace0de1e9959e6f48198cccb239700b39235b829b1430b8b99a76",
   "https://www.quantconnect.com/forum/discussions/1/research/#46088fb542c471f9c0c203e4e1d17ab0737066244c3611614d53a6cd183d559d",
+  "https://www.quantconnect.com/forum/discussions/1/research/#71fe22b5e15760811aae3d2f8e2110fda1919b7c0116e8342f4fa029b371c12a",
   "https://www.quantconnect.com/forum/discussions/1/research/#787adb87f259c64a5dd0ab79af6f63fc5dbf76de54bd00c86cc93d0c40c8756b",
   "https://www.quantconnect.com/forum/discussions/1/research/#947bdadd44495d1b3d923da69c93690b5f48fd7d559dc0a52d57837db8b2ae1b",
   "https://www.quantconnect.com/forum/discussions/1/research/#b0809d65900682a1a940752b21ded716e3d9d629100d7829b0a60b1124a0b053",
   "https://www.wintermute.com/research#0d2eece3715a352566837afe964873f68aa448f9d95216a1f2ed9a15e5353eca",
   "https://www.wintermute.com/research#3d499baee442f3de4db629d03ce44b84b293dfc12e1592b6fb363adc6708633c",
   "https://www.wintermute.com/research#612f7eda24b2333139e8eacdcd3e2bcc33352db7428031a310925a14cb16aa21",
+  "https://www.wintermute.com/research#8b8824f842c7b21f485e60d5b4140ea2195c41ad16b0e96986946b1d1b3f2c73",
   "https://www.wintermute.com/research#aa3df6e6ac2cf66a6e4362bf04dc98bce0752c3ac41429d30c6d6d15da42fd1e",
   "https://www.youtube.com/shorts/-LLBAZgdy_g",
   "https://www.youtube.com/shorts/-U-4RaC8U0Y",
@@ -274,6 +286,7 @@
   "https://x.com/L1vsun#0279a249a40584ce4907f71ffbe8a9513e24f28010c7adafb463ca5dcdd273df",
   "https://x.com/L1vsun#13d523cf0c3d60664f13600fd454cd0e20ecb562300646313121f9c22e021bc4",
   "https://x.com/L1vsun#72b1fc026b8aafc4af7d6eab6d791802d4184809a92cbe4af5dec7dc318a097a",
+  "https://x.com/L1vsun#76fcd4165415b9e4ac595b40078ce3944b0f887c6a50d6f52ee6afe58bba5373",
   "https://x.com/L1vsun#7ad64d5331d047bc812f7c33f37ac1a63b8adb97fb8c6a8bd69e464da1101418",
   "https://x.com/L1vsun#c760c0482ad6d061fc74ccb984c0dafe716615211c44e00638c1a45f408bd0a8",
   "https://x.com/L1vsun#d877061166ce94988aba759fa1887a21fbf5c9b109384fe4a743a97d6370fefc",
@@ -281,6 +294,7 @@
   "https://x.com/antpalkin#64446b096f159372b1b9497c29c7d645284db8ba465aa06380a9b4a580caa3b4",
   "https://x.com/antpalkin#6f3d48ab080188e36c9d74b6cbdabca4bc800a9d0486b1e136b6a03acb53ef86",
   "https://x.com/antpalkin#77ddae7665fd5a0e5d48cb4cfb5d9e7b43c6091359961a052a03fe879f79dad3",
+  "https://x.com/antpalkin#8c312ea04c6b3d4f1364123482444cbf50ae5ae6e3c30ebdec391849789c10f8",
   "https://x.com/antpalkin#acf514fd3bd9311d7410cc716e1a5bd6efd5b32d9a22135c21f1cff04cc66836",
   "https://x.com/antpalkin#ce39b4ce2a814d4a6ebc1283945a67f3093aa0c5cd104c1793934255145b311b",
   "https://x.com/antpalkin#cece073eec9bb0bb2cd16138559d52e5fe416fe9ebd82231c4db43b6a4c0f4a2",
@@ -291,6 +305,7 @@
   "https://x.com/shmidtqq#4e5be8b03008caaaaf03364d628c8caaddff852845f74745517d17d1fff58b42",
   "https://x.com/shmidtqq#53bc04416021fd10d7c71ee1bfbded66cbee8987e132d4df3536b1dc57fb7b4e",
   "https://x.com/shmidtqq#60c24c24e7acf031b220d71618a88a8c4cda6f8ecdf2c3904e9eae30d9c19f61",
+  "https://x.com/shmidtqq#ad1069c441306f97afaedc89a9305358332062732aef9ef23eb465b85e10cee8",
   "https://x.com/shmidtqq#b631cb0206bef178158386fc735b017c2a7121d83787b0c9138b6dac51f2de37",
   "youtube-video:-s32s6cSpbE",
   "youtube-video:0rzXU-BlKCg",
@@ -357,6 +372,7 @@
   "youtube-video:euoadbzOxFQ",
   "youtube-video:ftFptCxm5ZU",
   "youtube-video:g-Iwbrw0MXg",
+  "youtube-video:iJcxn4O68xs",
   "youtube-video:jCBnbQ1PUkE",
   "youtube-video:k4jUOruQ_4A",
   "youtube-video:lYDKNQZOVSo",
@@ -392,7 +408,7 @@
  "discovered_sources": [],
  "source_reputation": {
   "Lewis Jackson": {
-   "items": 20,
+   "items": 22,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
@@ -410,12 +426,12 @@
    "max_evidence_tier": -1
   },
   "Top Traders Unplugged": {
-   "items": 23,
+   "items": 25,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 16,
+   "failed_or_misleading": 17,
    "max_evidence_tier": -1
   },
   "Desire To Trade": {
@@ -473,7 +489,7 @@
    "max_evidence_tier": -1
   },
   "IQ Capital": {
-   "items": 27,
+   "items": 28,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
@@ -500,21 +516,21 @@
    "max_evidence_tier": -1
   },
   "Man Institute": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "AQR Research": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "arXiv q-fin Trading": {
@@ -554,21 +570,21 @@
    "max_evidence_tier": -1
   },
   "Flashbots Research Collective": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Ethereum Research Latest": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Paradigm Research": {
@@ -590,93 +606,93 @@
    "max_evidence_tier": -1
   },
   "Wintermute Research": {
-   "items": 4,
+   "items": 5,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 4,
+   "failed_or_misleading": 5,
    "max_evidence_tier": -1
   },
   "Bilibili Quant Search": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Hugging Face Finance Datasets": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Kaggle Trading Datasets": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "QuantConnect Community Research": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Habr Algorithmic Trading": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Qiita Algorithmic Trading": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "antpalkin": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "L1vsun": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "shmidtqq": {
-   "items": 7,
+   "items": 8,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 7,
+   "failed_or_misleading": 8,
    "max_evidence_tier": -1
   },
   "Algo Trading Space": {
@@ -707,26 +723,26 @@
    "max_evidence_tier": -1
   },
   "Forven public source": {
-   "items": 2,
+   "items": 3,
    "extracted": 0,
    "reproducible": 0,
    "internal_replications": 0,
    "independent_survivors": 0,
-   "failed_or_misleading": 2,
+   "failed_or_misleading": 3,
    "max_evidence_tier": -1
   }
  },
  "mechanism_sources": {},
  "transcript_retry": {
   "youtube-video:nWRmsNMV3lk": {
-   "attempts": 1,
-   "next_retry_at": "2026-08-30T06:38:28.771203+00:00",
+   "attempts": 2,
+   "next_retry_at": "2026-08-31T12:38:47.516074+00:00",
    "last_state": "UNREADABLE",
    "http_status": null
   },
   "youtube-video:EtiXvi_p6cw": {
-   "attempts": 1,
-   "next_retry_at": "2026-08-30T06:38:28.771203+00:00",
+   "attempts": 2,
+   "next_retry_at": "2026-08-31T12:38:47.516074+00:00",
    "last_state": "UNREADABLE",
    "http_status": null
   },
@@ -967,6 +983,18 @@
   "youtube-video:CdgaJ2vpAss": {
    "attempts": 1,
    "next_retry_at": "2026-08-30T06:38:28.771203+00:00",
+   "last_state": "UNREADABLE",
+   "http_status": null
+  },
+  "youtube-video:TU7dod35dQE": {
+   "attempts": 1,
+   "next_retry_at": "2026-08-31T06:38:47.516074+00:00",
+   "last_state": "UNREADABLE",
+   "http_status": null
+  },
+  "youtube-video:Wt2q4XhobVk": {
+   "attempts": 1,
+   "next_retry_at": "2026-08-31T06:38:47.516074+00:00",
    "last_state": "UNREADABLE",
    "http_status": null
   }

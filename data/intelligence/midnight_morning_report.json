@@ -1,253 +1,120 @@
 {
  "authority": "REPORT ONLY: no gate, certificate, allocation, promotion, sizing, or order authority",
  "candidate_conservation": {
-  "accounted": 19144,
-  "balanced": false,
-  "blocked": 16249,
+  "accounted": 23226,
+  "balanced": true,
+  "blocked": 0,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
-  "discovered": 20410,
+  "discovered": 23226,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
-  "lost": 1266,
-  "lost_cells": [
-   "US500.discovered.p=2c924452429733f6",
-   "US500.discovered.p=f7e3ea747cdc0e7a",
-   "US500.discovered.p=bdcbb220b007620d",
-   "GBPUSD.discovered.p=b34ba4370d73eee5",
-   "GBPUSD.discovered.p=1ffbaa84775d673c",
-   "GBPUSD.discovered.p=6866d8793dc7be86",
-   "GBPUSD.discovered.p=836e4344536125ff",
-   "GBPUSD.discovered.p=ef608a3bc43d9fc4",
-   "GBPUSD.discovered.p=123ff1af73188892",
-   "GBPUSD.discovered.p=ec5ecabc4606123f",
-   "GBPUSD.discovered.p=68b3e18cd4b0e7d2",
-   "GBPUSD.discovered.p=7817c8c8c3d15302",
-   "GBPUSD.discovered.p=5aaa1d63bceb8c58",
-   "GBPUSD.discovered.p=2c3352df206c4e94",
-   "GBPUSD.discovered.p=20b3055f332be4bb",
-   "GBPUSD.discovered.p=d8c1e4fa6d6f32cc",
-   "GBPUSD.discovered.p=5ae7f16f5e68ef2c",
-   "GBPUSD.discovered.p=2a3cdc198999c1cd",
-   "GBPUSD.discovered.p=5091c67a778a74d6",
-   "GBPUSD.discovered.p=ac33d572398a33ba",
-   "GBPUSD.discovered.p=ac24c9dea95e25ce",
-   "GBPUSD.discovered.p=17ceab349f4d153c",
-   "USDJPY.discovered.p=97141b4c3cfa38bf",
-   "USDJPY.discovered.p=0651aa4c51ce7ff7",
-   "USDJPY.discovered.p=3bf5405f3818d1a0",
-   "USDJPY.discovered.p=0f39638f7d8d6ac6",
-   "USDJPY.discovered.p=445d5fbf1b028966",
-   "USDJPY.discovered.p=e66f0337e1a5c304",
-   "USDJPY.discovered.p=363273689e7ce43f",
-   "USDCAD.discovered.p=fcd7f316a8849987",
-   "USDCAD.discovered.p=f56de7ec9b5135ef",
-   "USDCAD.discovered.p=887d9491f2fa0054",
-   "USDCAD.discovered.p=65f3a110ebe5fed9",
-   "USDCAD.discovered.p=fbfc8c340cbbaa00",
-   "USDCAD.discovered.p=7f1f3aa70a36e86d",
-   "USDCAD.discovered.p=1d4161bb3a36c9d2",
-   "USDCAD.discovered.p=ed54f518578a8eed",
-   "USDCAD.discovered.p=c980cc3d605f3ef7",
-   "USDCAD.discovered.p=617f1c024d8b687f",
-   "USDCAD.discovered.p=291c3569eb288262",
-   "AUDNZD.discovered.p=a0c29bb87eb3b2af",
-   "AUDNZD.discovered.p=2bfc62e05917df07",
-   "AUDNZD.discovered.p=8cf12c6d2ecfaa36",
-   "AUDNZD.discovered.p=ca18744cae2c240b",
-   "NZDUSD.discovered.p=f6cff824787eb913",
-   "NZDUSD.discovered.p=72f3c4a5edd8b5e9",
-   "NZDUSD.discovered.p=aa84350d607aa61d",
-   "NZDUSD.discovered.p=e4d2bb499dd0016d",
-   "NZDUSD.discovered.p=c245a1cae39cb245",
-   "NZDUSD.discovered.p=d7de0253aae801c8",
-   "NZDUSD.discovered.p=0c76477429ca039c",
-   "NZDUSD.discovered.p=f65db210388730a2",
-   "NZDUSD.discovered.p=f256506e525b9383",
-   "USDCHF.discovered.p=a9639e61968c34ca",
-   "USDCHF.discovered.p=c1be4dc3ffeb6720",
-   "USDCHF.discovered.p=417848400f216d95",
-   "USDCHF.discovered.p=19a8aaa708b57034",
-   "USDCHF.discovered.p=dd22733390948f34",
-   "USDCHF.discovered.p=215dffe244ab059f",
-   "USDCHF.discovered.p=e1ef77abd661ca48",
-   "USDCHF.discovered.p=cf454fa5392b8359",
-   "USDCHF.discovered.p=f3a6d7f86d3132f7",
-   "USDCHF.discovered.p=0c5804bef099cf72",
-   "AUDJPY.discovered.p=c4a3967a55862cd9",
-   "AUDJPY.discovered.p=d1d7a4d6f4a60d94",
-   "AUDJPY.discovered.p=9a285932626fe5ac",
-   "AUDJPY.discovered.p=c70bdc3515241deb",
-   "AUDJPY.discovered.p=3637d63966fd594c",
-   "AUDJPY.discovered.p=b82dc461ca422c73",
-   "BTCUSD.discovered.p=03ec2d1851e39c5b",
-   "BTCUSD.discovered.p=5a2edc41a5b3b49a",
-   "BTCUSD.discovered.p=717667e5fa1d0a7f",
-   "BTCUSD.discovered.p=70b5808df522b8fe",
-   "EURJPY.discovered.p=999b29fab0875713",
-   "EURJPY.discovered.p=243172c87b73932c",
-   "EURAUD.discovered.p=91171fd0297f3dc6",
-   "EURAUD.discovered.p=2773975268b1fee9",
-   "EURAUD.discovered.p=cad7ef5b6f414d96",
-   "GBPAUD.discovered.p=421d21bd693e800e",
-   "GBPAUD.discovered.p=b645af1fe8bb1b85",
-   "CHFJPY.discovered.p=f0b4e29c4dbd3ccf",
-   "CHFJPY.discovered.p=e0bdeb5ddcf6ef7b",
-   "NZDCAD.discovered.p=5855f60acccc2f76",
-   "NZDCAD.discovered.p=258e3c912608d233",
-   "NZDCAD.discovered.p=402874e3128c9719",
-   "NZDCAD.discovered.p=c10e25da6a463639",
-   "NZDCAD.discovered.p=c0da617e5bf679dd",
-   "NZDCAD.discovered.p=02be9f2c93292442",
-   "NZDCAD.discovered.p=8000b85668a21289",
-   "NZDCAD.discovered.p=228fede64191e498",
-   "NZDCAD.discovered.p=963bcdd78873c92e",
-   "NZDCAD.discovered.p=1d240da5d2ab91e5",
-   "NZDCAD.discovered.p=47fce6518528e2b7",
-   "NZDCAD.discovered.p=6c0059c9ce854faf",
-   "NZDCAD.discovered.p=6314826776052ce9",
-   "NZDCAD.discovered.p=718d94a08ed549c3",
-   "Cisco.discovered.p=0782731f189836bd",
-   "Cisco.discovered.p=e9fbfec312646d19",
-   "Cisco.discovered.p=b55bdbfb0245034d",
-   "Cisco.discovered.p=45e47d1ec7e9098e"
-  ],
-  "queued": 0,
-  "rejected": 2882,
-  "resumable_deferred": 0,
-  "tested": 13
+  "lost": 0,
+  "lost_cells": [],
+  "queued": 20897,
+  "rejected": 2328,
+  "resumable_deferred": 20897,
+  "tested": 1
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.005436,
+  "measured_cpu_hours": 0.002469,
   "stage_rows": [
    {
     "certificate_delta": 0,
-    "cpu_seconds": 8.475505,
-    "duration_seconds": 592.72,
+    "cpu_seconds": 2.107986,
+    "duration_seconds": 1045.53,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.95094,
-    "duration_seconds": 4.221,
+    "cpu_seconds": 0.803925,
+    "duration_seconds": 1.551,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 2.533211,
-    "duration_seconds": 5.173,
+    "cpu_seconds": 2.408457,
+    "duration_seconds": 3.36,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.063628,
-    "duration_seconds": 0.809,
+    "cpu_seconds": 0.050787,
+    "duration_seconds": 0.639,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.335132,
-    "duration_seconds": 29.202,
+    "cpu_seconds": 0.871009,
+    "duration_seconds": 57.009,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.986297,
-    "duration_seconds": 3.418,
+    "cpu_seconds": 1.009187,
+    "duration_seconds": 1.537,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.052033,
-    "duration_seconds": 1.438,
+    "cpu_seconds": 0.048196,
+    "duration_seconds": 0.536,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.977622,
-    "duration_seconds": 3.374,
+    "cpu_seconds": 0.884002,
+    "duration_seconds": 1.445,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.469247,
-    "duration_seconds": 59.272,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 47.507,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.293056,
-    "duration_seconds": 1.321,
+    "cpu_seconds": 0.277776,
+    "duration_seconds": 1.205,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.097998,
-    "duration_seconds": 1.03,
+    "cpu_seconds": 0.065952,
+    "duration_seconds": 0.66,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.272274,
-    "duration_seconds": 1.068,
+    "cpu_seconds": 0.293974,
+    "duration_seconds": 0.798,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0627,
-    "duration_seconds": 0.655,
+    "cpu_seconds": 0.068051,
+    "duration_seconds": 0.634,
     "name": "forward_clock_fence"
    }
   ]
  },
  "failure_root_causes": [
   {
-   "cause": "NOT_RUN_BUILD_FAILED",
-   "count": 16249,
+   "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+   "count": 20897,
    "sample_cells": [
-    "ADAUSD.event_reaction.p=4715a17a13ae8cc2",
-    "BCHUSD.event_reaction.p=4715a17a13ae8cc2",
-    "BNBUSD.event_reaction.p=4715a17a13ae8cc2",
-    "BTCUSD.event_reaction.p=4715a17a13ae8cc2",
-    "DOTUSD.event_reaction.p=4715a17a13ae8cc2",
-    "ETHUSD.event_reaction.p=4715a17a13ae8cc2",
-    "LNKUSD.event_reaction.p=4715a17a13ae8cc2",
-    "LTCUSD.event_reaction.p=4715a17a13ae8cc2",
-    "SOLUSD.event_reaction.p=4715a17a13ae8cc2",
-    "XLMUSD.event_reaction.p=4715a17a13ae8cc2"
-   ]
-  },
-  {
-   "cause": "in_sample_screen",
-   "count": 991,
-   "sample_cells": [
-    "XAUUSD.asia_momentum.rr=1.5_wb=?",
-    "XAUUSD.asia_momentum.rr=2.0_wb=?",
-    "XAUUSD.asia_momentum.rr=2.5_wb=?",
-    "NAS100.session_range_breakout.rr=1.5_wb=8",
-    "NAS100.session_range_breakout.rr=1.5_wb=12",
-    "NAS100.session_range_breakout.rr=2.0_wb=8",
-    "NAS100.session_range_breakout.rr=2.5_wb=8",
-    "US500.session_range_breakout.rr=1.5_wb=8",
-    "US500.session_range_breakout.rr=1.5_wb=12",
-    "US500.session_range_breakout.rr=2.0_wb=8"
-   ]
-  },
-  {
-   "cause": "deflated_sharpe",
-   "count": 876,
-   "sample_cells": [
-    "XAUUSD.session_range_breakout.rr=1.5_wb=8",
-    "XAUUSD.session_range_breakout.rr=1.5_wb=12",
-    "XAUUSD.session_range_breakout.rr=2.0_wb=8",
-    "XAUUSD.session_range_breakout.rr=2.0_wb=12",
-    "XAUUSD.session_range_breakout.rr=2.5_wb=8",
-    "XAUUSD.session_range_breakout.rr=2.5_wb=12",
-    "EURUSD.session_range_breakout.rr=1.5_wb=8",
-    "EURUSD.session_range_breakout.rr=1.5_wb=12",
-    "EURUSD.session_range_breakout.rr=2.0_wb=8",
-    "EURUSD.session_range_breakout.rr=2.0_wb=12"
+    "EURUSD.discovered.p=e4475a474e8b9425",
+    "EURUSD.discovered.p=5094763847e8c846",
+    "EURUSD.discovered.p=cd67a4816914819d",
+    "EURUSD.discovered.p=baccf462d4f46d5a",
+    "EURUSD.discovered.p=7050e0a8d092b04a",
+    "EURUSD.discovered.p=54cd03d5d9955fc5",
+    "EURUSD.discovered.p=f98e675d9ce34a1c",
+    "EURUSD.discovered.p=6f72fe0d92a9828e",
+    "EURUSD.discovered.p=3119f1ba15643f37",
+    "EURUSD.discovered.p=5e2c7dc0c9f14510"
    ]
   },
   {
@@ -267,44 +134,77 @@
    ]
   },
   {
-   "cause": "observations",
-   "count": 199,
+   "cause": "in_sample_screen",
+   "count": 816,
    "sample_cells": [
-    "AUDJPY.event_reaction.p=4715a17a13ae8cc2",
-    "CADJPY.event_reaction.p=4715a17a13ae8cc2",
-    "CHFJPY.event_reaction.p=4715a17a13ae8cc2",
-    "EURJPY.event_reaction.p=4715a17a13ae8cc2",
-    "GBPJPY.event_reaction.p=4715a17a13ae8cc2",
-    "HKDJPY.event_reaction.p=4715a17a13ae8cc2",
-    "MXNJPY.event_reaction.p=4715a17a13ae8cc2",
-    "NOKJPY.event_reaction.p=4715a17a13ae8cc2",
-    "NZDJPY.event_reaction.p=4715a17a13ae8cc2",
-    "SEKJPY.event_reaction.p=4715a17a13ae8cc2"
+    "XAUUSD.asia_momentum.rr=1.5_wb=?",
+    "XAUUSD.asia_momentum.rr=2.0_wb=?",
+    "XAUUSD.asia_momentum.rr=2.5_wb=?",
+    "NAS100.session_range_breakout.rr=1.5_wb=8",
+    "NAS100.session_range_breakout.rr=1.5_wb=12",
+    "NAS100.session_range_breakout.rr=2.0_wb=8",
+    "NAS100.session_range_breakout.rr=2.5_wb=8",
+    "US500.session_range_breakout.rr=1.5_wb=8",
+    "US500.session_range_breakout.rr=1.5_wb=12",
+    "US500.session_range_breakout.rr=2.0_wb=8"
+   ]
+  },
+  {
+   "cause": "deflated_sharpe",
+   "count": 577,
+   "sample_cells": [
+    "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+    "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+    "XAUUSD.session_range_breakout.rr=2.0_wb=8",
+    "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+    "XAUUSD.session_range_breakout.rr=2.5_wb=8",
+    "XAUUSD.session_range_breakout.rr=2.5_wb=12",
+    "EURUSD.session_range_breakout.rr=1.5_wb=8",
+    "EURUSD.session_range_breakout.rr=1.5_wb=12",
+    "EURUSD.session_range_breakout.rr=2.0_wb=8",
+    "EURUSD.session_range_breakout.rr=2.0_wb=12"
+   ]
+  },
+  {
+   "cause": "observations",
+   "count": 118,
+   "sample_cells": [
+    "USDMXN.cot_positioning.p=910f73eb20d91704",
+    "NZDUSD.cot_positioning.p=910f73eb20d91704",
+    "NAS100.calendar_month.p=82b636430ca68152",
+    "US500.calendar_month.p=82b636430ca68152",
+    "ADAUSD.carry.p=e3f98be9e28db5d7",
+    "AT&T.carry.p=e82efc48d8c19d10",
+    "AUS200.carry.p=d6ecd0b852774149",
+    "AVAXUSD.carry.p=00920436e1778bba",
+    "ALIBABAGROUP.carry.p=603cf51f1fef52d2",
+    "BCHUSD.carry.p=af46f19bbc0c7087"
+   ]
+  },
+  {
+   "cause": "cpcv",
+   "count": 1,
+   "sample_cells": [
+    "EURSEK.liquidity_gamma_reversal.p=44136fa355b3678a"
    ]
   }
  ],
  "forward_truth": {
-  "active_clocks": 20,
-  "fusion_native": 17,
+  "active_clocks": 39,
+  "fusion_native": 39,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
-  "source_unmeasured": 3,
-  "stale": 3,
-  "stale_keys": [
-   "xau_m5_anti_breakout_overlap",
-   "xau_m5_anti_momentum_ny",
-   "xau_m15_anti_breakout"
-  ]
+  "source_unmeasured": 0,
+  "stale": 0,
+  "stale_keys": []
  },
- "generated_at": "2026-08-30T07:44:10.013089+00:00",
+ "generated_at": "2026-08-31T01:00:49.592877+00:00",
  "headline": {
-  "candidates_discovered": 20410,
-  "candidates_lost": 1266,
+  "candidates_discovered": 23226,
+  "candidates_lost": 0,
   "certificates_added": 0,
-  "forward_clocks": 73,
-  "hard_failures": [
-   "forward_clock_reconciliation"
-  ]
+  "forward_clocks": 71,
+  "hard_failures": []
  },
  "mechanism_independence": {
   "allocation": {
@@ -321,11 +221,6 @@
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
     },
-    "EURZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
     "GBPJPY_asia": {
      "n": 2,
      "weight": 0.0,
@@ -336,11 +231,6 @@
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
     },
-    "USDZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
     "XAUUSD_asia": {
      "n": 2,
      "weight": 0.0,
@@ -350,32 +240,32 @@
    "why": "weights are fractional-Kelly on measured moments, further shrunk by the book's own concentration (N_eff / N). Kelly on estimated moments is fragile -- past 2x Kelly geometric growth turns negative -- so this allocates deliberately below the optimum."
   },
   "downside_comovement": {
-   "losing_days": 1,
-   "mean_share_losing_together": 0.429,
+   "losing_days": 2,
+   "mean_share_losing_together": 0.6,
    "measured": true,
    "why": "the fraction of sleeves that are down on the book's down days; near 1.0 means the book is one bet however many names it holds"
   },
   "effective_bets": {
-   "concentration": 6.88,
-   "n_effective": 1.017,
-   "n_sleeves": 7,
-   "pairs_assumed_correlated": 21,
+   "concentration": 4.92,
+   "n_effective": 1.016,
+   "n_sleeves": 5,
+   "pairs_assumed_correlated": 10,
    "pairs_measured": 0,
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
-  "forward_sleeves_with_observations": 7,
-  "measured_at": "2026-08-30T07:44:03+00:00",
+  "forward_sleeves_with_observations": 5,
+  "measured_at": "2026-08-31T01:00:44+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 1266
+  "stalled_cells": 20897
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 592.6,
+  "mem_available_mb": 910.8,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -522,11 +412,11 @@
     "overdue": true
    }
   ],
-  "certificates": 42,
-  "certificates_not_enrolled": 41,
+  "certificates": 44,
+  "certificates_not_enrolled": 43,
   "certificates_overdue": 20,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
-  "queue_active": 1283,
+  "queue_active": 17,
   "queue_overdue": 17,
   "queue_overdue_rows": [
    {
