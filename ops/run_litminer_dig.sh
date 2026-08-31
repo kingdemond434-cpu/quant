@@ -27,6 +27,7 @@ LOG="data/cro_ai_logs/litminer_$(date -u +%Y%m%dT%H%M).log"
 echo "=== litminer attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex litminer   # ONE brain desk-wide; defers (exit 0) if another organ holds it
+brain_mem_gate || exit 0
 brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
 # §33 CONVERSION PRIORITY. `dig_prompt` (ops/brain_env.sh) prepends the conversion duty
 # to this organ's brief so the run spends its FIRST effort disposing of the backlog, then

@@ -27,6 +27,7 @@ LOG="data/cro_ai_logs/video_hunter_$(date -u +%Y%m%dT%H%M).log"
 echo "=== video-hunter attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex video-hunter
+brain_mem_gate || exit 0
 brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
 # YouTube Data API key, if the principal has dropped it at the standard path. The prompt treats
 # video as the index and text/code as the corpus either way; the key just makes enumeration cheap.

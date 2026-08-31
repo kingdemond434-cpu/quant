@@ -75,6 +75,33 @@ brain_mutex() {
     return 0
 }
 
+# --- MEMORY GATE (2026-08-31) ---
+# A seat that dies between its attempt header and its first claude line is a SILENT death --
+# 21 stubs in 7 days, cgroup oom_kill counter at 912, 0 swap on 3.8GB. The launcher writes the
+# header, then brain_mutex, then brain_auth_check; the probes there spawn claude, and an OOM
+# kill of the whole group leaves only the 58-byte header. Hunting harder cannot fix a box that
+# cannot hold the launch, so a launcher must DEFER cleanly first instead of dying silently.
+# Grace value in MB: a 158-line stub of failed-claude + the seat's own python. Below ~500MB
+# available an --effort max seam can push the box over the cliff; defer to the next catchup
+# tick (5 min) and it resumes the moment memory frees.
+_BRAIN_MEM_FLOOR_MB="${_BRAIN_MEM_FLOOR_MB:-500}"
+brain_mem_gate() {
+    local avail_mb
+    avail_mb="$(awk '/MemAvailable/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null)"
+    [ -n "$avail_mb" ] || return 0          # cannot read -> do not block, never block the desk
+    if [ "$avail_mb" -lt "$_BRAIN_MEM_FLOOR_MB" ]; then
+        [ -n "${BRAIN_MUTEX_LOGFILE:-}" ] && \
+            echo "=== ${BRAIN_ORGAN:-brain} MEMORY-STARVED only ${avail_mb}MB available DEFERRED -- box at ${_BRAIN_MEM_FLOOR_MB}MB floor; organ_catchup re-fires ===" \
+            >> "$BRAIN_MUTEX_LOGFILE" 2>/dev/null || true
+        printf 'brain_mem_gate: %d MB available < %s MB floor -- deferring\n' \
+            "$avail_mb" "$_BRAIN_MEM_FLOOR_MB" >&2
+        return 1
+    fi
+    printf 'brain_mem_gate: %d MB available >= %s MB floor -- go\n' \
+        "$avail_mb" "$_BRAIN_MEM_FLOOR_MB" >&2
+    return 0
+}
+
 # --- D3 self-healing (founders directive, principal 2026-07-19) ---
 _brain_page() {
     # page the principal via the desk pager topic (ntfy.sh); never fails the caller

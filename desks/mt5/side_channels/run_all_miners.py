@@ -7,8 +7,43 @@ Can be invoked standalone or imported by hourly_controller.
 import sys
 import os
 import json
+import multiprocessing
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Hard wall-clock budget per miner (seconds). A miner that exceeds it is killed
+# so one hung channel can never stall the hourly pipeline. 2026-08-31: academic
+# miner was observed spinning CPU for 20+ min and never returning.
+MINER_TIMEOUT_S = int(os.environ.get("QUANT_MINER_TIMEOUT_S", "180"))
+process_ctx = multiprocessing.get_context("spawn")
+
+
+def _run_miner_inner(name, fn_ref, q):
+    try:
+        disc = fn_ref()
+        q.put(("ok", disc))
+    except Exception as e:
+        q.put(("err", type(e).__name__ + ": " + str(e)))
+
+
+def _run_miner(name, fn):
+    """Run one miner under a hard timeout. Returns ("ok", discs) | ("err", msg) | ("timeout",)."""
+    q = process_ctx.Queue()
+    p = process_ctx.Process(target=_run_miner_inner, args=(name, fn, q), daemon=True)
+    p.start()
+    p.join(timeout=MINER_TIMEOUT_S)
+    if p.is_alive():
+        p.terminate()
+        p.join(5)
+        if p.is_alive():
+            p.kill()
+            p.join()
+        print(f"  {name}: TIMED OUT after {MINER_TIMEOUT_S}s (killed)")
+        return ("timeout",)
+    try:
+        return q.get(timeout=5)
+    except Exception:
+        return ("err", "no result after process ended")
 
 # Ensure side_channels dir is on path for direct imports
 _dir = os.path.dirname(os.path.abspath(__file__))
@@ -95,14 +130,17 @@ def run_all_miners() -> dict:
     results = {}
     total = 0
     for name, fn in ALL_MINERS:
-        try:
-            disc = fn()
+        status, payload = _run_miner(name, fn)
+        if status == "ok":
+            disc = payload
             results[name] = {"count": len(disc), "discoveries": disc}
             total += len(disc)
             print(f"  {name}: {len(disc)} discoveries")
-        except Exception as e:
-            results[name] = {"count": 0, "error": str(e)}
-            print(f"  {name}: FAILED ({e})")
+        elif status == "timeout":
+            results[name] = {"count": 0, "error": "timeout_killed", "discoveries": []}
+        else:
+            results[name] = {"count": 0, "error": payload}
+            print(f"  {name}: FAILED ({payload})")
 
     ok = sum(1 for r in results.values() if r.get("count", 0) > 0)
     results["summary"] = {

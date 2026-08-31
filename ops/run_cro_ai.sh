@@ -29,6 +29,7 @@ if [ "${BRAIN_DRY_RUN:-0}" != "1" ]; then
     export BRAIN_MUTEX_LOGFILE="$LOG"
 fi
 brain_mutex cro_ai   # ONE brain desk-wide; defers (exit 0) if another organ holds it
+brain_mem_gate || exit 0
 # BRAIN_DRY_RUN=1 (CI shell-hygiene gate, 2026-07-20): exercise every expansion in this
 # script under `set -u` WITHOUT auth, network, tokens, or log writes -- the 2026-07-19
 # unescaped-\$300 crash class is caught statically by exactly this path.

@@ -36,6 +36,7 @@ dig_dry_run "brain-hunter" "ops/brain_hunter_prompt.txt" && exit 0
 echo "=== brain-hunter attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex "brain-hunter"
+brain_mem_gate || exit 0
 CONTROLLER="claude"
 if ! brain_auth_check; then
     # Claude subscription/auth outages previously erased the whole daily WorldQuant/competition

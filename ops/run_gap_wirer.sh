@@ -21,6 +21,7 @@ LOG="data/cro_ai_logs/gap_wirer_$(date -u +%Y%m%dT%H%M).log"
 echo "=== gap-wirer attempt $(date -u) ===" >> "$LOG"
 export BRAIN_MUTEX_LOGFILE="$LOG"
 brain_mutex gap-wirer
+brain_mem_gate || exit 0
 brain_auth_check || { echo "auth unavailable -- next run resumes ($(date -u))" >> "$LOG"; exit 1; }
 claude --effort max --append-system-prompt "$_DOCTRINE" -p "$(dig_prompt ops/gap_wirer_prompt.txt)" --dangerously-skip-permissions >> "$LOG" 2>&1
 echo "=== gap-wirer exit $? at $(date -u) ===" >> "$LOG"

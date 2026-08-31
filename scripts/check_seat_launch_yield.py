@@ -68,16 +68,32 @@ _STARVED_RATIO = 0.5          # hour yield below half the desk's own yield = sta
 _ATTEMPT_RE = re.compile(r"^=== ([a-z0-9_-]+) attempt ", re.M)
 _STAMP_RE = re.compile(r"_(\d{8})T(\d{2})(\d{2})")
 
+#: Words the CLI uses when it refuses a seat because the quota window is closed. The auth chain
+#: already pages these as quota events (ops/brain_env.sh brain_auth_check greps "limit"), so the
+#: fence must agree with the pager on what a wall looks like. Measured real shapes kept HERE so a
+#: new sentence from the vendor shows up as an AUTH_UNAVAILABLE rather than a fabricated death:
+#:   "You've hit your weekly limit · resets Sep 1, 3pm (UTC)"
+#:   "You've hit your session limit - resets 1am (UTC)"
+#:   "usage credits" / "rate limit" / "usage limit" (metered fallback shape)
+_QUOTA_WORD_RE = re.compile(r"\b(limit|usage credits|rate limit|reset)\b", re.I)
+
 
 def classify(text: str, size: int) -> str:
     """Why this launch produced nothing -- or PRODUCED."""
+    low = text.lower()
     if size >= _REAL_LOG_BYTES:
         return "PRODUCED"
-    if "auth unavailable" in text:
+    # QUOTA WALLS COME IN MORE THAN ONE SENTENCE. The seat launchers say "auth unavailable"
+    # (old shape) and the CLI itself says "You've hit your weekly limit"/"session limit" (new
+    # shape, measured 2026-08-30 on brain-hunter). Both are a closed window, never a death:
+    # the desk's own auth chain pages "limit" as a quota event and records it in
+    # brain_quota_windows.jsonl. A launch that names a limit must be counted like the one that
+    # names the wall, or every reset-day burn shows up as a fabricated crash.
+    if "auth unavailable" in low or _QUOTA_WORD_RE.search(low):
         return "AUTH_UNAVAILABLE"      # quota wall; the seat never launched, cost ~one ping
-    if "DEFERRED" in text:
+    if "deferred" in low:
         return "MUTEX_DEFERRED"        # correct behaviour: organ_catchup re-fires the loser
-    if " start " in text:
+    if " start " in low:
         return "DIED_AFTER_START"      # launched and was killed -- usually the OOM killer
     # A log holding ONLY its attempt header (~60 bytes) is a SILENT death: the wrapper wrote
     # the header, the process died, and nothing explained why. Measured 2026-08-28: six of
