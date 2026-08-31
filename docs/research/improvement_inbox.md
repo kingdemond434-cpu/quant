@@ -5861,3 +5861,54 @@ fingerprints; force a watchdog expiry after the remote job id is returned; prove
 before polling, that retry resumes rather than resubmits it, and that structural failures remain
 terminal while typed transport failures alone are retryable. Reconcile both local cells and unique
 remote jobs. Evidence: `data/brain_hunter_s42_static_heuristic_and_active_cohort_screen.json`.
+
+## 2026-08-31 — BRAIN HUNTER s43 — a full in-memory history is still an erased history
+
+Apache-2.0 `Liu-Ming-Yu/alpha-forge` at `922d8d34` makes the strongest public claim on this
+ground so far: every generated expression receives provenance and every admission/rejection is
+written to JSONL. The static path disproves the durable half. `mine_alphas()` accumulates the
+entire history in process memory; the CLI calls it to completion and only then opens the output
+with `"w"`. An evaluation exception, OOM or killed worker therefore leaves **zero typed rows** for
+every attempt before the failure. A complete history that exists only after clean return is not
+failure memory. [§33: screened]
+
+The same read strengthens the existing s33/s41/s42 repair rather than creating another organ:
+
+- provenance omits the code commit, data hash/vintage, requested and loaded universe, date window,
+  target horizon, search/gate config and executable-cost fingerprint;
+- missing/empty symbol stores are silently skipped, so the requested universe can contract without
+  a missing-symbol row or an identity change;
+- the advertised walk-forward aggregate both steers evolutionary parent selection and admits the
+  result, so it is inner selection evidence, not untouched OOS;
+- the cross-run baseline loader is explicitly unused, and missing baseline correlation is treated
+  as acceptable, so independence pressure resets every invocation.
+
+**Strengthened determining test:** prewrite full-identity `PLANNED` rows, force-kill after candidate
+*k*, reconcile every planned cell after restart, and prove that changing only a Fusion contract,
+cost, horizon, data vintage, universe member or code commit changes identity. Persist requested vs
+loaded terminal rosters with typed absences; load the active/historical accepted population before
+correlation admission; reserve untouched post-selection evidence for the canonical universal
+forward engine. No external threshold or private admission gate transfers. Exact traces:
+`data/brain_hunter_s43_alpha_forge_failure_memory_screen.json`.
+
+## 2026-08-31 — BRAIN HUNTER s44 — checkpoints preserve work only when the checkpoint survives
+
+MIT `microsoft/RD-Agent` at `6762f84f` is the nearest implementation on alpha-forge's declared
+Qlib/RD-Agent lineage. It independently converges on the good half of the existing conservation
+repair: hypotheses and experiments are logged before execution, every successful workflow step
+gets a resumable snapshot, and declared `FactorEmptyError`/`CoderError` outcomes are converted to
+feedback and appended to the experiment trace. This strengthens s41-s43's requirement to create
+identity before evaluation and to type expected failures. It creates no new recommendation.
+
+The same source supplies the missing crash falsifier. A generic undeclared exception is re-raised
+before terminal feedback; `LoopBase.dump` opens the final checkpoint directly with `wb` and
+`pickle.dump`; restart blindly loads the latest pickle; and `checkout=True` deletes all later
+session and log objects. Step-frequency checkpointing is therefore not append-only failure memory.
+The strengthened test must kill during serialization, reject the partial generation, atomically
+fall back to the last checksum-valid checkpoint, and preserve the prewritten full-identity trial
+row. Rollback may restore controller state but may never truncate the evidence ledger.
+
+No third-party agent code or pickle was executed or imported. The transferable shape is a typed,
+schema-versioned, data-only `PLANNED -> RUNNING -> terminal` ledger plus separately replaceable
+controller checkpoints. Exact static traces:
+`data/brain_hunter_s44_rdagent_failure_memory_screen.json`. [§33: screened]

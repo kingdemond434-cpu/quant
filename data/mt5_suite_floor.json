@@ -1,6 +1,6 @@
 {
  "known_failing": [],
- "measured_at": "2026-08-31T07:47:53+00:00",
+ "measured_at": "2026-08-31T19:47:46+00:00",
  "passed_at_measure": 711,
  "total_at_measure": 711,
  "command": "python scripts/check_mt5_suite.py",

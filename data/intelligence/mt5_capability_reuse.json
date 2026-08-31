@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-31T12:32:08.794546+00:00",
+  "generated_at": "2026-08-31T21:58:17.261727+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 67,
-    "UNWIRED_REVIEW": 562,
+    "UNWIRED_REVIEW": 563,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -3647,6 +3647,13 @@
     {
       "module": "libs.risk.factor_caps",
       "path": "libs/risk/factor_caps.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.fx_factors",
+      "path": "libs/risk/fx_factors.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
