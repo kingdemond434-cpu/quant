@@ -1,101 +1,101 @@
 {
  "authority": "REPORT ONLY: no gate, certificate, allocation, promotion, sizing, or order authority",
  "candidate_conservation": {
-  "accounted": 23229,
+  "accounted": 23257,
   "balanced": true,
-  "blocked": 63,
+  "blocked": 107,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
-  "discovered": 23229,
+  "discovered": 23257,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
   "lost": 0,
   "lost_cells": [],
-  "queued": 20051,
-  "rejected": 3104,
-  "resumable_deferred": 20051,
-  "tested": 11
+  "queued": 19482,
+  "rejected": 3647,
+  "resumable_deferred": 19482,
+  "tested": 21
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.002971,
+  "measured_cpu_hours": 0.036253,
   "stage_rows": [
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 4226.432,
+    "cpu_seconds": 123.467419,
+    "duration_seconds": 5287.846,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.343621,
-    "duration_seconds": 5.443,
+    "cpu_seconds": 1.118691,
+    "duration_seconds": 2.388,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 2.905874,
-    "duration_seconds": 9.13,
+    "cpu_seconds": 2.608554,
+    "duration_seconds": 4.934,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.057708,
-    "duration_seconds": 1.661,
+    "cpu_seconds": 0.064498,
+    "duration_seconds": 0.899,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.714661,
-    "duration_seconds": 34.037,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 51.036,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.985942,
-    "duration_seconds": 4.267,
+    "cpu_seconds": 1.023361,
+    "duration_seconds": 3.707,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.060896,
-    "duration_seconds": 1.341,
+    "cpu_seconds": 0.051259,
+    "duration_seconds": 1.892,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.913158,
-    "duration_seconds": 3.086,
+    "cpu_seconds": 0.996864,
+    "duration_seconds": 3.816,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 8.034,
+    "cpu_seconds": 0.423414,
+    "duration_seconds": 4.816,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.234691,
-    "duration_seconds": 2.124,
+    "cpu_seconds": 0.254416,
+    "duration_seconds": 2.188,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.067157,
-    "duration_seconds": 1.147,
+    "cpu_seconds": 0.087518,
+    "duration_seconds": 1.228,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.336911,
-    "duration_seconds": 2.602,
+    "cpu_seconds": 0.323613,
+    "duration_seconds": 2.043,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.073466,
-    "duration_seconds": 1.369,
+    "cpu_seconds": 0.091632,
+    "duration_seconds": 1.648,
     "name": "forward_clock_fence"
    }
   ]
@@ -103,39 +103,23 @@
  "failure_root_causes": [
   {
    "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
-   "count": 20051,
+   "count": 19482,
    "sample_cells": [
-    "AUDCAD.discovered.p=c7c1daf17e0f1c25",
-    "AUDCAD.discovered.p=01c757b1d04b7e0f",
-    "AUDCAD.discovered.p=a1e4d75edec747a9",
-    "AUDCAD.discovered.p=96d533246dd6004c",
-    "AUDCAD.discovered.p=d10fd6c511fbb877",
-    "AUDCAD.discovered.p=c5d4ccda69e7b400",
-    "AUDCAD.discovered.p=c82077e1f988b3b9",
-    "AUDCAD.discovered.p=cb3b35f83c6bae40",
-    "AUDCAD.discovered.p=07a4f66ad1f29c0b",
-    "AUDCAD.discovered.p=150ba55bd4112914"
-   ]
-  },
-  {
-   "cause": "in_sample_screen",
-   "count": 1029,
-   "sample_cells": [
-    "XAUUSD.asia_momentum.rr=1.5_wb=?",
-    "XAUUSD.asia_momentum.rr=2.0_wb=?",
-    "XAUUSD.asia_momentum.rr=2.5_wb=?",
-    "NAS100.session_range_breakout.rr=1.5_wb=8",
-    "NAS100.session_range_breakout.rr=1.5_wb=12",
-    "NAS100.session_range_breakout.rr=2.0_wb=8",
-    "NAS100.session_range_breakout.rr=2.5_wb=8",
-    "US500.session_range_breakout.rr=1.5_wb=8",
-    "US500.session_range_breakout.rr=1.5_wb=12",
-    "US500.session_range_breakout.rr=2.0_wb=8"
+    "AUDCAD.discovered.p=b71757a0e52a19f5",
+    "AUDCAD.discovered.p=8780aaae32935bef",
+    "AUDCAD.discovered.p=e5dc4620351c1985",
+    "AUDCAD.discovered.p=d890ed7efc9aa6b2",
+    "AUDCAD.discovered.p=121603d9828dba6d",
+    "AUDCAD.discovered.p=5597dc3b3a0ecd38",
+    "AUDCAD.discovered.p=8f606aa2c20d80cc",
+    "AUDCAD.discovered.p=a6e0165a1cef01e2",
+    "AUDCAD.discovered.p=d996db079b87c53e",
+    "AUDCAD.discovered.p=36acd696b1827818"
    ]
   },
   {
    "cause": "deflated_sharpe",
-   "count": 1013,
+   "count": 1162,
    "sample_cells": [
     "XAUUSD.session_range_breakout.rr=1.5_wb=8",
     "XAUUSD.session_range_breakout.rr=1.5_wb=12",
@@ -147,6 +131,22 @@
     "EURUSD.session_range_breakout.rr=1.5_wb=12",
     "EURUSD.session_range_breakout.rr=2.0_wb=8",
     "EURUSD.session_range_breakout.rr=2.0_wb=12"
+   ]
+  },
+  {
+   "cause": "in_sample_screen",
+   "count": 1143,
+   "sample_cells": [
+    "XAUUSD.asia_momentum.rr=1.5_wb=?",
+    "XAUUSD.asia_momentum.rr=2.0_wb=?",
+    "XAUUSD.asia_momentum.rr=2.5_wb=?",
+    "NAS100.session_range_breakout.rr=1.5_wb=8",
+    "NAS100.session_range_breakout.rr=1.5_wb=12",
+    "NAS100.session_range_breakout.rr=2.0_wb=8",
+    "NAS100.session_range_breakout.rr=2.5_wb=8",
+    "US500.session_range_breakout.rr=1.5_wb=8",
+    "US500.session_range_breakout.rr=1.5_wb=12",
+    "US500.session_range_breakout.rr=2.0_wb=8"
    ]
   },
   {
@@ -167,7 +167,7 @@
   },
   {
    "cause": "observations",
-   "count": 244,
+   "count": 524,
    "sample_cells": [
     "USDMXN.cot_positioning.p=910f73eb20d91704",
     "NZDUSD.cot_positioning.p=910f73eb20d91704",
@@ -183,18 +183,18 @@
   },
   {
    "cause": "NOT_RUN_BUILD_FAILED",
-   "count": 63,
+   "count": 107,
    "sample_cells": [
-    "EURILS.lvc_asia_london.p=44136fa355b3678a",
-    "EURTRY.lvc_asia_london.p=44136fa355b3678a",
-    "GBPJPY.lvc_asia_london.p=44136fa355b3678a",
-    "GBPTRY.lvc_asia_london.p=44136fa355b3678a",
-    "GBPZAR.lvc_asia_london.p=44136fa355b3678a",
-    "USDCZK.lvc_asia_london.p=44136fa355b3678a",
-    "USDTRY.lvc_asia_london.p=44136fa355b3678a",
-    "USDZAR.lvc_asia_london.p=44136fa355b3678a",
-    "XAUEUR.lvc_asia_london.p=44136fa355b3678a",
-    "XCUUSD.lvc_asia_london.p=44136fa355b3678a"
+    "A.pca_residual.p=00beb01ea8970934",
+    "AA.pca_residual.p=00beb01ea8970934",
+    "ABBV.24H.pca_residual.p=00beb01ea8970934",
+    "ADM.pca_residual.p=00beb01ea8970934",
+    "ADS.pca_residual.p=00beb01ea8970934",
+    "ADYEN.pca_residual.p=00beb01ea8970934",
+    "AENA.pca_residual.p=00beb01ea8970934",
+    "AFG.pca_residual.p=00beb01ea8970934",
+    "AGN.pca_residual.p=00beb01ea8970934",
+    "AIG.pca_residual.p=00beb01ea8970934"
    ]
   },
   {
@@ -207,23 +207,21 @@
   }
  ],
  "forward_truth": {
-  "active_clocks": 42,
-  "fusion_native": 39,
+  "active_clocks": 40,
+  "fusion_native": 40,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
-  "source_unmeasured": 3,
+  "source_unmeasured": 0,
   "stale": 0,
   "stale_keys": []
  },
- "generated_at": "2026-08-31T06:02:47.374014+00:00",
+ "generated_at": "2026-08-31T09:31:49.822769+00:00",
  "headline": {
-  "candidates_discovered": 23229,
+  "candidates_discovered": 23257,
   "candidates_lost": 0,
   "certificates_added": 0,
-  "forward_clocks": 75,
-  "hard_failures": [
-   "forward_clock_reconciliation"
-  ]
+  "forward_clocks": 72,
+  "hard_failures": []
  },
  "mechanism_independence": {
   "allocation": {
@@ -328,18 +326,18 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 16,
-  "measured_at": "2026-08-31T06:02:35+00:00",
+  "measured_at": "2026-08-31T09:31:38+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 20051
+  "stalled_cells": 19482
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 995.5,
+  "mem_available_mb": 1257.8,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -486,8 +484,8 @@
     "overdue": true
    }
   ],
-  "certificates": 44,
-  "certificates_not_enrolled": 43,
+  "certificates": 45,
+  "certificates_not_enrolled": 44,
   "certificates_overdue": 20,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 17,

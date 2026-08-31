@@ -5840,3 +5840,24 @@ so it creates no duplicate recommendation. The determining test is a forced shor
 failed batch submit: both must leave typed rows, and changing only a Fusion cost/config field must
 produce a new experiment identity. No BRAIN threshold or private screen transfers to the canonical
 ten-gate path.
+
+## 2026-08-31 — BRAIN HUNTER s42 — conservation extends through remote job identity and retries
+
+Public MIT `angel4angelov-glitch/wq-alpha-pipeline` at `98e763a` independently implements the good
+half of s41: one SQLite row per planned grid cell, typed
+`QUEUED/RUNNING/COMPLETE/FAILED/TIMEOUT`, raw verdict retention and check result/value/limit triplets.
+The convergence strengthens the existing repair; it does not create a new recommendation.
+
+Its failures specify two extra falsifiers for that repair. First, the “full settings” dedup key omits
+pasteurization, unit/NaN handling, language, instrument type, visualization, code version, data
+vintage and costs, so changed semantics can reuse a terminal result. Second, the runner accepts a
+simulation timeout without forwarding it, stores the remote simulation location only after the
+future finishes, stops tracking a watchdog-expired future while it continues remotely, and bulk
+requeues structural and transport failures identically. A retry can therefore resubmit a live remote
+job while the local row count still looks conserved.
+
+**Strengthened determining test:** freeze full Fusion cell identity including code/config/data/cost
+fingerprints; force a watchdog expiry after the remote job id is returned; prove that id is persisted
+before polling, that retry resumes rather than resubmits it, and that structural failures remain
+terminal while typed transport failures alone are retryable. Reconcile both local cells and unique
+remote jobs. Evidence: `data/brain_hunter_s42_static_heuristic_and_active_cohort_screen.json`.

@@ -142,11 +142,11 @@
    "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
    "roi_bps": 0,
    "raised": "2026-07-26T15:27:35.842054+00:00",
-   "status": "rejected",
-   "reason": "The row is stale and overbroad under the MT5/Fusion-only mandate: its motivating btc126/USDT-CNY endpoint and the only named adjacency are crypto-exchange-native ground that may not be hunted. The reusable method is already preserved as active OP-031, including its same-day negative adjacency screen and CDX-count-first test. A named Fusion or macro endpoint remains eligible when measured truncation appears.",
+   "status": "scheduled",
+   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
    "commit": null,
-   "due": null,
-   "disposed": "2026-08-31T08:18:02.167179+00:00"
+   "due": "2026-08-27",
+   "disposed": "2026-08-11T16:02:19.761368+00:00"
   },
   {
    "id": "R0012",
@@ -7822,11 +7822,11 @@
    "summary": "data/cot_btc_panel.json BUILDER COLUMN DEFECT: comm_long==noncomm_long AND comm_short==noncomm_short on 100% of 435 CME BITCOIN rows (litminer run8, data/carry_liq_screen.json cot_column_audit) -- the commercial columns are DUPLICATES of noncommercial, so every comm_* field in this SS33-credited artifact is fiction; nonrep_* verified independent (0% collision, used by M1). MECHANISM (likely): CFTC legacy futures-only column offsets mis-mapped in the 08-11 brain-hunter builder (raw zips cached at data/scratch/cot/ -- re-derivable without refetch). PATCH: fix the column map against the CFTC legacy layout, rebuild from cached zips, re-verify nonrep against total-OI arithmetic (noncomm_net + comm_net + nonrep_net = 0 identity currently CANNOT hold with duplicated columns -- use it as the rebuild's self-check). Until rebuilt: any analysis touching comm_* on this file is void; nonrep-based M1 stands.",
    "roi_bps": 15.0,
    "raised": "2026-08-18T19:20:11.836227+00:00",
-   "status": "rejected",
-   "reason": "REJECTED 2026-08-31 under the standing MT5/Fusion-only universe order. This row repairs a CME-Bitcoin panel built to condition a crypto-exchange carry sleeve; it names no Fusion CFD consumer and the documented M1/COT-BTC construction belongs to the retired hunted universe. CFTC COT remains admissible when mapped point-in-time to a specific Fusion instrument, but that is a separate terminal-enumerated futures-proxy study and must not inherit this BTC panel or its verdict. Historical files remain provenance; zero desk trials or forward clocks are changed.",
+   "status": "open",
+   "reason": null,
    "commit": null,
    "due": null,
-   "disposed": "2026-08-31T09:00:14.916967+00:00"
+   "disposed": null
   },
   {
    "id": "R0614",
@@ -8032,11 +8032,11 @@
    "rank": 6.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T02:23:26.406574+00:00",
-   "status": "rejected",
-   "reason": "REJECTED 2026-08-31 under the standing MT5/Fusion-only universe order. Per-name routing between Binance USDT-M and COIN-M funding books is an exchange-native execution optimization, not reference data that informs execution of an MT5 instrument. Its named consumer is the retired crypto carry sleeve and its prerequisite R0462 is also exchange-native. Fusion crypto CFDs, if terminal-listed, must be researched and costed from broker-native bid/ask, commission, swap, fills and contract specifications through the canonical pipeline; no exchange-book router is imported.",
+   "status": "open",
+   "reason": null,
    "commit": null,
    "due": null,
-   "disposed": "2026-08-31T08:59:22.601687+00:00"
+   "disposed": null
   },
   {
    "id": "R0630",
@@ -8074,11 +8074,11 @@
    "rank": 8.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T06:41:23.019993+00:00",
-   "status": "rejected",
-   "reason": "REJECTED 2026-08-31 under the standing MT5/Fusion-only universe order. The affected producer compares Bithumb and Binance calendar bars for a killed crypto-exchange premium axis; repairing it would reactivate explicitly forbidden hunted ground. The look-ahead finding remains in the graveyard as reusable clock-alignment evidence, and any MT5 calendar join must independently declare source availability and next-Fusion-execution time. This rejection does not endorse the leaked statistic: the producer remains non-authoritative historical code and no MT5 consumer or forward clock may use it.",
+   "status": "open",
+   "reason": null,
    "commit": null,
    "due": null,
-   "disposed": "2026-08-31T08:58:37.924021+00:00"
+   "disposed": null
   },
   {
    "id": "R0633",

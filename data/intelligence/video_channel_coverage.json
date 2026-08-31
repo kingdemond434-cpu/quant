@@ -28,15 +28,16 @@
    ]
   }
  ],
- "last_sweep": "2026-08-31T05:37:00.649327+00:00",
- "ts": "2026-08-31T05:37:00.649327+00:00",
+ "last_sweep": "2026-08-31T09:02:17.601609+00:00",
+ "ts": "2026-08-31T09:02:17.601609+00:00",
  "videos": 0,
- "channels_swept": 14,
+ "channels_swept": 13,
  "new_links": 0,
  "discovered_channels": 0,
- "units_spent": 29,
+ "units_spent": 28,
  "errors": [
-  "channel Unbiased Trading: HTTP Error 404: Not Found"
+  "channel Unbiased Trading: HTTP Error 404: Not Found",
+  "channel Surprised Goshawk: <urlopen error [Errno 104] Connection reset by peer>"
  ],
  "transcripts": 0,
  "transcript_attempts": 0,

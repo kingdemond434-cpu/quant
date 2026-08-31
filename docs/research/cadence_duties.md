@@ -1,8 +1,8 @@
-# Generation due -- 2026-08-30T03:22Z (stage S0)
+# Generation due -- 2026-08-31T08:10Z (stage S0)
 
 The cadence engine flags these; the brain executes SCOPED generate runs (graveyard-excluded, pre-registration mandatory) and then marks them done by setting gen_done_<name> / last_live_generate in data/cadence_state.json.
 
-- stablecoin_flows: clock matured (56d) -- scoped generate run owed, PLUS a graveyard re-mine pass: any killed entry whose kill-reason this new data invalidates gets a fresh pre-registration (no silent revivals)
+- stablecoin_flows: clock matured (57d) -- scoped generate run owed, PLUS a graveyard re-mine pass: any killed entry whose kill-reason this new data invalidates gets a fresh pre-registration (no silent revivals)
 - DECISION OUTCOME SCORING (monthly -- closes the self-improvement loop): for every ledger decision past its review horizon (>=30d old) not yet scored, judge predicted-vs-ACTUAL: did expected_benefit materialize? was success_metric met? did reversal_condition fire? Append to data/decision_outcomes.jsonl (id, predicted, actual, hit/miss, lesson), then update EV-gate priors from the hit-rate -- the desk must learn whether its OWN predictions are any good. Mark done: last_decision_scoring.
 - MEMORY CONSOLIDATION (quarterly -- anti-bloat for a lifetime system): consolidate ops/memory + knowledge base -- merge superseded/duplicate addenda, archive resolved items to a dated file, compress recurring lessons into principles, fix stale facts, keep MEMORY.md lean. Memory must get SIMPLER as it learns, not only longer. NEVER delete the ledger or graveyard (append-only truth) -- consolidate the NARRATIVE layer only. Mark done: last_memory_consolidation.
 - PROMPT SELF-IMPROVEMENT (monthly): score every mission prompt + auditor against verified-hit evidence (panel_rulings.md, inboxes, micro_audit_log.jsonl). Rewrite ONLY the worst performer; ledger the revision with a pre-registered success metric (verified-finding rate over its next 2 runs) and an auto-revert condition. Prompts live in git -- every revision is diffable and revertible. Mark done: set last_prompt_review in data/cadence_state.json.

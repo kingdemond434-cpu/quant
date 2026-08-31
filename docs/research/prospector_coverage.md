@@ -14027,3 +14027,74 @@ third-party runtime was touched; research freeze held.
   `ThinhPhan0108/wq-brain-alpha-analytics`; follow the `gplearn` author/citation graph for
   failure-preserving alternatives; run the existing Rsquare conditioner when shared compute is
   quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s42 — 2026-08-31 — four repairs converted; syntax-as-Sharpe and absence-as-pass killed
+
+**Conversion and corpora first.** Five WorldQuant rows in
+`data/intelligence/gpt_practitioner_corpus.jsonl` were reviewed before retrieval. Four Great Goat
+rows remain transcript-unavailable and AgonAlpha remains metadata-only; no failed route was retried.
+Video: **0 fetched, 0 newly locked**. The repair window converted **four** overdue rows by reasoned
+rejection: R0612 (exchange liquidation stream), R0613 (COT-BTC panel), R0629 (USDT-M/COIN-M router)
+and R0632 (Bithumb/Binance premium writer). Each row owns crypto-exchange-native machinery with no
+exact Fusion consumer, so rebuilding it would violate the MT5-only universe. Their historical
+artifacts and graveyard lessons remain provenance.
+
+**Inherited targets, text only.** Public MIT `talingaur/quant-research-model-WorldQuant` at
+`c5a9b3b` is an operator editor whose Sharpe/IQC estimate is a fixed weighted sum of formula-token
+presence: **20** token/shape booleans, hand-set bonuses, another bonus for operator count ≥6, then
+`score × 0.115`. No market observation, target, timestamp, universe, cost, regime or OOS sample
+enters the number. Its regex auditor declares literal `rank()` + `group_neutralize()` “Tier 1
+ready.” This is **KILLED AS EVIDENCE**; adding syntax can mechanically raise the estimate without
+changing a signal.
+
+Public MIT `ThinhPhan0108/wq-brain-alpha-analytics` at `c46753d` counts datasets/categories only
+over currently **ACTIVE**, non-hidden, regular alphas inside a submission-date range. A failed API
+page ends pagination but still publishes accumulated rows as complete; unresolved metadata is
+discarded as “not a datafield”; manually entered CAP/VF endpoints are differenced beside the
+changing active cohort without an identity join. Dataset productivity and performance attribution
+are therefore **KILLED**. The same source optionally stores plaintext credentials and pickled
+cookies: **HARD REFUSAL**, and no login/API/private alpha was touched.
+
+**Venue discovery paid.** Following both owners and repository topics one layer farther exposed the
+previously unrecorded `https://github.com/topics/alpha-research` surface (**RICH** this pass).
+`kxlian/alpha-diagnostics-lab` has no declared license and was stopped before its source body.
+Public MIT `angel4angelov-glitch/wq-alpha-pipeline` at `98e763a` was read as text only and supplied
+four process results:
+
+1. Independent convergence on one durable row per planned simulation and typed
+   `QUEUED/RUNNING/COMPLETE/FAILED/TIMEOUT` outcomes — **KEEP** the shape.
+2. Its claimed full-settings identity omits execution settings, code, data and cost fingerprints —
+   changed semantics can reuse a terminal row; s33's fingerprint repair is strengthened.
+3. Missing and pending structural checks are converted to PASS by `COALESCE`, explicitly test-pinned
+   for UNITS — **KILLED**, absence is UNMEASURED.
+4. PnL is cached forever by alpha id, aligned by array length rather than date, NaN→0 imputed and
+   greedily selected by standalone Sharpe — **KILLED** as independence/portfolio admission. Its
+   ignored timeout argument plus late remote-job-id persistence also shows that local row
+   conservation can coexist with duplicate remote submissions; s41's repair test was strengthened.
+
+Exact traces, provenance, translations and sampled Fusion cost fields:
+`data/brain_hunter_s42_static_heuristic_and_active_cohort_screen.json`. `translate_to_mt5()` returned
+no mapping for the four process phrases; only literal sector neutralisation mapped to MT5
+asset-class/currency-risk-bucket neutralisation. No tradeable mechanism survived, so no symbol,
+direction or horizon was invented. If a later candidate exists, it must use terminal-enumerated
+Fusion ground, PIT bars/bid-ask and symbol-native spread, commission, realised
+slippage/partial-fill markout and swap through the canonical ten gates. This session ran **0 desk
+constructions, 0 target-horizon cells, 0 tradeable cards and 0 survivors**.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `talingaur/quant-research-model-WorldQuant` commit `c5a9b3b`: estimator, auditor, advisor,
+  operator-vocabulary and local-library research axes **EXHAUSTED on 2026-08-31**; re-enter on a
+  substantive licensed commit with empirical evidence.
+- `ThinhPhan0108/wq-brain-alpha-analytics` commit `c46753d`: population, field-resolution,
+  reporting and credential/session axes **EXHAUSTED on 2026-08-31**; private/account data remains
+  permanently outside the boundary.
+- `angel4angelov-glitch/wq-alpha-pipeline` commit `98e763a`: trial store, identity, dispatcher,
+  survivor-filter and correlation-admission axes **EXHAUSTED on 2026-08-31**; its private BRAIN API
+  route and alpha templates were not used or imported.
+- `kxlian/alpha-diagnostics-lab`: **not exhausted; license-walled**. Re-enter only on an explicit
+  compatible license.
+- **Next:** continue the new topic surface at `Liu-Ming-Yu/alpha-forge`, beginning with legitimacy
+  and then failure-memory/experiment-identity semantics; follow the `gplearn` author/citation graph
+  for failure-preserving alternatives; run the existing Rsquare conditioner when shared compute is
+  quiet. The BRAIN ground remains open.

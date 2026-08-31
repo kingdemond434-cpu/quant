@@ -1,10 +1,12 @@
-Implemented and committed `d8bdf129`:
+Implementation ledger
 
-- Fixed shadow sleeve cost-map failures to retain `KeyError(symbol)` evidence classification in [shadow_forward.py](/home/quant/quant-platform/desks/mt5/research/shadow_forward.py:382).
-- Verified targeted shadow/cost suite: 30 passed.
-- Verified full MT5 suite: 711 passed, 0 failed.
-- Checkpointed controller epoch 129 and released the lease.
+- No commit created; preserved existing dirty work.
+- Repaired remote-code drift: `scalp_shadow.py` was stale on the MT5 desk box. The verified drift service re-shipped and hash-verified it.
+- Fresh remote shadow run and pull correctly quarantined all four gold-scalp rows: they lack exact current ten-gate certificates, so they cannot accrue/promote on invalid authority.
+- Forward-clock fence now passes: healthy 27, churned 0, unrepairable 0.
+- Tests passed: `tests/test_check_forward_clock.py`, `desks/mt5/tests/test_scalp_shadow.py` (6 tests).
+- Checkpoint recorded at controller epoch 132; lease released.
 
-Economic effect: missing catalogue/cost entries remain fail-closed while preserving the repair-target identity; one blocked sleeve cannot conceal or halt the rest of the zero-capital forward book.
+Economic/safety effect: prevents uncertified scalp evidence from being represented as usable forward evidence; no capital authority changed.
 
-Blocker: canonical external gauntlet has 19,905 budget-deferred cells and two candidate-conservation losses; continue from its existing checkpoint.
+Blockers/next dependency: re-certify eligible scalp candidates through the canonical gauntlet before fresh zero-capital enrollment. The ratchet still reports a separate 0.02-day silent rebase on an EURGBP discovered sleeve; its writer remains the repair owner.

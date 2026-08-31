@@ -2593,8 +2593,8 @@
     "moat_persist:binance:BTCUSDT|hidden_liquidity|60": {
       "p": 0.7778,
       "kind": "moat_persistence",
-      "updated": "2026-08-30T03:15:28.594614+00:00",
-      "resolve_by": "2026-09-19T03:15:28.341419+00:00",
+      "updated": "2026-08-31T08:50:54.552045+00:00",
+      "resolve_by": "2026-09-20T08:50:54.527059+00:00",
       "claim": "moat candidate binance:BTCUSDT|hidden_liquidity|60 survives its next screening (6/7 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
     },
@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-08-30T04:23:35.270386+00:00",
+      "updated": "2026-08-31T08:12:01.107714+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-08-30T04:23:35.302489+00:00",
+      "updated": "2026-08-31T08:12:01.162859+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-08-30T04:23:35.337151+00:00",
+      "updated": "2026-08-31T08:12:01.273715+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
