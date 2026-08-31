@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-30T13:20:19+00:00",
+ "built_at": "2026-08-31T01:19:52+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -622,37 +622,347 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "MT5_futures_roll_forced_flow",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|new_york|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "public roll calendar (CME/ICE/Eurex) + MT5 tick data on correlated CFD (e.g., ES\u2192SPX500 CFD, CL\u2192XTIUSD CFD, GC\u2192XAUUSD)",
+   "kill": "kill if t-stat < 2.0 across 3 years AND no parameter sweep (window 1\u201310 days, lag 0\u20133) yields p<0.01",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "CFTC_COT_Spreading",
    "compiled": true,
    "family": "generic",
    "params": {
     "event": "forced_deleveraging",
-    "context": "asia",
+    "context": "month_end",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|month_end|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "CFTC COT, Quandl API",
+   "kill": "Mean reversion profit <1.5x transaction cost",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "XAU_XAG_VAULT",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "london",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|london|magnitude|divergence|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "Quandl LBMA Gold Price + Kitco Silver + ICE futures data",
+   "kill": "Divergence returns to baseline within 72 hours without exceeding 1 standard deviation",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "NOK_OLJETANK",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "low_liquidity",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_liquidity|magnitude|convergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Nordic Commodity Trading Platform + Baird NOK crude curves",
+   "kill": "Calendar spread converges below 0.5 USD/tonne within 4 hours of scheduled departure</think>I'll analyze these hypotheses against the desk's dead list.",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "ZAR_RANDJACK",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "new_york",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|new_york|magnitude|divergence|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "JSE data feed + JSE Limited regulatory disclosures + CME RND futures",
+   "kill": "Differential collapses below 0.5% within 4 hours post-London open",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "session_range_breakout_momentum_decay**",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "high_liquidity",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "cross_market_move|high_liquidity|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "MT5 price data for certified instruments (XAUUSD, USDJPY, etc.)",
+   "kill": "Kill: correlation coefficient of momentum decay vs ratio < 0.1 across 3+ certified instruments",
+   "lens": "SECOND ORDER",
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "SPOT_VS_FUTURES_IB_OPEN_GAPS",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "new_york",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|new_york|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "IMM date rolls (Wed of 3rd week), CME FX futures volume at 8:30 ET vs spot turnover, BIS Triennial",
+   "kill": "Drift not significantly different from non-IMM Wednesdays by 3+bps, or disappears when IMM dates harmonized with SOFR effective dates",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "USDJPY_TPP_export_settlement_yen_conv",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "month_end",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|month_end|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "MOF BOJ Tankan + USDJPY tick via OANDA/Dukascopy; quarterly 2015-2024",
+   "kill": "Kill if mean move <3 pips OR direction consistency <55% across 36 quarter-ends OR vanishes after 2022 BoJ YCC regime change",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "GOLD_ETF_creation_redemption_flow",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "month_end",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|month_end|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "ETFdb creation unit data + GLD iNAV vs spot from LBMA via Yahoo Finance",
+   "kill": "No directional bias (",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "volatility_regime_hysteresis",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "volatility_shock",
+    "context": "high_vol",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "volatility_shock|high_vol|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): bar range minus its 20-bar mean measures realised volatility relative to its own recent level. range IS a realised-volatility measure at bar resolution",
+   "data_source": "Public free options chains on CBOE delayed quotes (or Deribit historical via public CSV) + realized vol from MT5 ticks",
+   "kill": "Sharpe <0.3 over 12 months OR mean reversion half-life outside [3,15] days",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CONSTRAINT_FLOW_GOLD_ETF_REDEEM",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "london",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|london|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "SPDR GLD daily creation/redemption (SSGA filings), COMEX gold tick, LBMA AM/PM fix",
+   "kill": "If redemption-day drift not significantly negative (<5%) across 2015-2024 OR only present in tiny-cap days, edge is too thin",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "INDIA_FII_DBT_SETTLEMENT_DELAY",
    "compiled": true,
    "family": "generic",
    "params": {
     "event": "carry_change",
-    "context": "asia",
+    "context": "low_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|low_liquidity|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "RBI daily VRR/auction calendar (https://www.rbi.org.in), CCIL FII trade data, MT5 USDINR pricing, offshore NDF from HKMA CMU",
+   "kill": "Kill if basis mean-reverts within 30 minutes >75% of occurrences OR edge indistinguishable after 60 auction cycles",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "STATE_TRANSITION_MICROSTRUCTURE_REGIME_PERSISTENCE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "new_york",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "inventory_rebalance|new_york|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "Tick-level public: Dukascopy Bank FX historical ticks (free) + CME E-mini futures via Quandl-free. Compute micro-price (bid+ask)/2 + tick-rule signed-flow on 1-sec bars; define transition as HMM log-likelihood ratio crossing 0.",
+   "kill": "Kill if win-rate < 52% on 300 transitions OR if edge confined to < 3 calendar hours/day (it's a session artifact, not regime persistence).",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   },
   {
-   "name": "audit:liquidity_shock|continuation",
+   "name": "QUIET-HOUR SPREAD WIDENING AS REGIME FLAG",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "london",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|london|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MT5 spread tick series EURUSD/GBPUSD 18:00-22:00 UTC vs realized 1h return next session",
+   "kill": "Kill if hit rate < 52% over 250 sessions OR payoff < 0 after 1pip/side cost",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "XAU_locbasis_split",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "new_york",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|new_york|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "SGE Au99.99 daily close (en.sge.com.cn), LBMA AM/PM fix (lbma.org), USDCNY mid (histdata.com), SAFE monthly cross-border gold flow bulletin",
+   "kill": "Kill if mean dislocation in stressed regime <30bps OR if 90% of stressed observations revert within 1 session",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "L2_liqvacuum_signature",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|new_york|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "CME Globex ES L2 cancel/add via Databento ES.FUT; DXY tick; USDJPY tick",
+   "kill": "Cancel bursts and USDJPY drift sign uncorrelated (",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "ECB_SNAPSHOT_FLOW",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "volatility_shock",
+    "context": "low_liquidity",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "volatility_shock|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): bar range minus its 20-bar mean measures realised volatility relative to its own recent level. range IS a realised-volatility measure at bar resolution",
+   "data_source": "ECB Governing Council calendar + DTCC EUR settlement reports",
+   "kill": "No volatility/distribution difference in 200 snapshot events",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "MOMENTUM_PERSISTENCE_CROSS",
    "compiled": true,
    "family": "generic",
    "params": {
@@ -663,7 +973,12 @@
     "quality_atr": 1.0
    },
    "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MT5 tick data + FX liquidity proxies",
+   "kill": "EURUSD spread, JPY momentum decay, and cross pair correlation",
+   "lens": "SECOND ORDER",
    "promotion_authority": false
   }
  ]

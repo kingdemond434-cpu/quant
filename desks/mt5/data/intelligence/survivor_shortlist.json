@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-30T13:23:25+00:00",
+ "updated_at": "2026-08-31T01:23:04+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -84,7 +84,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -136,7 +136,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -146,12 +146,12 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 49.559,
-   "growth_pct": 3110.55,
+   "ev_score": 49.535,
+   "growth_pct": 3109.06,
    "weeks": 132.0,
    "pf": 1.31,
    "max_dd_pct": null,
-   "trades": 5278.0,
+   "trades": 5279.0,
    "win_pct": 2096.0,
    "algo_pct": 82.0,
    "subscribers": 0.0,
@@ -208,7 +208,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -223,7 +223,7 @@
    "trades": 5857.0,
    "win_pct": 3745.0,
    "algo_pct": 14.0,
-   "subscribers": 65.0,
+   "subscribers": 64.0,
    "author": "/en/users/tec_daniel",
    "author_other_signals": [
     {
@@ -281,7 +281,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -355,7 +355,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -371,7 +371,7 @@
    "trades": 4037.0,
    "win_pct": 3327.0,
    "algo_pct": 100.0,
-   "subscribers": 66.0,
+   "subscribers": 67.0,
    "author": "/en/users/mo2002",
    "author_other_signals": [
     {
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -483,7 +483,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -534,7 +534,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -553,7 +553,7 @@
    "trades": 1085.0,
    "win_pct": 897.0,
    "algo_pct": 96.0,
-   "subscribers": 31.0,
+   "subscribers": 30.0,
    "author": "/en/users/datbh",
    "author_other_signals": [
     {
@@ -613,7 +613,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -675,7 +675,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -758,7 +758,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -808,7 +808,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -824,7 +824,7 @@
    "trades": 279.0,
    "win_pct": 266.0,
    "algo_pct": 99.0,
-   "subscribers": 47.0,
+   "subscribers": 45.0,
    "author": "/en/users/thomaszhong",
    "author_other_signals": [
     {
@@ -871,7 +871,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -914,7 +914,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -960,7 +960,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1039,7 +1039,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1085,7 +1085,7 @@
    "symbols": [
     "AUDCAD"
    ],
-   "found_at": "2026-08-30T13:23:25+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "high_pf",

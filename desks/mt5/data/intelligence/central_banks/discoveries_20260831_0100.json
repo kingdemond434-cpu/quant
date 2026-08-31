@@ -1,0 +1,40 @@
+[
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-08-31T01:00:00+00:00",
+    "title": "Flow of Funds (Overview of Japan, US, and the Euro area)(1st Quarter 2026)",
+    "link": "http://www.boj.or.jp/en/statistics/sj/sjhiq.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  },
+  {
+    "source": "central_bank",
+    "bank": "BoJ",
+    "currency": "JPY",
+    "feed": "https://www.boj.or.jp/en/rss/whatsnew.xml",
+    "published_utc": "2026-08-30T23:50:00+00:00",
+    "title": "Average Contract Interest Rates on Loans and Discounts (July)",
+    "link": "http://www.boj.or.jp/en/statistics/dl/loan/yaku/yaku2607.pdf",
+    "policy_signals": [],
+    "instruments": [
+      "USDJPY",
+      "EURJPY",
+      "GBPJPY",
+      "AUDJPY",
+      "CADJPY",
+      "CHFJPY",
+      "NZDJPY"
+    ]
+  }
+]
