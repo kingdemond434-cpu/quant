@@ -142,11 +142,11 @@
    "summary": "ADJACENCY (proactive battery move 2): apply OP-031 (Wayback-CDX-replay the API path, not the HTML page) to every OTHER row-capped/rolling-window endpoint in data_universe_map.json. One instance is never one instance -- btc126's 177-row cap hid 414 recoverable days; any other capped free endpoint the desk catalogued is hiding history the same way.",
    "roi_bps": 0,
    "raised": "2026-07-26T15:27:35.842054+00:00",
-   "status": "scheduled",
-   "reason": "EV-ordered re-schedule at measured build throughput (~2 majors/week beside daily duties); prior due lapsed while the queue drained higher-EV rows; enforced by the section-42 fence (drain verified: ratio 1.244, debt_growing=false).",
+   "status": "rejected",
+   "reason": "The row is stale and overbroad under the MT5/Fusion-only mandate: its motivating btc126/USDT-CNY endpoint and the only named adjacency are crypto-exchange-native ground that may not be hunted. The reusable method is already preserved as active OP-031, including its same-day negative adjacency screen and CDX-count-first test. A named Fusion or macro endpoint remains eligible when measured truncation appears.",
    "commit": null,
-   "due": "2026-08-27",
-   "disposed": "2026-08-11T16:02:19.761368+00:00"
+   "due": null,
+   "disposed": "2026-08-31T08:18:02.167179+00:00"
   },
   {
    "id": "R0012",

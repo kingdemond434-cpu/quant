@@ -13971,3 +13971,59 @@ compatible license; the prohibitive artifact requires an actual permission chang
   verification; then `Anikesh-99/wq_alpha_research`, whose claimed ~400-simulation failure cohort
   is high-value only if the license permits inspection. Run the existing Rsquare conditioner when
   shared compute permits. The BRAIN ground remains open.
+
+## BRAIN HUNTER s41 — 2026-08-31 — two walled targets, then seven static ways a search loses its own trials
+
+**Conversion and corpora first.** R0011 was closed by reasoned rejection: its named endpoints are
+retired crypto-native ground, while the reusable CDX method and same-day negative adjacency already
+remain active in OP-031. Five WorldQuant rows in
+`data/intelligence/gpt_practitioner_corpus.jsonl` were reviewed; four Great Goat rows remained
+transcript-unavailable and AgonAlpha metadata-only. Video: **0 fetched, 0 newly locked**.
+
+**Inherited targets stopped at the legitimacy boundary.** `Henxun/worlquant_alpha` and
+`Anikesh-99/wq_alpha_research` declare no license. The latter advertises roughly 400 simulations
+and a 259-tested/30-survivor funnel, but that cohort remains uninspected ore: repository metadata is
+not permission to read or reuse its body. `mingu0822/WorldQuantBrain---tools`, the distinct
+non-trailing-hyphen `YungTingKai/Worldquant-BRAIN-alpha-generator`, and the empty/unborn
+`nutdnuy/worldquant-brain-public-knowledge` are likewise license-walled. MIT
+`zc6600/worldquant-brain-hub` contains only its license. Exact commits, roots and dispositions are
+in `data/brain_hunter_s41_trial_conservation_screen.json`.
+
+**One layer deeper, text only.** MIT `0xceb1/brain-learn` at `0612662b` and Apache-2.0
+`Milkyway688/wq_auto_backtests` at `db9c40c5` were read without installing or executing them. The
+first pre-marks every initial program as evaluated before its evaluator filters out evaluated
+programs; all N initial candidates therefore become `-inf` without simulation. Its seed writer
+also ignores the RPN argument and pickles an empty list, while DIV declares multiplication rather
+than division units. The second deduplicates experiments by expression alone, uses
+`zip(group, children)` without cardinality reconciliation, does not persist failed batch-submit
+rows to its SQLite/CSV buffer, and returns after three consecutive single-mode errors without rows
+for the unattempted remainder. These are **seven static failure findings**, not alpha evidence.
+
+**Economic/MT5 disposition.** `translate_to_mt5()` returned no entry for all three process phrases;
+the exact analogue is nevertheless explicit: every terminal-enumerated Fusion cell must retain a
+full identity (symbol, family, parameters, side, session/horizon, preregistered regime,
+code/config/data/cost fingerprints) and a typed outcome satisfying candidate conservation. If a
+market candidate is later generated, its evidence must use PIT bid/ask plus spread, commission,
+realised slippage/partial-fill markout, swap and contract specifications. This session ran **0 desk
+constructions, 0 target-horizon cells, 0 tradeable cards and 0 survivors**. BRAIN thresholds,
+quality labels, account limits and private prefilters were refused.
+
+**Venue discovery.** Repository/owner metadata and root surfaces exposed **0 new external venues**;
+negative screen only, never a ground verdict. No login, private BRAIN material, credentialed API or
+third-party runtime was touched; research freeze held.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- The five no-license repositories are **not exhausted**; re-enter only on a compatible license.
+- `zc6600/worldquant-brain-hub` commit `26dfde88`: **EXHAUSTED on content/capability axes on
+  2026-08-31**; re-enter on a substantive licensed commit.
+- `0xceb1/brain-learn` commit `0612662b`: initial-population evaluation, seed-memory and unit-algebra
+  axes **EXHAUSTED on 2026-08-31**; formula-by-formula semantics remain open.
+- `Milkyway688/wq_auto_backtests` commit `db9c40c5`: experiment identity, batch conservation,
+  durable failure logging and breaker-censoring axes **EXHAUSTED on 2026-08-31**; its equity formula
+  templates were not imported.
+- **Next:** continue the measured permissive-license queue at
+  `talingaur/quant-research-model-WorldQuant` and
+  `ThinhPhan0108/wq-brain-alpha-analytics`; follow the `gplearn` author/citation graph for
+  failure-preserving alternatives; run the existing Rsquare conditioner when shared compute is
+  quiet. The BRAIN ground remains open.

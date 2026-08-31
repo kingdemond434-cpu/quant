@@ -5817,3 +5817,26 @@ slippage/partial-fill markout and swap. `translate_to_mt5("industry neutral ..."
 asset-class/currency-risk-bucket neutralisation; its other process terms returned no table match
 and are recorded as methodology, not fabricated mappings. Zero constructions and zero desk
 target-horizon cells were tried.
+
+## 2026-08-31 — BRAIN HUNTER s41 — candidate conservation must surround every search loop
+
+Two permissively licensed BRAIN reimplementations independently expose the same failure class the
+desk's full-trial law exists to prevent. MIT `0xceb1/brain-learn` pre-marks every initial expression
+as evaluated and then filters evaluated expressions out of evaluation, so all N initial candidates
+receive `-inf` without a simulation. Its advertised seed memory also moves the prior pickle aside
+and writes an empty list because the accepted RPN argument is never stored. Apache-2.0
+`Milkyway688/wq_auto_backtests` collapses experiment identity to expression alone, silently drops
+unmatched batch children through `zip(group, children)`, omits group-submit failures from its durable
+SQLite/CSV buffer, and censors the unattempted remainder after three consecutive single-mode errors.
+Exact static traces: `data/brain_hunter_s41_trial_conservation_screen.json`. [§33: screened]
+
+**Transfer, not import.** KEEP and strengthen one invariant around every desk generator: freeze the
+full candidate population before execution; key a cell by signal semantics + symbol + side +
+session/horizon + regime + code/config/data/cost fingerprints; and reconcile
+`planned = completed + failed + blocked + explicitly_unattempted` before a run can publish yield.
+A retryable transport failure is not an economic failure, and a missing child is UNMEASURED rather
+than absent. This converges with s33's payload-identity upgrade and s37's full-population denominator,
+so it creates no duplicate recommendation. The determining test is a forced short child list plus a
+failed batch submit: both must leave typed rows, and changing only a Fusion cost/config field must
+produce a new experiment identity. No BRAIN threshold or private screen transfers to the canonical
+ten-gate path.
