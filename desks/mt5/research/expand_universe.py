@@ -49,6 +49,7 @@ MIN_BARS = 3000
 def main() -> int:
     import MetaTrader5 as mt5
     import pandas as pd
+    from mt5desk.universe_registry import cost_fields_from_symbol_info
 
     now = datetime.now(tz=UTC)
     if not mt5.initialize():
@@ -120,7 +121,14 @@ def main() -> int:
                 # sizing path need one tick's worth IN ACCOUNT CURRENCY, and this collector never
                 # asked MT5 for it -- so all 82 equity/index rows of the whole-broker expansion
                 # arrived uncostable and sat outside the hunt while looking "present".
-                "tick_value": float(getattr(info, "trade_tick_value", 0) or 0),
+                # The cost fields come from cost_fields_from_symbol_info (below) rather than
+                # being read inline: `or 0` wrote 0.0 for a symbol with no fresh tick, and
+                # because this is a MERGE that 0.0 overwrote a good prior reading -- the exact
+                # row-level clobber the comment above warns about, committed by the line that
+                # was meant to fix it. A degenerate reading must be OMITTED so the prior value
+                # survives; 0.0 tick_value is unmeasured, not free, and it makes
+                # spread_cost_per_lot 0.0 so gate 8 (stress_costs) cannot judge the candidate
+                # at all -- which is how a symbol sits in the registry and never certifies.
                 "contract_size": float(getattr(info, "trade_contract_size", 0) or 0),
                 "digits": int(getattr(info, "digits", 5) or 5),
                 # ONE FIELD, ONE MEASUREMENT (fixed 2026-08-27). This wrote `info.spread` -- the
@@ -138,6 +146,7 @@ def main() -> int:
                 "spread_pts_at_collection": float(getattr(info, "spread", 0) or 0),
                 "swap_long": float(getattr(info, "swap_long", 0) or 0),
                 "swap_short": float(getattr(info, "swap_short", 0) or 0),
+                **cost_fields_from_symbol_info(info),
                 "volume_min": float(getattr(info, "volume_min", 0.01) or 0.01),
                 "volume_step": float(getattr(info, "volume_step", 0.01) or 0.01),
                 "bars": len(df),
