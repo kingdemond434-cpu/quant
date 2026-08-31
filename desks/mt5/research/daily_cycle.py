@@ -186,6 +186,20 @@ def _curve_strategies() -> None:
     curve_strategy_screen.main()
 
 
+def _conservation() -> None:
+    """Fast-filter/full-gauntlet conservation ledger (read-only reconciliation).
+
+    The multiplicity denominator owed to every gate is the FULL grid. This step
+    reconciles the hunt reports against the signal gate and the gauntlet so a
+    shrinking denominator -- the silent way a filter weakens the gates downstream
+    of it -- is visible the same day instead of at the next external audit.
+    """
+    import conservation_ledger
+    rc = conservation_ledger.main()
+    if rc != 0:
+        raise RuntimeError(f"conservation_ledger returned {rc}")
+
+
 def _export_aurum() -> None:
     """Re-export the findings Aurum's absorption channel reads.
 
@@ -230,8 +244,8 @@ STEPS = (("refresh_bars", _refresh_bars), ("cost_fields", _cost_fields),
          ("reconcile", _reconcile), ("shadow", _shadow), ("qquant_shadow", _qquant_shadow),
          ("execution", _execution), ("promoter", _promote), ("markout", _markout),
          ("portfolio", _portfolio), ("decay", _decay),
-         ("zentech", _zentech), ("export_aurum", _export_aurum))
-
+         ("zentech", _zentech), ("conservation", _conservation),
+         ("export_aurum", _export_aurum))
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv

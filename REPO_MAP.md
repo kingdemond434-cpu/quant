@@ -121,7 +121,13 @@ as deprecated is how a working path gets deleted by a future cleanup.
 - `libs/portfolio/construction.py` (new) vs `libs/portfolio/optimize.py` (orphaned) — converge on one
   meta-optimizer (Phase 5 integration).
 - `libs/alpha/decay.py` vs `libs/signal_engine/decay.py` vs `libs/portfolio/lifecycle.decay_state`
-  — three decay implementations; pick `signal_engine` (richest) as canonical.
+  — RULED 2026-08-31, NOT duplicates: three layers of ONE stack, each with live consumers and
+  real reuse. `alpha/decay.py` is the canonical decay SCORING; `self_improvement/decay_engine.py`
+  maps score -> DecayLevel/action and is reused by `signal_engine/decay.py` (adapter);
+  `portfolio/lifecycle.decay_state` is the slower governance layer above allocation (daily chain).
+  Do NOT merge across layers — the two same-named `classify_decay` functions
+  (`libs/data/decay.py` = data-source trend decay w/ bucketed sample sizes;
+  `libs/self_improvement/decay_engine.py` = alpha PF/Sharpe levels) are DIFFERENT DOMAINS.
 
 ## Refactor opportunities
 1. One **AlphaRegistry** as the single source of truth (wire `libs/alpha` + `libs/store`).

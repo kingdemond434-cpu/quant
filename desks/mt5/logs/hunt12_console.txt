@@ -1,3 +1,3 @@
      sym win        state            n     exp     t  defl    PF   maxDD  GATE
 
-106 survivors of 384 tests across 23 symbols
+13 survivors of 368 tests across 23 symbols

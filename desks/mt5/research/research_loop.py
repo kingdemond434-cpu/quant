@@ -106,9 +106,17 @@ def run_experiment(item: dict) -> int:
     exp_id = item["id"]
     log(f"starting {exp_id}: {item.get('family')} {item.get('side')} "
         f"{item.get('params')} [{item.get('hypothesis', '')[:80]}]")
-    r = subprocess.run([str(PY), "-u", "-W", "ignore",
-                        "research/run_hunt18.py", exp_id],
-                       cwd=str(BASE), capture_output=True, text=True, timeout=7200)
+    # A TIMED-OUT EXPERIMENT IS A FAILED EXPERIMENT, NOT A CRASHED LOOP: a hung
+    # run_hunt18 must never kill the loop and strand the queue behind it (same
+    # lesson as scripts/run_cadence.py's timed-out panel).
+    try:
+        r = subprocess.run([str(PY), "-u", "-W", "ignore",
+                            "research/run_hunt18.py", exp_id],
+                           cwd=str(BASE), capture_output=True, text=True, timeout=7200)
+    except subprocess.TimeoutExpired as e:
+        tail = "\n".join((e.stdout or "").splitlines()[-6:]) if e.stdout else ""
+        log(f"{exp_id} TIMEOUT after 7200s (cell untested; queue continues){chr(10)}{tail}")
+        return 124
     tail = "\n".join(r.stdout.splitlines()[-6:])
     log(f"{exp_id} rc={r.returncode}\n{tail}")
     if r.returncode != 0:
