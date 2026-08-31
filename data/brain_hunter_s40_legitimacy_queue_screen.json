@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "session": "BRAIN_HUNTER_s40",
+  "screened_at": "2026-08-31T07:55:01Z",
+  "authority": "research-only legitimacy and coverage evidence; no promotion or capital authority",
+  "corpora_first": {
+    "source": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "readable_new_mechanisms": 0,
+    "video_fetched": 0,
+    "video_newly_locked": 0,
+    "note": "Four Great Goat rows remained transcript-unavailable and AgonAlpha remained metadata-only; no failed transcript route was retried."
+  },
+  "repair_conversion": {
+    "recommendation_id": "R0640",
+    "verdict": "REJECTED",
+    "reason": "The requested crypto-exchange grouping-map repair is outside the standing MT5/Fusion-only universe and has zero measured consumers. Separate Fusion peer-group work remains active."
+  },
+  "legitimacy_screen": [
+    {
+      "repo": "YungTingKai/Worldquant-BRAIN-alpha-generator-",
+      "commit": "3ea7b833fd419f39d1db696d291e653c8a541ca8",
+      "url": "https://github.com/YungTingKai/Worldquant-BRAIN-alpha-generator-",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["README.md", "day2.ipynb", "day3.ipynb", "day4.ipynb"]
+    },
+    {
+      "repo": "witttingtorch/wq_alpha_project",
+      "commit": "7df4ecf32a605c1fef7c2fe8da3f59f20a249998",
+      "url": "https://github.com/witttingtorch/wq_alpha_project",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": [".env.example", ".gitignore", "README.md", "alphas", "data", "main.py", "requirements.txt", "src", "tests"]
+    },
+    {
+      "repo": "958136706-create/worldquant-brain-skill",
+      "commit": "6504e9d1ea235c448605de61927c23e17a27dae7",
+      "url": "https://github.com/958136706-create/worldquant-brain-skill",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["SKILL.md"]
+    },
+    {
+      "repo": "huashengditie/alphaPipeline778",
+      "commit": "f391cee0ad117728848ea581908496141af0a16a",
+      "url": "https://github.com/huashengditie/alphaPipeline778",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["README.md", "alpha_variation_main.py", "automatic_submitter.py", "iteration_main.py", "variable_list.py"]
+    },
+    {
+      "repo": "onefreecomet/wq-gem-workflow",
+      "commit": "e7263fe2822e9bd7b78f01f255e9a575345aee0f",
+      "url": "https://github.com/onefreecomet/wq-gem-workflow",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["README.md", "SKILL.md", "references", "scripts"]
+    },
+    {
+      "repo": "Hoolum/worldquant-brain-mvp",
+      "commit": "fb95473b685c5fa9dc7b5fa10be71430f88a1210",
+      "url": "https://github.com/Hoolum/worldquant-brain-mvp",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["backend", "frontend"]
+    },
+    {
+      "repo": "harsh-dev-ux/worldquant-brain-alphas",
+      "commit": "bf33248d9bb106886d6c2db3388b3c513826c00e",
+      "url": "https://github.com/harsh-dev-ux/worldquant-brain-alphas",
+      "verdict": "LICENSE_FORBIDS_USE",
+      "license_api": "NOASSERTION",
+      "root_names": [".gitignore", "LICENSE", "README.md", "accepted-alphas", "learning"],
+      "license_disposition": "HARD STOP: all rights reserved; no permission to reproduce, distribute, modify, reverse-engineer, deploy or commercially use."
+    },
+    {
+      "repo": "ngesarosemary938-jpg/worldquant-alphas",
+      "commit": "86149387c4c5ad6262af6d147fc77e721d7a0eab",
+      "url": "https://github.com/ngesarosemary938-jpg/worldquant-alphas",
+      "verdict": "LICENSE_WALLED",
+      "license_api": null,
+      "root_names": ["README.md", "alpha-1-social-sentiment", "alpha-2-momentum-volatility"]
+    }
+  ],
+  "screen_counts": {
+    "repositories": 8,
+    "license_walled": 7,
+    "license_forbids_use": 1,
+    "source_bodies_read": 0,
+    "operators_extracted": 0,
+    "data_axes_extracted": 0,
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0,
+    "new_venues": 0
+  },
+  "mt5_disposition": "No mechanism crossed the legitimacy gate, so translate_to_mt5 was not applicable. No Fusion symbol, field, timeframe or cost model was invented.",
+  "provenance": {
+    "source": "GitHub public repository metadata, root content listings, default-branch commit endpoints, and the restrictive LICENSE file only",
+    "derives_from": "data/brain_hunter_s31_repo_triage.json UNKNOWN-description queue",
+    "derives_from_none_checked": true,
+    "third_party_code_executed": false,
+    "credentialed_brain_content_accessed": false
+  },
+  "next_unexhausted_ground": [
+    "Henxun/worlquant_alpha — begin with license verification",
+    "Anikesh-99/wq_alpha_research — begin with license verification, then inspect its claimed full failure cohort only if licensed",
+    "run the existing Rsquare conditioner when shared compute permits"
+  ]
+}

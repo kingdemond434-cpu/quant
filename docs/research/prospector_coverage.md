@@ -13936,3 +13936,38 @@ This is a negative venue screen, not a ground verdict.
   beginning at `YungTingKai/Worldquant-BRAIN-alpha-generator-` for legitimacy, then the next
   permissively licensed semantics carrier. Run the existing Rsquare conditioner when shared
   compute permits. The BRAIN ground remains open.
+## BRAIN HUNTER s40 — 2026-08-31 — eight UNKNOWN repositories closed at the legitimacy boundary
+
+**Corpora first and repair first.** Five WorldQuant rows in
+`data/intelligence/gpt_practitioner_corpus.jsonl` were reviewed before retrieval. Four Great Goat
+rows remained transcript-unavailable and AgonAlpha remained metadata-only; no failed transcript
+route was retried. Video: **0 fetched, 0 newly locked**. The repair window converted **R0640** by
+reasoned rejection: its requested crypto-exchange grouping-map repair is outside the standing
+MT5/Fusion-only universe and has zero readers. Separate Fusion peer-group work remains active.
+
+**UNKNOWN queue legitimacy screen.** Public GitHub metadata, default-branch commit identities and
+root names were checked for eight queued repositories. Seven declare no license:
+`YungTingKai/Worldquant-BRAIN-alpha-generator-`, `witttingtorch/wq_alpha_project`,
+`958136706-create/worldquant-brain-skill`, `huashengditie/alphaPipeline778`,
+`onefreecomet/wq-gem-workflow`, `Hoolum/worldquant-brain-mvp`, and
+`ngesarosemary938-jpg/worldquant-alphas`. They are **LICENSE-WALLED, not exhausted**. The eighth,
+`harsh-dev-ux/worldquant-brain-alphas`, carries an all-rights-reserved license that expressly
+forbids reproduction, modification, reverse engineering, deployment and commercial use: **HARD
+STOP**. Only that license text was opened; no source, notebook, strategy or skill body from any of
+the eight was read, installed or executed. Exact commits, root inventories and dispositions:
+`data/brain_hunter_s40_legitimacy_queue_screen.json`.
+
+**Economic/MT5 disposition.** This was a negative access screen: **8 repositories dispositioned,
+0 source bodies read, 0 operators, 0 data axes, 0 constructions, 0 target-horizon cells, 0
+tradeable cards, 0 survivors**. No mechanism crossed the legitimacy gate, so
+`translate_to_mt5()` was not applicable and no Fusion mapping or cost assumption was invented.
+Repository/owner metadata exposed **0 new venues**. Re-enter a walled artifact only on an explicit
+compatible license; the prohibitive artifact requires an actual permission change.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- All eight repositories are **not exhausted**; each is blocked at the legitimacy axis.
+- **Next:** continue the s31 UNKNOWN queue with `Henxun/worlquant_alpha`, beginning with license
+  verification; then `Anikesh-99/wq_alpha_research`, whose claimed ~400-simulation failure cohort
+  is high-value only if the license permits inspection. Run the existing Rsquare conditioner when
+  shared compute permits. The BRAIN ground remains open.
