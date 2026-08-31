@@ -143,7 +143,8 @@ def effective_n(rs: Sequence[float],
     return max(1.0, acf_n), f"acf_adjusted(rho_sum={rho_sum:.3f})"
 
 
-def sequential_lower_bound(rs: Sequence[float], alpha: float = SEQ_ALPHA) -> float:
+def sequential_lower_bound(rs: Sequence[float], alpha: float = SEQ_ALPHA,
+                          sigma: float | None = None) -> float:
     """Always-valid lower confidence bound on mean R. Positive => significant at any look.
 
     Robbins' normal-mixture confidence sequence. For a sub-Gaussian sequence with proxy sigma,
@@ -168,7 +169,14 @@ def sequential_lower_bound(rs: Sequence[float], alpha: float = SEQ_ALPHA) -> flo
     if n < SEQ_MIN_TRADES:
         return float("-inf")
 
-    sigma = max(_std(rs), (max(rs) - min(rs)) / 2.0)
+    # `sigma` overrides the derived proxy ONLY when the caller knows the variance from the
+    # distribution rather than from the sample. The one such caller is the 0/1 arm test in
+    # libs/research_os/brain_ab.py: a proportion's variance is fixed by its mean, so an arm
+    # with no successes has zero SAMPLE deviation while its true sigma is not zero. Deriving
+    # the proxy there returns -inf, and no winner could ever be declared on the terminal rung.
+    # Left as None -- every other caller -- the bound is bit-identical to before this override.
+    if sigma is None:
+        sigma = max(_std(rs), (max(rs) - min(rs)) / 2.0)
     if sigma <= 0:
         return float("-inf")
 
