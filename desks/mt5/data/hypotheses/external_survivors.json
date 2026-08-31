@@ -6189,7 +6189,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6202,7 +6203,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6215,7 +6217,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6239,7 +6242,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6254,7 +6258,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6267,7 +6272,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "A",
@@ -6280,7 +6286,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6295,7 +6302,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6319,7 +6327,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6332,7 +6341,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6345,7 +6355,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6369,7 +6380,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6384,7 +6396,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6397,7 +6410,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AA",
@@ -6410,7 +6424,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAL",
@@ -6434,7 +6449,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AAL",
@@ -6447,7 +6463,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6462,7 +6479,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6486,7 +6504,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6499,7 +6518,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6514,7 +6534,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6527,7 +6548,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6540,7 +6562,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALB",
@@ -6553,7 +6576,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6568,7 +6592,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6592,7 +6617,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6605,7 +6631,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6618,7 +6645,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6633,7 +6661,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6646,7 +6675,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AALG",
@@ -6659,7 +6689,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAOI",
@@ -6672,7 +6703,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6687,7 +6719,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6711,7 +6744,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6724,7 +6758,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6737,7 +6772,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6750,7 +6786,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL",
@@ -6763,7 +6800,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL.24H",
@@ -6776,7 +6814,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL.24H",
@@ -6789,7 +6828,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL.24H",
@@ -6804,7 +6844,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL.24H",
@@ -6817,7 +6858,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPL.24H",
@@ -6830,7 +6872,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AAPLUSD",
@@ -6843,7 +6886,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6867,7 +6911,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6880,7 +6925,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6893,7 +6939,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6906,7 +6953,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6919,7 +6967,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6932,7 +6981,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6956,7 +7006,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6969,7 +7020,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBV.24H",
@@ -6982,7 +7034,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7006,7 +7059,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7019,7 +7073,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7032,7 +7087,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7045,7 +7101,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7058,7 +7115,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABBVIE",
@@ -7071,7 +7129,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABDN",
@@ -7086,7 +7145,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABDN",
@@ -7110,7 +7170,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABDN",
@@ -7123,7 +7184,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABDN",
@@ -7136,7 +7198,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABF",
@@ -7160,7 +7223,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABF",
@@ -7173,7 +7237,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABF",
@@ -7186,7 +7251,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABF",
@@ -7199,7 +7265,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABN",
@@ -7223,7 +7290,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABN",
@@ -7238,7 +7306,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABN",
@@ -7251,7 +7320,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABNB",
@@ -7275,7 +7345,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABNB",
@@ -7288,7 +7359,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABNB",
@@ -7301,7 +7373,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABNB",
@@ -7314,7 +7387,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABT",
@@ -7338,7 +7412,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ABT",
@@ -7351,7 +7426,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ABT",
@@ -7364,7 +7440,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ABT",
@@ -7377,7 +7454,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7392,7 +7470,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7416,7 +7495,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7429,7 +7509,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7442,7 +7523,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7455,7 +7537,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AC",
@@ -7468,7 +7551,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACA",
@@ -7492,7 +7576,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ACA",
@@ -7505,7 +7590,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACA",
@@ -7518,7 +7604,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACA",
@@ -7531,7 +7618,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACA",
@@ -7544,7 +7632,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACN",
@@ -7568,7 +7657,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ACN",
@@ -7581,7 +7671,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ACN",
@@ -7594,7 +7685,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ACN",
@@ -7609,7 +7701,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ACN",
@@ -7622,7 +7715,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7646,7 +7740,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7659,7 +7754,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7672,7 +7768,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7687,7 +7784,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7700,7 +7798,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADAJPY",
@@ -7713,7 +7812,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE",
@@ -7737,7 +7837,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE",
@@ -7750,7 +7851,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE",
@@ -7763,7 +7865,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE",
@@ -7776,7 +7879,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE",
@@ -7789,7 +7893,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7804,7 +7909,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7828,7 +7934,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7841,7 +7948,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7854,7 +7962,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7867,7 +7976,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7880,7 +7990,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7893,7 +8004,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADBE.24H",
@@ -7906,7 +8018,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7921,7 +8034,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7945,7 +8059,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7958,7 +8073,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7971,7 +8087,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7986,7 +8103,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -7999,7 +8117,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADI",
@@ -8012,7 +8131,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADM",
@@ -8036,7 +8156,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADM",
@@ -8051,7 +8172,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADM",
@@ -8064,7 +8186,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADPR",
@@ -8079,7 +8202,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADPR",
@@ -8103,7 +8227,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADPR",
@@ -8116,7 +8241,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADPR",
@@ -8129,7 +8255,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADPR",
@@ -8142,7 +8269,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADS",
@@ -8155,7 +8283,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADS",
@@ -8179,7 +8308,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADS",
@@ -8192,7 +8322,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADSK",
@@ -8216,7 +8347,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADSK",
@@ -8229,7 +8361,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADSK",
@@ -8242,7 +8375,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADSK",
@@ -8255,7 +8389,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADYEN",
@@ -8279,7 +8414,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADYEN",
@@ -8292,7 +8428,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ADYEN",
@@ -8305,7 +8442,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ADYEN",
@@ -8329,7 +8467,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ADYEN",
@@ -8344,7 +8483,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AENA",
@@ -8368,7 +8508,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AENA",
@@ -8381,7 +8522,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AENA",
@@ -8405,7 +8547,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AENA",
@@ -8418,7 +8561,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AENA",
@@ -8431,7 +8575,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AEP",
@@ -8455,7 +8600,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AEP",
@@ -8468,7 +8614,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AEP",
@@ -8481,7 +8628,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AEP",
@@ -8494,7 +8642,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AFG",
@@ -8509,7 +8658,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AFG",
@@ -8533,7 +8683,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AFG",
@@ -8546,7 +8697,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AFG",
@@ -8570,7 +8722,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AFL",
@@ -8594,7 +8747,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AFL",
@@ -8607,7 +8761,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AFL",
@@ -8620,7 +8775,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AFL",
@@ -8633,7 +8789,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AFX",
@@ -8648,7 +8805,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AFX",
@@ -8661,7 +8819,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AFX",
@@ -8674,7 +8833,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGG",
@@ -8698,7 +8858,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AGG",
@@ -8711,7 +8872,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AGG",
@@ -8724,7 +8886,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGG",
@@ -8737,7 +8900,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8761,7 +8925,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8774,7 +8939,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8798,7 +8964,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8813,7 +8980,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8826,7 +8994,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGN",
@@ -8839,7 +9008,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGNC",
@@ -8863,7 +9033,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AGNC",
@@ -8876,7 +9047,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AGNC",
@@ -8889,7 +9061,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AGNC",
@@ -8902,7 +9075,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AI",
@@ -8926,7 +9100,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AI",
@@ -8939,7 +9114,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AI",
@@ -8952,7 +9128,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AI",
@@ -8965,7 +9142,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AIG",
@@ -8989,7 +9167,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AIG",
@@ -9002,7 +9181,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AIG",
@@ -9015,7 +9195,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AIG",
@@ -9039,7 +9220,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AIG",
@@ -9052,7 +9234,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AIR",
@@ -9067,7 +9250,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AIR",
@@ -9091,7 +9275,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AIR",
@@ -9104,7 +9289,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AIR",
@@ -9128,7 +9314,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AIR",
@@ -9143,7 +9330,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9158,7 +9346,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9182,7 +9371,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9195,7 +9385,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9208,7 +9399,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9232,7 +9424,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9245,7 +9438,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AKAM",
@@ -9258,7 +9452,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9273,7 +9468,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9297,7 +9493,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9310,7 +9507,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9334,7 +9532,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9347,7 +9546,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AKZA",
@@ -9360,7 +9560,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALAB",
@@ -9373,7 +9574,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALAB",
@@ -9386,7 +9588,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALB",
@@ -9401,7 +9604,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALB",
@@ -9425,7 +9629,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALB",
@@ -9438,7 +9643,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALB",
@@ -9453,7 +9659,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALB",
@@ -9466,7 +9673,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGN",
@@ -9481,7 +9689,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGN",
@@ -9505,7 +9714,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGN",
@@ -9518,7 +9728,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGN",
@@ -9531,7 +9742,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGN",
@@ -9544,7 +9756,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGUSD",
@@ -9568,7 +9781,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGUSD",
@@ -9581,7 +9795,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALGUSD",
@@ -9594,7 +9809,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9609,7 +9825,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9633,7 +9850,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9646,7 +9864,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9659,7 +9878,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9672,7 +9892,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA",
@@ -9685,7 +9906,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA.24H",
@@ -9698,7 +9920,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA.24H",
@@ -9711,7 +9934,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA.24H",
@@ -9724,7 +9948,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA.24H",
@@ -9737,7 +9962,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALIBABA.24H",
@@ -9750,7 +9976,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9765,7 +9992,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9789,7 +10017,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9802,7 +10031,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9815,7 +10045,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9830,7 +10061,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9843,7 +10075,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALK",
@@ -9856,7 +10089,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9871,7 +10105,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9895,7 +10130,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9908,7 +10144,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9932,7 +10169,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9947,7 +10185,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "ALLC",
@@ -9960,7 +10199,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDCAD",
@@ -9984,7 +10224,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDCAD",
@@ -9997,7 +10238,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDCAD",
@@ -10021,7 +10263,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDCAD",
@@ -10034,7 +10277,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDHUF",
@@ -10047,7 +10291,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDHUF",
@@ -10060,7 +10305,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10075,7 +10321,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10099,7 +10346,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10112,7 +10360,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10125,7 +10374,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10138,7 +10388,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10162,7 +10413,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDJPY",
@@ -10175,7 +10427,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDNZD",
@@ -10190,7 +10443,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDNZD",
@@ -10203,7 +10457,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDNZD",
@@ -10216,7 +10471,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDNZD",
@@ -10229,7 +10485,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDNZD",
@@ -10242,7 +10499,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDSGD",
@@ -10255,7 +10513,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDSGD",
@@ -10268,7 +10527,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDUSD",
@@ -10292,7 +10552,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDUSD",
@@ -10305,7 +10566,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDUSD",
@@ -10329,7 +10591,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDUSD",
@@ -10344,7 +10607,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "AUDUSD",
@@ -10357,7 +10621,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "AVAXUSD",
@@ -10370,7 +10635,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "BTCUSD",
@@ -10385,7 +10651,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "BTCUSD",
@@ -10398,7 +10665,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10413,7 +10681,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10437,7 +10706,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10450,7 +10720,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10463,7 +10734,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10476,7 +10748,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10500,7 +10773,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10515,7 +10789,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10528,7 +10803,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CADJPY",
@@ -10541,7 +10817,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFDKK",
@@ -10554,7 +10831,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFDKK",
@@ -10578,7 +10856,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFDKK",
@@ -10591,7 +10870,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFHUF",
@@ -10604,7 +10884,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFHUF",
@@ -10617,7 +10898,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFJPY",
@@ -10630,7 +10912,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFJPY",
@@ -10643,7 +10926,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFJPY",
@@ -10656,7 +10940,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFJPY",
@@ -10669,7 +10954,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFNOK",
@@ -10682,7 +10968,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFNOK",
@@ -10695,7 +10982,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFNOK",
@@ -10719,7 +11007,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFPLN",
@@ -10732,7 +11021,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSEK",
@@ -10745,7 +11035,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSEK",
@@ -10769,7 +11060,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSEK",
@@ -10782,7 +11074,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSGD",
@@ -10806,7 +11099,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSGD",
@@ -10819,7 +11113,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "CHFSGD",
@@ -10832,7 +11127,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10856,7 +11152,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10869,7 +11166,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10882,7 +11180,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10906,7 +11205,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10921,7 +11221,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",
@@ -10934,7 +11235,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCAD",
@@ -10947,7 +11249,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCAD",
@@ -10960,7 +11263,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCHF",
@@ -10973,7 +11277,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCHF",
@@ -10997,7 +11302,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCZK",
@@ -11010,7 +11316,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURCZK",
@@ -11023,7 +11330,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURGBP",
@@ -11036,7 +11344,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURGBP",
@@ -11060,7 +11369,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHKD",
@@ -11084,7 +11394,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHKD",
@@ -11097,7 +11408,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHKD",
@@ -11121,7 +11433,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHKD",
@@ -11134,7 +11447,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHUF",
@@ -11158,7 +11472,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHUF",
@@ -11171,7 +11486,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURHUF",
@@ -11184,7 +11500,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURILS",
@@ -11197,7 +11514,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURILS",
@@ -11210,7 +11528,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURILS",
@@ -11225,7 +11544,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11240,7 +11560,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11253,7 +11574,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11266,7 +11588,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11290,7 +11613,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11303,7 +11627,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURJPY",
@@ -11316,7 +11641,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURMXN",
@@ -11329,7 +11655,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURMXN",
@@ -11353,7 +11680,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURMXN",
@@ -11368,7 +11696,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNOK",
@@ -11381,7 +11710,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNOK",
@@ -11394,7 +11724,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNOK",
@@ -11409,7 +11740,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11433,7 +11765,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11446,7 +11779,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11459,7 +11793,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11483,7 +11818,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11498,7 +11834,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11511,7 +11848,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURNZD",
@@ -11524,7 +11862,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURPLN",
@@ -11537,7 +11876,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11550,7 +11890,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11563,7 +11904,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11578,7 +11920,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11591,7 +11934,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11604,7 +11948,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURRUB",
@@ -11617,7 +11962,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURSEK",
@@ -11630,7 +11976,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "EURSEK",
@@ -11643,7 +11990,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURSGD",
@@ -11656,7 +12004,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURTRY",
@@ -11671,7 +12020,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURZAR",
@@ -11695,7 +12045,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "EURZAR",
@@ -11708,7 +12059,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPAUD",
@@ -11723,7 +12075,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPAUD",
@@ -11736,7 +12089,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPAUD",
@@ -11751,7 +12105,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPAUD",
@@ -11764,7 +12119,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11788,7 +12144,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11801,7 +12158,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11825,7 +12183,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11840,7 +12199,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11853,7 +12213,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPCAD",
@@ -11866,7 +12227,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPDKK",
@@ -11879,7 +12241,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPDKK",
@@ -11903,7 +12266,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPDKK",
@@ -11918,7 +12282,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPDKK",
@@ -11931,7 +12296,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPHUF",
@@ -11944,7 +12310,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPHUF",
@@ -11968,7 +12335,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -11992,7 +12360,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12005,7 +12374,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12018,7 +12388,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12031,7 +12402,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12055,7 +12427,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12070,7 +12443,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12083,7 +12457,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPJPY",
@@ -12096,7 +12471,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPMXN",
@@ -12109,7 +12485,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPMXN",
@@ -12133,7 +12510,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNOK",
@@ -12146,7 +12524,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNOK",
@@ -12159,7 +12538,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNOK",
@@ -12174,7 +12554,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNZD",
@@ -12198,7 +12579,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNZD",
@@ -12211,7 +12593,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNZD",
@@ -12224,7 +12607,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPNZD",
@@ -12239,7 +12623,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPPLN",
@@ -12252,7 +12637,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPSEK",
@@ -12265,7 +12651,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPSGD",
@@ -12289,7 +12676,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPSGD",
@@ -12302,7 +12690,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPSGD",
@@ -12326,7 +12715,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPSGD",
@@ -12341,7 +12731,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPUSD",
@@ -12354,7 +12745,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPUSD",
@@ -12378,7 +12770,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPUSD",
@@ -12393,7 +12786,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPZAR",
@@ -12406,7 +12800,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPZAR",
@@ -12419,7 +12814,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPZAR",
@@ -12443,7 +12839,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "GBPZAR",
@@ -12458,7 +12855,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "HK50",
@@ -12482,7 +12880,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "HK50",
@@ -12495,7 +12894,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12519,7 +12919,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12532,7 +12933,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12545,7 +12947,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12558,7 +12961,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12582,7 +12986,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12597,7 +13002,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12610,7 +13016,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "HKDJPY",
@@ -12623,7 +13030,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "JPN225",
@@ -12638,7 +13046,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "JPN225",
@@ -12661,7 +13070,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "JPN225",
@@ -12676,7 +13086,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "NAS100",
@@ -12700,7 +13111,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "NOKSEK",
@@ -12713,7 +13125,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "NOKSEK",
@@ -12726,7 +13139,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDCAD",
@@ -12739,7 +13153,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDCAD",
@@ -12763,7 +13178,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDCHF",
@@ -12776,7 +13192,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDCHF",
@@ -12800,7 +13217,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDHUF",
@@ -12813,7 +13231,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDSGD",
@@ -12826,7 +13245,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDSGD",
@@ -12839,7 +13259,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDUSD",
@@ -12863,7 +13284,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDUSD",
@@ -12876,7 +13298,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDUSD",
@@ -12889,7 +13312,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "NZDUSD",
@@ -12902,7 +13326,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12917,7 +13342,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12930,7 +13356,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12954,7 +13381,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12969,7 +13397,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12982,7 +13411,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "SGDJPY",
@@ -12995,7 +13425,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "SOLUSD",
@@ -13008,7 +13439,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "US30",
@@ -13032,7 +13464,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "US30",
@@ -13047,7 +13480,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "US30",
@@ -13060,7 +13494,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "US30",
@@ -13073,7 +13508,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USCOCOA",
@@ -13097,7 +13533,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDBRL",
@@ -13121,7 +13558,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDBRL",
@@ -13136,7 +13574,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCAD",
@@ -13151,7 +13590,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "COT net positioning",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCAD",
@@ -13164,7 +13604,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCAD",
@@ -13177,7 +13618,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCAD",
@@ -13190,7 +13632,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCHF",
@@ -13203,7 +13646,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCHF",
@@ -13216,7 +13660,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCHF",
@@ -13229,7 +13674,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCNH",
@@ -13244,7 +13690,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCNH",
@@ -13268,7 +13715,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCNH",
@@ -13281,7 +13729,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCNH",
@@ -13305,7 +13754,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCNH",
@@ -13320,7 +13770,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDCZK",
@@ -13333,7 +13784,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDDKK",
@@ -13357,7 +13809,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDDKK",
@@ -13372,7 +13825,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDDKK",
@@ -13385,7 +13839,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHKD",
@@ -13409,7 +13864,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHKD",
@@ -13422,7 +13878,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-31T06:10:16+00:00"
+  "first_seen": "2026-08-31T06:10:16+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHKD",
@@ -13435,7 +13892,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHKD",
@@ -13450,7 +13908,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-31T06:10:16+00:00"
+  "first_seen": "2026-08-31T06:10:16+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHUF",
@@ -13463,7 +13922,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDHUF",
@@ -13487,7 +13947,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDILS",
@@ -13500,7 +13961,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDILS",
@@ -13513,7 +13975,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13528,7 +13991,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13552,7 +14016,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13565,7 +14030,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13578,7 +14044,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13591,7 +14058,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13615,7 +14083,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13630,7 +14099,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13643,7 +14113,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13656,7 +14127,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDJPY",
@@ -13669,7 +14141,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDKRW",
@@ -13684,7 +14157,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDMXN",
@@ -13708,7 +14182,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDMXN",
@@ -13721,7 +14196,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDMXN",
@@ -13736,7 +14212,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDMXN",
@@ -13749,7 +14226,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDNOK",
@@ -13773,7 +14251,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDNOK",
@@ -13786,7 +14265,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDNOK",
@@ -13801,7 +14281,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-29T11:06:11+00:00"
+  "first_seen": "2026-08-29T11:06:11+00:00",
+  "banked": true
  },
  {
   "symbol": "USDPLN",
@@ -13814,7 +14295,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDSEK",
@@ -13827,7 +14309,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDSEK",
@@ -13842,7 +14325,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDSEK",
@@ -13855,7 +14339,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDSGD",
@@ -13868,7 +14353,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDSGD",
@@ -13892,7 +14378,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDTHB",
@@ -13905,7 +14392,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "USDTHB",
@@ -13918,7 +14406,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDTHB",
@@ -13931,7 +14420,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "USDZAR",
@@ -13946,7 +14436,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDZAR",
@@ -13969,7 +14460,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "USDZAR",
@@ -13982,7 +14474,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGEUR",
@@ -14006,7 +14499,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGEUR",
@@ -14019,7 +14513,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGEUR",
@@ -14032,7 +14527,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14047,7 +14543,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14062,7 +14559,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "COT net positioning",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14085,7 +14583,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14098,7 +14597,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14111,7 +14611,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14124,7 +14625,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAGUSD",
@@ -14137,7 +14639,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUAUD",
@@ -14152,7 +14655,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUAUD",
@@ -14176,7 +14680,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUAUD",
@@ -14189,7 +14694,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUEUR",
@@ -14213,7 +14719,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUEUR",
@@ -14228,7 +14735,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUEUR",
@@ -14241,7 +14749,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUUSD",
@@ -14265,7 +14774,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUUSD",
@@ -14278,7 +14788,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUUSD",
@@ -14291,7 +14802,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUUSD",
@@ -14304,7 +14816,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XAUUSD",
@@ -14317,7 +14830,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14341,7 +14855,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14354,7 +14869,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14367,7 +14883,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14391,7 +14908,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14406,7 +14924,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14419,7 +14938,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14432,7 +14952,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XBRUSD",
@@ -14445,7 +14966,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XCUUSD",
@@ -14469,7 +14991,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XCUUSD",
@@ -14493,7 +15016,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XCUUSD",
@@ -14508,7 +15032,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XNGUSD",
@@ -14521,7 +15046,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XNIUSD",
@@ -14534,7 +15060,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "XNIUSD",
@@ -14549,7 +15076,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "a peer instrument's H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14564,7 +15092,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "COT net positioning",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14588,7 +15117,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "2+ factor instruments' H1",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14601,7 +15131,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14625,7 +15156,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T07:32:53+00:00"
+  "first_seen": "2026-08-28T07:32:53+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14638,7 +15170,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14651,7 +15184,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XTIUSD",
@@ -14664,7 +15198,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "XZNUSD",
@@ -14677,7 +15212,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-30T10:58:12+00:00"
+  "first_seen": "2026-08-30T10:58:12+00:00",
+  "banked": true
  },
  {
   "symbol": "ZARJPY",
@@ -14690,7 +15226,8 @@
   "mechanism_status": "NAMED",
   "mechanism_note": "price only",
   "producer": "orthogonal_candidates.json",
-  "first_seen": "2026-08-28T01:22:06.723767+00:00"
+  "first_seen": "2026-08-28T01:22:06.723767+00:00",
+  "banked": true
  },
  {
   "symbol": "EURAUD",

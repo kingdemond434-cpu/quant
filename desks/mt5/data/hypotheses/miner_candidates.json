@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-08-31T22:22:29+00:00",
+ "compiled_at": "2026-08-31T23:22:58+00:00",
  "hypotheses": [
   {
    "symbol": "USDCHF",
@@ -3149,12 +3149,12 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 22,
+   "rows": 26,
    "candidates": 0,
-   "deepening": 22
+   "deepening": 26
   },
   "forexfactory": {
-   "rows": 49,
+   "rows": 50,
    "candidates": 0,
    "deepening": 107
   },
@@ -3184,19 +3184,19 @@
    "deepening": 73
   },
   "litefinance": {
-   "rows": 15,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 15
+   "deepening": 30
   },
   "instaforex_copy": {
-   "rows": 4,
+   "rows": 8,
    "candidates": 0,
-   "deepening": 4
+   "deepening": 8
   },
   "amarkets": {
-   "rows": 115,
+   "rows": 226,
    "candidates": 0,
-   "deepening": 115
+   "deepening": 226
   },
   "fbs_tape": {
    "rows": 1,
@@ -3244,9 +3244,9 @@
    "deepening": 13
   },
   "forextsd_cdx": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "quant_se": {
    "rows": 30,
@@ -3284,8 +3284,8 @@
    "deepening": 0
   }
  },
- "rows_accounted": 938,
+ "rows_accounted": 1192,
  "executable_candidates": 260,
- "deepening_tasks": 557,
+ "deepening_tasks": 680,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
