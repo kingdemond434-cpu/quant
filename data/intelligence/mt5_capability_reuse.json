@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-31T01:00:55.041190+00:00",
+  "generated_at": "2026-08-31T06:02:55.209004+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
@@ -4472,6 +4472,8 @@
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
         "desks/mt5/scripts/full_pipeline.py",
+        "desks/mt5/side_channels/full_pipeline.canonical.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4496,6 +4498,8 @@
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
         "desks/mt5/scripts/full_pipeline.py",
+        "desks/mt5/side_channels/full_pipeline.canonical.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4622,6 +4626,8 @@
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
         "desks/mt5/scripts/full_pipeline.py",
+        "desks/mt5/side_channels/full_pipeline.canonical.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4657,6 +4663,8 @@
         "desks/mt5/research/universal_gate.py",
         "desks/mt5/scripts/external_gauntlet.py",
         "desks/mt5/scripts/full_pipeline.py",
+        "desks/mt5/side_channels/full_pipeline.canonical.py",
+        "desks/mt5/side_channels/full_pipeline.py",
         "desks/mt5/side_channels/gate_calibration.py",
         "desks/mt5/side_channels/ug_remote.py"
       ],
@@ -4764,7 +4772,10 @@
       "module": "libs.validation.walk_forward",
       "path": "libs/validation/walk_forward.py",
       "status": "REACHABLE_MT5_STATIC",
-      "direct_mt5_consumers": [],
+      "direct_mt5_consumers": [
+        "desks/mt5/side_channels/full_pipeline.canonical.py",
+        "desks/mt5/side_channels/full_pipeline.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     }
   ],

@@ -1,10 +1,10 @@
-Implemented and committed `12dfff8c`:
+Implemented and committed `d8bdf129`:
 
-- [`scripts/run_midnight_completion.py`](/home/quant/quant-platform/scripts/run_midnight_completion.py) now labels unchanged, resource-fenced catch-up debt as `DEFERRED_RESOURCE`, not a hard pipeline failure. It remains incomplete and owed.
-- Added regression coverage in [`test_midnight_completion.py`](/home/quant/quant-platform/tests/scripts/test_midnight_completion.py).
+- Fixed shadow sleeve cost-map failures to retain `KeyError(symbol)` evidence classification in [shadow_forward.py](/home/quant/quant-platform/desks/mt5/research/shadow_forward.py:382).
+- Verified targeted shadow/cost suite: 30 passed.
+- Verified full MT5 suite: 711 passed, 0 failed.
+- Checkpointed controller epoch 129 and released the lease.
 
-Proof: 4 targeted tests passed; syntax compilation and constitution-core verification passed.
+Economic effect: missing catalogue/cost entries remain fail-closed while preserving the repair-target identity; one blocked sleeve cannot conceal or halt the rest of the zero-capital forward book.
 
-Runtime evidence: remote workers are live—edge search PID 3180 (~4.1 GB), gauntlet PID 7628, orthogonal sweep PID 7752—with only 64 MB free. Serial admission is correct; competing starts would risk the MT5 terminal.
-
-Checkpoint recorded at epoch 121. Blockers remain explicit: 19,917 deferred cells await the live worker, and the authority ratchet reports queue/cohort count regressions; its repair actuator is rate-limited, so shared artifacts were not overwritten.
+Blocker: canonical external gauntlet has 19,905 budget-deferred cells and two candidate-conservation losses; continue from its existing checkpoint.
