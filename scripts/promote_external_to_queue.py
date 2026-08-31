@@ -52,7 +52,18 @@ def main() -> int:
     except (OSError, ValueError):
         seen = set()
 
-    fresh = [s for s in items if isinstance(s, dict) and key(s) not in seen]
+    # The ledger records that a cell was *ever* projected; it is not authority to
+    # discard a card if a concurrent/stale writer later removes that queue row.
+    # Queue identity is the active evidence population, so repair any missing
+    # projection idempotently while retaining the ledger as an audit trail.
+    projected = {
+        key({"symbol": (row.get("external_screen") or {}).get("symbol"),
+             "family": row.get("family"), "params": row.get("params", {})})
+        for row in queue
+        if isinstance(row, dict) and str(row.get("id", "")).startswith("ext-")
+        and isinstance(row.get("external_screen"), dict)
+    }
+    fresh = [s for s in items if isinstance(s, dict) and key(s) not in projected]
     fresh.sort(key=lambda s: abs(float(s.get("t_stat", 0) or 0)), reverse=True)
     now = datetime.now(tz=UTC)
     added = 0

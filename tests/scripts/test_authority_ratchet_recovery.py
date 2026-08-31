@@ -62,6 +62,29 @@ def test_better_authority_heals_canon_under_the_same_lease(monkeypatch, tmp_path
     assert json.loads(canon.read_text("utf-8"))["survivors"] == _doc(2)["survivors"]
 
 
+def test_cohort_loss_merges_latest_sufficient_git_snapshot(monkeypatch, tmp_path) -> None:
+    cohort = tmp_path / "cohort_registry.json"
+    cohort.write_text(json.dumps({"current": {"observations": 2}}), "utf-8")
+    monkeypatch.setattr(ratchet, "COHORT_FILE", cohort)
+    monkeypatch.setattr(ratchet, "ROOT", tmp_path)
+    monkeypatch.setattr(ratchet, "hold", lambda *_a, **_kw: _NullLease())
+
+    class Result:
+        def __init__(self, stdout: str, returncode: int = 0) -> None:
+            self.stdout, self.returncode = stdout, returncode
+
+    def fake_run(command, **_kwargs):
+        if command[1] == "rev-list":
+            return Result("known-good\n")
+        return Result(json.dumps({"old": {"observations": 0}, "current": {"observations": 1}}))
+
+    monkeypatch.setattr(ratchet.subprocess, "run", fake_run)
+    message = ratchet.restore_cohorts_from_git(2)
+
+    assert "1 -> 2" in message
+    assert json.loads(cohort.read_text("utf-8"))["current"]["observations"] == 2
+
+
 class _NullLease:
     def __enter__(self):
         return "test-token"

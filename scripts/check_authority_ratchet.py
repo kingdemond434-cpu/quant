@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from contextlib import suppress
@@ -37,6 +38,7 @@ FLOORS = ROOT / "data" / "authority_ratchet.json"
 ALARM = ROOT / "data" / "AUTHORITY_ALARM.txt"
 AUTHORITY_FILE = DESK / "reports" / "UNIVERSAL_SURVIVORS.json"
 CANON_FILE = DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json"
+COHORT_FILE = DESK / "data" / "intelligence" / "cohorts" / "cohort_registry.json"
 
 #: artifact -> (path, how to count it). Each is EARNED evidence that time and compute produced.
 WATCH = {
@@ -79,6 +81,20 @@ def _atomic_copy(source: Path, target: Path) -> None:
     try:
         with os.fdopen(fd, "wb") as out:
             out.write(source.read_bytes())
+            out.flush()
+            os.fsync(out.fileno())
+        os.replace(name, target)
+    finally:
+        with suppress(FileNotFoundError):
+            os.unlink(name)
+
+
+def _atomic_json(target: Path, value: dict) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix=f".{target.name}.", dir=target.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out:
+            json.dump(value, out, indent=0, default=str)
             out.flush()
             os.fsync(out.fileno())
         os.replace(name, target)
@@ -143,6 +159,46 @@ def heal_canon() -> str | None:
     return None
 
 
+def restore_cohorts_from_git(minimum: int) -> str | None:
+    """Merge a lost cohort population from the latest sufficient git snapshot.
+
+    Cohort rows are point-in-time evidence.  The live file has no second canon copy, but the
+    hourly sync commits are its durable recovery source.  Merge (rather than replace) so current
+    mortality observations win while historical members cannot be silently discarded by a stale
+    writer.
+    """
+    current = read(COHORT_FILE)
+    if not isinstance(current, dict) or len(current) >= minimum:
+        return None
+    relative = COHORT_FILE.relative_to(ROOT).as_posix()
+    try:
+        history = subprocess.run(
+            ["git", "rev-list", "--all", "--", relative], cwd=ROOT, text=True,
+            capture_output=True, timeout=30, check=False,
+        ).stdout.splitlines()
+    except OSError:
+        return None
+    for revision in history:
+        try:
+            snapshot = subprocess.run(
+                ["git", "show", f"{revision}:{relative}"], cwd=ROOT, text=True,
+                capture_output=True, timeout=30, check=False,
+            )
+            prior = json.loads(snapshot.stdout) if snapshot.returncode == 0 else None
+        except (OSError, ValueError):
+            continue
+        if not isinstance(prior, dict) or len(prior) < minimum:
+            continue
+        merged = {**prior, **current}
+        if len(merged) < minimum:
+            continue
+        with hold(relative, "authority-ratchet"):
+            _atomic_json(COHORT_FILE, merged)
+        return (f"cohorts restored from git {revision[:12]}: {len(current)} -> {len(merged)} "
+                "members; live observations retained")
+    return None
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     healed = heal_canon()
@@ -153,6 +209,10 @@ def main() -> int:
         print(f"authority ratchet: {restored}")
     floors = read(FLOORS) or {"note": "earned-evidence floors; rise freely, fall only on an "
                                       "explicit recorded revocation", "counts": {}}
+    cohort_floor = int((floors.get("counts") or {}).get("cohort_members", 0))
+    cohorts_restored = restore_cohorts_from_git(cohort_floor)
+    if cohorts_restored:
+        print(f"authority ratchet: {cohorts_restored}")
     breaches: list[str] = []
     counts: dict[str, int] = {}
 
