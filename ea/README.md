@@ -58,3 +58,15 @@ error}`.
   confirm an `ack` response; confirm `state/*` files refresh; confirm `EMERGENCY_STOP` flattens.
   The `.mq5` cannot be compiled or executed from this Python sandbox — that step is performed once
   in MetaEditor on the deployment machine.
+
+## v1.10 hardening (2026-08-31)
+- Heartbeat timeout compares GMT to GMT (was `TimeCurrent()` server-time mix).
+- `DONE_PARTIAL` fills reported as `filled` (partial), never as `rejected`.
+- Restart-safe idempotency via `state/processed_ids.log` journal; order comments are secondary.
+- Magic-scoped `FlattenAll` and positions cap (`FlattenAccountWide=false` default).
+- `MODIFY` (de-risk) always allowed, even under a kill flag / daily stop.
+- Emergency states auto-recover: kill flag → on flag removal; daily stop → next day; heartbeat → when fresh.
+- Order validation: volume step/min/max, margin pre-check, stops-level distance, explicit error text.
+- `WriteFileAtomic` retries on Windows reader contention; audit log rotates at ~4MB.
+- `positions.state` rows are `SYMBOL|qty|avg|magic` with per-symbol digit precision.
+- New inputs: `DeviationPoints` (slippage), `FlattenAccountWide`.

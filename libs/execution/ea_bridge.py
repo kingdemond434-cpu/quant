@@ -124,12 +124,14 @@ class EABridge:
         positions: list[BrokerPosition] = []
         for line in path.read_text("utf-8").splitlines():
             parts = line.split("|")
-            if len(parts) == 3 and float(parts[1]) != 0.0:
-                positions.append(
-                    BrokerPosition(
-                        instrument=parts[0], qty=float(parts[1]), avg_price=float(parts[2])
-                    )
-                )
+            if len(parts) not in (3, 4) or float(parts[1]) == 0.0:
+                continue
+            # v1.10 EA writes SYMBOL|qty|avg|magic; scope to our magic when present
+            if len(parts) == 4 and int(parts[3]) != self.magic:
+                continue
+            positions.append(
+                BrokerPosition(instrument=parts[0], qty=float(parts[1]), avg_price=float(parts[2]))
+            )
         return positions
 
     def get_order(self, client_order_id: str) -> BrokerOrderResult | None:
