@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-31T11:25:12+00:00",
+ "rebuilt_at": "2026-08-31T12:24:55+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -562,7 +562,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -577,7 +577,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -592,7 +592,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1059,7 +1059,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 2,
+    "longevity_max_d": 3,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1236,6 +1236,21 @@
    },
    "cohorts": [
     "a95ed72501d3fede"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "digistoremaster": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "907633fdfc5ddb1b"
    ],
    "scores": {
     "independent_evidence": 1,
