@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T08:28:32+00:00",
+ "built_at": "2026-08-31T10:14:42+00:00",
  "tasks": [
   {
    "source": "github",
@@ -4374,320 +4374,320 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_expert_1",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_expert_1&mode=overview&isinline=1",
+   "title": "FX Blue user forexcyborg-demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_flex_ea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_flex_ea&mode=overview&isinline=1",
+   "title": "FX Blue user forexcyborg-demo2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-demo2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_fox",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_fox&mode=overview&isinline=1",
+   "title": "FX Blue user forexcyborg-v2demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg-v2demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_gold_investor",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_gold_investor&mode=overview&isinline=1",
+   "title": "FX Blue user forexdevice",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdevice&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_gold_investor_",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_gold_investor_&mode=overview&isinline=1",
+   "title": "FX Blue user forexdevice_live",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdevice_live&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_gump_ea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_gump_ea&mode=overview&isinline=1",
+   "title": "FX Blue user forexdiamond-a1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdiamond-a1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_incontrol",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_incontrol&mode=overview&isinline=1",
+   "title": "FX Blue user forexdiamond-usdjpy",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdiamond-usdjpy&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_invest",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_invest&mode=overview&isinline=1",
+   "title": "FX Blue user forexdraw",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_m",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_m&mode=overview&isinline=1",
+   "title": "FX Blue user forexdraw_ea_demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw_ea_demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_pip_shooter",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_pip_shooter&mode=overview&isinline=1",
+   "title": "FX Blue user forexdraw_ea_live",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdraw_ea_live&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_quant_ea_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_quant_ea_live&mode=overview&isinline=1",
+   "title": "FX Blue user forexdroiderea",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdroiderea&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_razer_ea_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_razer_ea_live&mode=overview&isinline=1",
+   "title": "FX Blue user forexdynamiceurusd",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexdynamiceurusd&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_spectre",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_spectre&mode=overview&isinline=1",
+   "title": "FX Blue user forexextract",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_steam",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_steam&mode=overview&isinline=1",
+   "title": "FX Blue user forexextract-demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract-demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forex_warrior",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forex_warrior&mode=overview&isinline=1",
+   "title": "FX Blue user forexextract-live2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexextract-live2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexai",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexai&mode=overview&isinline=1",
+   "title": "FX Blue user forexfastron",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfastron&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexalpha",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexalpha&mode=overview&isinline=1",
+   "title": "FX Blue user forexfastron2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfastron2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexalpha2",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexalpha2&mode=overview&isinline=1",
+   "title": "FX Blue user forexfbi",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfbi&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexapollolive",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexapollolive&mode=overview&isinline=1",
+   "title": "FX Blue user forexfib",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfib&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbycom",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom&mode=overview&isinline=1",
+   "title": "FX Blue user forexfib56",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfib56&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbycom-4",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-4&mode=overview&isinline=1",
+   "title": "FX Blue user forexflexea_review",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexflexea_review&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbycom-6",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-6&mode=overview&isinline=1",
+   "title": "FX Blue user forexfreedom",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfreedom&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbycom-signals",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbycom-signals&mode=overview&isinline=1",
+   "title": "FX Blue user forexfuryv3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexfuryv3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbyexness",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbyexness&mode=overview&isinline=1",
+   "title": "FX Blue user forexgain",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgain&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexarbysf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexarbysf&mode=overview&isinline=1",
+   "title": "FX Blue user forexgbpavenger7",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgbpavenger7&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexautomator",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexautomator&mode=overview&isinline=1",
+   "title": "FX Blue user forexgermany_6",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_6&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexautomator_gold",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexautomator_gold&mode=overview&isinline=1",
+   "title": "FX Blue user forexgermany_63",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_63&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbacklash",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbacklash&mode=overview&isinline=1",
+   "title": "FX Blue user forexgermany_64",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_64&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbacklash2",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbacklash2&mode=overview&isinline=1",
+   "title": "FX Blue user forexgermany_68",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgermany_68&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbigben-demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbigben-demo&mode=overview&isinline=1",
+   "title": "FX Blue user forexgoldinv",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgoldinv&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbigbenea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbigbenea&mode=overview&isinline=1",
+   "title": "FX Blue user forexgump-taku-high",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-high&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbot28",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28&mode=overview&isinline=1",
+   "title": "FX Blue user forexgump-taku-low",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-low&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbot28_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28_demo&mode=overview&isinline=1",
+   "title": "FX Blue user forexgump-taku-mid",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump-taku-mid&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexbot28_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexbot28_live&mode=overview&isinline=1",
+   "title": "FX Blue user forexgump_ea_demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgump_ea_demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcapt_extreme",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcapt_extreme&mode=overview&isinline=1",
+   "title": "FX Blue user forexgumpea-demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexgumpea-demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcapt_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcapt_live&mode=overview&isinline=1",
+   "title": "FX Blue user forexhero",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexhero&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcleaner",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcleaner&mode=overview&isinline=1",
+   "title": "FX Blue user forexid",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=forexid&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcombo_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcombo_demo&mode=overview&isinline=1",
+   "title": "FX Blue user foreximba",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcpt-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcpt-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user foreximba-live2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba-live2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user forexcyborg",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=forexcyborg&mode=overview&isinline=1",
+   "title": "FX Blue user foreximba-real",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=foreximba-real&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5788,6 +5788,22 @@
   {
    "source": "quant_se",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Accrued interest for a bond with a long first coupon: should the long coupon period be split into quasi-coupon periods?",
+   "url": "https://quant.stackexchange.com/questions/85739/accrued-interest-for-a-bond-with-a-long-first-coupon-should-the-long-coupon-per",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Portfolio Optimization with Options Using Only the P Measure",
+   "url": "https://quant.stackexchange.com/questions/85748/portfolio-optimization-with-options-using-only-the-p-measure",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Black Scholes PDE explicit Scheme",
    "url": "https://quant.stackexchange.com/questions/75027/black-scholes-pde-explicit-scheme",
    "symbols": [],
@@ -5916,14 +5932,6 @@
   {
    "source": "quant_se",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Portfolio Optimization with Options Using Only the P Measure",
-   "url": "https://quant.stackexchange.com/questions/85748/portfolio-optimization-with-options-using-only-the-p-measure",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "quant_se",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Calculate return for a set of securities downloaded using quantmod",
    "url": "https://quant.stackexchange.com/questions/45581/calculate-return-for-a-set-of-securities-downloaded-using-quantmod",
    "symbols": [],
@@ -6018,210 +6026,10 @@
    "mechanism_tags": []
   },
   {
-   "source": "quant_se",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "PaymentLag in ql.OvernightIndexedSwap()",
-   "url": "https://quant.stackexchange.com/questions/83811/paymentlag-in-ql-overnightindexedswap",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "RetailAgent: Structured Adverse Timing in Self-Conditioned Multimodal LLM Trading Agents",
-   "url": "http://arxiv.org/abs/2608.28399v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "What survives honest evaluation? Leakage-safe, search-aware assessment of LLM-driven trading strategy discovery",
-   "url": "http://arxiv.org/abs/2608.27734v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Tabular Deep Learning for Algorithmic Trading: Cross-Regime Bayesian Optimisation for Equity Signal Generation",
-   "url": "http://arxiv.org/abs/2608.27076v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Output-Only Identification and Spectral Monitoring of Coupled Feedback Networks with Known Time-Varying Actuation",
-   "url": "http://arxiv.org/abs/2608.25844v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Harvesting the Volatility Risk Premium: A Learning-to-Rank Approach",
-   "url": "http://arxiv.org/abs/2608.24786v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Lead-Lag Relationships in Financial Markets: A Comparison of Multiple Clustering Algorithms",
-   "url": "http://arxiv.org/abs/2608.24703v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Generalizing Markowitz Portfolio Optimization by a Quadratic Risk Measure",
-   "url": "http://arxiv.org/abs/2608.24449v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Equilibrium in closed constant-function market maker economies",
-   "url": "http://arxiv.org/abs/2608.23915v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Equity Strategy Backtesting: Luck or Edge? The MinervaScore as a Statistical Robustness Grade",
-   "url": "http://arxiv.org/abs/2608.23808v2",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Axiomatic Trader: Latent Regularity, Information Budgets, and the Canonical Form of a Quantitative Investment System",
-   "url": "http://arxiv.org/abs/2608.23416v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "KellyBoost: Growth-Optimal Portfolio Construction with Gradient-Boosted Trees",
-   "url": "http://arxiv.org/abs/2608.23393v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tse_tick: A Python Library for Parsing and Querying Nikkei NEEDS Tick Data from the Tokyo Stock Exchange",
-   "url": "http://arxiv.org/abs/2608.23053v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "From Exponential to Polynomial: An Exact Filter for High-Dimensional MSM Models",
-   "url": "http://arxiv.org/abs/2608.22864v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Loop-Gain Matrix: Coupled Rebalancing Feedback and the Blind Spots of Scalar Stability Monitoring",
-   "url": "http://arxiv.org/abs/2608.22768v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Short-horizon mean reversion in cryptocurrency markets: a matched cross-market measurement",
-   "url": "http://arxiv.org/abs/2608.21888v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "A Multiscale Ball Test for Conditional Mean Independence",
-   "url": "http://arxiv.org/abs/2608.20727v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dynamic Portfolio Optimization under CVaR Constraints",
-   "url": "http://arxiv.org/abs/2608.20179v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Reconfiguration Premium: Co-movement Structure as an Unspanned Dimension of the Variance Risk Premium",
-   "url": "http://arxiv.org/abs/2608.20020v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Concentrated Liquidity Provision: a Reinforcement Learning Perspective",
-   "url": "http://arxiv.org/abs/2608.19389v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Market's Conditioning Representation: Equilibrium, Crowding, and Convention Multiplicity",
-   "url": "http://arxiv.org/abs/2608.18299v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Entropic Value-at-Risk portfolio optimization for tempered stable L\u00e9vy processes",
-   "url": "http://arxiv.org/abs/2608.18022v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Multi-Level Market Making with Reinforcement Learning",
-   "url": "http://arxiv.org/abs/2608.18195v1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice",
-   "url": "http://arxiv.org/abs/2608.17808v2",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Scalable Pontryagin-Guided Adjoint-to-Control Recovery for Constrained Dynamic Portfolio Choice",
-   "url": "http://arxiv.org/abs/2608.15667v2",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "arxiv_qfin",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "A contribution to the critique of blockchain censorship",
-   "url": "http://arxiv.org/abs/2608.15640v1",
+   "title": "429 Client Error: Unknown Error for url: https://export.arxiv.org/api/query?search_query=cat:q-fin.TR+OR+cat:q-fin.PM+OR+cat:q-fin.ST&sortBy=submittedDate&sortOrder=descending&max_results=25",
+   "url": "",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6548,6 +6356,30 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "lenardclimatical374/MT5-volume-profile-indicator",
+   "url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "7skooooo/mql5-systems-mirror",
+   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
    "url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
    "symbols": [],
@@ -6644,32 +6476,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dinethlive/Ultra-MT5-indicators",
-   "url": "https://github.com/dinethlive/Ultra-MT5-indicators",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "nodalytics/till_infinity",
    "url": "https://github.com/nodalytics/till_infinity",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Rick12357/python-expert-agent",
+   "url": "https://github.com/Rick12357/python-expert-agent",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6692,16 +6508,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "QuachGia1994/OAK-Hidden-SLTP-Manager",
-   "url": "https://github.com/QuachGia1994/OAK-Hidden-SLTP-Manager",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
+   "title": "ashikscreativemath-commits/Paldo-ALM",
+   "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6716,8 +6532,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-PropFirm-Drawdown-Guard",
-   "url": "https://github.com/Valtorim/MT5-PropFirm-Drawdown-Guard",
+   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6728,6 +6544,20 @@
    "url": "",
    "symbols": [],
    "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Monday! Let's see XAUUSD",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "support",
+    "resistance",
+    "EMA"
+   ]
   },
   {
    "source": "reddit",

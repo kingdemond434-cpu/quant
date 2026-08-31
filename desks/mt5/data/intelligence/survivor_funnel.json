@@ -1,8 +1,8 @@
 {
- "updated_at": "2026-08-31T09:24:43+00:00",
+ "updated_at": "2026-08-31T10:24:37+00:00",
  "supreme_metric": "validated incremental E[log W] per unit of survivor-hunting capacity -- everything below is diagnostic, never the objective",
- "cohort_registry": 1360,
- "cohort_alive": 1360,
+ "cohort_registry": 1400,
+ "cohort_alive": 1400,
  "cohort_dead": 0,
  "credible_shortlist": 19,
  "external_stageA_survivors": 23257,

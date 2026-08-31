@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T09:20:38+00:00",
+ "built_at": "2026-08-31T10:19:21+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1182,17 +1182,37 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "FX_REALIZED_CORR_INTRADAY",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
+    "event": "cross_market_move",
+    "context": "overlap",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|overlap|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "EURUSD, GBPUSD, USDJPY tick data (MT5/Fusion), DXY tick",
+   "kill": "Kill if z>2 signal shows <52% hit-rate over 1500 events or max DD > 8% before fees.",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
@@ -1212,17 +1232,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "audit:inventory_rebalance|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "inventory_rebalance",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

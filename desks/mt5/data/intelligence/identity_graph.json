@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-08-31T09:24:43+00:00",
+ "rebuilt_at": "2026-08-31T10:24:37+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -531,7 +531,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -546,7 +546,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1179,7 +1179,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
