@@ -2524,3 +2524,25 @@ repair remains stronger: append-before-evaluate candidate rows plus typed termin
 atomic checksum-valid controller checkpoints stored separately. No alpha, operator, symbol or
 threshold transfers from this result. `[§33: screened ->
 data/brain_hunter_s45_gplearn_durability_screen.json]`
+
+# 2026-08-31 — an “immutable” shard written non-atomically is not crash-safe (BRAIN hunter s46)
+
+**Source:** `rbudnar/open-autoresearch` commit
+`d65b33171604edb57e41e16fdb1e472a1736b34c` (MIT), read as public text only. The source declares
+derivation from the Karpathy autoresearch, AlphaLab, MARS, AI Scientist v2 and Arbor/HTR lineages.
+No third-party agent tooling was installed, imported or run.
+
+**KILLED AS FAILURE-PRESERVATION EVIDENCE.** The protocol calls each
+`state/ledger/<id>.json` record immutable and requires corrections to be new records. Its actual
+writer first checks `exists()` and then calls `Path.write_text()` on the final name: no exclusive
+create, temporary file, fsync or atomic replace. A kill can therefore leave a partial final shard;
+the validator can diagnose it later but cannot recover the missing record. The protocol also logs
+after a run rather than reserving a full-identity `PLANNED` row before evaluation, so a crash before
+the logger is invoked remains invisible.
+
+**What survives:** immutable per-experiment shards, child-record corrections, derived views,
+parent-cycle validation and content-hashed references are valuable process shapes after atomic
+birth. They strengthen the existing desk repair only when paired with append-before-evaluate typed
+outcomes and a separately replaceable controller checkpoint. No alpha, operator, symbol or gate
+transfers. `[§33: screened ->
+data/brain_hunter_s46_open_autoresearch_ledger_screen.json]`

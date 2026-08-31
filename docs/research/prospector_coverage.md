@@ -14246,3 +14246,53 @@ not newly discovered venues: **0 new external venues**.
   publish append-only experiment stores and test whether rollback and immutable trial history are
   actually separate. RD-Agent factor proposals remain conditional next-ground only if they supply
   a novel mechanism rather than another private gate. The BRAIN ground remains open.
+
+## BRAIN HUNTER s46 — 2026-08-31 — immutable shards still lose the experiment that never got a row
+
+**Repair and corpora first.** Three overdue panel rows were re-scheduled with an enforced
+2026-09-07 due date after fresh collector state still reported `OpenRouter key unavailable`:
+R0189 (panel aggregation), R0190 (review verification) and R0191 (per-family calibration). R0250
+was rejected as Binance `FUNDING_FEE` reconciliation for the retired cash-carry executor. Its
+mechanism was not discarded: the distinct MT5 question is realised Fusion closed-deal `swap`
+versus PIT contract-term swap, which must be measured and carded independently. Five WorldQuant
+rows in `data/intelligence/gpt_practitioner_corpus.jsonl` remained text-empty. Video: **0 fetched,
+0 newly locked**.
+
+**Inherited ground, legitimacy first, text only.** Public MIT
+`rbudnar/open-autoresearch` at `d65b3317` was found by following s45's symbolic-search
+failure-memory frontier. Its protocol, experiment schema, ledger writer and validator were read as
+text; no agent framework was installed, imported or run. It independently supplies one useful
+shape: immutable per-experiment shards, corrections as new child records, derived JSONL/tree views,
+parent-cycle validation and content-hashed evidence references.
+
+The source does not close the repair it resembles. `log_experiment.write_record()` performs an
+`exists()` check followed by `Path.write_text()` directly on the final shard: no exclusive create,
+temporary file, fsync or atomic replace. A kill during serialization can leave a malformed final
+record. The advertised single writer is protocol text rather than a lock/broker in the inspected
+writer. And the ledger is updated **after** each run; no full-identity `PLANNED` row exists before
+evaluation, so a crash before logging still deletes the candidate from history. The schema also
+allows free-form status, empty metrics, optional data identity and arbitrary extra fields rather
+than requiring the full Fusion experiment identity.
+
+**Economic/MT5 disposition.** Keep the sharded-source/derived-view separation; reject the source
+as candidate-conservation or crash-safety evidence. This strengthens s33/s41-s45's existing test:
+kill during evaluation and during serialization, require every planned Fusion cell to reconcile to
+a typed outcome, require every visible shard to be checksum-valid, and keep controller rollback
+separate. `translate_to_mt5()` returned no entry for the five process phrases. They are universal
+integrity controls, not market features. This session ran **0 desk constructions, 0 target-horizon
+cells, 0 tradeable cards and 0 survivors**. Exact traces:
+`data/brain_hunter_s46_open_autoresearch_ledger_screen.json`.
+
+**Venue discovery.** The repository is a new public artifact surface; its author profile declares
+no external site or social handle. Repository references are lineage sources, not new communities:
+**0 new external venues**. No account wall, private BRAIN API, credentialed content or proprietary
+alpha was touched.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `rbudnar/open-autoresearch` commit `d65b3317`: protocol 0.6 experiment-ledger architecture,
+  schema, writer and validator axes **EXHAUSTED on 2026-08-31**.
+- **Next:** inspect its declared Arbor/HTR implementation lineage for prewrite, atomic-commit and
+  restart-reconciliation semantics; continue the residual permissively licensed gplearn fork
+  population outside s45's slice; inspect RD-Agent factor proposals only if they yield a novel
+  MT5-translatable mechanism rather than a private gate. The BRAIN ground remains open.

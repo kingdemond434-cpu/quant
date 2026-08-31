@@ -5912,3 +5912,26 @@ No third-party agent code or pickle was executed or imported. The transferable s
 schema-versioned, data-only `PLANNED -> RUNNING -> terminal` ledger plus separately replaceable
 controller checkpoints. Exact static traces:
 `data/brain_hunter_s44_rdagent_failure_memory_screen.json`. [§33: screened]
+
+## 2026-08-31 — BRAIN HUNTER s46 — immutable shards still need an atomic birth
+
+MIT `rbudnar/open-autoresearch` at `d65b3317` independently supplies the strongest positive
+storage shape yet: one immutable JSON shard per experiment, corrections as new child records,
+derived JSONL/tree views, parent-cycle validation and content-hashed promotion references. This
+strengthens the existing s33/s41-s45 repair; it does not create a competing organ or gate.
+
+The writer is the falsifier. `write_record()` checks `out_path.exists()` and then calls
+`Path.write_text()` directly on the final path. It does not exclusively create the shard and does
+not write+fsync a temporary file before atomic replacement. A kill during serialization can leave
+a malformed final-name shard, while the protocol's single-writer rule is not implemented by a lock
+or broker in the inspected writer. More importantly, the loop records after a run: no full-identity
+`PLANNED` row is reserved before evaluation, so a crash before the logger runs still erases the
+candidate completely. [§33: screened ->
+`data/brain_hunter_s46_open_autoresearch_ledger_screen.json`]
+
+**Strengthened determining test:** reserve the complete terminal-enumerated Fusion cell before
+evaluation; force-kill both during candidate evaluation and during shard serialization; restart;
+prove `planned = completed + failed + blocked + explicitly_unattempted`, and prove every visible
+final shard is checksum-valid. Run two writers against the same identity and prove exactly one
+exclusive creation succeeds. Controller rollback remains a separate replaceable checkpoint and may
+never truncate evidence. No external threshold, maturity label or promotion rule transfers.

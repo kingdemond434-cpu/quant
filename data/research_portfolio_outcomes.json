@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-31",
+  "authority": "research allocation evidence only; no promotion, sizing, order or capital authority",
+  "policy": "ops/research_allocation_policy.json",
+  "current_weights": {
+    "exploitation": 0.5,
+    "exploration": 0.5
+  },
+  "evidence_used_to_move_prior": false,
+  "reason": "Neither portfolio has realised validated economic value or a measured common research-cost denominator. Candidate, finding, disposition and commit counts are not economic yield, so the principal's 50/50 prior is retained.",
+  "latest_cycle": {
+    "cycle": "BRAIN_HUNTER_s46",
+    "as_of": "2026-08-31",
+    "exploitation": {
+      "work": "Enforced re-scheduling of R0189/R0190/R0191 against fresh unavailable-panel evidence and reasoned rejection of retired Binance funding-reconciliation row R0250 while preserving its distinct MT5 realised-swap analogue.",
+      "validated_economic_value": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "expected_log_wealth",
+        "why": "The dispositions remove stale or currently unexecutable demand without discarding the separate Fusion measurement gap, but no counterfactual engineering cost or downstream portfolio contribution is measured."
+      },
+      "research_cost": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "common_cost_unit",
+        "why": "Wall time and controller tokens are not durably metered by portfolio in an artifact usable for two-sided comparison."
+      },
+      "source_evidence": [
+        "docs/research/recommendation_ledger.json::R0189",
+        "docs/research/recommendation_ledger.json::R0190",
+        "docs/research/recommendation_ledger.json::R0191",
+        "docs/research/recommendation_ledger.json::R0250"
+      ]
+    },
+    "exploration": {
+      "work": "Static public-text mining of the MIT open-autoresearch experiment ledger reached from the symbolic-search failure-memory frontier.",
+      "validated_economic_value": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "expected_log_wealth",
+        "why": "The cycle retained the sharded-ledger process shape and refuted its crash-safety/candidate-conservation claim, but no Fusion market cell, canonical-gate certificate, forward evidence or realised portfolio contribution exists."
+      },
+      "research_cost": {
+        "status": "UNKNOWN",
+        "value": null,
+        "unit": "common_cost_unit",
+        "why": "No comparable portfolio-level cost meter exists."
+      },
+      "source_evidence": [
+        "data/brain_hunter_s46_open_autoresearch_ledger_screen.json",
+        "docs/graveyard.md::2026-08-31 immutable shard",
+        "docs/research/prospector_coverage.md::BRAIN HUNTER s46"
+      ]
+    }
+  }
+}

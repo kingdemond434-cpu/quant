@@ -2603,11 +2603,20 @@
    "roi_bps": 40.0,
    "raised": "2026-07-31T19:17:29.252822+00:00",
    "status": "scheduled",
-   "reason": "BLOCKED ON A VERIFIED EXTERNAL CONSTRAINT, and the blocker is measured not assumed: OpenRouter balance is -0.59 USD against a ~2.93 USD single run, so zero panel seats can respond and there is no aggregation to calibrate. Item is a soft-voting/Bayesian-fusion layer OVER panel outputs; building it against a dead panel would ship an untested aggregator whose first real input arrives months later. The row's own strongest content is the NEGATIVE result (debate cancellation CONFIRMED -- do not rebuild debate), which is already preserved in the summary and costs nothing to retain. Fires when credits land (principal page item 3).",
+   "reason": "Fresh 2026-08-31 state still reports OpenRouter key unavailable in data/intelligence/public_strategy_items.json; no second-family panel outputs exist to aggregate. Recheck the connection on 2026-09-07; build only after real panel rows exist, preserving the existing negative verdict against debate cancellation.",
    "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-05T13:51:26.750443+00:00",
-   "note": "renumbered from R0178 after sibling-session ID race, merge 2026-07-31"
+   "due": "2026-09-07",
+   "disposed": "2026-08-31T23:24:17.911851+00:00",
+   "note": "renumbered from R0178 after sibling-session ID race, merge 2026-07-31",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-26",
+     "was_reason": "BLOCKED ON A VERIFIED EXTERNAL CONSTRAINT, and the blocker is measured not assumed: OpenRouter balance is -0.59 USD against a ~2.93 USD single run, so zero panel seats can respond and there is no aggregation to calibrate. Item is a soft-voting/Bayesian-fusion layer OVER panel outputs; building it against a dead panel would ship an untested aggregator whose first real input arrives months later. The row's own strongest content is the NEGATIVE result (debate cancellation CONFIRMED -- do not rebuild debate), which is already preserved in the summary and costs nothing to retain. Fires when credits land (principal page item 3).",
+     "was_disposed": "2026-08-05T13:51:26.750443+00:00",
+     "rescheduled": "2026-08-31T23:24:17.911825+00:00",
+     "why": "Fresh 2026-08-31 state still reports OpenRouter key unavailable in data/intelligence/public_strategy_items.json; no second-family panel outputs exist to aggregate. Recheck the connection on 2026-09-07; build only after real panel rows exist, preserving the existing negative verdict against debate cancellation."
+    }
+   ]
   },
   {
    "id": "R0190",
@@ -2616,11 +2625,20 @@
    "roi_bps": 30.0,
    "raised": "2026-07-31T19:17:29.341133+00:00",
    "status": "scheduled",
-   "reason": "Same measured blocker as R0189 (OpenRouter -0.59 USD, no seats). Rubric-decomposed verification with a capped review loop is a change to how PANEL review is conducted; with no panel it has no surface to act on. NOTE FOR WHOEVER PICKS IT UP: the 12.8pct verifier wrong-flip risk in round 1 is the load-bearing number -- a verification layer that flips correct findings is negative discovery (L1.25a), so this must ship with the flip rate measured on our own rulings, not adopted on the paper's F1 alone.",
+   "reason": "Fresh 2026-08-31 state still reports OpenRouter key unavailable in data/intelligence/public_strategy_items.json; there is no panel review stream on which to measure the load-bearing 12.8 percent wrong-flip risk. Recheck 2026-09-07 and require a desk-native before/after flip-rate measurement before adoption.",
    "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-05T13:51:29.092157+00:00",
-   "note": "renumbered from R0179 after sibling-session ID race, merge 2026-07-31"
+   "due": "2026-09-07",
+   "disposed": "2026-08-31T23:24:24.877225+00:00",
+   "note": "renumbered from R0179 after sibling-session ID race, merge 2026-07-31",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-26",
+     "was_reason": "Same measured blocker as R0189 (OpenRouter -0.59 USD, no seats). Rubric-decomposed verification with a capped review loop is a change to how PANEL review is conducted; with no panel it has no surface to act on. NOTE FOR WHOEVER PICKS IT UP: the 12.8pct verifier wrong-flip risk in round 1 is the load-bearing number -- a verification layer that flips correct findings is negative discovery (L1.25a), so this must ship with the flip rate measured on our own rulings, not adopted on the paper's F1 alone.",
+     "was_disposed": "2026-08-05T13:51:29.092157+00:00",
+     "rescheduled": "2026-08-31T23:24:24.877196+00:00",
+     "why": "Fresh 2026-08-31 state still reports OpenRouter key unavailable in data/intelligence/public_strategy_items.json; there is no panel review stream on which to measure the load-bearing 12.8 percent wrong-flip risk. Recheck 2026-09-07 and require a desk-native before/after flip-rate measurement before adoption."
+    }
+   ]
   },
   {
    "id": "R0191",
@@ -2629,11 +2647,20 @@
    "roi_bps": 35.0,
    "raised": "2026-07-31T19:17:29.436348+00:00",
    "status": "scheduled",
-   "reason": "PARTLY SUPERSEDED, remainder blocked. The desk already has a live calibration organ (scripts/check_calibration.py + calibrated_confidence feeding Kelly shrinkage) and this cycle's own forecast log shows it operating (R0370 logged p=0.35 COLD-START, resolve_by 2026-08-19). What this row adds beyond that is per-family/per-task-type shrinkage and RE-BASELINE on every model upgrade -- and the re-baseline half is the genuinely valuable part, because model_upgrade.py can silently invalidate a calibration curve. The per-FAMILY half needs a second family, which is OpenRouter-blocked (-0.59 USD). Scheduled together so the re-baseline hook is not built twice.",
+   "reason": "The existing calibration organ already covers global confidence shrinkage; the remaining per-family rebaseline work still lacks a second active family because current public-strategy rows report OpenRouter key unavailable. Recheck 2026-09-07; do not duplicate the live global calibration path.",
    "commit": null,
-   "due": "2026-08-26",
-   "disposed": "2026-08-05T13:51:31.637421+00:00",
-   "note": "renumbered from R0180 after sibling-session ID race, merge 2026-07-31"
+   "due": "2026-09-07",
+   "disposed": "2026-08-31T23:24:32.473620+00:00",
+   "note": "renumbered from R0180 after sibling-session ID race, merge 2026-07-31",
+   "schedule_history": [
+    {
+     "was_due": "2026-08-26",
+     "was_reason": "PARTLY SUPERSEDED, remainder blocked. The desk already has a live calibration organ (scripts/check_calibration.py + calibrated_confidence feeding Kelly shrinkage) and this cycle's own forecast log shows it operating (R0370 logged p=0.35 COLD-START, resolve_by 2026-08-19). What this row adds beyond that is per-family/per-task-type shrinkage and RE-BASELINE on every model upgrade -- and the re-baseline half is the genuinely valuable part, because model_upgrade.py can silently invalidate a calibration curve. The per-FAMILY half needs a second family, which is OpenRouter-blocked (-0.59 USD). Scheduled together so the re-baseline hook is not built twice.",
+     "was_disposed": "2026-08-05T13:51:31.637421+00:00",
+     "rescheduled": "2026-08-31T23:24:32.473593+00:00",
+     "why": "The existing calibration organ already covers global confidence shrinkage; the remaining per-family rebaseline work still lacks a second active family because current public-strategy rows report OpenRouter key unavailable. Recheck 2026-09-07; do not duplicate the live global calibration path."
+    }
+   ]
   },
   {
    "id": "R0192",
@@ -3390,11 +3417,11 @@
    "summary": "L1.45 follow-on: est_funding is modelled and NEVER reconciled against venue funding transfers. The REVENUE half of a carry desk has no realised-vs-predicted check while the COST half now has three (cost_ratio, slippage_ks_p, calibration_mae_falling_months). L1.4 reality anchoring applies to revenue exactly as to cost.",
    "roi_bps": 35.0,
    "raised": "2026-08-01T06:03:38.012357+00:00",
-   "status": "scheduled",
-   "reason": "est_funding vs venue-transfer reconciliation is read-side (venue income ledger + funding_clock lib already exist; L1.47 built the per-position clock) -- explicitly NOT blocked by the executor merge. Deferred behind this window's drains with the first step named: difference booked est_funding rows against venue income FUNDING_FEE rows per position, publish the residual distribution.",
+   "status": "rejected",
+   "reason": "Reject the original venue-specific row under the standing MT5/Fusion-only mandate: it reconciles Binance FUNDING_FEE transfers against the retired cash-carry executor. Preserve the mechanism but do not carry the forbidden venue bundle forward. The live MT5 analogue is a distinct measurement over Fusion closed-deal realised swap versus point-in-time contract-term swap; desks/mt5/mt5desk/gateway.py already records realised swap, while carry_state remains a snapshot proxy. That MT5 measurement must be carded and judged independently rather than pretending this Binance row solves it.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-11T20:51:10.289512+00:00"
+   "due": null,
+   "disposed": "2026-08-31T23:24:39.547853+00:00"
   },
   {
    "id": "R0251",
