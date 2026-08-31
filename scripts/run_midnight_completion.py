@@ -236,6 +236,7 @@ def execute(root: Path, stages: Iterable[Stage], runner: Runner = _run,
         checkpoint = {"schema_version": 1, "cycle": cycle, "stages": {}}
     results: list[dict[str, object]] = []
     hard_failures: list[str] = []
+    deferred_stages: list[str] = []
     findings: list[str] = []
     for stage in stages:
         stage_before = snapshot(root)
@@ -272,8 +273,21 @@ def execute(root: Path, stages: Iterable[Stage], runner: Runner = _run,
                 )
                 break
             prior_outstanding = outstanding
-        accepted = result.returncode in stage.accepted_returncodes
-        if not accepted:
+        # A catch-up service can have completed cleanly while its remote, single-writer worker
+        # is still alive.  A second immediate invocation then observes the same deferred census
+        # and produces this sentinel.  That is not a broken pipeline: calling it one used to
+        # ask the controller to contend with the worker that the resource fence deliberately
+        # kept serial.  Keep the debt loud and the cycle incomplete, but distinguish it from a
+        # failed command so the repair path can wait for the live owner rather than duplicate it.
+        resource_deferred = (
+            stage.catch_up
+            and result.returncode == 75
+            and result.stderr.startswith("canonical catch-up made no progress:")
+        )
+        accepted = result.returncode in stage.accepted_returncodes or resource_deferred
+        if resource_deferred:
+            deferred_stages.append(stage.name)
+        elif not accepted:
             hard_failures.append(stage.name)
         elif stage.diagnostic and result.returncode != 0:
             findings.append(stage.name)
@@ -283,6 +297,7 @@ def execute(root: Path, stages: Iterable[Stage], runner: Runner = _run,
             "command": list(stage.command),
             "returncode": result.returncode,
             "accepted": accepted,
+            "deferred_resource": resource_deferred,
             "diagnostic_finding": stage.diagnostic and result.returncode != 0,
             "duration_seconds": round(time.monotonic() - tick, 3),
             "cpu_seconds": (round(sum(float(row.get("cpu_seconds") or 0.0)
@@ -297,7 +312,8 @@ def execute(root: Path, stages: Iterable[Stage], runner: Runner = _run,
         results.append(stage_row)
         checkpoint["updated_at"] = datetime.now(UTC).isoformat()
         checkpoint["stages"][stage.name] = {
-            "status": "DONE" if accepted else "FAILED",
+            "status": ("DEFERRED_RESOURCE" if resource_deferred
+                       else "DONE" if accepted else "FAILED"),
             "finished_at": checkpoint["updated_at"],
             "returncode": result.returncode,
             "passes_completed": len(passes),
@@ -314,9 +330,10 @@ def execute(root: Path, stages: Iterable[Stage], runner: Runner = _run,
         "after": snapshot(root),
         "stages": results,
         "hard_failures": hard_failures,
+        "deferred_stages": deferred_stages,
         "diagnostic_findings": findings,
-        "needs_controller": bool(hard_failures or findings),
-        "complete": not hard_failures,
+        "needs_controller": bool(hard_failures or deferred_stages or findings),
+        "complete": not hard_failures and not deferred_stages,
         "resource_execution": _resource_state(root),
         "checkpoint": str(checkpoint_path.relative_to(root)),
     }

@@ -119,3 +119,38 @@ def test_catch_up_restarts_the_same_service_until_no_cell_is_deferred(tmp_path: 
         "returncode": 0,
         "passes_completed": 2,
     }
+
+
+def test_live_resource_debt_is_deferred_not_a_pipeline_failure(tmp_path: Path) -> None:
+    """An unchanged deferred census means a serial remote worker owns the work.
+
+    The completion controller must neither call that a clean completion nor turn it into a
+    hard failure that encourages a competing writer.
+    """
+    report_path = (tmp_path / "desks" / "mt5" / "reports"
+                   / "universal_gates_external.json")
+
+    def fake_runner(command, timeout, root):
+        del command, timeout
+        _write(root / report_path.relative_to(tmp_path), {
+            "n_cells_discovered": 1,
+            "verdicts": [{"cell": "x", "passed": None,
+                          "downstream_status": "NOT_RUN_BUILD_BUDGET_DEFERRED"}],
+        })
+        return completion.CommandResult(0, "", "", 1.0)
+
+    stage = completion.Stage("canonical_external_pipeline", ("canonical",), 1,
+                             catch_up=True)
+    result = completion.execute(tmp_path, (stage,), fake_runner,
+                                tmp_path / "completion.json")
+
+    assert result["hard_failures"] == []
+    assert result["deferred_stages"] == ["canonical_external_pipeline"]
+    assert result["complete"] is False
+    assert result["needs_controller"] is True
+    assert result["stages"][0]["deferred_resource"] is True
+    checkpoint = json.loads(
+        (tmp_path / "data" / "intelligence"
+         / "midnight_completion_checkpoint.json").read_text("utf-8")
+    )
+    assert checkpoint["stages"]["canonical_external_pipeline"]["status"] == "DEFERRED_RESOURCE"
