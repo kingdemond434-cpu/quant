@@ -7822,11 +7822,11 @@
    "summary": "data/cot_btc_panel.json BUILDER COLUMN DEFECT: comm_long==noncomm_long AND comm_short==noncomm_short on 100% of 435 CME BITCOIN rows (litminer run8, data/carry_liq_screen.json cot_column_audit) -- the commercial columns are DUPLICATES of noncommercial, so every comm_* field in this SS33-credited artifact is fiction; nonrep_* verified independent (0% collision, used by M1). MECHANISM (likely): CFTC legacy futures-only column offsets mis-mapped in the 08-11 brain-hunter builder (raw zips cached at data/scratch/cot/ -- re-derivable without refetch). PATCH: fix the column map against the CFTC legacy layout, rebuild from cached zips, re-verify nonrep against total-OI arithmetic (noncomm_net + comm_net + nonrep_net = 0 identity currently CANNOT hold with duplicated columns -- use it as the rebuild's self-check). Until rebuilt: any analysis touching comm_* on this file is void; nonrep-based M1 stands.",
    "roi_bps": 15.0,
    "raised": "2026-08-18T19:20:11.836227+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REJECTED 2026-08-31 under the standing MT5/Fusion-only universe order. This row repairs a CME-Bitcoin panel built to condition a crypto-exchange carry sleeve; it names no Fusion CFD consumer and the documented M1/COT-BTC construction belongs to the retired hunted universe. CFTC COT remains admissible when mapped point-in-time to a specific Fusion instrument, but that is a separate terminal-enumerated futures-proxy study and must not inherit this BTC panel or its verdict. Historical files remain provenance; zero desk trials or forward clocks are changed.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-31T09:00:14.916967+00:00"
   },
   {
    "id": "R0614",
