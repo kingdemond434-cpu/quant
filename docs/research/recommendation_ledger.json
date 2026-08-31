@@ -8032,11 +8032,11 @@
    "rank": 6.0,
    "roi_basis": "rank",
    "raised": "2026-08-19T02:23:26.406574+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "rejected",
+   "reason": "REJECTED 2026-08-31 under the standing MT5/Fusion-only universe order. Per-name routing between Binance USDT-M and COIN-M funding books is an exchange-native execution optimization, not reference data that informs execution of an MT5 instrument. Its named consumer is the retired crypto carry sleeve and its prerequisite R0462 is also exchange-native. Fusion crypto CFDs, if terminal-listed, must be researched and costed from broker-native bid/ask, commission, swap, fills and contract specifications through the canonical pipeline; no exchange-book router is imported.",
    "commit": null,
    "due": null,
-   "disposed": null
+   "disposed": "2026-08-31T08:59:22.601687+00:00"
   },
   {
    "id": "R0630",
