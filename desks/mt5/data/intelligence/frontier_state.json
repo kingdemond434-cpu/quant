@@ -1,5 +1,5 @@
 {
-"cursor": 129,
+"cursor": 139,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -80,6 +80,9 @@
 "\u0441\u0438\u0433\u043d\u0430\u043b\u044b ranking"
 ],
 "ar": [
+"\u0623\u0642\u0635\u0649 \u062a\u0631\u0627\u062c\u0639 MT4",
+"\u0623\u0642\u0635\u0649 \u062a\u0631\u0627\u062c\u0639 MT5",
+"\u0623\u0642\u0635\u0649 \u062a\u0631\u0627\u062c\u0639 ranking",
 "\u0627\u0644\u0623\u0631\u0628\u0627\u062d MT4",
 "\u0627\u0644\u0623\u0631\u0628\u0627\u062d MT5",
 "\u0627\u0644\u0623\u0631\u0628\u0627\u062d ranking",
@@ -112,6 +115,9 @@
 "cuentas gestionadas MT4",
 "cuentas gestionadas MT5",
 "cuentas gestionadas ranking",
+"drawdown MT4",
+"drawdown MT5",
+"drawdown ranking",
 "ganancia MT4",
 "ganancia MT5",
 "ganancia ranking",
@@ -144,6 +150,9 @@
 "retorno MT4",
 "retorno MT5",
 "retorno ranking",
+"rob\u00f4 de trading MT4",
+"rob\u00f4 de trading MT5",
+"rob\u00f4 de trading ranking",
 "sinais MT4",
 "sinais MT5",
 "sinais ranking"
@@ -152,6 +161,9 @@
 "copy trade MT4",
 "copy trade MT5",
 "copy trade ranking",
+"ea MT4",
+"ea MT5",
+"ea ranking",
 "l\u1ee3i nhu\u1eadn MT4",
 "l\u1ee3i nhu\u1eadn MT5",
 "l\u1ee3i nhu\u1eadn ranking",
@@ -352,7 +364,10 @@
 "signal ranking",
 "social trading MT4",
 "social trading MT5",
-"social trading ranking"
+"social trading ranking",
+"yield MT4",
+"yield MT5",
+"yield ranking"
 ]
 }
 }

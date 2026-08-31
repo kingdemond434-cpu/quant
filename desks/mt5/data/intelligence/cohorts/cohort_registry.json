@@ -27383,5 +27383,7031 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"4a6ea236dbed8020": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "digistoremaster/real-magic-robot-trading-system",
+"url": "https://github.com/digistoremaster/real-magic-robot-trading-system",
+"text": "Real Magic Robot 3.0 (PREMIUM) \u2014 Vollautomatisches MetaTrader 4/5 Trading-System (EA) f\u00fcr Forex & Gold. Adaptiver Volatilit\u00e4tsfilter, Low-Latency Ausf\u00fchrung & Prop-Firm-Risikoschutz. Inklusive deutscher Masterclass & Dokumentation.",
+"symbols": [],
+"found_at": "2026-08-31T13:24:38+00:00",
+"topic": "metatrader5",
+"stars": 72,
+"star_delta": 0,
+"pushed": "2026-08-31T12:48:00Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"69ccf53461be8561": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_80",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_80&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"534926207cc9c9e9": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_81",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_81&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"446ae33cd654865e": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_83",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_83&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"28e502fb7debb0ef": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_85",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_85&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ae8541241a98890a": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_88",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_88&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"81846722a1f5435d": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_96",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_96&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"504b21785ecf2df1": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_97",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_97&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"99e442e2300bdf6a": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_98",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_98&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a6795e878ea1ab64": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotinfo_hu_99",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotinfo_hu_99&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d52e25ecbc27bc55": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotlab001",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotlab001&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1356646cee0aa35d": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotlab002",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotlab002&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"10d0a1fc110086dc": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotrading01",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotrading01&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"33e5c1806a662271": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotrading1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotrading1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"744f35e4bfe4d035": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b03001a2cd458297": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"13c78a2b559f4809": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2376dfcfa261ad0f": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"33e8062b08328267": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ebbf76f46e83703b": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"eaefc4a3368da0b1": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"522bb0c7938ef94b": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga18",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga18&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"de8ec049a79debda": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga19",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga19&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0754fa5cc5298235": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinga20",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinga20&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f1cdce5fb8e64988": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingb11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingb11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7af445fdd5c63e5e": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingb14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingb14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1b07e827c379fa4f": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingb16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingb16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"53e4be685f418d10": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b99d22028d346a4b": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"150882d661f2f179": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4046a148a2fb2a33": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f7cdc32d84ed8cde": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ea6f55ef77ad619d": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"abcc656539d9d81b": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c47b9e7b6ae32ed9": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"291c51692c61e9a7": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingc20",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingc20&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d155eff033020f6b": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c284c678cb85536f": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7e690dbd788d526c": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c97e22ef33042028": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f922da287d235f9c": {
+"t0": "2026-08-31T13:24:43+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T13:24:05+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"33c5334a919b9970": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5c20830439d88cd0": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"148d49f20dffcf79": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d5c2ba7a28ac550b": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd18",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd18&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"399e07606dcd2fc4": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradingd19",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradingd19&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dfa8ed6f29da3172": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3ca24fdaf0b6a097": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e9cfa764896cfb74": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"74e2dbc3f3ec8dc5": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2e244016117fa058": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8dfd417368c991ca": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotradinge16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotradinge16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f1b3675b4f668ff": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotron",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotron&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"493efc50fade9c80": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotron-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotron-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"cd859ccd46014aa7": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotron-icm",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotron-icm&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"42321e5a017dd435": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotron2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotron2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"61319bd3b7950f62": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexrobotronreal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexrobotronreal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ce2f79d4497adc68": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexscalpingea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexscalpingea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"scalping",
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"65574e15f0b60682": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexseven",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexseven&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"39c103ce3fa6a39f": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexshuffle-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexshuffle-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c6c04777d6231acf": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexsteroid_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexsteroid_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"58d4a503ba79030a": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexsugar",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexsugar&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"58119a780acf04a9": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexsugar-gny",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexsugar-gny&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"31033067afdfb082": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexsugar-gre",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexsugar-gre&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"55c3207c87b45fe9": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexthor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexthor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d6916b949e25471b": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade01",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade01&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d139c1f802598316": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b1093c75e96264f2": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1eurusd1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1eurusd1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"84ffa387eff11062": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1eurusd2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1eurusd2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b4d64b2c956f5e7d": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1eurusd3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1eurusd3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"09c568a11aca8c9a": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1gold",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1gold&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e86ca1601eeb882b": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1hedge",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1hedge&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d5d372990a42d8c9": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrade1highroi",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrade1highroi&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c83d532e3a7e8c76": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"39cdd011bd595275": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b3e9a920307b3ee7": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"03dc50d758d11ffd": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5554163dee947322": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"778b218b3bf12295": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"04cd628e2fd01519": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8d2126d758a4d424": {
+"t0": "2026-08-31T14:24:52+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T14:24:08+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b7ad730dddac81ee": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f2d21b0a62ccb592": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea18",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea18&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ac77fca7d2089cae": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea19",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea19&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6845356e4047e20d": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea4",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea4&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9a250caea1f2d28b": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradea6",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradea6&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1f06c55ab76563df": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2c758c1e8c5c3f1b": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb10",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb10&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"614bda5a41c34d76": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"203646c1a5e0dfba": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9cee358a7848399a": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0502ef96a5e82145": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4f1ff82e3c6b0d0d": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d2d24317dfeb732c": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6d8b99d6d0a7a3a2": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"06b336719d382b05": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb18",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb18&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"81492c9b2294ead6": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb19",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb19&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4221e4e994e82e91": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb20",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb20&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"112c6963817aac87": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeb7",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeb7&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"50f1de0225af125c": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f0c98209209b226": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1f25f84464f7c106": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec11",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec11&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9531a8f566728492": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8b7e3e340bb1fb7c": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"92751fca87f68e09": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"87929f30b8522182": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec15",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec15&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"152d3ffd61aacf60": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"289309973bb5b235": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradec17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradec17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"15be4049b6c46316": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextraded3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextraded3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"beee63ff02922853": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradee12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradee12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3c6dafcf1aa81898": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradee13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradee13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a8dacf3a9e6ea4e6": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradee14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradee14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b5b740f463b96eec": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeh23",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeh23&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"191865b23a86f53a": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeh25",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeh25&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9cb13394baf06794": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeh26",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeh26&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9749ee19dbaba327": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeh28",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeh28&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4b8019307f8ba8a3": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradeh29",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradeh29&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"88fb1a59208f54f6": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei12",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei12&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b13c29ec10328ccc": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei13",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei13&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4537ec1c6a43e137": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei14",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei14&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e284abf2142a6bb0": {
+"t0": "2026-08-31T15:24:56+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei16",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei16&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T15:24:11+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d788fce235d4a0a5": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "EarnForex/PositionSizer",
+"url": "https://github.com/EarnForex/PositionSizer",
+"text": "Calculate your position size based on the risk and account size and execute your trades with this free MetaTrader expert advisor. ",
+"symbols": [],
+"found_at": "2026-08-31T16:24:20+00:00",
+"topic": "mql5",
+"stars": 592,
+"star_delta": 0,
+"pushed": "2026-08-31T15:33:28Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"948684769b0cbb29": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei17",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei17&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e9c127030cf1dc79": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei18",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei18&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"13164d905a9128fe": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei19",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei19&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3c62466b850889d3": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei20",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei20&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"613a8aaef498c592": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei21",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei21&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a5c1e25289331f42": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei22",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei22&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6cc44b9a448e23c9": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei23",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei23&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d10ffc058e16b3bb": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei24",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei24&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0143babaaebacbfa": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei25",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei25&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"beef156bc95871e7": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradei26",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradei26&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0813c769f480b813": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradej28",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradej28&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ccefcfbcbafd86c0": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradej29",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradej29&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"205c683758e1cdbd": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradek02",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradek02&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"06cd543f338a9c0c": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradek03",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradek03&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bfd2f2e69e7fa4c1": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextradersystems",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextradersystems&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e50c98287cac4858": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forextrendhunter",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forextrendhunter&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"trend",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"81034baf891b8fb2": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexwand01",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexwand01&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4b42170b28386907": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexwand02",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexwand02&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5e26b31d144ebf88": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexwand03",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexwand03&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5150085cbda1a241": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexxoy",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexxoy&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ce6e74ab0d72bbdc": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexzeonx1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexzeonx1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f15d925a57a22f3f": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexzeonx2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexzeonx2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"135ea2c8e6e78ecb": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user forexzeonx3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=forexzeonx3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4b5e5ca0dbd0a0b9": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fortuna-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fortuna-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"541c06f200d77aff": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fotm",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fotm&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"427a94456f4a960e": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fran_algotrader_v9",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fran_algotrader_v9&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1f5783f64967e6e7": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frarelin_forex_robot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frarelin_forex_robot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4c23c5b502922442": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frarelin_fx_robot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frarelin_fx_robot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6444a2b441174f68": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frarelinrobotlive",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frarelinrobotlive&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a80326531daf7f64": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frater300",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frater300&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"83e499f713b73ac3": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fraterredox",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fraterredox&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dd15f92d61fd9404": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fredox",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fredox&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"79dd59a3658458ea": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3a5b533c0d841736": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal-2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal-2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b1bd8108f284ab90": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal-3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal-3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"05ac7782e07d97b7": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal-4",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal-4&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"33b26f19fe6852d7": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2e054fefe294d9dd": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c48889eae0004355": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal4",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal4&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4500657843ba992e": {
+"t0": "2026-08-31T16:24:26+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal5",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal5&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T16:24:01+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d848c637390afc1a": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user free-forex-signal6",
+"url": "https://api.fxblue.com/wl/view.aspx?id=free-forex-signal6&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b3d38a3c66a74872": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user freedomtrader",
+"url": "https://api.fxblue.com/wl/view.aspx?id=freedomtrader&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"09a5574bcba2c0cc": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user freeforexsignal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=freeforexsignal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"copy_trading",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"749b9cadfaa0ef83": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user freefxtradingrobot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=freefxtradingrobot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fb174cd79ce9bdbc": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user from1tomillion",
+"url": "https://api.fxblue.com/wl/view.aspx?id=from1tomillion&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"61b0ecd1319059be": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frontrunnerpip",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frontrunnerpip&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6090edfdec14849b": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frontrunnerpips",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frontrunnerpips&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a4162689215db6a8": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frr_kangarooea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frr_kangarooea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ebaed41f6b5f3076": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frz_nnfx_ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frz_nnfx_ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0a20de57d23ee825": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frzbtc",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frzbtc&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"df88574c1763a311": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frzfxblue",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frzfxblue&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"74f29b51104fcd52": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frzgold",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frzgold&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7a74f6382d356fe6": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frznnfx",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frznnfx&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f5b84847dfa29dab": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user frzultimo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=frzultimo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5b8b1bdcf2e319ca": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fsb01",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fsb01&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"62174e591e84785b": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fstmegadroid",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fstmegadroid&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2aae2341ca2f3062": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fszone",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fszone&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"693be7b0c66eac81": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ft1_pamm",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ft1_pamm&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a946d34b8fc4fc7e": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ft1oneclicktrading",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ft1oneclicktrading&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"07788a32d9fd9dad": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ft1strategy-22",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ft1strategy-22&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"19f67e6305e1043c": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ftmo220075571",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ftmo220075571&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e30290cc0313106c": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ftmo8november2023",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ftmo8november2023&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6174a18e33b65e6d": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ftmogokuea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ftmogokuea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"30d5f8cc1eb5a0b2": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ftmoprport2c",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ftmoprport2c&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f2ddcaa9f3989ee4": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user ftmorobottop5hirisk",
+"url": "https://api.fxblue.com/wl/view.aspx?id=ftmorobottop5hirisk&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8cef180444bb5526": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fueledbyforex",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fueledbyforex&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ea840aa7c1db52fe": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fullbodymassage21",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fullbodymassage21&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c2e26990873d68e9": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fund-trader-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fund-trader-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5ddf931ce62edce8": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fundedchoch",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fundedchoch&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c9ca277dd3ccea1f": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funnel-trader",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funnel-trader&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"eb53a370e3b3d022": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funnel-trader-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funnel-trader-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"22ffa0d31f4af45d": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funnel__trader",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funnel__trader&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"321acaad6b0e8089": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funnel_trader",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funnel_trader&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ca16acb911ed0686": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funnel_trader_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funnel_trader_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"507e5579b7249e68": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user funneltraderea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=funneltraderea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"26a32b121e38e2b5": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user furiousscalper",
+"url": "https://api.fxblue.com/wl/view.aspx?id=furiousscalper&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"scalping"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"de5402401d8316a8": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fusion-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fusion-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c76dbf673601168c": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fusionforexrobot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fusionforexrobot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"25cdda9083178654": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fvg",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fvg&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d853fbe93e7fbb7a": {
+"t0": "2026-08-31T17:24:46+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-active",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-active&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T17:23:49+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6ba9b4ad85bb0634": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-adept-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-adept-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fc0edfa767a6467e": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-alexb",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-alexb&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d761c0925d5103f6": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-autotrader-elite",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-autotrader-elite&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"68616e84ffef87b4": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"56a72b5bfb2ca656": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit-100",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit-100&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6b7bd440b91cef02": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit_2_pairs",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit_2_pairs&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b4c100e120f868a4": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit_3_pairs",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit_3_pairs&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"03315b4527ec1500": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit_6_pairs",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit_6_pairs&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0181db917ececb6b": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bit_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bit_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"38a4f6bfb8d55f90": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-bringer",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-bringer&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"69154565ecdd38c2": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-builder-basic",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-builder-basic&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4389d3c1fbfde943": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-builder-light",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-builder-light&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f34db9751ea8862": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-builder-pro",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-builder-pro&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1a7ff15fcdd07691": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-builder_pro",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-builder_pro&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"446aff44af691fd2": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-charger-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-charger-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5f0a2bdf9d85d14d": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-charger-test",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-charger-test&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6b4e3315f9fbaba1": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-conductor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-conductor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"73ed1b3c2cd007b9": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-cyborg-robot-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-cyborg-robot-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5e23144b8ff6fbe6": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-diverse",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-diverse&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"42926165e7947070": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-ekspert-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-ekspert-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6968f938d508b23c": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-ekspert-ea-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-ekspert-ea-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"241e05191a81e02f": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-ekspert-ma-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-ekspert-ma-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ea5396c5a360e54a": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-ekspert-ma-ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-ekspert-ma-ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bf3ed40462ac5645": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-enigma-ea-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-enigma-ea-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c30873178ea25fd9": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-equity-builder-v3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-equity-builder-v3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c29d5253e62e8b69": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-financial",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-financial&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6c6d20f459b1299c": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-flash-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-flash-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2d01f7887b4c81b6": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-flight-pro-review",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-flight-pro-review&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"19f0e354c5f33453": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-fortnite-ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-fortnite-ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bf2a713eeccf4a6e": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-fortnite-ea-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-fortnite-ea-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f2cb6391d9559015": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-gain",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-gain&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"cc1d1bb59ebdd1d3": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-goodway",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-goodway&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5798a81cc5616b8e": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-growth-manager",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-growth-manager&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5fe2d093e63f3ef6": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-luxury",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-luxury&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7fb58bbbfaf9ff70": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-math-ej1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-math-ej1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"df69f905ac1e3ea7": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-math-gu1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-math-gu1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"eaf5fb632ae82aad": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-maximal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-maximal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"34ec19f804967a7a": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-maximal-ea-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-maximal-ea-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1674dc53b44ed43f": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-maximal-ea-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-maximal-ea-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8413c95172ec7879": {
+"t0": "2026-08-31T18:24:07+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-maximal-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-maximal-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T18:23:48+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"66ec68bd6c09af82": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-monetizer",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-monetizer&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1095738845ac228f": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-mower",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-mower&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"64d06a53f3e581ea": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-mower-real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-mower-real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fc927fecc183fd21": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-mower-robot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-mower-robot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b432036504452ed9": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-neurobot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-neurobot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"27211047288e0f7d": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-orbital_ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-orbital_ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"13726caab46a7801": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-proctor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-proctor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5d0fb4ef977c7da5": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-proud-ea-review",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-proud-ea-review&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"20c563737a80fbef": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-quasar",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-quasar&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"904edb0983457993": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-race-to-100k",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-race-to-100k&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a8ac8d98631d68f9": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-rapid-ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-rapid-ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"37311ef2f38cf8ff": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-ryder",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-ryder&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"63b6663a875dfe78": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-secret-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-secret-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8cd42667a1954908": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-secret-ea-real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-secret-ea-real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fffdcd74f871e693": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-secret-signals",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-secret-signals&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"copy_trading"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b8ec9f407b42c967": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-seer",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-seer&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c6164273b77564dd": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-seer-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-seer-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4f8bccb50d2052e1": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-seer-microlive",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-seer-microlive&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"19cf524a674dd48b": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-seer2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-seer2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"94f0dfbb352662db": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-seer_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-seer_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e3e401801cfac3e0": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-shooter",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-shooter&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e04a879f0a9788bf": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-shooter-ea-review",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-shooter-ea-review&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1fa876c92dc835df": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-shutter-stock",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-shutter-stock&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0e38e137e957d925": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-solution-ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-solution-ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f17bab81688266b2": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-splitter-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-splitter-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"27016ce215d5d2a7": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-stabilizer-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-stabilizer-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7eb28c4ffc0fe667": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-stabilizer-real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-stabilizer-real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6c5e07bb2265f88b": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-steady-growth",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-steady-growth&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1a146f041474a847": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-toy-scalper",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-toy-scalper&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"scalping"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"615285a12387c21e": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-track-pro-ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-track-pro-ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"eda2eb9a4c0dbdf9": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-turbine-2-0",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-turbine-2-0&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"28c6382048abc472": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-unicorn",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-unicorn&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6108cfcb3ce933e9": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-warrior",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-warrior&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9b1243ea9b7ffb6b": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-williaml",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-williaml&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6b1a2d9812537f2c": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx-wisetrade",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx-wisetrade&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"daa282011041e718": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx2-fund",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx2-fund&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d335f8da3f4c3f72": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_1000",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_1000&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0c0b1a1608ca1570": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_3000",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_3000&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"191a9cbbf45ef6ad": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_50k",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_50k&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a2beecaac97cb43e": {
+"t0": "2026-08-31T19:24:49+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_active",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_active&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T19:23:52+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1d5cfcf2edfcba16": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_earth_eurgpb",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_earth_eurgpb&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ad99c679953f7eb7": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_earth_eurusd",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_earth_eurusd&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f7ebcdbc25e0a245": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_earth_gbpusd",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_earth_gbpusd&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0fa667d44f5f45b6": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_eternal_real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_eternal_real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8a7f29b756828253": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_fortnite_real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_fortnite_real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"edf572174ef68d3b": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_hunter_portfolio",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_hunter_portfolio&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0422a65fbd8f4cb1": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_hunter_wealth",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_hunter_wealth&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"175c1052a4204b72": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_incontrol",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_incontrol&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f47af5f803eef5a6": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_kalei",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_kalei&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"87b813dd82cccd03": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_kaleidoscope",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_kaleidoscope&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e10e5b46e7865cc5": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_pip_shooter_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_pip_shooter_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"39f312248e6b9655": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_pros_",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_pros_&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d64e9b3322a5d221": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_pros_2kchallenge",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_pros_2kchallenge&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7ad1d7af651a5fea": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_shield_alpha",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_shield_alpha&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f311fdd19bb602a4": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_shutter_stock",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_shutter_stock&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c8cb47a4bbeb323d": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_sync_1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_sync_1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f71c43446d296a0d": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fx_trend_hunter_",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fx_trend_hunter_&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"trend"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"578c1a32fe735f6e": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxadept-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxadept-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b593e5b5895e788e": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxadept-demo2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxadept-demo2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6ef9e7f96e08c37d": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxadept-real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxadept-real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8fd16dd8552c590b": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxadept_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxadept_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"be000d4be580ead0": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxadept_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxadept_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c9fb9947cc3a043b": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxamorher",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxamorher&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"920b2ec487886104": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxaugmenter-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxaugmenter-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d304c61e6639bfce": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxautolimited",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxautolimited&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"10e2889848be12ec": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxautopips",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxautopips&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4c1f50b4a0ec2297": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxautopips_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxautopips_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"488338bf68e2fa2e": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxautotrader-elite",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxautotrader-elite&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c235538ac7675b56": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxautotraderelite",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxautotraderelite&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0d01103e731e5408": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbit",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbit&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"084c83082c9dc9ec": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxblaster-pro",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxblaster-pro&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"197e9f7ba9de32c3": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxblaster-pro-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxblaster-pro-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c907147362473b3d": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_ag_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_ag_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"74383e8434a7dd3a": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_cons_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_cons_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2b4465baa662f268": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_norm_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_norm_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"70e44e337ea2c89e": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_normal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_normal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d63455698123bc1a": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_ult_conser",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_ult_conser&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0e0bedbd3a19e7fd": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbringer_ult_normal",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbringer_ult_normal&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"599688e29ca6cd9a": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbrokerbuster-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbrokerbuster-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"da524f1efadb08aa": {
+"t0": "2026-08-31T20:24:18+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxbullstrading",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxbullstrading&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T20:23:56+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7301109c4bb5ea35": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxch4096",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxch4096&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b91182e67b63b209": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0dd284054fc7e76a": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger-audusd",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger-audusd&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c23b1287aa4340d0": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger-basic-new",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger-basic-new&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3e0db28dd9009392": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger-eurusd",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger-eurusd&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0a76f0fd920dd579": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c13beca0508010ee": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger-real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger-real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a3a0481e7f4c9011": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger_basic",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger_basic&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bd6d19475a30bd0b": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger_max",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger_max&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6e7ee63c90b0c190": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcharger_max_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcharger_max_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3eb8aec3ed6fcd9f": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcipher-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcipher-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"da6c27d7242fc438": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcipher-demo2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcipher-demo2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c841929e32f4dc3e": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcipher-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcipher-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"df11c917b55e9c01": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcipher-live2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcipher-live2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d949cfe886017bbf": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcipherdemo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcipherdemo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"88ebd164f450e0ba": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcitypro",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcitypro&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b7c9c0fa31282967": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcitypro_aud",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcitypro_aud&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5468dbba95cd312d": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcitypro_eur",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcitypro_eur&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e499ef93c68983c7": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxclassictrader",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxclassictrader&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bb3864f2d084b3b0": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxclassictrader_gbp",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxclassictrader_gbp&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"73e70f6a196321f2": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxclassictrader_jpy",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxclassictrader_jpy&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"65718d8a853b4a73": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcombo-ea-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcombo-ea-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"27f5884e9722ce2f": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcombo_vf_ffxm_pbm",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcombo_vf_ffxm_pbm&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7434a571bc1ffb85": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxconstant",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxconstant&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dcd9a6e24a492935": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxconstant-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxconstant-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6bc145e213415cba": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcorescalper-bfr",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcorescalper-bfr&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"scalping",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dc91285b311caf25": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcorrelationnsd",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcorrelationnsd&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"89a335fb5946a6ba": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxcr7ea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxcr7ea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b3450eca790c2432": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdailyinspirations",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdailyinspirations&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"948beaac41715de8": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdcc",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdcc&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"557b440b35e7abca": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdcc_5000",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdcc_5000&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"16cca1bdbb2ea7fc": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdcc_62901",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdcc_62901&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4f39c8ce6a58a9d2": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdiamond2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdiamond2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c3468b78e2304700": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdiverse",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdiverse&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3f65487734f58149": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdiverse_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdiverse_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"476b739be6232a5b": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdiverse_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdiverse_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"01f28b8b4b00f5b2": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxdiverse_unlimited",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxdiverse_unlimited&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"01c650f17413b3c5": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxduo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxduo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5572de9892c1d281": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxeaprofit",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxeaprofit&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"2bbaa99566f543a9": {
+"t0": "2026-08-31T21:24:50+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxearth-highrisk",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxearth-highrisk&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T21:23:53+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"097db7b7bdc59b4f": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "github_topics",
+"kind": "repo",
+"title": "risan-g/quant-hack",
+"url": "https://github.com/risan-g/quant-hack",
+"text": "Python and MQL5 algorithmic trading system with asynchronous CSV IPC, validation and execution safeguards.",
+"symbols": [],
+"found_at": "2026-08-31T22:24:18+00:00",
+"topic": "mql5",
+"stars": 0,
+"star_delta": 0,
+"pushed": "2026-08-31T21:54:52Z"
+},
+"mechanism_tags": [
+"ea_robot",
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"bb5e5ec655c8827d": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxearth-highrisk2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxearth-highrisk2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"9baa05254df2e4f8": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxearth-highrisk3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxearth-highrisk3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1eff1fe2acce116e": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxecn3countereu",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxecn3countereu&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d30fe775deefeeb7": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxecn8gpsmike",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxecn8gpsmike&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"09f9ea4e926d287e": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxekspert-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxekspert-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a597596742317563": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxeternals-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxeternals-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"494f6846255e586c": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxeurgrid",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxeurgrid&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"grid"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"3af6639c6480f0bc": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxflightpro1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxflightpro1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7168779361a7f636": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxflightpro_ea_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxflightpro_ea_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"21e603c75bbffe60": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxflightpro_ea_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxflightpro_ea_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"299321d5ea58dc21": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxflightproea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxflightproea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0df73fb6907ee99f": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoldinvestor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoldinvestor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"308ca8a0d2a6e6e3": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"ed93e4a244ef4bf4": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f277f149eedc47d9": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway-usdchf",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway-usdchf&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"45fee43a4bf230ce": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c75a66a736466365": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_demo2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_demo2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d899be4a2109f0d1": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_demo3",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_demo3&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"23f36e3867a331ff": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_real",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_real&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7f3d1452ab0927ae": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_real1",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_real1&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a821289b0402cf92": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_real2",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_real2&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"458a54c833e1fdc8": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgoodway_usdchf",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgoodway_usdchf&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"51e135f12556aee3": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgreenea",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgreenea&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"ea_robot"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"175b5d6d749ebb8e": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgunpow",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgunpow&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"09360141f33e3629": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxgunpowder",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxgunpowder&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"38b08272873b5d40": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxhelix",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxhelix&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d8c4ca409ea16546": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxhelix-review",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxhelix-review&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"14a72578eea3a78f": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxhelix_demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxhelix_demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0ef0afaaff2e7405": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxhelix_live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxhelix_live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"053e0d82d084d00f": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxhunter-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxhunter-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d3de0cf7fa2ee58a": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxigor",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxigor&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [
+"gold"
+],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"8b1a5c8806678186": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxincontrol",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxincontrol&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d24b87a324f9d2df": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxincontrol-2ch-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxincontrol-2ch-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"52b6d78667023fe1": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxincontrol-live",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxincontrol-live&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fa30d9e7dbab3eb8": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxjetbot",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxjetbot&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"26ea5173073bde1b": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxjetbot-bestpairs",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxjetbot-bestpairs&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"89347b99c0d1cd3a": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxjetbot-demo",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxjetbot-demo&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"37bbfbd640858088": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxkaleidoscope_2025",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxkaleidoscope_2025&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a46fa72223995379": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxkaleidoscope_darwi",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxkaleidoscope_darwi&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"48cd6850080bda57": {
+"t0": "2026-08-31T22:24:25+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user fxluckypro",
+"url": "https://api.fxblue.com/wl/view.aspx?id=fxluckypro&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-08-31T22:24:07+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

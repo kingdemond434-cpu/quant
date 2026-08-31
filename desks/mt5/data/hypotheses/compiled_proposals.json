@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T12:20:05+00:00",
+ "built_at": "2026-08-31T22:19:10+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1222,37 +1222,67 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "COT_EXTREME_REBALANCE",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
-    "context": "asia",
+    "event": "positioning_extreme",
+    "context": "low_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|low_liquidity|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "CFTC COT reports freely available",
+   "kill": "Kill: If spread moves against by 2% without reversal within 7 days, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "SESSION_BREAKOUT_FAILURE_REV_FILL",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "session_transition",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "session_transition|new_york|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "MT5 tick data for XAUUSD, USDJPY, CADJPY, GBPJPY, EURJPY (already-certified instruments) with the session_range_breakout labelled fills and bar-level outcomes; match each CERTIFIED breakout attempt to its 1-minute outcome within the same session window.",
+   "kill": "If PF<1.1 over N>=200 failures OR hit rate not significantly above 50% (binomial p<0.05) across any single (instrument, rr, wb) cell, kill that cell; if fewer than 3 of 18 cells survive, kill the family.",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "stress_liquidity_withdrawal_AS_curl",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "high_vol",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "liquidity_shock|high_vol|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MT5 BookInfo snapshots on XAUUSD and WTI CFD; freely joinable on demo",
+   "kill": "Per-symbol hit rate < 51% at 30s or < 53% at 60s, or depth signal drops below 0.05 correlation with subsequent mid move",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "forced_deleveraging",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:inventory_rebalance|continuation",
+   "name": "ORDER_FLOW_PRESSURE_TRANSITION",
    "compiled": true,
    "family": "generic",
    "params": {
@@ -1263,7 +1293,52 @@
     "quality_atr": 1.0
    },
    "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "Dukascopy tick data + EBS Reuters FX benchmarks (free historical via broker APIs)",
+   "kill": "imbalance",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "session_handover_micro",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "asia",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|asia|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MT5 broker symbol book depth (public aggregator) for EURUSD, USDJPY, XAUUSD at 00:00, 07:00, 12:30 UTC",
+   "kill": "Sharpe<0.8 after 500 trades; kill if any handover window shows positive autocorrelation in displacement signs",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "LCH_Clearing_Margin_FX",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "low_liquidity",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "LCH public margin schedule changes + CFTC TFF + JPX FX futures volume + BoJ announcement dates",
+   "kill": "Mean post-event drift < 5bp OR win rate < 55% over 30 BoJ events",
+   "lens": "PARTICIPANT CONSTRAINT",
    "promotion_authority": false
   }
  ]
