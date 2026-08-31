@@ -3,7 +3,12 @@ Description=Research queue guard: unfinished queued intent may not vanish to a s
 
 [Service]
 Type=oneshot
-MemoryMax=200M
+# 2026-08-31: was 200M and the unit peaked at EXACTLY 200M on every run -- 18 of the 24
+# oom-kills on this box in 90 minutes were this one unit hitting its own cgroup ceiling,
+# not the box running out. It reads a 23,300-row research queue; 200M was never enough.
+# A unit killed mid-read cannot report the unfinished queued intent it exists to protect,
+# so the guard was silently absent 284 times a day while looking scheduled.
+MemoryMax=600M
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/check_research_queue.py
 SuccessExitStatus=0 1

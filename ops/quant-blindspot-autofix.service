@@ -4,6 +4,14 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+# 2026-08-31: was unbounded, and an unbounded unit on a swapless 3.7GB box does not
+# fail alone -- it drives the box to global OOM and the kernel kills a NEIGHBOUR that
+# fit perfectly well. Measured 24h peak here: 307M.
+# MemoryHigh THROTTLES (reclaim + slow down), it does not kill; MemoryMax is only the
+# far backstop for a genuine runaway. So a heavy run gets slower, never SIGKILLed, and
+# it can no longer take out the units around it.
+MemoryHigh=460M
+MemoryMax=640M
 Type=oneshot
 User=quant
 WorkingDirectory=/home/quant/quant-platform
