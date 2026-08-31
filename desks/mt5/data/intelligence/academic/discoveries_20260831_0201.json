@@ -1,0 +1,28 @@
+[
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Curvature-Conditioned Multiscale Momentum with Sphere Constraints for LLM Pretraining",
+    "summary": "Pretraining accounts for a large fraction of the total computational cost in LLM training. However, noise-dominant gradients and the highly ill-conditioned loss landscape bring severe challenges. Alth",
+    "url": "https://arxiv.org/abs/2608.28442v1",
+    "published": "2026-08-28T15:28:05Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  },
+  {
+    "source": "arxiv",
+    "type": "academic_paper",
+    "title": "Implications of relativistic corrections on high-momentum nucleon-transfer reactions",
+    "summary": "High-momentum components (HMCs) of nuclear wave functions, governed by short-range nucleon-nucleon correlations, provide essential insights into nuclear structure beyond the mean-field picture. High-e",
+    "url": "https://arxiv.org/abs/2608.28417v1",
+    "published": "2026-08-28T15:04:57Z",
+    "trading_terms": [
+      "momentum"
+    ],
+    "symbols": [],
+    "confidence": 0.1
+  }
+]

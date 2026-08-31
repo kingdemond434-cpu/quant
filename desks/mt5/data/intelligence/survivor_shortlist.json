@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-31T01:23:04+00:00",
+ "updated_at": "2026-08-31T02:23:07+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -84,7 +84,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -136,7 +136,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -208,7 +208,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -281,7 +281,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -355,7 +355,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -483,7 +483,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -534,7 +534,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -613,7 +613,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -675,7 +675,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -758,7 +758,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -803,12 +803,80 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
+   "url": "https://www.mql5.com/en/signals/2307342",
+   "symbols": [
+    "BTCUSD",
+    "US500",
+    "XAUUSD"
+   ],
+   "found_at": "2026-08-31T02:23:07+00:00",
+   "platform": "mt5",
+   "phenotypes": [
+    "max_growth",
+    "low_dd_high_return",
+    "algo_survivor",
+    "gold"
+   ],
+   "ev_score": 11.624,
+   "growth_pct": 825.91,
+   "weeks": 103.0,
+   "pf": 1.29,
+   "max_dd_pct": null,
+   "trades": 4523.0,
+   "win_pct": 3135.0,
+   "algo_pct": 100.0,
+   "subscribers": 4.0,
+   "author": "/en/users/aller.techno",
+   "author_other_signals": [
+    {
+     "sid": "2338047",
+     "title": "'Techno Growth' by Nice Trader",
+     "growth": "75%",
+     "curve_points": 20,
+     "curve_dd": -17.0
+    },
+    {
+     "sid": "2377446",
+     "title": "'Techno Long Term IC' by Nice Trader",
+     "growth": "68%",
+     "curve_points": 20,
+     "curve_dd": -11.0
+    },
+    {
+     "sid": "2357816",
+     "title": "'Techno SteadyFlow' by Nice Trader",
+     "growth": "26%",
+     "curve_points": 20,
+     "curve_dd": -20.0
+    }
+   ],
+   "hour_histogram": {
+    "11": 4,
+    "16": 2,
+    "19": 4,
+    "17": 2,
+    "14": 2,
+    "07": 3,
+    "21": 9,
+    "15": 4,
+    "12": 4,
+    "01": 1,
+    "06": 1,
+    "13": 2,
+    "23": 1,
+    "02": 1
+   }
+  },
+  {
+   "source": "mql5_survivors",
+   "kind": "track_record",
+   "title": "",
    "url": "https://www.mql5.com/en/signals/2339082",
    "symbols": [
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -871,7 +939,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -907,60 +975,11 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2329290",
-   "symbols": [
-    "AUDUSD",
-    "EURUSD",
-    "XAUEUR",
-    "XAUUSD"
-   ],
-   "found_at": "2026-08-31T01:23:04+00:00",
-   "platform": "mt5",
-   "phenotypes": [
-    "max_growth",
-    "algo_survivor",
-    "gold",
-    "multi_fx"
-   ],
-   "ev_score": 4.708,
-   "growth_pct": 475.36,
-   "weeks": 51.0,
-   "pf": 1.43,
-   "max_dd_pct": null,
-   "trades": 788.0,
-   "win_pct": 461.0,
-   "algo_pct": 98.0,
-   "subscribers": 18.0,
-   "author": "/en/users/archigenius",
-   "author_other_signals": [],
-   "hour_histogram": {
-    "08": 2,
-    "13": 4,
-    "10": 2,
-    "09": 2,
-    "16": 1,
-    "11": 4,
-    "17": 1,
-    "06": 2,
-    "15": 2,
-    "14": 4,
-    "18": 1,
-    "03": 1,
-    "22": 2,
-    "21": 1,
-    "19": 2,
-    "12": 1
-   }
-  },
-  {
-   "source": "mql5_survivors",
-   "kind": "track_record",
-   "title": "",
    "url": "https://www.mql5.com/en/signals/2265877",
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1039,7 +1058,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1085,7 +1104,7 @@
    "symbols": [
     "AUDCAD"
    ],
-   "found_at": "2026-08-31T01:23:04+00:00",
+   "found_at": "2026-08-31T02:23:07+00:00",
    "platform": "mt5",
    "phenotypes": [
     "high_pf",
@@ -1142,68 +1161,49 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2307342",
+   "url": "https://www.mql5.com/en/signals/2329290",
    "symbols": [
-    "BTCUSD",
-    "US500",
+    "AUDUSD",
+    "EURUSD",
+    "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-27T01:23:24+00:00",
+   "found_at": "2026-08-31T01:23:04+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
-    "low_dd_high_return",
     "algo_survivor",
-    "gold"
+    "gold",
+    "multi_fx"
    ],
-   "ev_score": 12.071,
-   "growth_pct": 857.68,
-   "weeks": 103.0,
-   "pf": 1.3,
+   "ev_score": 4.708,
+   "growth_pct": 475.36,
+   "weeks": 51.0,
+   "pf": 1.43,
    "max_dd_pct": null,
-   "trades": 4508.0,
-   "win_pct": 3126.0,
-   "algo_pct": 100.0,
-   "subscribers": 4.0,
-   "author": "/en/users/aller.techno",
-   "author_other_signals": [
-    {
-     "sid": "2338047",
-     "title": "'Techno Growth' by Nice Trader",
-     "growth": "77%",
-     "curve_points": 20,
-     "curve_dd": -17.0
-    },
-    {
-     "sid": "2377446",
-     "title": "'Techno Long Term IC' by Nice Trader",
-     "growth": "72%",
-     "curve_points": 20,
-     "curve_dd": -11.0
-    },
-    {
-     "sid": "2357816",
-     "title": "'Techno SteadyFlow' by Nice Trader",
-     "growth": "26%",
-     "curve_points": 20,
-     "curve_dd": -21.0
-    }
-   ],
+   "trades": 788.0,
+   "win_pct": 461.0,
+   "algo_pct": 98.0,
+   "subscribers": 18.0,
+   "author": "/en/users/archigenius",
+   "author_other_signals": [],
    "hour_histogram": {
+    "08": 2,
+    "13": 4,
+    "10": 2,
+    "09": 2,
+    "16": 1,
     "11": 4,
-    "16": 2,
-    "19": 4,
-    "17": 2,
-    "14": 2,
-    "07": 3,
-    "21": 9,
-    "15": 4,
-    "12": 4,
-    "01": 1,
-    "06": 1,
-    "13": 2,
-    "23": 1,
-    "02": 1
+    "17": 1,
+    "06": 2,
+    "15": 2,
+    "14": 4,
+    "18": 1,
+    "03": 1,
+    "22": 2,
+    "21": 1,
+    "19": 2,
+    "12": 1
    }
   }
  ]
