@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-08-31T10:23:26+00:00",
+ "updated_at": "2026-08-31T11:23:24+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -85,7 +85,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -137,7 +137,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -209,7 +209,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -282,7 +282,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -356,7 +356,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -411,7 +411,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -484,7 +484,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -535,7 +535,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -614,7 +614,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -676,7 +676,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -759,7 +759,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -809,7 +809,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -872,7 +872,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -915,7 +915,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -961,7 +961,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1040,7 +1040,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1086,7 +1086,7 @@
    "symbols": [
     "AUDCAD"
    ],
-   "found_at": "2026-08-31T10:23:26+00:00",
+   "found_at": "2026-08-31T11:23:24+00:00",
    "platform": "mt5",
    "phenotypes": [
     "high_pf",

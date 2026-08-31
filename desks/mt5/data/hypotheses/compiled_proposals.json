@@ -1,5 +1,5 @@
 {
- "built_at": "2026-08-31T10:19:21+00:00",
+ "built_at": "2026-08-31T11:19:41+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1202,18 +1202,23 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "NOK",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "cross_market_move",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "NordicBondVPS/EURSEK 1-minute FX data + Norwegian pension fund disclosure reports",
+   "kill": "Kill if Sharpe < 0.5 over 200 events or correlation drops below 0.3 on 3 consecutive events",
+   "lens": "PARTICIPANT CONSTRAINT",
    "promotion_authority": false
   },
   {
@@ -1228,6 +1233,21 @@
     "quality_atr": 1.0
    },
    "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
