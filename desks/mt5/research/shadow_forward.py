@@ -382,10 +382,11 @@ def main() -> None:
                 # a cost because today's remote catalogue is incomplete.
                 costs = frozen_costs(key)
                 if costs is None:
-                    raise RuntimeError(
-                        f"{sym} absent from current universe and {key} has no complete frozen "
-                        "cost basis"
-                    ) from exc
+                    # Preserve the missing-catalogue identity in the blocked-evidence record.
+                    # Operations consumes this as a cost-map repair target; relabelling it as a
+                    # generic RuntimeError makes the 2026-08-27 failure indistinguishable from
+                    # unrelated replay faults.
+                    raise KeyError(sym) from exc
                 slog(f"{key}: current universe lacks {sym}; using its frozen cost basis")
             try:
                 import dataclasses as _dc
