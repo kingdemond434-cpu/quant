@@ -1,27 +1,36 @@
 {
-    "free_gb":  28.4,
-    "checked_at":  "2026-08-30T12:53:14.5859093Z",
+    "free_gb":  19.5,
+    "checked_at":  "2026-08-31T01:02:44.6569500Z",
     "actions":  [
-                    "FAILING MT5-Gauntlet: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "NO-PROGRESS check on external_gauntlet: silent for 20m but working at 0.44 core(s) -- a fully-cached sweep writes nothing while it computes gates. Left alone."
+                    "FAILING MT5-Gauntlet: last result 75 twice in a row -- re-run",
+                    "RAM-FLOOR: only 124MB free (phys 124MB / virt 17808MB) -- shed edge_search.py (commit 4243MB); it resumes from cache on its next trigger",
+                    "UNIVERSE: registry shrank to 23 rows (canon 251) -- restored from canon"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  2,
     "procs":  {
-                  "external_gauntlet.232":  {
-                                                "cpu":  27493.828125,
-                                                "at":  "2026-08-30T14:50:45.2294530+02:00"
+                  "orthogonal_sweep.4412":  {
+                                                "cpu":  3840.046875,
+                                                "at":  "2026-08-31T03:00:44.6688072+02:00"
                                             },
-                  "fail.MT5-Gauntlet":  {
-                                            "cpu":  1,
-                                            "at":  "2026-08-30T14:50:45.2294530+02:00"
+                  "shadow_cycle.9020":  {
+                                            "cpu":  3.34375,
+                                            "at":  "2026-08-31T03:00:44.6688072+02:00"
                                         },
-                  "orthogonal_sweep.7828":  {
-                                                "cpu":  2102.609375,
-                                                "at":  "2026-08-30T14:50:45.2294530+02:00"
-                                            },
-                  "edge_search.5276":  {
-                                           "cpu":  8137.96875,
-                                           "at":  "2026-08-30T14:50:45.2294530+02:00"
-                                       }
+                  "fail.MT5-Hourly":  {
+                                          "cpu":  1,
+                                          "at":  "2026-08-31T03:00:44.6688072+02:00"
+                                      },
+                  "edge_search.9124":  {
+                                           "cpu":  8184.796875,
+                                           "at":  "2026-08-31T03:00:44.6688072+02:00"
+                                       },
+                  "fail.MT5-Gauntlet":  {
+                                            "cpu":  75,
+                                            "at":  "2026-08-31T03:00:44.6688072+02:00"
+                                        },
+                  "fail.MT5-Shadow":  {
+                                          "cpu":  1,
+                                          "at":  "2026-08-31T03:00:44.6688072+02:00"
+                                      }
               }
 }

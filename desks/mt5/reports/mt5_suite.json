@@ -1,16 +1,21 @@
 {
- "checked_at": "2026-08-30T07:47:26+00:00",
- "verdict": "OK",
+ "checked_at": "2026-08-31T02:21:33+00:00",
+ "verdict": "FAIL",
  "counts": {
-  "passed": 711,
-  "failed": 0,
+  "passed": 709,
+  "failed": 2,
   "error": 0,
   "skipped": 0,
   "total": 711
  },
- "new_failing": [],
+ "new_failing": [
+  "desks.mt5.tests.test_shadow_sleeve_isolation::test_a_terminal_verdict_survives_a_blocked_evaluation",
+  "desks.mt5.tests.test_shadow_sleeve_isolation::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book"
+ ],
  "newly_passing": [],
  "known_failing": [],
- "reasons": [],
- "pytest_tail": "........................................................................ [ 91%]\n...............................................................          [100%]\n711 passed in 23.97s"
+ "reasons": [
+  "2 NEW failing test(s) on the money path: desks.mt5.tests.test_shadow_sleeve_isolation::test_a_terminal_verdict_survives_a_blocked_evaluation; desks.mt5.tests.test_shadow_sleeve_isolation::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book"
+ ],
+ "pytest_tail": "FAILED desks/mt5/tests/test_shadow_sleeve_isolation.py::test_missing_cost_map_entry_blocks_one_sleeve_and_never_the_book\nFAILED desks/mt5/tests/test_shadow_sleeve_isolation.py::test_a_terminal_verdict_survives_a_blocked_evaluation\n2 failed, 709 passed in 22.12s"
 }
