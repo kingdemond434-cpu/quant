@@ -9,93 +9,93 @@
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
   "lost": 0,
   "lost_cells": [],
-  "queued": 19377,
-  "rejected": 3752,
-  "resumable_deferred": 19377,
+  "queued": 19358,
+  "rejected": 3771,
+  "resumable_deferred": 19358,
   "tested": 21
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
   "certificates_added": 0,
   "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.002658,
+  "measured_cpu_hours": 0.003936,
   "stage_rows": [
    {
     "certificate_delta": 0,
-    "cpu_seconds": 2.86872,
-    "duration_seconds": 7277.611,
+    "cpu_seconds": 3.958579,
+    "duration_seconds": 2367.381,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.125706,
-    "duration_seconds": 1.684,
+    "cpu_seconds": 1.176709,
+    "duration_seconds": 2.2,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 2.641586,
-    "duration_seconds": 4.835,
+    "cpu_seconds": 2.992667,
+    "duration_seconds": 5.166,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.057532,
-    "duration_seconds": 1.39,
+    "cpu_seconds": 0.066193,
+    "duration_seconds": 0.984,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 48.574,
+    "cpu_seconds": 3.364384,
+    "duration_seconds": 44.409,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.876287,
-    "duration_seconds": 1.465,
+    "cpu_seconds": 0.891841,
+    "duration_seconds": 3.047,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.050034,
-    "duration_seconds": 0.679,
+    "cpu_seconds": 0.064066,
+    "duration_seconds": 0.813,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.855936,
-    "duration_seconds": 1.445,
+    "cpu_seconds": 0.967649,
+    "duration_seconds": 2.844,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.373918,
-    "duration_seconds": 3.938,
+    "cpu_seconds": 0.0,
+    "duration_seconds": 5.805,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.251334,
-    "duration_seconds": 0.807,
+    "cpu_seconds": 0.232453,
+    "duration_seconds": 1.253,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.075577,
-    "duration_seconds": 0.835,
+    "cpu_seconds": 0.072938,
+    "duration_seconds": 0.963,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.325663,
-    "duration_seconds": 1.242,
+    "cpu_seconds": 0.305258,
+    "duration_seconds": 1.852,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.065388,
-    "duration_seconds": 0.808,
+    "cpu_seconds": 0.075119,
+    "duration_seconds": 0.846,
     "name": "forward_clock_fence"
    }
   ]
@@ -103,39 +103,23 @@
  "failure_root_causes": [
   {
    "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
-   "count": 19377,
+   "count": 19358,
    "sample_cells": [
-    "NAS100.discovered.p=67763741e34c4a8f",
-    "NAS100.discovered.p=4e2dd57991228579",
-    "NAS100.discovered.p=cd67a4816914819d",
-    "NAS100.discovered.p=67f31e9f4a526065",
-    "NAS100.discovered.p=9acd128a409da528",
-    "NAS100.discovered.p=c1cf61ffea849eba",
-    "NAS100.discovered.p=706cb4024e405366",
-    "NAS100.discovered.p=6f827fc568b30202",
-    "NAS100.discovered.p=35e227c7f92f3e0b",
-    "NAS100.discovered.p=59217c86ae8901e2"
-   ]
-  },
-  {
-   "cause": "deflated_sharpe",
-   "count": 1187,
-   "sample_cells": [
-    "XAUUSD.session_range_breakout.rr=1.5_wb=8",
-    "XAUUSD.session_range_breakout.rr=1.5_wb=12",
-    "XAUUSD.session_range_breakout.rr=2.0_wb=8",
-    "XAUUSD.session_range_breakout.rr=2.0_wb=12",
-    "XAUUSD.session_range_breakout.rr=2.5_wb=8",
-    "XAUUSD.session_range_breakout.rr=2.5_wb=12",
-    "EURUSD.session_range_breakout.rr=1.5_wb=8",
-    "EURUSD.session_range_breakout.rr=1.5_wb=12",
-    "EURUSD.session_range_breakout.rr=2.0_wb=8",
-    "EURUSD.session_range_breakout.rr=2.0_wb=12"
+    "NAS100.discovered.p=28606f372dbc826d",
+    "NAS100.discovered.p=84d85fa51fff8814",
+    "NAS100.discovered.p=53504417e2e0c5d9",
+    "NAS100.discovered.p=2f02364b47bbc3b1",
+    "NAS100.discovered.p=11564218e3057e79",
+    "NAS100.discovered.p=6e8c055107aa0d46",
+    "NAS100.discovered.p=8a6bc30a0e916213",
+    "NAS100.discovered.p=2f1f83cbc05dc99b",
+    "NAS100.discovered.p=7ff60b19cd439613",
+    "NAS100.discovered.p=4407cd26a8188935"
    ]
   },
   {
    "cause": "in_sample_screen",
-   "count": 1167,
+   "count": 1192,
    "sample_cells": [
     "XAUUSD.asia_momentum.rr=1.5_wb=?",
     "XAUUSD.asia_momentum.rr=2.0_wb=?",
@@ -147,6 +131,22 @@
     "US500.session_range_breakout.rr=1.5_wb=8",
     "US500.session_range_breakout.rr=1.5_wb=12",
     "US500.session_range_breakout.rr=2.0_wb=8"
+   ]
+  },
+  {
+   "cause": "deflated_sharpe",
+   "count": 1190,
+   "sample_cells": [
+    "XAUUSD.session_range_breakout.rr=1.5_wb=8",
+    "XAUUSD.session_range_breakout.rr=1.5_wb=12",
+    "XAUUSD.session_range_breakout.rr=2.0_wb=8",
+    "XAUUSD.session_range_breakout.rr=2.0_wb=12",
+    "XAUUSD.session_range_breakout.rr=2.5_wb=8",
+    "XAUUSD.session_range_breakout.rr=2.5_wb=12",
+    "EURUSD.session_range_breakout.rr=1.5_wb=8",
+    "EURUSD.session_range_breakout.rr=1.5_wb=12",
+    "EURUSD.session_range_breakout.rr=2.0_wb=8",
+    "EURUSD.session_range_breakout.rr=2.0_wb=12"
    ]
   },
   {
@@ -167,18 +167,18 @@
   },
   {
    "cause": "observations",
-   "count": 580,
+   "count": 571,
    "sample_cells": [
-    "USDMXN.cot_positioning.p=910f73eb20d91704",
-    "NZDUSD.cot_positioning.p=910f73eb20d91704",
-    "NAS100.calendar_month.p=82b636430ca68152",
-    "US500.calendar_month.p=82b636430ca68152",
-    "3M.carry.p=364802d2d8e552f9",
-    "ADAUSD.carry.p=e3f98be9e28db5d7",
-    "ADP.carry.p=7e89dd8137ccc152",
-    "AMD.carry.p=f8ff82dcc0676d67",
-    "AT&T.carry.p=e82efc48d8c19d10",
-    "AUS200.carry.p=d6ecd0b852774149"
+    "EURAUD.event_reaction.p=4715a17a13ae8cc2",
+    "EURCAD.event_reaction.p=4715a17a13ae8cc2",
+    "EURCHF.event_reaction.p=4715a17a13ae8cc2",
+    "EURCZK.event_reaction.p=4715a17a13ae8cc2",
+    "EURDKK.event_reaction.p=4715a17a13ae8cc2",
+    "EURGBP.event_reaction.p=4715a17a13ae8cc2",
+    "EURHKD.event_reaction.p=4715a17a13ae8cc2",
+    "EURHUF.event_reaction.p=4715a17a13ae8cc2",
+    "EURILS.event_reaction.p=4715a17a13ae8cc2",
+    "EURJPY.event_reaction.p=4715a17a13ae8cc2"
    ]
   },
   {
@@ -215,7 +215,7 @@
   "stale": 0,
   "stale_keys": []
  },
- "generated_at": "2026-08-31T11:43:43.620734+00:00",
+ "generated_at": "2026-08-31T12:31:59.126750+00:00",
  "headline": {
   "candidates_discovered": 23257,
   "candidates_lost": 0,
@@ -228,16 +228,6 @@
    "kelly_fraction": 0.25,
    "measured": true,
    "sleeves": {
-    "AUDCHF_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "CADCHF_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
     "CADJPY_asia": {
      "n": 3,
      "weight": 0.0,
@@ -258,55 +248,15 @@
      "weight": 0.0,
      "why": "3 day(s) < 8: too little to size on"
     },
-    "EURNOK_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "EURZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "GBPCHF_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
     "GBPJPY_asia": {
      "n": 3,
      "weight": 0.0,
      "why": "3 day(s) < 8: too little to size on"
     },
-    "GBPMXN_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "GBPNOK_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "GBPZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
     "USDJPY_asia": {
      "n": 3,
      "weight": 0.0,
      "why": "3 day(s) < 8: too little to size on"
-    },
-    "USDMXN_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "USDZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
     },
     "XAUUSD_asia": {
      "n": 2,
@@ -317,32 +267,32 @@
    "why": "weights are fractional-Kelly on measured moments, further shrunk by the book's own concentration (N_eff / N). Kelly on estimated moments is fragile -- past 2x Kelly geometric growth turns negative -- so this allocates deliberately below the optimum."
   },
   "downside_comovement": {
-   "losing_days": 2,
-   "mean_share_losing_together": 0.176,
+   "losing_days": 3,
+   "mean_share_losing_together": 0.429,
    "measured": true,
    "why": "the fraction of sleeves that are down on the book's down days; near 1.0 means the book is one bet however many names it holds"
   },
   "effective_bets": {
-   "concentration": 16.68,
-   "n_effective": 1.019,
-   "n_sleeves": 17,
-   "pairs_assumed_correlated": 136,
+   "concentration": 6.88,
+   "n_effective": 1.017,
+   "n_sleeves": 7,
+   "pairs_assumed_correlated": 21,
    "pairs_measured": 0,
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
-  "forward_sleeves_with_observations": 17,
-  "measured_at": "2026-08-31T11:43:36+00:00",
+  "forward_sleeves_with_observations": 7,
+  "measured_at": "2026-08-31T12:31:50+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 19377
+  "stalled_cells": 19358
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 1640.1,
+  "mem_available_mb": 1457.7,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
