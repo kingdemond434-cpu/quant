@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-01T12:55:30+00:00",
+ "compiled_at": "2026-09-01T14:10:10+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4499,9 +4499,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 37,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 36
   },
   "litefinance": {
    "rows": 15,
@@ -4598,6 +4598,11 @@
    "candidates": 0,
    "deepening": 1
   },
+  "cnn_fear_greed": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
   "scheduled_chatgpt": {
    "rows": 3,
    "candidates": 3,
@@ -4606,6 +4611,6 @@
  },
  "rows_accounted": 1064,
  "executable_candidates": 370,
- "deepening_tasks": 611,
+ "deepening_tasks": 612,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
