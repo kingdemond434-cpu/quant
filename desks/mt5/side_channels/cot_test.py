@@ -15,7 +15,8 @@ tests = [
 ]
 for name, u in tests:
     try:
-        req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(u, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
         with urllib.request.urlopen(req, timeout=30) as r:
             d = json.load(r)
             print(name, "OK rows=", len(d))

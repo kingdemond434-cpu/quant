@@ -31,7 +31,8 @@ def _extract_patterns(text: str) -> list[str]:
 def mine_tradingview() -> list[dict]:
     discoveries = []
     try:
-        resp = requests.get(TV_SEARCH_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        resp = requests.get(TV_SEARCH_URL, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=15)
         resp.raise_for_status()
         text = resp.text
         scripts = re.findall(r'<a[^>]*href="(/scripts/[^"]+)"[^>]*>([^<]+)</a>', text)

@@ -2,7 +2,8 @@ import json
 import urllib.parse
 import urllib.request
 
-UA = {"User-Agent": "Mozilla/5.0"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 for pat in ["YEN", "FX", "POUND", "DOLLAR", "S&P", "NASDAQ"]:
     params = {"$select": "distinct commodity_name",
               "$where": "commodity_name like '{}%'".format(pat)}

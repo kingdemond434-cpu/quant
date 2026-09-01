@@ -3,7 +3,8 @@ import urllib.request
 
 req = urllib.request.Request(
     "https://publicreporting.cftc.gov/resource/72hh-3qpy.json?$limit=1",
-    headers={"User-Agent": "Mozilla/5.0"})
+    headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
 try:
     rows = json.load(urllib.request.urlopen(req, timeout=60))
     print("rows:", len(rows))

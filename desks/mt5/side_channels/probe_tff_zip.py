@@ -6,7 +6,8 @@ import zipfile
 ctx = ssl.create_default_context()
 ctx.check_hostname = False
 ctx.verify_mode = ssl.CERT_NONE
-UA = {"User-Agent": "Mozilla/5.0"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 url = "https://www.cftc.gov/files/dea/history/fut_fin_txt_2024.zip"
 req = urllib.request.Request(url, headers=UA)
 try:

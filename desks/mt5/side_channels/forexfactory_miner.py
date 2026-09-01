@@ -21,7 +21,8 @@ OUT.mkdir(parents=True, exist_ok=True)
 CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 CALENDAR_NEXT_URL = "https://nfs.faireconomy.media/ff_calendar_nextweek.json"
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 
 # Impact levels that move markets
 HIGH_IMPACT = {"High", "Red"}
@@ -89,6 +90,12 @@ def mine_calendar() -> list[dict]:
 
         except Exception as e:
             print(f"  forexfactory calendar: {e}")
+        # A SWALLOWED EXCEPTION IS A SILENT ZERO: printing and returning [] makes a
+        # crashed miner indistinguishable from a quiet source. classify_row keys on
+        # "kind", so this counts as an error and never as a real row (L1.28a).
+        discoveries.append({"source": "forexfactory",
+                            "kind": "fetch_error",
+                            "error": f"{type(e).__name__}: {e}"})
 
     return discoveries
 

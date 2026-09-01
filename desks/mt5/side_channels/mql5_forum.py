@@ -26,7 +26,8 @@ def mine_forum(max_pages: int = 3) -> list[dict]:
     for page in range(1, max_pages + 1):
         try:
             resp = requests.get(FORUM_URL, params={"page": page},
-                              headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                              headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=15)
             resp.raise_for_status()
             text = resp.text
             threads = re.findall(r'<a[^>]*href="(/en/forum/[^"]+)"[^>]*>([^<]+)</a>', text)

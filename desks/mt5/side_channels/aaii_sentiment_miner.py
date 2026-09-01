@@ -17,7 +17,8 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "aaii"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 AAII_URL = "https://www.aaii.com/sentimentsurvey"
 
 
@@ -79,6 +80,12 @@ def mine_aaii() -> list[dict]:
 
     except Exception as e:
         print(f"  aaii: {e}")
+        # A SWALLOWED EXCEPTION IS A SILENT ZERO: printing and returning [] makes a
+        # crashed miner indistinguishable from a quiet source. classify_row keys on
+        # "kind", so this counts as an error and never as a real row (L1.28a).
+        discoveries.append({"source": "aaii_sentiment",
+                            "kind": "fetch_error",
+                            "error": f"{type(e).__name__}: {e}"})
 
     return discoveries
 

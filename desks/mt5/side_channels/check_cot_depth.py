@@ -3,7 +3,8 @@ import json
 import urllib.request
 
 def q(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.loads(resp.read())
 

@@ -15,7 +15,8 @@ BASE = Path(__file__).resolve().parent.parent
 OUT = BASE / "data" / "intelligence" / "academic"
 OUT.mkdir(parents=True, exist_ok=True)
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 
 # arXiv API for quantitative finance
 ARXIV_URL = "http://export.arxiv.org/api/query"

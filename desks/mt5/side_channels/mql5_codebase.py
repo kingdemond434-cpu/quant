@@ -53,7 +53,8 @@ def mine_codebase(max_pages: int = 3) -> list[dict]:
             resp = requests.get(
                 CODEBASE_URL,
                 params={"page": page, "sort": "date"},
-                headers={"User-Agent": "Mozilla/5.0"},
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"},
                 timeout=15,
             )
             resp.raise_for_status()

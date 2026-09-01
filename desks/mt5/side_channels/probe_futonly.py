@@ -3,7 +3,8 @@ import urllib.request
 
 url = ("https://publicreporting.cftc.gov/resource/72hh-3qpy.json?"
        "$select=futonly_or_combined,commodity_name&$where=commodity_name='GOLD'")
-req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
 rows = json.load(urllib.request.urlopen(req, timeout=90))
 vals = {}
 for r in rows:

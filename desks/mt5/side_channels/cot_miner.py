@@ -19,7 +19,8 @@ OUT = BASE / "data" / "intelligence" / "cot"
 OUT.mkdir(parents=True, exist_ok=True)
 
 COT_URL = "https://www.cftc.gov/dea/newcot/FinFutWk.txt"
-HEADERS = {"User-Agent": "Mozilla/5.0"}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}
 
 # Map CFTC contract names to our symbols
 CONTRACT_MAP = {

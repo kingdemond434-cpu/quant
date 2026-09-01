@@ -51,7 +51,8 @@ def fetch_all(market_filter: str) -> list[dict]:
             "noncomm_positions_long_all,noncomm_positions_short_all,"
             "comm_positions_long_all,comm_positions_short_all,open_interest_all"
         )
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"})
         with urllib.request.urlopen(req, timeout=60) as resp:
             batch = json.loads(resp.read())
         if not batch:

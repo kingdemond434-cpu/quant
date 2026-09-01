@@ -30,7 +30,8 @@ def _extract_patterns(text: str) -> list[str]:
 def mine_quantconnect() -> list[dict]:
     discoveries = []
     try:
-        resp = requests.get(QC_URL, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        resp = requests.get(QC_URL, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"}, timeout=15)
         resp.raise_for_status()
         text = resp.text
         strategies = re.findall(r'<h3[^>]*><a[^>]*href="([^"]+)"[^>]*>([^<]+)</a></h3>', text)
