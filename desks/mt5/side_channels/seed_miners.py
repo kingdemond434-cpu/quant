@@ -70,6 +70,45 @@ def _state() -> dict:
 #                      challenge is circumventing an access control and is out of bounds, so
 #                      the only legitimate move is to ask again, rarely, in case it lifts.
 SOURCE_WALLS: dict[str, dict] = {
+    # --- added 2026-09-01 after measuring each host directly -------------------------------
+    # robots.txt was READ FIRST for all three (that is always permitted and is what it is for).
+    # None names ClaudeBot/Anthropic and none carries a wildcard Disallow: /, so these are
+    # server-side refusals and throttles, NOT a refusal in writing. That distinction decides the
+    # probe cadence above, and it is why the UA these miners send was left as a browser string
+    # rather than being treated as the forexpeacearmy case.
+    "china": {
+        "verdict": "ANTIBOT_CHALLENGE",
+        "host": "www.zhihu.com",
+        "evidence": "Content search returns HTTP 403 with a 674-byte interstitial while "
+                    "/robots.txt itself serves 200 (21,905 bytes) and names no AI agent. The "
+                    "refusal is the anti-bot layer, not the operator, so the content is not "
+                    "re-fetched but the wall is re-probed in case it lifts.",
+        "probe": "url",
+        "url": "https://www.zhihu.com/robots.txt",
+        "since": "2026-09-01",
+    },
+    "investing": {
+        "verdict": "HTTP_403",
+        "host": "www.investing.com",
+        "evidence": "The whole host refuses: the sentiment page returns 403 with a 3-byte body, "
+                    "and /robots.txt ITSELF returns 403 -- so the desk cannot even read the "
+                    "operator's stated policy. Absence of a readable directive is not "
+                    "permission, so this is walled rather than retried hourly.",
+        "probe": "url",
+        "url": "https://www.investing.com/robots.txt",
+        "since": "2026-09-01",
+    },
+    "google_trends": {
+        "verdict": "HTTP_403",
+        "host": "trends.google.com",
+        "evidence": "HTTP 429 on every explore query -- rate limiting, not a content refusal: "
+                    "/robots.txt serves 200 (93 bytes) and names no AI agent. Recorded as a wall "
+                    "because an hourly miner cannot honour a quota it keeps exceeding; the "
+                    "rediscovery probe is the honest way back in.",
+        "probe": "url",
+        "url": "https://trends.google.com/robots.txt",
+        "since": "2026-09-01",
+    },
     "forexpeacearmy": {
         "verdict": "ROBOTS_DISALLOW",
         "host": "www.forexpeacearmy.com",
