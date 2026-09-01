@@ -44,8 +44,9 @@ from __future__ import annotations
 
 import json
 import math
+from collections import OrderedDict
 from datetime import UTC, datetime
-from functools import cache, lru_cache
+from functools import lru_cache
 from itertools import combinations
 from pathlib import Path
 
@@ -245,6 +246,33 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
 
 
 
+#: SMALL, ORDERED CACHE -- NOT A BIG ONE, AND THE ORDER IS WHY IT WORKS.
+#: `resolve_inputs` rebuilds residuals and rolling correlations against EVERY other instrument in
+#: the registry, and external_gauntlet called it once per cell. Measured 2026-09-01 on the live
+#: docket: 14,060 of the 20,341 `discovered` cells use an `ext_` feature and they span only 137
+#: distinct symbols, so 13,923 of those calls (99.0%) rebuilt a universe that was already built
+#: moments earlier for the same symbol.
+#:
+#: Memoising all 137 is not an option -- 137 symbols x ~250 peers x 2 series is tens of GB on a
+#: box with 8GB and a live terminal. Two entries are enough PROVIDED the caller walks the docket
+#: in symbol order, which external_gauntlet now does: every cell of a symbol is consecutive, so
+#: depth 2 (current symbol + the one being finished) converts ~99% of the calls into hits at
+#: O(1) memory. Unsorted, the same cache would thrash to a ~0% hit rate, which is exactly the
+#: behaviour this replaces.
+_RESOLVE_CACHE: OrderedDict[tuple, dict] = OrderedDict()
+_RESOLVE_CACHE_DEPTH = 2
+
+
+def _resolve_cache_key(symbol: str, index, all_symbols: list[str]) -> tuple:
+    """Identity of the universe this call would build.
+
+    Length plus both endpoints pins a time index: two different bar sets cannot share all three.
+    The peer set is part of the identity because adding an instrument changes every residual.
+    """
+    return (symbol, len(index), str(index[0]) if len(index) else "",
+            str(index[-1]) if len(index) else "", len(all_symbols))
+
+
 def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     """Every external series this box can supply, as PRIMITIVES with no family semantics.
 
@@ -257,6 +285,14 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
     """
     import numpy as np
     import pandas as pd
+
+    _ck = _resolve_cache_key(symbol, index, all_symbols)
+    _hit = _RESOLVE_CACHE.get(_ck)
+    if _hit is not None:
+        _RESOLVE_CACHE.move_to_end(_ck)
+        # A SHALLOW COPY, so a caller that adds or drops a key cannot corrupt the entry the next
+        # cell will read. The Series inside are treated as read-only by every family.
+        return dict(_hit)
 
     extra: dict = {}
 
@@ -421,7 +457,10 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
         except Exception:
             continue
 
-    return extra
+    _RESOLVE_CACHE[_ck] = extra
+    while len(_RESOLVE_CACHE) > _RESOLVE_CACHE_DEPTH:
+        _RESOLVE_CACHE.popitem(last=False)
+    return dict(extra)
 
 
 def _forward_returns(close, horizons=HORIZONS) -> dict:

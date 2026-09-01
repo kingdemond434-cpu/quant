@@ -798,6 +798,19 @@ def main():
                 _f.unlink(missing_ok=True)
     except OSError:
         pass
+    # SYMBOL ORDER IS A PERFORMANCE CONTRACT, NOT A PREFERENCE. build_cell -> resolve_inputs
+    # rebuilds residuals and rolling correlations against EVERY other registry instrument, and it
+    # is memoised only two entries deep because the full universe for one symbol is hundreds of
+    # series and this box has 8GB beside a live terminal. Two entries convert ~99% of those calls
+    # into hits WHEN a symbol's cells are consecutive, and ~0% when they are interleaved.
+    # Measured 2026-09-01: 14,060 of 20,341 `discovered` cells use an `ext_` feature across just
+    # 137 symbols, so unsorted iteration was rebuilding the same universe 13,923 redundant times.
+    # Cells are independent -- each is built from its own bars and judged by the same matrix
+    # afterwards -- so ordering changes nothing about any verdict. It does change WHICH cells the
+    # fresh-build budget reaches first, and grouping means the budget buys more cells per second,
+    # which is the point.
+    eligible_specs = sorted(eligible_specs, key=lambda sp: (str(sp.get("sym") or ""),
+                                                            str(sp.get("family") or "")))
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
         frame = _h1_for(spec["sym"])
