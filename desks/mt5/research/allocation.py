@@ -3,11 +3,24 @@
 Maximizes mean log growth over the 2018-2026 daily-R matrix with per-sleeve
 weights (positive, sum=1), total risk q_total fixed. Reports:
   - optimal weights vs equal weight
-  - net Sharpe + CAGR of the weighted book at q_total = 5.5%/day-R
+  - net Sharpe + CAGR of the weighted book at q_total = Q_OPT, IMPORTED from the gateway
+    (gateway_config_fallback.risk_per_trade(), 1.27% at the time of writing). The header
+    used to say 5.5%/day-R, which was the abandoned near-Kelly setting -- the code has
+    always imported Q_OPT, so only this line was stale, but a stale number in the header
+    of an ALLOCATOR is the kind of thing a reader trusts without checking.
   - concentration (HHI) and marginal contribution ranking
 
 Forward evidence (live ledger) overrides any backtest allocation; this is the
 prior the forward ledger will update.
+
+THAT UPDATE HAS NEVER HAPPENED, and the reason was not this module. Measured
+2026-09-01: desks/mt5/data/live_ledger.jsonl did not exist on either box, because
+gateway.record_trades required each closed deal's comment to start with 'DW' ON TOP OF
+the magic filter that had already selected this desk's own trades -- and brokers rewrite
+comments. So the ledger that is supposed to override this prior was empty from the day
+it was designed, and every allocation this module has ever produced has been pure
+backtest with nothing to update it. Fixed in the gateway the same day; this note stays
+so the next reader knows which allocations predate any forward evidence at all.
 """
 
 from __future__ import annotations
