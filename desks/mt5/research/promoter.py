@@ -143,6 +143,30 @@ def sleeve_forward_stats(ledger: list[dict], name: str) -> dict:
             "roll20_exp": sum(roll) / len(roll)}
 
 
+#: The hardcoded live book, by the names gateway.sleeve_set() emits. Kept here rather than
+#: imported because promoter runs on the research side and gateway imports MetaTrader5, which is
+#: Windows-only; a wrong name here retires nothing rather than the wrong thing, and the names are
+#: asserted against the gateway by tests/test_gold_retire_names.py.
+GOLD_SLEEVE_NAMES = ("gold_asia", "gold_london_am", "gold_afternoon")
+
+#: Windows the gateway must stop emitting. Absent file = nothing retired, which is the state the
+#: desk has been in until now, so behaviour is unchanged until a rule actually fires.
+GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+
+
+def _load_gold_retired() -> dict:
+    try:
+        v = json.loads(GOLD_RETIRED_FILE.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_gold_retired(rows: dict) -> None:
+    GOLD_RETIRED_FILE.parent.mkdir(parents=True, exist_ok=True)
+    GOLD_RETIRED_FILE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
+
+
 def load_qquant_shadow() -> dict:
     """The qquant (hunt-certified) forward clock, kept in its own state file."""
     p = SHADOW_DIR / "qquant_shadow_state.json"
@@ -305,6 +329,43 @@ def main() -> None:
             if skey in shadow:
                 shadow[skey]["status"] = "KILL"
             plog(f"AUTO-RETIRED {s['name']} ({reason})")
+            changed = True
+
+    # ---------------------------------------------------------------- the gold book
+    # THE ARMED GOLD BOOK NOW DECAYS LIKE EVERYTHING ELSE (principal, 2026-09-01). It used to be
+    # exempt -- "The armed gold book is NOT managed here" -- because it predates the gauntlet and
+    # is armed by a person. The consequence was that the desk's ONLY live sleeves were the only
+    # ones with no automatic decay protection: the three retire rules below walked sleeves.json,
+    # which is empty, so they applied to nothing that could actually lose money. A gold book whose
+    # edge died would have degraded indefinitely with no organ able to notice.
+    #
+    # RETIREMENT HERE DOES NOT DELETE ANYTHING. It writes the window into data/GOLD_RETIRED.json
+    # with its reason; gateway.sleeve_set() reads that file and stops emitting the window. Undo is
+    # deleting the entry, which keeps re-arming a person's act exactly as it is today.
+    #
+    # SAFE BEFORE THE LEDGER FILLS: sleeve_forward_stats returns n=0/max_dd=0.0 for a sleeve with
+    # no rows, and every rule below requires either n >= 10 or a drawdown worse than -25R, so an
+    # empty or missing ledger retires nothing. It arms itself only once real fills are recorded.
+    gold_retired = _load_gold_retired()
+    for gname in GOLD_SLEEVE_NAMES:
+        if gname in gold_retired:
+            continue
+        fs = sleeve_forward_stats(ledger, gname)
+        retire = False
+        reason = ""
+        if fs["n"] >= RETIRE_MIN_N and fs["roll20_exp"] <= 0.0:
+            retire, reason = True, f"roll20 exp {fs['roll20_exp']:.3f}R <= 0"
+        elif fs["max_dd"] < RETIRE_MAX_DD:
+            retire, reason = True, f"forward maxDD {fs['max_dd']:.1f}R < {RETIRE_MAX_DD}R"
+        elif fs["n"] >= 50 and fs["exp"] < RETIRE_MIN_EXP:
+            retire, reason = True, f"n={fs['n']} exp {fs['exp']:.3f}R < {RETIRE_MIN_EXP}R"
+        if retire:
+            gold_retired[gname] = {
+                "retired_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                "reason": reason, "n": fs["n"], "exp": fs["exp"],
+                "roll20_exp": fs["roll20_exp"], "max_dd": fs["max_dd"]}
+            _save_gold_retired(gold_retired)
+            plog(f"AUTO-RETIRED {gname} ({reason}) -- gateway stops emitting this window")
             changed = True
 
     if changed:

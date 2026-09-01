@@ -1157,11 +1157,44 @@ def ledger_rows() -> list[dict]:
     return out
 
 
+#: Written by research/promoter.py when a gold window trips a retire rule. Read on every pass so
+#: a retirement takes effect within one gateway cycle rather than waiting for a restart.
+GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+
+
+def _load_retired_gold() -> dict:
+    """Retired gold windows, or {} when the file is absent/unreadable.
+
+    FAILS OPEN ON PURPOSE, and this is the one place in the gateway where that is right: an
+    unreadable file must not silently stop a live book that is otherwise trading correctly.
+    A retirement that does not apply is visible in the next promoter run and in this log line;
+    a book that stops because a JSON file got truncated is an outage with no author.
+    """
+    try:
+        v = json.loads(GOLD_RETIRED_FILE.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def sleeve_set() -> list[dict]:
     """All active sleeves: gold book + promoted, with window metadata."""
     sleeves = []
+    # THE GOLD BOOK DECAYS LIKE EVERYTHING ELSE NOW (principal, 2026-09-01). research/promoter.py
+    # walks these three names against the same retire rules it applies to promoted sleeves and
+    # writes the loser here with its reason. Until 2026-09-01 the armed gold book was exempt from
+    # retirement entirely -- so the desk's ONLY live sleeves were the only ones with no automatic
+    # decay protection, because the retire rules walked sleeves.json, which is empty.
+    # ABSENT FILE = NOTHING RETIRED, which is the behaviour up to now; and re-arming stays a
+    # person's act, because undoing a retirement means deleting the entry by hand.
+    retired_gold = _load_retired_gold()
     for label, sig_hour, rng in GOLD_WINDOWS:
-        sleeves.append({"name": f"gold_{label}", "symbol": "XAUUSD",
+        name = f"gold_{label}"
+        if name in retired_gold:
+            log(f"GOLD {name}: RETIRED ({retired_gold[name].get('reason', 'no reason recorded')}); "
+                f"not emitted this pass")
+            continue
+        sleeves.append({"name": name, "symbol": "XAUUSD",
                         "window": label, "sig_hour": sig_hour, "rng": rng,
                         "lot": "auto", "status": "LIVE"})
     for s in load_sleeves():
