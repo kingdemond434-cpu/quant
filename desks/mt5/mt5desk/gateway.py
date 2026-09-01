@@ -23,7 +23,8 @@ from __future__ import annotations
 import json
 import math
 import time
-from datetime import UTC, datetime
+import contextlib
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import sys
@@ -50,6 +51,13 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 
 TERMINAL = terminal_path()
 MAGIC = 341953
+
+#: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
+#: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
+#: exists because the previous day-wide window silently lost every fill the gateway did not see
+#: on the same calendar day: a skipped pass, an OOM kill or a restart after midnight left those
+#: closes unrecorded permanently, since nothing ever looked backwards.
+LEDGER_LOOKBACK_DAYS = 30
 
 LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
@@ -1049,20 +1057,50 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     """
     if not st["armed"]:
         return
+
+    # ALREADY-RECORDED DEALS, so the window below can be widened without duplicating rows.
+    # The ledger is append-only JSONL and `deal` is the venue's own ticket, unique per fill.
+    seen_deals: set = set()
+    if LEDGER.exists():
+        try:
+            for line in LEDGER.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                with contextlib.suppress(ValueError):
+                    tid = json.loads(line).get("deal")
+                    if tid is not None:
+                        seen_deals.add(tid)
+        except OSError:
+            seen_deals = set()
+
     try:
-        day_start = datetime.combine(datetime.now(tz=UTC).date(),
-                                     datetime.min.time(), tzinfo=UTC)
-        deals = mt5.history_deals_get(day_start, datetime.now(tz=UTC), magic=MAGIC) or []
+        # A DAY-WIDE WINDOW LOSES EVERY FILL THE GATEWAY DID NOT SEE THE SAME DAY. Any pass that
+        # is skipped, OOM-killed or started after midnight left that day's closes unrecorded
+        # forever, because nothing ever looked backwards. Dedupe by deal ticket makes a wider
+        # window free, so the lookback is bounded by history rather than by uptime.
+        since = datetime.now(tz=UTC) - timedelta(days=LEDGER_LOOKBACK_DAYS)
+        deals = mt5.history_deals_get(since, datetime.now(tz=UTC), magic=MAGIC) or []
     except Exception:
         return
     written = 0
     for d in deals:
         if d.entry != mt5.DEAL_ENTRY_OUT:
             continue
-        comment = (d.comment or "")
-        if not comment.startswith("DW"):
+        if getattr(d, "ticket", None) in seen_deals:
             continue
-        sleeve = comment[2:]
+        comment = (d.comment or "")
+        # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
+        # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
+        # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
+        # do rewrite comments -- it is the same lesson the EA learned when it stopped trusting
+        # them for idempotency and moved to a persistent journal. Measured 2026-09-01:
+        # live_ledger.jsonl did not exist on either box while the account carried real P&L and
+        # open margin, so matched_fills read 0 and execution was UNMEASURED. A fill this desk
+        # placed is now recorded whether or not its label survived the round trip; the sleeve
+        # name is taken from the comment when it is there and marked unattributed when it is not,
+        # which is a recoverable gap, unlike never recording the fill at all.
+        sleeve = comment[2:] if comment.startswith("DW") else (comment or "UNATTRIBUTED")
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
