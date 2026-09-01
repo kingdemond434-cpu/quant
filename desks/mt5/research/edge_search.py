@@ -246,6 +246,37 @@ def build_primitives(df, symbol: str, extra: dict | None = None) -> dict:
 
 
 
+def _match_clock(series, index):
+    """Put `series` on the same tz-awareness as `index` WITHOUT moving a single timestamp.
+
+    THE UNIVERSE IS MIXED AND IT IS NOT COSMETIC. Measured 2026-09-01 on the live registry: 171
+    of 251 H1 parquets carry a tz-naive index and 80 carry tz-aware UTC -- all 251 legitimate
+    registry symbols, written by two different producers. `resolve_inputs` unions the base index
+    with every peer, so ANY base symbol met a peer of the other kind and pandas raised
+    "Cannot join tz-naive with tz-aware DatetimeIndex". build_cell catches that as INPUT-FAIL and
+    returns None, so all 14,060 `ext_` discovered cells -- 69% of the docket -- were being
+    discarded before a single gate ran, each after ~12s of work.
+
+    THE COERCION IS VALUE-PRESERVING IN BOTH DIRECTIONS, which is why it is safe to apply to
+    money-path inputs. Dropping a tz keeps the UTC wall clock; adding one labels a clock that is
+    already UTC. The naive files ARE UTC: AUDCAD (aware) and 3M (naive) both end 2026-08-28
+    22:00, and 3M's missing hours are equity session gaps, not an offset. Peers adopt the BASE
+    index's convention rather than a fixed UTC so the returned features come back on exactly the
+    index the caller handed in, and nothing downstream sees a different clock than it passed.
+    """
+    if series is None or not hasattr(series, "index"):
+        return series
+    want = getattr(index, "tz", None)
+    have = getattr(series.index, "tz", None)
+    if want is None and have is not None:
+        return series.tz_localize(None)
+    if want is not None and have is None:
+        return series.tz_localize(want)
+    if want is not None and have is not None and str(want) != str(have):
+        return series.tz_convert(want)
+    return series
+
+
 #: SMALL, ORDERED CACHE -- NOT A BIG ONE, AND THE ORDER IS WHY IT WORKS.
 #: `resolve_inputs` rebuilds residuals and rolling correlations against EVERY other instrument in
 #: the registry, and external_gauntlet called it once per cell. Measured 2026-09-01 on the live
@@ -294,17 +325,27 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
         # cell will read. The Series inside are treated as read-only by every family.
         return dict(_hit)
 
+    def _cl(sym: str):
+        """Every close read in this function, already on the caller's clock.
+
+        Bound once rather than coercing at each call site: the function reads closes from five
+        separate places (peer residuals, the cross-sectional panel, FX triangles, and the
+        swap/carry legs), and a single missed site re-raises the tz union error and discards the
+        whole cell as INPUT-FAIL -- which is precisely how 69% of the docket was being lost.
+        """
+        return _match_clock(_close(sym), index)
+
     extra: dict = {}
 
     # --- peers: residuals and rolling correlations against several other instruments ---------
     # ALL registry instruments are potential peers. The previous [:4] silently made most of the
     # Fusion universe ineligible as a driver; caching makes full coverage cheaper than that cap.
     peers = [s for s in all_symbols if s != symbol]
-    base_close = _close(symbol)
+    base_close = _cl(symbol)
     base = np.log(base_close) if base_close is not None else None
     if base is not None:
         for peer in peers:
-            peer_close = _close(peer)
+            peer_close = _cl(peer)
             if peer_close is None:
                 continue
             pc = np.log(peer_close)
@@ -325,7 +366,7 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
         # Cross-sectional state: dispersion and common motion across every available Fusion leg.
         peer_returns = []
         for peer in peers:
-            pc = _close(peer)
+            pc = _cl(peer)
             if pc is not None:
                 peer_returns.append(np.log(pc).diff().rename(peer))
         if peer_returns:
@@ -341,10 +382,10 @@ def resolve_inputs(symbol: str, index, all_symbols: list[str]) -> dict:
             base_ccy, quote_ccy = symbol[:3], symbol[3:]
 
             def fx_log(a: str, b: str):
-                direct = _close(a + b)
+                direct = _cl(a + b)
                 if direct is not None:
                     return np.log(direct)
-                inverse = _close(b + a)
+                inverse = _cl(b + a)
                 return -np.log(inverse) if inverse is not None else None
 
             currencies = sorted({s[:3] for s in all_symbols if len(s) == 6 and s.isalpha()}

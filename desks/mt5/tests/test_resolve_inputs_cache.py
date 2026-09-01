@@ -107,3 +107,52 @@ def test_key_separates_different_bar_sets(synthetic):
     k_peers = edge_search._resolve_cache_key("XAUUSD", idx, [*peers, "NZDUSD"])
     assert k_full != k_short, "a different bar count must not read a stale universe"
     assert k_full != k_peers, "adding a peer changes every residual and must miss"
+
+
+# --------------------------------------------------------------- clock coercion (tz mismatch)
+# 171 of 251 live H1 parquets are tz-naive and 80 are tz-aware, so ANY base symbol met a peer of
+# the other kind and pandas raised "Cannot join tz-naive with tz-aware DatetimeIndex".
+# build_cell catches that as INPUT-FAIL and discards the cell, which is how 14,060 `ext_` cells
+# (69% of the docket) were thrown away before a single gate ran. The coercion must never move a
+# timestamp -- if it does, every feature is silently shifted against the bars it conditions on.
+
+def test_coercion_never_moves_a_timestamp_when_dropping_a_tz():
+    aware = pd.Series([1.0, 2.0, 3.0],
+                      index=pd.date_range("2024-05-01 00:00", periods=3, freq="h", tz="UTC"))
+    naive_idx = pd.date_range("2024-05-01 00:00", periods=3, freq="h")
+    out = edge_search._match_clock(aware, naive_idx)
+    assert out.index.tz is None
+    assert list(out.index.astype("datetime64[ns]")) == list(naive_idx)
+    assert list(out.values) == [1.0, 2.0, 3.0]
+
+
+def test_coercion_never_moves_a_timestamp_when_adding_a_tz():
+    naive = pd.Series([1.0, 2.0, 3.0],
+                      index=pd.date_range("2024-05-01 00:00", periods=3, freq="h"))
+    aware_idx = pd.date_range("2024-05-01 00:00", periods=3, freq="h", tz="UTC")
+    out = edge_search._match_clock(naive, aware_idx)
+    assert out.index.tz is not None
+    assert [str(t) for t in out.index] == [str(t) for t in aware_idx]
+    assert list(out.values) == [1.0, 2.0, 3.0]
+
+
+def test_a_naive_peer_and_an_aware_base_can_now_be_joined():
+    """The exact failure: CHFJPY (tz-aware) unioned against 3M (tz-naive)."""
+    base_idx = pd.date_range("2024-05-01", periods=5, freq="h", tz="UTC")
+    naive_peer = pd.Series(1.0, index=pd.date_range("2024-05-01", periods=5, freq="h"))
+    with pytest.raises(TypeError):
+        pd.concat([pd.Series(1.0, index=base_idx), naive_peer], axis=1)
+    fixed = edge_search._match_clock(naive_peer, base_idx)
+    joined = pd.concat([pd.Series(1.0, index=base_idx), fixed], axis=1)
+    assert len(joined) == 5, "coerced peer should align exactly, not union into a longer index"
+
+
+def test_matching_clocks_are_left_alone():
+    idx = pd.date_range("2024-05-01", periods=3, freq="h", tz="UTC")
+    s = pd.Series([1.0, 2.0, 3.0], index=idx)
+    assert edge_search._match_clock(s, idx) is s
+
+
+def test_none_and_indexless_inputs_are_passed_through():
+    idx = pd.date_range("2024-05-01", periods=3, freq="h", tz="UTC")
+    assert edge_search._match_clock(None, idx) is None
