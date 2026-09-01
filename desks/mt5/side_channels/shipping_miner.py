@@ -36,11 +36,26 @@ def mine_bdi() -> list[dict]:
             resp = requests.get(url, headers=HEADERS, timeout=15)
             if resp.status_code == 200:
                 text = resp.text
-                # Extract BDI value
-                bdi_match = re.search(r'(\d{3,5})', text)
+                # ANCHOR ON THE LABEL, NOT ON POSITION. This searched for the FIRST 3-5 digit
+                # number anywhere in the page and then required 200 < v < 5000. Measured
+                # 2026-09-01 against the live 417KB page, that first match is `157` -- a
+                # fragment of markup -- which fails the range test, so the miner appended
+                # nothing and reported a healthy fetch with no rows. A positional regex over
+                # modern HTML is a lottery, not an extraction.
+                #
+                # The value that follows the "Baltic Dry" label is the quote: 3,157.00 on the
+                # day this was fixed. Thousands separators are stripped, which the old pattern
+                # could not even represent (\d{3,5} cannot match "3,157").
+                #
+                # The sanity band is widened because the old one was itself wrong: the BDI
+                # traded above 5,000 in 2021, so `< 5000` would have discarded a real reading
+                # as garbage. It stays a band -- an unanchored number is still rejected -- just
+                # one that spans the index's actual history.
+                m = re.search(r'(?is)Baltic\s*Dry.{0,400}?>\s*([\d,]{3,8}\.?\d*)\s*<', text)
+                bdi_match = m
                 if bdi_match:
-                    bdi_value = int(bdi_match.group(1))
-                    if 200 < bdi_value < 5000:  # Reasonable BDI range
+                    bdi_value = int(float(bdi_match.group(1).replace(",", "")))
+                    if 100 < bdi_value < 15000:  # BDI's real historical range
                         # Historical context
                         if bdi_value > 2000:
                             signal = "strong_expansion"
