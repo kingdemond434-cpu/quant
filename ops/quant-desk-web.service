@@ -4,6 +4,11 @@ After=network-online.target
 
 [Service]
 Type=simple
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 350M, so nothing that fits today is newly constrained.
+MemoryHigh=280M
 MemoryMax=350M
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python scripts/serve_dashboard.py --port 8788 --host 127.0.0.1 --require-token

@@ -1,0 +1,23 @@
+[Unit]
+Description=Quant heavy research organs -- one shared memory budget
+
+# WHY A SLICE AND NOT MORE PER-UNIT CAPS (2026-09-01). Per-unit MemoryHigh fixed the units that
+# were killing THEMSELVES: quant-queue-guard died 284x/day against a 200M cap it needed 271M for,
+# and eleven units ran with MemoryMax=infinity on a swapless 3814MB box. Those are fixed.
+#
+# What per-unit caps CANNOT fix is the sum. Measured 2026-09-01 02:20: quant-external-panel was
+# oom-killed at a 668M peak while its own ceiling was 800M -- it had not misbehaved at all. The
+# BOX was at 138MB free / 397MB available, so the global OOM killer fired and chose the largest
+# process it could see. Eighteen organs peak above 400M and several exceed 1G (manifest-dispatch
+# 1536M, full-pipeline 1228M, cadence 1126M); nothing stops them coinciding, and when they do the
+# victim is whoever happens to be biggest -- routinely a unit that fit perfectly well, and on this
+# box sometimes the memecoin desk or a Claude session rather than a quant organ at all.
+#
+# A slice bounds the SUM. The organs inside it throttle each other under MemoryHigh -- reclaim
+# first, slow down, still finish -- instead of the machine running out and the kernel picking a
+# casualty from everything running on it. The budget is set with real headroom so nothing that
+# fits today is newly constrained: this is a blast-radius bound, not a diet.
+[Slice]
+MemoryHigh=2400M
+MemoryMax=2800M
+MemorySwapMax=0

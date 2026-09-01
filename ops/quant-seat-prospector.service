@@ -2,6 +2,10 @@
 Description=Early-window seat: prospector (manifest slot re-homed; root timer fires into the exhausted quota window)
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
 Type=oneshot
 WorkingDirectory=/home/quant/quant-platform
 TimeoutStartSec=3h

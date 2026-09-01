@@ -3,6 +3,11 @@ Description=Per-symbol bar-span ratchet (GAP #148) (migrated from crontab 2026-0
 
 [Service]
 Type=oneshot
+# 2026-09-01: MemoryMax alone HARD-KILLS at the ceiling -- that was the normal failure
+# mode here, not a runaway backstop. MemoryHigh throttles (reclaim + slow) below it, so
+# a heavy run finishes slowly instead of dying and being retried forever. Ceiling is
+# UNCHANGED at 500M, so nothing that fits today is newly constrained.
+MemoryHigh=400M
 MemoryMax=500M
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/sh -c '.venv/bin/python scripts/check_bar_span.py >> data/cro_ai_logs/bar_span.log 2>&1'

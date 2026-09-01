@@ -2,14 +2,15 @@
 Description=Restored organ: organ-catchup (cron manifest line re-homed to a user timer; root cron daemon dead since 2026-08-20)
 
 [Service]
-# 2026-08-31: was unbounded, and an unbounded unit on a swapless 3.7GB box does not
-# fail alone -- it drives the box to global OOM and the kernel kills a NEIGHBOUR that
-# fit perfectly well. Measured 24h peak here: 290M.
-# MemoryHigh THROTTLES (reclaim + slow down), it does not kill; MemoryMax is only the
-# far backstop for a genuine runaway. So a heavy run gets slower, never SIGKILLed, and
-# it can no longer take out the units around it.
-MemoryHigh=430M
-MemoryMax=600M
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (594M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=742M
+MemoryMax=1009M
 Type=oneshot
 # KillMode=process IS LOAD-BEARING (measured 2026-08-26, same class as the manifest
 # dispatcher). This organ SPAWNS the organs it re-fires and then exits; systemd's default

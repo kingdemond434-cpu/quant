@@ -7,6 +7,7 @@ import socket
 import sys
 import time
 import uuid
+from collections.abc import Iterator
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -14,6 +15,11 @@ from pathlib import Path
 BASE = Path(__file__).resolve().parent.parent
 LOCK_ROOT = BASE / "data" / ".job_locks"
 STALE_SECONDS = 45 * 60
+
+#: How long a job that does not fit will WAIT for a neighbour to exit before standing down.
+#: Bounded well under the hourly trigger so a waiting job can never overlap its own next run.
+ADMIT_PATIENCE_SECONDS = 12 * 60
+ADMIT_RECHECK_SECONDS = 45
 
 
 def _owner_state(path: Path) -> str:
@@ -124,7 +130,7 @@ def free_mb() -> int | None:
 
 
 @contextmanager
-def exclusive_job(name: str, need_mb: int = 0):
+def exclusive_job(name: str, need_mb: int = 0) -> Iterator[bool]:
     """Yield True to one writer, False to duplicates OR when the box cannot fit this job.
 
     THE MEMORY PRECONDITION (2026-08-28). This desk box has 8GB and runs the LIVE MT5 terminal
@@ -151,16 +157,48 @@ def exclusive_job(name: str, need_mb: int = 0):
         # coin flip, and a job whose start depends on a coin flip is not scheduled, it is
         # gambled. Three readings across ~20 seconds outlast the trough; a genuinely starved box
         # reads low in all of them.
-        readings = []
-        for i in range(3):
-            if i:
-                time.sleep(10)
-            r = free_mb()
-            if r is not None:
-                readings.append(r)
-        avail = sorted(readings)[len(readings) // 2] if readings else None
+        def _median_free() -> int | None:
+            readings = []
+            for i in range(3):
+                if i:
+                    time.sleep(10)
+                r = free_mb()
+                if r is not None:
+                    readings.append(r)
+            return sorted(readings)[len(readings) // 2] if readings else None
+
+        # WAIT FOR THE NEIGHBOUR, DO NOT ABANDON THE HOUR (2026-09-01). The refusal above was
+        # right that a job which does not fit must not start; it was wrong to treat "not now" as
+        # "not this hour". These jobs are not competing with a permanent condition, they are
+        # competing with EACH OTHER: edge_search (~2000MB), orthogonal_sweep (~1250MB) and
+        # external_gauntlet (~1200MB) cannot coexist on an 8GB box that also runs the live
+        # terminal, but any ONE of them fits with room to spare. Measured 2026-08-31: 162
+        # stand-downs in a day -- edge_search 67, external_gauntlet 62, orthogonal_sweep 33 --
+        # while free memory sat at 2389MB minutes later, because whoever lost the race gave up
+        # the whole trigger instead of waiting a few minutes for the winner to exit.
+        #
+        # So the loser now waits. Nothing about the safety property changes: a job still never
+        # starts unless it fits, measured by the same median-of-three that outlasts the
+        # sawtooth. What changes is that "does not fit right now" costs minutes instead of an
+        # hour, which is the difference between a gauntlet that runs hourly and one that runs
+        # whenever it happens to win a coin flip.
+        avail = _median_free()
         if avail is not None and avail < need_mb:
-            print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available. "
+            deadline = time.monotonic() + ADMIT_PATIENCE_SECONDS
+            print(f"{name}: waiting for room -- needs ~{need_mb}MB, box has {avail}MB; "
+                  f"holding up to {ADMIT_PATIENCE_SECONDS // 60}min for a neighbour to exit "
+                  f"rather than giving up this trigger.")
+            while time.monotonic() < deadline:
+                time.sleep(ADMIT_RECHECK_SECONDS)
+                avail = _median_free()
+                if avail is None or avail >= need_mb:
+                    print(f"{name}: room found ({avail}MB) -- starting.")
+                    break
+            else:
+                avail = _median_free()
+        if avail is not None and avail < need_mb:
+            print(f"{name}: STOOD DOWN -- needs ~{need_mb}MB, box has {avail}MB available "
+                  f"after waiting {ADMIT_PATIENCE_SECONDS // 60}min. "
                   f"Not started (a job that does not fit thrashes the box and the live "
                   f"terminal); the next scheduled trigger retries and the cache makes it resume.")
             yield False

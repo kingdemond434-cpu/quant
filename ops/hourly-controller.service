@@ -3,11 +3,19 @@ Description=Hourly survivor acquisition controller
 After=network.target
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
 EnvironmentFile=/home/quant/quant-platform/data/secrets/youtube.env
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/home/quant/quant-platform/.venv/bin/python /home/quant/quant-platform/hourly_controller.py --once
 StandardOutput=append:/home/quant/logs/hourly_user.log
 StandardError=append:/home/quant/logs/hourly_user.log
-MemoryMax=600M
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (600M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=750M
+MemoryMax=1020M
 CPUQuota=50%
 TimeoutStartSec=3000

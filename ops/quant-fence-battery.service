@@ -2,6 +2,10 @@
 Description=Daily fence battery (bar_span, recoverability, disposition-landed, frozen-values, knob-sensitivity, ledger-reversion)
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
 # 2026-08-31: was unbounded, and an unbounded unit on a swapless 3.7GB box does not
 # fail alone -- it drives the box to global OOM and the kernel kills a NEIGHBOUR that
 # fit perfectly well. Measured 24h peak here: 580M.

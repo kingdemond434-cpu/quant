@@ -2,6 +2,10 @@
 Description=Auto-push guard (local commits reach origin) (migrated from crontab 2026-08-28: cron.service has been OOM-dead since 2026-08-20)
 
 [Service]
+# Shares one memory budget with the other heavy organs (see ops/quant-heavy.slice): the
+# per-unit caps stop a unit killing itself, the slice stops them collectively exhausting
+# the box and getting an innocent neighbour killed by the global OOM killer.
+Slice=quant-heavy.slice
 Type=oneshot
 # MEASURED 2026-08-29, not guessed: `/usr/bin/time -v ./ops/gates.sh` reports
 # `Maximum resident set size (kbytes): 428608` = 419 MiB, and `pytest --co -q tests/` alone
@@ -16,7 +20,11 @@ Type=oneshot
 # 600M keeps a real ceiling (a leak still takes this unit down rather than the box) with 43%
 # headroom over measurement, and scripts/auto_push.sh refuses to START below 550MB available,
 # so the two guards cannot disagree about what the gate costs.
-MemoryMax=600M
+# 2026-09-01 (corrected): sized from the TRUE 24h maximum (581M), not the most recent
+# reading. An earlier pass sized off the last peak and left the throttle BELOW the real
+# working set on nine units -- permanent reclaim, which is a slow kill, not a margin.
+MemoryHigh=726M
+MemoryMax=987M
 WorkingDirectory=/home/quant/quant-platform
 ExecStart=/bin/sh -c 'bash scripts/auto_push.sh >> data/cro_ai_logs/auto_push.log 2>&1'
 SuccessExitStatus=0 1 2
