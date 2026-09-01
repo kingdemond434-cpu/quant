@@ -596,6 +596,30 @@ def run_and_save() -> dict:
         except Exception as exc:
             rows_ = [row(name, "fetch_error", str(exc)[:200], needs_selector_work=True)]
             summary["failed"] += 1
+        else:
+            # A SUCCESSFUL FETCH THAT PARSED NOTHING IS NOT A QUIET SOURCE (2026-09-01).
+            # `fetch` raises on a bad status and the handler above turns that into a fetch_error
+            # row, so a FAILURE is already visible. What was invisible is the other half: the
+            # request succeeded, the page arrived, and the selector matched nothing -- the miner
+            # returns [] and _write_rows archives an empty sweep. check_miner_health could then
+            # only say "archived EMPTY 18x -- exception swallowed, no error row", which is not
+            # even the right diagnosis: nothing was swallowed, there was nothing to swallow.
+            #
+            # Measured against the live fleet that day: 26 sources DOWN, and the majority
+            # carried exactly that message while their hosts were answering normally. Their
+            # markup had moved and no organ could say so.
+            #
+            # One stub row here covers all 19 seed miners, because the distinction belongs to
+            # the runner rather than to each parser. classify_row counts `needs_selector_work`
+            # as a STUB: never real, never an error, never a healthy zero (L1.28a). So the fence
+            # can finally separate "nothing happened today" from "this parser is blind", which
+            # are different pieces of work and were the same silence.
+            if not rows_:
+                rows_ = [row(name, "stub",
+                             "fetched OK and matched no selector -- markup moved or the data "
+                             "is rendered client-side; needs a parser or an API, not a retry",
+                             needs_selector_work=True)]
+                summary["failed"] += 1
         _write_rows(name, rows_, ts, results, summary)
         real = [r_ for r_ in rows_ if not r_.get("needs_selector_work")]
         print(f"  {name}: {len(rows_)} rows ({'real' if real else 'RAW/selector-work'})")
