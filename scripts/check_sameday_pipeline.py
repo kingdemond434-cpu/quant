@@ -89,9 +89,32 @@ def forward_rows() -> dict[str, dict]:
     return rows
 
 
+#: Symbols this desk can actually replay. A certificate for anything else cannot enrol, ever.
+_UNIVERSE = Path(__file__).resolve().parent.parent / "desks" / "mt5" / "data" / "universe"
+
+
+def tradeable_symbols() -> set[str]:
+    """Registry symbols with bars on disk -- the set enrolment can draw a clock from.
+
+    Read from BOTH the registry and the parquet directory because either alone is a lie: a
+    registry row with no bars cannot be replayed, and bars for a symbol the registry dropped
+    are not tradeable. Empty means "could not read", never "nothing is tradeable" -- the caller
+    treats an empty set as no opinion rather than condemning every certificate (L1.28a).
+    """
+    syms: set[str] = set()
+    with contextlib.suppress(OSError, ValueError):
+        reg = json.loads((_UNIVERSE / "universe.json").read_text("utf-8"))
+        syms |= set(reg) if isinstance(reg, dict) else {
+            str(r.get("symbol")) for r in reg if isinstance(r, dict)}
+    with contextlib.suppress(OSError):
+        syms |= {p.stem.removesuffix("_H1") for p in _UNIVERSE.glob("*_H1.parquet")}
+    return {s for s in syms if s}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
     certs = (read(CERTS) or {}).get("survivors") or {}
+    tradeable = tradeable_symbols()
     rows = forward_rows()
     live_rows = {k: v for k, v in rows.items() if not _is_terminal(v.get("status"))}
     findings: list[str] = []
@@ -109,6 +132,23 @@ def main() -> int:
         age_h = 999.0
         with contextlib.suppress(ValueError):
             age_h = (now - datetime.fromisoformat(stamp)).total_seconds() / 3600
+        # A CERTIFICATE FOR A SYMBOL THE DESK CANNOT REPLAY IS NOT "WAITING TO ENROL".
+        # Measured 2026-09-01: six `external.AFG.*` certificates had passed all ten gates for a
+        # symbol with no AFG_H1.parquet and no registry row -- AFG has never appeared in this
+        # registry in any commit. They reported CERTIFIED-NOT-ENROLLED every 30 minutes forever,
+        # and the message told the reader to wait for an enrolment that can never happen. The
+        # cause is upstream (the external backtest certifies on a wider symbol set than the desk
+        # can trade), and naming it is what makes the finding actionable instead of noise.
+        # An empty `tradeable` means the universe was unreadable, which is no opinion, not a
+        # licence to condemn every certificate.
+        if tradeable and sym and sym not in tradeable:
+            findings.append(
+                f"CERTIFIED-UNTRADEABLE: {name} passed all ten gates on symbol {sym!r}, which "
+                f"is absent from the universe registry AND has no {sym}_H1.parquet. It can "
+                f"never enrol a forward clock, so this is not a same-day lag -- either the "
+                f"symbol is restored to the universe or the certificate is retired. A gate that "
+                f"cannot be cashed is not a survivor (L1.49).")
+            continue
         if age_h > ENROL_GRACE_HOURS:
             findings.append(
                 f"CERTIFIED-NOT-ENROLLED: {name} passed all ten gates "
