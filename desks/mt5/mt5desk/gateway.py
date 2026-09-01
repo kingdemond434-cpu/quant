@@ -852,12 +852,54 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
 
 
 def cancel_pending(st: dict, symbol: str) -> None:
-    if st["armed"]:
-        for o in mt5.orders_get(symbol=symbol) or []:
-            mt5.order_delete(o.ticket)
-            log(f"cancelled pending ticket {o.ticket} ({symbol})")
-    else:
+    """Remove unfilled pending orders, and PROVE each one is gone.
+
+    THIS NEVER WORKED ONCE. It called `mt5.order_delete(ticket)`, and the MetaTrader5 Python
+    package HAS NO SUCH FUNCTION -- verified against the live terminal 2026-09-01:
+    `hasattr(mt5, "order_delete")` is False. Removal is documented as order_send() with
+    TRADE_ACTION_REMOVE (=8). So every call raised AttributeError while the very next line
+    logged "cancelled pending ticket <n>", and unfilled buy/sell stops were left standing on a
+    live account with the desk reporting them cancelled.
+
+    IT ALSO TOOK THE REST OF THE PASS WITH IT. Neither this function nor its caller caught the
+    exception, and the housekeeping block runs at hour >= CANCEL_HOUR (20:30 UTC) BEFORE
+    close_positions, record_trades and reconcile. From 20:30 onward, every one of those was
+    skipped -- which is the shape of `last_reconcile` standing at 2026-08-17 and of a live
+    ledger that never appeared.
+
+    SO CANCELLATION IS NOW IDEMPOTENT AND VERIFIED, not hopeful: send the documented removal,
+    read the retcode, then re-read orders_get and confirm the ticket is ABSENT. A ticket that
+    survives is reported as still live rather than logged as cancelled, because a cancellation
+    the desk believes in but the venue did not perform is worse than a loud failure. One
+    ticket's failure never aborts the others, and never the pass.
+    """
+    if not st["armed"]:
         log("SHADOW would cancel unfilled brackets")
+        return
+    pending = list(mt5.orders_get(symbol=symbol) or [])
+    if not pending:
+        return
+    for o in pending:
+        ticket = getattr(o, "ticket", None)
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket})
+        # Broad on purpose: one bad ticket must not strand the others, nor abort the pass.
+        except Exception as exc:
+            log(f"CANCEL FAILED ticket {ticket} ({symbol}): "
+                f"{type(exc).__name__}: {exc}; order may still be live")
+            continue
+        retcode = getattr(res, "retcode", None)
+        # THE VENUE IS THE STATE, not the return value. A retcode can be optimistic, a result can
+        # be None on a dropped connection, and either way the only fact that matters is whether
+        # the ticket is still accepting a fill.
+        still = any(getattr(x, "ticket", None) == ticket
+                    for x in (mt5.orders_get(symbol=symbol) or []))
+        if still:
+            log(f"CANCEL NOT CONFIRMED ticket {ticket} ({symbol}): retcode={retcode}, "
+                f"order STILL PRESENT after remove -- treat as live")
+            continue
+        log(f"cancelled pending ticket {ticket} ({symbol}) retcode={retcode}, "
+            f"confirmed absent from orders_get")
 
 
 def close_positions(st: dict, symbol: str) -> None:
