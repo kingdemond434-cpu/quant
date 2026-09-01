@@ -20,7 +20,12 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 
 # Weather events that move commodities
 WEATHER_SOURCES = {
-    "noaa_hurricanes": "https://www.nhc.noaa.gov/CurrentSummaries.json",
+    # CurrentSummaries.json was RENAMED to CurrentStorms.json; the old path now serves a
+    # 404 HTML page (22,982 bytes), which resp.json() rejects and the bare except swallowed,
+    # so this source read as "no storms" rather than "endpoint moved" -- measured 2026-09-01
+    # with 4 active storms live on the new path. The response SCHEMA is unchanged
+    # (activeStorms[].name), so this is a route fix only.
+    "noaa_hurricanes": "https://www.nhc.noaa.gov/CurrentStorms.json",
     "drought_monitor": "https://droughtmonitor.unl.edu/Data/DmDataTokenDownload.aspx",
 }
 
