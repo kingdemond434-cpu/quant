@@ -34,6 +34,29 @@ def _atomic_json(path: Path, value: dict[str, Any]) -> None:
             os.unlink(name)
 
 
+def hunt_name(raw: object) -> str:
+    """The hunt component of a survivor key, guaranteed to contain no dot.
+
+    A qquant survivor key is `qquant.<hunt>.<cell>` and EVERY downstream consumer splits it on
+    dots -- forward_reconcile says so in its own docstring. So a dot inside the hunt component
+    does not produce a slightly-wrong label, it shifts every field after it by one.
+
+    Measured 2026-09-01: one live certificate is keyed
+    `qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` -- the producer
+    passed the FILE NAME rather than the hunt name. Split on dots, its "symbol" reads `hunt16`
+    and its family reads `json`, which is how a filename ended up in the symbol column of the
+    currency-exposure report and why the row matches no authorized run and can never enrol.
+
+    Stripping is not enough on its own: any dot breaks the contract, so any that survive become
+    underscores. A mangled-but-parseable name is recoverable; a shifted key is not.
+    """
+    name = str(raw or "").strip()
+    name = name.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]   # never a path
+    if name.endswith(".json"):
+        name = name[: -len(".json")]
+    return name.replace(".", "_")
+
+
 def _shadow_spec(row: dict[str, Any]) -> dict[str, Any] | None:
     parts = str(row.get("id") or "").split()
     if len(parts) != 5:
@@ -69,9 +92,10 @@ def publish_qquant_survivors(report: dict[str, Any], reports: Path) -> dict[str,
         spec = _shadow_spec(row)
         if spec is None:
             continue
-        key = f"qquant.{row['hunt']}.{row['id']}"
+        hunt = hunt_name(row.get("hunt"))
+        key = f"qquant.{hunt}.{row['id']}"
         survivors[key] = {
-            "hunt": row["hunt"],
+            "hunt": hunt,
             "cell": row["id"],
             "sym": spec["symbol"],
             "days": row.get("days"),
