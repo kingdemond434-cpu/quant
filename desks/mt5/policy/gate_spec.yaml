@@ -127,7 +127,25 @@ gates:
 
   - name: lockbox
     classification: validity
-    description: "Genuine untouched holdout — last 20% of data (min 60 bars), Sharpe > 0"
+    # DESCRIPTION CORRECTED 2026-09-01 to match what the code measures. Both validators compute
+    # this gate as `wf_oos >= 0.0` -- the SAME walk-forward out-of-sample Sharpe that gate 7
+    # (walk_forward) already uses -- and qquant_gates has always said so in its own header:
+    # "9 lockbox - wf OOS Sharpe >= 0 (holdout proxy)". The previous wording claimed a "genuine
+    # untouched holdout", which is a materially stronger thing: a segment no grid search, no
+    # parameter choice and no result inspection has ever seen. This gate is not that, so gate 9
+    # is not independent of gate 7 and the ten gates are nine plus a restatement.
+    #
+    # THE BAR IS NOT MOVED HERE, deliberately: standing principal direction is that the ten
+    # gates stay fixed and never become harsher, and a true lockbox would be strictly harder to
+    # pass. Only the claim is corrected -- a spec that overstates what it verifies makes every
+    # certificate issued under it look stronger than the evidence behind it, which is the
+    # failure this desk calls a claim it cannot cash (L1.49).
+    #
+    # `holdout_fraction: 0.20` below is retained as the DESIGN INTENT for a real lockbox, and is
+    # currently unread by either validator. Implementing it is a principal decision, not a
+    # maintenance fix, because it would retroactively raise the bar on the existing book.
+    description: "Walk-forward OOS Sharpe > 0 (holdout PROXY, not an untouched segment; shares
+      its statistic with the walk_forward gate — see the note above)"
     threshold: "lockbox_sharpe > 0.0"
     metric: "holdout_sharpe"
     params:
