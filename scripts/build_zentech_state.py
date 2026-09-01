@@ -275,7 +275,17 @@ def _funnel(universal: dict[str, Any]) -> dict[str, Any]:
         "forward_clocks": len(forward),
         "promotion_ready": promo_ready,
         "live": len(live_rows),
-        "forward_detail": sorted(forward, key=lambda r: -r["days"])[:40],
+        # NOT [:40] ANY MORE, AND THE CAP WAS NOT A DISPLAY CHOICE. check_research_health
+        # reads THIS list to find BLOCKED and stalled clocks, so the cap silently limited the
+        # fence to the 40 OLDEST sleeves. Measured 2026-09-01: shadow_state carried
+        # configured_sleeves 56 against 57 runnable certificates, written six minutes earlier
+        # -- enrolment was working same-day, exactly as shadow_forward claims. The 16 dropped
+        # rows were the NEWEST clocks, which sort last by `days`, so every freshly certified
+        # sleeve was invisible to the organ whose job is to notice a sleeve accruing nothing,
+        # until older clocks aged out. A truncated funnel reads as a stalled one.
+        # Bounded generously rather than unbounded: 500 rows is ~100KB, far above any plausible
+        # clock count, so the artifact still cannot grow without limit.
+        "forward_detail": sorted(forward, key=lambda r: -r["days"])[:500],
     }
 
 
