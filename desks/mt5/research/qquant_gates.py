@@ -44,14 +44,6 @@ sys.path.insert(0, str(BASE))
 sys.path.insert(0, str(BASE / "research"))
 sys.path.insert(0, str(Path(r"C:\Users\dell\quant-platform")))
 
-from mt5desk import families  # noqa: E402
-from mt5desk.engine import Costs, run_backtest  # noqa: E402
-
-from libs.validation.cpcv import CPCV  # noqa: E402
-from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
-from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
-from libs.validation.reality_check import hansen_spa  # noqa: E402
-from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 from gate_policy import (  # noqa: E402
     COST_SCENARIO,
     DSR_THRESHOLD,
@@ -61,6 +53,14 @@ from gate_policy import (  # noqa: E402
     WF_MIN_STABILITY,
     WF_SPLITS,
 )
+from mt5desk import families  # noqa: E402
+from mt5desk.engine import Costs, run_backtest  # noqa: E402
+
+from libs.validation.cpcv import CPCV  # noqa: E402
+from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E402
+from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
+from libs.validation.reality_check import hansen_spa  # noqa: E402
+from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
 
 # THRESHOLDS ARE IMPORTED ABOVE, NOT DEFINED HERE (2026-09-01). These seven were local copies
 # while universal_gate.py imported the same seven from gate_policy -- "the single immutable
