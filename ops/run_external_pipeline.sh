@@ -200,17 +200,45 @@ scp -q data/cot_zcache.parquet \
 # merging a copy 25 hours old for the rest of the day. `scp -p` preserves the artifact's TRUE
 # mtime, so merge_hypotheses' freshness contract -- not this script's guess about the run --
 # decides whether the content is this cycle's discovery or yesterday's.
+# ONE SEARCH PER CYCLE, ALTERNATING -- because the unit is `Type=oneshot` on an hourly timer,
+# and systemd SKIPS a trigger whose previous run has not finished. It does not queue it and it
+# does not overlap it: the hour is simply dropped. Measured 2026-09-01, the 02:20 cycle was still
+# in stage 2b at 03:15, so the 03:05 trigger never fired at all.
+#
+# Stage 2b was the whole overrun: two remote searches at a 25m timeout each, run back to back,
+# is 50 minutes before the merge has started. Running them in parallel is not the fix -- they
+# are the two heaviest jobs on an 8GB box that also holds the live terminal, and colliding is
+# what produced 162 stand-downs in a day.
+#
+# So each cycle runs ONE of them, alternating on the hour. Both keep per-cell caches that resume
+# rather than restart (see job_lock's refusal text and the gauntlet's FRESH_BUILD_BUDGET), so
+# alternating halves the wall clock without losing any work -- a search simply advances every
+# other hour instead of every hour, against a docket already 20,000 deep. The gauntlet, which is
+# terminal and whose stand-down costs everything, keeps its slot every single cycle.
+_HOUR=$(date -u +%H)
+if [ $(( 10#$_HOUR % 2 )) -eq 0 ]; then _SEARCH=orthogonal; else _SEARCH=familyfree; fi
+echo "stage 2b: running the $_SEARCH frontier this cycle (they alternate hourly; both resume from cache)"
+
+# A search may take the whole slot and still make progress; the gauntlet already had its own.
+_SEARCH_TIMEOUT_SAVE="$REMOTE_STAGE_TIMEOUT"
+REMOTE_STAGE_TIMEOUT="${SEARCH_STAGE_TIMEOUT:-20m}"
+
+if [ "$_SEARCH" = "orthogonal" ]; then
 remote_stage "orthogonal frontier" \
      "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\orthogonal_sweep.py" \
   || echo "orthogonal frontier run FAILED/timed out on the desk box -- see $LOGF"
+fi
 scp -p -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/orthogonal_candidates.json' \
     desks/mt5/data/hypotheses/orthogonal_candidates.json 2>/dev/null \
   && echo "orthogonal frontier artifact pulled (true mtime preserved)" \
   || echo "orthogonal frontier pull FAILED"
 
+if [ "$_SEARCH" = "familyfree" ]; then
 remote_stage "family-free frontier" \
      "cd C:\opt\quant\desks\mt5 && py -3 -W ignore research\edge_search.py" \
   || echo "family-free frontier run FAILED/timed out on the desk box -- see $LOGF"
+fi
+REMOTE_STAGE_TIMEOUT="$_SEARCH_TIMEOUT_SAVE"
 scp -p -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_results.json' \
     desks/mt5/data/hypotheses/edge_search_results.json 2>/dev/null \
   && echo "family-free frontier artifact pulled (true mtime preserved)" \
