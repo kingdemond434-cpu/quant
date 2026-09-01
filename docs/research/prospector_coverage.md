@@ -14296,3 +14296,44 @@ alpha was touched.
   restart-reconciliation semantics; continue the residual permissively licensed gplearn fork
   population outside s45's slice; inspect RD-Agent factor proposals only if they yield a novel
   MT5-translatable mechanism rather than a private gate. The BRAIN ground remains open.
+
+## BRAIN HUNTER s47 — 2026-08-31 — the first “held-out” merge has no baseline
+
+**Repair and corpora first.** R0169, R0281 and R0305 were converted by reasoned rejection. Their
+exact consumers are the permanently retired cash-carry/Binance moat paths; the survival,
+broker-native order-flow and discrete-rollover ideas remain admissible only as independent
+Fusion-native questions. Five WorldQuant rows in `data/intelligence/gpt_practitioner_corpus.jsonl`
+were reviewed; all carried zero usable text. Video: **0 fetched, 0 newly locked**.
+
+**Inherited Arbor/HTR ground, legitimacy first, text only.** Public MIT
+`K-Dense-AI/scientific-agent-skills` at commit `1dd0fccf` was reached from s46's declared lineage.
+The Arbor skill and `scripts/tree.py` were read as text. Nothing was installed, imported or run.
+
+The state manager prewrites pending hypotheses, preserves pruned reasons and separates result from
+inference — useful convergence on the existing candidate-conservation repair. Its admission claim
+fails in three places: `best_test_score` begins null and the first candidate automatically passes;
+successive candidates all see results from the same supposedly held-out evaluator; and whole-tree
+writes use one fixed `.tmp` without fencing/CAS while stranded `running` nodes have no restart
+reconciliation. The first permits a candidate worse than the initial artifact, the second turns
+confirmation into adaptive selection evidence, and the third loses trials or updates under failure.
+
+**Economic/MT5 disposition.** Keep only the prewritten identity, negative-constraint and
+result-versus-inference shapes. Reject this implementation as held-out admission, multi-writer or
+candidate-conservation evidence. `translate_to_mt5()` returned no mapping for the seven inspected
+process phrases: they are universal integrity requirements over terminal-enumerated Fusion cells,
+not market features. This session ran **0 desk constructions, 0 target-horizon cells, 0 tradeable
+cards and 0 survivors**. Exact traces and falsifiers:
+`data/brain_hunter_s47_arbor_htr_state_screen.json`.
+
+**Venue discovery.** Repository, owner and referenced paper/skill surfaces produced **0 new external
+venues**. This is a negative discovery result, not a ground verdict.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `K-Dense-AI/scientific-agent-skills` commit `1dd0fccf`: Arbor skill state, baseline, merge,
+  persistence and restart-reconciliation axes **EXHAUSTED on 2026-08-31**.
+- **Next:** inspect the standalone `RUC-NLPIR/Arbor` implementation named by the skill, beginning
+  with license and exact commit identity, for baseline binding, sequential test reuse and durable
+  reconciliation; then continue the residual permissively licensed gplearn fork population outside
+  s45's slice. RD-Agent factor proposals remain conditional on a novel MT5 mechanism. The BRAIN
+  ground remains open.

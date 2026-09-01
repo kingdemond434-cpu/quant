@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "session": "brain_hunter_s47",
+  "generated_at": "2026-08-31T23:52:03Z",
+  "venue_scope": "MT5_FUSION_ONLY",
+  "source": {
+    "repository": "K-Dense-AI/scientific-agent-skills",
+    "url": "https://github.com/K-Dense-AI/scientific-agent-skills/tree/main/skills/arbor",
+    "commit": "1dd0fccf46fc3c9855c4a0c313a0c57fe4319883",
+    "license": "MIT",
+    "derives_from": "Arbor / Hypothesis Tree Refinement (Jin et al., 2026), declared by the source",
+    "derives_from_checked": true,
+    "inspection_mode": "public repository metadata, skill specification and scripts/tree.py read as text only; no install, import or third-party agent execution"
+  },
+  "discovery_path": {
+    "inherited_ground": "BRAIN hunter s46: inspect the declared Arbor/HTR lineage for prewrite, atomic commit and restart reconciliation",
+    "query_surface": "public GitHub search followed by the repository's licensed Arbor skill and state manager",
+    "selection_note": "The implementation claims a persistent auditable hypothesis tree and held-out merge gate, making its actual state transitions direct falsifiers for the candidate-conservation and untouched-evidence repairs already under study."
+  },
+  "prefetched_corpus": {
+    "path": "data/intelligence/gpt_practitioner_corpus.jsonl",
+    "worldquant_rows_reviewed": 5,
+    "usable_new_text_rows": 0,
+    "video_fetched": 0,
+    "video_newly_locked": 0
+  },
+  "findings": [
+    {
+      "id": "BH-S47-F1",
+      "verdict": "KEEP_PREWRITTEN_HYPOTHESIS_IDENTITY_AND_NEGATIVE_CONSTRAINTS",
+      "evidence": [
+        "cmd_add_node writes a pending node before dispatch and cmd_set_status can mark it running before evaluation",
+        "cmd_prune persists a reason and the Observe projection exposes pruned lessons to later ideation",
+        "cmd_set_evidence separates the factual result from a distilled insight and branch reference"
+      ],
+      "economic_disposition": "KEEP the process shapes: create identity before evaluation, retain falsified branches as negative constraints, and separate raw result from reusable inference. They strengthen the existing repair but create no market evidence or promotion authority."
+    },
+    {
+      "id": "BH-S47-F2",
+      "verdict": "THE_FIRST_CANDIDATE_PASSES_AN_EMPTY_BASELINE",
+      "evidence": [
+        "cmd_init sets best_test_score to null and never evaluates or records M_0 on the held-out evaluator",
+        "cmd_merge.better returns true whenever the prior best score is null",
+        "therefore the first candidate is marked merged for any finite test score, including a score worse than the initial artifact"
+      ],
+      "economic_disposition": "REJECT the source's held-out merge gate as capital or validation evidence. A real baseline must be measured and identity-bound before any candidate; missing baseline is UNMEASURED, never permission to merge."
+    },
+    {
+      "id": "BH-S47-F3",
+      "verdict": "THE_HELD_OUT_EVALUATOR_BECOMES_AN_ADAPTIVE_SEARCH_ORACLE",
+      "evidence": [
+        "every cmd_merge call records test_score into the tree and updates the best score visible to later Observe and Decide cycles",
+        "the same test evaluator is reused for successive candidates with no cohort rotation, alpha spending, lockbox retirement or one-use evidence rule",
+        "later hypotheses can therefore condition on prior held-out outcomes even though the skill says E_test must not guide search"
+      ],
+      "economic_disposition": "REJECT repeated test-score feedback as untouched evidence. Dev may guide search; an exposed test cohort becomes selection evidence after first use and cannot retain promotion authority without a fresh preregistered cohort or an anytime-valid sequential design."
+    },
+    {
+      "id": "BH-S47-F4",
+      "verdict": "ATOMIC_REPLACE_DOES_NOT_PREVENT_CONCURRENT_LOST_UPDATES",
+      "evidence": [
+        "_save uses one fixed sibling path obtained with path.with_suffix('.tmp') for every writer",
+        "there is no lock, compare-and-swap version, exclusive temporary name, fsync or parent-directory durability step",
+        "each mutating command loads the whole JSON object and replaces it, so concurrent coordinators can overwrite one another after reading the same prior state"
+      ],
+      "economic_disposition": "REJECT tree.json/run.json as a multi-writer durable ledger. Keep replaceable controller state separate from an append-before-evaluate immutable trial ledger; fence writers and detect stale versions before replace."
+    },
+    {
+      "id": "BH-S47-F5",
+      "verdict": "RUNNING_NODES_HAVE_NO_RESTART_RECONCILIATION",
+      "evidence": [
+        "a node may be marked running before dispatch, but no command detects a dead executor or converts abandoned running state to a typed terminal outcome",
+        "validate checks parent/status consistency only and does not reconcile running nodes with worktrees or evaluator processes",
+        "set_evidence accepts a status override without checking it against VALID_STATUS"
+      ],
+      "economic_disposition": "REJECT completion/candidate-conservation claims. Restart must reconcile every prewritten identity to completed, failed, blocked or explicitly unattempted; a stranded running node is measured inventory, not evidence."
+    }
+  ],
+  "mt5_translation": {
+    "translate_to_mt5_results": {
+      "hypothesis tree refinement": [],
+      "held-out merge gate": [],
+      "append-before-evaluate": [],
+      "atomic checkpoint": [],
+      "experiment identity": [],
+      "active baseline": [],
+      "sequential reuse of test evaluator": []
+    },
+    "disposition": "These are universal research-integrity mechanisms over terminal-enumerated Fusion candidates, not alpha features. No symbol, direction, timeframe or market hypothesis was invented.",
+    "future_candidate_cost_contract": "Any later Fusion market cell must bind point-in-time bid/ask, terminal roster, symbol-native spread, commission, realised slippage and partial-fill markout, swap, contract terms, code/config/data/cost fingerprints and a canonical ten-gate certificate."
+  },
+  "trial_accounting": {
+    "source_process_findings": 5,
+    "desk_constructions": 0,
+    "target_horizon_cells": 0,
+    "tradeable_cards": 0,
+    "survivors": 0
+  },
+  "venue_discovery": {
+    "new_external_venues": 0,
+    "note": "GitHub repository, owner and referenced paper/skill surfaces were lineage artifacts rather than new practitioner communities."
+  },
+  "repair_window": {
+    "rejected": ["R0169", "R0281", "R0305"],
+    "note": "All three exact implementations target the permanently retired crypto-exchange cash-carry or Binance moat. Their general survival, order-flow and discrete-rollover mechanisms remain live only as independent Fusion-native questions."
+  },
+  "section_exhaustion": [
+    "K-Dense-AI/scientific-agent-skills commit 1dd0fccf: Arbor skill state manager, prewrite, merge, persistence and restart-reconciliation axes exhausted 2026-08-31",
+    "the standalone RUC-NLPIR/Arbor upstream implementation and paper experiment details remain open"
+  ],
+  "next_unexhausted_ground": [
+    "Inspect the standalone RUC-NLPIR/Arbor implementation named by the licensed skill, beginning with license and exact commit identity, for baseline binding, sequential test reuse and durable trial reconciliation.",
+    "Continue the residual permissively licensed gplearn fork population outside the s45 slice for substantive journaling or interruption recovery diffs.",
+    "Inspect RD-Agent factor proposals only if they yield a novel MT5-translatable mechanism rather than a private gate."
+  ]
+}

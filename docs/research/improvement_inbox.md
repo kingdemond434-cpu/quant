@@ -5935,3 +5935,26 @@ prove `planned = completed + failed + blocked + explicitly_unattempted`, and pro
 final shard is checksum-valid. Run two writers against the same identity and prove exactly one
 exclusive creation succeeds. Controller rollback remains a separate replaceable checkpoint and may
 never truncate evidence. No external threshold, maturity label or promotion rule transfers.
+
+## 2026-08-31 — BRAIN HUNTER s47 — a held-out set stops being held out when every candidate sees it
+
+MIT `K-Dense-AI/scientific-agent-skills` at `1dd0fccf` independently confirms three useful process
+shapes: create a pending hypothesis identity before dispatch, preserve pruned branches with reasons,
+and separate executor result from the inferred lesson. Its Arbor state manager also supplies three
+falsifiers that matter more than its labels.
+
+First, `cmd_init` leaves `best_test_score = None`, never scores the initial artifact, and
+`cmd_merge.better()` passes any first finite score when the prior is absent. The first candidate can
+therefore lose to the starting artifact and still become `M_best`. Second, every later merge exposes
+the same test score to the coordinator and updates the next comparison. That test cohort has become
+adaptive selection evidence after its first use; calling it held out does not restore untouchedness.
+Third, `_save()` uses a fixed `.tmp` name and whole-object replacement without fencing or
+compare-and-swap, while abandoned `running` nodes have no restart reconciliation. Atomic rename is
+not candidate conservation and is not multi-writer safety.
+
+**Transfer:** baseline evidence must exist and bind to the full experiment identity before any
+candidate; a missing baseline is UNMEASURED, not a pass. Dev evidence may guide the search, but an
+exposed confirmation cohort must retire from promotion authority or be replaced by a preregistered
+fresh cohort/validated anytime-sequential design. Every prewritten Fusion identity must reconcile to
+a typed terminal outcome after restart. No third-party agent tool was installed, imported or run.
+Exact traces: `data/brain_hunter_s47_arbor_htr_state_screen.json`. [§33: screened]

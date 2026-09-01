@@ -2347,11 +2347,13 @@
    "summary": "Guard-affirm inversion: executor currently fail-opens when live_guard is silent; add dead-man-style affirmative liveness (guard must affirm or executor TIGHTENS) -- inverse of fail-open, mirrors the existing dead-man pattern one layer down. Design work: interacts with KILL-file authority",
    "roi_bps": 35.0,
    "raised": "2026-07-31T17:55:39.697233+00:00",
-   "status": "scheduled",
-   "reason": "FAIL-OPEN CONFIRMED PRESENT AND REACHED, not merely documented. run_cashcarry_executor.py:1292-1293 _refresh_guard OPENS by resetting _GUARD to {size_frac 1.0, limit_only False} before attempting the read, and both the not-fresh branch (:1307-1308) and the bare except (:1311-1312) return leaving it there -- so a stale, empty or unreadable live_guard.json leaves the tick at MAXIMUM permitted size with takers allowed, via the caller at :867. Mitigations landed since the row was raised are DETECT-ONLY: run_alerts.py:301/:305 page live_guard_missing/live_guard_dead and the read leaves a stale_read record, none of which tightens the executor -- and a dead guard cannot write its own KILL file. Note tests/execution/test_money_path_wiring.py asserts the fail-open as INTENDED, so that test changes with the design. Work: affirmative-liveness contract where absence of a fresh affirmation TIGHTENS (reduced size_frac and/or limit_only), resolved against KILL-file authority. Restrictive direction only; must land before REARM.",
+   "status": "rejected",
+   "reason": "Reject the original implementation target under the standing MT5/Fusion-only universe. R0169 changes run_cashcarry_executor.py and its live_guard/KILL contract, but the cash-carry executor is permanently retired and its Binance/Bybit venue path may never be hunted or revived. Building affirmative liveness into a permanently empty money path would be vacuous under L1.57. The survival principle is retained on the active MT5 path, where fail-closed gateway/preflight and Tier-3 repair remain separate governed work; this row is not authority to touch the dead-man or arm capital.",
    "commit": null,
-   "due": "2026-08-19",
-   "disposed": "2026-08-05T09:03:11.213794+00:00"
+   "due": null,
+   "disposed": "2026-08-31T23:50:58.646391+00:00",
+   "claimed_by": "brain-hunter-s47",
+   "claimed_at": "2026-08-31T23:50:40.774945+00:00"
   },
   {
    "id": "R0170",
@@ -3799,11 +3801,11 @@
    "summary": "The trade tape is the only CLEAN-CLOCK series in the moat corpus and the sole micro-feature producer filters it out: micro_factory.py keeps only k=d rows, but a sampled futures hour is 357 depth against 11,680 trade rows -- ~97% of records, venue-stamped, already on disk, unused. Aggressor imbalance, trade-size distribution and inter-arrival times are all free. Verified 2026-08-01 on data/moat/fut/BTCUSDT/20260725_07.jsonl.gz.",
    "roi_bps": 0.0,
    "raised": "2026-08-01T10:10:16.037173+00:00",
-   "status": "scheduled",
-   "reason": "Real build (trade-row micro features, ~97pct of venue-stamped records unused); needs an L1.46 clock-provenance design pass so the one clean-clock series is not contaminated at birth. One dedicated session.",
+   "status": "rejected",
+   "reason": "Venue-retired and now prohibited. The cited population is data/moat/fut/BTCUSDT Binance futures trade tape and the requested aggressor-imbalance/size/inter-arrival feature producer would hunt crypto-exchange-native ground. LAWS section 1 forbids that universe even as research. The transferable mechanism is broker-native order-flow microstructure, but it must begin from Fusion/MT5 tick or depth fields with point-in-time broker timestamps, executable spread/commission/slippage and terminal-enumerated symbols; it cannot inherit this row's BTCUSDT tape or consumer.",
    "commit": null,
-   "due": "2026-08-27",
-   "disposed": "2026-08-18T20:46:09.404274+00:00",
+   "due": null,
+   "disposed": "2026-08-31T23:51:03.115665+00:00",
    "schedule_history": [
     {
      "was_due": "2026-08-16",
@@ -3812,7 +3814,9 @@
      "rescheduled": "2026-08-18T20:46:09.404246+00:00",
      "why": "Real build (trade-row micro features, ~97pct of venue-stamped records unused); needs an L1.46 clock-provenance design pass so the one clean-clock series is not contaminated at birth. One dedicated session."
     }
-   ]
+   ],
+   "claimed_by": "brain-hunter-s47",
+   "claimed_at": "2026-08-31T23:50:40.775002+00:00"
   },
   {
    "id": "R0282",
@@ -4128,11 +4132,13 @@
    "summary": "L1.47 STAGED (money path, L1.38 STERILE): make closes settlement-aware. 59/265 closes (22.3%, z=+4.8) landed within 1h of a funding stamp with POSITIVE funding, walking away from $8.58 = 2.89bps on that notional and 9.2% of ALL booked funding revenue on the only deployed sleeve. Add a phase term to _churn_guard (hold past an imminent stamp when funding>0 and no rail forces the exit) and replace _entry_gate's periods=max(1,min_hold_h/8.0) with funding_clock.settlements_in over the prospective window. RAILS ALWAYS WIN -- never hold past a rail to chase a settlement (L1.45 closes-are-never-excited).",
    "roi_bps": 130.0,
    "raised": "2026-08-01T14:01:24.532956+00:00",
-   "status": "scheduled",
-   "reason": "L1.38-staged money-path change: window is STERILE (verified this cycle via check_change_window status in data/stale_daemon_repair.json). Due = window re-check date; lands the day the window opens. Not idle-deferral: the freeze is the named clamp and its lifting condition is the window state.",
+   "status": "rejected",
+   "reason": "Reject the exact money-path change: _churn_guard, _entry_gate and the 8-hour funding stamp belong to the permanently retired crypto cash-carry executor, so no admissible future fill can receive this patch. The durable L1.47 mechanism is already represented on current MT5 ground by point-in-time Fusion swap fields, per-symbol swap_rollover3days and rollover_nights; research has also shown triple day varies by symbol rather than using a universal 8-hour cadence. Any exit-timing hypothesis must therefore be preregistered independently on Fusion-native rollover clocks and pass the canonical pipeline, never resurrect this venue-specific implementation.",
    "commit": null,
-   "due": "2026-08-25",
-   "disposed": "2026-08-11T15:59:12.494998+00:00"
+   "due": null,
+   "disposed": "2026-08-31T23:51:06.067649+00:00",
+   "claimed_by": "brain-hunter-s47",
+   "claimed_at": "2026-08-31T23:50:40.775011+00:00"
   },
   {
    "id": "R0306",
