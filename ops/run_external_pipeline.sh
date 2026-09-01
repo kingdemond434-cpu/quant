@@ -76,7 +76,14 @@ echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk b
 # They are runtime dependencies of both the remote discovery jobs and the writer-side forward
 # engine, so leaving either off this verified bundle makes the whole family registry disappear
 # behind an ImportError even while the top-level module hash looks current.
-REMOTE_MODULES="desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py desks/mt5/mt5desk/families_edge_queue.py desks/mt5/mt5desk/family_generic.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
+# family_inputs.py is here because its ABSENCE is a measured outage, not a hypothetical:
+# shadow_forward.py runs on the desk box and imports mt5desk.family_inputs, and when the
+# file was not there it raised ModuleNotFoundError and parked NINE certified sleeves at
+# BLOCKED_SLEEVE_ERROR with days=0 of 14 -- a fifth of the forward book accruing nothing
+# while every fence read green. Someone put the file on the box by hand on 2026-08-30 and
+# the sleeves recovered, but nothing in this list guaranteed it, so a rebuild would have
+# silently reproduced the outage.
+REMOTE_MODULES="desks/mt5/mt5desk/family_inputs.py desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py desks/mt5/mt5desk/families_edge_queue.py desks/mt5/mt5desk/family_generic.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
 # NEVER SHIP A TRAMPLED MODULE (2026-08-27): a replayer reverts working-tree code to ancient
 # copies roughly hourly, the moneypath fence heals within 10 minutes -- but this sync fires at
 # :05, INSIDE the trample window, and shipped ancient engines to the desk twice tonight. The
@@ -133,6 +140,52 @@ $PY desks/mt5/research/miner_candidate_compiler.py \
 # merge or the gauntlet. The desk box has the same Fusion universe and ~8GB RAM; execute BOTH the
 # family-free search and the named orthogonal falsification sweep there, then pull their artifacts
 # into the one merge below. Discovery remains hourly; only the compute location changes.
+# ORDER IS THE FIX (2026-09-01). This block used to sit AFTER stage 2b, and that is why the
+# gauntlet almost never ran. Stage 2b launches TWO heavy remote searches on the desk box --
+# orthogonal frontier (~1250MB) and family-free/edge_search (~2000MB) -- and stage 3 then asked
+# the SAME 8GB box, which also runs the live terminal, for another ~1200MB. It was last in the
+# queue for memory it could never get: measured 2026-08-31, 62 external_gauntlet stand-downs in
+# one day, and on 2026-09-01 02:06 the merge announced 22 families and 20,341 discovered
+# candidates going to the gauntlet, which then exited rc=75 one second later.
+#
+# THE ASYMMETRY DECIDES THE ORDER. A gauntlet that stands down means candidates are never
+# judged: zero certificates, and the entire hour of mining upstream is wasted. A SEARCH that
+# stands down means fewer NEW candidates against a docket already 20,341 deep, and it resumes
+# from its per-cell cache on the next trigger by design. One loss is total, the other marginal,
+# so the terminal stage goes first and runs while the box is at its quietest.
+#
+# The docket it judges is `external_survivors.json`, which PERSISTS on disk between runs, so
+# running before this cycle's merge costs at most one hour of freshness on the newest rows --
+# paid out of a backlog that has not been judged at all for days.
+# STAGE 3 RUNS ON THE DESK BOX, NOT HERE. Measured 2026-08-26: a 208-cell gauntlet (100 of them
+# discovered edges with ~5,000 signals each) was OOM-killed on this 4GB box -- 25 OOM events in 90
+# minutes -- while the desk box sat with 4.1GB free of 8GB and already holds the universe. Heavy
+# compute follows the memory and the data; this box coordinates and keeps the canon. Running it
+# here would silently truncate the gauntlet to whatever fits, which is worse than not running it:
+# a partial gauntlet still writes verdicts.
+echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet (on the desk box)"
+# Ship the docket ONLY when it holds candidates -- an empty file here becomes an empty sweep
+# there, and an empty sweep once wiped the authority file. Belt to the two braces above.
+ROWS=$($PY -c "import json;print(len(json.load(open('desks/mt5/data/hypotheses/external_survivors.json'))))" 2>/dev/null || echo 0)
+if [ "$ROWS" -gt 0 ]; then
+  scp -q desks/mt5/data/hypotheses/external_survivors.json \
+      contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
+else
+  echo "NOT shipping an empty docket ($ROWS rows) to the desk box"
+fi
+if remote_stage "ten-gate gauntlet" \
+     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py"; then
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \
+      desks/mt5/reports/UNIVERSAL_SURVIVORS.json 2>/dev/null
+  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/universal_gates_external.json' \
+      desks/mt5/reports/universal_gates_external.json 2>/dev/null
+  $PY scripts/reconcile_external_queue.py || echo "external queue reconciliation FAILED (rc=$?)"
+  echo "gauntlet done on the desk box; certificates pulled back"
+else
+  echo "stage 3 FAILED on the desk box -- see $LOGF"
+fi
+
+
 echo "[$(date -u +%FT%TZ)] stage 2b: desk-box frontier search (family-free + orthogonal)"
 scp -q desks/mt5/data/hypotheses/mined_targets.json \
     contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/mined_targets.json' 2>/dev/null || true
@@ -168,34 +221,6 @@ scp -p -q contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/edge_search_result
 # stayed 95% one family while the searcher "ran nightly".
 echo "[$(date -u +%FT%TZ)] stage 2c: merge hypothesis sources"
 $PY desks/mt5/research/merge_hypotheses.py || echo "merge FAILED (rc=$?)"
-
-# STAGE 3 RUNS ON THE DESK BOX, NOT HERE. Measured 2026-08-26: a 208-cell gauntlet (100 of them
-# discovered edges with ~5,000 signals each) was OOM-killed on this 4GB box -- 25 OOM events in 90
-# minutes -- while the desk box sat with 4.1GB free of 8GB and already holds the universe. Heavy
-# compute follows the memory and the data; this box coordinates and keeps the canon. Running it
-# here would silently truncate the gauntlet to whatever fits, which is worse than not running it:
-# a partial gauntlet still writes verdicts.
-echo "[$(date -u +%FT%TZ)] stage 3: ten-gate gauntlet (on the desk box)"
-# Ship the docket ONLY when it holds candidates -- an empty file here becomes an empty sweep
-# there, and an empty sweep once wiped the authority file. Belt to the two braces above.
-ROWS=$($PY -c "import json;print(len(json.load(open('desks/mt5/data/hypotheses/external_survivors.json'))))" 2>/dev/null || echo 0)
-if [ "$ROWS" -gt 0 ]; then
-  scp -q desks/mt5/data/hypotheses/external_survivors.json \
-      contabo-mt5:'C:/opt/quant/desks/mt5/data/hypotheses/external_survivors.json' 2>/dev/null
-else
-  echo "NOT shipping an empty docket ($ROWS rows) to the desk box"
-fi
-if remote_stage "ten-gate gauntlet" \
-     "cd C:\opt\quant\desks\mt5 && py -3 -W ignore scripts\external_gauntlet.py"; then
-  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/UNIVERSAL_SURVIVORS.json' \
-      desks/mt5/reports/UNIVERSAL_SURVIVORS.json 2>/dev/null
-  scp -q contabo-mt5:'C:/opt/quant/desks/mt5/reports/universal_gates_external.json' \
-      desks/mt5/reports/universal_gates_external.json 2>/dev/null
-  $PY scripts/reconcile_external_queue.py || echo "external queue reconciliation FAILED (rc=$?)"
-  echo "gauntlet done on the desk box; certificates pulled back"
-else
-  echo "stage 3 FAILED on the desk box -- see $LOGF"
-fi
 
 # Stage 4: certificates -> canon copy -> desk box. The canon file is what the authority
 # ratchet floors and what restores the authority file after a bad writer.
