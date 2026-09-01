@@ -52,6 +52,18 @@ def mine_korea() -> list[dict]:
                 })
         except Exception:
             continue
+    # A 200 WITH NOTHING IN IT IS NOT A QUIET SOURCE. Measured 2026-09-01: this host serves
+    # the page but not the DATA -- search results are rendered client-side; the served 26KB contains none of the mapped Korean terms.
+    # So an empty result here means the content moved behind client-side rendering, and
+    # reporting silence would be indistinguishable from a genuinely uneventful day.
+    # classify_row keys on `needs_selector_work` and counts this as a STUB: never a real
+    # row, never an error, and never a healthy zero (L1.28a). It needs an API or a
+    # rendering fetch, not another regex.
+    if not discoveries:
+        discoveries.append({"source": "korea", "kind": "stub",
+                            "needs_selector_work": True,
+                            "host": "finance.naver.com/search/search.naver",
+                            "why": "fetched OK, content is client-side rendered"})
     return discoveries
 
 def run_and_save() -> list[dict]:

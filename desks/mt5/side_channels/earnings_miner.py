@@ -53,6 +53,30 @@ def mine_earnings_calendar() -> list[dict]:
         except Exception:
             continue
 
+    # A 200 WITH NOTHING IN IT IS NOT A QUIET SOURCE. Measured 2026-09-01: this host serves
+
+    # the page but not the DATA -- the Earnings Date field is rendered client-side; the served 1.1MB carries 0 matches.
+
+    # So an empty result here means the content moved behind client-side rendering, and
+
+    # reporting silence would be indistinguishable from a genuinely uneventful day.
+
+    # classify_row keys on `needs_selector_work` and counts this as a STUB: never a real
+
+    # row, never an error, and never a healthy zero (L1.28a). It needs an API or a
+
+    # rendering fetch, not another regex.
+
+    if not discoveries:
+
+        discoveries.append({"source": "earnings", "kind": "stub",
+
+                            "needs_selector_work": True,
+
+                            "host": "finance.yahoo.com/quote/<ticker>/",
+
+                            "why": "fetched OK, content is client-side rendered"})
+
     return discoveries
 
 
