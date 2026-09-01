@@ -131,10 +131,29 @@ def costs_for(sym: str, meta: dict, mult: float = 1.0) -> Costs:
       * `commission_per_lot=3.50 * mult` scaled a CONTRACTUAL fee with market stress, which models
         nothing that happens; `from_symbol` scales the spread alone and is the reason it exists.
 
-    `mult` keeps its meaning (spread multiplier) so no caller changes. The commission stays 3.50
-    -- Fusion's measured round turn on this account, not the 2.25 class default.
+    `mult` keeps its meaning (spread multiplier) so no caller changes.
+
+    THE FOURTH UNIT TRAP, and it was in this docstring (2026-09-01). The override read
+    "commission stays 3.50 -- Fusion's measured ROUND TURN on this account". But
+    `commission_per_lot` is charged PER SIDE: the class docstring above says the engine "adds
+    the spread to TWO commissions". A round-turn figure written into a per-side field is
+    therefore charged twice -- $7.00 round turn against a stated $3.50 -- which is exactly the
+    shape of the three defects this same docstring already lists (dollars-per-ounce into a
+    per-lot field; a currency amount divided by contract_size as though it were price).
+    A measured number in the wrong unit is not more accurate than a published one.
+
+    So the override is removed and `from_symbol`'s default stands: USD 2.25 per lot per side,
+    $4.50 round turn, which is Fusion Zero's published contract and what engine.Costs already
+    documents. Principal direction 2026-09-01: charge the official Fusion Zero schedule, not
+    less and not more, even where the realized rate is lower.
+
+    THIS MAKES THE GAUNTLET LESS PESSIMISTIC, on the one call site that decides who gets a
+    certificate. Commission was being charged at 2x, so candidates whose edge covers the real
+    Fusion cost have been rejected for a cost the account never pays. Every certificate issued
+    under the old number was issued against a harder bar, so nothing already certified is
+    invalidated -- the bar moves to the true one, it does not drop below it.
     """
-    return Costs.from_symbol(meta.get(sym, {}), mult=mult, commission_per_lot=3.50)
+    return Costs.from_symbol(meta.get(sym, {}), mult=mult)
 
 
 def daily_series(df: pd.DataFrame, sigs: list, costs: Costs) -> pd.Series:

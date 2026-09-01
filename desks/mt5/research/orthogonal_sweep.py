@@ -451,11 +451,19 @@ def sweep() -> dict:
         }
         m = meta.get(sym, {}) if isinstance(meta, dict) else {}
         try:
-            costs = Costs(spread_per_lot=max(float(m.get("median_spread_pts", 1)) *
-                                             float(m.get("tick_size", 0.0001)) *
-                                             float(m.get("contract_size", 100000)), 0.05),
-                          commission_per_lot=3.50,
-                          contract_oz=float(m.get("contract_size", 100000)))
+            # ONE COST MODEL, AND from_symbol IS IT (2026-09-01). This built `Costs` by hand
+            # and so carried the two defects external_gauntlet.costs_for already documents and
+            # fixed on its own call site:
+            #   * no `quote_per_account`, so commission was charged as though every symbol were
+            #     quoted in the account's currency -- on this EUR account that is USDJPY 184.31x,
+            #     CADJPY 8.21x, EURJPY 6.19x undercharged, i.e. every JPY cross in the live family;
+            #   * commission_per_lot=3.50, a ROUND-TURN figure in a PER-SIDE field ($7.00 charged
+            #     against a $4.50 contract). from_symbol's default is Fusion Zero's published
+            #     USD 2.25 per lot per side.
+            # A sweep that prices candidates differently from the gauntlet that judges them is two
+            # brokers inside one pipeline: the sweep ranks and filters on numbers the certifying
+            # door will never agree with. Same constructor, same numbers, one truth.
+            costs = Costs.from_symbol(m)
         except (TypeError, ValueError):
             continue
 

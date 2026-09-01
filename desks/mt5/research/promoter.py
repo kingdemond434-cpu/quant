@@ -167,6 +167,34 @@ def _save_gold_retired(rows: dict) -> None:
     GOLD_RETIRED_FILE.write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
 
+def degenerate_evidence(ledger: list[dict], name: str) -> str:
+    """Why this sleeve's r-series cannot support a retirement, or "" when it can.
+
+    RETIRING IS AS CONSEQUENTIAL AS PROMOTING AND HAD NONE OF THE GUARDS. Measured 2026-09-01:
+    gold_asia was auto-retired on n=30 with exp EXACTLY -1.000R, roll20 EXACTLY -1.000R and
+    max_dd -29.0 -- thirty consecutive losses of precisely one R -- while the account those
+    sleeves trade went 500.00 -> 603.84 on the same day, +103.84. Real trading does not produce
+    thirty identical outcomes; a constant series is the signature of a broken r_multiple
+    computation, and the ledger it was read from is not on either box now.
+
+    A series with NO DISPERSION carries no information about performance. Acting on it is not
+    conservative -- it stops a book on a bug, and the stop looks exactly like a verdict
+    afterwards. So dispersion is required before any retire rule may fire. This does not soften
+    a single threshold: a genuinely losing sleeve has losing trades of DIFFERENT sizes and still
+    trips every rule below.
+    """
+    rs = [r.get("r_multiple") for r in ledger if r.get("sleeve") == name]
+    rs = [float(x) for x in rs if isinstance(x, (int, float))]
+    if len(rs) < 2:
+        return ""
+    if len({round(x, 9) for x in rs}) == 1:
+        return (f"every one of {len(rs)} r_multiples is exactly {rs[0]:+.3f} -- a constant series "
+                f"is a computation defect, not performance; refusing to retire on it")
+    if all(x == 0.0 for x in rs):
+        return f"all {len(rs)} r_multiples are 0.0 -- risk_per_lot was unmeasurable on every fill"
+    return ""
+
+
 def load_qquant_shadow() -> dict:
     """The qquant (hunt-certified) forward clock, kept in its own state file."""
     p = SHADOW_DIR / "qquant_shadow_state.json"
@@ -306,6 +334,10 @@ def main() -> None:
     for s in sleeves:
         if s.get("status") != "LIVE":
             continue
+        why_not = degenerate_evidence(ledger, s["name"])
+        if why_not:
+            plog(f"RETIRE-REFUSED {s['name']}: {why_not}")
+            continue
         fs = sleeve_forward_stats(ledger, s["name"])
         retire = False
         reason = ""
@@ -349,6 +381,10 @@ def main() -> None:
     gold_retired = _load_gold_retired()
     for gname in GOLD_SLEEVE_NAMES:
         if gname in gold_retired:
+            continue
+        why_not = degenerate_evidence(ledger, gname)
+        if why_not:
+            plog(f"RETIRE-REFUSED {gname}: {why_not}")
             continue
         fs = sleeve_forward_stats(ledger, gname)
         retire = False
