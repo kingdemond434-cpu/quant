@@ -52,14 +52,27 @@ from libs.validation.dsr import deflated_sharpe_ratio, sharpe_ratio  # noqa: E40
 from libs.validation.pbo import probability_backtest_overfitting  # noqa: E402
 from libs.validation.reality_check import hansen_spa  # noqa: E402
 from libs.validation.revalidation import WalkForwardEngine, WalkForwardStatus  # noqa: E402
+from gate_policy import (  # noqa: E402
+    COST_SCENARIO,
+    DSR_THRESHOLD,
+    PBO_THRESHOLD,
+    SPA_ALPHA,
+    TRIALS_MULTIPLIER,
+    WF_MIN_STABILITY,
+    WF_SPLITS,
+)
 
-TRIALS_MULTIPLIER = 7.0
-DSR_THRESHOLD = 0.95
-PBO_THRESHOLD = 0.5
-SPA_ALPHA = 0.05
-WF_SPLITS = 4
-WF_MIN_STABILITY = 0.5
-COST_SCENARIO = 3.0  # X3
+# THRESHOLDS ARE IMPORTED ABOVE, NOT DEFINED HERE (2026-09-01). These seven were local copies
+# while universal_gate.py imported the same seven from gate_policy -- "the single immutable
+# authority for MT5 shadow admission", which loads them from desks/mt5/policy/gate_spec.yaml.
+# Two programs both called universal validation, one following policy and one carrying its own
+# numbers. They agreed on the day this changed -- verified value by value, all seven identical --
+# so no verdict moves and no bar moves. What is removed is the drift: an edit to gate_spec.yaml
+# moved universal_gate and left this file behind, silently, and the two would then certify
+# different candidates from the same evidence while both reporting a ten-gate pass.
+# TRIALS_MULTIPLIER matters most: policy pins the multiple-testing charge precisely so a
+# candidate "must not face a higher bar for having been scheduled into a wider sweep", and a
+# private copy here could raise that bar without anyone editing policy.
 WORKERS = int(sys.argv[sys.argv.index("--workers") + 1]) if "--workers" in sys.argv else 8
 
 _worker_ctx: dict = {}
