@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-01T01:40:51+00:00",
+ "built_at": "2026-09-01T12:55:30+00:00",
  "tasks": [
   {
    "source": "github",
@@ -509,1397 +509,6 @@
     "swing",
     "trend"
    ]
-  },
-  {
-   "symbol": "EURAUD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURCAD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURCZK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURDKK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURGBP",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURHKD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURILS",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURMXN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURNOK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURNZD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURPLN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURRUB",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURSEK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURTRY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EURZAR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XAGEUR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XAUEUR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "German Prelim CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "ADAUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "BCHUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "BNBUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "BTCUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "DOTUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "EOSUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "ETHUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "LNKUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "LTCUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NAS100",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "SOLUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "US500",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDBRL",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDCAD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDCNH",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDCZK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDDKK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDHKD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDIDR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDILS",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDINR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDKRW",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDMXN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDNOK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDPLN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDRUB",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDSEK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDTHB",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDTRY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "USDZAR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XAGUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XALUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XAUUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XBRUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XCUUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XLMUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XNGUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XNIUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XPBUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XPDUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XPTUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XTIUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XZNUSD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "ISM Manufacturing PMI",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDCAD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDNZD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "AUDSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPAUD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "XAUAUD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "GDP q/q",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPNZD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDCAD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NZDSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "Official Cash Rate",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CADCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOC Rate Statement",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOC Rate Statement",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPCAD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOC Rate Statement",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFPLN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFSEK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPCHF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "CPI m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPDKK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPHUF",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPMXN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPNOK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPPLN",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPSEK",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPSGD",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPTRY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "GBPZAR",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:forexfactory",
-   "source_url": "",
-   "source_title": "BOE Gov Bailey Speaks",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
    "source": "sec_edgar",
@@ -2723,14 +1332,6 @@
   {
    "source": "litefinance",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "@H_Trading",
-   "url": "https://my.litefinance.org/traders/H_Trading",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "litefinance",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Fire_Phoenix",
    "url": "https://my.litefinance.org/traders/Fire_Phoenix",
    "symbols": [],
@@ -2789,6 +1390,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "@Earth_Taurus",
    "url": "https://my.litefinance.org/traders/Earth_Taurus",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "litefinance",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "@Atlas_Capital",
+   "url": "https://my.litefinance.org/traders/Atlas_Capital",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -2892,6 +1501,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
    "symbols": [],
@@ -2936,8 +1556,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2952,17 +1572,6 @@
    "symbols": [],
    "mechanism_tags": [
     "trend",
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439516/",
-   "symbols": [],
-   "mechanism_tags": [
     "ea_robot",
     "gold"
    ]
@@ -3004,8 +1613,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3015,8 +1624,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1040896/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3302,6 +1911,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1401394/",
    "symbols": [],
@@ -3315,17 +1935,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3357,8 +1966,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3368,8 +1977,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3390,8 +1999,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3401,8 +2010,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442805/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1138237/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3445,6 +2054,28 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1361018/",
    "symbols": [],
@@ -3467,30 +2098,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1351806/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1430083/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431344/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3511,8 +2120,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3533,8 +2142,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3544,8 +2153,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439717/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3588,6 +2197,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1434251/",
    "symbols": [],
@@ -3599,30 +2219,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1399589/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3698,17 +2296,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1438600/",
    "symbols": [],
@@ -3720,19 +2307,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3753,8 +2329,30 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1433832/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1442020/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1426045/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3842,8 +2440,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443990/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -3853,8 +2451,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443927/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443927/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1397438/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4008,6 +2606,28 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1376471/",
    "symbols": [],
@@ -4053,30 +2673,19 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1443927/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1443927/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1191632/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1442531/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -4266,6 +2875,20 @@
    "source": "mql5_survivors",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "",
+   "url": "https://www.mql5.com/en/signals/2222743",
+   "symbols": [
+    "BTCUSD",
+    "EURUSD",
+    "USDJPY",
+    "XAUEUR",
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
    "url": "https://www.mql5.com/en/signals/2300694",
    "symbols": [
     "AUDCAD",
@@ -4277,20 +2900,6 @@
     "NZDUSD",
     "USDCAD",
     "XAGUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "mql5_survivors",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "",
-   "url": "https://www.mql5.com/en/signals/2222743",
-   "symbols": [
-    "BTCUSD",
-    "EURUSD",
-    "USDJPY",
-    "XAUEUR",
     "XAUUSD"
    ],
    "mechanism_tags": []
@@ -4320,16 +2929,6 @@
    "source": "mql5_survivors",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2308095",
-   "symbols": [
-    "AUDCAD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "mql5_survivors",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "",
    "url": "https://www.mql5.com/en/signals/2367701",
    "symbols": [
     "AUDCAD",
@@ -4344,6 +2943,18 @@
     "EURAUD",
     "EURCAD",
     "EURCHF"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "mql5_survivors",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "",
+   "url": "https://www.mql5.com/en/signals/2307342",
+   "symbols": [
+    "BTCUSD",
+    "US500",
+    "XAUUSD"
    ],
    "mechanism_tags": []
   },
@@ -4374,320 +2985,320 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsecretsignals-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsecretsignals-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user link98c",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=link98c&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxseed",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxseed&mode=overview&isinline=1",
+   "title": "FX Blue user link99c",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=link99c&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxseed-icmarkets",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxseed-icmarkets&mode=overview&isinline=1",
+   "title": "FX Blue user link_17c",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=link_17c&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxseed-pepperstone",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxseed-pepperstone&mode=overview&isinline=1",
+   "title": "FX Blue user linkableactts",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkableactts&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxseer_15",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxseer_15&mode=overview&isinline=1",
+   "title": "FX Blue user linkh10",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh10&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxseer_40",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxseer_40&mode=overview&isinline=1",
+   "title": "FX Blue user linkh11",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh11&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsevenpips",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsevenpips&mode=overview&isinline=1",
+   "title": "FX Blue user linkh12",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh12&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshockerpro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshockerpro&mode=overview&isinline=1",
+   "title": "FX Blue user linkh13",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh13&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshockerpro-live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshockerpro-live&mode=overview&isinline=1",
+   "title": "FX Blue user linkh14",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh14&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshooter_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshooter_demo&mode=overview&isinline=1",
+   "title": "FX Blue user linkh15",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh15&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshooter_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshooter_live&mode=overview&isinline=1",
+   "title": "FX Blue user linkh16",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh16&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshooterea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshooterea&mode=overview&isinline=1",
+   "title": "FX Blue user linkh17",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh17&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxshutterstock-live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxshutterstock-live&mode=overview&isinline=1",
+   "title": "FX Blue user linkh18",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh18&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsocial",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsocial&mode=overview&isinline=1",
+   "title": "FX Blue user linkh19",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh19&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsolution-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsolution-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user linkh2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxspanna",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxspanna&mode=overview&isinline=1",
+   "title": "FX Blue user linkh20",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh20&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxspeedtrader",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxspeedtrader&mode=overview&isinline=1",
+   "title": "FX Blue user linkh21",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh21&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsplitter",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsplitter&mode=overview&isinline=1",
+   "title": "FX Blue user linkh22",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh22&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsplitter_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsplitter_demo&mode=overview&isinline=1",
+   "title": "FX Blue user linkh23",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh23&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer&mode=overview&isinline=1",
+   "title": "FX Blue user linkh24",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh24&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer-aud-dur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer-aud-dur&mode=overview&isinline=1",
+   "title": "FX Blue user linkh25",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh25&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer-aud-tur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer-aud-tur&mode=overview&isinline=1",
+   "title": "FX Blue user linkh26",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh26&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer-eur-dur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer-eur-dur&mode=overview&isinline=1",
+   "title": "FX Blue user linkh3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer-eur-tur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer-eur-tur&mode=overview&isinline=1",
+   "title": "FX Blue user linkh5",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh5&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer-live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer-live&mode=overview&isinline=1",
+   "title": "FX Blue user linkh6",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh6&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_aud_dur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_aud_dur&mode=overview&isinline=1",
+   "title": "FX Blue user linkh7",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkh7&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_aud_tur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_aud_tur&mode=overview&isinline=1",
+   "title": "FX Blue user linkpr1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkpr1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_audusd",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_audusd&mode=overview&isinline=1",
+   "title": "FX Blue user linkpr2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkpr2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_eur_dur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_eur_dur&mode=overview&isinline=1",
+   "title": "FX Blue user linkpr3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkpr3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_eur_tur",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_eur_tur&mode=overview&isinline=1",
+   "title": "FX Blue user linkpr4",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkpr4&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_live&mode=overview&isinline=1",
+   "title": "FX Blue user linkrsi1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkrsi1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_pro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_pro&mode=overview&isinline=1",
+   "title": "FX Blue user linkrsi2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkrsi2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizer_ult",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizer_ult&mode=overview&isinline=1",
+   "title": "FX Blue user linkrsi5",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkrsi5&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizerea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizerea&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizereau",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizereau&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstabilizerpro_live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstabilizerpro_live&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsteadygrowth-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsteadygrowth-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave4",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave4&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxstreetrobot",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxstreetrobot&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave5",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave5&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxsunray",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxsunray&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave6",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave6&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user fxtechgroup",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=fxtechgroup&mode=overview&isinline=1",
+   "title": "FX Blue user linkwave7",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=linkwave7&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4714,84 +3325,6 @@
    "url": "",
    "symbols": [],
    "mechanism_tags": []
-  },
-  {
-   "symbol": "HKDJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "MXNJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "NOKJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "SEKJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "SGDJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
-  },
-  {
-   "symbol": "ZARJPY",
-   "family": "event_reaction",
-   "params": {
-    "input_source": "ff_calendar_vintage"
-   },
-   "source": "miner:ff_calendar_vintage",
-   "source_url": "",
-   "source_title": "JPY Prelim Industrial Production m/m",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "scheduled information releases create conditional repricing and liquidity",
-   "deepening_reason": "last sweep built 113 cell(s), judged 0 -- every one under the 60 trading days the gates need; parameters need DEEPENING before judgment is possible"
   },
   {
    "source": "ff_calendar_vintage",
@@ -4828,8 +3361,960 @@
   {
    "source": "forextsd_cdx",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "HTTPConnectionPool(host='web.archive.org', port=80): Read timed out. (read timeout=40)",
-   "url": "",
+   "title": "http://www.forex-tsd.com:80/",
+   "url": "https://web.archive.org/web/20051016184519/http://www.forex-tsd.com:80/",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "url": "https://web.archive.org/web/20081214163953/http://www.forex-tsd.com:80/!11342!http://www.forex-tsd.com/evaluate-commercial-ideas/11342-evaluation-ea-shark.html);",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140428/http://www.forex-tsd.com/!12005!http://www.forex-tsd.com/announcements-blog/12005%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140922142037/http://www.forex-tsd.com/!18449!http://www.forex-tsd.com/rentasignal-service-elite-section-discus%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141007050806/http://www.forex-tsd.com/!344%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20141006124851/http://www.forex-tsd.com/!6359!http://www.forex-tsd.c%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-6",
+   "url": "https://web.archive.org/web/20150425044026/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com/%3C!--Unregistered--%3Eelite-section/3580-elite-indicators-657.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140928140431/http://www.forex-tsd.com/!m3580!http://www.forex-tsd.com/manual-trading-systems-indicators/%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-7",
+   "url": "https://web.archive.org/web/20140610002310/http://www.forex-tsd.com:80/!m3580!http://www.forex-tsd.com%3C!--Unregistered--%3E/elite-section/3580-elite-indicators-733.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "url": "https://web.archive.org/web/20140828201458/http://www.forex-tsd.com/!m617!http://www.forex-tsd.com/manual-trading-systems/617-channel-trading-%3C!--Unregistered--",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "url": "https://web.archive.org/web/20130114235826/http://www.forex-tsd.com:80/!p365373!http://www.forex-tsd.com/365373-%3C!--ReeBok--%3Epost67.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpa",
+   "url": "https://web.archive.org/web/20140816211013/http://www.forex-tsd.com/%22http://analysis.forex-trading-signals.info/?wysijap=subscriptions&email_id=3&user_id=3&urlpassed=aHR0cDovL2FuYWx5c2lzLmZvcmV4LXRyYWRpbmctc2lnbmFscy5pbmZvLz93eXNpamFwPXN1YnNjcmlwdGlvbnMmYW1wO2VtYWlsX2lkPTMmYW1wO3VzZXJfaWQ9MiZhbXA7dXJscGFzc2VkPWFIUjBjRG92TDJGdVlXeDVjMmx6TG1admNtVjRMWFJ5WVdScGJtY3RjMmxuYm1Gc2N5NXBibVp2THo5M2VYTnBhbUZ3UFhOMVluTmpjbWx3ZEdsdmJuTW1ZVzF3TzJWdFlXbHNYMmxrUFRNbVlXMXdPM1Z6WlhKZmFXUTlNaVpoYlhBN2RYSnNjR0Z6YzJWa1BXRklVakJqUkc5MlRESkdkVmxYZURWak1teDZURzFhZG1OdFZqUk1XRko1V1ZkU2NHSnRZM1JqTW14dVltMUdjMk41TlhCaWJWcDJUSG81TTJWWVRuQmhiVVozVUZoT01WbHVUbXBqYld4M1pFZHNkbUp1VFcxWlZ6RjNUekpXZEZsWGJITllNbXhyVUZSTmJWbFhNWGRQTTFaNldsaEtabUZYVVRsTmFWcG9ZbGhCTjJSWVNuTmpSMFo2WXpKV2ExQlhSa2xWYWtKcVVrYzVNbFJFU2tka1ZteFlaVVJXYWsxdGVEWlVSekZoWkcxT2RGWnFVazFYUmtvMVYxWmtVMk5IU25SWk0xSnFUVzE0ZFZsdE1VZGpNazQxVGxoQ2FXSldjREpVU0c4MVRUSldXVlJ1UW1oaVZWb3pWVVpvVDAxV2JIVlViWEJxWWxkNE0xcEZaSE5rYlVwMVZGY3hXbFo2UmpOVWVrcFhaRVpzV0dKSVRsbE5iWGh5VlVaU1RtSldiRmhOV0dSUVRURmFObGRzYUV0YWJVWllWVlJzVGxaRlJqVlViV3hoWVVkS1dWRlVaR3RYUlhCNldUQmtSMlZ0VFhsV2JYUlJWakJhU2xaWGNFTmhiRXBJVDFSS1ZWSkZOWEpVVkVwVFRsVTFXRTFYYkU1TlNFSjZWMnhXVG1WRk1VaFVibEpUWWxoU2IxWnVjRmRrVmxKSFlVVTVhbEp0T1RWVWJHUnZZVlpPUmsxVVJscFdiVTE0V1d4a1MwNVZPVVJXV0hCVFVURndiMWxzYUVKT01XdDVUMWhXYTFORmNESlphMlEwWWtkT2NVMVljR3RTTUZsM1dUTnNZV0ZIU2xsUlZHUmFWakEwZDFsV1l6VmtWa0pZVW01V1dsWXpaekZaZWtwV1lsWnNXRTFZWkZCTk1sRXhXWHBLYzJOV2JGUk5XR1JhVmpKU2MxVkdVa1ppVm14WVRWaGtVRTB5VVRGWmVrcHpZMVpzV1ZGVWJHcE5NVnB3V1hwS1QyVlhSbGxSYWtKb1ZucHNNVmt6WTJ4Tk1GRnNUVEJSYlZsWE1YZFBNazUyWW01U2VXSXllSE5hV0VrNVl6TlNhR1JJVFcxWlZ6RjNUekpHYW1SSGJIWmlhakZvWW0xR2MyVllUbXhLYlVaMFkwUjBNMlZZVG5CaGJVVjBZMGRHYmxwVU1IaEtiVVowWTBSME0yVllUbkJoYlVaM1VGaE9NVmx1VG1wamJXeDNaRWRzZG1KdVRTVXpSQ1poYlhBN1kyOXVkSEp2Ykd4bGNqMXpkR0YwY3laaGJYQTdZV04wYVc5dVBXRnVZV3g1YzJVbVlXMXdPM2Q1YzJscVlTMXdZV2RsUFRFbVlXMXdPM2Q1YzJscVlYQTljM1ZpYzJOeWFYQjBhVzl1Y3clM0QlM0QmYW1wO2NvbnRyb2xsZXI9c3RhdHMmYW1wO2FjdGlvbj1hbmFseXNlJmFtcDt3eXNpamEtcGFnZT0xJmFtcDt3eXNpamFwPXN1YnNjcmlwdGlvbnM%3D&controller=stats&action=analyse&wysija-page",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "url": "https://web.archive.org/web/20090420185718/http://www.forex-tsd.com:80/%20-%20Forex%20TSD%7C%20Metatrader%20Indicators%20and%20Experts%20Advisors",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "url": "https://web.archive.org/web/20080227113739/http://www.forex-tsd.com:80/%20analytics/%2012186-signals-primer.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "url": "https://web.archive.org/web/20080405231746/http://www.forex-tsd.com:80/%20commercial-trading-systems-indicators/%2012080-probability",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "url": "https://web.archive.org/web/20080224020717/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011958-shogun-breakout-st&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "url": "https://web.archive.org/web/20080323102645/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2011997-there-ea-like.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "url": "https://web.archive.org/web/20080218140249/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012011-my-wealth-trading-sy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "url": "https://web.archive.org/web/20080322021252/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012110-please-check-my-firs",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "url": "https://web.archive.org/web/20080321110204/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012184-correlation-grid-ea",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "url": "https://web.archive.org/web/20080226234853/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012230-oilfxpro-pro-experts",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "url": "https://web.archive.org/web/20080219103755/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012358-petit-pip-eater.ht&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "url": "https://web.archive.org/web/20080219111128/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012359-hedge-ea-advice-op&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "url": "https://web.archive.org/web/20080403033155/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012385-turn-hedging-syste&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "url": "https://web.archive.org/web/20080523161606/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012659-ea-m-series-eurjpy-b",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "url": "https://web.archive.org/web/20080609191658/http://www.forex-tsd.com:80/%20expert-advisors-metatrader-4/%2012843-powersm-semi-marting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "url": "https://web.archive.org/web/20080201033805/http://www.forex-tsd.com:80/%20harmonic-trading/%2011145-zup_v73.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "url": "https://web.archive.org/web/20080121025202/http://www.forex-tsd.com:80/%20harmonic-trading/%2011443-harmonic-zigzags.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "url": "https://web.archive.org/web/20080404111826/http://www.forex-tsd.com:80/%20harmonic-trading/%2011472-secrets-meta-trader.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "url": "https://web.archive.org/web/20080323102650/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011760-lr-trend.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "url": "https://web.archive.org/web/20080219005053/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2011834-simple-adtr-indicator.htm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "url": "https://web.archive.org/web/20080321221930/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012016-wave_autotrendlines-new&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "url": "https://web.archive.org/web/20080321210031/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012188-amazing-gbp-jpy-indicat",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "url": "https://web.archive.org/web/20080405231751/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012616-where-can-i-find-these-in",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "url": "https://web.archive.org/web/20080415013026/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2012779-trade-assistant.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "url": "https://web.archive.org/web/20090218092018/http://www.forex-tsd.com:80/%20indicators-metatrader-4/%2015166-index-indicator-best-indi",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "url": "https://web.archive.org/web/20080418081454/http://www.forex-tsd.com:80/%20metatrader-4/%2012769-range-bar-chart-mt4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "url": "https://web.archive.org/web/20080226224920/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012218-master-forex.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "url": "https://web.archive.org/web/20080323151004/http://www.forex-tsd.com:80/%20metatrader-brokers/%2012746-varengolbankfx-metatrader-fx-t",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "url": "https://web.archive.org/web/20080415093556/http://www.forex-tsd.com:80/%20post-compare-trades/%2012754-victor-journal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "url": "https://web.archive.org/web/20080319000716/http://www.forex-tsd.com:80/%20post-compare-trades/%2012794-fxfariz36s-trading-journal-&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "url": "https://web.archive.org/web/20080322021657/http://www.forex-tsd.com:80/%20post-compare-trades/%2012859-i-dont-know-if-against-rule&hellip",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "url": "https://web.archive.org/web/20080218142517/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2012175-ozfx-system-100-800-p",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "url": "https://web.archive.org/web/20080628015958/http://www.forex-tsd.com:80/%20suggestions-trading-systems/%2014477-ashfx-daily.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%23",
+   "url": "https://web.archive.org/web/20070113020933/http://www.forex-tsd.com:80/%23",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E",
+   "url": "https://web.archive.org/web/20100211171926/http://www.forex-tsd.com:80/%E3%80%80%E3%81%93%E3%81%93%E3%81%A7%E3%82%B0%E3%82%B0%E3%82%8B%E3%82%82%E3%82%88%E3%81%97%E3%80%82",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/)",
+   "url": "https://web.archive.org/web/20080108064552/http://www.forex-tsd.com:80/)",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/),",
+   "url": "https://web.archive.org/web/20080108064301/http://www.forex-tsd.com:80/),",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/+1-888-591-2951",
+   "url": "https://web.archive.org/web/20140814151245/http://www.forex-tsd.com/+1-888-591-2951",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-post.html",
+   "url": "https://web.archive.org/web/20061208063057/http://www.forex-tsd.com:80/-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "url": "https://web.archive.org/web/20150403085923/http://www.forex-tsd.com:80/-v12-c02-smoothi-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "url": "https://web.archive.org/web/20150403085853/http://www.forex-tsd.com:80/-v15-c07-rainbow-pdf.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "url": "https://web.archive.org/web/20130409023128/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "url": "https://web.archive.org/web/20130409023133/http://www.forex-tsd.com:80/.../12696-mt4_fx_dashboard-5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "url": "https://web.archive.org/web/20130409024521/http://www.forex-tsd.com:80/.../1662-super-signals-indicator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "url": "https://web.archive.org/web/20121115232421/http://www.forex-tsd.com:80/.../20659-sniper-forex-system",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "url": "https://web.archive.org/web/20130411045245/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal-10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "url": "https://web.archive.org/web/20130409024527/http://www.forex-tsd.com:80/.../27859-indicators-alerts-signal.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "url": "https://web.archive.org/web/20120727043327/http://www.forex-tsd.com:80/.../32755-financial-markets-today-winopti...",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "url": "https://web.archive.org/web/20130412094616/http://www.forex-tsd.com:80/.../8024-stochastic-oscillator.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "url": "https://web.archive.org/web/20130412094922/http://www.forex-tsd.com:80/.../8214-simple-entry-exit-ea.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.ic-trading.html",
+   "url": "https://web.archive.org/web/20071024032302/http://www.forex-tsd.com:80/.ic-trading.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.od-revised.html",
+   "url": "https://web.archive.org/web/20071219185114/http://www.forex-tsd.com:80/.od-revised.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.php",
+   "url": "https://web.archive.org/web/20150612030139/http://www.forex-tsd.com:80/.php",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-187.html",
+   "url": "https://web.archive.org/web/20080108064559/http://www.forex-tsd.com:80/.rading-187.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "url": "https://web.archive.org/web/20080218043410/http://www.forex-tsd.com:80/.rading-214.htmlhttp://picasaweb.google.com/pipimint",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "url": "https://web.archive.org/web/20150101162534/http://www.forex-tsd.com:80/.site/eminis/how_to/articles/A-Simple-Day-Trading-Strategy-80849.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "url": "https://web.archive.org/web/20110711161538/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/-76494.cfm",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=",
+   "url": "https://web.archive.org/web/20120423070242/http://www.forex-tsd.com:80/.site/stocks/how_to/articles/How-to-Use--Average-True-Range-for-Short-Term-trad-81414.cfm?a=81414",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1-post.html",
+   "url": "https://web.archive.org/web/20070210094610/http://www.forex-tsd.com:80/1-post.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "url": "https://web.archive.org/web/20140701073938/http://www.forex-tsd.com:80/1/post/2012/01/the-highly-anticipated-alert-indicator-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "url": "https://web.archive.org/web/20140424054214/http://www.forex-tsd.com:80/1/post/2012/10/coming-soon-rsi-and-cci-divergence-indicators.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "url": "https://web.archive.org/web/20140424054219/http://www.forex-tsd.com:80/1/post/2012/10/truetl-175-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "url": "https://web.archive.org/web/20141016032009/http://www.forex-tsd.com:80/1/post/2014/01/triangle-mode-only-two-trendlines-truetl-189-is-released.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "url": "https://web.archive.org/web/20141016033219/http://www.forex-tsd.com:80/1/post/2014/03/changes-from-the-19-versions.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "url": "https://web.archive.org/web/20141016033224/http://www.forex-tsd.com:80/1/post/2014/03/triangle-mode-for-all-trendline-indicators-truetl-v190.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10-post6.html",
+   "url": "https://web.archive.org/web/20070106122056/http://www.forex-tsd.com:80/10-post6.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100%.txt",
+   "url": "https://web.archive.org/web/20130520192043/http://www.forex-tsd.com:80/100%.txt",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100-post2.html",
+   "url": "https://web.archive.org/web/20080226234858/http://www.forex-tsd.com:80/100-post2.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10000-post3.html",
+   "url": "https://web.archive.org/web/20061026043608/http://www.forex-tsd.com:80/10000-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100001-post9.html",
+   "url": "https://web.archive.org/web/20080821180706/http://www.forex-tsd.com/100001-post9.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100002-post44.html",
+   "url": "https://web.archive.org/web/20090822232151/http://www.forex-tsd.com:80/100002-post44.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100003-post22.html",
+   "url": "https://web.archive.org/web/20070519133558/http://www.forex-tsd.com:80/100003-post22.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com/100004-post10.html",
+   "url": "https://web.archive.org/web/20080830070132/http://www.forex-tsd.com/100004-post10.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100005-post45.html",
+   "url": "https://web.archive.org/web/20090823002110/http://www.forex-tsd.com:80/100005-post45.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100006-post3.html",
+   "url": "https://web.archive.org/web/20080411084146/http://www.forex-tsd.com:80/100006-post3.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100008-post128.html",
+   "url": "https://web.archive.org/web/20071207170449/http://www.forex-tsd.com:80/100008-post128.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100009-post92.html",
+   "url": "https://web.archive.org/web/20070423224401/http://www.forex-tsd.com:80/100009-post92.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10001-post25.html",
+   "url": "https://web.archive.org/web/20081005130726/http://www.forex-tsd.com:80/10001-post25.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100011-post93.html",
+   "url": "https://web.archive.org/web/20070618141552/http://www.forex-tsd.com:80/100011-post93.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100012-post94.html",
+   "url": "https://web.archive.org/web/20070503113312/http://www.forex-tsd.com:80/100012-post94.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100013-post95.html",
+   "url": "https://web.archive.org/web/20070918192247/http://www.forex-tsd.com:80/100013-post95.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100015-post96.html",
+   "url": "https://web.archive.org/web/20070501024727/http://www.forex-tsd.com:80/100015-post96.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100016-post89.html",
+   "url": "https://web.archive.org/web/20070501204510/http://www.forex-tsd.com:80/100016-post89.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100017-post97.html",
+   "url": "https://web.archive.org/web/20070503183311/http://www.forex-tsd.com:80/100017-post97.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100019-post98.html",
+   "url": "https://web.archive.org/web/20070921002113/http://www.forex-tsd.com:80/100019-post98.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10002-post143.html",
+   "url": "https://web.archive.org/web/20080202185535/http://www.forex-tsd.com:80/10002-post143.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100024-post99.html",
+   "url": "https://web.archive.org/web/20070501175727/http://www.forex-tsd.com:80/100024-post99.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100025-post100.html",
+   "url": "https://web.archive.org/web/20070430235912/http://www.forex-tsd.com:80/100025-post100.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100027-post4.html",
+   "url": "https://web.archive.org/web/20070520092111/http://www.forex-tsd.com:80/100027-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100029-post109.html",
+   "url": "https://web.archive.org/web/20071114003837/http://www.forex-tsd.com:80/100029-post109.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10003-post11.html",
+   "url": "https://web.archive.org/web/20060310004217/http://www.forex-tsd.com:80/10003-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100032-post110.html",
+   "url": "https://web.archive.org/web/20071114003839/http://www.forex-tsd.com:80/100032-post110.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100033-post5.html",
+   "url": "https://web.archive.org/web/20071123112114/http://www.forex-tsd.com:80/100033-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100035-post4.html",
+   "url": "https://web.archive.org/web/20080411084152/http://www.forex-tsd.com:80/100035-post4.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100036-post5.html",
+   "url": "https://web.archive.org/web/20080411071944/http://www.forex-tsd.com:80/100036-post5.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100037-post321.html",
+   "url": "https://web.archive.org/web/20071103214411/http://www.forex-tsd.com:80/100037-post321.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post16.html",
+   "url": "https://web.archive.org/web/20080108033235/http://www.forex-tsd.com:80/100038-post16.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100038-post40.html",
+   "url": "https://web.archive.org/web/20081005105455/http://www.forex-tsd.com:80/100038-post40.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10004-post144.html",
+   "url": "https://web.archive.org/web/20080202185541/http://www.forex-tsd.com:80/10004-post144.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100040-post101.html",
+   "url": "https://web.archive.org/web/20070503042226/http://www.forex-tsd.com:80/100040-post101.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100042-post111.html",
+   "url": "https://web.archive.org/web/20071024003834/http://www.forex-tsd.com:80/100042-post111.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post17.html",
+   "url": "https://web.archive.org/web/20080108033240/http://www.forex-tsd.com:80/100044-post17.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100044-post41.html",
+   "url": "https://web.archive.org/web/20081005103717/http://www.forex-tsd.com:80/100044-post41.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100046-post214.html",
+   "url": "https://web.archive.org/web/20070521171935/http://www.forex-tsd.com:80/100046-post214.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100047-post11.html",
+   "url": "https://web.archive.org/web/20070717075537/http://www.forex-tsd.com:80/100047-post11.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100048-post1.html",
+   "url": "https://web.archive.org/web/20070422193747/http://www.forex-tsd.com:80/100048-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/10005-post1.html",
+   "url": "https://web.archive.org/web/20070521085716/http://www.forex-tsd.com:80/10005-post1.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100050-post13.html",
+   "url": "https://web.archive.org/web/20071023074725/http://www.forex-tsd.com:80/100050-post13.html",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "forextsd_cdx",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "http://www.forex-tsd.com:80/100053-post861.html",
+   "url": "https://web.archive.org/web/20090921025802/http://www.forex-tsd.com:80/100053-post861.html",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5076,6 +4561,46 @@
   {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Metaorder modelling and identification from public data",
+   "url": "http://arxiv.org/abs/2608.30999v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "End-to-End Neural Shrinkage of Indefinite Pairwise Correlation Matrices for Small-Cap-Inclusive Portfolios",
+   "url": "http://arxiv.org/abs/2608.30446v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Optimal Block Time for AMM Liquidity Providers under Jump-Diffusion Prices",
+   "url": "http://arxiv.org/abs/2608.30321v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Portfolio Risk Bounds without Cross-Asset Return Covariances: Distributional Fields from Language-Model Representations",
+   "url": "http://arxiv.org/abs/2608.29692v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Wasserstein-Barycentric Interaction Fields for Spatial Factor Models: Evidence from Language-Model Representations",
+   "url": "http://arxiv.org/abs/2608.29669v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "arxiv_qfin",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "The Convergence Rate of Stochastic Tracking with Application to Optimal Execution",
    "url": "http://arxiv.org/abs/2608.29468v1",
    "symbols": [],
@@ -5234,42 +4759,90 @@
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
+   "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Concentrated Liquidity Provision: a Reinforcement Learning Perspective",
-   "url": "http://arxiv.org/abs/2608.19389v1",
+   "title": "Policy rate kept unchanged at this meeting",
+   "url": "https://www.bis.org/speeches/20260901-policy-rate-kept-unchanged-meeting",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
+   "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Market's Conditioning Representation: Equilibrium, Crowding, and Convention Multiplicity",
-   "url": "http://arxiv.org/abs/2608.18299v1",
+   "title": "Recent economic and financial developments in Turkey",
+   "url": "https://www.bis.org/speeches/20260901-recent-economic-and-financial-developments-turkey",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
+   "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Entropic Value-at-Risk portfolio optimization for tempered stable L\u00e9vy processes",
-   "url": "http://arxiv.org/abs/2608.18022v1",
+   "title": "The everyday work of inclusion",
+   "url": "https://www.bis.org/speeches/20260901-everyday-work-inclusion",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
+   "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Multi-Level Market Making with Reinforcement Learning",
-   "url": "http://arxiv.org/abs/2608.18195v1",
+   "title": "Monetary policy, the yield curve and financial markets",
+   "url": "https://www.bis.org/speeches/20260901-monetary-policy-yield-curve-and-financial-markets",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "arxiv_qfin",
+   "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Self-Consistent Adjoint Policy Iteration for Constrained Dynamic Portfolio Choice",
-   "url": "http://arxiv.org/abs/2608.17808v2",
+   "title": "Closing remarks at the Conference on the Spanish Economy",
+   "url": "https://www.bis.org/speeches/20260901-closing-remarks-conference-spanish-economy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Advancing banking, governance and financial innovation in Malaysia and Asia",
+   "url": "https://www.bis.org/speeches/20260901-advancing-banking-governance-and-financial-innovation-malaysia-and-asia",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The restrictive stance of monetary policy",
+   "url": "https://www.bis.org/speeches/20260901-restrictive-stance-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Overview of the South African economy",
+   "url": "https://www.bis.org/speeches/20260817-overview-south-african-economy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The cooperative spirit at the heart of the digital euro",
+   "url": "https://www.bis.org/speeches/20260817-cooperative-spirit-heart-digital-euro",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
+   "url": "https://www.bis.org/speeches/20260817-remarks-annual-dinner-heads-foreign-missions-accredited-south-africa",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Remarks on the MAS Annual Report 2025/2026",
+   "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5332,32 +4905,16 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Overview of the South African economy",
-   "url": "https://www.bis.org/speeches/20260817-overview-south-african-economy",
+   "title": "Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-hong-kong-monetary-authority-hkma-hong-kong-association-banks-hkab-seminar",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The cooperative spirit at the heart of the digital euro",
-   "url": "https://www.bis.org/speeches/20260817-cooperative-spirit-heart-digital-euro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
-   "url": "https://www.bis.org/speeches/20260817-remarks-annual-dinner-heads-foreign-missions-accredited-south-africa",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Remarks on the MAS Annual Report 2025/2026",
-   "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
+   "title": "Strengthening customer grievance redress - the role of the internal ombudsman",
+   "url": "https://www.bis.org/speeches/20260810-strengthening-customer-grievance-redress-role-internal-ombudsman",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5404,24 +4961,16 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
-   "url": "https://www.bis.org/speeches/20260810-opening-remarks-hong-kong-monetary-authority-hkma-hong-kong-association-banks-hkab-seminar",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Strengthening customer grievance redress - the role of the internal ombudsman",
-   "url": "https://www.bis.org/speeches/20260810-strengthening-customer-grievance-redress-role-internal-ombudsman",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "National Bank of Ukraine press briefing - monetary policy decisions",
    "url": "https://www.bis.org/speeches/20260806-national-bank-ukraine-press-briefing-monetary-policy-decisions",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Responsible innovation and financial inclusion",
+   "url": "https://www.bis.org/speeches/20260803-responsible-innovation-and-financial-inclusion",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5444,8 +4993,16 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Responsible innovation and financial inclusion",
-   "url": "https://www.bis.org/speeches/20260803-responsible-innovation-and-financial-inclusion",
+   "title": "Speech - Hong Kong FIC and Bond Connect Summit",
+   "url": "https://www.bis.org/speeches/20260731-speech-hong-kong-fic-and-bond-connect-summit",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Growth and regulation",
+   "url": "https://www.bis.org/speeches/20260731-growth-and-regulation",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5522,74 +5079,82 @@
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Speech - Hong Kong FIC and Bond Connect Summit",
-   "url": "https://www.bis.org/speeches/20260731-speech-hong-kong-fic-and-bond-connect-summit",
+   "title": "DIRJEN-BOT/mt5-gold-trading-ea",
+   "url": "https://github.com/DIRJEN-BOT/mt5-gold-trading-ea",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Growth and regulation",
-   "url": "https://www.bis.org/speeches/20260731-growth-and-regulation",
+   "title": "Avenmoqe/MT5-Telegram-Signal-AutoTrader",
+   "url": "https://github.com/Avenmoqe/MT5-Telegram-Signal-AutoTrader",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Finance for innovation and artificial intelligence as drivers of development",
-   "url": "https://www.bis.org/speeches/20260730-finance-innovation-and-artificial-intelligence-drivers-development",
+   "title": "Vandoriz/MT5-OrderFlow-Footprint-Engine",
+   "url": "https://github.com/Vandoriz/MT5-OrderFlow-Footprint-Engine",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The green transition - benefits and barriers",
-   "url": "https://www.bis.org/speeches/20260730-green-transition-benefits-and-barriers",
+   "title": "Vandoriz/MT5-Economic-News-Filter",
+   "url": "https://github.com/Vandoriz/MT5-Economic-News-Filter",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Response to media regarding the new measures announced by People Bank of China's Governor Pan Gongsheng",
-   "url": "https://www.bis.org/speeches/20260730-response-media-regarding-new-measures-announced-people-bank-chinas-governor-pan-gongsheng",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Hearing of the Committee on Economic and Monetary Affairs of the European Parliament",
-   "url": "https://www.bis.org/speeches/20260730-hearing-committee-economic-and-monetary-affairs-european-parliament",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Understanding your lane, managing turning points",
-   "url": "https://www.bis.org/speeches/20260730-understanding-your-lane-managing-turning-points",
+   "title": "Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
+   "url": "https://github.com/Avenmoqe/MT5-PropFirm-MultiPass-Dashboard",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Additional monetary policy tools - reflections and a new framework",
-   "url": "https://www.bis.org/speeches/20260730-additional-monetary-policy-tools-reflections-and-new-framework",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Two thoughts on the transmission of monetary policy",
-   "url": "https://www.bis.org/speeches/20260730-two-thoughts-transmission-monetary-policy",
+   "title": "ZrakD/Mt5-Forex-position-size-calculator",
+   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5604,16 +5169,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "7skooooo/mql5-systems-mirror",
-   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "anas1412/orb-mt5",
-   "url": "https://github.com/anas1412/orb-mt5",
+   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Aloni-zin/Equity-Ray-Tracer",
+   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5628,96 +5201,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tharindu2028/Trade-Terminator-Closer",
-   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "url": "https://github.com/Valtorim/MT5-Portfolio-Correlation-Matrix",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/Prop-Matrix-Engine",
-   "url": "https://github.com/Quorvathz/Prop-Matrix-Engine",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Kaltorim/MT5-Trend-Direction-Predictor",
-   "url": "https://github.com/Kaltorim/MT5-Trend-Direction-Predictor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Meridiansz/MT5-Popular-Charts-Dashboard",
-   "url": "https://github.com/Meridiansz/MT5-Popular-Charts-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/TradingView-Webhook-MT5-Bridge",
-   "url": "https://github.com/Zypheronz/TradingView-Webhook-MT5-Bridge",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Solasent/MT5-Live-Strategy-Backtest-Engine",
-   "url": "https://github.com/Solasent/MT5-Live-Strategy-Backtest-Engine",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "vatsasr8846/PriceAction-EngulfingZone-EA",
-   "url": "https://github.com/vatsasr8846/PriceAction-EngulfingZone-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
-   "url": "https://github.com/Solasent/MT5-SMC-Institutional-Liquidity-Scanner",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "lenardclimatical374/MT5-volume-profile-indicator",
-   "url": "https://github.com/lenardclimatical374/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
+   "title": "manuelhorvey/EigenCapital",
+   "url": "https://github.com/manuelhorvey/EigenCapital",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5738,30 +5223,6 @@
    "mechanism_tags": []
   },
   {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "url": "https://github.com/Zypheronz/MT5-Master-Slave-Trade-Copier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quorvathz/MT5-Gateway-Trend-Classifier",
-   "url": "https://github.com/Quorvathz/MT5-Gateway-Trend-Classifier",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "propfirm_boards",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "404 Client Error: Not Found for url: https://ftmo.com/en/leaderboards/",
@@ -5770,16 +5231,35 @@
    "mechanism_tags": []
   },
   {
+   "source": "arxiv",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The impact of hot mode accretion and angular momentum conservation on metallicity gradients of galactic discs",
+   "url": "https://arxiv.org/abs/2608.31144v1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "My H1 setup literally changes depending on which chart I use",
+   "title": "Is Gold Setting Up for a Deeper Pullback?",
    "url": "",
    "symbols": [
-    "EURUSD"
+    "XAUUSD"
    ],
    "mechanism_tags": [
-    "swing"
+    "breakout",
+    "pullback"
    ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "XAUUSD",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
   },
   {
    "source": "reddit",
@@ -5792,6 +5272,18 @@
    "mechanism_tags": [
     "support",
     "resistance"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "My H1 setup literally changes depending on which chart I use",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": [
+    "swing"
    ]
   },
   {

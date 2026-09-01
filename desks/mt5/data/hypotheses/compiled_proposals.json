@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-01T03:19:25+00:00",
+ "built_at": "2026-09-01T13:20:13+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1342,6 +1342,66 @@
    "promotion_authority": false
   },
   {
+   "name": "CFTC_POSITION_REVERSAL",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "positioning_extreme",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|new_york|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "CFTC COT report + CME settlement data",
+   "kill": "Kill if net position reversal correlation <0.3 over 12 months",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "COMMODITY_POSITION_LIMIT_DISLOCATION",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "high_liquidity",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|high_liquidity|magnitude|convergence|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "TradingView crude oil spot vs Brent futures prices",
+   "kill": "If basis deviation returns to normal range within 2 hours for 20 consecutive contract rollovers",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "volume_cluster_activation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "low_vol",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|low_vol|magnitude|convergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Tiingo end-of-day price/volume + Quandl CFTC data",
+   "kill": "If 30%+ of activations show no sustained move (>1%) within 3 days over 500 clusters, kill",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:benchmark_flow|continuation",
    "compiled": true,
    "family": "generic",
@@ -1357,17 +1417,32 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "audit:carry_change|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
+    "event": "carry_change",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
