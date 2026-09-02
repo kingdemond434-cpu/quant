@@ -125,7 +125,20 @@ FX_EUR = 0.92
 GOLD_SYMBOL = "XAUUSD"
 RR = 2.0
 ATR_N = 20
-CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
+#: HOW LONG AN UNFILLED BRACKET MAY WAIT FOR ITS BREAKOUT, in hours.
+#:
+#: CANCEL_HOUR ALONE IS NOT A TTL. It cancels every sleeve's unfilled bracket at one clock time,
+#: so a `gold_asia` bracket placed at its 07:00 signal hour sat until 20:30 -- 13.5 hours, long
+#: past the session whose range formed it. A breakout that fills at 19:00 on a range measured
+#: before 07:00 is not the strategy that was validated; it is a different trade wearing that
+#: sleeve's name and charged to its risk budget, which is the same substitution the desk already
+#: fixed once when an unconditioned sleeve traded under a conditioned one's promotion.
+#:
+#: Six hours covers the session a bracket belongs to with room for a late trigger, and is short
+#: enough that a bracket cannot survive into the next session's regime.
+BRACKET_TTL_HOURS = 6.0
+
+CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
@@ -920,7 +933,12 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
             "price": s["price"],
             "sl": s["sl"],
             "tp": s["tp"],
-            "type_time": mt5.ORDER_TIME_GTC,
+            # BROKER-SIDE EXPIRY, so the TTL survives this process dying. A gateway-side sweep
+            # only runs while the gateway runs, and an OOM kill or a box restart would leave a
+            # stale bracket resting at the broker indefinitely -- exposure nothing is managing.
+            # `_expiry_request` falls back to GTC when the symbol refuses timed orders, and the
+            # sweep below is what covers that case.
+            **_expiry_request(symbol),
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
@@ -985,6 +1003,65 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
         return False, (f"sell_stop {price:.2f} is {gap:.2f} below bid {bid:.2f}; "
                        f"broker needs {band:.2f}. NOT AVAILABLE today.")
     return True, ""
+
+
+def _expiry_request(symbol: str) -> dict:
+    """`type_time`/`expiration` fields for a bracket, or GTC when the symbol refuses timed orders.
+
+    MT5 exposes what a symbol accepts through `symbol_info().expiration_mode`; a symbol without
+    the SPECIFIED bit rejects the whole order if one is sent, so this asks first rather than
+    losing the bracket. Absence of the information falls back to GTC and the gateway-side sweep,
+    never to an unbounded order the desk believes is bounded.
+    """
+    try:
+        info = mt5.symbol_info(symbol)
+        mode = int(getattr(info, "expiration_mode", 0) or 0)
+        if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
+            until = datetime.now(tz=UTC) + timedelta(hours=BRACKET_TTL_HOURS)
+            return {"type_time": mt5.ORDER_TIME_SPECIFIED,
+                    "expiration": int(until.timestamp())}
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"{symbol}: expiration mode unreadable ({type(exc).__name__}); bracket is GTC "
+            f"and relies on the {BRACKET_TTL_HOURS:.0f}h sweep")
+    return {"type_time": mt5.ORDER_TIME_GTC}
+
+
+def expire_stale_brackets(st: dict) -> int:
+    """Cancel this desk's pending orders older than BRACKET_TTL_HOURS. Returns how many.
+
+    THE SWEEP IS NOT REDUNDANT WITH THE BROKER EXPIRY. It covers the symbols whose expiration
+    mode refuses a timed order, brackets placed before this TTL existed, and anything left
+    resting by a gateway that died between placing and cancelling. It is keyed on MAGIC, so it
+    can only ever touch orders this desk placed.
+    """
+    try:
+        orders = mt5.orders_get() or ()
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
+        return 0
+    cutoff = datetime.now(tz=UTC) - timedelta(hours=BRACKET_TTL_HOURS)
+    killed = 0
+    for o in orders:
+        if int(getattr(o, "magic", 0) or 0) != MAGIC:
+            continue
+        setup = getattr(o, "time_setup", None)
+        if not setup:
+            continue
+        placed = datetime.fromtimestamp(int(setup), tz=UTC)
+        if placed > cutoff:
+            continue
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+        gone = not any(getattr(x, "ticket", None) == o.ticket
+                       for x in (mt5.orders_get(symbol=o.symbol) or ()))
+        if gone:
+            killed += 1
+            log(f"TTL: cancelled {o.symbol} order {o.ticket} placed {placed:%H:%M} "
+                f"({(datetime.now(tz=UTC) - placed).total_seconds() / 3600:.1f}h old, "
+                f"limit {BRACKET_TTL_HOURS:.0f}h)")
+        else:
+            log(f"TTL: {o.symbol} order {o.ticket} SURVIVED cancellation "
+                f"(retcode {getattr(res, 'retcode', None)}); it is still resting")
+    return killed
 
 
 def cancel_pending(st: dict, symbol: str) -> None:
@@ -1798,7 +1875,9 @@ def main() -> None:
                                          "spec": spec, "placed_at": now(), "result": res}
             save_state(st)
 
-    # housekeeping: cancel unfilled brackets, force-close positions
+    # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
+    # end-of-day backstop and the force-close.
+    expire_stale_brackets(st)
     if hour >= CANCEL_HOUR:
         for s in sleeves:
             cancel_pending(st, s["symbol"])
