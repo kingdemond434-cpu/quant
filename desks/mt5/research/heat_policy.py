@@ -54,9 +54,9 @@ from mt5desk.gateway_config_fallback import (  # noqa: E402
 
 __all__ = [
     "CERTIFY_TOLERANCE",
-    "MAX_FAMILY_HEAT_SHARE",
     "HEAT_HARD_CEILING",
     "HEAT_TARGET",
+    "MAX_FAMILY_HEAT_SHARE",
     "READY_SCALE",
     "HeatVerdict",
     "catastrophe_override",

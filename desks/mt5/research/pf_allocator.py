@@ -64,6 +64,7 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    enforce_family_cap,
     evidence_readiness,
     per_sleeve_bounds,
     resolve,
@@ -709,6 +710,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         _log(why)
 
     # 3. THE BOOK, at the heat the law resolved.
+    fam_share: dict[str, float] = {}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -719,6 +721,29 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
                         worlds=worlds, max_per_sleeve=ub,
                         warm_start=current_book() or None)
+
+        # MECHANISM CONCENTRATION, enforced by re-solving under tightened bounds rather than
+        # priced. Measured 2026-09-02 the first solved book held 97% of its heat in one family;
+        # the redundancy term could not see it, because those sleeves are weakly correlated day
+        # to day while sharing a mechanism and a 01:00 fill hour. Two passes converge: the cap
+        # scales the offending family's members proportionally, the optimiser re-spends what it
+        # frees on everything else, and a family already inside the cap is never touched.
+        family_of = {e.name: e.family for e in ev}
+        for _pass in range(2):
+            capped = enforce_family_cap(book.heat, family_of, book.total_heat)
+            if all(math.isinf(v) for v in capped.values()):
+                break                                   # every mechanism already inside the cap
+            tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
+            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
+                            worlds=worlds, max_per_sleeve=tight, warm_start=book.heat or None)
+        for name, h in book.heat.items():
+            if h > 1e-6:
+                fam = family_of.get(name, "?")
+                fam_share[fam] = fam_share.get(fam, 0.0) + h
+        if fam_share:
+            top = max(fam_share.items(), key=lambda kv: kv[1])
+            _log(f"mechanism mix: {len(fam_share)} family(ies), largest {top[0]} at "
+                 f"{top[1] / max(book.total_heat, 1e-9):.0%} of the book")
     funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
 
     # A BOOK THE OPTIMISER CANNOT SCORE IS NOT A BOOK. The mandated solve can come back -inf --
@@ -785,6 +810,10 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },
         "book": funded,
+        # WHICH MECHANISMS HOLD THE BOOK. A single-family book is a single bet however many
+        # sleeves it is spread across, and that is invisible from the sleeve list alone.
+        "mechanism_mix": {k: round(v, 6)
+                          for k, v in sorted(fam_share.items(), key=lambda kv: -kv[1])},
         "marginal_delta_elog": book.marginal,
         "growth": {
             "annual_growth_pct": book.annual_growth_pct,
