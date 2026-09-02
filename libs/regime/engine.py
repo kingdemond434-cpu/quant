@@ -37,8 +37,27 @@ def _characterise(states: np.ndarray, raw_ret: np.ndarray, k: int) -> dict[int, 
     for rank, j in enumerate(vol_order):
         tier[j] = "low_vol" if rank == 0 else ("high_vol" if rank == k - 1 else "mid_vol")
     out: dict[int, dict[str, object]] = {}
+    # TREND IS RELATIVE TO THE OTHER STATES, NOT TO ZERO -- and this is the difference between a
+    # regime label that carries information and one that restates the asset's drift.
+    #
+    # MEASURED 2026-09-02 on XAUUSD, 2,181 daily closes: gold rose over the window, so EVERY HMM
+    # state had a positive mean return and every one was labelled "bull". The GMM, clustering the
+    # same features differently, produced bear/low_vol, bull/mid_vol and bear/high_vol. The two
+    # models therefore disagreed on the trend axis for two states out of three, `hmm_gmm_agree`
+    # went False, and `current()` returned confidence 0.000 -- on every single call.
+    #
+    # Downstream that made the entire regime layer inert: the allocator's world sampler mixes
+    # over regime probabilities weighted by this confidence, so it fell back to empirical
+    # frequency on every pass and the regime axis cost compute while contributing nothing.
+    #
+    # A state is bullish RELATIVE to the regime set it belongs to. Splitting at the cross-state
+    # median mean makes the label informative for an asset with any drift, up or down, and makes
+    # the two models comparable -- they are then both answering "which of these states is the
+    # strong one", rather than one answering "did the price rise" and the other "did this cluster
+    # rise". The vol axis was already relative (ranked low/mid/high) and always worked.
+    _pivot = float(np.median([stats[j]["mean_ret"] for j in range(k)])) if k else 0.0
     for j in range(k):
-        trend = "bull" if stats[j]["mean_ret"] >= 0 else "bear"
+        trend = "bull" if stats[j]["mean_ret"] >= _pivot else "bear"
         vt = tier[j]
         lev = max(0.2, min(1.0, _VOL_FACTOR[vt] * _TREND_FACTOR[trend]))
         out[j] = {"label": f"{trend}/{vt}", "trend": trend, "vol_tier": vt,
