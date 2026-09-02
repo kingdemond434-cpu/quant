@@ -118,7 +118,11 @@ def test_the_validated_gold_book_is_never_amputated_by_the_cap():
     round number. The budget is set so the validated core fits and ADDITIONS must be earned."""
     gold = [{"name": "gold_asia"}, {"name": "gold_london_am"}, {"name": "gold_afternoon"}]
     admitted, note = NS["cap_by_heat"](list(gold), 1684.0)
-    assert [s["name"] for s in admitted] == [g["name"] for g in gold], (
+    # SET, NOT SEQUENCE. The property is that the armed book is never AMPUTATED; the order
+    # within it is now decided by marginal dE[log W] (gateway.allocator_order), which is the
+    # whole point of ranking by what a sleeve is worth instead of where the caller put it.
+    # Asserting a sequence here pinned the test to the old age-ordering it was written under.
+    assert {s["name"] for s in admitted} == {g["name"] for g in gold}, (
         "the armed gold book does not fit inside MAX_PORTFOLIO_HEAT at live equity")
     assert note is None
 
@@ -132,9 +136,12 @@ def test_promoted_sleeves_are_what_gets_deferred():
     sleeves += [{"name": f"promoted_{i}"} for i in range(27)]
     admitted, note = NS["cap_by_heat"](sleeves, 1684.0)
     names = [s["name"] for s in admitted]
-    assert names[:3] == ["gold_asia", "gold_london_am", "gold_afternoon"]
+    assert set(names[:3]) == {"gold_asia", "gold_london_am", "gold_afternoon"}
     assert len(admitted) < len(sleeves), "the budget did not bind; seniority is untested"
-    assert names[:3] == ["gold_asia", "gold_london_am", "gold_afternoon"], (
+    # The proven book comes first AS A SET -- its internal order is the allocator's marginal
+    # ranking, not a fixed list, so pinning the sequence would test the ranking rather than the
+    # seniority this test is about.
+    assert set(names[:3]) == {"gold_asia", "gold_london_am", "gold_afternoon"}, (
         "the proven book must be admitted before any unproven sleeve")
     assert note and "promoted_" in note
 
