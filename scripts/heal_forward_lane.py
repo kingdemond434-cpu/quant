@@ -282,6 +282,26 @@ def _parse_ts(v: object) -> datetime | None:
     return d if d.tzinfo else d.replace(tzinfo=UTC)
 
 
+def _tradeable(sym: str) -> tuple[bool, str]:
+    """Can this desk ever place an order on `sym` and replay a clock on it?
+
+    The SAME predicate gate 0 applies (`external_gauntlet.symbol_is_tradeable`), imported rather
+    than restated so the two can never disagree about which symbols exist. Gate 0 stops NEW
+    untradeable certificates; this names the ones minted before it.
+    """
+    try:
+        sys.path.insert(0, str(ROOT / "desks" / "mt5" / "scripts"))
+        from external_gauntlet import symbol_is_tradeable
+
+        meta = json.loads((ROOT / "desks" / "mt5" / "data" / "universe" / "universe.json")
+                          .read_text("utf-8"))
+        return symbol_is_tradeable(sym, meta)
+    except Exception as exc:
+        # UNKNOWN IS NOT UNTRADEABLE. If the predicate cannot run, the certificate keeps its
+        # place in the idle list rather than being quietly written off (L1.28a).
+        return True, f"tradeability UNMEASURED ({type(exc).__name__})"
+
+
 def _idle_certificates() -> dict:
     """Certificates that should have a forward clock and do not.
 
@@ -317,9 +337,27 @@ def _idle_certificates() -> dict:
         except (OSError, json.JSONDecodeError):
             continue
 
-    idle = sorted(k for k in expected if k not in clocked)
-    return {"authorized_runs": len(expected), "with_clock": len(expected) - len(idle),
-            "idle": idle[:40], "idle_count": len(idle)}
+    # UNTRADEABLE IS NOT IDLE, and reporting it as idle is worse than not reporting it. Measured
+    # 2026-09-02: eight certificates on AFG and AFL -- symbols absent from the universe registry
+    # with no H1 parquet on the box -- were named IDLE every twenty minutes, for weeks. There is
+    # no repair for them: no clock can ever enrol a symbol the broker does not quote and no
+    # replay can run on bars that do not exist (L1.49, a gate that cannot be cashed is not a
+    # survivor). A permanent finding on a rolling health report is how a reader learns to skip
+    # the row, which then costs the real ones. Named separately and counted, never mixed in.
+    untradeable: dict[str, str] = {}
+    idle_real: list[str] = []
+    for key in sorted(k for k in expected if k not in clocked):
+        sym = str(key).split(".")[0].split("#")[0]
+        ok, why = _tradeable(sym)
+        if ok:
+            idle_real.append(key)
+        else:
+            untradeable[key] = why
+    return {"authorized_runs": len(expected),
+            "with_clock": len(expected) - len(idle_real) - len(untradeable),
+            "idle": idle_real[:40], "idle_count": len(idle_real),
+            "untradeable": dict(list(untradeable.items())[:40]),
+            "untradeable_count": len(untradeable)}
 
 
 def main() -> int:
@@ -416,6 +454,12 @@ def main() -> int:
               f"with a forward clock: {report['idle']['with_clock']}, idle: {idle_n}")
         for n in report["idle"]["idle"][:10]:
             print(f"    IDLE {n} -- authorized to run forward, no clock exists")
+    unt = report["idle"].get("untradeable_count") or 0
+    if unt:
+        print(f"\n  UNTRADEABLE ({unt}) -- certified on a symbol this desk cannot trade or "
+              f"replay. Not idle and not repairable; gate 0 now refuses these at admission:")
+        for k, why in list(report["idle"]["untradeable"].items())[:6]:
+            print(f"    {k[:52]:54s} {why[:70]}")
 
     if report["unfixable"]:
         print(f"\n  NOT AUTO-FIXABLE ({len(report['unfixable'])}) -- each needs a named cause, "
