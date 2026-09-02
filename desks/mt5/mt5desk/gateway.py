@@ -95,7 +95,10 @@ LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 #: TOLERANCE over the book's worst -33.7R. See that module for the full argument.
 from mt5desk.gateway_config_fallback import (  # noqa: E402
     BOOK_WORST_DD_R as _BOOK_WORST_DD_R,
+    HEAT_HARD_CEILING,
+    HEAT_TARGET,
     MAX_DRAWDOWN_TOLERANCE,
+    MAX_SLEEVE_HEAT_SHARE,
     Q_OPT,
 )
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
@@ -380,11 +383,91 @@ _HEAT_BASE_KEFF = 2.26
 #: expressed as total heat = per-trade risk x legs, so this converts one into the other.
 _HEAT_BASE_LEGS = 3
 
-#: Never exceed this however good the diversification looks. Correlations rise in exactly the
-#: regime where the budget would be spent, and a measured k_eff is an estimate from calm. Raised
-#: from 10% only because the budget is now solved against an explicit drawdown target -- the
-#: ceiling is a backstop against a bad k_eff estimate, not the operative limit.
-MAX_HEAT_CEILING = 0.15
+#: THE OUTER ENVELOPE -- the total heat the desk may never cross, whatever any optimiser
+#: computes. Imported, never restated: `gateway_config_fallback` is where the desk's risk budget
+#: is defined, for the same reason Q_OPT lives there.
+#:
+#: RAISED 0.15 -> 0.30 (principal, 2026-09-02) AND ITS MEANING CHANGED. At 0.15 this was the
+#: operative limit and the growth bottleneck: `heat_budget()` returned its 3.81% base on every
+#: call the desk has ever made, because k_eff is measured from a live ledger that was empty until
+#: 2026-09-01 -- so the account ran at a fifth of its own stated budget and nothing said so. It is
+#: now a CATASTROPHE BACKSTOP above a 20% utilisation target, and 30% is where the arithmetic
+#: turns: across 256 sampled worlds the robust score is positive at 20% and 25% and NEGATIVE at
+#: 30%. Past here the book loses wealth in the worlds it must survive.
+MAX_HEAT_CEILING = HEAT_HARD_CEILING
+
+
+#: How stale the allocator's book may be before the gateway stops believing its heat number. One
+#: hour: the allocator's own heavy clock. A stale artifact falls back to the derived formula
+#: below -- fail-closed, because an old book is a claim about an opportunity set that has moved.
+_ALLOC_MAX_AGE_S = 3600
+
+
+def allocator_heat() -> tuple[float | None, str]:
+    """Total heat the E[log W] allocator resolved, or None with the reason it cannot be used.
+
+    THE BUDGET IS AN OUTPUT, NOT A FORMULA. `heat_budget()` below derives a number from the
+    drawdown tolerance and a breadth estimate, which was the best available answer while nothing
+    solved for exposure. `research/pf_allocator.py` now does solve for it -- jointly with which
+    sleeves hold it -- so when a fresh, certified, ARMED book exists it is the budget, and the
+    derivation is what the desk falls back to when it does not.
+
+    FAILS CLOSED ON EVERY DOUBT. Missing file, stale file, unparseable file, uncertified target,
+    unarmed allocator: all return None, and the desk keeps running the derived budget it ran
+    yesterday. Nothing here can RAISE heat by accident -- raising it takes a live artifact that
+    passed its own certification plus a human-created arm file, which is the same shape as every
+    other arming decision on this desk (GENERIC_EXEC_ENABLED, and gold re-arming).
+    """
+    try:
+        if not (BASE / "data" / "PF_ALLOCATOR_ARMED").exists():
+            return None, "allocator not armed (data/PF_ALLOCATOR_ARMED absent)"
+        f = BASE / "reports" / "pf_allocation.json"
+        if not f.exists():
+            return None, "no pf_allocation.json"
+        age = time.time() - f.stat().st_mtime
+        if age > _ALLOC_MAX_AGE_S:
+            return None, f"pf_allocation.json is {age / 60:.0f} min stale"
+        art = json.loads(f.read_text(encoding="utf-8"))
+        heat = art.get("heat") or {}
+        if not heat.get("certified"):
+            return None, "allocator did not certify the utilisation target"
+        total = float(heat.get("total") or 0.0)
+        if not (0.0 < total <= MAX_HEAT_CEILING + 1e-12):
+            return None, f"allocator heat {total:.4f} outside (0, {MAX_HEAT_CEILING:.2f}]"
+        return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
+    except Exception as exc:                                    # noqa: BLE001
+        return None, f"allocator artifact unreadable ({type(exc).__name__})"
+
+
+def allocator_order(sleeves: list[dict]) -> list[dict]:
+    """Reorder `sleeves` by marginal dE[log W], best first; unpriced sleeves keep their place.
+
+    WHAT THIS REPLACES. `cap_by_heat` trims in list order and `sleeve_set()` emits gold first, so
+    the armed gold book was senior to everything else by position. The stated justification was
+    that gold is "the one book with forward evidence behind it" -- which stopped being true once
+    the forward clocks filled, and a seniority rule that outlives its reason silently becomes a
+    rule that the oldest sleeve wins. Ordering by what each sleeve is worth to the book makes the
+    trim drop the cheapest growth rather than the newest name.
+
+    SILENT ON ABSENCE, NEVER WRONG ON IT: no artifact, or a stale one, and the caller's order
+    stands unchanged.
+    """
+    try:
+        f = BASE / "reports" / "pf_allocation.json"
+        if not f.exists() or time.time() - f.stat().st_mtime > _ALLOC_MAX_AGE_S:
+            return sleeves
+        mg = json.loads(f.read_text(encoding="utf-8")).get("marginal_delta_elog") or {}
+        if not isinstance(mg, dict) or not mg:
+            return sleeves
+        rank = {str(k): float(v) for k, v in mg.items()}
+    except Exception:                                           # noqa: BLE001
+        return sleeves
+    known = [s for s in sleeves if str(s.get("name")) in rank]
+    unknown = [s for s in sleeves if str(s.get("name")) not in rank]
+    known.sort(key=lambda s: -rank[str(s["name"])])
+    # Unknown sleeves go LAST, not first: a sleeve the allocator has never priced has no claim
+    # on the budget ahead of one it has measured and valued.
+    return known + unknown
 
 
 def heat_budget(k_eff: float | None = None) -> float:

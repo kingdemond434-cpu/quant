@@ -68,3 +68,45 @@ def risk_per_trade(tolerance: float = MAX_DRAWDOWN_TOLERANCE,
 #: first diverge at EUR 2,076. This changes no order at current equity -- it removes a brake that
 #: would otherwise bind for the whole of the account's growth.
 Q_OPT = risk_per_trade()
+
+
+# ---------------------------------------------------------------------------------------
+# PORTFOLIO HEAT -- the three numbers that bound total open risk, defined here for the same
+# reason Q_OPT is: two files holding a risk budget is a defect waiting for the edit that
+# forgets one. `heat_budget()` in the gateway and `research/heat_policy.py` both read these.
+# ---------------------------------------------------------------------------------------
+
+#: NORMAL FULL-UTILISATION TARGET (principal, 2026-09-02). Total heat the desk aims to have
+#: WORKING at all times during certified operation -- a target, not a ceiling. Raised from the
+#: 15% that stood here after the E[log W] allocator was measured against it.
+#:
+#: WHY A TARGET AND NOT MERELY A CAP. A cap answers "how much may we risk"; the desk needs the
+#: answer to "how much SHOULD we risk", and those differ whenever the cap binds. Under a cap the
+#: allocator quietly runs at 3-6% because the free robust optimum sits there, and the account
+#: compounds at a fraction of what the opportunity set supports. Under a target the question
+#: becomes WHAT the budget is spent on, and an unfillable budget becomes a research request
+#: (`pf_allocator.opportunity`) instead of an invisible shortfall.
+#:
+#: CERTIFIED, NOT ASSERTED. `heat_policy.certify()` re-measures the growth curve on the live
+#: world population every heavy pass and `reports/pf_allocation.json` carries the verdict: if the
+#: opportunity set ever degrades enough that 20% sits past the peak of the curve, that artifact
+#: says so and `gateway.allocator_heat()` refuses the number. This comment is not the evidence.
+HEAT_TARGET = 0.20
+
+#: THE HARD BAR. Total heat may never cross this, whatever the optimiser computes -- the outer
+#: envelope inside which the allocator is free, and the only constant here that is a limit rather
+#: than a goal.
+#:
+#: 30% IS WHERE THE ARITHMETIC TURNS, which is why it is the bar rather than a round number.
+#: Measured 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix: the ROBUST score (half
+#: its weight on the worst 20% of worlds) runs +0.00133/day at the free optimum, +0.00072 at 20%,
+#: +0.00011 at 25% and NEGATIVE at 30%. Past 30% the book loses wealth in the worlds it has to
+#: survive, and no amount of average-case growth buys that back.
+HEAT_HARD_CEILING = 0.30
+
+#: No single sleeve may hold more than this share of total heat. NOT tidiness -- measured
+#: 2026-09-02: told to spend 20% with no per-sleeve bound, the optimiser put 14.4 of those 20
+#: points into one sleeve it gives exactly ZERO when free, because a near-cash sleeve is the
+#: cheapest place to park a budget you do not believe in. A mandate without this bound funds the
+#: flattest row in the matrix, not the book.
+MAX_SLEEVE_HEAT_SHARE = 0.25
