@@ -1,40 +1,40 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-08-31T22:52:08.151004+00:00",
+  "generated_at": "2026-09-02T00:09:25.255982+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 251,
-    "metadata_mtime": "2026-08-31T04:43:52+00:00",
-    "newest_h1_mtime": "2026-08-31T20:30:44.187283+00:00"
+    "metadata_mtime": "2026-09-02T00:03:10.860281+00:00",
+    "newest_h1_mtime": "2026-09-01T22:00:44.258433+00:00"
   },
   "conversion": {
     "research_queue": {
-      "BLOCKED_CANONICAL_DOCKET_MISSING": 93,
+      "BLOCKED_CANONICAL_DOCKET_MISSING": 279,
       "DONE": 10,
-      "GAUNTLET_PASSED": 16,
-      "GAUNTLET_REJECTED": 23164,
+      "GAUNTLET_PASSED": 49,
+      "GAUNTLET_REJECTED": 46584,
       "PENDING": 17
     },
-    "universal_survivors": 45,
-    "shadow_sleeves": 72,
-    "shadow_observations": 236,
-    "shadow_last_run": "2026-08-31"
+    "universal_survivors": 63,
+    "shadow_sleeves": 82,
+    "shadow_observations": 270,
+    "shadow_last_run": "2026-09-02T00:04:28.365960+00:00"
   },
   "freshness": {
-    "research_loop": "2026-08-31T20:31:09.975255+00:00",
-    "research_pipeline": "2026-08-31T22:50:20+00:00",
-    "external_gauntlet": "2026-08-31T18:45:07+00:00",
-    "universal_gate": "2026-08-31T22:50:20+00:00",
-    "allocation": "2026-08-31T20:30:51.371833+00:00",
+    "research_loop": "2026-09-01T22:01:09.266344+00:00",
+    "research_pipeline": "2026-09-02T00:03:30+00:00",
+    "external_gauntlet": "2026-09-01T22:11:48+00:00",
+    "universal_gate": "2026-09-02T00:03:30+00:00",
+    "allocation": "2026-09-01T22:00:50.418904+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
     "markout_usable": false,
     "markout_matched_fills": 0
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-08-31T22:52:07.977813+00:00",
+    "generated_at": "2026-09-02T00:09:24.367374+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 7,
       "DISPOSED_SUPERSEDED": 10,
