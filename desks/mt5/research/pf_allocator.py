@@ -64,6 +64,7 @@ from libs.portfolio.robust_elog import (  # noqa: E402
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
+    evidence_readiness,
     per_sleeve_bounds,
     resolve,
 )
@@ -689,8 +690,19 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             curve = {float(h): float(g) for h, g in prev}
         except (OSError, ValueError, TypeError):
             curve = {}
+    # READINESS: THE TARGET IS EARNED, NOT ASSERTED (principal, 2026-09-02 -- "once we have a
+    # good amount of live edges it should increase to 20 percent itself daily ... and once it
+    # earns it, it forces full 20 percent allocation every hour"). Out-of-sample day-equivalents
+    # per sleeve, weighted by the heat the FREE solve wants to give it, because the question is
+    # about the capital and not the roster. At readiness 1.0 the floor IS the target and every
+    # pass enforces it; below that the desk bets what its evidence supports and the gap is a
+    # research request rather than a number someone decided to force.
+    oos = {e.name: 4.0 * e.forward_days + 12.0 * e.live_days for e in ev}
+    ready, ready_why = evidence_readiness(oos, free.heat)
+    _log(f"readiness {ready:.1%} -- {ready_why}")
     verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
                       hard_ceiling=HEAT_HARD_CEILING, mandate=True,
+                      readiness=ready, readiness_why=ready_why,
                       allocator_ok=(bool(free.heat) and math.isfinite(free.mean_log_growth)
                                     and not implausible))
     for why in verdict.reasons:
@@ -726,8 +738,20 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                 note="mandated book was ruinous on the sampled worlds")
         funded = {}
 
+    # DID THE MANDATE ACTUALLY FILL? Once readiness earns the target the floor is a standing
+    # instruction, so a pass that lands short is a defect and not a preference. Only the
+    # catastrophe layer may resolve below it, and it says so in `binding`; anything else short is
+    # the per-sleeve bounds failing to fund the budget, which is a research gap
+    # (portfolio_gap.py) and must never read as a quiet risk decision.
+    shortfall = verdict.total_heat - book.total_heat
+    filled = abs(shortfall) <= 1e-4
+    if not filled and verdict.binding != "catastrophe":
+        _log(f"HEAT NOT FILLED: resolved {verdict.total_heat:.2%}, book holds "
+             f"{book.total_heat:.2%} ({shortfall:+.2%}). The eligible library cannot fund the "
+             f"budget under its per-sleeve bounds -- a research gap, not a risk choice.")
+
     _log(f"book: {len(funded)} funded sleeves at {book.total_heat:.2%} total heat, "
-         f"ann={book.annual_growth_pct:.1f}%")
+         f"ann={book.annual_growth_pct:.1f}% [{'FILLED' if filled else 'SHORT'}]")
 
     # THE BASELINE IS WHAT THE DESK HOLDS, not the free optimum. Measuring the proposal against
     # the unconstrained solve answers "how far from ideal is this", which is a different question
@@ -754,6 +778,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "free_optimum": round(verdict.free_optimum, 6),
             "target": verdict.target, "hard_ceiling": verdict.hard_ceiling,
             "binding": verdict.binding, "certified": verdict.certified,
+            "filled": filled, "shortfall": round(shortfall, 6),
+            "readiness": round(verdict.readiness, 4), "floor": round(verdict.floor, 6),
+            "readiness_why": ready_why,
             "reasons": list(verdict.reasons),
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },

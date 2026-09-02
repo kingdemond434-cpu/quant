@@ -55,9 +55,11 @@ __all__ = [
     "CERTIFY_TOLERANCE",
     "HEAT_HARD_CEILING",
     "HEAT_TARGET",
+    "READY_SCALE",
     "HeatVerdict",
     "catastrophe_override",
     "certify",
+    "evidence_readiness",
     "per_sleeve_bounds",
     "resolve",
 ]
@@ -66,6 +68,46 @@ __all__ = [
 #: answer is not "unlimited". This is the R-drawdown assumed for such a sleeve -- the armed
 #: book's own worst, so an unmeasured sleeve is bounded as tightly as the most-measured one.
 _DEFAULT_DD_R = 33.7
+
+
+#: Out-of-sample day-equivalents at which the desk is considered to have "a good amount of live
+#: edges" and the utilisation target applies in full. Forward days count 4x and live days 12x
+#: (`robust_elog._posterior_mu`), so this is reached by roughly 60 forward days across the book,
+#: or 20 live ones. The same 250-day scale the selection-penalty relief uses -- one number, not
+#: two that can drift.
+READY_SCALE = 250.0
+
+
+def evidence_readiness(oos_by_sleeve: dict[str, float],
+                       heat_by_sleeve: dict[str, float]) -> tuple[float, str]:
+    """How far the book has earned its utilisation target, in [0, 1].
+
+    "once we have a good amount of live edges it should increase to 20 percent itself daily"
+                                                            -- the principal, 2026-09-02
+
+    THE TARGET IS EARNED, NOT ASSERTED. Forcing 20% while the book's expected growth rests on
+    backtests is overbetting a prior; refusing to ever reach 20% wastes the opportunity set once
+    the evidence exists. This measures the difference and lets the floor ramp between them, so
+    the desk arrives at full utilisation by accumulating the evidence that justifies it rather
+    than by a person deciding it is time.
+
+    HEAT-WEIGHTED, because the question is about the CAPITAL, not the roster: a book whose funded
+    sleeves are all backtest-only is not made ready by twenty unfunded ones that have clocks.
+    """
+    if not heat_by_sleeve:
+        return 0.0, "no funded sleeves: readiness is 0, not unmeasured"
+    total = sum(max(v, 0.0) for v in heat_by_sleeve.values())
+    if total <= 0:
+        return 0.0, "book holds no heat"
+    share = sum(max(h, 0.0) * (oos_by_sleeve.get(k, 0.0)
+                               / (oos_by_sleeve.get(k, 0.0) + READY_SCALE))
+                for k, h in heat_by_sleeve.items()) / total
+    n_ev = sum(1 for k, h in heat_by_sleeve.items()
+               if h > 1e-6 and oos_by_sleeve.get(k, 0.0) > 0)
+    return float(min(max(share, 0.0), 1.0)), (
+        f"{n_ev}/{sum(1 for h in heat_by_sleeve.values() if h > 1e-6)} funded sleeve(s) carry "
+        f"out-of-sample evidence; heat-weighted readiness {share:.1%} of the {READY_SCALE:.0f}"
+        f"-day scale")
 
 
 @dataclass(frozen=True)
@@ -80,6 +122,9 @@ class HeatVerdict:
     #: "mandate" (floored at target), "ceiling" (clipped at the hard bar), "catastrophe".
     binding: str
     certified: bool
+    #: How much of the target the book has EARNED, and the floor that follows from it.
+    readiness: float = 0.0
+    floor: float = 0.0
     reasons: tuple[str, ...] = ()
     curve: tuple[tuple[float, float], ...] = ()
     detail: dict[str, float] = field(default_factory=dict)
@@ -173,12 +218,20 @@ def catastrophe_override(*, broker_ok: bool = True, prices_fresh: bool = True,
 
 def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
             target: float = HEAT_TARGET, hard_ceiling: float = HEAT_HARD_CEILING,
-            mandate: bool = True, **integrity: bool) -> HeatVerdict:
+            mandate: bool = True, readiness: float = 1.0,
+            readiness_why: str = "", **integrity: bool) -> HeatVerdict:
     """Total heat the desk should run right now, and why.
 
-    `mandate=True` is the standing policy: full utilisation of the target, with the optimiser
-    free to go ABOVE it up to the hard ceiling when growth genuinely wants more. `mandate=False`
-    is pure E[log W] -- the book may hold back. Both obey the ceiling and both obey integrity.
+    `mandate=True` is the standing policy: utilisation of the target, RAMPED BY `readiness` --
+    the floor is `target * readiness`, so the desk arrives at 20% by accumulating out-of-sample
+    evidence rather than by asserting it. `readiness=1.0` is the un-ramped mandate and remains
+    the default so no existing caller changes behaviour silently. `mandate=False` is pure
+    E[log W]: the book may hold back. All three obey the ceiling and all three obey integrity.
+
+    Growth is ALWAYS free to exceed the target up to the hard ceiling, whatever readiness says --
+    readiness gates the FLOOR, never the upside. A book whose robust optimum genuinely wants 24%
+    gets 24% on day one; readiness only decides how much the desk is willing to bet on a prior
+    when the optimiser wants less.
     """
     reasons: list[str] = []
     override, bad = catastrophe_override(**integrity) if integrity else (None, ())
@@ -190,11 +243,19 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     ok, why = certify(curve or {}, target)
     reasons.append(why)
 
+    r = float(min(max(readiness, 0.0), 1.0))
+    floor = target * r if mandate else 0.0
+    if mandate:
+        reasons.append(f"utilisation floor {floor:.2%} = {target:.0%} target x {r:.1%} readiness"
+                       + (f" ({readiness_why})" if readiness_why else ""))
+
     h = float(free_optimum)
     binding = "growth"
-    if mandate and h < target:
-        h, binding = target, "mandate"
-        reasons.append(f"full-utilisation mandate: floored {free_optimum:.2%} -> {target:.2%}")
+    if mandate and h < floor:
+        h, binding = floor, "mandate"
+        reasons.append(f"utilisation mandate: floored {free_optimum:.2%} -> {floor:.2%}"
+                       + (f"; the full {target:.0%} applies at readiness 100%"
+                          if r < 0.999 else ""))
     if h > hard_ceiling:
         reasons.append(f"HARD CEILING: growth wanted {h:.2%}, clipped to {hard_ceiling:.2%}")
         h, binding = hard_ceiling, "ceiling"
@@ -203,6 +264,7 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
 
     return HeatVerdict(total_heat=h, free_optimum=float(free_optimum), target=target,
                        hard_ceiling=hard_ceiling, binding=binding, certified=ok,
+                       readiness=r, floor=floor,
                        reasons=tuple(reasons),
                        curve=tuple(sorted((curve or {}).items())),
                        detail={"mandate": float(mandate)})
