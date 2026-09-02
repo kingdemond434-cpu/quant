@@ -59,6 +59,7 @@ from libs.portfolio.robust_elog import (  # noqa: E402
     Worlds,
     optimise,
     sample_worlds,
+    score_book,
 )
 from research.heat_policy import (  # noqa: E402
     HEAT_HARD_CEILING,
@@ -140,6 +141,68 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
     except Exception as exc:
         _log(f"forward evidence unavailable ({type(exc).__name__}); backtest basis only")
     return daily, forward
+
+
+def certified_evidence() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+    """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
+
+    THE DEFECT THIS EXISTS TO FIX, measured 2026-09-02. `portfolio_projection.build_sleeves()`
+    prices the gold book and the hunt12 survivors -- 109 sleeves. `UNIVERSAL_SURVIVORS.json`
+    holds 63 certificates over 28 distinct sleeves. THE OVERLAP IS ZERO. So the E[log W]
+    allocator was solving over a universe that contained none of the things that actually passed
+    the ten gates, and "all validated edges compete jointly for capital" was false by
+    construction: a certified sleeve could not be funded because it was never priced.
+
+    REPLAYED THROUGH `external_gauntlet.build_cell`, NOT THROUGH A SECOND COPY OF THE LOGIC. That
+    function is what turned the spec into signals when the certificate was earned -- same family
+    function, same fill-hour spread surface, same `Costs.from_symbol`. A private replay here
+    would be a second cost model, and the desk has spent a lot of commits removing those.
+
+    Returns (series by sleeve name, accounting). Every refusal is named: a sleeve that cannot be
+    priced is reported, never dropped into a silence that reads like an empty library.
+    """
+    acct: dict[str, Any] = {"certificates": 0, "priced": 0, "refused": {}}
+    try:
+        sys.path.insert(0, str(BASE / "scripts"))
+        import external_gauntlet as eg  # type: ignore[import-not-found]
+
+        from research.portfolio_gap import load_survivors
+    except Exception as exc:
+        acct["refused"]["import"] = f"{type(exc).__name__}: {exc}"
+        return {}, acct
+
+    try:
+        meta = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        acct["refused"]["universe"] = str(exc)
+        return {}, acct
+
+    seen: set[tuple[str, str, str]] = set()
+    out: dict[str, np.ndarray] = {}
+    survivors = load_survivors()
+    acct["certificates"] = len(survivors)
+    for sv in survivors:
+        sym, fam, win = sv.get("symbol", ""), sv.get("family", ""), sv.get("window", "")
+        if not sym or not fam or (sym, fam, win) in seen:
+            continue
+        seen.add((sym, fam, win))
+        name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
+        try:
+            cell = eg.build_cell(sym, fam, {}, meta)
+            if not cell or cell.get("sigs") is None:
+                acct["refused"][name] = "build_cell returned no signals"
+                continue
+            ser = eg.daily_series(cell["df"], cell["sigs"], cell["costs"])
+            if ser is None or len(ser) < 2:
+                acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
+                continue
+            out[name] = np.asarray(ser.to_numpy(dtype=float))
+            acct["priced"] += 1
+        except Exception as exc:
+            acct["refused"][name] = f"{type(exc).__name__}: {exc}"
+    _log(f"certified library: {acct['priced']}/{len(seen)} sleeves priced "
+         f"({acct['certificates']} certificates), {len(acct['refused'])} refused")
+    return out, acct
 
 
 def live_days_by_sleeve() -> dict[str, int]:
@@ -247,24 +310,94 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
     return (), ()
 
 
-def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
-                    live: dict[str, int]) -> list[SleeveEvidence]:
-    """Fold backtest, forward and live evidence into one record per sleeve.
+def join_forward(columns: list[str], forward: dict[str, dict[str, float]],
+                 ) -> tuple[dict[str, dict[str, float]], dict[str, Any]]:
+    """Attribute forward series to priced sleeves, and ACCOUNT for the ones that cannot be.
 
-    Forward days are APPENDED to the backtest series, not averaged into it: they are additional
+    THE TWO SIDES KEY DIFFERENTLY. The forward clocks record `<symbol>_<window>` (sometimes with a
+    family in the middle: `CHFNOK_carry_asia`); the backtest matrix records
+    `<symbol>_<window>_<state>`. Measured 2026-09-02: 20 sleeves carried forward evidence and the
+    allocator reported `with_forward: 0`, because nothing joined and a failed join returns the
+    same empty dict as "no forward evidence exists". That is the silent-zero class this desk has
+    a law about (L1.28a) -- absence is never health.
+
+    AMBIGUOUS JOINS ARE REFUSED, NOT SPREAD. `CADJPY_asia` matches CADJPY_asia_TREND_DAY,
+    _NORMAL_DAY and _RANGE_DAY. Those forward trades were taken UNCONDITIONED, so attributing
+    them to a state-conditioned sleeve would append the returns of a strategy the sleeve does not
+    run -- the exact substitution that produced +0.163R-unconditioned against the +0.276R that
+    earned promotion. Appending to all three would additionally count one day of evidence three
+    times. Both are refused; the count is reported so the mismatch is visible.
+
+    Returns (attributed series by column name, accounting).
+    """
+    exact = {c: forward[c] for c in columns if c in forward}
+    unmatched, ambiguous = {}, {}
+    for name, series in forward.items():
+        if name in exact:
+            continue
+        hits = [c for c in columns if c == name or c.startswith(name + "_")]
+        if len(hits) == 1:
+            exact[hits[0]] = series
+        elif hits:
+            ambiguous[name] = [str(h) for h in hits]
+        else:
+            unmatched[name] = len(series)
+    acct = {
+        "forward_series_seen": len(forward),
+        "attributed": len(exact),
+        "ambiguous_state_variants": ambiguous,
+        "no_priced_sleeve": unmatched,
+        "note": ("forward clocks key on (symbol, window); the matrix keys on "
+                 "(symbol, window, state). Unattributed forward evidence cannot inform "
+                 "allocation and is NOT counted as zero evidence -- it is counted as unjoined."),
+    }
+    if ambiguous or unmatched:
+        _log(f"forward join: {len(exact)}/{len(forward)} attributed, "
+             f"{len(ambiguous)} ambiguous, {len(unmatched)} name no priced sleeve")
+    return exact, acct
+
+
+def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
+                    live: dict[str, int],
+                    certified: dict[str, np.ndarray] | None = None) -> list[SleeveEvidence]:
+    """Fold backtest, certified, forward and live evidence into one record per sleeve.
+
+    THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
+    survivors) and the certified library (what cleared the ten gates) were disjoint sets, so
+    whichever one the allocator read, it could not fund the other. Both are priced here, on the
+    same daily clock, and compete for the same heat.
+
+    Forward days are APPENDED to the series, not averaged into it: they are additional
     observations of the same sleeve, and the posterior weights them 4x (live 12x) precisely
     because they are the only ones the sleeve could not have been selected on.
     """
     out: list[SleeveEvidence] = []
-    for name in daily.columns:
-        hist = daily[name].fillna(0.0).to_numpy(dtype=float)
-        fwd = forward.get(str(name), {})
+    series: dict[str, np.ndarray] = {
+        str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
+    }
+    for name, arr in (certified or {}).items():
+        # A name in BOTH is the same sleeve reached two ways; keep the longer history rather than
+        # entering it twice, which would double its weight in the book.
+        if name not in series or arr.size > series[name].size:
+            series[name] = arr
+
+    for name, hist in series.items():
+        fwd = forward.get(name, {})
         if fwd:
             hist = np.concatenate([hist, np.array(list(fwd.values()), dtype=float)])
-        fam = str(name).split("_")[0]
+        parts = name.split("_")
+        # FAMILY IS THE MECHANISM, NOT THE SYMBOL. The hierarchical posterior pools a sleeve
+        # toward its family mean, and pooling by SYMBOL pools EURJPY_asia_TREND with
+        # EURJPY_london_NORMAL -- two different mechanisms that happen to share an instrument --
+        # while leaving every session_range_breakout sleeve in a family of one. The mechanism is
+        # what shares a prior; the instrument is what shares a correlation, and correlation is
+        # handled by the worlds.
+        fam = ("session_bracket" if name.startswith("gold_") or parts[-1].endswith("_DAY")
+               or (len(parts) > 2 and parts[-1] in ("TREND", "NORMAL", "RANGE"))
+               else "_".join(parts[1:-1]) or "unspecified")
         out.append(SleeveEvidence(
-            name=str(name), daily_r=hist, family=fam, symbol=fam,
-            forward_days=len(fwd), live_days=int(live.get(str(name), 0)),
+            name=name, daily_r=hist, family=fam, symbol=parts[0],
+            forward_days=len(fwd), live_days=int(live.get(name, 0)),
             # Cost LEVEL is already inside the replayed R multiples (Costs.from_symbol at the
             # honest 2x baseline); this is the per-trade scale used to size the UNCERTAINTY
             # around it, never a second charge.
@@ -273,17 +406,24 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     return out
 
 
-def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
-    """Each sleeve's worst peak-to-trough drawdown in R -- the input to its per-sleeve bound."""
+def worst_dd_r(daily: pd.DataFrame,
+               certified: dict[str, np.ndarray] | None = None) -> dict[str, float]:
+    """Each sleeve's worst peak-to-trough drawdown in R -- the input to its per-sleeve bound.
+
+    An UNMEASURED drawdown is reported as 0.0 and `heat_policy.per_sleeve_bounds` treats that as
+    the armed book's own worst (33.7R), so a sleeve nobody has measured is bounded as tightly as
+    the most-measured one rather than as loosely as a flawless one.
+    """
     out: dict[str, float] = {}
-    for name in daily.columns:
-        eq = daily[name].fillna(0.0).cumsum().to_numpy(dtype=float)
-        if eq.size == 0:
-            out[str(name)] = 0.0
-            continue
-        out[str(name)] = float(np.maximum.accumulate(eq).max() - eq.min()) if eq.size else 0.0
-        dd = np.maximum.accumulate(eq) - eq
-        out[str(name)] = float(dd.max()) if dd.size else 0.0
+    cols: dict[str, np.ndarray] = {
+        str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
+    }
+    for k, v in (certified or {}).items():
+        cols.setdefault(k, v)
+    for name, arr in cols.items():
+        eq = np.cumsum(arr)
+        dd = np.maximum.accumulate(eq) - eq if eq.size else np.array([0.0])
+        out[name] = float(dd.max()) if dd.size else 0.0
     return out
 
 
@@ -423,8 +563,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     heavy = mode == "heavy"
     daily, forward = build_evidence(force=heavy)
     live = live_days_by_sleeve()
-    ev = sleeve_evidence(daily, forward, live)
-    dd = worst_dd_r(daily)
+    certified, cert_acct = certified_evidence()
+    universe = [str(c) for c in daily.columns] + [k for k in certified if k not in daily.columns]
+    forward, fwd_acct = join_forward(universe, forward)
+    ev = sleeve_evidence(daily, forward, live, certified)
+    dd = worst_dd_r(daily, certified)
 
     labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
@@ -491,8 +634,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     _log(f"book: {len(funded)} funded sleeves at {book.total_heat:.2%} total heat, "
          f"ann={book.annual_growth_pct:.1f}%")
 
+    # THE BASELINE IS WHAT THE DESK HOLDS, not the free optimum. Measuring the proposal against
+    # the unconstrained solve answers "how far from ideal is this", which is a different question
+    # from "is moving worth the turnover" and gave the no-trade filter a meaningless number.
     prev_book = current_book()
-    nt = no_trade(prev_book, funded, book.mean_log_growth - free.mean_log_growth)
+    held = score_book(ev, prev_book, cfg=cfg, worlds=worlds)
+    gain = (book.mean_log_growth - held["mean_log_growth"]
+            if math.isfinite(held["mean_log_growth"]) and math.isfinite(book.mean_log_growth)
+            # A currently-ruinous book has no growth rate to improve on, and refusing to move off
+            # it because the arithmetic is undefined would be the worst possible reading.
+            else float("inf"))
+    nt = no_trade(prev_book, funded, gain)
+    nt["held"] = {k: round(v, 8) for k, v in held.items()}
     opp = opportunity(free, funded, HEAT_TARGET)
 
     art: dict[str, Any] = {
@@ -528,6 +681,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "with_live": sum(1 for e in ev if e.live_days > 0),
             "worlds": worlds.r.shape[0], "world_rows": worlds.r.shape[1],
             "note": worlds.note,
+            "forward_join": fwd_acct,
+            "certified_library": cert_acct,
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},
     }
@@ -538,18 +693,40 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     return art
 
 
+#: Admission memory per mode, measured rather than guessed. This box has 3.8 GB, NO SWAP and a
+#: documented OOM history; starting a job that does not fit destroys its own run and endangers
+#: every neighbour. Heavy rebuilds the whole daily-R matrix from parquet; fast reads a cache.
+_NEED_MB = {"heavy": 900, "normal": 600, "fast": 400}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--mode", choices=("fast", "normal", "heavy"), default="normal")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
+
+    # ONE LOCK ACROSS ALL THREE CLOCKS, not one per mode. The clocks overlap by design -- a heavy
+    # pass takes ~5 minutes and the fast clock fires every 5 -- and three allocators resident at
+    # once is ~750 MB on a box with ~700 MB free. A fast pass while a heavy pass is running has
+    # nothing to add anyway: it would re-solve the same evidence at lower fidelity and overwrite
+    # the better answer.
     try:
-        run(args.mode, seed=args.seed)
-    except Exception as exc:
-        # A crash here must never read as "no allocation was needed" (L1.28a). The artifact keeps
-        # its last good content and the failure is loud and non-zero.
-        _log(f"ALLOCATOR FAILED: {type(exc).__name__}: {exc}")
-        raise
+        from research.job_lock import exclusive_job
+    except ModuleNotFoundError:            # entrypoint put research/ on the path, not desks/mt5
+        from job_lock import exclusive_job  # type: ignore[no-redef,import-not-found]
+
+    with exclusive_job("pf_allocator", need_mb=_NEED_MB[args.mode]) as go:
+        if not go:
+            _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
+                 f"{_NEED_MB[args.mode]}MB. The previous book stands.")
+            return 0
+        try:
+            run(args.mode, seed=args.seed)
+        except Exception as exc:
+            # A crash here must never read as "no allocation was needed" (L1.28a). The artifact
+            # keeps its last good content and the failure is loud and non-zero.
+            _log(f"ALLOCATOR FAILED: {type(exc).__name__}: {exc}")
+            raise
     return 0
 
 

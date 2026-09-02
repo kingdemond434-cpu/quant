@@ -55,6 +55,7 @@ __all__ = [
     "optimise",
     "project_capped_simplex",
     "sample_worlds",
+    "score_book",
 ]
 
 
@@ -594,6 +595,33 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
                   sorted(marginal.items(), key=lambda kv: -kv[1])},
         iterations=done, converged=converged, note=w_pop.note,
     )
+
+
+def score_book(ev: Sequence[SleeveEvidence], heat: Mapping[str, float], *,
+               cfg: WorldConfig | None = None, worlds: Worlds | None = None) -> dict[str, float]:
+    """Growth of a GIVEN book on the world population -- no optimisation, no reweighting.
+
+    This is what a rebalance must be measured against. Comparing a proposed book to the FREE
+    optimum answers "how far from ideal is this", which is not the question: the question is
+    whether moving from what the desk holds NOW to the proposal buys more than the turnover
+    costs, and that needs the current holdings scored on the same worlds.
+    """
+    cfg = cfg or WorldConfig()
+    w_pop = worlds if worlds is not None else sample_worlds(ev, cfg)
+    h = np.array([float(heat.get(n, 0.0)) for n in w_pop.names])
+    score, _grad, g_w = _objective(w_pop, h, _corr_abs(ev), cfg)
+    finite = g_w[np.isfinite(g_w)]
+    mean_g = float(finite.mean()) if finite.size else float("-inf")
+    n_tail = max(1, round(cfg.cvar_alpha * max(finite.size, 1)))
+    return {
+        "total_heat": float(h.sum()),
+        "robust_score": score,
+        "mean_log_growth": mean_g,
+        "cvar_log_growth": float(np.sort(finite)[:n_tail].mean()) if finite.size else -np.inf,
+        "annual_growth_pct": ((float(np.exp(mean_g * 252.0)) - 1.0) * 100.0
+                              if math.isfinite(mean_g) else float("-inf")),
+        "prob_annual_loss": float((finite <= 0.0).mean()) if finite.size else 1.0,
+    }
 
 
 def marginal_delta_elog(current: Sequence[SleeveEvidence], candidate: SleeveEvidence, *,
