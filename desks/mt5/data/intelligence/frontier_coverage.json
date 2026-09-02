@@ -70,7 +70,7 @@
    "queries_exercised": 27,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-01T11:22:01+00:00",
+   "last_swept": "2026-09-02T00:22:01+00:00",
    "native_terms_available": 9
   },
   "ko": {
@@ -106,16 +106,16 @@
    "queries_exercised": 30,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-01T03:22:03+00:00",
+   "last_swept": "2026-09-01T22:22:05+00:00",
    "native_terms_available": 10
   },
   "en": {
    "region": "global",
    "open_frontier": false,
-   "queries_exercised": 24,
+   "queries_exercised": 27,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-08-31T22:22:02+00:00",
+   "last_swept": "2026-09-01T23:22:02+00:00",
    "native_terms_available": 20
   }
  }

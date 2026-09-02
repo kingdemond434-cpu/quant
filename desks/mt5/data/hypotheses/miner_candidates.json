@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-01T14:10:10+00:00",
+ "compiled_at": "2026-09-02T00:18:04+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4464,14 +4464,14 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "reddit": {
-   "rows": 28,
+   "rows": 45,
    "candidates": 0,
-   "deepening": 28
+   "deepening": 45
   },
   "forexfactory": {
    "rows": 44,
@@ -4499,9 +4499,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 36,
+   "rows": 38,
    "candidates": 0,
-   "deepening": 36
+   "deepening": 38
   },
   "litefinance": {
    "rows": 15,
@@ -4519,6 +4519,11 @@
    "deepening": 113
   },
   "fbs_tape": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "global_frontier": {
    "rows": 1,
    "candidates": 0,
    "deepening": 1
@@ -4598,7 +4603,17 @@
    "candidates": 0,
    "deepening": 1
   },
+  "earnings": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
   "cnn_fear_greed": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "korea": {
    "rows": 1,
    "candidates": 0,
    "deepening": 1
@@ -4607,10 +4622,25 @@
    "rows": 3,
    "candidates": 3,
    "deepening": 0
+  },
+  "shipping": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "tradingview": {
+   "rows": 1,
+   "candidates": 0,
+   "deepening": 1
+  },
+  "weather": {
+   "rows": 4,
+   "candidates": 0,
+   "deepening": 4
   }
  },
- "rows_accounted": 1064,
+ "rows_accounted": 1093,
  "executable_candidates": 370,
- "deepening_tasks": 612,
+ "deepening_tasks": 648,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

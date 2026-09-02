@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-01T14:19:50+00:00",
+ "built_at": "2026-09-02T00:19:58+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1402,18 +1402,103 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "spread_fragility_break",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
+    "event": "liquidity_shock",
+    "context": "high_vol",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|high_vol|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MT5 spread history (free, tick-level), compute spread_zscore vs 1-hour rolling median",
+   "kill": "Kill if regression R^2 < 0.02 or if direction reverses (positive beta significant) on 6 months OOS",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "JGB_margin_window_fx_carry",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "london",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "forced_deleveraging|london|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "BOJ margin/topix data via public.statistics.boj.or.jp + minute JPY crosses from broker MT5",
+   "kill": "Kill if Sharpe < 0.4 over 200 events or correlation sign-flip in 3 of last 5 quarters",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "hard_segment_TZX_FVX_repo",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "new_york",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|new_york|magnitude|divergence|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "CME T-Note futures + FINRA primary dealer weekly holdings + Fed H.4.1 SLR disclosure window",
+   "kill": "Basis remains inside +/-2bp of theoretical for 30 sessions during constrained dealer regime OR SLR exemption reinstated",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "A3: NDX_MXN_CARRY_TIER1_LICENCE_BARRIER",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "month_end",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|month_end|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Banxico remittance flow data, CNBV Afore monthly foreign holding reports, US Treasury TIC data, MT5 USDMXN tick",
+   "kill": "Sharpe <0.3 over 5y OR Afore regulatorily permitted overseas-hedged ETFs materially change reporting",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CRYPTO_FX_DECOUPLE_T1",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|divergence|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Binance.fapi public klines + Bybit public klines, hourly, BTCUSDT/ETHUSDT perp vs spot",
+   "kill": "If mean weekend basis net of fees+slippage < 5bps OR any 6-month rolling window shows sign-flip with t-stat>2, KILL",
+   "lens": "STRUCTURAL SEGMENTATION",
    "promotion_authority": false
   },
   {
@@ -1432,17 +1517,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:liquidity_shock|continuation",
+   "name": "audit:cross_market_move|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "liquidity_shock",
+    "event": "cross_market_move",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
