@@ -319,6 +319,79 @@ def reconcile(key: str, ident: dict, *, replayed: bool = False) -> str | None:
     return why
 
 
+def rebase_cost(key: str, ident: dict, cost_fields: dict) -> str | None:
+    """Re-freeze a clock's COST after the desk corrects its own cost model. Nothing else moves.
+
+    THE HOLE `reconcile()` CANNOT FILL. That function clears IDENTITY_BROKEN when the identity
+    becomes byte-identical again -- right for a transient (a stale file sync, an outage). A COST
+    CORRECTION is neither transient nor reversible: the desk decided the old number was wrong, so
+    the frozen hash can never match again and the clock is dead forever.
+
+    MEASURED 2026-09-02. All twelve IDENTITY_BROKEN clocks froze `commission_per_lot: 3.5` -- the
+    round-turn figure that sat in a PER-SIDE field, charging $7.00 against a stated $3.50. The
+    desk corrected it to Fusion Zero's published 2.25 on 2026-09-01, every cost_hash changed, and
+    twelve pre-registered clocks stopped accruing against the `days >= 14` bar. Correcting a known
+    error destroyed the evidence gathered while the error stood, permanently, with no way back.
+
+    WHY THIS IS SOUND AND WHY IT IS NOT A LOOSENING:
+
+      * `forward_start` IS NOT TOUCHED. The ratchet holds: pre-registration protects WHICH DAYS
+        were observed, and a cost correction does not un-observe a day.
+      * THE ENGINE REPLAYS. Every pass recomputes the whole series from bars, so the R multiples
+        are recomputed at the corrected cost -- there is no spliced evidence to preserve, and no
+        observation priced at the wrong cost survives into the numbers.
+      * IT FIRES ON `cost_hash` ALONE. Any other drifted field -- code, params, symbol, venue,
+        direction -- and the clock stays terminal. A strategy change is still a new clock.
+
+    THE DANGEROUS DIRECTION IS NAMED, NOT HIDDEN. A "correction" that makes a sleeve CHEAPER is
+    the shape of a desk talking itself into an edge, so the old and new cost fields are both
+    recorded and `cost_rebase_cheaper` is set when the new charge is lower. A reviewer can find
+    every rebase that helped the sleeve it was applied to.
+
+    Returns the reason when a clock was rebased, else None.
+    """
+    reg = _read(REGISTRY)
+    row = reg.get("sleeves", {}).get(key)
+    if not row or not row.get("identity"):
+        return None
+    drift = verify(key, ident)
+    if drift != ["cost_hash"]:
+        return None                     # sole-cause rule: anything else and the clock stays dead
+    old = dict(row.get("cost_fields") or {})
+    new = dict(cost_fields or {})
+    if not new:
+        return None                     # an unmeasured new cost is not a correction (L1.28a)
+
+    def _charge(cf: dict) -> float:
+        try:
+            qpa = float(cf.get("quote_per_account") or 1.0) or 1.0
+            return (float(cf.get("spread_per_lot") or 0.0)
+                    + 2.0 * float(cf.get("commission_per_lot") or 0.0)) / qpa
+        except (TypeError, ValueError):
+            return float("nan")
+
+    before, after = _charge(old), _charge(new)
+    cheaper = bool(after == after and before == before and after < before)
+    why = (f"cost model corrected after the clock froze "
+           f"({old.get('commission_per_lot')}->{new.get('commission_per_lot')} commission, "
+           f"{old.get('spread_per_lot')}->{new.get('spread_per_lot')} spread per lot; "
+           f"round-trip charge {before:.4f}->{after:.4f} in account units). forward_start "
+           f"unchanged; the engine replays, so every observation is repriced at the new cost.")
+    row["identity"]["cost_hash"] = ident.get("cost_hash")
+    row["cost_fields"] = new
+    row["cost_fields_before_rebase"] = old
+    row["status"] = "LIVE"
+    row["status_why"] = ""
+    row["status_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    row["cost_rebased_at"] = row["status_at"]
+    row["cost_rebase_why"] = why
+    row["cost_rebase_cheaper"] = cheaper
+    row["cost_rebase_count"] = int(row.get("cost_rebase_count") or 0) + 1
+    reg["updated_at"] = row["status_at"]
+    _write(reg)
+    return why
+
+
 def live_keys() -> set[str]:
     """Keys the registry considers live -- the ONE answer to 'how many sleeves are running'."""
     return {k for k, v in _read(REGISTRY).get("sleeves", {}).items()

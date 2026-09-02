@@ -530,14 +530,37 @@ def main() -> None:
                     # does not. See h1_source.Bars.evidence_venue.
                     data_venue=str(bars.evidence_venue))
                 _drift = _reg.verify(key, _ident)
+                # A COST CORRECTION IS NOT A STRATEGY CHANGE, and treating it as one kills the
+                # clock permanently. Measured 2026-09-02: all twelve IDENTITY_BROKEN rows had
+                # frozen `commission_per_lot: 3.5` -- the round-turn figure that sat in a per-SIDE
+                # field -- and the desk's own correction to 2.25 changed every cost_hash. Twelve
+                # pre-registered clocks stopped accruing toward `days >= 14` because the desk
+                # fixed a known error. `rebase_cost` re-freezes the cost and NOTHING else, fires
+                # only when cost_hash is the SOLE drift, and never touches forward_start.
+                if _drift == ["cost_hash"]:
+                    _why = _reg.rebase_cost(key, _ident, {
+                        "spread_per_lot": getattr(costs, "spread_per_lot", None),
+                        "commission_per_lot": getattr(costs, "commission_per_lot", None),
+                        "contract_oz": getattr(costs, "contract_oz", None),
+                        "quote_per_account": getattr(costs, "quote_per_account", None),
+                    })
+                    if _why:
+                        _drift = []
+                        st.pop("identity_drift", None)
+                        st["cost_rebased_why"] = _why
+                        slog(f"{key}: COST REBASED -- {_why}")
                 if _drift:
-                    _reg.mark(key, "IDENTITY_BROKEN",
-                              f"{', '.join(_drift)} changed after the clock froze")
+                    _reason = f"{', '.join(_drift)} changed after the clock froze"
+                    _reg.mark(key, "IDENTITY_BROKEN", _reason)
                     st["status"] = "IDENTITY_BROKEN"
                     st["identity_drift"] = _drift
-                    slog(f"{key}: IDENTITY BROKEN -- {', '.join(_drift)} changed after the clock "
-                         f"froze; evidence preserved, clock stopped. Restarting requires a NEW "
-                         f"frozen identity and a NEW window.")
+                    # THE REASON BELONGS IN THE STATE TOO. It was recorded only in the registry,
+                    # so `shadow_state.json` carried twelve terminal rows with no why -- a status
+                    # nobody downstream could act on, and the registry disagreed with it anyway
+                    # (all twelve still read LIVE there).
+                    st["identity_reason"] = _reason
+                    slog(f"{key}: IDENTITY BROKEN -- {_reason}; evidence preserved, clock "
+                         f"stopped. Restarting requires a NEW frozen identity and a NEW window.")
                     state[key] = st
                     continue
                 # THE DRIFT VERDICT MUST CLEAR ITSELF WHEN THE IDENTITY COMES BACK. Reaching this
