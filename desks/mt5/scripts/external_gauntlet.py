@@ -451,6 +451,37 @@ def partition_at_economic_prior(specs: list[dict],
 CACHE_DIR = REPORTS / "gauntlet_cache"
 
 
+#: When each symbol's cells were last BUILT (not merely considered). The rotation key.
+BUILD_CURSOR = REPORTS.parent / "data" / "hypotheses" / "gauntlet_build_cursor.json"
+
+
+def _build_cursor() -> dict[str, str]:
+    """symbol -> ISO time its cells were last built. Missing reads as "never", which sorts first.
+
+    An unreadable cursor is treated as EMPTY, which puts every symbol at the front rather than
+    at the back: the failure mode of losing this file is one wasted rotation, never a symbol
+    that stops being built (L1.28a).
+    """
+    try:
+        doc = json.loads(BUILD_CURSOR.read_text("utf-8"))
+        return {str(k): str(v) for k, v in doc.items()} if isinstance(doc, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_build_cursor(cursor: dict[str, str], built: set[str]) -> None:
+    """Stamp the symbols this run actually built, so the next run starts past them."""
+    if not built:
+        return
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    cursor.update({sym: now for sym in built})
+    try:
+        BUILD_CURSOR.parent.mkdir(parents=True, exist_ok=True)
+        BUILD_CURSOR.write_text(json.dumps(cursor, indent=1, sort_keys=True), encoding="utf-8")
+    except OSError as exc:
+        print(f"  build cursor NOT saved ({exc}); the next sweep repeats this rotation")
+
+
 def _cache_key(sym: str, family: str, params: dict, last_day: str) -> str:
     import hashlib
     blob = json.dumps({"s": sym, "f": family, "p": params, "d": last_day},
@@ -898,8 +929,28 @@ def main():
     # afterwards -- so ordering changes nothing about any verdict. It does change WHICH cells the
     # fresh-build budget reaches first, and grouping means the budget buys more cells per second,
     # which is the point.
-    eligible_specs = sorted(eligible_specs, key=lambda sp: (str(sp.get("sym") or ""),
-                                                            str(sp.get("family") or "")))
+    # SYMBOL GROUPS STAY CONTIGUOUS -- that is the frame-cache win above and it is preserved --
+    # but WHICH group goes first now rotates by starvation instead of by the alphabet.
+    #
+    # A LIST ORDER STARVES ITS OWN TAIL, and this one did. The budget builds ~20 minutes of cells
+    # per hour against a docket that goes cold daily when the cache key rolls, so a full cold
+    # sweep cannot finish in a day -- measured 2026-09-02, 7,648 cells came back
+    # NOT_RUN_BUILD_BUDGET_DEFERRED. Under a fixed alphabetical order those are always the SAME
+    # 7,648: AUDCAD is rebuilt every hour and the far end of the alphabet is never reached at
+    # all, so "deferred" quietly means "never" for a third of the docket while the report calls
+    # it work not yet done.
+    #
+    # Longest-unbuilt symbol first makes deferral self-correcting: whatever an hour misses is at
+    # the front of the next one, and the docket rotates completely instead of the head being
+    # rebuilt forever. Same rule `fetch_universe._refresh_order` applies to bars, for the same
+    # reason. Verdicts are unaffected -- cells are independent and judged by the same matrix.
+    _cursor = _build_cursor()
+    _built_syms: set[str] = set()
+    eligible_specs = sorted(
+        eligible_specs,
+        key=lambda sp: (_cursor.get(str(sp.get("sym") or ""), ""),
+                        str(sp.get("sym") or ""),
+                        str(sp.get("family") or "")))
     for spec in eligible_specs:
         key = f"{spec['sym']}.{spec['family']}.{json.dumps(spec['params'], sort_keys=True)}"
         frame = _h1_for(spec["sym"])
@@ -927,6 +978,7 @@ def main():
             # cached and starts from here, so the docket converges instead of restarting.
             deferred.append(spec)
             continue
+        _built_syms.add(str(spec["sym"]))
         obj = build_cell(spec["sym"], spec["family"], spec["params"], meta)
         if obj:
             obj["mechanism_status"] = spec.get("mechanism_status")
@@ -988,6 +1040,13 @@ def main():
         "stages": {}, "downstream_status": s["downstream_status"], "why": s["why"],
     } for s in blocked_build]
     result["n_cells_deferred_build_budget"] = len(deferred)
+    _save_build_cursor(_cursor, _built_syms)
+    result["build_rotation"] = {
+        "symbols_built_this_run": len(_built_syms),
+        "symbols_in_cursor": len(_cursor),
+        "note": "symbol groups are ordered longest-unbuilt first, so a deferred cell is at the "
+                "front of the next sweep rather than behind the same alphabetical head forever",
+    }
     result["n_cells_blocked_build_or_data"] = len(blocked_build)
     result["verdicts"] = (prior_rejections + deferred_verdicts + blocked_verdicts
                           + list(result.get("verdicts", [])))
