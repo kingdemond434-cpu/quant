@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-02T20:14:43+00:00",
+ "compiled_at": "2026-09-02T21:43:18+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4485,9 +4485,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 29,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 29
+   "deepening": 30
   },
   "mql5_signals": {
    "rows": 1,
@@ -4500,14 +4500,14 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
   },
   "reddit": {
-   "rows": 39,
+   "rows": 41,
    "candidates": 0,
-   "deepening": 39
+   "deepening": 41
   },
   "forexfactory": {
    "rows": 44,
@@ -4605,9 +4605,9 @@
    "deepening": 7
   },
   "forextsd_cdx": {
-   "rows": 120,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 120
+   "deepening": 1
   },
   "quant_se": {
    "rows": 30,
@@ -4680,13 +4680,13 @@
    "deepening": 4
   },
   "world_crawler": {
-   "rows": 53,
+   "rows": 52,
    "candidates": 0,
-   "deepening": 53
+   "deepening": 52
   }
  },
- "rows_accounted": 1146,
+ "rows_accounted": 1028,
  "executable_candidates": 373,
- "deepening_tasks": 694,
+ "deepening_tasks": 583,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

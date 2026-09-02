@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T21:19:55+00:00",
+ "built_at": "2026-09-02T22:19:59+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1679,6 +1679,111 @@
    "data_source": "Free CLS FX flow data (public aggregate) + MT5 tick data on 8 majors (EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, NZDUSD, USDCHF, EURJPY)",
    "kill": "Hit-rate \u226452% OR effect magnitude <1bp post-spread OR restricted to 1-2 pairs and doesn't generalize across \u22654 majors",
    "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "MT5_OIL_BRBENCH_CRACK_BARRIER",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "asia",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|asia|magnitude|divergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "ICE Brent settlements (ice.com), Platts Dubai (spglobal.com free delayed), OPEC allocation notices (opec.org), shipping rates (balfour.com)",
+   "kill": "Sharpe < 0.3 after 120 trades OR EFS residual not significant (p > 0.05) when ADNOC term month flagged",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "EUREX_TRF_DARK_FLOW",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "month_end",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|month_end|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Public: Eurex TRF monthly stats + USDJPY daily",
+   "kill": "Edge < 3bp net OR only month-end works",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "BOJ_FX_COVERED_INTEREST_RATE_DIVERGENCE_RULE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Ministry of Finance Flow of Funds quarterly, Tokyo Tanshi FX volume, JPY basis swap data, METI securities holdings",
+   "kill": "Spread indistinguishable from zero across rule episodes since 2010, or post-2014 Abenomics sample",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:inventory_rebalance|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:liquidity_shock|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
  ]
