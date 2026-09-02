@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-02T13:20:07+00:00",
+ "compiled_at": "2026-09-02T15:13:23+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4485,9 +4485,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 23,
+   "rows": 32,
    "candidates": 0,
-   "deepening": 23
+   "deepening": 32
   },
   "mql5_signals": {
    "rows": 1,
@@ -4505,9 +4505,9 @@
    "deepening": 2
   },
   "reddit": {
-   "rows": 34,
+   "rows": 40,
    "candidates": 0,
-   "deepening": 34
+   "deepening": 40
   },
   "forexfactory": {
    "rows": 44,
@@ -4535,9 +4535,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 38,
+   "rows": 37,
    "candidates": 0,
-   "deepening": 38
+   "deepening": 37
   },
   "litefinance": {
    "rows": 15,
@@ -4650,9 +4650,9 @@
    "deepening": 1
   },
   "cnn_fear_greed": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
   },
   "korea": {
    "rows": 1,
@@ -4680,8 +4680,8 @@
    "deepening": 4
   }
  },
- "rows_accounted": 1081,
+ "rows_accounted": 1094,
  "executable_candidates": 373,
- "deepening_tasks": 640,
+ "deepening_tasks": 652,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }
