@@ -23,7 +23,8 @@ from __future__ import annotations
 import json
 import math
 import time
-from datetime import UTC, datetime
+import contextlib
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import sys
@@ -36,7 +37,7 @@ from mt5desk import position_manager as _pm  # noqa: E402
 from mt5desk import provenance as _prov  # noqa: E402
 from mt5desk.independence import measure_from_ledger  # noqa: E402
 from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
-from mt5desk.sizing import clamp_risk_frac  # noqa: E402
+from mt5desk.sizing import clamp_risk_frac, decay_factor  # noqa: E402
 
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
@@ -50,6 +51,13 @@ PAUSED = BASE / "data" / "GATEWAY_PAUSED"
 
 TERMINAL = terminal_path()
 MAGIC = 341953
+
+#: How far back record_trades looks for closed deals it has not yet written. Deals are deduped
+#: by the venue's own ticket, so a wider window costs a list scan and cannot double-count. It
+#: exists because the previous day-wide window silently lost every fill the gateway did not see
+#: on the same calendar day: a skipped pass, an OOM kill or a restart after midnight left those
+#: closes unrecorded permanently, since nothing ever looked backwards.
+LEDGER_LOOKBACK_DAYS = 30
 
 LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 # RISK FRACTION OF EQUITY PER TRADE. Was 0.055, and that was not an arbitrary number: measured
@@ -87,7 +95,10 @@ LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 #: TOLERANCE over the book's worst -33.7R. See that module for the full argument.
 from mt5desk.gateway_config_fallback import (  # noqa: E402
     BOOK_WORST_DD_R as _BOOK_WORST_DD_R,
+    HEAT_HARD_CEILING,
+    HEAT_TARGET,
     MAX_DRAWDOWN_TOLERANCE,
+    MAX_SLEEVE_HEAT_SHARE,
     Q_OPT,
 )
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
@@ -114,7 +125,33 @@ FX_EUR = 0.92
 GOLD_SYMBOL = "XAUUSD"
 RR = 2.0
 ATR_N = 20
-CANCEL_HOUR = 20.5      # cancel unfilled brackets at 20:30 UTC
+#: CEILING for a bracket whose session the desk cannot identify, in hours. NOT the normal rule:
+#: `bracket_deadline` derives each sleeve's expiry from its OWN window, and this is only what a
+#: promoted family sleeve with an unrecognised window falls back to.
+#:
+#: A FLAT TTL IS A PROXY FOR THE SESSION AND IT IS WRONG FOR MOST OF THE BOOK. Six hours suits
+#: gold_asia (07:00 -> 13:00) and nothing else: london_am would run four hours into the
+#: afternoon session, and afternoon would outlive the 19:30 force-close entirely. The bracket
+#: belongs to the session whose range formed it, so that session is what must end it.
+BRACKET_TTL_HOURS = 6.0
+
+#: HOW FAR THE BOOK MAY SLIDE PAST THE BUDGET TO KEEP A VALIDATED LEG, in fractions of equity.
+#:
+#: MEASURED 2026-09-02: the armed gold book priced at 20.3% against a 20.0% budget and
+#: `cap_by_heat` deferred `gold_afternoon` -- a validated, human-armed session amputated over
+#: THREE TENTHS OF ONE POINT. The cost of that trade is not the 0.3%: it is a whole session of
+#: the day going untraded, and the leg's price floats with its stop distance, so the same book
+#: was 13.1% earlier the same afternoon. A budget that drops a third of the book on a rounding
+#: edge is measuring volatility, not risk.
+#:
+#: TWO POINTS, AND THE HARD BAR STILL BINDS ABSOLUTELY. The slide is a tolerance, never a new
+#: budget: admission is capped at min(budget + slide, MAX_HEAT_CEILING), so 30% remains
+#: unreachable and a book genuinely far over budget is still trimmed. On this book's 33.7R worst
+#: run, 20% costs 90.2% and 22% costs 92.4% -- the slide is not a different risk posture, it is
+#: the same one without a cliff at the boundary. (principal, 2026-09-02)
+HEAT_SLIDE = 0.02
+
+CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
                              # (0.01 lot at 300 EUR ~= 5.9% risk/trade ~= validated 5.5%)
@@ -122,7 +159,8 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
 
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
-                 risk_frac: float | None = None) -> float:
+                 risk_frac: float | None = None,
+                 decay_faded: object = None) -> float:
     """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
 
     RISK BASE (principal order 2026-08-25): promoted sleeves target
@@ -144,7 +182,13 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     this path is always taken.
     """
     ramp = 0.25 if live_n < 50 else (0.5 if live_n < 200 else 1.0)
-    q_eff = clamp_risk_frac(risk_frac) * ramp
+    # L1.59 FADE, OUTSIDE the clamp (gap-fixer 2026-08-29). `clamp_risk_frac` floors at 3%, so
+    # the halved fraction `decay_monitor` wrote into data/sleeves.json was read straight back up
+    # and a FADED sleeve sized identically to a healthy one -- measured, 3.0 lots vs 3.0 lots.
+    # The flag is now the single source of truth and it is applied here, alongside `ramp`,
+    # which is the same shape for the same reason: authority and decay both scale RISK, not the
+    # lot after the fact. Reduce-only by construction; it can never raise a fraction.
+    q_eff = clamp_risk_frac(risk_frac) * ramp * decay_factor(decay_faded)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
@@ -258,7 +302,8 @@ def stop_distance(spec: dict) -> float | None:
 
 
 def realised_q(equity: float, dist_usd: float | None = None,
-               symbol: str = GOLD_SYMBOL, info: object | None = None) -> float:
+               symbol: str = GOLD_SYMBOL, info: object | None = None,
+               lot: float | None = None) -> float:
     """The risk fraction the account WILL actually run, after the 0.01-lot floor.
 
     Not the same as Q_OPT whenever equity is small, and that gap is the whole point of this
@@ -275,7 +320,11 @@ def realised_q(equity: float, dist_usd: float | None = None,
     """
     d = float(dist_usd) if dist_usd and dist_usd > 0 else DIST_USD
     per_unit = _eur_per_price_unit(symbol, info)
-    lot = max(_lot_steps(Q_OPT * equity / (d * per_unit)), 0.01)
+    if lot is None:
+        # No lot given: recompute at Q_OPT -- right for the Q_OPT-sized book, FICTION for a
+        # clamp-sized promoted sleeve (printed 1.16% while the lot ran 2.9%). Callers holding
+        # the actual lot pass it; q_charge already bills the heat cap honestly either way.
+        lot = max(_lot_steps(Q_OPT * equity / (d * per_unit)), 0.01)
     return float(lot * d * per_unit / equity) if equity > 0 else 0.0
 
 
@@ -360,11 +409,99 @@ _HEAT_BASE_KEFF = 2.26
 #: expressed as total heat = per-trade risk x legs, so this converts one into the other.
 _HEAT_BASE_LEGS = 3
 
-#: Never exceed this however good the diversification looks. Correlations rise in exactly the
-#: regime where the budget would be spent, and a measured k_eff is an estimate from calm. Raised
-#: from 10% only because the budget is now solved against an explicit drawdown target -- the
-#: ceiling is a backstop against a bad k_eff estimate, not the operative limit.
-MAX_HEAT_CEILING = 0.15
+#: THE OUTER ENVELOPE -- the total heat the desk may never cross, whatever any optimiser
+#: computes. Imported, never restated: `gateway_config_fallback` is where the desk's risk budget
+#: is defined, for the same reason Q_OPT lives there.
+#:
+#: RAISED 0.15 -> 0.30 (principal, 2026-09-02) AND ITS MEANING CHANGED. At 0.15 this was the
+#: operative limit and the growth bottleneck: `heat_budget()` returned its 3.81% base on every
+#: call the desk has ever made, because k_eff is measured from a live ledger that was empty until
+#: 2026-09-01 -- so the account ran at a fifth of its own stated budget and nothing said so. It is
+#: now a CATASTROPHE BACKSTOP above a 20% utilisation target, and 30% is where the arithmetic
+#: turns: across 256 sampled worlds the robust score is positive at 20% and 25% and NEGATIVE at
+#: 30%. Past here the book loses wealth in the worlds it must survive.
+MAX_HEAT_CEILING = HEAT_HARD_CEILING
+
+
+#: How stale the allocator's book may be before the gateway stops believing its heat number. One
+#: hour: the allocator's own heavy clock. A stale artifact falls back to the derived formula
+#: below -- fail-closed, because an old book is a claim about an opportunity set that has moved.
+_ALLOC_MAX_AGE_S = 3600
+
+
+def allocator_heat() -> tuple[float | None, str]:
+    """Total heat the E[log W] allocator resolved, or None with the reason it cannot be used.
+
+    THE BUDGET IS AN OUTPUT, NOT A FORMULA. `heat_budget()` below derives a number from the
+    drawdown tolerance and a breadth estimate, which was the best available answer while nothing
+    solved for exposure. `research/pf_allocator.py` now does solve for it -- jointly with which
+    sleeves hold it -- so when a fresh, certified, ARMED book exists it is the budget, and the
+    derivation is what the desk falls back to when it does not.
+
+    FAILS CLOSED ON EVERY DOUBT. Missing file, stale file, unparseable file, uncertified target,
+    unarmed allocator: all return None, and the desk keeps running the derived budget it ran
+    yesterday. Nothing here can RAISE heat by accident -- raising it takes a live artifact that
+    passed its own certification plus a human-created arm file, which is the same shape as every
+    other arming decision on this desk (GENERIC_EXEC_ENABLED, and gold re-arming).
+    """
+    try:
+        if not (BASE / "data" / "PF_ALLOCATOR_ARMED").exists():
+            return None, "allocator not armed (data/PF_ALLOCATOR_ARMED absent)"
+        f = BASE / "reports" / "pf_allocation.json"
+        if not f.exists():
+            return None, "no pf_allocation.json"
+        age = time.time() - f.stat().st_mtime
+        if age > _ALLOC_MAX_AGE_S:
+            return None, f"pf_allocation.json is {age / 60:.0f} min stale"
+        art = json.loads(f.read_text(encoding="utf-8"))
+        heat = art.get("heat") or {}
+        if not heat.get("certified"):
+            return None, "allocator did not certify the utilisation target"
+        total = float(heat.get("total") or 0.0)
+        if not (0.0 < total <= MAX_HEAT_CEILING + 1e-12):
+            return None, f"allocator heat {total:.4f} outside (0, {MAX_HEAT_CEILING:.2f}]"
+        # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
+        # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
+        # least one sampled world -- and every check above passed it, because they all asked
+        # about the heat and none asked whether the optimiser could score the thing it sized.
+        g = art.get("growth") or {}
+        ann = g.get("annual_growth_pct")
+        if not isinstance(ann, (int, float)) or not math.isfinite(float(ann)):
+            return None, f"allocator book has no finite growth ({ann!r})"
+        return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
+    except Exception as exc:                                    # noqa: BLE001
+        return None, f"allocator artifact unreadable ({type(exc).__name__})"
+
+
+def allocator_order(sleeves: list[dict]) -> list[dict]:
+    """Reorder `sleeves` by marginal dE[log W], best first; unpriced sleeves keep their place.
+
+    WHAT THIS REPLACES. `cap_by_heat` trims in list order and `sleeve_set()` emits gold first, so
+    the armed gold book was senior to everything else by position. The stated justification was
+    that gold is "the one book with forward evidence behind it" -- which stopped being true once
+    the forward clocks filled, and a seniority rule that outlives its reason silently becomes a
+    rule that the oldest sleeve wins. Ordering by what each sleeve is worth to the book makes the
+    trim drop the cheapest growth rather than the newest name.
+
+    SILENT ON ABSENCE, NEVER WRONG ON IT: no artifact, or a stale one, and the caller's order
+    stands unchanged.
+    """
+    try:
+        f = BASE / "reports" / "pf_allocation.json"
+        if not f.exists() or time.time() - f.stat().st_mtime > _ALLOC_MAX_AGE_S:
+            return sleeves
+        mg = json.loads(f.read_text(encoding="utf-8")).get("marginal_delta_elog") or {}
+        if not isinstance(mg, dict) or not mg:
+            return sleeves
+        rank = {str(k): float(v) for k, v in mg.items()}
+    except Exception:                                           # noqa: BLE001
+        return sleeves
+    known = [s for s in sleeves if str(s.get("name")) in rank]
+    unknown = [s for s in sleeves if str(s.get("name")) not in rank]
+    known.sort(key=lambda s: -rank[str(s["name"])])
+    # Unknown sleeves go LAST, not first: a sleeve the allocator has never priced has no claim
+    # on the budget ahead of one it has measured and valued.
+    return known + unknown
 
 
 def heat_budget(k_eff: float | None = None) -> float:
@@ -395,7 +532,35 @@ def heat_budget(k_eff: float | None = None) -> float:
     # desk actually sizes each trade at, because Q_OPT is now that same derivation rather than a
     # hardcoded second opinion. One tolerance, one formula, both levels: the budget can no longer
     # be spending a drawdown allowance that per-trade sizing has privately decided against.
-    q_star = Q_OPT
+    # THE PORTFOLIO BUDGET IS A STATED NUMBER, NOT A PER-TRADE q TIMES A LEG COUNT.
+    #
+    # WHAT WAS WRONG. This read `q_star = Q_OPT` -- the 1.27% POLICY risk -- times the validated
+    # leg count, giving 3.81%. That is correct only while the 0.01-lot floor does not bind. It
+    # binds now: MEASURED 2026-09-02 at EUR 603.84 equity, the armed gold book's three legs cost
+    # 13.1% because the venue minimum forces ~4.4% per leg. `cap_by_heat` charges what a leg
+    # REALLY costs against a budget built from what a leg WOULD cost on a bigger account, so the
+    # live gateway log read `admitting 1 at 7.7%, deferring ['gold_london_am', 'gold_afternoon']`
+    # on every pass -- two thirds of the human-armed book sitting out because the account shrank.
+    #
+    # A REJECTED FIX, RECORDED BECAUSE IT LOOKS RIGHT. Raising the budget to the leg's REALISED
+    # cost (max(Q_OPT, q_realised) x legs) restores all three legs and is wrong: it grows total
+    # heat precisely as equity falls, which is the exact failure
+    # `test_a_small_account_gets_fewer_sleeves_not_more_risk` exists to catch, and it caught it.
+    # A budget that moves with the account is not a budget.
+    #
+    # HEAT_TARGET is the principal's stated portfolio budget (20%, 2026-09-02), fixed and
+    # equity-independent, so the invariant holds: a smaller account still buys fewer sleeves
+    # (4 legs at EUR 600 against 15 at EUR 8,000), it just no longer buys fewer than the armed
+    # book needs to exist.
+    #
+    # WHAT IT COSTS, STATED AND NOT BURIED. The 35% drawdown tolerance is solved against THIS
+    # book's 33.7R worst run, so 3.81% <-> 35.0%. At 20% the same run costs 90.2%, and at the
+    # 30% ceiling 97.1%. Those numbers describe the THREE-LEG CORRELATED GOLD BOOK; 33.7R is its
+    # drawdown, and twenty independent sleeves do not all lose together, so the same heat over a
+    # broad book implies far less. That is precisely why `research/heat_policy.py` ramps the
+    # allocator's floor with measured out-of-sample breadth instead of asserting 20% on day one,
+    # and why the k_eff term below still has to be earned.
+    q_star = HEAT_TARGET / _HEAT_BASE_LEGS
     # MULTIPLIED BY THE VALIDATED LEG COUNT, NOT BY k_eff -- and the difference matters. The
     # -33.7R figure is the drawdown of the SUMMED three-leg series, so it already contains how
     # often those legs co-fire; scaling it by k_eff as well double-counts the diversification and
@@ -430,10 +595,14 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     Returns the admitted sleeves and a note when anything was dropped, because a silently
     shortened book is indistinguishable from a book that had nothing to trade.
 
-    ORDER IS PRESERVED, so the caller's own priority decides who is dropped -- and the gold book
-    is placed first by `sleeve_set()`, which makes the armed, human-authorised sleeves senior to
-    anything the promoter added on its own. A cap that dropped sleeves arbitrarily could silently
-    retire the one book with forward evidence behind it in favour of three that have none.
+    ORDER IS BY MARGINAL dE[log W], not by the caller's list position. It used to be the latter,
+    justified by `sleeve_set()` emitting gold first: "a cap that dropped sleeves arbitrarily could
+    silently retire the one book with forward evidence behind it in favour of three that have
+    none." That was true when gold was the only sleeve with forward evidence and stopped being
+    true when the forward clocks filled -- at which point a seniority rule with a dead reason is
+    just a rule that the oldest sleeve wins, and the desk cannot displace a worse edge with a
+    better one. `allocator_order` ranks by what each sleeve contributes; absent an allocator
+    artifact the caller's order still stands, so the old behaviour is the fallback, not the rule.
 
     EACH SLEEVE IS CHARGED ITS OWN q, NOT THE BOOK'S. This multiplied ONE q -- gold's, because
     `realised_q` defaulted to gold's contract economics -- by the sleeve COUNT, so a book of
@@ -444,7 +613,13 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     """
     if equity <= 0 or not sleeves:
         return list(sleeves), None
-    budget = heat_budget(k_eff)
+    # THE ALLOCATOR'S BOOK IS THE BUDGET WHEN THERE IS ONE. `heat_budget` is the derivation the
+    # desk falls back to; `allocator_heat` is a number something actually solved for. Fails
+    # closed to the derivation on any doubt, so this cannot raise heat by accident.
+    solved, why = allocator_heat()
+    budget_src = why if solved is not None else f"derived (allocator unusable: {why})"
+    # ORDERED BY WHAT EACH SLEEVE IS WORTH, not by where the caller put it. See allocator_order.
+    sleeves = allocator_order(sleeves)
     # Per-sleeve q: an explicit scalar override still applies to every sleeve (that is what a
     # caller asking for one means), otherwise each sleeve is priced on ITS OWN instrument.
     qs: list[float] = []
@@ -486,23 +661,36 @@ def cap_by_heat(sleeves: list[dict], equity: float,
             qs.append(float("nan"))
     known = [q for q in qs if q == q and q > 0]
     fallback = max(known) if known else 0.0
+    budget = solved if solved is not None else heat_budget(k_eff)
     qs = [(q if q == q and q > 0 else fallback) for q in qs]
     if fallback <= 0:
         note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
                 "admitting none rather than sizing from another instrument's constants")
         return [], note
+    # THE SLIDE. A validated leg is not dropped for overshooting the budget by a rounding edge;
+    # see HEAT_SLIDE. The hard ceiling is applied here and not inside it, so no future change to
+    # the slide can lift the book past MAX_HEAT_CEILING.
+    limit = min(budget + HEAT_SLIDE, MAX_HEAT_CEILING)
+
     admitted: list[dict] = []
+    dropped: list[str] = []
     used = 0.0
     for s, q in zip(sleeves, qs, strict=True):
-        if used + q > budget + 1e-12:
-            break
+        # CONTINUE, NOT BREAK. Stopping at the first sleeve that does not fit throws away every
+        # sleeve behind it, however cheap -- so one expensive leg near the front could defer a
+        # whole tail of legs the budget had room for. Combined with the value ordering above this
+        # is a greedy fill by marginal growth per unit of heat: the budget buys the most it can,
+        # and what is deferred is the cheapest growth rather than everything after the misfit.
+        if used + q > limit + 1e-12:
+            dropped.append(str(s.get("name", "?")))
+            continue
         admitted.append(s)
         used += q
-    if len(admitted) == len(sleeves):
+    if not dropped:
         return list(sleeves), None
-    dropped = [s.get("name", "?") for s in sleeves[len(admitted):]]
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
-            f"exceed {budget:.1%} "
+            f"exceed {limit:.1%} (budget {budget:.1%} + {HEAT_SLIDE:.1%} slide, "
+            f"ceiling {MAX_HEAT_CEILING:.0%}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
     return admitted, note
@@ -764,7 +952,12 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
             "price": s["price"],
             "sl": s["sl"],
             "tp": s["tp"],
-            "type_time": mt5.ORDER_TIME_GTC,
+            # BROKER-SIDE EXPIRY, so the TTL survives this process dying. A gateway-side sweep
+            # only runs while the gateway runs, and an OOM kill or a box restart would leave a
+            # stale bracket resting at the broker indefinitely -- exposure nothing is managing.
+            # `_expiry_request` falls back to GTC when the symbol refuses timed orders, and the
+            # sweep below is what covers that case.
+            **_expiry_request(symbol, sleeve, spec.get("window")),
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
@@ -831,13 +1024,158 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
+def bracket_deadline(sleeve: str, window: str | None = None) -> datetime:
+    """When this sleeve's bracket stops belonging to the session whose range formed it.
+
+    "asian for asian, london for london, ny for ny" -- the principal, 2026-09-02.
+
+    DERIVED FROM THE ARMED WINDOWS, NEVER A SECOND CONSTANT. Each window signals at its own hour
+    and its trade belongs to the stretch before the next one opens; the last of the day ends at
+    the force-close. From GOLD_WINDOWS (asia 07, london_am 13, afternoon 17) and CLOSE_HOUR 19.5:
+
+        asia        07:00 -> 13:00   (6.0h, dies when London opens)
+        london_am   13:00 -> 17:00   (4.0h, dies when the NY afternoon opens)
+        afternoon   17:00 -> 19:30   (2.5h, dies at the force-close)
+
+    A single flat TTL cannot express that, and six hours -- what a first pass used -- is right
+    for asia alone: it would let a london_am bracket fire four hours into the afternoon session
+    and an afternoon bracket outlive the force-close that exists to flatten the book. Deriving
+    the deadline means adding a window changes this automatically and no second list can drift.
+
+    An unrecognised window (a promoted family sleeve) takes BRACKET_TTL_HOURS as a ceiling --
+    bounded, and by a number this docstring calls a fallback rather than a session.
+    """
+    now_utc = datetime.now(tz=UTC)
+    win = window or (sleeve[len("gold_"):] if sleeve.startswith("gold_") else "")
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == win), None)
+    if sig is None:
+        return now_utc + timedelta(hours=BRACKET_TTL_HOURS)
+    later = [float(w[1]) for w in GOLD_WINDOWS if float(w[1]) > sig]
+    end_hour = min(later) if later else float(CLOSE_HOUR)
+    deadline = now_utc.replace(hour=int(end_hour), minute=int(round((end_hour % 1) * 60)),
+                               second=0, microsecond=0)
+    if deadline <= now_utc:
+        # Placed at or after its own session's end (a late or replayed pass). Never a deadline
+        # in the past, and never more than the ceiling.
+        deadline = min(now_utc + timedelta(hours=BRACKET_TTL_HOURS),
+                       deadline + timedelta(days=1))
+    return deadline
+
+
+def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) -> dict:
+    """`type_time`/`expiration` fields for a bracket, or GTC when the symbol refuses timed orders.
+
+    MT5 exposes what a symbol accepts through `symbol_info().expiration_mode`; a symbol without
+    the SPECIFIED bit rejects the whole order if one is sent, so this asks first rather than
+    losing the bracket. Absence of the information falls back to GTC and the gateway-side sweep,
+    never to an unbounded order the desk believes is bounded.
+    """
+    try:
+        info = mt5.symbol_info(symbol)
+        mode = int(getattr(info, "expiration_mode", 0) or 0)
+        if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
+            until = bracket_deadline(sleeve, window)
+            return {"type_time": mt5.ORDER_TIME_SPECIFIED,
+                    "expiration": int(until.timestamp())}
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"{symbol}: expiration mode unreadable ({type(exc).__name__}); bracket is GTC "
+            f"and relies on the {BRACKET_TTL_HOURS:.0f}h sweep")
+    return {"type_time": mt5.ORDER_TIME_GTC}
+
+
+def expire_stale_brackets(st: dict) -> int:
+    """Cancel this desk's pending orders whose SESSION has ended. Returns how many.
+
+    THE SWEEP IS NOT REDUNDANT WITH THE BROKER EXPIRY. It covers the symbols whose expiration
+    mode refuses a timed order, brackets placed before this TTL existed, and anything left
+    resting by a gateway that died between placing and cancelling. It is keyed on MAGIC, so it
+    can only ever touch orders this desk placed.
+    """
+    try:
+        orders = mt5.orders_get() or ()
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
+        return 0
+    killed = 0
+    now_utc = datetime.now(tz=UTC)
+    for o in orders:
+        if int(getattr(o, "magic", 0) or 0) != MAGIC:
+            continue
+        setup = getattr(o, "time_setup", None)
+        if not setup:
+            continue
+        placed = datetime.fromtimestamp(int(setup), tz=UTC)
+        # THE SAME PER-SESSION RULE THE ORDER WAS PLACED UNDER, recovered from its own label, so
+        # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
+        # point: it would keep an afternoon bracket alive hours past the force-close the broker
+        # had already been told to kill it at.
+        comment = str(getattr(o, "comment", "") or "")
+        sleeve = comment[2:] if comment.startswith("DW") else ""
+        if bracket_deadline(sleeve) > now_utc and placed.date() == now_utc.date():
+            continue
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+        gone = not any(getattr(x, "ticket", None) == o.ticket
+                       for x in (mt5.orders_get(symbol=o.symbol) or ()))
+        if gone:
+            killed += 1
+            log(f"TTL: cancelled {o.symbol} order {o.ticket} placed {placed:%H:%M} "
+                f"({(datetime.now(tz=UTC) - placed).total_seconds() / 3600:.1f}h old, "
+                f"limit {BRACKET_TTL_HOURS:.0f}h)")
+        else:
+            log(f"TTL: {o.symbol} order {o.ticket} SURVIVED cancellation "
+                f"(retcode {getattr(res, 'retcode', None)}); it is still resting")
+    return killed
+
+
 def cancel_pending(st: dict, symbol: str) -> None:
-    if st["armed"]:
-        for o in mt5.orders_get(symbol=symbol) or []:
-            mt5.order_delete(o.ticket)
-            log(f"cancelled pending ticket {o.ticket} ({symbol})")
-    else:
+    """Remove unfilled pending orders, and PROVE each one is gone.
+
+    THIS NEVER WORKED ONCE. It called `mt5.order_delete(ticket)`, and the MetaTrader5 Python
+    package HAS NO SUCH FUNCTION -- verified against the live terminal 2026-09-01:
+    `hasattr(mt5, "order_delete")` is False. Removal is documented as order_send() with
+    TRADE_ACTION_REMOVE (=8). So every call raised AttributeError while the very next line
+    logged "cancelled pending ticket <n>", and unfilled buy/sell stops were left standing on a
+    live account with the desk reporting them cancelled.
+
+    IT ALSO TOOK THE REST OF THE PASS WITH IT. Neither this function nor its caller caught the
+    exception, and the housekeeping block runs at hour >= CANCEL_HOUR (20:30 UTC) BEFORE
+    close_positions, record_trades and reconcile. From 20:30 onward, every one of those was
+    skipped -- which is the shape of `last_reconcile` standing at 2026-08-17 and of a live
+    ledger that never appeared.
+
+    SO CANCELLATION IS NOW IDEMPOTENT AND VERIFIED, not hopeful: send the documented removal,
+    read the retcode, then re-read orders_get and confirm the ticket is ABSENT. A ticket that
+    survives is reported as still live rather than logged as cancelled, because a cancellation
+    the desk believes in but the venue did not perform is worse than a loud failure. One
+    ticket's failure never aborts the others, and never the pass.
+    """
+    if not st["armed"]:
         log("SHADOW would cancel unfilled brackets")
+        return
+    pending = list(mt5.orders_get(symbol=symbol) or [])
+    if not pending:
+        return
+    for o in pending:
+        ticket = getattr(o, "ticket", None)
+        try:
+            res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": ticket})
+        # Broad on purpose: one bad ticket must not strand the others, nor abort the pass.
+        except Exception as exc:
+            log(f"CANCEL FAILED ticket {ticket} ({symbol}): "
+                f"{type(exc).__name__}: {exc}; order may still be live")
+            continue
+        retcode = getattr(res, "retcode", None)
+        # THE VENUE IS THE STATE, not the return value. A retcode can be optimistic, a result can
+        # be None on a dropped connection, and either way the only fact that matters is whether
+        # the ticket is still accepting a fill.
+        still = any(getattr(x, "ticket", None) == ticket
+                    for x in (mt5.orders_get(symbol=symbol) or []))
+        if still:
+            log(f"CANCEL NOT CONFIRMED ticket {ticket} ({symbol}): retcode={retcode}, "
+                f"order STILL PRESENT after remove -- treat as live")
+            continue
+        log(f"cancelled pending ticket {ticket} ({symbol}) retcode={retcode}, "
+            f"confirmed absent from orders_get")
 
 
 def close_positions(st: dict, symbol: str) -> None:
@@ -1029,6 +1367,40 @@ def reconcile(st: dict) -> dict:
     return st
 
 
+def _position_context(deal: object) -> tuple[float, float, float, str]:
+    """(entry price, stop, take-profit, comment) for the position a closing deal belongs to.
+
+    MT5 splits what this desk needs across two record types and joins them only on
+    `position_id`: the DEAL holds the executed price and P&L, the ORDER holds the stop and
+    target. A closing deal therefore knows what it made and not what it risked, and R is the
+    ratio of the two -- so both must be fetched.
+
+    RETURNS ZEROS RATHER THAN RAISING. A single unreadable position must not abort the loop that
+    records every other fill: that is exactly how one AttributeError kept the entire live ledger
+    empty while the account carried real P&L.
+    """
+    pid = getattr(deal, "position_id", None)
+    if not pid:
+        return 0.0, 0.0, 0.0, ""
+    entry = sl = tp = 0.0
+    comment = ""
+    try:
+        for o in (mt5.history_orders_get(position=pid) or ()):
+            if not comment:
+                comment = str(getattr(o, "comment", "") or "")
+            if float(getattr(o, "sl", 0.0) or 0.0) > 0:
+                sl = float(o.sl)
+                tp = float(getattr(o, "tp", 0.0) or 0.0)
+        for x in (mt5.history_deals_get(position=pid) or ()):
+            if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
+                entry = float(getattr(x, "price", 0.0) or 0.0)
+                break
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
+        return 0.0, 0.0, 0.0, comment
+    return entry, sl, tp, comment
+
+
 def record_trades(st: dict, sleeves: list[dict]) -> None:
     """Append closed trades (deal OUT with DW comment) to the live ledger.
 
@@ -1037,27 +1409,75 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
     """
     if not st["armed"]:
         return
+
+    # ALREADY-RECORDED DEALS, so the window below can be widened without duplicating rows.
+    # The ledger is append-only JSONL and `deal` is the venue's own ticket, unique per fill.
+    seen_deals: set = set()
+    if LEDGER.exists():
+        try:
+            for line in LEDGER.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                with contextlib.suppress(ValueError):
+                    tid = json.loads(line).get("deal")
+                    if tid is not None:
+                        seen_deals.add(tid)
+        except OSError:
+            seen_deals = set()
+
     try:
-        day_start = datetime.combine(datetime.now(tz=UTC).date(),
-                                     datetime.min.time(), tzinfo=UTC)
-        deals = mt5.history_deals_get(day_start, datetime.now(tz=UTC), magic=MAGIC) or []
+        # A DAY-WIDE WINDOW LOSES EVERY FILL THE GATEWAY DID NOT SEE THE SAME DAY. Any pass that
+        # is skipped, OOM-killed or started after midnight left that day's closes unrecorded
+        # forever, because nothing ever looked backwards. Dedupe by deal ticket makes a wider
+        # window free, so the lookback is bounded by history rather than by uptime.
+        since = datetime.now(tz=UTC) - timedelta(days=LEDGER_LOOKBACK_DAYS)
+        deals = mt5.history_deals_get(since, datetime.now(tz=UTC), magic=MAGIC) or []
     except Exception:
         return
     written = 0
     for d in deals:
         if d.entry != mt5.DEAL_ENTRY_OUT:
             continue
-        comment = (d.comment or "")
-        if not comment.startswith("DW"):
+        if getattr(d, "ticket", None) in seen_deals:
             continue
-        sleeve = comment[2:]
+        # A DEAL CARRIES NO STOP, NO TAKE-PROFIT AND NO ENTRY PRICE, and this function read all
+        # three off it. MEASURED 2026-09-02 on the live box: every pass raised
+        # `AttributeError("'TradeDeal' object has no attribute 'price_open'")` and the whole
+        # trade loop aborted, so `live_ledger.jsonl` was never written -- the file whose absence
+        # was diagnosed on 2026-09-01 as a comment-prefix problem and fixed there. That fix was
+        # necessary and not sufficient: the function could not run at all.
+        #
+        # MT5's own shapes: TradeDeal has {price, position_id, order, entry, profit, commission,
+        # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
+        # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
+        # (stop), joined on position_id -- the only join MT5 offers between the two.
+        entry_price, sl_price, tp_price, order_comment = _position_context(d)
+        comment = (d.comment or order_comment or "")
+        # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
+        # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
+        # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
+        # do rewrite comments -- it is the same lesson the EA learned when it stopped trusting
+        # them for idempotency and moved to a persistent journal. Measured 2026-09-01:
+        # live_ledger.jsonl did not exist on either box while the account carried real P&L and
+        # open margin, so matched_fills read 0 and execution was UNMEASURED. A fill this desk
+        # placed is now recorded whether or not its label survived the round trip; the sleeve
+        # name is taken from the comment when it is there and marked unattributed when it is not,
+        # which is a recoverable gap, unlike never recording the fill at all.
+        sleeve = comment[2:] if comment.startswith("DW") else (comment or "UNATTRIBUTED")
         sym_info = mt5.symbol_info(d.symbol)
         if sym_info is None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
         pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
-        risk_quote = (d.price_open - d.sl if d.type == mt5.POSITION_TYPE_BUY
-                      else d.sl - d.price_open)
+        if entry_price <= 0 or sl_price <= 0:
+            # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED. Without both the entry and the stop
+            # there is no R multiple, and inventing one would put a fabricated number into the
+            # ledger the promoter uses to retire live sleeves (L1.28a).
+            risk_quote = 0.0
+        else:
+            risk_quote = (entry_price - sl_price if d.type == mt5.POSITION_TYPE_BUY
+                          else sl_price - entry_price)
         risk_per_lot = max(risk_quote, 0.0) * sym_info.trade_contract_size
         r = pl_quote / risk_per_lot if risk_per_lot > 0 else 0.0
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
@@ -1069,7 +1489,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # possible: the one number that reveals execution quality was computed and
                # discarded on every single trade. contract_size travels with it so slippage can
                # be converted to account currency without a second lookup at analysis time.
-               "fill_price": float(d.price_open), "sl": float(d.sl), "tp": float(d.tp),
+               "fill_price": float(d.price), "entry_price": float(entry_price),
+               "sl": float(sl_price), "tp": float(tp_price),
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
                "order": getattr(d, "order", None),
                "contract_size": float(sym_info.trade_contract_size),
                "risk_quote": round(float(risk_quote), 6),
@@ -1107,11 +1529,44 @@ def ledger_rows() -> list[dict]:
     return out
 
 
+#: Written by research/promoter.py when a gold window trips a retire rule. Read on every pass so
+#: a retirement takes effect within one gateway cycle rather than waiting for a restart.
+GOLD_RETIRED_FILE = BASE / "data" / "GOLD_RETIRED.json"
+
+
+def _load_retired_gold() -> dict:
+    """Retired gold windows, or {} when the file is absent/unreadable.
+
+    FAILS OPEN ON PURPOSE, and this is the one place in the gateway where that is right: an
+    unreadable file must not silently stop a live book that is otherwise trading correctly.
+    A retirement that does not apply is visible in the next promoter run and in this log line;
+    a book that stops because a JSON file got truncated is an outage with no author.
+    """
+    try:
+        v = json.loads(GOLD_RETIRED_FILE.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
 def sleeve_set() -> list[dict]:
     """All active sleeves: gold book + promoted, with window metadata."""
     sleeves = []
+    # THE GOLD BOOK DECAYS LIKE EVERYTHING ELSE NOW (principal, 2026-09-01). research/promoter.py
+    # walks these three names against the same retire rules it applies to promoted sleeves and
+    # writes the loser here with its reason. Until 2026-09-01 the armed gold book was exempt from
+    # retirement entirely -- so the desk's ONLY live sleeves were the only ones with no automatic
+    # decay protection, because the retire rules walked sleeves.json, which is empty.
+    # ABSENT FILE = NOTHING RETIRED, which is the behaviour up to now; and re-arming stays a
+    # person's act, because undoing a retirement means deleting the entry by hand.
+    retired_gold = _load_retired_gold()
     for label, sig_hour, rng in GOLD_WINDOWS:
-        sleeves.append({"name": f"gold_{label}", "symbol": "XAUUSD",
+        name = f"gold_{label}"
+        if name in retired_gold:
+            log(f"GOLD {name}: RETIRED ({retired_gold[name].get('reason', 'no reason recorded')}); "
+                f"not emitted this pass")
+            continue
+        sleeves.append({"name": name, "symbol": "XAUUSD",
                         "window": label, "sig_hour": sig_hour, "rng": rng,
                         "lot": "auto", "status": "LIVE"})
     for s in load_sleeves():
@@ -1249,7 +1704,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             continue
         try:
             lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
-                               s.get("risk_frac"))
+                               s.get("risk_frac"), s.get("decay_faded"))
         except Exception as exc:                                  # noqa: BLE001
             log(f"[{name}] FAMILY-EXEC: cannot price risk ({exc}); skipped")
             continue
@@ -1384,7 +1839,8 @@ def main() -> None:
         if _s.get("lot") == "auto_ramp":
             _ramp = 0.25 if sleeve_live_n(_s["name"]) < 50 else (
                 0.5 if sleeve_live_n(_s["name"]) < 200 else 1.0)
-            _s["q_charge"] = clamp_risk_frac(_s.get("risk_frac")) * _ramp
+            _s["q_charge"] = (clamp_risk_frac(_s.get("risk_frac")) * _ramp
+                              * decay_factor(_s.get("decay_faded")))
     sleeves, heat_note = cap_by_heat(sleeves, equity, k_eff=k_eff)
     if heat_note:
         log(heat_note)
@@ -1449,9 +1905,9 @@ def main() -> None:
             try:
                 lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
                     promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
-                                 s.get("risk_frac"))
+                                 s.get("risk_frac"), s.get("decay_faded"))
                     if s["lot"] == "auto_ramp" else float(s["lot"]))
-                q_real = realised_q(equity, dist, s["symbol"], sym)
+                q_real = realised_q(equity, dist, s["symbol"], sym, lot=lot)
             except Exception as exc:                              # noqa: BLE001
                 log(f"[{s['name']}] SKIPPED: cannot price {s['symbol']} risk in account "
                     f"currency ({exc}); refusing to size from the house average")
@@ -1482,7 +1938,9 @@ def main() -> None:
                                          "spec": spec, "placed_at": now(), "result": res}
             save_state(st)
 
-    # housekeeping: cancel unfilled brackets, force-close positions
+    # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
+    # end-of-day backstop and the force-close.
+    expire_stale_brackets(st)
     if hour >= CANCEL_HOUR:
         for s in sleeves:
             cancel_pending(st, s["symbol"])

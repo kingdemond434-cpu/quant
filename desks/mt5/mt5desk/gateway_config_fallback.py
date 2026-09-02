@@ -25,41 +25,7 @@ from __future__ import annotations
 #: makes LESS money than sizing well below it, because past the true optimum the geometric rate
 #: falls; at 2x Kelly it goes negative while every backtest number still looks excellent. More
 #: size is not more aggression past that point, it is less money.
-#:
-#: RAISED 0.35 -> 0.642 ON 2026-08-22, PRINCIPAL'S EXPLICIT AND REPEATED INSTRUCTION, to put
-#: Q_OPT at 3.00%. Raised HERE rather than hardcoding Q_OPT, so the derivation stays intact and
-#: the number re-solves itself when BOOK_WORST_DD_R is next measured.
-#:
-#: WHAT THE EVIDENCE SAID, INCLUDING THE PART AGAINST IT. Measured on 5,731 real gold session
-#: trades (682/yr, exp +0.1176R in-sample), growth by TRUE edge as a fraction of backtest:
-#:
-#:     true edge   Kelly q*    g(2%)   g(3%)      <- 3% is at/near optimum only if the edge
-#:       x1.00       8.00%      323%    671%         lands around a THIRD of backtest
-#:       x0.50       5.10%       90%    132%
-#:       x0.33       3.30%       45%     54%
-#:       x0.25       2.50%       27%     27%      <- 2% and 3% TIE here
-#:       x0.15       1.50%        8%      0%      <- 3% is the last non-negative size
-#:
-#: 3.00% is the LARGEST q whose worst case across those scenarios is still non-negative; 3.5%
-#: returns -7% there and 5% returns -33%. That is the argument for it, and it is a real one.
-#:
-#: THE ARGUMENT AGAINST, RECORDED SO IT IS NOT LOST. At x0.25 3% buys NOTHING over 2% (+27% both)
-#: while costing 15 more points of drawdown, and the 5-year bad-decile outcome on $5,000 is
-#: $3,836 at 3% against $6,241 at 2% -- one path in eight ends five years of compounding BELOW
-#: starting capital, and 2.3% of paths end under $1,000. Trailing stops and profit locks do not
-#: mitigate this: the worst drawdown is -45.8R built from 168 small losses against 94 wins, whose
-#: largest single loss was -1.12R. There is no fat loss for a tighter stop to cut and no open
-#: winner for a trail to protect, so drawdown here is attrition, not tail events.
-#:
-#: THE UNCERTAINTY THAT DOMINATES BOTH. The spread between x1.00 and x0.15 at a FIXED 3% is 671%
-#: to 0%. Which column is true matters far more than 2% vs 3%, and nothing in a backtest can say
-#: which it is. Shadow forward evidence is the only thing that narrows it, and it currently holds
-#: ZERO trades. Until it does, this constant rests on in-sample data by necessity.
-#: EXACTLY half measured Kelly. 0.6417324740 is not a taste: it is the tolerance that solves
-#: q* = 3.0000% at BOOK_WORST_DD_R = 33.7R, i.e. 0.06/2. Chosen to the tenth decimal so the
-#: budget lands ON the half-Kelly fence rather than 0.0022% over it -- a bound that is "about
-#: right" is a bound nobody can test against.
-MAX_DRAWDOWN_TOLERANCE = 0.6417324740
+MAX_DRAWDOWN_TOLERANCE = 0.35
 
 #: Worst peak-to-trough drawdown the armed book has produced, in R, at the sweep that validated
 #: it. Risk is solved against THIS, so the numbers answer a question about the actual book rather
@@ -102,3 +68,45 @@ def risk_per_trade(tolerance: float = MAX_DRAWDOWN_TOLERANCE,
 #: first diverge at EUR 2,076. This changes no order at current equity -- it removes a brake that
 #: would otherwise bind for the whole of the account's growth.
 Q_OPT = risk_per_trade()
+
+
+# ---------------------------------------------------------------------------------------
+# PORTFOLIO HEAT -- the three numbers that bound total open risk, defined here for the same
+# reason Q_OPT is: two files holding a risk budget is a defect waiting for the edit that
+# forgets one. `heat_budget()` in the gateway and `research/heat_policy.py` both read these.
+# ---------------------------------------------------------------------------------------
+
+#: NORMAL FULL-UTILISATION TARGET (principal, 2026-09-02). Total heat the desk aims to have
+#: WORKING at all times during certified operation -- a target, not a ceiling. Raised from the
+#: 15% that stood here after the E[log W] allocator was measured against it.
+#:
+#: WHY A TARGET AND NOT MERELY A CAP. A cap answers "how much may we risk"; the desk needs the
+#: answer to "how much SHOULD we risk", and those differ whenever the cap binds. Under a cap the
+#: allocator quietly runs at 3-6% because the free robust optimum sits there, and the account
+#: compounds at a fraction of what the opportunity set supports. Under a target the question
+#: becomes WHAT the budget is spent on, and an unfillable budget becomes a research request
+#: (`pf_allocator.opportunity`) instead of an invisible shortfall.
+#:
+#: CERTIFIED, NOT ASSERTED. `heat_policy.certify()` re-measures the growth curve on the live
+#: world population every heavy pass and `reports/pf_allocation.json` carries the verdict: if the
+#: opportunity set ever degrades enough that 20% sits past the peak of the curve, that artifact
+#: says so and `gateway.allocator_heat()` refuses the number. This comment is not the evidence.
+HEAT_TARGET = 0.20
+
+#: THE HARD BAR. Total heat may never cross this, whatever the optimiser computes -- the outer
+#: envelope inside which the allocator is free, and the only constant here that is a limit rather
+#: than a goal.
+#:
+#: 30% IS WHERE THE ARITHMETIC TURNS, which is why it is the bar rather than a round number.
+#: Measured 2026-09-02 across 256 sampled worlds on the 109-sleeve matrix: the ROBUST score (half
+#: its weight on the worst 20% of worlds) runs +0.00133/day at the free optimum, +0.00072 at 20%,
+#: +0.00011 at 25% and NEGATIVE at 30%. Past 30% the book loses wealth in the worlds it has to
+#: survive, and no amount of average-case growth buys that back.
+HEAT_HARD_CEILING = 0.30
+
+#: No single sleeve may hold more than this share of total heat. NOT tidiness -- measured
+#: 2026-09-02: told to spend 20% with no per-sleeve bound, the optimiser put 14.4 of those 20
+#: points into one sleeve it gives exactly ZERO when free, because a near-cash sleeve is the
+#: cheapest place to park a budget you do not believe in. A mandate without this bound funds the
+#: flattest row in the matrix, not the book.
+MAX_SLEEVE_HEAT_SHARE = 0.25
