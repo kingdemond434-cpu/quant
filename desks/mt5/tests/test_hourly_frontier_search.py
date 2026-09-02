@@ -170,7 +170,7 @@ def test_gauntlet_stops_terminal_gate_one_rejects_before_signal_construction() -
 def test_single_valid_series_fails_program_gates_without_aborting(monkeypatch) -> None:
     daily = pd.Series(
         np.sin(np.arange(120) / 7.0) * 0.1 + 0.01,
-        index=pd.date_range("2025-01-01", periods=120, freq="d"),
+        index=pd.date_range("2025-01-01", periods=120, freq="D"),
     )
     monkeypatch.setattr(external_gauntlet, "daily_series", lambda *_a, **_kw: daily)
     cell = {

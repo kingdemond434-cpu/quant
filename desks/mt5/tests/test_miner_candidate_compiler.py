@@ -89,7 +89,7 @@ def test_calendar_month_family_uses_the_mined_month_and_direction() -> None:
 def test_cot_candidate_reader_uses_owned_history_weekly(tmp_path, monkeypatch) -> None:
     desk = tmp_path / "desks" / "mt5"
     (tmp_path / "data").mkdir()
-    idx = pd.date_range("2020-01-01", periods=900, freq="d", tz="UTC")
+    idx = pd.date_range("2020-01-01", periods=900, freq="D", tz="UTC")
     pd.DataFrame({"XAUUSD": np.sin(np.arange(len(idx)) / 40)}, index=idx).to_parquet(
         tmp_path / "data" / "cot_zcache.parquet"
     )

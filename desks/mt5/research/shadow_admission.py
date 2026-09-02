@@ -34,6 +34,38 @@ def _exec_family(name: str) -> str:
     return _FAMILY_ALIASES.get(str(name).casefold(), str(name) or "session_range_breakout")
 
 
+#: THE ONLY SIDE THE FORWARD ENGINE CAN ACTUALLY RUN.
+#:
+#: This is a declared restriction on the money path, not a preference, and it is
+#: declared here because until now it was neither. Two of the three certificate
+#: sources below carried a bare `if side != "LONG": continue` and the third had
+#: no side test at all, so a certificate that passed all ten gates on the SHORT
+#: side was dropped in silence by two doors and admitted by the third.
+#:
+#: DELETING THE TEST WOULD NOT OPEN THE DOOR, IT WOULD CORRUPT THE EVIDENCE.
+#: `shadow_forward` stamps `direction="LONG"` into the frozen identity of every
+#: clock it mints and calls the family as `fam_fn(h1, side=1, ...)`. The spec
+#: tuple carries no side at all. So a SHORT certificate admitted here enrols a
+#: clock that REPLAYS LONG and then accrues forward evidence for the opposite
+#: direction to the one that was certified, under an identity claiming it was
+#: LONG all along. That is worse than the sleeve never running.
+#:
+#: So the door stays shut, and `unreachable_certificates` counts what it costs.
+#: A cap nobody can see is a cap nobody will ever pay to remove; the number is
+#: what turns "give the engine a short leg" from an opinion into a priced job.
+ENGINE_SIDES = frozenset({"LONG"})
+
+#: Why a certified row could not enrol. One string per cause, so the health
+#: report can group by it instead of showing a bare total.
+UNREACHABLE_NO_SHORT_LEG = ("forward engine has no short leg: shadow_forward "
+                            "freezes direction=LONG and calls fam_fn(side=1)")
+
+
+def _engine_can_run(side: str) -> bool:
+    """Can the forward engine execute a certificate on this side, as built today?"""
+    return str(side or "LONG").upper() in ENGINE_SIDES
+
+
 def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, bool]]:
     """Return exact executable specs certified under the original policy only.
 
@@ -63,8 +95,8 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
             # and diversification is the binding constraint here.
             # The guards that matter are unchanged and do the real work: is_exact_policy on the
             # report, and all_ten_pass on the row. Only genuinely certified rows reach this line.
-            if side.upper() != "LONG":
-                continue
+            if not _engine_can_run(side):
+                continue                    # counted by unreachable_certificates; see ENGINE_SIDES
             state = None if condition.upper() in {"NONE", "ALL", "UNCONDITIONED"} else condition
             out.add((symbol, selector, state, _exec_family(family), False))
 
@@ -82,8 +114,8 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
         # and then wrote "session_range_breakout" regardless, so a certificate for any other
         # mechanism was either discarded or relabelled as something it is not.
         family = str(row.get("fam") or "SESSION_RANGE_BREAKOUT")
-        if str(row.get("side") or "LONG").upper() != "LONG":
-            continue
+        if not _engine_can_run(str(row.get("side") or "LONG")):
+            continue                        # counted by unreachable_certificates; see ENGINE_SIDES
         state = row.get("state") or None
         out.add((str(row["sym"]), str(row["win"]), state, _exec_family(family), False))
 
@@ -102,6 +134,78 @@ def authorized_specs(base: Path = BASE) -> set[tuple[str, str, str | None, str, 
                      spec.get("condition") or None, str(spec["family"]),
                      spec["is_universe"] is True))
     return out
+
+
+def unreachable_certificates(base: Path = BASE) -> dict:
+    """Certificates that passed all ten gates and STILL cannot enrol, and why.
+
+    THE GAP THIS MEASURES. `authorized_specs` answers "what may run". Nothing
+    answered "what passed everything and runs anyway". The difference is the
+    desk's real enrolment ceiling, and it was invisible: a certified SHORT row
+    hit a bare `continue` in two of the three sources and left no trace, so a
+    reader comparing "63 certified" against "57 enrolled" had no way to learn
+    whether the six were a bug, a queue, or a wall.
+
+    IT IS DELIBERATELY NOT A DOOR. This function admits nothing and changes no
+    behaviour; `authorized_specs` is untouched in what it returns. It exists so
+    the ceiling is a NUMBER on the health report rather than a discrepancy
+    somebody has to notice. A restriction nobody can see is a restriction nobody
+    will ever pay to remove -- and the fix here is real work (thread `side`
+    through the spec tuple, the frozen identity and `fam_fn`), so it needs a
+    price before it can be ranked against anything else.
+
+    UNREADABLE IS NOT ZERO. A report that fails `is_exact_policy`, or does not
+    parse, contributes `None` to its source rather than 0: "no certificates are
+    blocked" and "I could not read the certificates" are opposite facts and the
+    desk has shipped that confusion before.
+    """
+    reports = base / "reports"
+    blocked: list[dict] = []
+    readable: dict[str, bool] = {}
+
+    qquant = _read(reports / "QQUANT_GATES.json")
+    readable["QQUANT_GATES"] = bool(qquant) and is_exact_policy(qquant.get("gate_policy"))
+    if readable["QQUANT_GATES"]:
+        for row in qquant.get("verdicts", []):
+            if not isinstance(row, dict) or row.get("passed") is not True:
+                continue
+            if not all_ten_pass(row.get("stages")):
+                continue
+            parts = str(row.get("id") or "").split()
+            if len(parts) != 5:
+                continue
+            symbol, family, side, selector, _condition = parts
+            if _engine_can_run(side):
+                continue
+            blocked.append({"source": "QQUANT_GATES", "symbol": symbol,
+                            "family": _exec_family(family), "side": side.upper(),
+                            "selector": selector, "cause": UNREACHABLE_NO_SHORT_LEG})
+
+    real = _read(reports / "REAL_SURVIVORS.json")
+    readable["REAL_SURVIVORS"] = bool(real)
+    if readable["REAL_SURVIVORS"]:
+        for row in real.get("real_survivors", []):
+            if not isinstance(row, dict) or row.get("REAL3") is not True:
+                continue
+            cert = row.get("qquant_gates") or {}
+            if not is_exact_policy(cert.get("policy")) or not all_ten_pass(cert.get("stages")):
+                continue
+            side = str(row.get("side") or "LONG")
+            if _engine_can_run(side):
+                continue
+            blocked.append({"source": "REAL_SURVIVORS", "symbol": str(row.get("sym") or "?"),
+                            "family": _exec_family(str(row.get("fam") or "")),
+                            "side": side.upper(), "selector": str(row.get("win") or "?"),
+                            "cause": UNREACHABLE_NO_SHORT_LEG})
+
+    by_cause: dict[str, int] = {}
+    for row in blocked:
+        by_cause[row["cause"]] = by_cause.get(row["cause"], 0) + 1
+    return {"n": len(blocked) if any(readable.values()) else None,
+            "sources_readable": readable,
+            "by_cause": by_cause,
+            "engine_sides": sorted(ENGINE_SIDES),
+            "certificates": blocked}
 
 
 def partition_work(

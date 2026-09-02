@@ -411,6 +411,15 @@ def main() -> int:
             CERTS.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
             CANON.write_text(json.dumps(doc, indent=2, default=str), "utf-8")
 
+    # WHAT PASSED EVERY GATE AND STILL CANNOT RUN. Never allowed to break the reconcile:
+    # this is a measurement attached to a health report, and a report that dies because
+    # an enrichment threw is worse than one missing a field.
+    try:
+        from shadow_admission import unreachable_certificates
+        _unreachable = unreachable_certificates()
+    except Exception as exc:
+        _unreachable = {"n": None, "error": f"{type(exc).__name__}: {exc}"}
+
     # REPORT UNKNOWN AS UNKNOWN. `"enrolled": 0` is what a reader saw for a full day while the
     # real cause was an unpack error -- indistinguishable from an engine that legitimately enrols
     # nothing, which is why nobody chased it. Null carries the distinction the count cannot.
@@ -421,11 +430,25 @@ def main() -> int:
          "certified_pairs": len(certs),
          "identity_unfrozen": (None if _frozen is None
                                else sum(a["action"] == "IDENTITY_UNFROZEN" for a in actions)),
+         # THE CEILING, AS A NUMBER. `certified_pairs` minus `certified_clocks` is a
+         # discrepancy a reader has to notice and then investigate; this is the part of
+         # that gap the desk can already explain -- certificates that passed all ten
+         # gates and cannot enrol because the engine has no leg to run them on. It was
+         # a bare `continue` in shadow_admission and left no trace anywhere.
+         # Reported beside the counts it explains so the two are read together.
+         "unreachable_certified": _unreachable,
          "actions": actions}, indent=1), "utf-8")
     counts: dict[str, int] = {}
     for a in actions:
         counts[a["action"]] = counts.get(a["action"], 0) + 1
     print(f"forward reconcile: {len(actions)} action(s) {counts or '{}'}")
+    _n_unreach = _unreachable.get("n")
+    if _n_unreach:
+        print(f"  CEILING: {_n_unreach} certificate(s) passed all ten gates and cannot "
+              f"enrol -- {_unreachable.get('by_cause') or {}}")
+    elif _n_unreach is None:
+        print("  CEILING: UNMEASURED -- no certificate report was readable, which is "
+              "not the same as nothing being blocked")
     return 0
 
 
