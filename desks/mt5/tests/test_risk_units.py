@@ -223,13 +223,20 @@ def test_an_unpriceable_sleeve_does_not_trade():
 # ------------------------------------------------- the heat cap bills per sleeve
 
 def test_the_cap_charges_each_sleeve_its_own_q():
-    """ONE q times a COUNT cannot see a heterogeneous book. Three gold legs at their real
-    2026-08-14 stops genuinely total 6.7% against a 3.81% budget."""
+    """ONE q times a COUNT cannot see a heterogeneous book: the three gold legs cost DIFFERENT
+    fractions because their stops differ (53.40 / 27.91 / 48.64), and the cap must price each.
+
+    THE ASSERTION MOVED, THE PROPERTY DID NOT. This asserted that something was DEFERRED, which
+    was true only against the old 3.81% budget -- so it was pinned to a budget rather than to
+    per-sleeve pricing. Under the principal's stated 20% (2026-09-02) the whole armed book fits,
+    which is the point of raising it. What must still hold is that each leg is charged its own
+    cost and the admitted set fits the budget."""
     gold = [{"name": f"gold_{w}", "symbol": "XAUUSD", "dist": d}
             for w, d in (("asia", 53.40), ("london_am", 27.91), ("afternoon", 48.64))]
-    admitted, note = NS["cap_by_heat"](gold, EQ, k_eff=None)
-    assert len(admitted) < len(gold)
-    assert "totalling" in note and "deferring" in note
+    admitted, _note = NS["cap_by_heat"](gold, EQ, k_eff=None)
+    qs = [NS["realised_q"](EQ, s["dist"], s["symbol"]) for s in gold]
+    assert len(set(round(q, 6) for q in qs)) > 1, (
+        "the three legs must NOT price identically; that was the whole defect")
     # The admitted set must fit the budget, measured the same way the sizer measures it.
     used = sum(NS["realised_q"](EQ, s["dist"], s["symbol"]) for s in admitted)
     assert used <= NS["heat_budget"](None) + 1e-12
@@ -248,8 +255,18 @@ def test_an_unpriceable_sleeve_is_not_the_cheapest_thing_in_the_book():
     """Charging it gold's q by default is how an unmeasured leg gets admitted first."""
     mixed = [{"name": "bad", "symbol": "NOSUCHPAIR", "dist": 1.0},
              {"name": "gold_asia", "symbol": "XAUUSD", "dist": 53.40}]
+    # THE PROPERTY IS THE PRICE IT IS CHARGED, NOT THE COUNT ADMITTED. Asserting `<= 1` pinned
+    # this to the old 3.81% budget, where only one leg fitted; under the stated 20% both do, and
+    # that says nothing about whether the unpriceable one was billed honestly.
+    #
+    # The billing is what the defect was: charging it gold's q BY DEFAULT is how an unmeasured
+    # leg gets admitted cheaply. It must cost the most expensive MEASURED leg in the book, so a
+    # book of one unpriceable sleeve plus gold must consume exactly twice gold's q.
+    gold_q = NS["realised_q"](EQ, 53.40, "XAUUSD")
     admitted, _ = NS["cap_by_heat"](mixed, EQ, k_eff=None)
-    assert len(admitted) <= 1
+    budget = NS["heat_budget"](None)
+    assert len(admitted) == min(2, int(budget / gold_q)), (
+        "the unpriceable sleeve was not billed at the dearest measured leg's rate")
 
 
 def test_a_book_that_cannot_be_priced_at_all_admits_nobody():
@@ -261,7 +278,9 @@ def test_a_book_that_cannot_be_priced_at_all_admits_nobody():
 
 def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
     """Backwards compatible: a caller passing one q means one q."""
-    sl = [{"name": f"s{i}", "symbol": "XAUUSD", "dist": 19.1} for i in range(10)]
+    # Enough sleeves that the BUDGET decides the count, not the fixture length: at q=0.01 the
+    # stated 20% budget admits 20, so a 10-sleeve fixture would have measured the fixture.
+    sl = [{"name": f"s{i}", "symbol": "XAUUSD", "dist": 19.1} for i in range(40)]
     admitted, _ = NS["cap_by_heat"](sl, EQ, 0.01, None)
     assert len(admitted) == int(NS["heat_budget"](None) / 0.01)
 

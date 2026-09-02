@@ -506,7 +506,35 @@ def heat_budget(k_eff: float | None = None) -> float:
     # desk actually sizes each trade at, because Q_OPT is now that same derivation rather than a
     # hardcoded second opinion. One tolerance, one formula, both levels: the budget can no longer
     # be spending a drawdown allowance that per-trade sizing has privately decided against.
-    q_star = Q_OPT
+    # THE PORTFOLIO BUDGET IS A STATED NUMBER, NOT A PER-TRADE q TIMES A LEG COUNT.
+    #
+    # WHAT WAS WRONG. This read `q_star = Q_OPT` -- the 1.27% POLICY risk -- times the validated
+    # leg count, giving 3.81%. That is correct only while the 0.01-lot floor does not bind. It
+    # binds now: MEASURED 2026-09-02 at EUR 603.84 equity, the armed gold book's three legs cost
+    # 13.1% because the venue minimum forces ~4.4% per leg. `cap_by_heat` charges what a leg
+    # REALLY costs against a budget built from what a leg WOULD cost on a bigger account, so the
+    # live gateway log read `admitting 1 at 7.7%, deferring ['gold_london_am', 'gold_afternoon']`
+    # on every pass -- two thirds of the human-armed book sitting out because the account shrank.
+    #
+    # A REJECTED FIX, RECORDED BECAUSE IT LOOKS RIGHT. Raising the budget to the leg's REALISED
+    # cost (max(Q_OPT, q_realised) x legs) restores all three legs and is wrong: it grows total
+    # heat precisely as equity falls, which is the exact failure
+    # `test_a_small_account_gets_fewer_sleeves_not_more_risk` exists to catch, and it caught it.
+    # A budget that moves with the account is not a budget.
+    #
+    # HEAT_TARGET is the principal's stated portfolio budget (20%, 2026-09-02), fixed and
+    # equity-independent, so the invariant holds: a smaller account still buys fewer sleeves
+    # (4 legs at EUR 600 against 15 at EUR 8,000), it just no longer buys fewer than the armed
+    # book needs to exist.
+    #
+    # WHAT IT COSTS, STATED AND NOT BURIED. The 35% drawdown tolerance is solved against THIS
+    # book's 33.7R worst run, so 3.81% <-> 35.0%. At 20% the same run costs 90.2%, and at the
+    # 30% ceiling 97.1%. Those numbers describe the THREE-LEG CORRELATED GOLD BOOK; 33.7R is its
+    # drawdown, and twenty independent sleeves do not all lose together, so the same heat over a
+    # broad book implies far less. That is precisely why `research/heat_policy.py` ramps the
+    # allocator's floor with measured out-of-sample breadth instead of asserting 20% on day one,
+    # and why the k_eff term below still has to be earned.
+    q_star = HEAT_TARGET / _HEAT_BASE_LEGS
     # MULTIPLIED BY THE VALIDATED LEG COUNT, NOT BY k_eff -- and the difference matters. The
     # -33.7R figure is the drawdown of the SUMMED three-leg series, so it already contains how
     # often those legs co-fire; scaling it by k_eff as well double-counts the diversification and
@@ -563,7 +591,6 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     # desk falls back to; `allocator_heat` is a number something actually solved for. Fails
     # closed to the derivation on any doubt, so this cannot raise heat by accident.
     solved, why = allocator_heat()
-    budget = solved if solved is not None else heat_budget(k_eff)
     budget_src = why if solved is not None else f"derived (allocator unusable: {why})"
     # ORDERED BY WHAT EACH SLEEVE IS WORTH, not by where the caller put it. See allocator_order.
     sleeves = allocator_order(sleeves)
@@ -608,6 +635,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
             qs.append(float("nan"))
     known = [q for q in qs if q == q and q > 0]
     fallback = max(known) if known else 0.0
+    budget = solved if solved is not None else heat_budget(k_eff)
     qs = [(q if q == q and q > 0 else fallback) for q in qs]
     if fallback <= 0:
         note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
