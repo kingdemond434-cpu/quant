@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-02T10:43:54+00:00",
+ "compiled_at": "2026-09-02T12:07:32+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4500,14 +4500,14 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "reddit": {
-   "rows": 33,
+   "rows": 40,
    "candidates": 0,
-   "deepening": 33
+   "deepening": 40
   },
   "forexfactory": {
    "rows": 44,
@@ -4675,8 +4675,8 @@
    "deepening": 4
   }
  },
- "rows_accounted": 1087,
+ "rows_accounted": 1095,
  "executable_candidates": 373,
- "deepening_tasks": 636,
+ "deepening_tasks": 643,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

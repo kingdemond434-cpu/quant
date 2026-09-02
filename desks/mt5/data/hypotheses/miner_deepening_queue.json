@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T10:43:54+00:00",
+ "built_at": "2026-09-02T12:07:32+00:00",
  "tasks": [
   {
    "source": "github",
@@ -3015,320 +3015,320 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sp2012",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sp2012&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-02",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-02&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spain_forex",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spain_forex&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-03",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-03&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spartanforex1",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spartanforex1&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-04",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-04&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user specialone",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=specialone&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-05",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-05&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spectrumm",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spectrumm&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-06",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-06&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user speedsuper",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=speedsuper&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-07",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-07&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user speedtrader-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=speedtrader-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-08",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-08&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sphantom",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sphantom&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-09",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-09&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spinamba10",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spinamba10&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-10",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-10&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spreefx",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spreefx&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-11",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-11&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spydrfx",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spydrfx&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-12",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-12&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user spydrtrading",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=spydrtrading&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-13",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-13&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqx_forex_ptf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqx_forex_ptf&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-14",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-14&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqx_ptf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqx_ptf&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-15",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-15&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqxdax_ptf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqxdax_ptf&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-16",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-16&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqxdow_ptf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqxdow_ptf&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-17",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-17&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqxnasdaq_ptf",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqxnasdaq_ptf&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-18",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-18&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sqxoil",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sqxoil&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-19",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-19&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sratosea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sratosea&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-20",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-20&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stabilis",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stabilis&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-21",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-21&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stabilis_lucra",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stabilis_lucra&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-22",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-22&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stabilis_lucra_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stabilis_lucra_demo&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-23",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-23&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stabilizer-durable-l",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stabilizer-durable-l&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-24",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-24&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stablepro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stablepro&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-25",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-25&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user staidforex",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=staidforex&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-26",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-26&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user standart",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=standart&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-27",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-27&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user starbot",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=starbot&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-28",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-28&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user startrader_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=startrader_demo&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-29",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-29&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stat-arb-pro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stat-arb-pro&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-30",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-30&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stats",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stats&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-31",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-31&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steady--growth",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steady--growth&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-32",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-32&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steady-growth",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steady-growth&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-33",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-33&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steady_growth",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steady_growth&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-34",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-34&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steadygrowthpro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steadygrowthpro&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-35",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-35&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steadygrowthtrader",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steadygrowthtrader&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-36",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-36&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stealth-trader-demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stealth-trader-demo&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-37",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-37&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stealth_trader_demo",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stealth_trader_demo&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-38",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-38&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user stealthindices",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=stealthindices&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-39",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-39&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steam-light",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steam-light&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-40",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-40&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user steffen-01",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-01&mode=overview&isinline=1",
+   "title": "FX Blue user steffen-41",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=steffen-41&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5111,6 +5111,46 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "DIRJEN-BOT/mt5-gold-trading-ea",
+   "url": "https://github.com/DIRJEN-BOT/mt5-gold-trading-ea",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "softwaredevelop/mql5",
+   "url": "https://github.com/softwaredevelop/mql5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
@@ -5191,40 +5231,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "7skooooo/mql5-systems-mirror",
-   "url": "https://github.com/7skooooo/mql5-systems-mirror",
+   "title": "ElMoorish/AetherQuant-MT5",
+   "url": "https://github.com/ElMoorish/AetherQuant-MT5",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "shazzadu1/Trade-Halting-Safeguard",
-   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aloni-zin/Equity-Ray-Tracer",
-   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tharindu2028/Trade-Terminator-Closer",
-   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
+   "title": "nodalytics/till_infinity",
+   "url": "https://github.com/nodalytics/till_infinity",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5233,6 +5249,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "foxelabs/foxelabs.com",
    "url": "https://github.com/foxelabs/foxelabs.com",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ajayprabhuraj/institutional-orderflow-mt5",
+   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5255,22 +5279,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ElMoorish/AetherQuant-MT5",
-   "url": "https://github.com/ElMoorish/AetherQuant-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "BrockStar3540/mr-scrooge-v6",
    "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
@@ -5279,24 +5287,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Designated-AICoder/sri-lankan-exchange-rates",
-   "url": "https://github.com/Designated-AICoder/sri-lankan-exchange-rates",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "RPNATION1/Tradingalgos",
-   "url": "https://github.com/RPNATION1/Tradingalgos",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "title": "digineat/go-metatrader4",
+   "url": "https://github.com/digineat/go-metatrader4",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5360,6 +5352,24 @@
    "title": "",
    "url": "",
    "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quantconnect",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "New york opening with XAUUSD SETUP",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
    "mechanism_tags": []
   },
   {
@@ -5497,6 +5507,65 @@
     "pullback",
     "EMA"
    ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The Heating Oil Short",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": [
+    "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "SPY options+30k (for the month)",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": [
+    "scalp",
+    "trend"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Yen weakens past \u00a5160 per dollar, eroding intervention gains",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Trump announces deal with Venezuela to secure more than 65 billion barrels of oil reserves",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "$DELL \u2014 Am I crazy or is a $20 call actually a steal going into earnings?",
+   "url": "",
+   "symbols": [
+    "NAS100"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Spy Put Options: 73k Gain",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": []
   },
   {
    "source": "seasonality",
