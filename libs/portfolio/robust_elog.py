@@ -40,6 +40,7 @@ it is given.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 
@@ -408,9 +409,18 @@ def project_capped_simplex(v: np.ndarray, cap: float, *, exact: bool = False,
     clipped: np.ndarray = np.clip(v, 0.0, ub)
     if not exact and clipped.sum() <= cap:
         return clipped
-    # Bisection on the shrink threshold tau: sum(clip(v - tau, 0, ub)) == cap. Monotone
-    # decreasing in tau whether or not the box binds, so the bracket below is always valid.
-    lo, hi = float(v.max() - cap), float(v.max())
+    # Bisection on the shrink threshold tau: sum(clip(v - tau, 0, ub)) == cap. The sum is
+    # monotone decreasing in tau, so the only requirement is a bracket that straddles the root.
+    #
+    # THE LOWER END MUST ACCOUNT FOR THE BOX. `v.max() - cap` brackets the unbounded problem,
+    # where one entry can absorb the whole budget -- with an upper bound it cannot, so at that
+    # tau the sum can still be BELOW cap and the bisection converges to the wrong side. Measured:
+    # v=[9, .01, .01, .01, .01], cap=0.20, ub=0.05 returned 0.05, silently under-spending a
+    # mandate by three quarters. Pushing tau down by cap + max(ub) forces every entry to its own
+    # bound, where the sum is sum(ub) >= cap by the feasibility check above.
+    finite = ub[np.isfinite(ub)]
+    lo = float(v.min()) - float(cap) - (float(finite.max()) if finite.size else 0.0)
+    hi = float(v.max())
     for _ in range(80):
         tau = 0.5 * (lo + hi)
         if np.clip(v - tau, 0.0, ub).sum() > cap:
@@ -523,9 +533,25 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
         h = project_capped_simplex(np.full(n, cap / n), cap, exact=exact, upper=ub)
 
     score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
-    if score == -np.inf:                       # even the equal book is ruinous: back it right off
-        h = project_capped_simplex(np.full(n, cap / (4 * n)), cap * 0.25, exact=False, upper=ub)
-        score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
+    # A RUINOUS START MUST BACK OFF UNTIL IT IS NOT, and a single halving is not "until".
+    # -inf > -inf is False, so the ascent below cannot move off a ruinous point: it would return
+    # whatever heat it started with, carrying a -inf score nobody downstream reads as a refusal.
+    # Measured: a sleeve with one -50R day kept 7.5% heat that way.
+    #
+    # Only the FREE solve may back off. Under the mandate the total is the principal's, so a
+    # ruinous mandated book is reported ruinous (mean_log_growth = -inf, prob_annual_loss = 1.0)
+    # and `pf_allocator` routes it to the catastrophe layer, which is the one thing allowed to
+    # take exposure below target.
+    if score == -np.inf and not exact:
+        shrink = 1.0
+        while score == -np.inf and shrink > 1e-3:
+            shrink *= 0.25
+            h = project_capped_simplex(np.full(n, cap * shrink / n), cap * shrink,
+                                       exact=False, upper=ub)
+            score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
+        if score == -np.inf:
+            h = np.zeros(n)
+            score, grad, g_w = _objective(w_pop, h, corr_abs, cfg)
 
     lr, converged, done = step, False, 0
     for i in range(iterations):
@@ -541,7 +567,9 @@ def optimise(ev: Sequence[SleeveEvidence], *, hard_cap: float, target: float | N
                 break
         else:
             lr *= 0.5
-            if lr < 1e-9:
+            if lr < 1e-9 or score == -np.inf:
+                # -inf cannot be improved on by comparison, so an exact solve that starts ruinous
+                # would otherwise spin the full iteration budget doing nothing.
                 converged = True
                 break
 
@@ -589,13 +617,26 @@ def marginal_delta_elog(current: Sequence[SleeveEvidence], candidate: SleeveEvid
                    max_per_sleeve=max_per_sleeve)
     realloc = {k: round(ext.heat.get(k, 0.0) - v, 6) for k, v in base.heat.items()}
     got = float(ext.heat.get(candidate.name, 0.0))
+
+    def _delta(a: float, b: float) -> float:
+        # -inf minus -inf is nan, and a nan in an artifact reads like a measurement that was
+        # taken. Both books ruinous is not "no difference" -- it is a refusal, and the caller
+        # sees it as -inf plus admit=False rather than as a number.
+        if not (math.isfinite(a) and math.isfinite(b)):
+            return float("-inf")
+        return a - b
+
     return {
         "candidate": candidate.name,
-        "delta_robust": round(ext.robust_score - base.robust_score, 8),
-        "delta_annual_growth_pct": round(ext.annual_growth_pct - base.annual_growth_pct, 3),
+        "ruinous": not (math.isfinite(base.mean_log_growth)
+                        and math.isfinite(ext.mean_log_growth)),
+        "delta_robust": round(_delta(ext.robust_score, base.robust_score), 8),
+        "delta_annual_growth_pct": round(
+            _delta(ext.annual_growth_pct, base.annual_growth_pct), 3),
         "candidate_heat": round(got, 6),
         "total_heat_before": round(base.total_heat, 6),
         "total_heat_after": round(ext.total_heat, 6),
-        "admit": bool(ext.robust_score > base.robust_score and got > 1e-5),
+        "admit": bool(math.isfinite(ext.robust_score)
+                      and ext.robust_score > base.robust_score and got > 1e-5),
         "reallocation": realloc,                                   # type: ignore[dict-item]
     }

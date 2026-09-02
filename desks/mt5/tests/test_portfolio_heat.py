@@ -30,17 +30,24 @@ def _load():
     gateway_config_fallback, which this box CAN import, so the namespace is seeded with the real
     values; parsing them back out of a literal would be testing a copy that no longer exists.
     """
+    import json as _json
     import math as _math
+    import time as _time
 
     from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
+        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
     tree = ast.parse(_SRC)
     keep = []
-    ns = {"math": _math, "Q_OPT": Q_OPT, "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
-          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R}
+    ns = {"math": _math, "json": _json, "time": _time, "BASE": _DESK,
+          "Q_OPT": Q_OPT, "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
+          "_BOOK_WORST_DD_R": BOOK_WORST_DD_R, "HEAT_TARGET": HEAT_TARGET,
+          "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
+          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE}
     wanted_fn = {"cap_by_heat", "realised_q", "auto_lot", "heat_budget", "_lot_steps",
-                 "_eur_per_price_unit"}
+                 "_eur_per_price_unit", "allocator_heat", "allocator_order"}
     wanted_const = {"MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
+                    "_ALLOC_MAX_AGE_S",
                     "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
                     "GOLD_SYMBOL"}
     for n in tree.body:

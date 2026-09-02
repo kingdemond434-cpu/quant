@@ -533,10 +533,14 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     Returns the admitted sleeves and a note when anything was dropped, because a silently
     shortened book is indistinguishable from a book that had nothing to trade.
 
-    ORDER IS PRESERVED, so the caller's own priority decides who is dropped -- and the gold book
-    is placed first by `sleeve_set()`, which makes the armed, human-authorised sleeves senior to
-    anything the promoter added on its own. A cap that dropped sleeves arbitrarily could silently
-    retire the one book with forward evidence behind it in favour of three that have none.
+    ORDER IS BY MARGINAL dE[log W], not by the caller's list position. It used to be the latter,
+    justified by `sleeve_set()` emitting gold first: "a cap that dropped sleeves arbitrarily could
+    silently retire the one book with forward evidence behind it in favour of three that have
+    none." That was true when gold was the only sleeve with forward evidence and stopped being
+    true when the forward clocks filled -- at which point a seniority rule with a dead reason is
+    just a rule that the oldest sleeve wins, and the desk cannot displace a worse edge with a
+    better one. `allocator_order` ranks by what each sleeve contributes; absent an allocator
+    artifact the caller's order still stands, so the old behaviour is the fallback, not the rule.
 
     EACH SLEEVE IS CHARGED ITS OWN q, NOT THE BOOK'S. This multiplied ONE q -- gold's, because
     `realised_q` defaulted to gold's contract economics -- by the sleeve COUNT, so a book of
@@ -547,7 +551,14 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     """
     if equity <= 0 or not sleeves:
         return list(sleeves), None
-    budget = heat_budget(k_eff)
+    # THE ALLOCATOR'S BOOK IS THE BUDGET WHEN THERE IS ONE. `heat_budget` is the derivation the
+    # desk falls back to; `allocator_heat` is a number something actually solved for. Fails
+    # closed to the derivation on any doubt, so this cannot raise heat by accident.
+    solved, why = allocator_heat()
+    budget = solved if solved is not None else heat_budget(k_eff)
+    budget_src = why if solved is not None else f"derived (allocator unusable: {why})"
+    # ORDERED BY WHAT EACH SLEEVE IS WORTH, not by where the caller put it. See allocator_order.
+    sleeves = allocator_order(sleeves)
     # Per-sleeve q: an explicit scalar override still applies to every sleeve (that is what a
     # caller asking for one means), otherwise each sleeve is priced on ITS OWN instrument.
     qs: list[float] = []
@@ -595,17 +606,23 @@ def cap_by_heat(sleeves: list[dict], equity: float,
                 "admitting none rather than sizing from another instrument's constants")
         return [], note
     admitted: list[dict] = []
+    dropped: list[str] = []
     used = 0.0
     for s, q in zip(sleeves, qs, strict=True):
+        # CONTINUE, NOT BREAK. Stopping at the first sleeve that does not fit throws away every
+        # sleeve behind it, however cheap -- so one expensive leg near the front could defer a
+        # whole tail of legs the budget had room for. Combined with the value ordering above this
+        # is a greedy fill by marginal growth per unit of heat: the budget buys the most it can,
+        # and what is deferred is the cheapest growth rather than everything after the misfit.
         if used + q > budget + 1e-12:
-            break
+            dropped.append(str(s.get("name", "?")))
+            continue
         admitted.append(s)
         used += q
-    if len(admitted) == len(sleeves):
+    if not dropped:
         return list(sleeves), None
-    dropped = [s.get("name", "?") for s in sleeves[len(admitted):]]
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
-            f"exceed {budget:.1%} "
+            f"exceed {budget:.1%} [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
     return admitted, note
