@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T20:20:09+00:00",
+ "built_at": "2026-09-02T21:19:55+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1662,48 +1662,23 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "EXCHANGE_SESSION_HANDOFF_BID",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
-    "context": "asia",
+    "event": "session_transition",
+    "context": "overlap",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:cross_market_move|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "cross_market_move",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:forced_deleveraging|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "forced_deleveraging",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "session_transition|overlap|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "Free CLS FX flow data (public aggregate) + MT5 tick data on 8 majors (EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, NZDUSD, USDCHF, EURJPY)",
+   "kill": "Hit-rate \u226452% OR effect magnitude <1bp post-spread OR restricted to 1-2 pairs and doesn't generalize across \u22654 majors",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   }
  ]
