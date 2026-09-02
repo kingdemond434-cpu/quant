@@ -78,6 +78,12 @@ _STAMP_RE = re.compile(r"_(\d{8})T(\d{2})(\d{2})")
 _QUOTA_WORD_RE = re.compile(r"\b(limit|usage credits|rate limit|reset)\b", re.I)
 
 
+#: How long a launch is allowed to hold nothing but its attempt header before the absence of a
+#: second line counts as a death. The header is written before the memory gate, the mutex and the
+#: auth chain; the auth chain alone has been measured taking ~60 seconds to print its verdict.
+SETTLE_SECONDS = 300
+
+
 def classify(text: str, size: int) -> str:
     """Why this launch produced nothing -- or PRODUCED."""
     low = text.lower()
@@ -119,12 +125,21 @@ def scan(days: float) -> dict[str, object]:
         m = _ATTEMPT_RE.match(text)
         if not m:
             continue
-        stamp = _STAMP_RE.search(path.name)
+        # A LAUNCH STILL IN FLIGHT IS NOT A DEATH. The header is written first and the auth
+        # chain's first line lands up to a minute later, so a log read inside that window holds
+        # nothing but its 65-byte header and looks exactly like a silent crash. MEASURED
+        # 2026-09-02: frontier_unified_20260902T1148.log was reported as DIED_SILENT_NO_OUTPUT
+        # and gained "auth unavailable -- next run resumes" seconds afterwards. A meter that
+        # invents crashes trains the reader to ignore the row, which costs the real ones.
+        age_h = (now - stat.st_mtime) / 3600.0
+        outcome = classify(text, stat.st_size)
+        if outcome.startswith("DIED") and age_h * 3600.0 < SETTLE_SECONDS:
+            outcome = "IN_FLIGHT"
         launches.append({
-            "age_h": (now - stat.st_mtime) / 3600.0,
+            "age_h": age_h,
             "seat": m.group(1),
-            "hour": int(stamp.group(2)) if stamp else None,
-            "outcome": classify(text, stat.st_size),
+            "hour": int(stamp.group(2)) if (stamp := _STAMP_RE.search(path.name)) else None,
+            "outcome": outcome,
             "log": path.name,
         })
 
@@ -136,7 +151,9 @@ def scan(days: float) -> dict[str, object]:
     # minutes, so it is a delay, not a lost slot. Counting it as failure would make correct
     # serialisation look like a defect and push a future seat to remove the protection that
     # stopped two --effort max brains sharing one working tree.
-    billable = total - outcomes["MUTEX_DEFERRED"]
+    # IN_FLIGHT leaves the denominator with MUTEX_DEFERRED: neither is an outcome yet, and
+    # counting an unfinished launch as a failure would understate yield by whatever is running.
+    billable = total - outcomes["MUTEX_DEFERRED"] - outcomes["IN_FLIGHT"]
     yield_pct = round(100.0 * produced / billable, 1) if billable else None
 
     by_hour: dict[int, list[int]] = defaultdict(lambda: [0, 0])   # hour -> [dead, produced]

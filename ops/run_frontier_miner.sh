@@ -33,6 +33,13 @@ export BRAIN_MUTEX_LOGFILE="$LOG"
 # ONE brain desk-wide. Deferring is safe here BY DESIGN: run_frontier_rotation.sh only skips a
 # region that produced a real (>=1500b) log today, so a deferred region stays owed and the next
 # rotation invocation resumes it -- the mutex composes with the existing resume point.
+# MEMORY GATE BEFORE THE MUTEX. `brain_mem_gate` was written 2026-08-31 for exactly the death
+# this line prevents -- "a seat that dies between its attempt header and its first claude line is
+# a SILENT death, 21 stubs in 7 days, oom_kill counter at 912, 0 swap on 3.8GB" -- and was then
+# DEFINED AND NEVER CALLED (III.16: unwired is a defect). Measured 2026-09-02: four
+# frontier_unified logs held nothing but their 65-byte header, and the health report read them as
+# crashing seats. A starved launcher must DEFER with a logged reason, not die without one.
+brain_mem_gate || exit 0
 brain_mutex "frontier-${REGION}"
 # DUAL-POOL ROUTING (principal 2026-07-25): try the fable-5 METERED pool FIRST, then fall back
 # to the Max subscription seat. brain_auth_check walks this chain and exports the winner, so the
