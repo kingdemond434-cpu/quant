@@ -434,6 +434,14 @@ def allocator_heat() -> tuple[float | None, str]:
         total = float(heat.get("total") or 0.0)
         if not (0.0 < total <= MAX_HEAT_CEILING + 1e-12):
             return None, f"allocator heat {total:.4f} outside (0, {MAX_HEAT_CEILING:.2f}]"
+        # A HEAT NUMBER WITH NO GROWTH BEHIND IT IS NOT A BUDGET. Measured 2026-09-02: a pass
+        # published 30% total heat carrying annual_growth_pct = -inf -- a book wiped out in at
+        # least one sampled world -- and every check above passed it, because they all asked
+        # about the heat and none asked whether the optimiser could score the thing it sized.
+        g = art.get("growth") or {}
+        ann = g.get("annual_growth_pct")
+        if not isinstance(ann, (int, float)) or not math.isfinite(float(ann)):
+            return None, f"allocator book has no finite growth ({ann!r})"
         return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
     except Exception as exc:                                    # noqa: BLE001
         return None, f"allocator artifact unreadable ({type(exc).__name__})"

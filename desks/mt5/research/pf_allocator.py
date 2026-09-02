@@ -89,6 +89,13 @@ TURNOVER_COST_R = 0.06
 #: purpose: a rebalance justified only by a month of undisturbed holding is not justified.
 NO_TRADE_HORIZON_DAYS = 5.0
 
+#: Annual growth above which the pass is REFUSED as an input defect. The armed gold book replays
+#: at ~36%/yr and the widest optimised book measured here at ~219%; four figures has never been
+#: produced by anything real on this desk. Set well above every honest number so it can only fire
+#: on a defect, and it fires by refusing the pass rather than by clipping the number -- a clipped
+#: number is a defect wearing a plausible answer.
+IMPLAUSIBLE_ANNUAL_PCT = 5000.0
+
 #: Regime-mixture bounds. No regime the desk has enough history for is ever assigned zero worlds
 #: (MIN), and no regime may own more than MAX of the population however certain the classifier
 #: sounds. See `regime_state` for the measurement that made both necessary.
@@ -143,7 +150,7 @@ def build_evidence(*, force: bool = False) -> tuple[pd.DataFrame, dict[str, dict
     return daily, forward
 
 
-def certified_evidence() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
+def certified_evidence() -> tuple[dict[str, pd.Series], dict[str, Any]]:
     """Daily-R series for every sleeve that has cleared the ten gates, replayed the gauntlet's way.
 
     THE DEFECT THIS EXISTS TO FIX, measured 2026-09-02. `portfolio_projection.build_sleeves()`
@@ -178,7 +185,7 @@ def certified_evidence() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         return {}, acct
 
     seen: set[tuple[str, str, str]] = set()
-    out: dict[str, np.ndarray] = {}
+    out: dict[str, pd.Series] = {}
     survivors = load_survivors()
     acct["certificates"] = len(survivors)
     for sv in survivors:
@@ -188,7 +195,10 @@ def certified_evidence() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
         seen.add((sym, fam, win))
         name = f"{sym}_{fam}_{win}" if win else f"{sym}_{fam}"
         try:
-            cell = eg.build_cell(sym, fam, {}, meta)
+            # THE CERTIFICATE'S OWN PARAMS, not defaults. Replaying `{}` runs a different
+            # strategy under the certified strategy's name -- the same substitution that put an
+            # unconditioned +0.163R behind a conditioned sleeve's +0.276R promotion.
+            cell = eg.build_cell(sym, fam, dict(sv.get("params") or {}), meta)
             if not cell or cell.get("sigs") is None:
                 acct["refused"][name] = "build_cell returned no signals"
                 continue
@@ -196,7 +206,13 @@ def certified_evidence() -> tuple[dict[str, np.ndarray], dict[str, Any]]:
             if ser is None or len(ser) < 2:
                 acct["refused"][name] = f"replay produced {0 if ser is None else len(ser)} days"
                 continue
-            out[name] = np.asarray(ser.to_numpy(dtype=float))
+            # DATE-INDEXED, and that is not cosmetic. `sample_worlds` stacks sleeves by
+            # POSITION, so handing it two series on different clocks pairs unrelated days and
+            # destroys every correlation in the book. Measured 2026-09-02: unaligned certified
+            # series produced a free optimum pinned at the 30% ceiling and a reported 2.8e14%
+            # annual growth, because the bootstrap was drawing days that never co-occurred.
+            ser.index = pd.to_datetime(pd.Index(ser.index)).date
+            out[name] = ser.groupby(level=0).sum()
             acct["priced"] += 1
         except Exception as exc:
             acct["refused"][name] = f"{type(exc).__name__}: {exc}"
@@ -357,9 +373,30 @@ def join_forward(columns: list[str], forward: dict[str, dict[str, float]],
     return exact, acct
 
 
+def align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None) -> pd.DataFrame:
+    """One matrix, one clock. Every sleeve reindexed onto the union of trading days.
+
+    A sleeve that did not trade on a day contributes 0.0 THAT DAY -- which is what actually
+    happened -- so the bootstrap draws days on which the whole book's real behaviour co-occurs.
+    Without this, sleeves are stacked by POSITION and the resampler pairs a gold Tuesday with an
+    EURNOK Thursday, manufacturing diversification that does not exist. Measured 2026-09-02 on
+    the first unioned run: a free optimum pinned at the 30% ceiling, a book of seven exotic
+    crosses, and a reported annual growth rate of 2.8e14 percent.
+    """
+    if not certified:
+        return daily
+    frames = {str(c): daily[c] for c in daily.columns}
+    for name, ser in certified.items():
+        s = pd.Series(ser.to_numpy(dtype=float), index=[str(d) for d in ser.index])
+        if name not in frames or int(s.notna().sum()) > int(frames[name].notna().sum()):
+            frames[name] = s
+    idx = sorted({str(i) for f in frames.values() for i in f.index})
+    return pd.DataFrame({k: v.groupby(level=0).sum().reindex(idx) for k, v in frames.items()},
+                        index=idx, dtype=float)
+
+
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
-                    live: dict[str, int],
-                    certified: dict[str, np.ndarray] | None = None) -> list[SleeveEvidence]:
+                    live: dict[str, int]) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -375,12 +412,6 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     series: dict[str, np.ndarray] = {
         str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
     }
-    for name, arr in (certified or {}).items():
-        # A name in BOTH is the same sleeve reached two ways; keep the longer history rather than
-        # entering it twice, which would double its weight in the book.
-        if name not in series or arr.size > series[name].size:
-            series[name] = arr
-
     for name, hist in series.items():
         fwd = forward.get(name, {})
         if fwd:
@@ -406,8 +437,7 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
     return out
 
 
-def worst_dd_r(daily: pd.DataFrame,
-               certified: dict[str, np.ndarray] | None = None) -> dict[str, float]:
+def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
     """Each sleeve's worst peak-to-trough drawdown in R -- the input to its per-sleeve bound.
 
     An UNMEASURED drawdown is reported as 0.0 and `heat_policy.per_sleeve_bounds` treats that as
@@ -418,8 +448,6 @@ def worst_dd_r(daily: pd.DataFrame,
     cols: dict[str, np.ndarray] = {
         str(c): daily[c].fillna(0.0).to_numpy(dtype=float) for c in daily.columns
     }
-    for k, v in (certified or {}).items():
-        cols.setdefault(k, v)
     for name, arr in cols.items():
         eq = np.cumsum(arr)
         dd = np.maximum.accumulate(eq) - eq if eq.size else np.array([0.0])
@@ -564,10 +592,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     daily, forward = build_evidence(force=heavy)
     live = live_days_by_sleeve()
     certified, cert_acct = certified_evidence()
-    universe = [str(c) for c in daily.columns] + [k for k in certified if k not in daily.columns]
-    forward, fwd_acct = join_forward(universe, forward)
-    ev = sleeve_evidence(daily, forward, live, certified)
-    dd = worst_dd_r(daily, certified)
+    daily = align(daily, certified)
+    _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days")
+    forward, fwd_acct = join_forward([str(c) for c in daily.columns], forward)
+    ev = sleeve_evidence(daily, forward, live)
+    dd = worst_dd_r(daily)
 
     labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
@@ -604,6 +633,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                     max_per_sleeve=bounds)
     _log(f"free optimum H*={free.total_heat:.2%} ann={free.annual_growth_pct:.1f}% "
          f"P(annual loss)={free.prob_annual_loss:.1%}")
+    # A SANITY FENCE, NOT A CAP. Nothing in this desk's history compounds at four figures a year;
+    # a number that large is a broken input, and the one that produced 2.8e14% was sleeves stacked
+    # on mismatched date clocks. The fence does not clip the number -- clipping would hide the
+    # defect behind a plausible-looking answer -- it refuses the whole pass.
+    implausible = free.annual_growth_pct > IMPLAUSIBLE_ANNUAL_PCT
+    if implausible:
+        _log(f"REFUSING THIS PASS: free optimum reports {free.annual_growth_pct:.3g}% a year, "
+             f"above the {IMPLAUSIBLE_ANNUAL_PCT:.0f}% plausibility fence. That is an input "
+             f"defect, not an opportunity. The previous book stands.")
 
     # 2. THE CURVE, then the law.
     curve = growth_curve(ev, worlds, bounds, cfg) if heavy else {}
@@ -615,7 +653,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             curve = {}
     verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
                       hard_ceiling=HEAT_HARD_CEILING, mandate=True,
-                      allocator_ok=bool(free.heat) and math.isfinite(free.mean_log_growth))
+                      allocator_ok=(bool(free.heat) and math.isfinite(free.mean_log_growth)
+                                    and not implausible))
     for why in verdict.reasons:
         _log(why)
 
@@ -631,6 +670,24 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                         worlds=worlds, max_per_sleeve=ub,
                         warm_start=current_book() or None)
     funded = {k: round(v, 6) for k, v in book.heat.items() if v > 1e-5}
+
+    # A BOOK THE OPTIMISER CANNOT SCORE IS NOT A BOOK. The mandated solve can come back -inf --
+    # a book that is wiped out in at least one sampled world -- and publishing that would hand
+    # `gateway.allocator_heat()` a total heat with no growth behind it. Measured 2026-09-02: the
+    # first unioned run published exactly that, 30% heat across seven exotic crosses with
+    # annual_growth_pct = -inf. It routes to the catastrophe layer, which is the only thing
+    # allowed to take exposure below target.
+    if not math.isfinite(book.mean_log_growth) and book.total_heat > 0:
+        _log(f"RESOLVED BOOK IS RUINOUS at {book.total_heat:.2%}: at least one sampled world "
+             f"wipes it out. Publishing zero heat and the reason, not the book.")
+        verdict = resolve(free.total_heat, curve=curve, target=HEAT_TARGET,
+                          hard_ceiling=HEAT_HARD_CEILING, mandate=True, allocator_ok=False)
+        book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
+                                cvar_log_growth=0.0, annual_growth_pct=0.0,
+                                prob_annual_loss=0.0,
+                                note="mandated book was ruinous on the sampled worlds")
+        funded = {}
+
     _log(f"book: {len(funded)} funded sleeves at {book.total_heat:.2%} total heat, "
          f"ann={book.annual_growth_pct:.1f}%")
 
