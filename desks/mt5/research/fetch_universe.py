@@ -25,6 +25,7 @@ Two rules now hold here, and both are the anti-hardcode law (LAWS §1) rather th
 
 import json
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -66,6 +67,50 @@ MIN_BARS = 1000
 START = datetime(2018, 1, 1, tzinfo=timezone.utc)
 
 
+def _clocked_symbols() -> set[str]:
+    """Symbols carrying an ACTIVE forward clock. Their bars are load-bearing; others' are not."""
+    try:
+        state = json.loads((desk_root() / "reports" / "shadow" / "shadow_state.json")
+                           .read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(k).split(".")[0] for k, v in state.items()
+            if isinstance(v, dict) and str(v.get("status") or "") == "ACTIVE"}
+
+
+def _refresh_order(candidates: list[str]) -> list[str]:
+    """Order the refresh by what most needs it: clocked first, then stalest first.
+
+    A LIST ORDER STARVES ITS OWN TAIL. This walked `SEED_CANDIDATES` then registry order, so a
+    run that does not finish -- and with 251 symbols of 2018-to-now H1 through one terminal, many
+    do not -- always refreshes the same head and never reaches the same tail. MEASURED
+    2026-09-02: seven symbols carrying ACTIVE forward clocks (AUDCHF, CHFDKK, CHFNOK, EURZAR,
+    GBPCHF, USDMXN, USDZAR) held H1 parquets 168.7 HOURS old -- a full week -- while symbols
+    earlier in the list were 8.8 hours old. Those clocks were accruing forward evidence against
+    week-old bars, which is not forward evidence.
+
+    Staleness order makes truncation self-correcting: whatever a short run misses is first in
+    line next time, so no symbol can be starved by its position. Clocked symbols outrank
+    unclocked ones at equal staleness because a stale bar under a running clock corrupts
+    evidence, while a stale bar under no clock merely delays research.
+    """
+    clocked = _clocked_symbols()
+
+    def age(sym: str) -> float:
+        pq = OUT / f"{sym}_H1.parquet"
+        try:
+            return time.time() - pq.stat().st_mtime
+        except OSError:
+            return float("inf")         # never fetched: the stalest thing there is
+
+    ordered = sorted(candidates, key=lambda s: (0 if s in clocked else 1, -age(s)))
+    if clocked:
+        worst = ordered[0]
+        print(f"{len(clocked)} clocked symbol(s); refreshing {worst} first "
+              f"({age(worst) / 3600:.1f}h old)")
+    return ordered
+
+
 def main() -> None:
     if mt5.terminal_info() is None:
         if not mt5.initialize(path=TERMINAL):
@@ -87,9 +132,9 @@ def main() -> None:
                   f"retry later rather than rebuilding the registry from the seed list")
             return
     prior_n = len(registry)
-    candidates = list(dict.fromkeys([*SEED_CANDIDATES, *registry]))
+    candidates = _refresh_order(list(dict.fromkeys([*SEED_CANDIDATES, *registry])))
     print(f"refreshing {len(candidates)} symbol(s): {len(SEED_CANDIDATES)} seeded, "
-          f"{prior_n} already in the registry")
+          f"{prior_n} already in the registry; clocked and stalest first")
 
     summary = {}
     # WHY A SYMBOL HAS NO BARS IS ITSELF DATA. Both skips below used to print a line and vanish,
