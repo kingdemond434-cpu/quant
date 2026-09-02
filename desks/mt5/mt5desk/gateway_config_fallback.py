@@ -110,3 +110,22 @@ HEAT_HARD_CEILING = 0.30
 #: cheapest place to park a budget you do not believe in. A mandate without this bound funds the
 #: flattest row in the matrix, not the book.
 MAX_SLEEVE_HEAT_SHARE = 0.25
+
+#: No single MECHANISM may hold more than this share of total heat.
+#:
+#: MEASURED 2026-09-02: the solved book put 97% of its heat into `overnight_gap_decay` across
+#: seven exotic crosses. DISCOVERY DID NOT CAUSE THAT -- the family is 232 of 23,465 docket cells
+#: (0.99%), against 20,341 from the family-free searcher, and it holds 12 of 65 certificates.
+#: Nothing directs the search at it. The ALLOCATOR concentrated, because that family's replayed
+#: edge was the largest among the sleeves it could price.
+#:
+#: THE REDUNDANCY TERM CANNOT SEE THIS. It charges pairwise correlation of daily returns, and
+#: seven gap sleeves on different currency pairs genuinely are weakly correlated day to day. They
+#: also share one mechanism and one fill hour (01:00, the thinnest book of the session), so they
+#: fail TOGETHER on a liquidity event that no daily correlation contains. That is the factor
+#: duplication and tail co-failure the mandate asks to penalise, and it needs a CONSTRAINT rather
+#: than a price: a penalty is something growth can outbid.
+#:
+#: 40% still allows real conviction -- a mechanism may hold two fifths of the book -- while
+#: forcing at least three independent mechanisms to be right for the account to be whole.
+MAX_FAMILY_HEAT_SHARE = 0.40

@@ -47,18 +47,21 @@ from mt5desk.gateway_config_fallback import (  # noqa: E402
     HEAT_HARD_CEILING,
     HEAT_TARGET,
     MAX_DRAWDOWN_TOLERANCE,
+    MAX_FAMILY_HEAT_SHARE,
     MAX_SLEEVE_HEAT_SHARE,
     risk_per_trade,
 )
 
 __all__ = [
     "CERTIFY_TOLERANCE",
+    "MAX_FAMILY_HEAT_SHARE",
     "HEAT_HARD_CEILING",
     "HEAT_TARGET",
     "READY_SCALE",
     "HeatVerdict",
     "catastrophe_override",
     "certify",
+    "enforce_family_cap",
     "evidence_readiness",
     "per_sleeve_bounds",
     "resolve",
@@ -161,6 +164,35 @@ def per_sleeve_bounds(worst_dd_r: dict[str, float], total_heat: float,
 CERTIFY_TOLERANCE = 0.02
 
 
+def enforce_family_cap(heat: dict[str, float], family_of: dict[str, str], total: float,
+                       share: float = MAX_FAMILY_HEAT_SHARE) -> dict[str, float]:
+    """Per-sleeve upper bounds that hold any one MECHANISM under `share` of the book.
+
+    A CONSTRAINT, NOT A PRICE. The redundancy term in `robust_elog` charges pairwise correlation
+    of daily returns, and seven `overnight_gap_decay` sleeves on different crosses genuinely are
+    weakly correlated day to day -- so it did not see them, and the solved book put 97% of its
+    heat into that one mechanism. They share a fill hour (01:00, the thinnest book of the
+    session) and a mechanism, so they fail together on a liquidity event no daily correlation
+    contains. A penalty is something growth can outbid; this cannot be.
+
+    Bounds are proportional to each sleeve's own solved weight within its family, so the
+    optimiser's ranking inside a mechanism is preserved and only the mechanism's TOTAL is capped.
+    A family already inside the cap is returned unbounded, so this only ever binds where it must.
+    """
+    if total <= 0:
+        return {}
+    cap = share * total
+    by_fam: dict[str, float] = {}
+    for name, h in heat.items():
+        fam = family_of.get(name, "?")
+        by_fam[fam] = by_fam.get(fam, 0.0) + max(h, 0.0)
+    out: dict[str, float] = {}
+    for name, h in heat.items():
+        held = by_fam.get(family_of.get(name, "?"), 0.0)
+        out[name] = float("inf") if held <= cap or held <= 0 else max(h, 0.0) * (cap / held)
+    return out
+
+
 def certify(curve: dict[float, float], target: float = HEAT_TARGET,
             tolerance: float = CERTIFY_TOLERANCE) -> tuple[bool, str]:
     """Is `target` at, below, or negligibly past the peak of the growth curve?
@@ -244,10 +276,22 @@ def resolve(free_optimum: float, *, curve: dict[float, float] | None = None,
     reasons.append(why)
 
     r = float(min(max(readiness, 0.0), 1.0))
-    floor = target * r if mandate else 0.0
+
+    # THE FLOOR IS THE TARGET, FLAT. "it should minimum cover 20% heat cap 24/7 deployed minimum
+    # ... if it allows up to 30 we let it do 30" -- the principal, 2026-09-02, after being shown
+    # that 20% on the current three-leg gold book implies ~90% drawdown on that book's own worst
+    # 33.7R run against a stated 35% tolerance. That is their decision, recorded here rather than
+    # re-litigated on every pass.
+    #
+    # An earlier version ramped this floor with `readiness` so the target had to be EARNED with
+    # out-of-sample evidence. The instruction supersedes it. Readiness is still measured and
+    # still reported every pass -- it is the honest statement of how much of this book has traded
+    # rather than been fitted -- it simply no longer gates the budget.
+    floor = target if mandate else 0.0
     if mandate:
-        reasons.append(f"utilisation floor {floor:.2%} = {target:.0%} target x {r:.1%} readiness"
-                       + (f" ({readiness_why})" if readiness_why else ""))
+        reasons.append(f"utilisation floor {floor:.2%} (flat target, principal 2026-09-02); "
+                       f"readiness {r:.1%} is REPORTED, not gating"
+                       + (f" -- {readiness_why}" if readiness_why else ""))
 
     h = float(free_optimum)
     binding = "growth"
