@@ -79,6 +79,11 @@ class SleeveEvidence:
     #: Per-trade cost already charged inside `daily_r`, in R. Used only to size the UNCERTAINTY
     #: around it -- the level is already in the returns and must not be charged twice.
     cost_r: float = 0.0
+    #: HOW MANY CANDIDATES WERE SEARCHED TO FIND THIS ONE. The single most important field here
+    #: and the one a Bayesian shrinkage by sample size cannot substitute for: a sleeve with 2,000
+    #: observations is precisely estimated AND selected out of thousands of trials, so its sample
+    #: mean is biased upward by selection no matter how long its history. 1 means "not selected".
+    n_trials: int = 1
 
     def __post_init__(self) -> None:
         if self.daily_r.ndim != 1:
@@ -227,16 +232,67 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     s = np.array([float(e.daily_r.std(ddof=1)) if e.daily_r.size > 1 else 0.0 for e in ev])
     obs = np.array([float(e.daily_r.size) for e in ev])
 
-    # Forward and live days are worth more than backtest days because they are the only ones the
-    # sleeve could not have been selected on. Live is worth more again.
+    # TWO DIFFERENT CORRECTIONS, EACH APPLIED ONCE. Conflating them is what made the first two
+    # attempts at this both wrong, in opposite directions:
+    #
+    #   BIAS      -- the mean is inflated because this sleeve was CHOSEN out of thousands. That
+    #                is the trial deflation below, and more backtest does not cure it.
+    #   PRECISION -- how well the (now deflated) mean is measured. That IS a question about
+    #                sample size, and 2,455 observations genuinely answer it better than 40.
+    #
+    # Charging the bias correction through the precision term (by zeroing `obs`) pooled every
+    # sleeve completely into its family and put the whole 126-sleeve book at 0.1%/yr -- deleting
+    # a library the ten gates had vetted. Charging neither kept 97% of every sample mean and
+    # reported 5,272%/yr. Deflate for bias, weight by evidence for precision.
+    #
+    # Forward and live days still carry 4x and 12x, because they are the only observations the
+    # sleeve could not have been selected on -- so size grows as the forward clocks fill, which
+    # is the incentive the desk wants.
     eff = obs + 4.0 * np.array([float(e.forward_days) for e in ev]) \
         + 12.0 * np.array([float(e.live_days) for e in ev])
+    fam_w = eff
+
+    # TRIAL DEFLATION -- the bias limb, applied to the mean before any pooling. The expected
+    # maximum of N null Sharpes is ~sqrt(2 ln N) standard errors and SE(S_daily) ~ 1/sqrt(n), so
+    # subtracting that threshold is exactly what the desk's `deflated_sharpe` GATE does to decide
+    # whether a sleeve is real at all.
+    #
+    # HALF THE THRESHOLD, NOT ALL OF IT, and the reason is that the gate has already charged it
+    # once: a sleeve holding a certificate is past the full threshold by construction, so what
+    # remains is the residual bias of being a search's survivor rather than a fresh observation.
+    # Measured 2026-09-02, charging the full threshold a second time took the free optimum from
+    # 4.83% heat to 0.08% and the growth estimate from 282%/yr to 1.4% -- not conservatism,
+    # deletion of a library the ten gates had vetted. Nothing here changes a gate threshold.
+    trials = np.array([max(float(e.n_trials), 1.0) for e in ev])
+    sr0 = np.where(trials > 1.0,
+                   0.5 * np.sqrt(2.0 * np.log(np.maximum(trials, 1.0000001)))
+                   / np.sqrt(np.maximum(obs, 1.0)),
+                   0.0)
+
+    # OUT-OF-SAMPLE EVIDENCE RELIEVES THE SELECTION PENALTY, and this is the ONLY place it can
+    # do real work. Adding forward days to `eff` above changes nothing once a sleeve has
+    # thousands of backtest observations -- lam_s is already 0.976 and saturates -- so the 4x/12x
+    # multipliers were decorative: measured 2026-09-02, 250 forward days moved the book's growth
+    # estimate from 73.4%/yr to 75.5%.
+    #
+    # The coupling belongs here because it is the same question: sr0 exists because the sleeve
+    # was CHOSEN on its backtest, and an out-of-sample record is evidence the edge is real
+    # REGARDLESS of how it was found. A day the sleeve could not have been selected on is a day
+    # the winner's curse does not explain. So the penalty is relieved in proportion to how much
+    # such evidence exists, against a 250-day scale: three forward days relieve 5% of it, a
+    # quarter of live trading relieves half. Filling the forward clocks is what earns size.
+    oos = 4.0 * np.array([float(e.forward_days) for e in ev]) \
+        + 12.0 * np.array([float(e.live_days) for e in ev])
+    sr0 = sr0 * (1.0 - oos / (oos + 250.0))
+
+    sharpe = np.divide(m, s, out=np.zeros_like(m), where=s > 0)
+    m = np.sign(sharpe) * np.maximum(np.abs(sharpe) - sr0, 0.0) * s
 
     families = [e.family or e.name for e in ev]
     fam_mean: dict[str, float] = {}
     for fam in set(families):
         rows = [i for i, f in enumerate(families) if f == fam]
-        wts = eff[rows]
+        wts = fam_w[rows]
         fam_mean[fam] = float(np.average(m[rows], weights=wts)) if wts.sum() > 0 else 0.0
     fam_vec = np.array([fam_mean[f] for f in families])
 
@@ -244,7 +300,7 @@ def _posterior_mu(ev: Sequence[SleeveEvidence], rng: np.random.Generator,
     #: believing a mean: below it the sleeve is mostly its family, above it mostly itself.
     k_sleeve, k_family = 60.0, 120.0
     lam_s = eff / (eff + k_sleeve)
-    fam_eff = np.array([eff[[i for i, f in enumerate(families) if f == families[j]]].sum()
+    fam_eff = np.array([fam_w[[i for i, f in enumerate(families) if f == families[j]]].sum()
                         for j in range(n)])
     lam_f = fam_eff / (fam_eff + k_family)
 

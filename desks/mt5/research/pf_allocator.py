@@ -397,8 +397,34 @@ def align(daily: pd.DataFrame, certified: dict[str, pd.Series] | None) -> pd.Dat
                         index=idx, dtype=float)
 
 
+def search_trials() -> dict[str, int]:
+    """Trials each hunt searched, from the desk's own gate reports. The winner's-curse input.
+
+    `QQUANT_GATES.json` records n_trials per hunt (hunt12: 2,023; hunt16: 3,001) and
+    `universal_gates_external.json` records the external campaign's. These are the numbers the
+    `deflated_sharpe` gate already uses to decide WHETHER a sleeve is real; the allocator uses
+    them to decide how much of its measured edge to bet on. Absent report = 1 trial, i.e. no
+    deflation -- which is the conservative direction for the GATE and the aggressive one here, so
+    it is reported rather than assumed away.
+    """
+    out: dict[str, int] = {}
+    for f, key in ((BASE / "reports" / "QQUANT_GATES.json", "n_trials"),
+                   (BASE / "reports" / "universal_gates_external.json", "n_trials")):
+        try:
+            doc = json.loads(f.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        v = doc.get(key)
+        if isinstance(v, dict):
+            out.update({str(k): int(n) for k, n in v.items() if isinstance(n, (int, float))})
+        elif isinstance(v, (int, float)):
+            out["external"] = int(v)
+    return out
+
+
 def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
-                    live: dict[str, int]) -> list[SleeveEvidence]:
+                    live: dict[str, int],
+                    trials: dict[str, int] | None = None) -> list[SleeveEvidence]:
     """Fold backtest, certified, forward and live evidence into one record per sleeve.
 
     THE UNIVERSE IS THE UNION, which is the whole point. The backtest matrix (gold book + hunt12
@@ -428,8 +454,16 @@ def sleeve_evidence(daily: pd.DataFrame, forward: dict[str, dict[str, float]],
         fam = ("session_bracket" if name.startswith("gold_") or parts[-1].endswith("_DAY")
                or (len(parts) > 2 and parts[-1] in ("TREND", "NORMAL", "RANGE"))
                else "_".join(parts[1:-1]) or "unspecified")
+        # WHICH SEARCH FOUND IT decides how hard its mean is deflated. A session-bracket sleeve
+        # came out of the hunt12/hunt16 grid; a certified external sleeve came out of the
+        # external campaign. Unknown provenance takes the LARGEST known trial count rather than
+        # the smallest: an unattributable sleeve must not be the least-deflated thing in the book
+        # (L1.28a), which is the same rule cap_by_heat applies to an unpriceable one.
+        tr = trials or {}
+        n_trials = (max(tr.get("hunt12", 1), tr.get("hunt16", 1)) if fam == "session_bracket"
+                    else tr.get("external", max(tr.values()) if tr else 1))
         out.append(SleeveEvidence(
-            name=name, daily_r=hist, family=fam, symbol=parts[0],
+            name=name, daily_r=hist, family=fam, symbol=parts[0], n_trials=int(n_trials),
             forward_days=len(fwd), live_days=int(live.get(name, 0)),
             # Cost LEVEL is already inside the replayed R multiples (Costs.from_symbol at the
             # honest 2x baseline); this is the per-trade scale used to size the UNCERTAINTY
@@ -597,7 +631,9 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     daily = align(daily, certified)
     _log(f"aligned universe: {daily.shape[1]} sleeves on {daily.shape[0]} trading days")
     forward, fwd_acct = join_forward([str(c) for c in daily.columns], forward)
-    ev = sleeve_evidence(daily, forward, live)
+    trials = search_trials()
+    _log(f"search intensity for deflation: {trials or 'UNMEASURED (no deflation applied)'}")
+    ev = sleeve_evidence(daily, forward, live, trials)
     dd = worst_dd_r(daily)
 
     labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
@@ -742,6 +778,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "note": worlds.note,
             "forward_join": fwd_acct,
             "certified_library": cert_acct,
+            "search_trials": trials,
         },
         "solver": {"iterations": book.iterations, "converged": book.converged},
     }
