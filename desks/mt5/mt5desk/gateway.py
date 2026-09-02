@@ -1227,6 +1227,40 @@ def reconcile(st: dict) -> dict:
     return st
 
 
+def _position_context(deal: object) -> tuple[float, float, float, str]:
+    """(entry price, stop, take-profit, comment) for the position a closing deal belongs to.
+
+    MT5 splits what this desk needs across two record types and joins them only on
+    `position_id`: the DEAL holds the executed price and P&L, the ORDER holds the stop and
+    target. A closing deal therefore knows what it made and not what it risked, and R is the
+    ratio of the two -- so both must be fetched.
+
+    RETURNS ZEROS RATHER THAN RAISING. A single unreadable position must not abort the loop that
+    records every other fill: that is exactly how one AttributeError kept the entire live ledger
+    empty while the account carried real P&L.
+    """
+    pid = getattr(deal, "position_id", None)
+    if not pid:
+        return 0.0, 0.0, 0.0, ""
+    entry = sl = tp = 0.0
+    comment = ""
+    try:
+        for o in (mt5.history_orders_get(position=pid) or ()):
+            if not comment:
+                comment = str(getattr(o, "comment", "") or "")
+            if float(getattr(o, "sl", 0.0) or 0.0) > 0:
+                sl = float(o.sl)
+                tp = float(getattr(o, "tp", 0.0) or 0.0)
+        for x in (mt5.history_deals_get(position=pid) or ()):
+            if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
+                entry = float(getattr(x, "price", 0.0) or 0.0)
+                break
+    except Exception as exc:                                    # noqa: BLE001
+        log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
+        return 0.0, 0.0, 0.0, comment
+    return entry, sl, tp, comment
+
+
 def record_trades(st: dict, sleeves: list[dict]) -> None:
     """Append closed trades (deal OUT with DW comment) to the live ledger.
 
@@ -1267,7 +1301,19 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
             continue
         if getattr(d, "ticket", None) in seen_deals:
             continue
-        comment = (d.comment or "")
+        # A DEAL CARRIES NO STOP, NO TAKE-PROFIT AND NO ENTRY PRICE, and this function read all
+        # three off it. MEASURED 2026-09-02 on the live box: every pass raised
+        # `AttributeError("'TradeDeal' object has no attribute 'price_open'")` and the whole
+        # trade loop aborted, so `live_ledger.jsonl` was never written -- the file whose absence
+        # was diagnosed on 2026-09-01 as a comment-prefix problem and fixed there. That fix was
+        # necessary and not sufficient: the function could not run at all.
+        #
+        # MT5's own shapes: TradeDeal has {price, position_id, order, entry, profit, commission,
+        # swap, volume}; TradeOrder has {price_open, sl, tp}. So the risk this trade actually
+        # took is reconstructed from the position's OPENING deal (entry price) and its ORDER
+        # (stop), joined on position_id -- the only join MT5 offers between the two.
+        entry_price, sl_price, tp_price, order_comment = _position_context(d)
+        comment = (d.comment or order_comment or "")
         # MAGIC IS THE IDENTITY, NOT THE COMMENT. history_deals_get already filtered to
         # magic=MAGIC, so every deal here is this gateway's own; requiring the comment to ALSO
         # start with "DW" made a broker-side rewrite silently discard the entire ledger. Brokers
@@ -1284,8 +1330,14 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
             continue
         # risk per lot at entry: SL distance x contract (quote units)
         pl_quote = float(d.profit) + float(d.commission or 0.0) + float(d.swap or 0.0)
-        risk_quote = (d.price_open - d.sl if d.type == mt5.POSITION_TYPE_BUY
-                      else d.sl - d.price_open)
+        if entry_price <= 0 or sl_price <= 0:
+            # UNRECONSTRUCTIBLE IS RECORDED, NEVER GUESSED. Without both the entry and the stop
+            # there is no R multiple, and inventing one would put a fabricated number into the
+            # ledger the promoter uses to retire live sleeves (L1.28a).
+            risk_quote = 0.0
+        else:
+            risk_quote = (entry_price - sl_price if d.type == mt5.POSITION_TYPE_BUY
+                          else sl_price - entry_price)
         risk_per_lot = max(risk_quote, 0.0) * sym_info.trade_contract_size
         r = pl_quote / risk_per_lot if risk_per_lot > 0 else 0.0
         rec = {"time": now(), "sleeve": sleeve, "symbol": d.symbol,
@@ -1297,7 +1349,9 @@ def record_trades(st: dict, sleeves: list[dict]) -> None:
                # possible: the one number that reveals execution quality was computed and
                # discarded on every single trade. contract_size travels with it so slippage can
                # be converted to account currency without a second lookup at analysis time.
-               "fill_price": float(d.price_open), "sl": float(d.sl), "tp": float(d.tp),
+               "fill_price": float(d.price), "entry_price": float(entry_price),
+               "sl": float(sl_price), "tp": float(tp_price),
+               "r_unreconstructible": bool(entry_price <= 0 or sl_price <= 0),
                "order": getattr(d, "order", None),
                "contract_size": float(sym_info.trade_contract_size),
                "risk_quote": round(float(risk_quote), 6),
