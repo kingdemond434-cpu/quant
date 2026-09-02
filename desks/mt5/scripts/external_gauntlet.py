@@ -366,11 +366,55 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
 
 
-def partition_at_economic_prior(specs: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Apply gate 1 before constructing signals and return eligible specs plus exact rejects."""
+def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
+    """Can this desk ever place an order on `sym`, and hold bars to run a forward clock on it?
+
+    A SYMBOL THE DESK CANNOT TRADE CANNOT PRODUCE A SURVIVOR (L1.49 -- a gate that cannot be
+    cashed is not a survivor). Measured 2026-09-02: eight certificates -- six on `AFG`, two on
+    `AFL` -- had passed all ten gates on symbols absent from `universe.json` AND with no
+    `<sym>_H1.parquet` on the box. They can never enrol a forward clock, so the ten gates were
+    spent producing rows that look exactly like tradeable survivors in every artifact that counts
+    them, and the desk's certificate count was inflated by things it can never own.
+
+    BOTH CONDITIONS ARE REQUIRED and they answer different questions: registry membership is
+    "will the broker quote it", parquet presence is "can the clock replay it". Either missing and
+    the cell is UNTRADEABLE, named as such rather than failed -- it is not a bad edge, it is an
+    edge on an instrument this desk does not have.
+    """
+    if sym not in meta:
+        return False, f"symbol {sym!r} is absent from the universe registry"
+    if not (UNI / f"{sym}_H1.parquet").exists():
+        return False, f"symbol {sym!r} has no {sym}_H1.parquet; no clock can replay it"
+    return True, ""
+
+
+def partition_at_economic_prior(specs: list[dict],
+                                meta: dict | None = None) -> tuple[list[dict], list[dict]]:
+    """Apply gate 1 before constructing signals and return eligible specs plus exact rejects.
+
+    TRADEABILITY IS CHECKED FIRST, before the mechanism. A cell on a symbol the desk does not
+    have is not a weak hypothesis to be judged -- there is nothing to judge it with, and running
+    the other nine gates on it spends the sweep's budget manufacturing uncashable certificates.
+    `meta` is optional so no existing caller breaks; without it only the mechanism limb runs and
+    the artifact says which limbs were applied.
+    """
     eligible: list[dict] = []
     rejected: list[dict] = []
     for spec in specs:
+        if meta is not None:
+            ok, why = symbol_is_tradeable(str(spec.get("sym") or ""), meta)
+            if not ok:
+                rejected.append({
+                    "cell": cell_id(spec),
+                    "sym": spec["sym"],
+                    "family": spec["family"],
+                    "days": 0,
+                    "passed": False,
+                    "terminal_gate": "symbol_eligibility",
+                    "stages": {"symbol_eligibility": {"passed": False, "message": why}},
+                    "downstream_status": "NOT_RUN_UNTRADEABLE_SYMBOL",
+                })
+                continue
         stage = economic_prior(spec)
         if stage["passed"]:
             eligible.append(spec)
@@ -815,8 +859,15 @@ def main():
     # the first canonical gate. Before this partition, 2,760 such rows consumed days of signal
     # construction, CPCV and walk-forward work despite having zero path to a certificate. Record
     # each exact reject, but reserve downstream compute for candidates still capable of passing.
-    eligible_specs, prior_rejections = partition_at_economic_prior(list(cells.values()))
-    print(f"Economic prior: {len(eligible_specs)} advance; {len(prior_rejections)} terminal reject")
+    # `meta` IS PASSED so the tradeability limb runs. Without it the sweep spends the other nine
+    # gates on symbols the desk does not have and mints certificates that can never enrol a
+    # forward clock -- eight of them existed when this was wired (6x AFG, 2x AFL).
+    eligible_specs, prior_rejections = partition_at_economic_prior(list(cells.values()), meta)
+    _untradeable = sum(1 for r in prior_rejections
+                       if r.get("terminal_gate") == "symbol_eligibility")
+    print(f"Gate 0: {len(eligible_specs)} advance; {len(prior_rejections)} terminal reject "
+          f"({_untradeable} untradeable symbol, "
+          f"{len(prior_rejections) - _untradeable} no economic prior)")
 
     # Build cell objects -- CACHE FIRST. A cell whose (identity, params, last complete data-day)
     # was already computed loads its 1x and 3x daily series and skips signal generation AND both

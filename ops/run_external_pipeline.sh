@@ -33,6 +33,24 @@ LOGF=data/cro_ai_logs/external_pipeline_gauntlet.log
 # remote failure, because the two demand different repairs.
 REMOTE_STAGE_TIMEOUT="${REMOTE_STAGE_TIMEOUT:-25m}"
 
+# `timeout ... ssh` KILLS THE SSH CLIENT, NOT THE REMOTE PROCESS, and on this desk that is the
+# difference between a bounded stage and a box that slowly stops working. MEASURED 2026-09-02:
+# the 10:44 gauntlet was reported TIMED OUT at 11:09 and its python was still resident on the
+# desk box at 11:41 holding 1.2 GB, beside two more orphans from the same run (570 MB, 778 MB).
+# Six python processes held 3.1 GB of the box's 8.4 GB, so `edge_search` -- which needs ~2000 MB
+# -- found 891 MB, stood down, and edge_search_results.json went 9.1 hours stale and was
+# STALE_SKIPPED by the merge. The desk stopped producing candidates because its timeouts leaked.
+#
+# Every orphan is one hour's stage that reported failure and kept running. They accumulate, so
+# the box degrades monotonically until something restarts it -- which is exactly what "no new
+# certificates and no new clocks" looks like from the outside.
+reap_remote () {    # reap_remote <pattern> -- kill desk-box pythons whose command line matches
+  local pat="$1"
+  timeout 90 ssh -o ConnectTimeout=20 contabo-mt5 \
+    "powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\"Name='python.exe'\\\" | Where-Object { \$_.CommandLine -like '*${pat}*' } | ForEach-Object { Write-Output ('reaped ' + \$_.ProcessId + ' ' + [math]::Round(\$_.WorkingSetSize/1MB) + 'MB'); Stop-Process -Id \$_.ProcessId -Force }\"" \
+    2>>"$LOGF" | tr -d '\r'
+}
+
 remote_stage () {   # remote_stage <label> <remote command>
   local label="$1"; shift
   # These searches legitimately keep one SSH session open for 20+ minutes.  The default
@@ -44,6 +62,17 @@ remote_stage () {   # remote_stage <label> <remote command>
   local rc=$?
   if [ "$rc" -eq 124 ]; then
     echo "$label TIMED OUT after $REMOTE_STAGE_TIMEOUT on the desk box -- later stages still run"
+    # REAP WHAT THE TIMEOUT DID NOT. Matched on the script name inside the remote command so a
+    # timed-out gauntlet reaps gauntlets and nothing else -- never a blanket python kill, which
+    # would take the MT5 gateway and the forward engine with it.
+    local script
+    script=$(printf '%s\n' "$@" | grep -oE '[A-Za-z0-9_]+\.py' | head -1)
+    if [ -n "$script" ]; then
+      echo "$label: reaping orphaned $script on the desk box"
+      reap_remote "$script" | sed "s/^/  $label /"
+    else
+      echo "$label: TIMED OUT and no script name could be matched -- an orphan may remain"
+    fi
   elif [ "$rc" -ne 0 ]; then
     echo "$label FAILED with rc=$rc on the desk box -- later stages still run"
   fi
