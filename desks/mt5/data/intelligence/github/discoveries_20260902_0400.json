@@ -1,0 +1,126 @@
+[
+  {
+    "source": "github",
+    "repo": "ashikscreativemath-commits/Paldo-ALM",
+    "url": "https://github.com/ashikscreativemath-commits/Paldo-ALM",
+    "description": "\ud83e\udde0 Build adaptive algorithmic trading bots using machine learning and custom logic for MetaTrader 5 scalping and swing strategies.",
+    "stars": 21,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "scalping",
+      "swing"
+    ],
+    "confidence": 0.321
+  },
+  {
+    "source": "github",
+    "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
+    "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
+    "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
+    "stars": 81,
+    "language": null,
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.281
+  },
+  {
+    "source": "github",
+    "repo": "Evangeline668/forex-market-balance-trading-system",
+    "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
+    "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
+    "stars": 84,
+    "language": null,
+    "symbols": [],
+    "patterns": [
+      "SMA",
+      "smart money"
+    ],
+    "confidence": 0.384
+  },
+  {
+    "source": "github",
+    "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
+    "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
+    "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
+    "stars": 82,
+    "language": null,
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.28200000000000003
+  },
+  {
+    "source": "github",
+    "repo": "ilahuerta-IA/tradingsystem",
+    "url": "https://github.com/ilahuerta-IA/tradingsystem",
+    "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+    "stars": 16,
+    "language": "Python",
+    "symbols": [],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.16599999999999998
+  },
+  {
+    "source": "github",
+    "repo": "NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "url": "https://github.com/NadirAliOfficial/-MT5-LSTM-Trading-Bot-GBPUSD-",
+    "description": "A complete trading automation framework using MetaTrader 5, LSTM Neural Networks, and Python. The bot detects engulfing candlestick patterns, combines volume and pivot-based signals, and trades GBPUSD using a risk-managed strategy with trailing stop-loss, partial take-profit, and live execution support.",
+    "stars": 14,
+    "language": "Python",
+    "symbols": [
+      "GBPUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.21400000000000002
+  },
+  {
+    "source": "github",
+    "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
+    "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
+    "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
+    "stars": 82,
+    "language": null,
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "momentum"
+    ],
+    "confidence": 0.432
+  },
+  {
+    "source": "github",
+    "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
+    "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
+    "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
+    "stars": 82,
+    "language": null,
+    "symbols": [],
+    "patterns": [
+      "SMA",
+      "smart money"
+    ],
+    "confidence": 0.382
+  },
+  {
+    "source": "github",
+    "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+    "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
+    "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
+    "stars": 82,
+    "language": null,
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.432
+  }
+]

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T00:19:58+00:00",
+ "built_at": "2026-09-02T11:19:29+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1502,33 +1502,143 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "carry_change",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:cross_market_move|continuation",
+   "name": "transition_correlation_flip",
    "compiled": true,
    "family": "generic",
    "params": {
     "event": "cross_market_move",
-    "context": "asia",
+    "context": "low_liquidity",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "cross_market_move|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): a named peer's return, lagged >=1 bar (CrossAssetAdapter) measures a SECOND instrument's move leading this one. UNBLOCKED 2026-08-29: 251 instruments were on disk while the generic family looked at one instrument's own return. The adapter takes a real peer, lags it strictly (lag>=1 is asserted, not assumed), and picks an unnamed peer by shared currency -- NEVER by correlation, which would select on the outcome being tested.",
+   "data_source": "Yahoo Finance indices (SPX, NDX, FTSE, Nikkei, DJIA)",
+   "kill": "Momentum continuation fails in 60%+ of cases across 80 correlation-flip events within 3-month window",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "LEE_FUNDING_SHOCK",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "high_vol",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|high_vol|magnitude|convergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "Coinalyze.net + TradingView",
+   "kill": "If spread converges within 30min without 2\u03c3 re-trigger, kill after 5 consecutive failed transitions",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "transition_liquidity_drain",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "positioning_extreme",
+    "context": "high_liquidity",
+    "direction": "divergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "positioning_extreme|high_liquidity|magnitude|divergence|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): net non-commercial positioning / open interest, z-scored over 52 weeks, lagged 4 days to publication (CotPositioningAdapter) measures COT/TFF net positioning versus its own history. UNBLOCKED 2026-08-29: the desk always had COT parquets and the generic family used price extension instead. The adapter reads the real series and lags it to publication so no bar sees a report before it was public. VALIDATED_PROXY rather than DIRECT because the release is weekly while the claim is intraday -- the level is real, its resolution is coarse.",
+   "data_source": "CFTC COT futures",
+   "kill": "Kill if no spread widening occurs in next 3 consecutive extreme events",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "FUNDING_STRESS_CASCADE",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "high_vol",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|high_vol|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "FRED public cross-currency basis (daily) + investing.com FX forward points (free)",
+   "kill": "Edge vanishes when filtering for central bank meeting days",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CADMXN_COLLATERAL_MISMATCH",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "low_liquidity",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|low_liquidity|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "Bank of Canada swap eligibility lists + Banco de Mexico swap collateral rules + Reuters CADMXN swap rates",
+   "kill": "Kill if basis converges within 48h for >80% of observations or basis <5bps for >50% of sample",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "CARRY_UNRAVEL",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "high_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|high_liquidity|magnitude|reversal|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "FRED economic data API (basis swaps) + OANDA streaming FX",
+   "kill": "No statistically significant (p<0.05) divergence in basis velocity precedes 0.5% adverse excursion in 75% of events across all three pairs over 12-month rolling validation; or average time-in-market exceeds 50% without directional bias</think>LIQUIDITY_MELT",
+   "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "MA_Slope_Dispersion",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "volatility_shock",
+    "context": "low_vol",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "volatility_shock|low_vol|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): bar range minus its 20-bar mean measures realised volatility relative to its own recent level. range IS a realised-volatility measure at bar resolution",
+   "data_source": "Dukascopy free historical 1\u2011min CSV for EURUSD, GBPUSD, USDJPY, AUDUSD, USDCAD, USDCHF, NZDUSD",
+   "kill": "6\u2011month rolling Sharpe of the dispersion\u2011sorted portfolio \u22640",
+   "lens": "SECOND ORDER",
    "promotion_authority": false
   }
  ]

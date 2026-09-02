@@ -1,0 +1,362 @@
+[
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipnet-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipnet-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipsdominator",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipsdominator&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipsmineree-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipsmineree-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipsplus",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipsplus&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipspring-renko",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipspring-renko&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipspring-renko-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipspring-renko-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pipssniper",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pipssniper&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pitbossfx",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pitbossfx&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pitbull-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pitbull-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pivot-trader-live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pivot-trader-live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pivot-trader-pro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pivot-trader-pro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pivot_trader_pro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pivot_trader_pro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pivottraderpro",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pivottraderpro&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user platina-trader",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=platina-trader&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user platinum-forex-bot",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=platinum-forex-bot&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user platinumforexbot-bfr",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=platinumforexbot-bfr&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user plug-in",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=plug-in&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user plug-in-forex",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=plug-in-forex&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pmts_elysium",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pmts_elysium&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pogigilas",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pogigilas&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user poison-robot-hacked",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=poison-robot-hacked&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user poisonrobothacked",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=poisonrobothacked&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user polystats_alparilive",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=polystats_alparilive&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user ponder-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=ponder-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user portfolio",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=portfolio&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user portfolio_nemeth1",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=portfolio_nemeth1&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user portreal",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=portreal&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pow_test",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pow_test&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerflow",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerflow&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerful-forex-real",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerful-forex-real&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerful-forex-review",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerful-forex-review&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerfulforex",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerfulforex&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerfulforex-ea",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerfulforex-ea&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerfulforex-live",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerfulforex-live&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerfulforex__2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerfulforex__2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerfulforex_demo",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerfulforex_demo&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerhouse_eva",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerhouse_eva&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powerpun2",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powerpun2&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user powertron",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=powertron&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ },
+ {
+  "source": "fxblue",
+  "kind": "track_record",
+  "title": "FX Blue user pp226",
+  "url": "https://api.fxblue.com/wl/view.aspx?id=pp226&mode=overview&isinline=1",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-02T01:23:50+00:00"
+ }
+]
