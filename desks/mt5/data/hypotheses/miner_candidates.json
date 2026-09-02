@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-02T16:18:39+00:00",
+ "compiled_at": "2026-09-02T17:15:33+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4535,9 +4535,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 39,
+   "rows": 38,
    "candidates": 0,
-   "deepening": 39
+   "deepening": 38
   },
   "litefinance": {
    "rows": 15,
@@ -4680,8 +4680,8 @@
    "deepening": 4
   }
  },
- "rows_accounted": 1091,
+ "rows_accounted": 1090,
  "executable_candidates": 373,
- "deepening_tasks": 635,
+ "deepening_tasks": 637,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

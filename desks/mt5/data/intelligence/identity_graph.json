@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-02T16:24:41+00:00",
+ "rebuilt_at": "2026-09-02T17:25:14+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -940,7 +940,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -955,7 +955,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -970,7 +970,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -985,7 +985,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1001,7 +1001,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 2,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1076,7 +1076,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1091,7 +1091,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 4,
+    "longevity_max_d": 5,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1136,7 +1136,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 3,
+    "longevity_max_d": 4,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1151,7 +1151,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 3,
+    "longevity_max_d": 4,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1333,7 +1333,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1424,6 +1424,36 @@
    },
    "cohorts": [
     "e89108b2230be815"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "roseshayan": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "157dbb230f7f4568"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "drixzor": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "43effba26bdc8976"
    ],
    "scores": {
     "independent_evidence": 1,

@@ -1,5 +1,5 @@
 {
-"cursor": 174,
+"cursor": 175,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -389,6 +389,9 @@
 "copy trading MT4",
 "copy trading MT5",
 "copy trading ranking",
+"drawdown MT4",
+"drawdown MT5",
+"drawdown ranking",
 "gain MT4",
 "gain MT5",
 "gain ranking",

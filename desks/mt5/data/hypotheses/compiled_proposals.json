@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T16:19:06+00:00",
+ "built_at": "2026-09-02T17:19:21+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1642,18 +1642,23 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "ORDER_FLOW_PRESSURE_TRANSITION",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
+    "event": "inventory_rebalance",
+    "context": "low_vol",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "inventory_rebalance|low_vol|magnitude|continuation|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "MT5 L2 Depth-of-Market ticks (DOM snapshots aggregated 1s) + ATR(20) regime label",
+   "kill": "t-stat on returns <1.5 OR <55% directional accuracy OR avg trade Sharpe <0.3 over 100 trades",
+   "lens": "MECHANISM TRANSITION",
    "promotion_authority": false
   }
  ]
