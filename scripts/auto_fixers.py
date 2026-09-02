@@ -75,21 +75,56 @@ def _clear_lock(job: str) -> None:
     _ssh(f"cmd /c del /q C:\\opt\\quant\\desks\\mt5\\data\\.job_locks\\{job}.json 2>nul")
 
 
+#: A desk-box research process older than this is an orphan, not a long run. edge_search and the
+#: gauntlet are bounded by a 25-minute remote-stage timeout, so anything past an hour is a
+#: process whose supervisor is already gone.
+_ORPHAN_AGE_MIN = 60
+
+
+def _reap_desk(script: str, older_than_min: int = _ORPHAN_AGE_MIN) -> str:
+    """Kill desk-box pythons running `script` that outlived their supervisor. Returns what died.
+
+    WHY EVERY RELAUNCHING FIXER MUST DO THIS FIRST. `timeout ... ssh` kills the SSH CLIENT, not
+    the remote process, so a timed-out stage keeps running on the desk box after the pipeline has
+    reported it dead. MEASURED 2026-09-02: a gauntlet orphan from 10:44 was still resident at
+    11:41 holding 1.3 GB beside a sweep orphan from 10:12; six pythons held 3.1 GB of the box's
+    8.4 GB, and edge_search -- which needs ~2000 MB -- found 891 MB and stood down.
+
+    THE FIXERS MADE IT WORSE. `fix_search` cleared the lock and started a SECOND edge_search
+    while the first was still resident, so every repair attempt added a process to a box that
+    was already starved and the artifact went 9.1 hours stale anyway. Clearing a lock is not
+    reclaiming a slot: the lock is a flag, the memory is the constraint.
+
+    MATCHED ON THE SCRIPT NAME and bounded by age, never a blanket python kill -- the same box
+    runs the MT5 gateway and the forward engine.
+    """
+    rc, out = _ssh(
+        "powershell -NoProfile -Command \""
+        f"$cut = (Get-Date).AddMinutes(-{int(older_than_min)}); "
+        "Get-CimInstance Win32_Process -Filter \\\"Name='python.exe'\\\" | "
+        f"Where-Object {{ $_.CommandLine -like '*{script}*' -and $_.CreationDate -lt $cut }} | "
+        "ForEach-Object { Write-Output ('reaped ' + $_.ProcessId + ' ' + "
+        "[math]::Round($_.WorkingSetSize/1MB) + 'MB'); Stop-Process -Id $_.ProcessId -Force }\"")
+    return out.strip()[-160:] if rc == 0 else f"reap failed rc={rc}"
+
+
 # ----------------------------------------------------------------------------- fixers by class
 def fix_search() -> tuple[bool, str]:
     """Dead family-free searcher: clear a possibly-orphaned lock, run the leg on the desk."""
+    reaped = _reap_desk("edge_search.py")
     _clear_lock("edge_search")
     ok, out = _desk_task("MT5-Hourly")     # the desk hourly runs the search leg with its inputs
     rc, _out2 = _ssh("cmd /c \"cd /d C:\\opt\\quant\\desks\\mt5 && "
                     "start /b py -3 -W ignore research\\edge_search.py\"")
-    return (ok or rc == 0), f"lock cleared; task={out} direct_rc={rc}"
+    return (ok or rc == 0), f"{reaped}; lock cleared; task={out} direct_rc={rc}"
 
 
 def fix_sweep() -> tuple[bool, str]:
+    reaped = _reap_desk("orthogonal_sweep.py")
     _clear_lock("orthogonal_sweep")
     rc, out = _ssh("cmd /c \"cd /d C:\\opt\\quant\\desks\\mt5 && "
                    "start /b py -3 -W ignore research\\orthogonal_sweep.py\"")
-    return rc == 0, f"lock cleared; direct_rc={rc} {out[-80:]}"
+    return rc == 0, f"{reaped}; lock cleared; direct_rc={rc} {out[-80:]}"
 
 
 def fix_docket() -> tuple[bool, str]:
@@ -109,8 +144,13 @@ def fix_docket() -> tuple[bool, str]:
 
 
 def fix_gauntlet() -> tuple[bool, str]:
+    # REAP BEFORE RELAUNCH. The gauntlet is the biggest and longest of the desk-box jobs and the
+    # one the pipeline times out at 25 minutes, so it is the most frequent orphan: the 10:44 run
+    # was reported TIMED OUT at 11:09 and still held 1.3 GB at 11:41. Starting a second one on
+    # top is how the box reaches six resident pythons and stops fitting anything.
+    reaped = _reap_desk("external_gauntlet.py")
     ok, out = _desk_task("MT5-Gauntlet")
-    return ok, out
+    return ok, f"{reaped}; task={out}"
 
 
 def fix_shadow() -> tuple[bool, str]:
