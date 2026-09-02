@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T15:13:23+00:00",
+ "built_at": "2026-09-02T16:18:39+00:00",
  "tasks": [
   {
    "source": "github",
@@ -1658,17 +1658,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
    "symbols": [],
@@ -1715,6 +1704,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1439011/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2219,8 +2219,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2230,8 +2230,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1185042/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2991,7 +2991,7 @@
   {
    "source": "myfxbook_outlook",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ANTIBOT_CHALLENGE (probe not due)",
+   "title": "ANTIBOT_CHALLENGE: still blocked: 403 Client Error: Forbidden for url: https://www.myfxbook.com/community/outlook",
    "url": "https://www.myfxbook.com/community/outlook",
    "symbols": [],
    "mechanism_tags": []
@@ -3015,327 +3015,327 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user super_scalper_ea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=super_scalper_ea&mode=overview&isinline=1",
+   "title": "FX Blue user tasics",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tasics&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user supergeek-bfr",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=supergeek-bfr&mode=overview&isinline=1",
+   "title": "FX Blue user taurustech001",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=taurustech001&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user supergoldbot_100k",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=supergoldbot_100k&mode=overview&isinline=1",
+   "title": "FX Blue user tavos-tradingland",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tavos-tradingland&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user supernews",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=supernews&mode=overview&isinline=1",
+   "title": "FX Blue user tb106991",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tb106991&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user superscalper_xyz",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=superscalper_xyz&mode=overview&isinline=1",
+   "title": "FX Blue user tbfea-mt5",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tbfea-mt5&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user supertrader999",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=supertrader999&mode=overview&isinline=1",
+   "title": "FX Blue user tctradesltd",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tctradesltd&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user surga55",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=surga55&mode=overview&isinline=1",
+   "title": "FX Blue user tdi-certificate",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tdi-certificate&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user suspendedwifollowers",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=suspendedwifollowers&mode=overview&isinline=1",
+   "title": "FX Blue user techberry",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=techberry&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sweetswings",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sweetswings&mode=overview&isinline=1",
+   "title": "FX Blue user technova-plutusbot",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=technova-plutusbot&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swing-trader-pro",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swing-trader-pro&mode=overview&isinline=1",
+   "title": "FX Blue user telegrammastone90",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=telegrammastone90&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swingvipea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swingvipea&mode=overview&isinline=1",
+   "title": "FX Blue user temper",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=temper&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swingy",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swingy&mode=overview&isinline=1",
+   "title": "FX Blue user templefx",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=templefx&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork&mode=overview&isinline=1",
+   "title": "FX Blue user templefx1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=templefx1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork10k",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork10k&mode=overview&isinline=1",
+   "title": "FX Blue user templefx3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=templefx3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork10kea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork10kea&mode=overview&isinline=1",
+   "title": "FX Blue user templefx4",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=templefx4&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork10m",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork10m&mode=overview&isinline=1",
+   "title": "FX Blue user tension-trader",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tension-trader&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork2000",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork2000&mode=overview&isinline=1",
+   "title": "FX Blue user tensiontrader",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tensiontrader&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork20000",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork20000&mode=overview&isinline=1",
+   "title": "FX Blue user tensiontrader-demo",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tensiontrader-demo&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork20k",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork20k&mode=overview&isinline=1",
+   "title": "FX Blue user terra1",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra1&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetwork2k",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetwork2k&mode=overview&isinline=1",
+   "title": "FX Blue user terra10",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra10&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetworkcom",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetworkcom&mode=overview&isinline=1",
+   "title": "FX Blue user terra11",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra11&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swinznetworkea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swinznetworkea&mode=overview&isinline=1",
+   "title": "FX Blue user terra12",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra12&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user swissrisk",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=swissrisk&mode=overview&isinline=1",
+   "title": "FX Blue user terra13",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra13&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user syahmi1278",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=syahmi1278&mode=overview&isinline=1",
+   "title": "FX Blue user terra2",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra2&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user sydap2003axilive",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=sydap2003axilive&mode=overview&isinline=1",
+   "title": "FX Blue user terra3",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra3&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user synapsi",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=synapsi&mode=overview&isinline=1",
+   "title": "FX Blue user terra4",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra4&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user synk",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=synk&mode=overview&isinline=1",
+   "title": "FX Blue user terra5",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra5&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user synktrading",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=synktrading&mode=overview&isinline=1",
+   "title": "FX Blue user terra6",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra6&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user synktrading4",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=synktrading4&mode=overview&isinline=1",
+   "title": "FX Blue user terra7",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra7&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user synktrading5",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=synktrading5&mode=overview&isinline=1",
+   "title": "FX Blue user terra8",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra8&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user syslat",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=syslat&mode=overview&isinline=1",
+   "title": "FX Blue user terra9",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terra9&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user systematic-alpha",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=systematic-alpha&mode=overview&isinline=1",
+   "title": "FX Blue user terracode",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terracode&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user szjexnesslive",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=szjexnesslive&mode=overview&isinline=1",
+   "title": "FX Blue user terracode_nic",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terracode_nic&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user t-copierserver-ffs",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=t-copierserver-ffs&mode=overview&isinline=1",
+   "title": "FX Blue user terracodealexkt",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terracodealexkt&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user tandm",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=tandm&mode=overview&isinline=1",
+   "title": "FX Blue user terracodebc",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=terracodebc&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user tarek2750",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=tarek2750&mode=overview&isinline=1",
+   "title": "FX Blue user test-ph-addsix-6801",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=test-ph-addsix-6801&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user taren-forex",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=taren-forex&mode=overview&isinline=1",
+   "title": "FX Blue user testfx-bfr",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=testfx-bfr&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user taren-live",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=taren-live&mode=overview&isinline=1",
+   "title": "FX Blue user tetrabot",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tetrabot&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user taren_forex_ea",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=taren_forex_ea&mode=overview&isinline=1",
+   "title": "FX Blue user texeddy21",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=texeddy21&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user target-trader",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=target-trader&mode=overview&isinline=1",
+   "title": "FX Blue user tfot-bfr",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=tfot-bfr&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "collective2",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "HTTP_403 (probe not due)",
+   "title": "HTTP_403: still blocked: 403 Client Error: Forbidden for url: https://collective2.com/leaderboard",
    "url": "https://collective2.com/leaderboard",
    "symbols": [],
    "mechanism_tags": []
@@ -3343,7 +3343,7 @@
   {
    "source": "forexpeacearmy",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ROBOTS_DISALLOW (probe not due)",
+   "title": "ROBOTS_DISALLOW: robots.txt still disallows ClaudeBot",
    "url": "https://www.forexpeacearmy.com/",
    "symbols": [],
    "mechanism_tags": []
@@ -4351,6 +4351,14 @@
   {
    "source": "quant_se",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "GBM with adjusted normal distribution",
+   "url": "https://quant.stackexchange.com/questions/85269/gbm-with-adjusted-normal-distribution",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "quant_se",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "APIs to get first notice date for relevant commodities / futures?",
    "url": "https://quant.stackexchange.com/questions/85816/apis-to-get-first-notice-date-for-relevant-commodities-futures",
    "symbols": [],
@@ -4581,14 +4589,6 @@
    "mechanism_tags": []
   },
   {
-   "source": "quant_se",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Where can I find implied rates for central bank decisions?",
-   "url": "https://quant.stackexchange.com/questions/79073/where-can-i-find-implied-rates-for-central-bank-decisions",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
    "source": "arxiv_qfin",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Harvesting the Variance Risk Premium in Nuclear and Energy Equities: A Short-Put Portfolio Derisking Strategy",
@@ -4791,6 +4791,30 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Advancing banking, governance and financial innovation in Malaysia and Asia",
+   "url": "https://www.bis.org/speeches/20260901-advancing-banking-governance-and-financial-innovation-malaysia-and-asia",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The restrictive stance of monetary policy",
+   "url": "https://www.bis.org/speeches/20260901-restrictive-stance-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Policy rate kept unchanged at this meeting",
+   "url": "https://www.bis.org/speeches/20260901-policy-rate-kept-unchanged-meeting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Recent economic and financial developments in Turkey",
    "url": "https://www.bis.org/speeches/20260901-recent-economic-and-financial-developments-turkey",
    "symbols": [],
@@ -4817,70 +4841,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Closing remarks at the Conference on the Spanish Economy",
    "url": "https://www.bis.org/speeches/20260901-closing-remarks-conference-spanish-economy",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Advancing banking, governance and financial innovation in Malaysia and Asia",
-   "url": "https://www.bis.org/speeches/20260901-advancing-banking-governance-and-financial-innovation-malaysia-and-asia",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The restrictive stance of monetary policy",
-   "url": "https://www.bis.org/speeches/20260901-restrictive-stance-monetary-policy",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Policy rate kept unchanged at this meeting",
-   "url": "https://www.bis.org/speeches/20260901-policy-rate-kept-unchanged-meeting",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
-   "url": "https://www.bis.org/speeches/20260817-remarks-annual-dinner-heads-foreign-missions-accredited-south-africa",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Remarks on the MAS Annual Report 2025/2026",
-   "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opportunities and risks for CCPs and their overseers in a changing environment",
-   "url": "https://www.bis.org/speeches/20260817-opportunities-and-risks-ccps-and-their-overseers-changing-environment",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "40 years of the Deutsche Bundesbank's Representative Office in New York",
-   "url": "https://www.bis.org/speeches/20260817-40-years-deutsche-bundesbanks-representative-office-new-york",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Monetary policy in an era of shocks",
-   "url": "https://www.bis.org/speeches/20260817-monetary-policy-era-shocks",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4935,6 +4895,62 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Remarks - annual dinner for the Heads of Foreign Missions accredited in South Africa",
+   "url": "https://www.bis.org/speeches/20260817-remarks-annual-dinner-heads-foreign-missions-accredited-south-africa",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Remarks on the MAS Annual Report 2025/2026",
+   "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opportunities and risks for CCPs and their overseers in a changing environment",
+   "url": "https://www.bis.org/speeches/20260817-opportunities-and-risks-ccps-and-their-overseers-changing-environment",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "40 years of the Deutsche Bundesbank's Representative Office in New York",
+   "url": "https://www.bis.org/speeches/20260817-40-years-deutsche-bundesbanks-representative-office-new-york",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Monetary policy in an era of shocks",
+   "url": "https://www.bis.org/speeches/20260817-monetary-policy-era-shocks",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opening remarks - CMA Governors Meeting",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-cma-governors-meeting",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
+   "url": "https://www.bis.org/speeches/20260810-opening-remarks-hong-kong-monetary-authority-hkma-hong-kong-association-banks-hkab-seminar",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Strengthening customer grievance redress - the role of the internal ombudsman",
    "url": "https://www.bis.org/speeches/20260810-strengthening-customer-grievance-redress-role-internal-ombudsman",
    "symbols": [],
@@ -4975,32 +4991,8 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opening remarks - CMA Governors Meeting",
-   "url": "https://www.bis.org/speeches/20260810-opening-remarks-cma-governors-meeting",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opening remarks - Hong Kong Monetary Authority (HKMA)-Hong Kong Association of Banks (HKAB) seminar",
-   "url": "https://www.bis.org/speeches/20260810-opening-remarks-hong-kong-monetary-authority-hkma-hong-kong-association-banks-hkab-seminar",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "National Bank of Ukraine press briefing - monetary policy decisions",
    "url": "https://www.bis.org/speeches/20260806-national-bank-ukraine-press-briefing-monetary-policy-decisions",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Stability of Thy Times",
-   "url": "https://www.bis.org/speeches/20260803-stability-thy-times",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5017,6 +5009,54 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Responsible innovation and financial inclusion",
    "url": "https://www.bis.org/speeches/20260803-responsible-innovation-and-financial-inclusion",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Stability of Thy Times",
+   "url": "https://www.bis.org/speeches/20260803-stability-thy-times",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Release of the Monetary Policy Report",
+   "url": "https://www.bis.org/speeches/20260731-release-monetary-policy-report",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Understanding supply shocks and their implications for monetary policy",
+   "url": "https://www.bis.org/speeches/20260731-understanding-supply-shocks-and-their-implications-monetary-policy",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "The economic and financial system amidst uncertainty and innovation",
+   "url": "https://www.bis.org/speeches/20260731-economic-and-financial-system-amidst-uncertainty-and-innovation",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Will artificial intelligence broadly raise living standards or drive income and wealth inequality?",
+   "url": "https://www.bis.org/speeches/20260731-will-artificial-intelligence-broadly-raise-living-standards-or-drive-income-and-wealth-inequality",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Speech - Hong Kong FIC and Bond Connect Summit",
+   "url": "https://www.bis.org/speeches/20260731-speech-hong-kong-fic-and-bond-connect-summit",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5069,42 +5109,82 @@
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Release of the Monetary Policy Report",
-   "url": "https://www.bis.org/speeches/20260731-release-monetary-policy-report",
+   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
+   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Understanding supply shocks and their implications for monetary policy",
-   "url": "https://www.bis.org/speeches/20260731-understanding-supply-shocks-and-their-implications-monetary-policy",
+   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
+   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The economic and financial system amidst uncertainty and innovation",
-   "url": "https://www.bis.org/speeches/20260731-economic-and-financial-system-amidst-uncertainty-and-innovation",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Will artificial intelligence broadly raise living standards or drive income and wealth inequality?",
-   "url": "https://www.bis.org/speeches/20260731-will-artificial-intelligence-broadly-raise-living-standards-or-drive-income-and-wealth-inequality",
+   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
    "mechanism_tags": []
   },
   {
-   "source": "bis_speeches",
+   "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Speech - Hong Kong FIC and Bond Connect Summit",
-   "url": "https://www.bis.org/speeches/20260731-speech-hong-kong-fic-and-bond-connect-summit",
+   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/MT5-Risk-Management-EA",
+   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "softwaredevelop/mql5",
+   "url": "https://github.com/softwaredevelop/mql5",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "bipbopcompany-droid/Risk-Nexus-Command",
+   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5113,6 +5193,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "tipcsy/TradeForge",
    "url": "https://github.com/tipcsy/TradeForge",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZrakD/Mt5-Forex-position-size-calculator",
+   "url": "https://github.com/ZrakD/Mt5-Forex-position-size-calculator",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5143,136 +5231,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "motional-tammy18/systematic-trading-framework",
-   "url": "https://github.com/motional-tammy18/systematic-trading-framework",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aljawa831/MT5-MT4-Close-Orders-Script",
-   "url": "https://github.com/Aljawa831/MT5-MT4-Close-Orders-Script",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "feliciien/workfusionapp3",
-   "url": "https://github.com/feliciien/workfusionapp3",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "7skooooo/mql5-systems-mirror",
-   "url": "https://github.com/7skooooo/mql5-systems-mirror",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "mdarcshuvo/programming-advisor",
-   "url": "https://github.com/mdarcshuvo/programming-advisor",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "masdevid/mt5-quant",
-   "url": "https://github.com/masdevid/mt5-quant",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "shazzadu1/Trade-Halting-Safeguard",
-   "url": "https://github.com/shazzadu1/Trade-Halting-Safeguard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Aloni-zin/Equity-Ray-Tracer",
-   "url": "https://github.com/Aloni-zin/Equity-Ray-Tracer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "url": "https://github.com/Syed-Imran88/MT5-Exposure-Mesh-Analyzer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "tharindu2028/Trade-Terminator-Closer",
-   "url": "https://github.com/tharindu2028/Trade-Terminator-Closer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "GeoCodeCrafter/Smart-Order-Flow-Visualizer",
-   "url": "https://github.com/GeoCodeCrafter/Smart-Order-Flow-Visualizer",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "foxelabs/foxelabs.com",
-   "url": "https://github.com/foxelabs/foxelabs.com",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dasymetertrenchfever480/mt5-service-shade",
-   "url": "https://github.com/Dasymetertrenchfever480/mt5-service-shade",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Infini8y/Apex-Trading",
-   "url": "https://github.com/Infini8y/Apex-Trading",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefito/mt5-quiet-automata",
-   "url": "https://github.com/youcefito/mt5-quiet-automata",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ElMoorish/AetherQuant-MT5",
-   "url": "https://github.com/ElMoorish/AetherQuant-MT5",
+   "title": "ajayprabhuraj/institutional-orderflow-mt5",
+   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5287,62 +5247,6 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "BrockStar3540/mr-scrooge-v6",
-   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "jingling-gingerbeer626/decentralized-forex-broker",
-   "url": "https://github.com/jingling-gingerbeer626/decentralized-forex-broker",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "url": "https://github.com/VelmoPk/Smart-Money-Concepts-indicator-MT5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "digineat/go-metatrader4",
-   "url": "https://github.com/digineat/go-metatrader4",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "url": "https://github.com/NulveKN/Forex-Scalping-EA-MT5-MT1",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZrakD/MT5-Risk-Management-EA",
-   "url": "https://github.com/ZrakD/MT5-Risk-Management-EA",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
@@ -5351,16 +5255,16 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "title": "GeoCodeCrafter/Smart-Order-Flow-Visualizer",
+   "url": "https://github.com/GeoCodeCrafter/Smart-Order-Flow-Visualizer",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "title": "BrockStar3540/mr-scrooge-v6",
+   "url": "https://github.com/BrockStar3540/mr-scrooge-v6",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5411,7 +5315,18 @@
   {
    "source": "cnn_fear_greed",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Fear & Greed: 35.4571428571429 (fear)",
+   "title": "Fear & Greed: 34.4285714285714 (fear)",
+   "url": "",
+   "symbols": [
+    "NAS100",
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "cnn_fear_greed",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Fear & Greed changed worsening by 10 pts in 1 day",
    "url": "",
    "symbols": [
     "NAS100",
@@ -5438,16 +5353,6 @@
   {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "New york opening with XAUUSD SETUP",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "Is Gold About to Reject From 4320\u20134330?",
    "url": "",
    "symbols": [
@@ -5460,14 +5365,12 @@
   {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Waiting for the profit. Will it break volume support or not?",
+   "title": "New york opening with XAUUSD SETUP",
    "url": "",
    "symbols": [
-    "EURUSD"
+    "XAUUSD"
    ],
-   "mechanism_tags": [
-    "support"
-   ]
+   "mechanism_tags": []
   },
   {
    "source": "reddit",
@@ -5479,6 +5382,18 @@
    ],
    "mechanism_tags": [
     "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Waiting for the profit. Will it break volume support or not?",
+   "url": "",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": [
+    "support"
    ]
   },
   {
@@ -5580,73 +5495,6 @@
     "pullback",
     "EMA"
    ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "How do you properly trade gold?",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "How Do I Find A Strategy That Suits Me?",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Option traders need a little guidance?",
-   "url": "",
-   "symbols": [
-    "NAS100",
-    "US500"
-   ],
-   "mechanism_tags": []
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Any Australian/NZ traders learning US small-cap momentum?",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout",
-    "pullback",
-    "EMA",
-    "SMA",
-    "momentum"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "First day trading CFDs \u2013 made two profitable trades, looking for honest feedback",
-   "url": "",
-   "symbols": [],
-   "mechanism_tags": [
-    "SMA"
-   ]
-  },
-  {
-   "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Reality check: Should I buy a prop firm challenge to force discipline, or keep practicing on demo? (Also need MT5 firm recommendations!)",
-   "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
-   "mechanism_tags": []
   },
   {
    "source": "seasonality",
