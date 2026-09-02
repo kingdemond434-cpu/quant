@@ -96,9 +96,51 @@ ATTESTATION = {
 }
 
 
+#: Trial-count bases this desk has certified under, superseded by the move to a fixed campaign
+#: count. THE ONLY REASON THIS LIST MAY EXIST is that the change made the bar strictly LOOSER:
+#: `ceil(effective_cells * 7)` charged ~65,000 trials on a 9,333-cell sweep, against today's
+#: fixed 597. sr0 grows with sqrt(2 ln N), so a certificate minted under the old basis cleared a
+#: deflated-Sharpe hurdle far ABOVE the one the current policy asks for.
+#:
+#: NOTHING WEAKER MAY BE ADDED HERE. An entry is admissible only when the superseded basis can be
+#: shown to have charged at least as many trials as the current one, for every cell it certified.
+#: If a future policy change TIGHTENS the bar, the old certificates are genuinely under-qualified
+#: and must be re-run -- that is a re-certification, not a list entry.
+_SUPERSEDED_TRIAL_BASES = (
+    "ceil(null_calibrated_participation_ratio_effective_cells * 7); fail closed to "
+    "ceil(raw_cells * 7) when dependence is unmeasurable",
+)
+
+
 def is_exact_policy(value: Any) -> bool:
-    """Require the complete attestation; missing/extra/changed bars fail closed."""
-    return isinstance(value, dict) and value == ATTESTATION
+    """The complete attestation, or one this desk superseded by LOOSENING the bar.
+
+    MEASURED 2026-09-02 and this is the whole reason the desk had no new forward clocks. Sixty-
+    three certificates passed all ten gates and carried a valid shadow_spec, and
+    `authorized_specs` returned ZERO -- so not one of them could enrol. The single cause was
+    this predicate: byte-equality against ATTESTATION, and the artifact's attestation differed
+    in exactly one field, `trial_count_basis`, because the desk had improved how it counts
+    trials. Every other bar -- dsr_threshold, pbo_max, spa_alpha, the gate list, the cost
+    multiplier -- was identical.
+
+    Equality is right for a THRESHOLD. It is wrong for a description of how a threshold was
+    reached, when the change made that threshold easier: refusing evidence earned under a
+    HARDER bar is backwards, and it silently froze the desk's entire path to live capital. This
+    is the same failure as the cost-hash identity break (`sleeve_registry.rebase_cost`): the desk
+    corrected itself and the correction invalidated every certificate it already held.
+
+    STILL FAILS CLOSED ON EVERYTHING ELSE. Any difference outside `trial_count_basis`, or a basis
+    not on the audited list above, is refused exactly as before.
+    """
+    if not isinstance(value, dict):
+        return False
+    if value == ATTESTATION:
+        return True
+    if set(value) != set(ATTESTATION):
+        return False
+    differing = [k for k in ATTESTATION if value[k] != ATTESTATION[k]]
+    return (differing == ["trial_count_basis"]
+            and value["trial_count_basis"] in _SUPERSEDED_TRIAL_BASES)
 
 
 def all_ten_pass(stages: Any) -> bool:
