@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-02T13:25:32+00:00",
+ "rebuilt_at": "2026-09-02T14:24:37+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -1394,6 +1394,21 @@
    },
    "cohorts": [
     "60ceff4d566e68fb"
+   ],
+   "scores": {
+    "independent_evidence": 1,
+    "record_count": 1,
+    "longevity_max_d": 0,
+    "deleted_or_dead": 0,
+    "mortality": 0.0
+   }
+  },
+  "geocodecrafter": {
+   "presences": {
+    "github_topics": 1
+   },
+   "cohorts": [
+    "416057f7ea277f94"
    ],
    "scores": {
     "independent_evidence": 1,
