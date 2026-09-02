@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-02T17:15:33+00:00",
+ "compiled_at": "2026-09-02T18:18:19+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4520,9 +4520,9 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 9,
    "candidates": 0,
-   "deepening": 10
+   "deepening": 9
   },
   "arxiv": {
    "rows": 3,
@@ -4535,9 +4535,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 38,
+   "rows": 39,
    "candidates": 0,
-   "deepening": 38
+   "deepening": 39
   },
   "litefinance": {
    "rows": 15,
@@ -4550,9 +4550,9 @@
    "deepening": 4
   },
   "amarkets": {
-   "rows": 115,
+   "rows": 114,
    "candidates": 0,
-   "deepening": 115
+   "deepening": 114
   },
   "fbs_tape": {
    "rows": 1,
@@ -4678,10 +4678,15 @@
    "rows": 4,
    "candidates": 0,
    "deepening": 4
+  },
+  "world_crawler": {
+   "rows": 5,
+   "candidates": 0,
+   "deepening": 5
   }
  },
- "rows_accounted": 1090,
+ "rows_accounted": 1094,
  "executable_candidates": 373,
- "deepening_tasks": 637,
+ "deepening_tasks": 642,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

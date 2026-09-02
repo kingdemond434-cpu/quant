@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-02T17:19:21+00:00",
+ "built_at": "2026-09-02T18:19:42+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1659,6 +1659,51 @@
    "data_source": "MT5 L2 Depth-of-Market ticks (DOM snapshots aggregated 1s) + ATR(20) regime label",
    "kill": "t-stat on returns <1.5 OR <55% directional accuracy OR avg trade Sharpe <0.3 over 100 trades",
    "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:benchmark_flow|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "benchmark_flow",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:carry_change|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:liquidity_shock|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
  ]
