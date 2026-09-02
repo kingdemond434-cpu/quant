@@ -750,10 +750,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     return art
 
 
-#: Admission memory per mode, measured rather than guessed. This box has 3.8 GB, NO SWAP and a
-#: documented OOM history; starting a job that does not fit destroys its own run and endangers
-#: every neighbour. Heavy rebuilds the whole daily-R matrix from parquet; fast reads a cache.
-_NEED_MB = {"heavy": 900, "normal": 600, "fast": 400}
+#: Admission memory per mode. This box has 3.8 GB, NO SWAP and a documented OOM history, so a
+#: job that does not fit destroys its own run and endangers the neighbours -- but a gate set
+#: ABOVE the real need is just as broken, and quieter about it. These were 900/600/400 by
+#: guesswork and stood the heavy pass down for twelve minutes on a box with 589 MB free.
+#:
+#: MEASURED 2026-09-02 with /usr/bin/time -v on a full heavy pass over 126 sleeves: peak RSS
+#: 484 MB, wall 5:16. Set at ~1.35x the observed peak, which is headroom, not hope. Re-measure
+#: when the universe grows; the tall part is the parquet rebuild, not the world tensor.
+_NEED_MB = {"heavy": 650, "normal": 550, "fast": 350}
 
 
 def main() -> int:
@@ -768,11 +773,26 @@ def main() -> int:
     # nothing to add anyway: it would re-solve the same evidence at lower fidelity and overwrite
     # the better answer.
     try:
-        from research.job_lock import exclusive_job
+        from research.job_lock import exclusive_job, free_mb
     except ModuleNotFoundError:            # entrypoint put research/ on the path, not desks/mt5
-        from job_lock import exclusive_job  # type: ignore[no-redef,import-not-found]
+        from job_lock import exclusive_job, free_mb  # type: ignore[no-redef,import-not-found]
 
-    with exclusive_job("pf_allocator", need_mb=_NEED_MB[args.mode]) as go:
+    # ONLY THE HOURLY PASS IS WORTH WAITING FOR. `exclusive_job(need_mb=...)` holds a process
+    # alive for up to twelve minutes waiting for room, which is right when the next trigger is an
+    # hour away and wrong when it is five minutes: measured 2026-09-02, two `normal` passes sat
+    # resident at 352 MB and 170 MB waiting for memory neither would get, on a box with 113 MB
+    # free -- the waiting itself was the shortage. The short clocks now check once and leave; the
+    # next trigger is minutes away and the caches make it resume rather than restart.
+    need = _NEED_MB[args.mode]
+    if args.mode != "heavy":
+        room = free_mb()
+        if room is not None and room < need:
+            _log(f"stood down: needs ~{need}MB, box has {room}MB. The next {args.mode} trigger "
+                 f"retries in minutes; waiting here would BE the shortage.")
+            return 0
+        need = 0                            # room confirmed above; do not wait a second time
+
+    with exclusive_job("pf_allocator", need_mb=need) as go:
         if not go:
             _log(f"stood down: another allocator pass holds the lock, or the box cannot fit "
                  f"{_NEED_MB[args.mode]}MB. The previous book stands.")
