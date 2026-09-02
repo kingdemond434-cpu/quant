@@ -4,8 +4,21 @@
     "discoveries": []
   },
   "github": {
-    "count": 27,
+    "count": 25,
     "discoveries": [
+      {
+        "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
+      },
       {
         "source": "github",
         "repo": "ashikscreativemath-commits/Paldo-ALM",
@@ -25,53 +38,40 @@
         "repo": "Anastasiamaster/forex-c15-trader-strategy-mt4",
         "url": "https://github.com/Anastasiamaster/forex-c15-trader-strategy-mt4",
         "description": "Official repository for Forex C 15 Trader Strategy on MetaTrader 4 (MT4). Clean, non-repainting M15 intraday trading signals, trend filter, and risk management templates for Forex & Gold (XAUUSD).",
-        "stars": 78,
+        "stars": 85,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.278
+        "confidence": 0.28500000000000003
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-market-balance-trading-system",
         "url": "https://github.com/Evangeline668/forex-market-balance-trading-system",
         "description": "An institutional Forex Market Balance strategy for MetaTrader 4 (MT4). Automate value area detection, identify order flow imbalances, and trade alongside smart money with high R:R setups.",
-        "stars": 81,
+        "stars": 88,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.381
+        "confidence": 0.388
       },
       {
         "source": "github",
         "repo": "Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "url": "https://github.com/Evangeline668/forex-tp-pro-trend-strategy-mt4",
         "description": "Forex TP PRO Trend Strategy for MetaTrader 4 \u2014 A 100% no-repaint signal system for trading currency pairs and XAUUSD with built-in risk rules.",
-        "stars": 79,
+        "stars": 87,
         "language": null,
         "symbols": [
           "XAUUSD"
         ],
         "patterns": [],
-        "confidence": 0.279
-      },
-      {
-        "source": "github",
-        "repo": "ilahuerta-IA/tradingsystem",
-        "url": "https://github.com/ilahuerta-IA/tradingsystem",
-        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.16599999999999998
+        "confidence": 0.28700000000000003
       },
       {
         "source": "github",
@@ -91,7 +91,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 79,
+        "stars": 86,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -99,28 +99,28 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.429
+        "confidence": 0.436
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-mpx-zones-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-mpx-zones-strategy-mt4",
         "description": "Forex MPX Zones Strategy for MT4 \u2013 Master institutional order flow trading. Automate smart money zone mapping, get real-time price alerts, and upgrade your FX execution.",
-        "stars": 79,
+        "stars": 86,
         "language": null,
         "symbols": [],
         "patterns": [
           "SMA",
           "smart money"
         ],
-        "confidence": 0.379
+        "confidence": 0.386
       },
       {
         "source": "github",
         "repo": "Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "url": "https://github.com/Clementinemaster/forex-stgfx-advanced-strategy-mt4",
         "description": "High Risk-to-Reward Forex & Gold (XAUUSD) trading strategy for MetaTrader 4 (MT4). Built on 100% non-repainting signals, multi-timeframe volatility filtering, and systematic risk management. Includes complete setup guide, templates (.tpl), and presets (.set).",
-        "stars": 79,
+        "stars": 86,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -128,7 +128,7 @@
         "patterns": [
           "EMA"
         ],
-        "confidence": 0.429
+        "confidence": 0.436
       },
       {
         "source": "github",
@@ -148,7 +148,7 @@
         "repo": "rolling-panda-san/notebooks",
         "url": "https://github.com/rolling-panda-san/notebooks",
         "description": "Analysis on systematic trading strategies (e.g., trend-following, carry and mean-reversion). The result is regularly updated. ",
-        "stars": 755,
+        "stars": 756,
         "language": "Jupyter Notebook",
         "symbols": [],
         "patterns": [
@@ -219,13 +219,13 @@
         "repo": "nmj94/momentum-lab",
         "url": "https://github.com/nmj94/momentum-lab",
         "description": "Find the optimal momentum trading strategy for any asset. Just provide a ticker. 26 strategies, 1.6M+ parameter combinations, regime-aware adaptive switching.",
-        "stars": 82,
+        "stars": 98,
         "language": "Python",
         "symbols": [],
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.23199999999999998
+        "confidence": 0.248
       },
       {
         "source": "github",
@@ -259,7 +259,7 @@
         "repo": "Ahmed-GoCode/Quant-Edge-Indicators",
         "url": "https://github.com/Ahmed-GoCode/Quant-Edge-Indicators",
         "description": "\u26a1 A professional open-source algorithmic trading suite for TradingView. Features 16 Pine Script v6 strategies covering Smart Money Concepts (SMC), Order Flow, Momentum, and Trend Breakouts.",
-        "stars": 42,
+        "stars": 43,
         "language": null,
         "symbols": [],
         "patterns": [
@@ -268,7 +268,7 @@
           "SMA",
           "smart money"
         ],
-        "confidence": 0.642
+        "confidence": 0.643
       },
       {
         "source": "github",
@@ -302,7 +302,7 @@
         "repo": "Clementinemaster/forex-prime-trx-mt4-strategy",
         "url": "https://github.com/Clementinemaster/forex-prime-trx-mt4-strategy",
         "description": "Forex Prime TRX Strategy for MetaTrader 4 (MT4)** \u2014 A professional, non-repainting trend and momentum trading system with dynamic ATR risk management for Forex, Gold (XAUUSD), and Crypto. Includes step-by-step setup guide and alert features.",
-        "stars": 79,
+        "stars": 86,
         "language": null,
         "symbols": [
           "XAUUSD"
@@ -310,7 +310,20 @@
         "patterns": [
           "momentum"
         ],
-        "confidence": 0.429
+        "confidence": 0.436
+      },
+      {
+        "source": "github",
+        "repo": "ilahuerta-IA/tradingsystem",
+        "url": "https://github.com/ilahuerta-IA/tradingsystem",
+        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
+        "stars": 16,
+        "language": "Python",
+        "symbols": [],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.16599999999999998
       },
       {
         "source": "github",
@@ -338,47 +351,6 @@
           "RSI"
         ],
         "confidence": 0.188
-      },
-      {
-        "source": "github",
-        "repo": "ilahuerta-IA/tradingsystem",
-        "url": "https://github.com/ilahuerta-IA/tradingsystem",
-        "description": "Modular backtesting framework for algorithmic trading using Backtrader. Features a 4-phase state machine strategy, JPY pair P&L correction (ERIS logic), and professional reporting. Educational resource for learning systematic trading.",
-        "stars": 16,
-        "language": "Python",
-        "symbols": [],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.16599999999999998
-      },
-      {
-        "source": "github",
-        "repo": "goodie1972/algoforge",
-        "url": "https://github.com/goodie1972/algoforge",
-        "description": "XAUUSD \u9ec4\u91d1\u81ea\u52a8\u5316\u4ea4\u6613\u7cfb\u7edf | Algorithmic Gold Trading \u2014 \u591a\u7b56\u7565\u5e76\u884c\u00b7\u96f6\u914d\u7f6e\u81ea\u52a8\u53d1\u73b0 | Multi-strategy, zero-config auto-discovery \u00b7 \u4e09\u8f68\u5b9e\u65f6\u5f15\u64ce+\u4e09\u5c42\u98ce\u63a7\u81ea\u6108 | Three-rail real-time engine + 3-layer self-healing risk \u00b7 26 \u6307\u6807\u5171\u4eab\u7f13\u5b58\u00b7\u53cc\u8bed Web \u9762\u677f | Shared TA-Lib cache, bilingual dashboard",
-        "stars": 5,
-        "language": "HTML",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.20500000000000002
-      },
-      {
-        "source": "github",
-        "repo": "JustinGuese/python_tradingbot_framework",
-        "url": "https://github.com/JustinGuese/python_tradingbot_framework",
-        "description": "Python algorithmic trading bot framework for Kubernetes: backtesting, hyperparameter optimization, 150+ technical analysis indicators (RSI, MACD, Bollinger Bands, ADX), portfolio management, PostgreSQL integration, Helm deployment, CronJob scheduling. Minimal overhead, production-ready, Yahoo Finance data.",
-        "stars": 36,
-        "language": "Jupyter Notebook",
-        "symbols": [],
-        "patterns": [
-          "bollinger",
-          "RSI",
-          "MACD"
-        ],
-        "confidence": 0.48599999999999993
       }
     ]
   },
@@ -440,16 +412,120 @@
     "discoveries": []
   },
   "tradingview": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "tradingview",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "www.tradingview.com/scripts/",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
   },
   "quantconnect": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "quantconnect",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "www.quantconnect.com/tutorials/strategy-library",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
   },
   "reddit": {
-    "count": 22,
+    "count": 25,
     "discoveries": [
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Me VS XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "New york opening with XAUUSD SETUP",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Looking for 1 more market to trade alongside XAUUSD",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "liquidity"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Is Gold About to Reject From 4320\u20134330?",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "order block"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "XAUUSD \u26a0\ufe0f",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "EMA"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Waiting for the profit. Will it break volume support or not?",
+        "url": "",
+        "symbols": [
+          "EURUSD"
+        ],
+        "patterns": [
+          "support"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "Gold taking support from major level",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [
+          "support",
+          "trend"
+        ],
+        "confidence": 0.3
+      },
       {
         "source": "reddit",
         "subreddit": "Forex",
@@ -478,6 +554,32 @@
       {
         "source": "reddit",
         "subreddit": "Forex",
+        "title": "XAUUSD Trade",
+        "url": "",
+        "symbols": [
+          "XAUUSD"
+        ],
+        "patterns": [],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
+        "title": "NASDAQ MONTHLY REVIEW",
+        "url": "",
+        "symbols": [
+          "NAS100"
+        ],
+        "patterns": [
+          "reversal",
+          "EMA",
+          "order block"
+        ],
+        "confidence": 0.3
+      },
+      {
+        "source": "reddit",
+        "subreddit": "Forex",
         "title": "One more with Gold /XAUUSD",
         "url": "",
         "symbols": [
@@ -487,19 +589,6 @@
         "patterns": [
           "support",
           "resistance"
-        ],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "My H1 setup literally changes depending on which chart I use",
-        "url": "",
-        "symbols": [
-          "EURUSD"
-        ],
-        "patterns": [
-          "swing"
         ],
         "confidence": 0.3
       },
@@ -661,63 +750,6 @@
         ],
         "patterns": [],
         "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "You see the chart differently? Then you must be an idiot!",
-        "url": "",
-        "symbols": [
-          "DXY"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD SETUP",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Gold overbought ???",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "XAUUSD SETUP 26th August",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [],
-        "confidence": 0.3
-      },
-      {
-        "source": "reddit",
-        "subreddit": "Forex",
-        "title": "Is Gold Finding Buyers Around 4635\u20134640?",
-        "url": "",
-        "symbols": [
-          "XAUUSD"
-        ],
-        "patterns": [
-          "EMA"
-        ],
-        "confidence": 0.3
       }
     ]
   },
@@ -726,472 +758,8 @@
     "discoveries": []
   },
   "forexfactory": {
-    "count": 26,
-    "discoveries": [
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "German Prelim CPI m/m",
-        "currency": "EUR",
-        "impact": "MEDIUM",
-        "date": "2026-08-31T02:29:00-04:00",
-        "symbols": [
-          "EURUSD",
-          "GBPEUR",
-          "EURAUD",
-          "EURJPY"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact EUR event: German Prelim CPI m/m"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Core CPI Flash Estimate y/y",
-        "currency": "EUR",
-        "impact": "MEDIUM",
-        "date": "2026-09-01T05:00:00-04:00",
-        "symbols": [
-          "EURUSD",
-          "GBPEUR",
-          "EURAUD",
-          "EURJPY"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact EUR event: Core CPI Flash Estimate y/y"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "CPI Flash Estimate y/y",
-        "currency": "EUR",
-        "impact": "MEDIUM",
-        "date": "2026-09-01T05:00:00-04:00",
-        "symbols": [
-          "EURUSD",
-          "GBPEUR",
-          "EURAUD",
-          "EURJPY"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact EUR event: CPI Flash Estimate y/y"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "ISM Manufacturing PMI",
-        "currency": "USD",
-        "impact": "HIGH",
-        "date": "2026-09-01T10:00:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact USD event: ISM Manufacturing PMI"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "ISM Manufacturing Prices",
-        "currency": "USD",
-        "impact": "MEDIUM",
-        "date": "2026-09-01T10:00:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact USD event: ISM Manufacturing Prices"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "JOLTS Job Openings",
-        "currency": "USD",
-        "impact": "MEDIUM",
-        "date": "2026-09-01T10:00:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact USD event: JOLTS Job Openings"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "GDP q/q",
-        "currency": "AUD",
-        "impact": "HIGH",
-        "date": "2026-09-01T21:30:00-04:00",
-        "symbols": [
-          "AUDJPY",
-          "AUDCAD",
-          "AUDNZD",
-          "GBPAUD",
-          "EURAUD",
-          "AUDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact AUD event: GDP q/q"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Official Cash Rate",
-        "currency": "NZD",
-        "impact": "HIGH",
-        "date": "2026-09-01T22:00:00-04:00",
-        "symbols": [
-          "AUDNZD",
-          "NZDCAD",
-          "NZDJPY",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact NZD event: Official Cash Rate"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "RBNZ Monetary Policy Statement",
-        "currency": "NZD",
-        "impact": "HIGH",
-        "date": "2026-09-01T22:00:00-04:00",
-        "symbols": [
-          "AUDNZD",
-          "NZDCAD",
-          "NZDJPY",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact NZD event: RBNZ Monetary Policy Statement"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "RBNZ Rate Statement",
-        "currency": "NZD",
-        "impact": "HIGH",
-        "date": "2026-09-01T22:00:00-04:00",
-        "symbols": [
-          "AUDNZD",
-          "NZDCAD",
-          "NZDJPY",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact NZD event: RBNZ Rate Statement"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "RBNZ Press Conference",
-        "currency": "NZD",
-        "impact": "HIGH",
-        "date": "2026-09-01T23:00:00-04:00",
-        "symbols": [
-          "AUDNZD",
-          "NZDCAD",
-          "NZDJPY",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact NZD event: RBNZ Press Conference"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "ADP Non-Farm Employment Change",
-        "currency": "USD",
-        "impact": "MEDIUM",
-        "date": "2026-09-02T08:15:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact USD event: ADP Non-Farm Employment Change"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "BOC Rate Statement",
-        "currency": "CAD",
-        "impact": "HIGH",
-        "date": "2026-09-02T09:45:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact CAD event: BOC Rate Statement"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Overnight Rate",
-        "currency": "CAD",
-        "impact": "HIGH",
-        "date": "2026-09-02T09:45:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact CAD event: Overnight Rate"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "BOC Press Conference",
-        "currency": "CAD",
-        "impact": "HIGH",
-        "date": "2026-09-02T10:30:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact CAD event: BOC Press Conference"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "RBNZ Gov Breman Speaks",
-        "currency": "NZD",
-        "impact": "MEDIUM",
-        "date": "2026-09-02T16:10:00-04:00",
-        "symbols": [
-          "AUDNZD",
-          "NZDCAD",
-          "NZDJPY",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact NZD event: RBNZ Gov Breman Speaks"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "CPI m/m",
-        "currency": "CHF",
-        "impact": "MEDIUM",
-        "date": "2026-09-03T02:30:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "CHFJPY"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact CHF event: CPI m/m"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Unemployment Claims",
-        "currency": "USD",
-        "impact": "MEDIUM",
-        "date": "2026-09-03T08:30:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact USD event: Unemployment Claims"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "ISM Services PMI",
-        "currency": "USD",
-        "impact": "MEDIUM",
-        "date": "2026-09-03T10:00:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact USD event: ISM Services PMI"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "BOE Gov Bailey Speaks",
-        "currency": "GBP",
-        "impact": "HIGH",
-        "date": "2026-09-04T04:50:00-04:00",
-        "symbols": [
-          "GBPUSD",
-          "GBPJPY",
-          "GBPAUD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact GBP event: BOE Gov Bailey Speaks"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Employment Change",
-        "currency": "CAD",
-        "impact": "HIGH",
-        "date": "2026-09-04T08:30:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact CAD event: Employment Change"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Unemployment Rate",
-        "currency": "CAD",
-        "impact": "HIGH",
-        "date": "2026-09-04T08:30:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact CAD event: Unemployment Rate"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Average Hourly Earnings m/m",
-        "currency": "USD",
-        "impact": "HIGH",
-        "date": "2026-09-04T08:30:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact USD event: Average Hourly Earnings m/m"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Non-Farm Employment Change",
-        "currency": "USD",
-        "impact": "HIGH",
-        "date": "2026-09-04T08:30:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact USD event: Non-Farm Employment Change"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Unemployment Rate",
-        "currency": "USD",
-        "impact": "HIGH",
-        "date": "2026-09-04T08:30:00-04:00",
-        "symbols": [
-          "USDCHF",
-          "XAUUSD",
-          "USDJPY",
-          "NAS100",
-          "USDCAD",
-          "EURUSD",
-          "GBPUSD",
-          "AUDUSD",
-          "US500",
-          "NZDUSD"
-        ],
-        "confidence": 0.7,
-        "description": "High impact USD event: Unemployment Rate"
-      },
-      {
-        "source": "forexfactory",
-        "type": "calendar_event",
-        "title": "Ivey PMI",
-        "currency": "CAD",
-        "impact": "MEDIUM",
-        "date": "2026-09-04T10:00:00-04:00",
-        "symbols": [
-          "USDCAD",
-          "NZDCAD",
-          "AUDCAD"
-        ],
-        "confidence": 0.4,
-        "description": "Medium impact CAD event: Ivey PMI"
-      }
-    ]
+    "count": 0,
+    "error": "UnboundLocalError: cannot access local variable 'e' where it is not associated with a value"
   },
   "cot": {
     "count": 11,
@@ -1362,8 +930,20 @@
     ]
   },
   "sec_edgar": {
-    "count": 9,
+    "count": 10,
     "discoveries": [
+      {
+        "source": "sec_edgar",
+        "type": "13f_filing",
+        "fund": "Bridgewater",
+        "cik": "0001350694",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.4,
+        "description": "Bridgewater has recent 13F filing - check for position changes"
+      },
       {
         "source": "sec_edgar",
         "type": "13f_filing",
@@ -1475,16 +1055,67 @@
     ]
   },
   "earnings": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "earnings",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "finance.yahoo.com/quote/<ticker>/",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
   },
   "aaii": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "aaii",
+        "type": "extreme_sentiment",
+        "reading": "extreme_bullish",
+        "bullish_pct": 75.0,
+        "bearish_pct": 70.3,
+        "bull_bear_ratio": 1.07,
+        "symbols": [
+          "US500",
+          "NAS100",
+          "XAUUSD"
+        ],
+        "confidence": 0.75,
+        "description": "AAII: 75.0% bullish (extreme) - contrarian sell signal"
+      }
+    ]
   },
   "fear_greed": {
-    "count": 0,
-    "discoveries": []
+    "count": 2,
+    "discoveries": [
+      {
+        "source": "cnn_fear_greed",
+        "type": "sentiment_reading",
+        "reading": "neutral",
+        "score": 33.2285714285714,
+        "rating": "fear",
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.3,
+        "description": "Fear & Greed: 33.2285714285714 (fear)"
+      },
+      {
+        "source": "cnn_fear_greed",
+        "type": "rapid_change",
+        "score": 33.2285714285714,
+        "previous_close": 44.5714285714286,
+        "change": -11.3,
+        "symbols": [
+          "US500",
+          "NAS100"
+        ],
+        "confidence": 0.56714285714286,
+        "description": "Fear & Greed changed worsening by 11 pts in 1 day"
+      }
+    ]
   },
   "investing": {
     "count": 0,
@@ -1495,17 +1126,43 @@
     "discoveries": []
   },
   "academic": {
-    "count": 1,
+    "count": 3,
     "discoveries": [
       {
         "source": "arxiv",
         "type": "academic_paper",
-        "title": "The impact of hot mode accretion and angular momentum conservation on metallicity gradients of galactic discs",
-        "summary": "The hot circumgalactic medium (CGM) of a galaxy inevitably rotates more slowly than the cold gas in the disc it surrounds, due to a higher pressure support against gravity. If it accretes vertically o",
-        "url": "https://arxiv.org/abs/2608.31144v1",
-        "published": "2026-08-31T17:49:08Z",
+        "title": "Stability of Droop-Controlled Low-Frequency Transmission Lines",
+        "summary": "Low-Frequency AC (LFAC) transmission systems employing power converters are being considered for a varity of applications. This work studies the small-signal stability of an LFAC transmission line con",
+        "url": "https://arxiv.org/abs/2609.01571v1",
+        "published": "2026-09-01T17:38:27Z",
         "trading_terms": [
-          "momentum"
+          "strategy"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "A systematic Approach to constructing a Chance-and-Risk Matrix for Semiconductor Supply Chains",
+        "summary": "Semiconductor supply chains face escalating risks from geopolitical tensions, geographic concentration, and rapid technological shifts, yet no scalable system continuously extracts, structures, and pr",
+        "url": "https://arxiv.org/abs/2609.01563v1",
+        "published": "2026-09-01T17:30:39Z",
+        "trading_terms": [
+          "risk"
+        ],
+        "symbols": [],
+        "confidence": 0.1
+      },
+      {
+        "source": "arxiv",
+        "type": "academic_paper",
+        "title": "Stability of Droop-Controlled Low-Frequency Transmission Lines",
+        "summary": "Low-Frequency AC (LFAC) transmission systems employing power converters are being considered for a varity of applications. This work studies the small-signal stability of an LFAC transmission line con",
+        "url": "https://arxiv.org/abs/2609.01571v1",
+        "published": "2026-09-01T17:38:27Z",
+        "trading_terms": [
+          "strategy"
         ],
         "symbols": [],
         "confidence": 0.1
@@ -2152,19 +1809,87 @@
     ]
   },
   "weather": {
-    "count": 0,
-    "discoveries": []
+    "count": 4,
+    "discoveries": [
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Edouard",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Edouard - may impact energy prices"
+      },
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Karina",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Karina - may impact energy prices"
+      },
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Marie",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Marie - may impact energy prices"
+      },
+      {
+        "source": "weather",
+        "type": "hurricane",
+        "name": "Lowell",
+        "symbols": [
+          "USOIL",
+          "NATGAS"
+        ],
+        "confidence": 0.5,
+        "description": "Active hurricane Lowell - may impact energy prices"
+      }
+    ]
   },
   "shipping": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "shipping",
+        "type": "bdi",
+        "value": 3331,
+        "signal": "strong_expansion",
+        "symbols": [
+          "US500",
+          "NAS100",
+          "AUDUSD",
+          "NZDUSD"
+        ],
+        "confidence": 0.6,
+        "description": "BDI: 3331 (strong_expansion)"
+      }
+    ]
   },
   "china": {
     "count": 0,
     "discoveries": []
   },
   "korea": {
-    "count": 0,
-    "discoveries": []
+    "count": 1,
+    "discoveries": [
+      {
+        "source": "korea",
+        "kind": "stub",
+        "needs_selector_work": true,
+        "host": "finance.naver.com/search/search.naver",
+        "why": "fetched OK, content is client-side rendered"
+      }
+    ]
   }
 }

@@ -1,10 +1,9 @@
 {
- "checked_at": "2026-08-31T00:19:28+00:00",
- "enrolled": 42,
+ "checked_at": "2026-09-02T01:28:06+00:00",
+ "enrolled": 61,
  "enrolment_readable": true,
- "certified_clocks": 38,
- "certified_pairs": 21,
+ "certified_clocks": 57,
+ "certified_pairs": 28,
  "identity_unfrozen": 0,
- "actions": [],
- "restart_history": []
+ "actions": []
 }

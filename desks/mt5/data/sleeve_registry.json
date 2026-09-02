@@ -17,7 +17,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:31:40+00:00",
    "forward_start": "2026-08-27T07:58:09.320587+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 912.0,
     "commission_per_lot": 3.5,
@@ -25,8 +25,11 @@
     "quote_per_account": 18.56843
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:04+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "CADJPY.asia": {
    "identity": {
@@ -59,10 +62,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-29T12:45:28+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "CADJPY.asia#rr=2.5": {
    "identity": {
@@ -95,10 +98,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-29T12:45:28+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "CADJPY.asia#rr=1.5": {
    "identity": {
@@ -131,10 +134,10 @@
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
    "status_why": "",
-   "status_at": "2026-08-29T12:45:28+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "EURJPY.asia#rr=1.5": {
    "identity": {
@@ -158,7 +161,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.334302+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -166,11 +169,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:57+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 13
   },
   "EURJPY.asia": {
    "identity": {
@@ -194,7 +197,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.393594+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -202,11 +205,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:41+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:58+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 13
   },
   "EURJPY.asia#rr=2.5": {
    "identity": {
@@ -230,7 +233,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.450787+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -238,11 +241,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:59+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 13
   },
   "GBPJPY.asia#rr=1.5": {
    "identity": {
@@ -266,7 +269,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.589564+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -274,11 +277,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:09+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 13
   },
   "GBPJPY.asia#rr=2.5": {
    "identity": {
@@ -302,7 +305,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.653793+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -310,11 +313,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:09+00:00",
-   "identity_restored_at": "2026-08-29T12:45:28+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 13
   },
   "USDJPY.asia#rr=1.5": {
    "identity": {
@@ -338,7 +341,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.716568+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -346,11 +349,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:21+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_at": "2026-09-02T20:08:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "USDJPY.asia": {
    "identity": {
@@ -374,7 +377,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.772869+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -382,11 +385,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:21+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_at": "2026-09-02T20:08:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "USDJPY.asia#rr=2.5": {
    "identity": {
@@ -410,7 +413,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.836782+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 1300.0,
     "commission_per_lot": 3.5,
@@ -418,11 +421,11 @@
     "quote_per_account": 184.573
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:21+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_at": "2026-09-02T20:08:34+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 2
+   "identity_restore_count": 12
   },
   "USDZAR.overnight_gap_decay.asia": {
    "identity": {
@@ -441,7 +444,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T07:58:09.320618+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 808.0,
     "commission_per_lot": 3.5,
@@ -449,8 +452,11 @@
     "quote_per_account": 18.56843
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:26+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 12
   },
   "XAUUSD.asia#rr=1.5": {
    "identity": {
@@ -474,7 +480,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:48+00:00",
    "forward_start": "2026-08-27T03:34:48.973309+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
@@ -482,11 +488,11 @@
     "quote_per_account": 1.15844
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:29+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_at": "2026-09-02T20:08:35+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 11
   },
   "XAUUSD.asia": {
    "identity": {
@@ -510,7 +516,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": "2026-08-27T03:34:49.037701+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
@@ -518,11 +524,11 @@
     "quote_per_account": 1.15844
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:29+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_at": "2026-09-02T20:08:35+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 11
   },
   "XAUUSD.asia#rr=2.5": {
    "identity": {
@@ -546,7 +552,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": "2026-08-27T03:34:49.090008+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
@@ -554,11 +560,11 @@
     "quote_per_account": 1.15844
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:30+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_at": "2026-09-02T20:08:35+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 11
   },
   "XAUUSD.asia#rr=1.5_wait_bars=8": {
    "identity": {
@@ -582,7 +588,7 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-27T03:34:49+00:00",
    "forward_start": "2026-08-27T03:34:49.147736+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 16.0,
     "commission_per_lot": 3.5,
@@ -590,11 +596,11 @@
     "quote_per_account": 1.15844
    },
    "forward_start_backfilled_at": "2026-08-27T13:16:42+00:00",
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:29+00:00",
-   "identity_restored_at": "2026-08-29T12:45:29+00:00",
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:35+00:00",
+   "identity_restored_at": "2026-09-02T20:08:35+00:00",
    "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
-   "identity_restore_count": 1
+   "identity_restore_count": 11
   },
   "AUDCHF.overnight_gap_decay.asia": {
    "identity": {
@@ -619,7 +625,12 @@
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
-   }
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 11
   },
   "CADCHF.overnight_gap_decay.asia": {
    "identity": {
@@ -644,7 +655,12 @@
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
-   }
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 12
   },
   "CHFDKK.overnight_gap_decay.asia": {
    "identity": {
@@ -669,7 +685,12 @@
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 7.47536
-   }
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 12
   },
   "CHFNOK.carry.asia#input_symbol=CHFNOK": {
    "identity": {
@@ -696,7 +717,12 @@
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 10.86507
-   }
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURNOK.overnight_gap_decay.asia": {
    "identity": {
@@ -715,15 +741,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:51+00:00",
    "forward_start": "2026-08-29T13:34:35.776957+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 153.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 10.86507
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:01+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "GBPCHF.overnight_gap_decay.asia": {
    "identity": {
@@ -742,15 +771,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:53+00:00",
    "forward_start": "2026-08-29T13:34:35.776965+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:09+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "GBPMXN.overnight_gap_decay.asia": {
    "identity": {
@@ -769,15 +801,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:54+00:00",
    "forward_start": "2026-08-29T13:34:35.776973+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 298.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 19.7355
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:12+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 14
   },
   "GBPNOK.overnight_gap_decay.asia": {
    "identity": {
@@ -796,15 +831,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:54+00:00",
    "forward_start": "2026-08-29T13:34:35.776979+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 274.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 10.86507
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:17+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 14
   },
   "GBPSEK.overnight_gap_decay.asia": {
    "identity": {
@@ -823,15 +861,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:55+00:00",
    "forward_start": "2026-08-29T13:34:35.776987+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 222.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 11.1296
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:19+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 14
   },
   "GBPZAR.overnight_gap_decay.asia": {
    "identity": {
@@ -850,15 +891,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:55+00:00",
    "forward_start": "2026-08-29T13:34:35.776994+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 376.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 18.7414
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:19+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 14
   },
   "USDMXN.overnight_gap_decay.asia": {
    "identity": {
@@ -877,15 +921,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T14:37:56+00:00",
    "forward_start": "2026-08-29T13:34:35.777001+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 172.0,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 19.7355
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:03:23+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 12
   },
   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=ru_24_horizon=1_side=-1": {
    "identity": {
@@ -912,15 +959,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T22:33:05+00:00",
    "forward_start": "2026-08-29T13:34:35.776934+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:51+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1": {
    "identity": {
@@ -947,15 +997,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T22:36:18+00:00",
    "forward_start": "2026-08-29T13:34:35.776942+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:44+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=6_side=-1": {
    "identity": {
@@ -982,15 +1035,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-29T22:38:09+00:00",
    "forward_start": "2026-08-29T13:34:35.776950+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:47+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1": {
    "identity": {
@@ -1017,15 +1073,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T05:45:19+00:00",
    "forward_start": "2026-08-29T13:34:35.776927+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:43+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": {
    "identity": {
@@ -1052,15 +1111,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T05:45:19+00:00",
    "forward_start": "2026-08-29T13:34:35.776904+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:44+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
    "identity": {
@@ -1087,15 +1149,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T05:45:19+00:00",
    "forward_start": "2026-08-29T13:34:35.776912+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:46+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=3_side=-1": {
    "identity": {
@@ -1122,15 +1187,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T05:45:20+00:00",
    "forward_start": "2026-08-29T13:34:35.776919+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:48+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_at": "2026-09-02T20:04:35+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURGBP.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
    "identity": {
@@ -1157,15 +1225,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T05:45:20+00:00",
    "forward_start": "2026-08-30T05:45:20.371210+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.85597
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:54+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T01:43:49+00:00",
+   "identity_restored_at": "2026-09-02T01:43:49+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 9
   },
   "EURCHF.discovered.asia#band=[0.9, 1.0]_feature=hour_horizon=3_side=-1": {
    "identity": {
@@ -1192,15 +1263,18 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T21:44:00+00:00",
    "forward_start": "2026-08-30T21:44:00.438329+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.93762
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:50+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
   },
   "EURGBP.discovered.asia#band=[0.1, 0.25]_feature=ru_24_horizon=3_side=1": {
    "identity": {
@@ -1227,18 +1301,515 @@
    "identity_schema": "venue-2026-08-26",
    "frozen_at": "2026-08-30T22:52:18+00:00",
    "forward_start": "2026-08-30T22:52:18.923202+00:00",
-   "status": "IDENTITY_BROKEN",
+   "status": "LIVE",
    "cost_fields": {
     "spread_per_lot": 0.05,
     "commission_per_lot": 3.5,
     "contract_oz": 100000.0,
     "quote_per_account": 0.85597
    },
-   "status_why": "code_hash changed after the clock froze",
-   "status_at": "2026-08-31T02:02:54+00:00"
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 13
+  },
+  "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURGBP_z_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ext_resid_EURGBP_z",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "4b2f45861f75c741",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "ccad0e8b59c50b900292"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-08-31T08:05:44+00:00",
+   "forward_start": "2026-08-31T08:05:44.111207+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.60986
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 9
+  },
+  "AUDNZD.discovered.asia#band=[0.75, 0.9]_feature=hour_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDNZD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "hour",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "1fb66a15ff6ff42c",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "634830cfa39f79334371"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:11+00:00",
+   "forward_start": "2026-09-01T07:19:11.933237+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 15.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.96166
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=3_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_12",
+     "horizon": 3,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "aba2cca7610d22bd",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "4abd3974e727f94f70a5"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:24+00:00",
+   "forward_start": "2026-09-01T07:19:24.447377+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 14.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "AUDUSD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_24",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "aba2cca7610d22bd",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d60c9e57704914cd0495"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:24+00:00",
+   "forward_start": "2026-09-01T07:19:24.632203+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 14.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "dd_240",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "aba2cca7610d22bd",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "d4ba364f0160f56c64a2"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:24+00:00",
+   "forward_start": "2026-09-01T07:19:24.740897+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 14.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "AUDUSD.discovered.asia#band=[0.9, 1.0]_feature=dd_240_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "dd_240",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "aba2cca7610d22bd",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "f145417118836c6bd22e"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:24+00:00",
+   "forward_start": "2026-09-01T07:19:24.830678+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 14.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_48_horizon=12_side=1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.0,
+      0.1
+     ],
+     "feature": "dd_48",
+     "horizon": 12,
+     "side": 1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "874fa641588f716e",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "6898360921d19f5c847c"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:44+00:00",
+   "forward_start": "2026-09-01T07:19:44.934828+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 12.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "EURUSD.discovered.asia#band=[0.0, 0.1]_feature=dd_96_horizon=6_side=1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "EURUSD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.0,
+      0.1
+     ],
+     "feature": "dd_96",
+     "horizon": 6,
+     "side": 1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "874fa641588f716e",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "1f9152b69089f857a843"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T07:19:45+00:00",
+   "forward_start": "2026-09-01T07:19:45.001328+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 12.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.15844
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_at": "2026-09-02T20:04:36+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 10
+  },
+  "AUDCAD.discovered.asia#band=[0.75, 0.9]_feature=dd_24_horizon=3_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.75,
+      0.9
+     ],
+     "feature": "dd_24",
+     "horizon": 3,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "ccc7fe310af6795b",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "730f9c7ca9f6d8349556"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T12:12:37+00:00",
+   "forward_start": "2026-09-01T07:19:53.790415+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 1.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.60929
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T01:04:40+00:00",
+   "identity_restored_at": "2026-09-02T01:04:40+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 2
+  },
+  "AUDCAD.discovered.asia#band=[0.9, 1.0]_feature=ext_resid_EURDKK_z_horizon=1_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "AUDCAD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ext_resid_EURDKK_z",
+     "horizon": 1,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "ccc7fe310af6795b",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "85f074dded017a5ac285"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T12:21:28+00:00",
+   "forward_start": "2026-09-01T12:21:28.398481+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 1.0,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.60929
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_at": "2026-09-02T20:04:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 7
+  },
+  "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ext_residz_AUDCAD_horizon=3_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "USDCHF",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ext_residz_AUDCAD",
+     "horizon": 3,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "fecc230ea631c5d1",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "6cb2a05c08407ab4d58a"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-01T20:40:41+00:00",
+   "forward_start": "2026-09-01T20:40:41.453950+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 0.93968
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_at": "2026-09-02T20:08:34+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 5
+  },
+  "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ru_240",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "b7695eae608c28dc",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "ee372f7a4d6709a66ef7"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-02T13:42:29+00:00",
+   "forward_start": "2026-09-02T13:42:29.541212+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.60924
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 3
+  },
+  "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=6_side=-1": {
+   "identity": {
+    "family": "discovered",
+    "symbol": "USDCAD",
+    "direction": "LONG",
+    "timeframe": "H1",
+    "selector": "asia",
+    "condition": null,
+    "params": {
+     "band": [
+      0.9,
+      1.0
+     ],
+     "feature": "ru_96",
+     "horizon": 6,
+     "side": -1
+    },
+    "code_hash": "65540d303116bb80",
+    "cost_hash": "b7695eae608c28dc",
+    "data_venue": "MT5:FusionMarkets-Live",
+    "sleeve_id": "be4ab6ff271226047e7b"
+   },
+   "identity_schema": "venue-2026-08-26",
+   "frozen_at": "2026-09-02T13:42:29+00:00",
+   "forward_start": "2026-09-02T13:42:29.699333+00:00",
+   "status": "LIVE",
+   "cost_fields": {
+    "spread_per_lot": 0.05,
+    "commission_per_lot": 3.5,
+    "contract_oz": 100000.0,
+    "quote_per_account": 1.60924
+   },
+   "status_why": "",
+   "status_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_at": "2026-09-02T20:04:37+00:00",
+   "identity_restored_why": "identity intact on every field again (was: code_hash changed after the clock froze); evidence is replayed from bars, so no observation from the drift survives in it",
+   "identity_restore_count": 3
   }
  },
- "updated_at": "2026-08-31T02:03:30+00:00",
+ "updated_at": "2026-09-02T20:08:35+00:00",
  "migration": {
   "at": "2026-08-26T11:19:14+00:00",
   "to_schema": "venue-2026-08-26",

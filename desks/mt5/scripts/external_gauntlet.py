@@ -563,9 +563,29 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
             ds = _series_trim_partial(daily_series(c["df"], c["sigs"], c["costs"]), last_day)
             c["_fresh_ds"] = ds
             daily.append(ds)
+            # BOTH COST ARMS IN ONE PASS, so a cell's signals can be released the moment it is
+            # done with. The 3x arm used to run as a SECOND loop over every cell, which meant
+            # every built cell had to keep its `sigs` alive from the first loop to the second.
+            # MEASURED 2026-09-02 on the desk box: the gauntlet held 3,942 MB and left 658 MB
+            # free, so `edge_search` (needs ~2000 MB) could not start at all -- which is why
+            # edge_search_results.json went 21.6 hours stale and orthogonal_candidates.json 9.3,
+            # and the docket ran on miners alone. The cells are independent, so nothing about any
+            # verdict changes; only the peak does.
+            if c.get("_cached_ds3") is None:
+                try:
+                    costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
+                    c["_fresh_ds3"] = _series_trim_partial(
+                        daily_series(c["df"], c["sigs"], costs3), last_day)
+                except Exception as exc3:
+                    print(f"  FAIL-3x {c['sym']}.{c['family']}: {exc3}")
+                    c["_fresh_ds3"] = None
         except Exception as e:
             print(f"  FAIL {c['sym']}.{c['family']}: {e}")
             daily.append(None)
+        finally:
+            # RELEASE. `df` is a shared LRU frame and costs nothing to drop; `sigs` is this
+            # cell's own signal list and is the thing that accumulates.
+            c["df"] = c["sigs"] = c["costs"] = None
     if hits:
         print(f"  series cache: {hits}/{len(cells)} cell(s) loaded (unchanged data-day); "
               f"{len(cells) - hits} computed fresh")
@@ -675,15 +695,15 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
         print(f"  SPA: p={spa_p:.4f} ({'PASS' if spa_ok else 'FAIL'})")
 
     # 3x cost series
+    # ALREADY COMPUTED ABOVE, in the same pass that had the frames in hand. This loop now only
+    # collects and caches; it holds no bars and builds no signals.
     daily_x3 = []
     for c in cells:
         try:
             if c.get("_cached_ds3") is not None:
                 daily_x3.append(c["_cached_ds3"])
                 continue
-            costs3 = costs_for(c["sym"], meta, mult=COST_SCENARIO)
-            ds3 = _series_trim_partial(daily_series(c["df"], c["sigs"], costs3),
-                                       c.get("_last_day"))
+            ds3 = c.get("_fresh_ds3")
             daily_x3.append(ds3)
             if c.get("_fresh_ds") is not None and ds3 is not None and c.get("_ckey"):
                 cache_save(c["_ckey"], c["_fresh_ds"], ds3)

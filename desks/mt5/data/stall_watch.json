@@ -1,36 +1,28 @@
 {
-    "free_gb":  19.5,
-    "checked_at":  "2026-08-31T01:02:44.6569500Z",
+    "free_gb":  15.7,
+    "checked_at":  "2026-09-02T23:42:13.4084677Z",
     "actions":  [
-                    "FAILING MT5-Gauntlet: last result 75 twice in a row -- re-run",
-                    "RAM-FLOOR: only 124MB free (phys 124MB / virt 17808MB) -- shed edge_search.py (commit 4243MB); it resumes from cache on its next trigger",
-                    "UNIVERSE: registry shrank to 23 rows (canon 251) -- restored from canon"
+                    "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
+                    "FEED LAG: 26 CLOCKED symbol(s) \u003e6h stale: AUDCAD,AUDCHF,AUDNZD,AUDUSD,CADCHF,CADJPY,CHFDKK,CHFNOK,EURCHF,EURGBP,EURJPY,EURNOK,EURUSD,EURZAR,GBPCHF,GBPJPY,GBPMXN,GBPNOK,GBPSEK,GBPZAR,USDCAD,USDCHF,USDJPY,USDMXN,USDZAR,XAUUSD",
+                    "FEED LAG fixer: re-selected 26 symbol(s) in MarketWatch"
                 ],
-    "low_mem_strikes":  2,
+    "low_mem_strikes":  0,
     "procs":  {
-                  "orthogonal_sweep.4412":  {
-                                                "cpu":  3840.046875,
-                                                "at":  "2026-08-31T03:00:44.6688072+02:00"
-                                            },
-                  "shadow_cycle.9020":  {
-                                            "cpu":  3.34375,
-                                            "at":  "2026-08-31T03:00:44.6688072+02:00"
+                  "shadow_cycle.1336":  {
+                                            "cpu":  5.640625,
+                                            "at":  "2026-09-03T01:30:22.5923774+02:00"
                                         },
-                  "fail.MT5-Hourly":  {
-                                          "cpu":  1,
-                                          "at":  "2026-08-31T03:00:44.6688072+02:00"
-                                      },
-                  "edge_search.9124":  {
-                                           "cpu":  8184.796875,
-                                           "at":  "2026-08-31T03:00:44.6688072+02:00"
+                  "moat_silver.3916":  {
+                                           "cpu":  322.609375,
+                                           "at":  "2026-09-03T01:30:22.5923774+02:00"
                                        },
-                  "fail.MT5-Gauntlet":  {
-                                            "cpu":  75,
-                                            "at":  "2026-08-31T03:00:44.6688072+02:00"
-                                        },
-                  "fail.MT5-Shadow":  {
-                                          "cpu":  1,
-                                          "at":  "2026-08-31T03:00:44.6688072+02:00"
-                                      }
+                  "fail.MT5-MoatRecorder":  {
+                                                "cpu":  1,
+                                                "at":  "2026-09-03T01:30:22.5923774+02:00"
+                                            },
+                  "external_gauntlet.10016":  {
+                                                  "cpu":  3290.4375,
+                                                  "at":  "2026-09-03T01:30:22.5923774+02:00"
+                                              }
               }
 }
