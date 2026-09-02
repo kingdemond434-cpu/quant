@@ -46,6 +46,71 @@ def test_the_ttl_cannot_span_two_sessions() -> None:
     assert _const("BRACKET_TTL_HOURS") <= 6.0
 
 
+def _deadline_fn():
+    """`bracket_deadline` alone, exec'd without importing MetaTrader5."""
+    import math  # noqa: PLC0415
+    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
+
+    ns: dict = {"datetime": datetime, "timedelta": timedelta, "UTC": UTC, "math": math}
+    keep = [n for n in _TREE.body
+            if (isinstance(n, ast.FunctionDef) and n.name == "bracket_deadline")
+            or (isinstance(n, ast.Assign) and any(
+                getattr(t, "id", "") in ("GOLD_WINDOWS", "CLOSE_HOUR", "BRACKET_TTL_HOURS")
+                for t in n.targets))]
+    exec(compile(ast.Module(body=keep, type_ignores=[]), "<gw>", "exec"), ns)  # noqa: S102
+    return ns
+
+
+def test_each_session_s_bracket_dies_when_that_session_does() -> None:
+    """"asian for asian, london for london, ny for ny" -- the principal, 2026-09-02.
+
+    A bracket belongs to the session whose range formed it, so the next window opening is what
+    ends it, and the last of the day ends at the force-close. A flat TTL cannot express that:
+    six hours is right for asia alone and would run london_am four hours into the afternoon.
+    """
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    ns = _deadline_fn()
+    bd, windows, close = ns["bracket_deadline"], ns["GOLD_WINDOWS"], float(ns["CLOSE_HOUR"])
+    sig = {w[0]: float(w[1]) for w in windows}
+    now = datetime.now(tz=UTC)
+    here = now.hour + now.minute / 60.0
+    ceiling = _const("BRACKET_TTL_HOURS")
+    for name, hour in sig.items():
+        later = [h for h in sig.values() if h > hour]
+        want = min(later) if later else close
+        got = bd(f"gold_{name}")
+        assert got > now, f"gold_{name}: deadline is in the past"
+        if want > here:
+            # The session's end is still ahead today: the deadline IS that hour, exactly.
+            assert got.hour + got.minute / 60.0 == want, (
+                f"gold_{name} must expire at {want}, got {got:%H:%M}")
+        else:
+            # Its end has already passed (a late or replayed pass). The deadline must roll
+            # forward without ever exceeding the ceiling -- asserted at any hour of the day, so
+            # this test does not quietly pass by being run in the morning.
+            ahead = (got - now).total_seconds() / 3600.0
+            assert 0 < ahead <= ceiling + 0.01, (
+                f"gold_{name} rolled to {got:%H:%M} ({ahead:.1f}h), past the {ceiling}h ceiling")
+
+
+def test_an_unknown_window_is_bounded_by_the_ceiling_not_unbounded() -> None:
+    """A promoted family sleeve whose window the desk does not recognise still gets a limit."""
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    ns = _deadline_fn()
+    got = ns["bracket_deadline"]("promoted_something_new")
+    hours = (got - datetime.now(tz=UTC)).total_seconds() / 3600.0
+    assert 0 < hours <= _const("BRACKET_TTL_HOURS") + 0.01
+
+
+def test_the_sweep_uses_the_same_session_rule_as_the_broker_expiry() -> None:
+    """Two rules would disagree: a flat sweep cutoff would keep an afternoon bracket alive past
+    the force-close the broker expiry had already set it to die at."""
+    src = ast.get_source_segment(_SRC, _fn("expire_stale_brackets")) or ""
+    assert "bracket_deadline" in src
+
+
 def test_expiry_is_requested_from_the_broker() -> None:
     """Broker-side expiry survives this process dying; a gateway-side sweep alone does not, and
     an OOM kill would leave a stale bracket resting with nothing managing it."""

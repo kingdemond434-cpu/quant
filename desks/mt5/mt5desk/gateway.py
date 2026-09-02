@@ -125,17 +125,14 @@ FX_EUR = 0.92
 GOLD_SYMBOL = "XAUUSD"
 RR = 2.0
 ATR_N = 20
-#: HOW LONG AN UNFILLED BRACKET MAY WAIT FOR ITS BREAKOUT, in hours.
+#: CEILING for a bracket whose session the desk cannot identify, in hours. NOT the normal rule:
+#: `bracket_deadline` derives each sleeve's expiry from its OWN window, and this is only what a
+#: promoted family sleeve with an unrecognised window falls back to.
 #:
-#: CANCEL_HOUR ALONE IS NOT A TTL. It cancels every sleeve's unfilled bracket at one clock time,
-#: so a `gold_asia` bracket placed at its 07:00 signal hour sat until 20:30 -- 13.5 hours, long
-#: past the session whose range formed it. A breakout that fills at 19:00 on a range measured
-#: before 07:00 is not the strategy that was validated; it is a different trade wearing that
-#: sleeve's name and charged to its risk budget, which is the same substitution the desk already
-#: fixed once when an unconditioned sleeve traded under a conditioned one's promotion.
-#:
-#: Six hours covers the session a bracket belongs to with room for a late trigger, and is short
-#: enough that a bracket cannot survive into the next session's regime.
+#: A FLAT TTL IS A PROXY FOR THE SESSION AND IT IS WRONG FOR MOST OF THE BOOK. Six hours suits
+#: gold_asia (07:00 -> 13:00) and nothing else: london_am would run four hours into the
+#: afternoon session, and afternoon would outlive the 19:30 force-close entirely. The bracket
+#: belongs to the session whose range formed it, so that session is what must end it.
 BRACKET_TTL_HOURS = 6.0
 
 CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
@@ -938,7 +935,7 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
             # stale bracket resting at the broker indefinitely -- exposure nothing is managing.
             # `_expiry_request` falls back to GTC when the symbol refuses timed orders, and the
             # sweep below is what covers that case.
-            **_expiry_request(symbol),
+            **_expiry_request(symbol, sleeve, spec.get("window")),
             "type_filling": mt5.ORDER_FILLING_RETURN,
             "deviation": 20,
             "magic": MAGIC,
@@ -1005,7 +1002,45 @@ def entry_is_legal(price: float, side: str, bid: float, ask: float,
     return True, ""
 
 
-def _expiry_request(symbol: str) -> dict:
+def bracket_deadline(sleeve: str, window: str | None = None) -> datetime:
+    """When this sleeve's bracket stops belonging to the session whose range formed it.
+
+    "asian for asian, london for london, ny for ny" -- the principal, 2026-09-02.
+
+    DERIVED FROM THE ARMED WINDOWS, NEVER A SECOND CONSTANT. Each window signals at its own hour
+    and its trade belongs to the stretch before the next one opens; the last of the day ends at
+    the force-close. From GOLD_WINDOWS (asia 07, london_am 13, afternoon 17) and CLOSE_HOUR 19.5:
+
+        asia        07:00 -> 13:00   (6.0h, dies when London opens)
+        london_am   13:00 -> 17:00   (4.0h, dies when the NY afternoon opens)
+        afternoon   17:00 -> 19:30   (2.5h, dies at the force-close)
+
+    A single flat TTL cannot express that, and six hours -- what a first pass used -- is right
+    for asia alone: it would let a london_am bracket fire four hours into the afternoon session
+    and an afternoon bracket outlive the force-close that exists to flatten the book. Deriving
+    the deadline means adding a window changes this automatically and no second list can drift.
+
+    An unrecognised window (a promoted family sleeve) takes BRACKET_TTL_HOURS as a ceiling --
+    bounded, and by a number this docstring calls a fallback rather than a session.
+    """
+    now_utc = datetime.now(tz=UTC)
+    win = window or (sleeve[len("gold_"):] if sleeve.startswith("gold_") else "")
+    sig = next((float(w[1]) for w in GOLD_WINDOWS if w[0] == win), None)
+    if sig is None:
+        return now_utc + timedelta(hours=BRACKET_TTL_HOURS)
+    later = [float(w[1]) for w in GOLD_WINDOWS if float(w[1]) > sig]
+    end_hour = min(later) if later else float(CLOSE_HOUR)
+    deadline = now_utc.replace(hour=int(end_hour), minute=int(round((end_hour % 1) * 60)),
+                               second=0, microsecond=0)
+    if deadline <= now_utc:
+        # Placed at or after its own session's end (a late or replayed pass). Never a deadline
+        # in the past, and never more than the ceiling.
+        deadline = min(now_utc + timedelta(hours=BRACKET_TTL_HOURS),
+                       deadline + timedelta(days=1))
+    return deadline
+
+
+def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) -> dict:
     """`type_time`/`expiration` fields for a bracket, or GTC when the symbol refuses timed orders.
 
     MT5 exposes what a symbol accepts through `symbol_info().expiration_mode`; a symbol without
@@ -1017,7 +1052,7 @@ def _expiry_request(symbol: str) -> dict:
         info = mt5.symbol_info(symbol)
         mode = int(getattr(info, "expiration_mode", 0) or 0)
         if info is not None and (mode & mt5.SYMBOL_EXPIRATION_SPECIFIED):
-            until = datetime.now(tz=UTC) + timedelta(hours=BRACKET_TTL_HOURS)
+            until = bracket_deadline(sleeve, window)
             return {"type_time": mt5.ORDER_TIME_SPECIFIED,
                     "expiration": int(until.timestamp())}
     except Exception as exc:                                    # noqa: BLE001
@@ -1027,7 +1062,7 @@ def _expiry_request(symbol: str) -> dict:
 
 
 def expire_stale_brackets(st: dict) -> int:
-    """Cancel this desk's pending orders older than BRACKET_TTL_HOURS. Returns how many.
+    """Cancel this desk's pending orders whose SESSION has ended. Returns how many.
 
     THE SWEEP IS NOT REDUNDANT WITH THE BROKER EXPIRY. It covers the symbols whose expiration
     mode refuses a timed order, brackets placed before this TTL existed, and anything left
@@ -1039,8 +1074,8 @@ def expire_stale_brackets(st: dict) -> int:
     except Exception as exc:                                    # noqa: BLE001
         log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
         return 0
-    cutoff = datetime.now(tz=UTC) - timedelta(hours=BRACKET_TTL_HOURS)
     killed = 0
+    now_utc = datetime.now(tz=UTC)
     for o in orders:
         if int(getattr(o, "magic", 0) or 0) != MAGIC:
             continue
@@ -1048,7 +1083,13 @@ def expire_stale_brackets(st: dict) -> int:
         if not setup:
             continue
         placed = datetime.fromtimestamp(int(setup), tz=UTC)
-        if placed > cutoff:
+        # THE SAME PER-SESSION RULE THE ORDER WAS PLACED UNDER, recovered from its own label, so
+        # the sweep and the broker expiry can never disagree. A flat cutoff here would defeat the
+        # point: it would keep an afternoon bracket alive hours past the force-close the broker
+        # had already been told to kill it at.
+        comment = str(getattr(o, "comment", "") or "")
+        sleeve = comment[2:] if comment.startswith("DW") else ""
+        if bracket_deadline(sleeve) > now_utc and placed.date() == now_utc.date():
             continue
         res = mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
         gone = not any(getattr(x, "ticket", None) == o.ticket
