@@ -71,7 +71,7 @@ def _load():
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
                  "min_lot_risk_eur",
                  "allocator_heat", "allocator_order"}
-    wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
+    wanted_const = {"HEAT_SLIDE", "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
                     "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
                     "GOLD_SYMBOL"}
     keep = [n for n in tree.body
@@ -282,7 +282,11 @@ def test_an_explicit_scalar_q_still_applies_to_every_sleeve():
     # stated 20% budget admits 20, so a 10-sleeve fixture would have measured the fixture.
     sl = [{"name": f"s{i}", "symbol": "XAUUSD", "dist": 19.1} for i in range(40)]
     admitted, _ = NS["cap_by_heat"](sl, EQ, 0.01, None)
-    assert len(admitted) == int(NS["heat_budget"](None) / 0.01)
+    # The admission limit is the budget PLUS the slide -- a validated leg is not dropped over a
+    # rounding edge (see HEAT_SLIDE). One q for every sleeve is what this test is about, and it
+    # still is: the count is exactly what the limit divided by that one q allows.
+    limit = min(NS["heat_budget"](None) + NS["HEAT_SLIDE"], NS["MAX_HEAT_CEILING"])
+    assert len(admitted) == int(limit / 0.01 + 1e-9)
 
 
 # ------------------------------------------------- the live path, not just the helpers

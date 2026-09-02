@@ -47,7 +47,7 @@ def _load():
     wanted_fn = {"cap_by_heat", "realised_q", "auto_lot", "heat_budget", "_lot_steps",
                  "_eur_per_price_unit", "allocator_heat", "allocator_order"}
     wanted_const = {"MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
-                    "_ALLOC_MAX_AGE_S",
+                    "_ALLOC_MAX_AGE_S", "HEAT_SLIDE",
                     "DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
                     "GOLD_SYMBOL"}
     for n in tree.body:
@@ -146,6 +146,46 @@ def test_promoted_sleeves_are_what_gets_deferred():
     assert note and "promoted_" in note
 
 
+def test_a_validated_leg_is_not_dropped_over_a_rounding_edge():
+    """MEASURED 2026-09-02: the armed gold book priced at 20.3% against a 20.0% budget and
+    gold_afternoon -- a validated, human-armed session -- was deferred over three tenths of one
+    point. The cost is not the 0.3%, it is a whole session of the day going untraded, and the
+    leg's price floats with its stop distance (the same book was 13.1% earlier that afternoon).
+    """
+    q = NS["realised_q"](1684.0)
+    budget = NS["heat_budget"]()
+    # A book that lands just over the budget, inside the slide.
+    n = int(budget // q) + 1
+    over = _sleeves(n)
+    admitted, _note = NS["cap_by_heat"](over, 1684.0)
+    assert len(admitted) * q > budget, "the fixture did not actually exceed the budget"
+    assert len(admitted) == n, "a leg was dropped inside the slide band"
+
+
+def test_the_slide_is_a_tolerance_and_never_a_new_budget():
+    """A book genuinely far over budget is still trimmed -- otherwise the slide IS the budget."""
+    far = _sleeves(60)
+    admitted, note = NS["cap_by_heat"](far, 1684.0)
+    q = NS["realised_q"](1684.0)
+    assert len(admitted) < 60 and note
+    assert len(admitted) * q <= NS["heat_budget"]() + NS["HEAT_SLIDE"] + 1e-9
+
+
+def test_the_slide_can_never_lift_the_book_past_the_hard_bar():
+    """THE 30% CEILING IS ABSOLUTE. The slide is applied against min(budget + slide, ceiling),
+    so no future widening of it can reach the bar the principal set."""
+    assert NS["heat_budget"]() + NS["HEAT_SLIDE"] <= NS["MAX_HEAT_CEILING"] + 1e-12
+    for k_eff in (None, 2.26, 5.12, 9.0, 40.0):
+        admitted, _ = NS["cap_by_heat"](_sleeves(80), 1684.0, k_eff=k_eff)
+        used = len(admitted) * NS["realised_q"](1684.0)
+        assert used <= NS["MAX_HEAT_CEILING"] + 1e-9, f"k_eff={k_eff} breached the hard bar"
+
+
+def test_the_note_names_the_slide_so_the_band_is_never_invisible():
+    _admitted, note = NS["cap_by_heat"](_sleeves(60), 1684.0)
+    assert note and "slide" in note and "ceiling" in note
+
+
 def test_a_small_account_gets_fewer_sleeves_not_more_risk():
     """The 0.01 floor makes each sleeve a LARGER fraction as equity falls, so a sleeve-COUNT cap
     would let total risk grow silently on a shrinking account. A heat budget cannot."""
@@ -154,8 +194,11 @@ def test_a_small_account_gets_fewer_sleeves_not_more_risk():
     assert len(small) < len(big)
     for eq in (600.0, 1684.0, 8000.0):
         adm, _ = NS["cap_by_heat"](_sleeves(10), eq)
-        assert len(adm) * NS["realised_q"](eq) <= NS["heat_budget"]() + 1e-9, (
-            f"heat breached at equity {eq}")
+        # The admission limit is the budget PLUS the slide (see HEAT_SLIDE): a validated leg is
+        # not dropped over a rounding edge. The property this test exists for is unchanged --
+        # total risk still cannot grow as equity falls -- and the hard ceiling still binds.
+        assert len(adm) * NS["realised_q"](eq) <= (
+            NS["heat_budget"]() + NS["HEAT_SLIDE"] + 1e-9), f"heat breached at equity {eq}"
 
 
 def test_realised_risk_never_exceeds_the_policy_once_the_floor_clears():

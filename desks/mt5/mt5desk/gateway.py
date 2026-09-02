@@ -135,6 +135,22 @@ ATR_N = 20
 #: belongs to the session whose range formed it, so that session is what must end it.
 BRACKET_TTL_HOURS = 6.0
 
+#: HOW FAR THE BOOK MAY SLIDE PAST THE BUDGET TO KEEP A VALIDATED LEG, in fractions of equity.
+#:
+#: MEASURED 2026-09-02: the armed gold book priced at 20.3% against a 20.0% budget and
+#: `cap_by_heat` deferred `gold_afternoon` -- a validated, human-armed session amputated over
+#: THREE TENTHS OF ONE POINT. The cost of that trade is not the 0.3%: it is a whole session of
+#: the day going untraded, and the leg's price floats with its stop distance, so the same book
+#: was 13.1% earlier the same afternoon. A budget that drops a third of the book on a rounding
+#: edge is measuring volatility, not risk.
+#:
+#: TWO POINTS, AND THE HARD BAR STILL BINDS ABSOLUTELY. The slide is a tolerance, never a new
+#: budget: admission is capped at min(budget + slide, MAX_HEAT_CEILING), so 30% remains
+#: unreachable and a book genuinely far over budget is still trimmed. On this book's 33.7R worst
+#: run, 20% costs 90.2% and 22% costs 92.4% -- the slide is not a different risk posture, it is
+#: the same one without a cliff at the boundary. (principal, 2026-09-02)
+HEAT_SLIDE = 0.02
+
 CANCEL_HOUR = 20.5      # end-of-day backstop; the per-bracket TTL above is the real limit
 CLOSE_HOUR = 19.5       # force-close positions at 19:30 UTC
 PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
@@ -651,6 +667,11 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         note = ("PORTFOLIO HEAT CAP: no sleeve's risk could be priced in account currency; "
                 "admitting none rather than sizing from another instrument's constants")
         return [], note
+    # THE SLIDE. A validated leg is not dropped for overshooting the budget by a rounding edge;
+    # see HEAT_SLIDE. The hard ceiling is applied here and not inside it, so no future change to
+    # the slide can lift the book past MAX_HEAT_CEILING.
+    limit = min(budget + HEAT_SLIDE, MAX_HEAT_CEILING)
+
     admitted: list[dict] = []
     dropped: list[str] = []
     used = 0.0
@@ -660,7 +681,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
         # whole tail of legs the budget had room for. Combined with the value ordering above this
         # is a greedy fill by marginal growth per unit of heat: the budget buys the most it can,
         # and what is deferred is the cheapest growth rather than everything after the misfit.
-        if used + q > budget + 1e-12:
+        if used + q > limit + 1e-12:
             dropped.append(str(s.get("name", "?")))
             continue
         admitted.append(s)
@@ -668,7 +689,8 @@ def cap_by_heat(sleeves: list[dict], equity: float,
     if not dropped:
         return list(sleeves), None
     note = (f"PORTFOLIO HEAT CAP: {len(sleeves)} sleeves totalling {sum(qs):.1%} "
-            f"exceed {budget:.1%} [{budget_src}] "
+            f"exceed {limit:.1%} (budget {budget:.1%} + {HEAT_SLIDE:.1%} slide, "
+            f"ceiling {MAX_HEAT_CEILING:.0%}) [{budget_src}] "
             f"(k_eff {'unmeasured' if k_eff is None else format(k_eff, '.2f')}); "
             f"admitting {len(admitted)} at {used:.1%}, deferring {dropped}")
     return admitted, note
