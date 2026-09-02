@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-02T00:09:25.255982+00:00",
+  "generated_at": "2026-09-02T16:05:15.942672+00:00",
   "scope": "MT5_FUSION_ONLY",
   "execution_authority": false,
   "universe": {
     "metadata_entities": 251,
     "h1_bar_files": 251,
-    "metadata_mtime": "2026-09-02T00:03:10.860281+00:00",
-    "newest_h1_mtime": "2026-09-01T22:00:44.258433+00:00"
+    "metadata_mtime": "2026-09-02T16:03:14.225182+00:00",
+    "newest_h1_mtime": "2026-09-02T03:00:43.508726+00:00"
   },
   "conversion": {
     "research_queue": {
@@ -17,29 +17,29 @@
       "GAUNTLET_REJECTED": 46584,
       "PENDING": 17
     },
-    "universal_survivors": 63,
-    "shadow_sleeves": 82,
-    "shadow_observations": 270,
-    "shadow_last_run": "2026-09-02T00:04:28.365960+00:00"
+    "universal_survivors": 65,
+    "shadow_sleeves": 84,
+    "shadow_observations": 297,
+    "shadow_last_run": "2026-09-02"
   },
   "freshness": {
-    "research_loop": "2026-09-01T22:01:09.266344+00:00",
-    "research_pipeline": "2026-09-02T00:03:30+00:00",
-    "external_gauntlet": "2026-09-01T22:11:48+00:00",
-    "universal_gate": "2026-09-02T00:03:30+00:00",
-    "allocation": "2026-09-01T22:00:50.418904+00:00",
+    "research_loop": "2026-09-02T03:01:10.173764+00:00",
+    "research_pipeline": "2026-09-02T15:59:17+00:00",
+    "external_gauntlet": "2026-09-02T14:39:58+00:00",
+    "universal_gate": "2026-09-02T15:59:17+00:00",
+    "allocation": "2026-09-02T03:00:50.185236+00:00",
     "markout": "2026-08-30T08:35:16+00:00",
     "markout_usable": false,
     "markout_matched_fills": 0
   },
   "capability_reuse": {
     "artifact": "data/intelligence/mt5_capability_reuse.json",
-    "generated_at": "2026-09-02T00:09:24.367374+00:00",
+    "generated_at": "2026-09-02T16:05:15.494828+00:00",
     "counts": {
       "DISPOSED_BLOCKED": 7,
       "DISPOSED_SUPERSEDED": 10,
-      "REACHABLE_MT5_STATIC": 67,
-      "UNWIRED_REVIEW": 563,
+      "REACHABLE_MT5_STATIC": 73,
+      "UNWIRED_REVIEW": 558,
       "VENUE_SPECIFIC_REVIEW": 11
     },
     "proof_level": "STATIC_REACHABILITY_ONLY"

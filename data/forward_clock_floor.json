@@ -62,6 +62,8 @@
   "GBPNOK.overnight_gap_decay.asia": "2026-08-29T13:34:35.776979+00:00",
   "GBPSEK.overnight_gap_decay.asia": "2026-08-29T13:34:35.776987+00:00",
   "GBPZAR.overnight_gap_decay.asia": "2026-08-29T13:34:35.776994+00:00",
+  "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_240_horizon=6_side=-1": "2026-09-02T13:42:29.541212+00:00",
+  "USDCAD.discovered.asia#band=[0.9, 1.0]_feature=ru_96_horizon=6_side=-1": "2026-09-02T13:42:29.699333+00:00",
   "USDCHF.discovered.asia#band=[0.9, 1.0]_feature=ext_residz_AUDCAD_horizon=3_side=-1": "2026-09-01T20:40:41.453950+00:00",
   "USDJPY.asia": "2026-08-27T03:34:48.772869+00:00",
   "USDJPY.asia#rr=1.5": "2026-08-27T03:34:48.716568+00:00",
@@ -77,8 +79,8 @@
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 9.429,
- "measured_at": "2026-09-02T00:08:48+00:00",
+ "max_clock_age_days": 10.092,
+ "measured_at": "2026-09-02T16:04:18+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

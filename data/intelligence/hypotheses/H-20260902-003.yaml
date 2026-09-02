@@ -8,7 +8,7 @@ origin:
   source_id: channel_123
   source_url: null
   evidence_tier: practitioner_claim
-  collected_at: '2026-09-02T00:09:22.926908+00:00'
+  collected_at: '2026-09-02T15:10:51.652355+00:00'
   collector_version: '1.0'
   metadata: {}
 mechanism:
@@ -67,8 +67,8 @@ costs:
   data_cost_usd_monthly: 0.0
   execution_cost_bps_per_trade: 0.0
 status: discovered
-created_at: '2026-09-02T00:09:22.926967+00:00'
-updated_at: '2026-09-02T00:09:22.926972+00:00'
+created_at: '2026-09-02T15:10:51.652434+00:00'
+updated_at: '2026-09-02T15:10:51.652439+00:00'
 source_attribution: {}
 miner_attribution: {}
 validation_history: []

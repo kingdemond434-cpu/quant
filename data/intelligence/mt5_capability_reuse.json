@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-02T00:09:24.367374+00:00",
+  "generated_at": "2026-09-02T16:05:15.494828+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
-    "REACHABLE_MT5_STATIC": 67,
-    "UNWIRED_REVIEW": 563,
+    "REACHABLE_MT5_STATIC": 73,
+    "UNWIRED_REVIEW": 558,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2136,6 +2136,15 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.portfolio.robust_elog",
+      "path": "libs/portfolio/robust_elog.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/pf_allocator.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.portfolio.strategy_pool",
       "path": "libs/portfolio/strategy_pool.py",
       "status": "UNWIRED_REVIEW",
@@ -2152,35 +2161,37 @@
     {
       "module": "libs.regime.bayesian",
       "path": "libs/regime/bayesian.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
       "module": "libs.regime.engine",
       "path": "libs/regime/engine.py",
-      "status": "UNWIRED_REVIEW",
-      "direct_mt5_consumers": [],
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/research/pf_allocator.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
       "module": "libs.regime.features",
       "path": "libs/regime/features.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
       "module": "libs.regime.gmm",
       "path": "libs/regime/gmm.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
       "module": "libs.regime.hmm",
       "path": "libs/regime/hmm.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },

@@ -3,99 +3,99 @@
  "candidate_conservation": {
   "accounted": 23465,
   "balanced": true,
-  "blocked": 193,
+  "blocked": 131,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
   "discovered": 23465,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
   "lost": 0,
   "lost_cells": [],
-  "queued": 9226,
-  "rejected": 14046,
-  "resumable_deferred": 9226,
-  "tested": 0
+  "queued": 8594,
+  "rejected": 14709,
+  "resumable_deferred": 8594,
+  "tested": 31
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
-  "certificates_added": 0,
-  "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.026837,
+  "certificates_added": 2,
+  "certificates_per_cpu_hour": 40.924703,
+  "measured_cpu_hours": 0.04887,
   "stage_rows": [
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 83.046439,
-    "duration_seconds": 6738.531,
+    "certificate_delta": 2,
+    "cpu_seconds": 165.056143,
+    "duration_seconds": 16044.791,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 4.935808,
-    "duration_seconds": 46.349,
+    "cpu_seconds": 1.815231,
+    "duration_seconds": 8.579,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 5.189544,
-    "duration_seconds": 37.097,
+    "cpu_seconds": 5.299099,
+    "duration_seconds": 18.5,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.060506,
-    "duration_seconds": 5.677,
+    "cpu_seconds": 0.095802,
+    "duration_seconds": 6.061,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 86.359,
+    "cpu_seconds": 0.031115,
+    "duration_seconds": 87.247,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.17913,
-    "duration_seconds": 17.831,
+    "cpu_seconds": 1.428878,
+    "duration_seconds": 17.059,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.068764,
-    "duration_seconds": 5.626,
+    "cpu_seconds": 0.058143,
+    "duration_seconds": 7.61,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.089279,
-    "duration_seconds": 11.749,
+    "cpu_seconds": 0.978255,
+    "duration_seconds": 11.947,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 10.266,
+    "duration_seconds": 18.796,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.235674,
-    "duration_seconds": 6.271,
+    "cpu_seconds": 0.270231,
+    "duration_seconds": 12.414,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.084088,
-    "duration_seconds": 4.14,
+    "cpu_seconds": 0.123988,
+    "duration_seconds": 8.521,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.657923,
-    "duration_seconds": 6.763,
+    "cpu_seconds": 0.668473,
+    "duration_seconds": 11.804,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.066011,
-    "duration_seconds": 4.016,
+    "cpu_seconds": 0.107502,
+    "duration_seconds": 11.726,
     "name": "forward_clock_fence"
    }
   ]
@@ -103,66 +103,82 @@
  "failure_root_causes": [
   {
    "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
-   "count": 9226,
+   "count": 8594,
    "sample_cells": [
-    "GBPUSD.discovered.p=459d666f0a47df78",
-    "GBPUSD.discovered.p=5094763847e8c846",
-    "GBPUSD.discovered.p=73e981cd4804a13f",
-    "GBPUSD.discovered.p=afab35c671127e13",
-    "GBPUSD.discovered.p=848e90b24c748ad6",
-    "GBPUSD.discovered.p=7050e0a8d092b04a",
-    "GBPUSD.discovered.p=57a962976b5c79df",
-    "GBPUSD.discovered.p=4bd3ce74c1268d40",
-    "GBPUSD.discovered.p=1912309b94f37977",
-    "GBPUSD.discovered.p=bea98b27dc06dd65"
+    "Honeywell.discovered.p=cd4cf56a172d08f8",
+    "Honeywell.discovered.p=647cbc213b1ff70a",
+    "Honeywell.discovered.p=2ab3e57cdbe6d287",
+    "Honeywell.discovered.p=d893cb032cdb46ff",
+    "Honeywell.discovered.p=4c3318697839a588",
+    "Honeywell.discovered.p=9842fe8a8660fabb",
+    "Honeywell.discovered.p=63e92fbc37544eec",
+    "Honeywell.discovered.p=e6262b8bde1a13dc",
+    "Honeywell.discovered.p=a6ee71acf9b408ba",
+    "Honeywell.discovered.p=5c7b56999cf8fb0f"
    ]
   },
   {
    "cause": "in_sample_screen",
-   "count": 5702,
+   "count": 5749,
    "sample_cells": [
     "3M.cross_asset_residual.p=aa3d91c8b8b7b603",
-    "AALG.discovered.p=afec99a90fff13f1",
-    "AALG.discovered.p=67377d45ffc28ffa",
-    "AALG.discovered.p=d0c28a1ad68764b7",
-    "AALG.discovered.p=03f67aeb205317eb",
-    "AALG.discovered.p=54f2ca1ea393a6cd",
-    "AALG.discovered.p=8f8760ef944dfd06",
-    "AALG.discovered.p=79cfdaa264f6db89",
-    "AALG.discovered.p=902586ff5ca10786",
-    "AALG.discovered.p=89da272f62e60f31"
+    "ADAUSD.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "ADP.correlation_regime.p=4d5206231de2c743",
+    "ADP.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "ADP.relative_value.p=4d5206231de2c743",
+    "AMD.correlation_regime.p=d86e1a3440681757",
+    "AMD.cross_asset_residual.p=c86a8db914144923",
+    "AMD.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "AMD.overnight_gap_decay.p=44136fa355b3678a",
+    "AMD.turn_of_month.p=44136fa355b3678a"
+   ]
+  },
+  {
+   "cause": "symbol_eligibility",
+   "count": 3934,
+   "sample_cells": [
+    "ACCENTURE.carry.p=00976e6980a81593",
+    "ADOBE.carry.p=5896dcfad5052ee7",
+    "AIRBNB.carry.p=7efe6d982342738e",
+    "ALIBABAGROUP.carry.p=603cf51f1fef52d2",
+    "ALPHABET-A.carry.p=c63763f2c3f549c1",
+    "ALPHABET-C.carry.p=93e91c3d3d170029",
+    "AMAZON.carry.p=95db8d326a0bb1e2",
+    "AMERICANEXPRESS.carry.p=9c6381974c4a319d",
+    "AMGEN.carry.p=ea8bdc1081d649ce",
+    "APPLE.carry.p=231a6a6f6d07b8dd"
+   ]
+  },
+  {
+   "cause": "observations",
+   "count": 2630,
+   "sample_cells": [
+    "3M.carry.p=364802d2d8e552f9",
+    "ADAUSD.carry.p=e3f98be9e28db5d7",
+    "ADAUSD.event_reaction.p=4715a17a13ae8cc2",
+    "ADP.carry.p=7e89dd8137ccc152",
+    "AMD.carry.p=f8ff82dcc0676d67",
+    "AT&T.carry.p=e82efc48d8c19d10",
+    "AUDCAD.discovered.p=cc317030055c6a06",
+    "AUDCAD.discovered.p=7af29b8b04c22bc3",
+    "AUDCAD.discovered.p=a0e24f8ef34510c6",
+    "AUDCAD.discovered.p=3907155cd80fa369"
    ]
   },
   {
    "cause": "deflated_sharpe",
-   "count": 4568,
+   "count": 1578,
    "sample_cells": [
     "3M.cross_asset_residual.p=faa3a0a322fb39dc",
     "3M.overnight_gap_decay.p=44136fa355b3678a",
     "3M.relative_value.p=985ec3f41d2a2e35",
     "3M.turn_of_month.p=44136fa355b3678a",
     "3M.vol_transition.p=44136fa355b3678a",
-    "A.cross_asset_residual.p=00beb01ea8970934",
-    "A.cross_asset_residual.p=f1f1d03d92e199f7",
-    "A.cross_asset_residual.p=91641f7afb4a9e41",
-    "A.cross_asset_residual.p=4f2a58df88050cad",
-    "A.cross_asset_residual.p=aa3d91c8b8b7b603"
-   ]
-  },
-  {
-   "cause": "observations",
-   "count": 2960,
-   "sample_cells": [
-    "3M.carry.p=364802d2d8e552f9",
-    "AALG.discovered.p=0c2c0d724b4983b2",
-    "AALG.discovered.p=ca3c2186a61c9bcf",
-    "AAOI.discovered.p=b66e4d0588907d26",
-    "AAOI.discovered.p=4c752822e834ea47",
-    "AAOI.discovered.p=33019456c30741ba",
-    "AAPL.discovered.p=ebc3165c94e57ab8",
-    "AAPL.discovered.p=88550daa976e5f65",
-    "AAPL.discovered.p=fec1cee9a61eb3ff",
-    "AAPL.discovered.p=735f857de10a9783"
+    "ADAUSD.cross_asset_residual.p=c86a8db914144923",
+    "ADAUSD.vol_transition.p=44136fa355b3678a",
+    "ADP.cross_asset_residual.p=c86a8db914144923",
+    "ADP.overnight_gap_decay.p=44136fa355b3678a",
+    "ADP.relative_value.p=d86e1a3440681757"
    ]
   },
   {
@@ -183,37 +199,47 @@
   },
   {
    "cause": "NOT_RUN_BUILD_FAILED",
-   "count": 193,
+   "count": 131,
    "sample_cells": [
-    "A.pca_residual.p=00beb01ea8970934",
-    "A.pca_residual.p=f1f1d03d92e199f7",
-    "A.pca_residual.p=aa3d91c8b8b7b603",
-    "AA.pca_residual.p=00beb01ea8970934",
-    "AA.pca_residual.p=f1f1d03d92e199f7",
-    "AA.pca_residual.p=91641f7afb4a9e41",
-    "AA.pca_residual.p=aa3d91c8b8b7b603",
-    "AALG.pca_residual.p=f1f1d03d92e199f7",
-    "AALG.pca_residual.p=aa3d91c8b8b7b603",
-    "AAPL.pca_residual.p=f1f1d03d92e199f7"
+    "AUDCAD.pca_residual.p=00beb01ea8970934",
+    "AUDCAD.pca_residual.p=f1f1d03d92e199f7",
+    "AUDCHF.pca_residual.p=f1f1d03d92e199f7",
+    "AUDHUF.pca_residual.p=aa3d91c8b8b7b603",
+    "AUDJPY.pca_residual.p=00beb01ea8970934",
+    "AUDJPY.pca_residual.p=f1f1d03d92e199f7",
+    "AUDJPY.pca_residual.p=91641f7afb4a9e41",
+    "AUDJPY.pca_residual.p=aa3d91c8b8b7b603",
+    "AUDUSD.pca_residual.p=00beb01ea8970934",
+    "AUDUSD.pca_residual.p=f1f1d03d92e199f7"
+   ]
+  },
+  {
+   "cause": "cpcv",
+   "count": 2,
+   "sample_cells": [
+    "EURNOK.liquidity_gamma_reversal.p=44136fa355b3678a",
+    "EURSEK.liquidity_gamma_reversal.p=44136fa355b3678a"
    ]
   }
  ],
  "forward_truth": {
-  "active_clocks": 50,
-  "fusion_native": 50,
+  "active_clocks": 51,
+  "fusion_native": 51,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
   "source_unmeasured": 0,
   "stale": 0,
   "stale_keys": []
  },
- "generated_at": "2026-09-02T00:08:56.659389+00:00",
+ "generated_at": "2026-09-02T16:04:33.520430+00:00",
  "headline": {
   "candidates_discovered": 23465,
   "candidates_lost": 0,
-  "certificates_added": 0,
-  "forward_clocks": 82,
-  "hard_failures": []
+  "certificates_added": 2,
+  "forward_clocks": 84,
+  "hard_failures": [
+   "forward_lane_heal"
+  ]
  },
  "mechanism_independence": {
   "allocation": {
@@ -221,14 +247,14 @@
    "measured": true,
    "sleeves": {
     "AUDCAD_discovered_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "AUDCHF_overnight_gap_decay_asia": {
      "n": 2,
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
+    },
+    "AUDCHF_overnight_gap_decay_asia": {
+     "n": 3,
+     "weight": 0.0,
+     "why": "3 day(s) < 8: too little to size on"
     },
     "AUDNZD_discovered_asia": {
      "n": 1,
@@ -245,15 +271,20 @@
      "weight": 0.0,
      "why": "4 day(s) < 8: too little to size on"
     },
+    "CHFDKK_overnight_gap_decay_asia": {
+     "n": 1,
+     "weight": 0.0,
+     "why": "1 day(s) < 8: too little to size on"
+    },
     "CHFNOK_carry_asia": {
      "n": 2,
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
     },
     "EURGBP_discovered_asia": {
-     "n": 1,
+     "n": 2,
      "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
+     "why": "2 day(s) < 8: too little to size on"
     },
     "EURJPY_asia": {
      "n": 4,
@@ -261,14 +292,14 @@
      "why": "4 day(s) < 8: too little to size on"
     },
     "EURNOK_overnight_gap_decay_asia": {
+     "n": 3,
+     "weight": 0.0,
+     "why": "3 day(s) < 8: too little to size on"
+    },
+    "EURZAR_overnight_gap_decay_asia": {
      "n": 2,
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
-    },
-    "EURZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
     },
     "GBPCHF_overnight_gap_decay_asia": {
      "n": 1,
@@ -281,70 +312,75 @@
      "why": "4 day(s) < 8: too little to size on"
     },
     "GBPMXN_overnight_gap_decay_asia": {
-     "n": 2,
-     "weight": 0.0,
-     "why": "2 day(s) < 8: too little to size on"
-    },
-    "GBPNOK_overnight_gap_decay_asia": {
-     "n": 2,
-     "weight": 0.0,
-     "why": "2 day(s) < 8: too little to size on"
-    },
-    "GBPZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "USDJPY_asia": {
-     "n": 4,
-     "weight": 0.0,
-     "why": "4 day(s) < 8: too little to size on"
-    },
-    "USDMXN_overnight_gap_decay_asia": {
-     "n": 2,
-     "weight": 0.0,
-     "why": "2 day(s) < 8: too little to size on"
-    },
-    "USDZAR_overnight_gap_decay_asia": {
-     "n": 1,
-     "weight": 0.0,
-     "why": "1 day(s) < 8: too little to size on"
-    },
-    "XAUUSD_asia": {
      "n": 3,
      "weight": 0.0,
      "why": "3 day(s) < 8: too little to size on"
+    },
+    "GBPNOK_overnight_gap_decay_asia": {
+     "n": 3,
+     "weight": 0.0,
+     "why": "3 day(s) < 8: too little to size on"
+    },
+    "GBPSEK_overnight_gap_decay_asia": {
+     "n": 1,
+     "weight": 0.0,
+     "why": "1 day(s) < 8: too little to size on"
+    },
+    "GBPZAR_overnight_gap_decay_asia": {
+     "n": 2,
+     "weight": 0.0,
+     "why": "2 day(s) < 8: too little to size on"
+    },
+    "USDJPY_asia": {
+     "n": 5,
+     "weight": 0.0,
+     "why": "5 day(s) < 8: too little to size on"
+    },
+    "USDMXN_overnight_gap_decay_asia": {
+     "n": 3,
+     "weight": 0.0,
+     "why": "3 day(s) < 8: too little to size on"
+    },
+    "USDZAR_overnight_gap_decay_asia": {
+     "n": 2,
+     "weight": 0.0,
+     "why": "2 day(s) < 8: too little to size on"
+    },
+    "XAUUSD_asia": {
+     "n": 4,
+     "weight": 0.0,
+     "why": "4 day(s) < 8: too little to size on"
     }
    },
    "why": "weights are fractional-Kelly on measured moments, further shrunk by the book's own concentration (N_eff / N). Kelly on estimated moments is fragile -- past 2x Kelly geometric growth turns negative -- so this allocates deliberately below the optimum."
   },
   "downside_comovement": {
    "losing_days": 2,
-   "mean_share_losing_together": 0.158,
+   "mean_share_losing_together": 0.143,
    "measured": true,
    "why": "the fraction of sleeves that are down on the book's down days; near 1.0 means the book is one bet however many names it holds"
   },
   "effective_bets": {
-   "concentration": 18.64,
+   "concentration": 20.6,
    "n_effective": 1.019,
-   "n_sleeves": 19,
-   "pairs_assumed_correlated": 171,
+   "n_sleeves": 21,
+   "pairs_assumed_correlated": 210,
    "pairs_measured": 0,
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
-  "forward_sleeves_with_observations": 19,
-  "measured_at": "2026-09-02T00:08:19+00:00",
+  "forward_sleeves_with_observations": 21,
+  "measured_at": "2026-09-02T16:03:21+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 9226
+  "stalled_cells": 8594
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 325.1,
+  "mem_available_mb": 808.2,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -491,6 +527,13 @@
     "overdue": true
    },
    {
+    "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
+    "deadline_at": "2026-09-02 00:13:35.223752+00:00",
+    "enrolled": false,
+    "overdue": true
+   },
+   {
     "cell": "CADCHF.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-08-31 23:50:19.808274+00:00",
@@ -505,9 +548,9 @@
     "overdue": true
    }
   ],
-  "certificates": 63,
-  "certificates_not_enrolled": 62,
-  "certificates_overdue": 22,
+  "certificates": 65,
+  "certificates_not_enrolled": 64,
+  "certificates_overdue": 23,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 17,
   "queue_overdue": 17,
