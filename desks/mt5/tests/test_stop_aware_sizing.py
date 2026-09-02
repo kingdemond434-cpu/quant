@@ -31,12 +31,17 @@ LIVE_STOPS = {"asia": 53.40, "london_am": 27.91, "ny_open": 18.65,
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
     from mt5desk.gateway_config_fallback import (
-        BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT)
+        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
+        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
     from mt5desk.sizing import clamp_risk_frac, decay_factor
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          # The heat law lives in gateway_config_fallback and gateway.py imports it; the AST
+          # extraction keeps only function/const defs, so the names have to be supplied here.
+          "HEAT_TARGET": HEAT_TARGET, "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
+          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE,
           # gateway.py imports this from mt5desk.sizing; the AST extraction keeps only
           # function/const defs, so the import has to be supplied here or promoted_lot
           # dies on a NameError that looks like a sizing bug

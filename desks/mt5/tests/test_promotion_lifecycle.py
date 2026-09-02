@@ -136,7 +136,16 @@ def test_promotion_is_idempotent(desk):
 # ---------------------------------------------------------------------- retire
 
 def _losing(name: str, n: int = 12) -> list[dict]:
-    return [{"sleeve": name, "r_multiple": -1.0} for _ in range(n)]
+    """A sleeve that genuinely lost -- LOSSES THAT DIFFER, on purpose.
+
+    This returned n identical -1.0 R multiples, which `promoter.degenerate_evidence` now refuses
+    to retire on: a constant series is what a broken computation looks like, and the desk
+    retired a live, profitable gold sleeve on exactly that shape (n=30, exp=-1.000, while the
+    account was +EUR 103.84). A fixture that trips the safety guard tests the guard, not the
+    retire path these tests are about. Real losses vary; these do, and still average -0.85R.
+    """
+    losses = (-1.0, -0.62, -1.0, -0.95, -0.41, -1.0, -0.88, -1.0, -0.73, -1.0, -0.55, -1.0)
+    return [{"sleeve": name, "r_multiple": losses[i % len(losses)]} for i in range(n)]
 
 
 def test_retiring_a_conditioned_sleeve_kills_THAT_sleeve_in_shadow(desk):

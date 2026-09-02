@@ -268,6 +268,32 @@ def fetch_h1(sym: str):
     return bars
 
 
+def clock_breaches() -> dict[str, str]:
+    """Keys whose forward clock was SILENTLY REBASED, from the ratchet fence's own report.
+
+    `scripts/check_forward_clock_ratchet.py` has detected these since 2026-08-27 and NOTHING READ
+    IT. A silent rebase means a pre-registered forward window was served and then discarded, so
+    the desk cannot tell a clock at day 13 from one restarted at day 0 -- and `days >= 14` (L1.58)
+    is the single number the whole path to live capital turns on. Detection without consequence
+    left the breached sleeve accruing evidence toward that bar as though its window were intact.
+
+    Absence of the report is UNMEASURED, not clean: it returns empty, and the fence's own exit
+    code is what reports that it did not run.
+    """
+    try:
+        doc = json.loads((BASE.parent.parent / "data" / "forward_clock_ratchet.json")
+                         .read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    out: dict[str, str] = {}
+    for row in doc.get("silent_rebases") or []:
+        if isinstance(row, dict) and row.get("key"):
+            out[str(row["key"])] = (
+                f"forward clock silently rebased {row.get('was')} -> {row.get('now')}; "
+                f"{row.get('forward_days_destroyed', '?')} pre-registered days destroyed")
+    return out
+
+
 def main() -> None:
     from mt5desk.engine import run_backtest
 
@@ -291,6 +317,9 @@ def main() -> None:
     # safety ceiling as soon as all certified families became genuinely enrollable.
     enrolled.sort(key=lambda row: (row[0], row[1], row[3], repr(sorted(row[2].items()))))
     cached_symbol: str | None = None
+    breached = clock_breaches()
+    if breached:
+        slog(f"forward-clock ratchet: {len(breached)} breached key(s) will be quarantined")
     seen: set[str] = set()
     for sym, win, params, fam in enrolled:
         key = sleeve_key(sym, win, params, fam)
@@ -300,6 +329,26 @@ def main() -> None:
         st = state.get(key, {"n": 0, "cum_r": 0.0, "max_dd_r": 0.0,
                              "first_entry": None, "last_entry": None,
                              "status": "ACTIVE"})
+        if key in breached and not st.get("quarantine_reason"):
+            st["quarantine_reason"] = breached[key]
+
+        # A RATCHET BREACH IS TERMINAL, NOT ADVISORY, and it must be applied BEFORE the sleeve is
+        # evaluated -- evaluating it first would add another day of evidence to a window whose
+        # length is exactly what is in doubt. The clock fence has detected silent rebases since
+        # 2026-08-27 and nothing acted on one; a breached sleeve kept counting toward the
+        # `days >= 14` bar it had already lost the right to claim.
+        #
+        # BOTH AUTHORITIES ARE REVOKED, not just promotion. `order_authority` is what tells the
+        # engine this row may place a real order rather than replay one, and leaving it while
+        # revoking promotion would quarantine a sleeve that can still trade.
+        if st.get("quarantine_reason"):
+            st["status"] = "QUARANTINED_FORWARD_CLOCK_BREACH"
+            st["promotion_authority"] = False
+            st["order_authority"] = False
+            state[key] = st
+            slog(f"QUARANTINED {key}: {st['quarantine_reason']}")
+            continue
+
         # BLAST RADIUS: ONE SLEEVE, NEVER THE BOOK (gap-wirer 2026-08-27). This loop had no
         # per-sleeve guard and `state_path.write_text` sits AFTER it, so ANY exception raised for
         # ANY single sleeve discarded the whole pass -- every row already evaluated in that run

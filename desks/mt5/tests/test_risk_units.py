@@ -44,12 +44,23 @@ LEGACY_CONSTANT = 100 * 0.92
 
 def _load():
     """Exec the pure sizing helpers; gateway.py imports MetaTrader5."""
-    from mt5desk.gateway_config_fallback import BOOK_WORST_DD_R, MAX_DRAWDOWN_TOLERANCE, Q_OPT
+    import json as _json
+    import time as _time
+    from mt5desk.gateway_config_fallback import (
+        BOOK_WORST_DD_R, HEAT_HARD_CEILING, HEAT_TARGET, MAX_DRAWDOWN_TOLERANCE,
+        MAX_SLEEVE_HEAT_SHARE, Q_OPT)
     from mt5desk.sizing import clamp_risk_frac, decay_factor
     tree = ast.parse(_SRC)
     ns = {"math": math, "Q_OPT": Q_OPT,
           "MAX_DRAWDOWN_TOLERANCE": MAX_DRAWDOWN_TOLERANCE,
           "_BOOK_WORST_DD_R": BOOK_WORST_DD_R,
+          # The heat law lives in gateway_config_fallback and gateway.py imports it; the AST
+          # extraction keeps only function/const defs, so the names have to be supplied here.
+          "HEAT_TARGET": HEAT_TARGET, "HEAT_HARD_CEILING": HEAT_HARD_CEILING,
+          "MAX_SLEEVE_HEAT_SHARE": MAX_SLEEVE_HEAT_SHARE,
+          # cap_by_heat now consults the allocator's book before falling back to the derived
+          # budget; those two helpers need json/time/BASE, which the AST extraction drops.
+          "json": _json, "time": _time, "BASE": _DESK,
           # gateway.py imports this from mt5desk.sizing; the AST extraction drops imports,
           # so promoted_lot needs it supplied here (same repair as test_stop_aware_sizing)
           "clamp_risk_frac": clamp_risk_frac,
@@ -58,7 +69,8 @@ def _load():
           "decay_factor": decay_factor}
     wanted_fn = {"realised_q", "auto_lot", "_lot_steps", "promoted_lot",
                  "heat_budget", "cap_by_heat", "_eur_per_price_unit",
-                 "min_lot_risk_eur"}
+                 "min_lot_risk_eur",
+                 "allocator_heat", "allocator_order"}
     wanted_const = {"DIST_USD", "CONTRACT_OZ", "FX_EUR", "MIN_LOT_RISK_EUR",
                     "MAX_HEAT_CEILING", "_HEAT_BASE_KEFF", "_HEAT_BASE_LEGS",
                     "GOLD_SYMBOL"}

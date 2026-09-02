@@ -72,6 +72,8 @@ OUT = BASE / "reports" / "pf_allocation.json"
 DONE = BASE / "reports" / "DONE_pf_allocation"
 CACHE = BASE / "data" / "pf_allocator_cache"
 ARMED = BASE / "data" / "PF_ALLOCATOR_ARMED"
+#: Append-only record of what each pass EXPECTED. Read by `allocator_attribution.py`.
+FORECASTS = BASE / "data" / "pf_forecast_log.jsonl"
 
 #: How stale the assembled daily-R matrix may be before a `normal` pass rebuilds it. The matrix
 #: changes when a new certificate lands or a sleeve accumulates bars -- both hourly events -- so
@@ -746,6 +748,29 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(art, indent=2, default=str), encoding="utf-8")
     DONE.write_text(datetime.now(UTC).isoformat(), encoding="utf-8")
+
+    # THE FORECAST LOG IS APPEND-ONLY AND IT IS WHAT MAKES THIS LOOP LEARN. `pf_allocation.json`
+    # is overwritten every pass, so without this the desk has no record of what it EXPECTED --
+    # and "expected vs realized" is the only measurement that can tell a bad edge model from a
+    # bad cost model from a bad correlation model. One compact line per pass; the artifact keeps
+    # the detail, this keeps the claim.
+    try:
+        FORECASTS.parent.mkdir(parents=True, exist_ok=True)
+        with FORECASTS.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({
+                "t": art["generated_utc"], "mode": mode,
+                "total_heat": art["heat"]["total"],
+                "binding": art["heat"]["binding"],
+                "certified": art["heat"]["certified"],
+                "expected_log_per_day": art["growth"]["mean_log_per_day"],
+                "expected_cvar_per_day": art["growth"]["cvar_log_per_day"],
+                "prob_annual_loss": art["growth"]["prob_annual_loss"],
+                "book": funded,
+                "regime": dict(probs),
+                "n_universe": len(ev),
+            }, default=str) + "\n")
+    except OSError as exc:
+        _log(f"forecast log NOT written ({exc}) -- this pass cannot be scored later")
     _log(f"-> {OUT.relative_to(ROOT)}  [{nt['verdict']}]  {art['elapsed_s']}s")
     return art
 

@@ -341,7 +341,26 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             spread_at_hour = None
         if spread_at_hour is not None:
             cost_basis = f"fill_hour_{hour:02d}_spread"
-    costs = (Costs.from_symbol(meta, spread_pts=spread_at_hour)
+    # `meta.get(sym, {})`, NOT `meta`. THE WHOLE UNIVERSE DICT WAS BEING PASSED HERE and
+    # `from_symbol` reads `contract_size`, `tick_size`, `tick_value` and `median_spread_pts` off
+    # the mapping it is given -- a 251-symbol registry has none of those at the top level, so
+    # every one fell back to its default. Measured 2026-09-02: with the surface present (it is),
+    # EVERY cell priced through this branch got tick_size 0 -> spread max(0, 0.05) = 0.05,
+    # contract_size 1e5 and quote_per_account 1.0 -- gold's default contract on a NOK cross, no
+    # currency conversion, and essentially no spread, for every symbol.
+    #
+    # The direction is the worst one. This branch exists to charge the HIGHER fill-hour spread
+    # (`from_symbol`'s own docstring: EURZAR 310 pooled against 1,918 on its fill bars, and
+    # "both sleeves -- certified, and on live forward clocks -- go from +0.25R to NEGATIVE").
+    # The bug made it charge almost NOTHING instead, so the surface that was wired to make these
+    # sleeves honest was making them free. `overnight_gap_decay` on the exotic crosses replays at
+    # +0.55R per trading DAY under it, which is what sent the allocator's free optimum to 69,783%
+    # a year and tripped its plausibility fence.
+    #
+    # This is the same shape as the three defects `costs_for` lists above -- a value handed to a
+    # constructor in the wrong shape, defaulting quietly, in the survivor-manufacturing
+    # direction, on the one call site that decides who gets a certificate.
+    costs = (Costs.from_symbol(meta.get(sym, {}), spread_pts=spread_at_hour)
              if spread_at_hour is not None else costs_for(sym, meta))
     return {"sym": sym, "family": family, "params": params, "df": h1, "sigs": sigs,
             "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
