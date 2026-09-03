@@ -11646,3 +11646,41 @@ authorised. Resuming at run **(ab)**'s named next ground.
 3. **SEARCH-SPACE EXPANSION (>=25%)** — a new source class, not a re-scan.
 
 Status: **IN PROGRESS**
+
+---
+
+## BRAIN s53 — 2026-09-03 — AQR abstract corpus + the first RUN of the external factor benchmark
+
+**AXIS (new, held): AQR `/insights/research` abstract corpus.** 564 items, one abstract each,
+`data/external/aqr/research_abstracts.json`. Public, unauthenticated, citation-only licence,
+sitemap-enumerated. Type mix: journal-article 250, working-paper 113, white-papers 73,
+alternative-thinking 43, tax-aware-investing 31, book 25, trade-publication 18, bibliography 7,
+**video 3** (first-class under L1.34, not yet fetched). Slug-keyword census of on-mandate density:
+costs/capacity 53, rates 39, trend/tsmom 28, value 21, macro/regime 18, equity-index 12,
+methodology 5, currency 4, carry 4, commodity 3 — **119 distinct on-mandate items**. This is a
+mechanism corpus for MT5-native asset classes, not a price feed; it carries no PIT constraint
+because nothing here is a data axis to trade, only a hypothesis source.
+
+**BENCHMARK (RUN, not proposed): s52 proposed an external factor benchmark for
+`desks/mt5/mt5desk/independence.py`; s53 ran it for the first time.**
+`Time-Series-Momentum-Factors-Monthly.xlsx` (497 monthly rows, 1985-01 → 2026-05; the file's own
+header states 12-month lookback, 1-month hold, and states in AQR's words that "AQR reconstructs the
+full history each time the returns are updated" — the restatement s52 measured, admitted at source).
+Annualised Sharpe, computed here, never quoted:
+
+| leg | full 1985–2026 (n=497) | pre-desk ≤2018-12 (n=407) | **desk window 2018-12→2026-08 (n=90)** |
+|---|---|---|---|
+| TSMOM | 0.981 | 1.155 | **0.301** |
+| TSMOM^FX | 0.550 | 0.667 | **0.040** |
+| TSMOM^CM | 0.649 | 0.725 | **0.337** |
+| TSMOM^EQ | 0.546 | 0.699 | **−0.082** |
+| TSMOM^FI | 0.607 | 0.689 | **0.285** |
+
+**The desk's own MT5 tape agrees, and that is the point.** A 12-month TSMOM built from
+`desks/mt5/data/universe/*_H1.parquet` (daily resample, 63-day vol scaling, 60%-population guard)
+gives **Forex Sharpe −0.039, t = −0.11 over 1,993 days / 28 symbols**. Two datasets with different
+instruments, different construction and different vendors put the 12-month FX trend premium at
+**indistinguishable from zero in the desk's live window**. So a null FX-trend result on desk data
+is **not** a tape, clock or cost artifact — it is the period. Recorded as a fact about the window,
+never as a gate (L1.6/L1.60); no AQR threshold imported in either direction. Monthly resolution
+means this can never touch a 14-day forward decision — backtest histories only.

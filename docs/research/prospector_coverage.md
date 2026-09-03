@@ -14712,3 +14712,83 @@ state untouched, and the independence gap is named as a proposal rather than app
   transfer of this session's lesson and may dissolve the "needs JS" grade entirely; (d) s50's owed
   free-frontier search for a sub-M15/tick FX tape; (e) s49's unworked full text of 2608.08405v1 and
   2608.10410v1 (OOQI). The BRAIN ground remains open.
+
+## BRAIN HUNTER s53 — 2026-09-03 — I manufactured a soft-404 by rebuilding a URL I already had, and the abstract was inside an attribute
+
+Took s52's next-ground (a): the 564-item AQR `/insights/research` layer.
+
+**Both of my extraction failures passed every check I had.** (1) The sitemap's URLs carry a
+document-TYPE segment — `/insights/research/journal-article/carry`, not `/insights/research/carry`.
+I reconstructed from the slug and got **8/8 HTTP 200s of identical byte length**: the same soft-404
+each time. I had the correct URLs in hand and threw half of each away. (2) With the right URLs all
+12 probe pages returned "OK" at 8.4k–16.4k chars — **100% fraud-warning and disclosure boilerplate**.
+The body is client-side JS; the abstract lives only in `<meta name="description">`, i.e. inside an
+attribute, which a `<[^>]+>` stripper deletes by construction. Length checks, non-empty checks and
+soft-404 string checks all pass on a read that contains nothing. **Grade content by whether the
+extracted text DIFFERS across pages, not by how much of it there is.** Routed to
+`improvement_inbox.md`; `man.com` (s51's owed second hop, graded "needs JS" on exactly this
+evidence) is now the direct test of whether the grade survives the method.
+
+**Applying both makes the layer readable.** Type mix: journal-article 250, working-paper 113,
+white-papers 73, alternative-thinking 43, tax-aware-investing 31, book 25, trade-publication 18,
+bibliography 7, **video 3**. Slug census: **119 distinct on-mandate items** (costs/capacity 53,
+rates 39, trend/tsmom 28, value 21, macro/regime 18, equity-index 12, methodology 5, currency 4,
+carry 4, commodity 3). Corpus at `data/external/aqr/research_abstracts.json`.
+
+**s52 proposed the external factor benchmark; s53 ran it, and it changed a desk verdict.** AQR's
+`TSMOM^FX` Sharpe is **0.667 pre-2019 (n=407 months) and 0.040 in the desk's exact window
+2018-12→2026-08 (n=90)**; every leg falls (TSMOM 1.155→0.301, ^EQ 0.699→−0.082). The desk's own
+12-month TSMOM on its MT5 FX tape gives **−0.039, t=−0.11 over 1,993 days / 28 symbols**. Two
+vendors, different instruments, different construction, same answer: **the 12-month FX trend
+premium is indistinguishable from zero in the desk's live window**, so a null FX-trend result here
+is the period and not a tape, clock or cost bug. That is the first thing this seat has been able to
+say about *why* a desk null happened rather than *that* it happened.
+
+**The horizon grid is worth about half its cardinality.** TSMOM at {21,63,126,252} days gives
+**k_eff 1.76–2.15 in all seven asset classes** — near-identical structure across classes sharing no
+instruments. Diagnostic only, on the `wq_operators.fitness()` precedent; **no pass/fail path, in
+either direction (L1.60)**.
+
+**A desk data defect, found while building the tape and carded as R0761.** Seven
+`*_H1.parquet` files — AT&T, BankofAmericaCorp, Berkshire, BlackRock, CVSHealth, CharlesSchwab,
+ExxonMobil — are **D1/H1 splices with an identical 2022-02-28 boundary**: daily bars stamped at
+hour 00:00 before it, genuine hourly bars 16:00–22:00 after. **The control is decisive: zero
+hour-0 bars exist anywhere in the genuine H1 era, so 100% of hour-0 rows are daily bars.** Every
+hour-of-day consumer (`edge_search.py:205`, `regime_discovery.py:64`, `alpha_habitat.py:133`,
+`cost_surface.py:157`, `ny_open_probe.py:78`) therefore reads a fabricated **2.5x–4.2x** hour-0
+volatility spike on these symbols — a midnight-session "anomaly" made entirely of mislabelled daily
+bars. A bars-per-day ratio misgrades this (13 flagged); median inter-bar gap is the correct test
+(7 flagged, 244 clean). Fix named in R0761 at `registry.py:36`; **not applied — research freeze**.
+
+**Counts, honestly.** 0 desk constructions entered, **0 target-horizon cells and 0 gauntlet trials
+run**, 0 tradeable cards, 0 survivors, so no multiplicity was incurred against the canonical ten
+gates and none is reported. Nothing measured this session approaches the desk's bar: the largest
+|t| in the entire TSMOM table is **2.63** (Commodities L126, gross of costs) against a deflated
+5.236, and I am not proposing any of it as a candidate. No AQR Sharpe, threshold or fitness bar was
+imported as a desk gate (L1.6); their numbers are recorded as facts about their process. No private
+threshold applied in either direction (L1.60).
+
+**Legitimacy.** Public unauthenticated GETs to `www.aqr.com` only (1 sitemap + 20 probe pages +
+the 564-item abstract sweep), 2s spacing, robots re-confirmed as s52 recorded it. No account wall,
+private BRAIN API, credentialed content or proprietary dataset touched; no access control
+circumvented; **no third-party agent tooling installed, imported or run** — the xlsx was parsed with
+stdlib `zipfile`+`ElementTree`. Research-only freeze observed: wrote `docs/research/*` and `data/*`
+only; `scripts/`, `libs/`, `desks/mt5/**`, the executor, risk rails and live state untouched.
+
+**video: 0 fetched, 0 newly locked** — but the sitemap census surfaced **3 items of type `video`**
+on this host, which is the first video ground this seat has found here. **0 new external venues.**
+
+### Artifact exhaustion and next un-exhausted ground
+
+- AQR `/insights/research` **enumeration**: EXHAUSTED 2026-09-03 — all 564 URLs and their abstracts
+  harvested. The **full texts** are NOT exhausted (0 read beyond abstract; bodies are JS-rendered,
+  PDF links captured per row where present). Graded **RICH**.
+- `/insights/datasets` **index**: EXHAUSTED 2026-09-03 (s52). **Contents** still 3 of 23 downloaded.
+- **Next:** (a) the 119 on-mandate abstracts, read and triaged into mechanism cards — this is the
+  first time this seat has had the whole layer in one file and it should be worked before any new
+  host; (b) the **3 `video`-type items**, the untested route here (L1.34 first-class);
+  (c) the remaining 20 AQR datasets, `commodities-for-the-long-run-index-level-data-monthly` and
+  `value-and-momentum-everywhere-*` first; (d) **`man.com` sitemap census** — the direct test of
+  this session's method against s51's "needs JS" grade; (e) s50's owed free-frontier search for a
+  sub-M15/tick FX tape; (f) s49's unworked full text of 2608.08405v1 and 2608.10410v1 (OOQI).
+  The BRAIN ground remains open.

@@ -9917,11 +9917,11 @@
    "rank": 7.0,
    "roi_basis": "rank",
    "raised": "2026-09-03T17:34:48.132509+00:00",
-   "status": "open",
-   "reason": null,
+   "status": "scheduled",
+   "reason": "Instrument acquired and verified this session (data/external/aqr/, 1926-2026, three Fusion-native asset classes, licence permissive). Cannot be applied by this seat: the BRAIN HUNTER brief is a RESEARCH-ONLY freeze -- docs/research/* and data/* only, never libs/ or desks/ -- and the change lands in desks/mt5. Scheduled rather than rejected because the gap is confirmed in code (independence.py measures k_eff only from the desk's own sleeve ledger) and the blocking input, a free external factor benchmark, is now on disk. Scope when built: DIAGNOSTIC reporting residual alpha vs matching AQR legs on BACKTEST monthly returns, no pass/fail path (L1.60), monthly data so never on a forward-window decision.",
    "commit": null,
-   "due": null,
-   "disposed": null
+   "due": "2026-09-10",
+   "disposed": "2026-09-03T17:45:38.264394+00:00"
   },
   {
    "id": "R0760",
@@ -9931,6 +9931,20 @@
    "rank": 5.0,
    "roi_basis": "rank",
    "raised": "2026-09-03T17:35:18.597226+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0761",
+   "source": "cycle",
+   "summary": "BRAIN s53: 7 desks/mt5/data/universe/*_H1.parquet files (AT&T, BankofAmericaCorp, Berkshire, BlackRock, CVSHealth, CharlesSchwab, ExxonMobil) are D1/H1 SPLICES with an identical 2022-02-28 boundary -- pre-boundary daily bars are stamped at hour 00:00, post-boundary bars are genuine H1 but only 16:00-22:00. Zero hour-0 bars exist in the genuine H1 era, so 100% of hour-0 rows are daily bars: every hour-of-day/session consumer (edge_search.py:205, regime_discovery.py:64, alpha_habitat.py:133, cost_surface.py:157, ny_open_probe.py:78) reads a fabricated 2.5x-4.2x hour-0 volatility spike on these symbols. FIX: registry.py:36 must grade cadence per file (median inter-bar gap) and either exclude spliced files from hour-conditioned screens or truncate them to >=2022-02-28. Evidence: data/brain_hunter_s53_h1_cadence_audit.json, _h1_splice_hour0.json, _h1_splice_control.json.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T18:44:31.733971+00:00",
    "status": "open",
    "reason": null,
    "commit": null,

@@ -3,7 +3,7 @@
  "candidate_conservation": {
   "accounted": 23370,
   "balanced": false,
-  "blocked": 1,
+  "blocked": 6,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
   "discovered": 23465,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
@@ -105,128 +105,128 @@
    "WELLSFARGO.carry.p=efc657932b1ff292",
    "EBAY.carry.p=bb704a352af82749"
   ],
-  "queued": 7507,
-  "rejected": 15839,
-  "resumable_deferred": 7556,
+  "queued": 6978,
+  "rejected": 16363,
+  "resumable_deferred": 7026,
   "tested": 23
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
-  "certificates_added": 8,
-  "certificates_per_cpu_hour": 1935.286831,
-  "measured_cpu_hours": 0.004134,
+  "certificates_added": 0,
+  "certificates_per_cpu_hour": 0.0,
+  "measured_cpu_hours": 0.004769,
   "stage_rows": [
    {
-    "certificate_delta": 8,
+    "certificate_delta": -8,
     "cpu_seconds": 0.0,
-    "duration_seconds": 13879.227,
+    "duration_seconds": 7360.008,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 4.273618,
-    "duration_seconds": 23.954,
+    "cpu_seconds": 1.860506,
+    "duration_seconds": 18.26,
     "name": "external_queue_projection"
    },
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 5.13343,
-    "duration_seconds": 30.554,
+    "certificate_delta": 8,
+    "cpu_seconds": 5.642649,
+    "duration_seconds": 47.7,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.081753,
-    "duration_seconds": 6.518,
+    "cpu_seconds": 0.074274,
+    "duration_seconds": 7.125,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 79.887,
+    "cpu_seconds": 3.828958,
+    "duration_seconds": 58.155,
     "name": "fusion_state_pull"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.177995,
-    "duration_seconds": 13.595,
+    "cpu_seconds": 1.234034,
+    "duration_seconds": 14.904,
     "name": "forward_identity_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.083517,
-    "duration_seconds": 8.351,
+    "cpu_seconds": 0.064456,
+    "duration_seconds": 7.711,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.070367,
-    "duration_seconds": 18.432,
+    "cpu_seconds": 3.321,
+    "duration_seconds": 24.579,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 8.498,
+    "duration_seconds": 12.169,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.267192,
-    "duration_seconds": 6.109,
+    "cpu_seconds": 0.255621,
+    "duration_seconds": 11.112,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.091437,
-    "duration_seconds": 5.007,
+    "cpu_seconds": 0.129108,
+    "duration_seconds": 10.458,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.62497,
-    "duration_seconds": 13.864,
+    "cpu_seconds": 0.661385,
+    "duration_seconds": 10.299,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.077236,
-    "duration_seconds": 10.224,
+    "cpu_seconds": 0.095324,
+    "duration_seconds": 6.123,
     "name": "forward_clock_fence"
    }
   ]
  },
  "failure_root_causes": [
   {
-   "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
-   "count": 7556,
+   "cause": "in_sample_screen",
+   "count": 7609,
    "sample_cells": [
-    "Travelers.discovered.p=09a710129288b560",
-    "Travelers.discovered.p=d0de749356b23d6f",
-    "Travelers.discovered.p=04bea93b501289a9",
-    "Travelers.discovered.p=e6763a28b6f7f762",
-    "Travelers.discovered.p=4a34b0cb9624b231",
-    "Travelers.discovered.p=c8771c76e76344aa",
-    "Travelers.discovered.p=1ce671b510c4b08b",
-    "Travelers.discovered.p=8354ee684c5e51e1",
-    "Travelers.discovered.p=76b729ee0ebbc261",
-    "Travelers.discovered.p=9c9436792762dca4"
+    "EURSGD.carry.p=f33ee19442eed424",
+    "Twilio.correlation_regime.p=4d5206231de2c743",
+    "Twilio.cross_asset_residual.p=c86a8db914144923",
+    "Twilio.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "Twilio.discovered.p=ca62e5b43ac36775",
+    "Twilio.discovered.p=d49cb2144459e818",
+    "Twilio.discovered.p=721170005d393d88",
+    "Twilio.discovered.p=ca3b7393fa48b3c9",
+    "Twilio.discovered.p=40f3f7b20cc20543",
+    "Twilio.discovered.p=d0de749356b23d6f"
    ]
   },
   {
-   "cause": "in_sample_screen",
-   "count": 7152,
+   "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
+   "count": 7026,
    "sample_cells": [
-    "EURSGD.carry.p=f33ee19442eed424",
-    "Toyota.correlation_regime.p=d86e1a3440681757",
-    "Toyota.correlation_regime.p=4d5206231de2c743",
-    "Toyota.cross_asset_residual.p=c86a8db914144923",
-    "Toyota.cross_asset_residual.p=aa3d91c8b8b7b603",
-    "Toyota.discovered.p=b96b40483e9f3c6f",
-    "Toyota.discovered.p=f7729afd201543b6",
-    "Toyota.discovered.p=8e065d6ee89a839f",
-    "Toyota.discovered.p=f8501defc5b9ca9f",
-    "Toyota.discovered.p=a500110b7c7e4825"
+    "US500.session_range_breakout.rr=2.0_wb=8",
+    "US500.session_range_breakout.rr=2.0_wb=12",
+    "US500.session_range_breakout.rr=2.5_wb=8",
+    "US500.session_range_breakout.rr=2.5_wb=12",
+    "US500.turn_of_month.p=44136fa355b3678a",
+    "US500.vol_transition.p=44136fa355b3678a",
+    "USCOCOA.carry.p=a64a19509ec2befb",
+    "USCOCOA.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "USCOCOA.pca_residual.p=00beb01ea8970934",
+    "USCOCOA.pca_residual.p=f1f1d03d92e199f7"
    ]
   },
   {
@@ -247,34 +247,34 @@
   },
   {
    "cause": "observations",
-   "count": 2672,
+   "count": 2715,
    "sample_cells": [
     "EURSGD.event_reaction.p=4715a17a13ae8cc2",
-    "Toyota.carry.p=fdff2d8bdde81031",
-    "Toyota.discovered.p=3541fe3188f9d845",
-    "Toyota.discovered.p=f01fda97b7efbf3d",
-    "Toyota.discovered.p=761fb7bc22d11c1b",
-    "Toyota.discovered.p=9de180847e5d278c",
-    "Toyota.discovered.p=bab9d63956b96613",
-    "Toyota.discovered.p=349758a4135dd221",
-    "Toyota.discovered.p=b2357bf4fddd745c",
-    "Toyota.discovered.p=1ea3d56d7f57e6e8"
+    "Twilio.carry.p=0db844726bcfb4b2",
+    "UK100.carry.p=1e8c6bb9b83862ff",
+    "UKCOCOA.carry.p=02ba1f8940bf5fa5",
+    "UKGILT.carry.p=09b4ffff3a188fa5",
+    "US2000.carry.p=fb72ef5f5e7c150a",
+    "US30.carry.p=2912c235c6e7623b",
+    "US500.calendar_month.p=82b636430ca68152",
+    "US500.carry.p=5a92cfb0038a69e8",
+    "US500.discovered.p=2c924452429733f6"
    ]
   },
   {
    "cause": "deflated_sharpe",
-   "count": 1405,
+   "count": 1430,
    "sample_cells": [
     "EURSGD.cross_asset_residual.p=c86a8db914144923",
     "EURSGD.overnight_gap_decay.p=44136fa355b3678a",
-    "USDCAD.discovered.p=393cd9ae33aa6b42",
-    "USDCAD.discovered.p=63905daa9f902179",
-    "USDCAD.discovered.p=1f614650ea35242d",
-    "USDCAD.discovered.p=b7b64168acb4509d",
-    "USDCAD.discovered.p=2de996621f2b7d17",
-    "USDCHF.discovered.p=65435267ae0ad375",
-    "USDCHF.discovered.p=136d304492bd0ae9",
-    "USDCHF.discovered.p=c98d75a7d18007cc"
+    "UK100.correlation_regime.p=d86e1a3440681757",
+    "UK100.cross_asset_residual.p=c86a8db914144923",
+    "UK100.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "UK100.relative_value.p=d86e1a3440681757",
+    "UK100.turn_of_month.p=44136fa355b3678a",
+    "UKCOCOA.correlation_regime.p=4d5206231de2c743",
+    "UKCOCOA.relative_value.p=4d5206231de2c743",
+    "UKCOCOA.vol_mean_reversion.p=44136fa355b3678a"
    ]
   },
   {
@@ -295,9 +295,14 @@
   },
   {
    "cause": "NOT_RUN_BUILD_FAILED",
-   "count": 1,
+   "count": 6,
    "sample_cells": [
-    "Toyota.pca_residual.p=aa3d91c8b8b7b603"
+    "UK100.pca_residual.p=aa3d91c8b8b7b603",
+    "UKCOCOA.pca_residual.p=aa3d91c8b8b7b603",
+    "US2000.pca_residual.p=aa3d91c8b8b7b603",
+    "US30.pca_residual.p=00beb01ea8970934",
+    "US30.pca_residual.p=91641f7afb4a9e41",
+    "US500.pca_residual.p=aa3d91c8b8b7b603"
    ]
   },
   {
@@ -309,22 +314,21 @@
   }
  ],
  "forward_truth": {
-  "active_clocks": 40,
+  "active_clocks": 37,
   "fusion_native": 37,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
-  "source_unmeasured": 3,
+  "source_unmeasured": 0,
   "stale": 0,
   "stale_keys": []
  },
- "generated_at": "2026-09-03T16:37:12.408754+00:00",
+ "generated_at": "2026-09-03T18:59:29.279863+00:00",
  "headline": {
   "candidates_discovered": 23465,
   "candidates_lost": 95,
-  "certificates_added": 8,
-  "forward_clocks": 89,
+  "certificates_added": 0,
+  "forward_clocks": 85,
   "hard_failures": [
-   "forward_clock_reconciliation",
    "forward_lane_heal"
   ]
  },
@@ -333,15 +337,10 @@
    "kelly_fraction": 0.25,
    "measured": true,
    "sleeves": {
-    "AUDCAD_discovered_asia": {
-     "n": 2,
-     "weight": 0.0,
-     "why": "2 day(s) < 8: too little to size on"
-    },
     "AUDCHF_overnight_gap_decay_asia": {
-     "n": 4,
+     "n": 3,
      "weight": 0.0,
-     "why": "4 day(s) < 8: too little to size on"
+     "why": "3 day(s) < 8: too little to size on"
     },
     "AUDNZD_discovered_asia": {
      "n": 2,
@@ -349,9 +348,9 @@
      "why": "2 day(s) < 8: too little to size on"
     },
     "CADCHF_overnight_gap_decay_asia": {
-     "n": 3,
+     "n": 2,
      "weight": 0.0,
-     "why": "3 day(s) < 8: too little to size on"
+     "why": "2 day(s) < 8: too little to size on"
     },
     "CADJPY_asia": {
      "n": 5,
@@ -362,6 +361,11 @@
      "n": 1,
      "weight": 0.0,
      "why": "1 day(s) < 8: too little to size on"
+    },
+    "CHFNOK_carry_asia": {
+     "n": 3,
+     "weight": 0.0,
+     "why": "3 day(s) < 8: too little to size on"
     },
     "EURGBP_discovered_asia": {
      "n": 4,
@@ -374,9 +378,9 @@
      "why": "5 day(s) < 8: too little to size on"
     },
     "EURNOK_overnight_gap_decay_asia": {
-     "n": 4,
+     "n": 3,
      "weight": 0.0,
-     "why": "4 day(s) < 8: too little to size on"
+     "why": "3 day(s) < 8: too little to size on"
     },
     "EURUSD_discovered_asia": {
      "n": 1,
@@ -384,11 +388,6 @@
      "why": "1 day(s) < 8: too little to size on"
     },
     "EURZAR_overnight_gap_decay_asia": {
-     "n": 2,
-     "weight": 0.0,
-     "why": "2 day(s) < 8: too little to size on"
-    },
-    "GBPCHF_overnight_gap_decay_asia": {
      "n": 1,
      "weight": 0.0,
      "why": "1 day(s) < 8: too little to size on"
@@ -399,14 +398,14 @@
      "why": "5 day(s) < 8: too little to size on"
     },
     "GBPMXN_overnight_gap_decay_asia": {
-     "n": 4,
+     "n": 3,
      "weight": 0.0,
-     "why": "4 day(s) < 8: too little to size on"
+     "why": "3 day(s) < 8: too little to size on"
     },
     "GBPNOK_overnight_gap_decay_asia": {
-     "n": 4,
+     "n": 3,
      "weight": 0.0,
-     "why": "4 day(s) < 8: too little to size on"
+     "why": "3 day(s) < 8: too little to size on"
     },
     "GBPSEK_overnight_gap_decay_asia": {
      "n": 1,
@@ -414,9 +413,9 @@
      "why": "1 day(s) < 8: too little to size on"
     },
     "GBPZAR_overnight_gap_decay_asia": {
-     "n": 3,
+     "n": 2,
      "weight": 0.0,
-     "why": "3 day(s) < 8: too little to size on"
+     "why": "2 day(s) < 8: too little to size on"
     },
     "USDJPY_asia": {
      "n": 6,
@@ -424,14 +423,14 @@
      "why": "6 day(s) < 8: too little to size on"
     },
     "USDMXN_overnight_gap_decay_asia": {
-     "n": 3,
-     "weight": 0.0,
-     "why": "3 day(s) < 8: too little to size on"
-    },
-    "USDZAR_overnight_gap_decay_asia": {
      "n": 2,
      "weight": 0.0,
      "why": "2 day(s) < 8: too little to size on"
+    },
+    "USDZAR_overnight_gap_decay_asia": {
+     "n": 1,
+     "weight": 0.0,
+     "why": "1 day(s) < 8: too little to size on"
     },
     "XAUUSD_asia": {
      "n": 5,
@@ -443,31 +442,31 @@
   },
   "downside_comovement": {
    "losing_days": 2,
-   "mean_share_losing_together": 0.143,
+   "mean_share_losing_together": 0.15,
    "measured": true,
    "why": "the fraction of sleeves that are down on the book's down days; near 1.0 means the book is one bet however many names it holds"
   },
   "effective_bets": {
-   "concentration": 20.6,
+   "concentration": 19.62,
    "n_effective": 1.019,
-   "n_sleeves": 21,
-   "pairs_assumed_correlated": 210,
+   "n_sleeves": 20,
+   "pairs_assumed_correlated": 190,
    "pairs_measured": 0,
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
-  "forward_sleeves_with_observations": 21,
-  "measured_at": "2026-09-03T16:36:10+00:00",
+  "forward_sleeves_with_observations": 20,
+  "measured_at": "2026-09-03T18:58:22+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 7602
+  "stalled_cells": 7073
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 75.0,
+  "mem_available_mb": 336.7,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -709,7 +708,7 @@
   "certificates_not_enrolled": 65,
   "certificates_overdue": 33,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
-  "queue_active": 25,
+  "queue_active": 17,
   "queue_overdue": 17,
   "queue_overdue_rows": [
    {

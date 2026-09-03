@@ -6136,3 +6136,49 @@ decision — backtest histories exclusively. Vintage restatement (measured: ≤0
 acceptable for ex-post benchmarking and disqualifying for any live path.
 
 **Research-freeze:** proposed, not applied. No file under `scripts/`, `libs/` or the executor touched.
+
+---
+
+## BRAIN s53 — 2026-09-03 — two extraction defects that both pass a length check
+
+**(1) A URL you already hold must never be re-derived.** The AQR sitemap gives 564 fully-qualified
+`/insights/research/<TYPE>/<slug>` URLs, where TYPE ∈ {journal-article 250, working-paper 113,
+white-papers 73, alternative-thinking 43, tax-aware-investing 31, book 25, trade-publication 18,
+bibliography 7, **video 3**}. I reconstructed `/insights/research/<slug>` from the slug alone and
+got **8/8 HTTP 200s of identical byte length** — all the same soft-404. Byte-identical length
+across all inputs is the shell/soft-404 detector this desk already knows; what is new is that I
+manufactured the condition myself by discarding half of the path I had already fetched.
+**Rule: enumerate from the sitemap's own `<loc>` strings; never rebuild a URL from a component.**
+
+**(2) Stripping tags destroyed the only server-rendered content on this host.** With the correct
+URLs all 12 probe pages returned "OK" with 8,400–16,400 chars of extracted text. **That text is
+100% fraud-warning and disclosure boilerplate.** The article body is client-side JS and is absent
+from the HTML; the abstract exists only in `<meta name="description">` and `<meta
+property="og:description">` — i.e. inside an *attribute*, which a `<[^>]+>` stripper deletes by
+construction. A length check, a non-empty check and a soft-404 string check all pass. **Rule: on
+any JS-rendered host, read `<meta>` attributes BEFORE stripping tags, and grade content by whether
+the extracted text differs across pages — not by how much of it there is.** This is the s51
+landing-page audit defect one layer down: there, 43.8% of a corpus was landing pages; here a page
+that is *not* a landing page still yields zero content and looks identical to a good read.
+
+**Consequence, and it is the deliverable:** applying (1)+(2) makes the whole 564-item layer
+readable in one pass — `data/external/aqr/research_abstracts.json` (url, type, title, abstract,
+pdf links per item). Enumerating hosts by sitemap and harvesting `<meta>` descriptions is now the
+standing first move for every JS-rendered research host this seat meets, `man.com` next (s51's
+still-owed second hop, where the "needs JS" grade was assigned on exactly this evidence).
+
+**(3) The trend-horizon grid buys ~2 effective factors, not 4 — measured, and it is stable.**
+Vol-scaled time-series momentum at lookbacks {21, 63, 126, 252} trading days, built on the desk's
+own daily-resampled MT5 tape with a 60%-of-group population guard, gives an eigenvalue-based
+effective factor count of **k_eff = 1.76–2.15 in every one of seven asset classes**
+(Commodities 1.76, Forex Exotics 1.99, Indices 2.06, Forex 2.09, Crypto CFD 2.14, Equities 2.15,
+ALL 1.83). Adjacent-horizon correlations run 0.53–0.69, distant ones 0.08–0.42, and the structure
+is near-identical across classes that share no instruments. **Reading:** a searcher that sweeps
+four lookbacks is exploring roughly two independent directions, so a horizon grid is a weaker
+diversifier than its cardinality suggests, and the marginal-independence scoring L1.61 mandates
+should see that. Gross annualised Sharpe by horizon is monotone increasing in lookback almost
+everywhere (ALL: 0.08 / −0.15 / 0.23 / 0.58), but **nothing here approaches the desk's bar** — the
+largest |t| in the whole table is 2.63 (Commodities L126, gross of costs), against a deflated
+threshold of 5.236. **This is a diagnostic on the `wq_operators.fitness()` precedent and must not
+acquire a pass/fail path (L1.60): no screen, searcher or miner may turn k_eff into a threshold in
+either direction.** Artifact: `data/brain_hunter_s53_tsmom_horizon_redundancy.json`.

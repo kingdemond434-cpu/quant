@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-03T16:37:50.362532+00:00",
+  "generated_at": "2026-09-03T19:00:41.752282+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
-    "REACHABLE_MT5_STATIC": 73,
-    "UNWIRED_REVIEW": 562,
+    "REACHABLE_MT5_STATIC": 77,
+    "UNWIRED_REVIEW": 563,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2266,6 +2266,15 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.anomaly_miner",
+      "path": "libs/research/anomaly_miner.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/scripts/run_discovery_cycle.py"
+      ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.anytime_valid",
       "path": "libs/research/anytime_valid.py",
       "status": "UNWIRED_REVIEW",
@@ -2965,8 +2974,17 @@
     {
       "module": "libs.research.measurement_resolver",
       "path": "libs/research/measurement_resolver.py",
-      "status": "UNWIRED_REVIEW",
+      "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.mechanism_adapters",
+      "path": "libs/research/mechanism_adapters.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/scripts/run_discovery_cycle.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
@@ -3236,8 +3254,22 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.research.research_brain",
+      "path": "libs/research/research_brain.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.research_control",
       "path": "libs/research/research_control.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.research_state",
+      "path": "libs/research/research_state.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
@@ -3429,6 +3461,15 @@
       "path": "libs/research/tail_funding.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.trajectory",
+      "path": "libs/research/trajectory.py",
+      "status": "REACHABLE_MT5_STATIC",
+      "direct_mt5_consumers": [
+        "desks/mt5/scripts/run_discovery_cycle.py"
+      ],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {

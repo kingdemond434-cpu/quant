@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T11:59:19.281739+00:00",
+      "updated": "2026-09-03T18:03:40.611071+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T11:59:19.354350+00:00",
+      "updated": "2026-09-03T18:03:40.624345+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T11:59:19.488611+00:00",
+      "updated": "2026-09-03T18:03:40.694100+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3997,21 +3997,30 @@
       "kind": "recommendation",
       "updated": "2026-08-18T19:19:48.396015+00:00",
       "resolve_by": "2026-09-01T19:19:48.386122+00:00",
-      "claim": "R0614 reaches IMPLEMENTED by 2026-09-01"
+      "claim": "R0614 reaches IMPLEMENTED by 2026-09-01",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:45.897364+00:00"
     },
     "rec:R0615": {
       "p": 0.6457,
       "kind": "recommendation",
       "updated": "2026-08-18T19:19:56.916474+00:00",
       "resolve_by": "2026-09-01T19:19:56.900894+00:00",
-      "claim": "R0615 reaches IMPLEMENTED by 2026-09-01"
+      "claim": "R0615 reaches IMPLEMENTED by 2026-09-01",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:45.984877+00:00"
     },
     "rec:R0616": {
       "p": 0.6457,
       "kind": "recommendation",
       "updated": "2026-08-18T19:20:11.985222+00:00",
       "resolve_by": "2026-09-01T19:20:11.983505+00:00",
-      "claim": "R0616 reaches IMPLEMENTED by 2026-09-01"
+      "claim": "R0616 reaches IMPLEMENTED by 2026-09-01",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.066767+00:00"
     },
     "conviction:2026-08-18T19:51:25.996228+00:00": {
       "p": 0.58,
@@ -4028,14 +4037,20 @@
       "kind": "recommendation",
       "updated": "2026-08-18T20:01:54.669777+00:00",
       "resolve_by": "2026-09-01T20:01:54.668137+00:00",
-      "claim": "R0617 reaches IMPLEMENTED by 2026-09-01"
+      "claim": "R0617 reaches IMPLEMENTED by 2026-09-01",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.185552+00:00"
     },
     "rec:R0618": {
       "p": 0.6457,
       "kind": "recommendation",
       "updated": "2026-08-18T20:42:24.022072+00:00",
       "resolve_by": "2026-09-01T20:42:24.014025+00:00",
-      "claim": "R0618 reaches IMPLEMENTED by 2026-09-01"
+      "claim": "R0618 reaches IMPLEMENTED by 2026-09-01",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.261559+00:00"
     },
     "conviction:2026-08-18T20:50:59.721418+00:00": {
       "p": 0.57,
@@ -4052,77 +4067,110 @@
       "kind": "recommendation",
       "updated": "2026-08-19T01:23:55.591944+00:00",
       "resolve_by": "2026-09-02T01:23:55.589036+00:00",
-      "claim": "R0619 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0619 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.323120+00:00"
     },
     "rec:R0620": {
       "p": 0.6457,
       "kind": "recommendation",
       "updated": "2026-08-19T01:23:57.533145+00:00",
       "resolve_by": "2026-09-02T01:23:57.525852+00:00",
-      "claim": "R0620 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0620 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.390145+00:00"
     },
     "rec:R0621": {
       "p": 0.6457,
       "kind": "recommendation",
       "updated": "2026-08-19T01:45:22.099412+00:00",
       "resolve_by": "2026-09-02T01:45:22.095839+00:00",
-      "claim": "R0621 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0621 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.472901+00:00"
     },
     "rec:R0626": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:04:12.229660+00:00",
       "resolve_by": "2026-09-02T02:04:12.227846+00:00",
-      "claim": "R0626 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0626 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.534591+00:00"
     },
     "rec:R0627": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:20:17.807619+00:00",
       "resolve_by": "2026-09-02T02:20:17.802814+00:00",
-      "claim": "R0627 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0627 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.590597+00:00"
     },
     "rec:R0628": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:20:21.987457+00:00",
       "resolve_by": "2026-09-02T02:20:21.985508+00:00",
-      "claim": "R0628 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0628 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.601158+00:00"
     },
     "rec:R0629": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:20:26.417251+00:00",
       "resolve_by": "2026-09-02T02:20:26.415571+00:00",
-      "claim": "R0629 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0629 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.632408+00:00"
     },
     "rec:R0630": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:20:29.665633+00:00",
       "resolve_by": "2026-09-02T02:20:29.661942+00:00",
-      "claim": "R0630 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0630 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.657704+00:00"
     },
     "rec:R0631": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:31:10.857135+00:00",
       "resolve_by": "2026-09-02T02:31:10.855517+00:00",
-      "claim": "R0631 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0631 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.693411+00:00"
     },
     "rec:R0632": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:31:13.780350+00:00",
       "resolve_by": "2026-09-02T02:31:13.778368+00:00",
-      "claim": "R0632 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0632 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.821254+00:00"
     },
     "rec:R0633": {
       "p": 0.6476,
       "kind": "recommendation",
       "updated": "2026-08-19T02:31:16.443895+00:00",
       "resolve_by": "2026-09-02T02:31:16.441024+00:00",
-      "claim": "R0633 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0633 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.895898+00:00"
     },
     "probe:2026-08-19T06:06:06.092602+00:00:q1": {
       "p": 0.5,
@@ -4199,21 +4247,30 @@
       "kind": "recommendation",
       "updated": "2026-08-19T07:22:38.099592+00:00",
       "resolve_by": "2026-09-02T07:22:38.097888+00:00",
-      "claim": "R0635 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0635 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:46.972003+00:00"
     },
     "rec:R0639": {
       "p": 0.6556,
       "kind": "recommendation",
       "updated": "2026-08-19T08:39:28.122199+00:00",
       "resolve_by": "2026-09-02T08:39:28.110658+00:00",
-      "claim": "R0639 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0639 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.110662+00:00"
     },
     "rec:R0640": {
       "p": 0.6556,
       "kind": "recommendation",
       "updated": "2026-08-19T08:39:35.234526+00:00",
       "resolve_by": "2026-09-02T08:39:35.227159+00:00",
-      "claim": "R0640 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0640 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.198584+00:00"
     },
     "conviction:2026-08-19T08:55:21.904874+00:00": {
       "p": 0.57,
@@ -4230,14 +4287,20 @@
       "kind": "recommendation",
       "updated": "2026-08-19T09:20:52.987948+00:00",
       "resolve_by": "2026-09-02T09:20:52.981256+00:00",
-      "claim": "R0718 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0718 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.277370+00:00"
     },
     "rec:R0720": {
       "p": 0.6566,
       "kind": "recommendation",
       "updated": "2026-08-19T11:24:53.687971+00:00",
       "resolve_by": "2026-09-02T11:24:53.682146+00:00",
-      "claim": "R0720 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0720 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.309541+00:00"
     },
     "probe:2026-08-19T12:06:05.259804+00:00:q1": {
       "p": 0.5,
@@ -4304,35 +4367,50 @@
       "kind": "recommendation",
       "updated": "2026-08-19T12:09:14.000620+00:00",
       "resolve_by": "2026-09-02T12:09:13.996811+00:00",
-      "claim": "R0648 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0648 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.459637+00:00"
     },
     "rec:R0663": {
       "p": 0.6544,
       "kind": "recommendation",
       "updated": "2026-08-19T15:15:17.012620+00:00",
       "resolve_by": "2026-09-02T15:15:17.010912+00:00",
-      "claim": "R0663 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0663 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.547745+00:00"
     },
     "rec:R0669": {
       "p": 0.6475,
       "kind": "recommendation",
       "updated": "2026-08-19T16:43:28.352989+00:00",
       "resolve_by": "2026-09-02T16:43:28.350990+00:00",
-      "claim": "R0669 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0669 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.601328+00:00"
     },
     "rec:R0670": {
       "p": 0.6475,
       "kind": "recommendation",
       "updated": "2026-08-19T16:43:47.474830+00:00",
       "resolve_by": "2026-09-02T16:43:47.467334+00:00",
-      "claim": "R0670 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0670 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.648182+00:00"
     },
     "rec:R0671": {
       "p": 0.6475,
       "kind": "recommendation",
       "updated": "2026-08-19T16:44:08.512150+00:00",
       "resolve_by": "2026-09-02T16:44:08.508408+00:00",
-      "claim": "R0671 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0671 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.696417+00:00"
     },
     "conviction:2026-08-19T16:52:33.573333+00:00": {
       "p": 0.58,
@@ -4409,21 +4487,30 @@
       "kind": "recommendation",
       "updated": "2026-08-19T19:10:18.201380+00:00",
       "resolve_by": "2026-09-02T19:10:18.196048+00:00",
-      "claim": "R0687 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0687 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.813098+00:00"
     },
     "rec:R0688": {
       "p": 0.6526,
       "kind": "recommendation",
       "updated": "2026-08-19T19:10:25.099260+00:00",
       "resolve_by": "2026-09-02T19:10:25.089752+00:00",
-      "claim": "R0688 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0688 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.921272+00:00"
     },
     "rec:R0689": {
       "p": 0.6526,
       "kind": "recommendation",
       "updated": "2026-08-19T19:10:31.997747+00:00",
       "resolve_by": "2026-09-02T19:10:31.991414+00:00",
-      "claim": "R0689 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0689 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:47.995415+00:00"
     },
     "conviction:2026-08-19T19:54:27.932643+00:00": {
       "p": 0.58,
@@ -4440,63 +4527,90 @@
       "kind": "recommendation",
       "updated": "2026-08-19T20:02:34.091399+00:00",
       "resolve_by": "2026-09-02T20:02:34.086897+00:00",
-      "claim": "R0692 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0692 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.110279+00:00"
     },
     "rec:R0693": {
       "p": 0.6526,
       "kind": "recommendation",
       "updated": "2026-08-19T20:02:50.845190+00:00",
       "resolve_by": "2026-09-02T20:02:50.840971+00:00",
-      "claim": "R0693 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0693 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.196968+00:00"
     },
     "rec:R0694": {
       "p": 0.6535,
       "kind": "recommendation",
       "updated": "2026-08-19T20:04:56.986952+00:00",
       "resolve_by": "2026-09-02T20:04:56.985019+00:00",
-      "claim": "R0694 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0694 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.319851+00:00"
     },
     "rec:R0695": {
       "p": 0.6535,
       "kind": "recommendation",
       "updated": "2026-08-19T20:05:09.567032+00:00",
       "resolve_by": "2026-09-02T20:05:09.564905+00:00",
-      "claim": "R0695 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0695 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.428288+00:00"
     },
     "rec:R0696": {
       "p": 0.6535,
       "kind": "recommendation",
       "updated": "2026-08-19T20:05:36.652598+00:00",
       "resolve_by": "2026-09-02T20:05:36.644791+00:00",
-      "claim": "R0696 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0696 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.560922+00:00"
     },
     "rec:R0697": {
       "p": 0.6535,
       "kind": "recommendation",
       "updated": "2026-08-19T20:05:52.591188+00:00",
       "resolve_by": "2026-09-02T20:05:52.589142+00:00",
-      "claim": "R0697 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0697 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.647292+00:00"
     },
     "rec:R0698": {
       "p": 0.6528,
       "kind": "recommendation",
       "updated": "2026-08-19T20:39:21.323163+00:00",
       "resolve_by": "2026-09-02T20:39:21.321257+00:00",
-      "claim": "R0698 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0698 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.733860+00:00"
     },
     "rec:R0699": {
       "p": 0.6528,
       "kind": "recommendation",
       "updated": "2026-08-19T20:39:36.457506+00:00",
       "resolve_by": "2026-09-02T20:39:36.455772+00:00",
-      "claim": "R0699 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0699 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.816326+00:00"
     },
     "rec:R0700": {
       "p": 0.6528,
       "kind": "recommendation",
       "updated": "2026-08-19T20:39:52.894848+00:00",
       "resolve_by": "2026-09-02T20:39:52.891511+00:00",
-      "claim": "R0700 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0700 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:48.990452+00:00"
     },
     "conviction:2026-08-19T20:52:43.584742+00:00": {
       "p": 0.58,
@@ -4513,49 +4627,70 @@
       "kind": "recommendation",
       "updated": "2026-08-19T21:02:39.816394+00:00",
       "resolve_by": "2026-09-02T21:02:39.810336+00:00",
-      "claim": "R0701 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0701 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.115680+00:00"
     },
     "rec:R0702": {
       "p": 0.6496,
       "kind": "recommendation",
       "updated": "2026-08-19T21:03:11.179844+00:00",
       "resolve_by": "2026-09-02T21:03:11.175875+00:00",
-      "claim": "R0702 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0702 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.201439+00:00"
     },
     "rec:R0703": {
       "p": 0.6496,
       "kind": "recommendation",
       "updated": "2026-08-19T21:04:24.559043+00:00",
       "resolve_by": "2026-09-02T21:04:24.557064+00:00",
-      "claim": "R0703 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0703 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.292821+00:00"
     },
     "rec:R0704": {
       "p": 0.6498,
       "kind": "recommendation",
       "updated": "2026-08-19T21:23:16.252018+00:00",
       "resolve_by": "2026-09-02T21:23:16.244408+00:00",
-      "claim": "R0704 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0704 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.387458+00:00"
     },
     "rec:R0705": {
       "p": 0.6498,
       "kind": "recommendation",
       "updated": "2026-08-19T21:23:39.428791+00:00",
       "resolve_by": "2026-09-02T21:23:39.423189+00:00",
-      "claim": "R0705 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0705 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.482526+00:00"
     },
     "rec:R0710": {
       "p": 0.6613,
       "kind": "recommendation",
       "updated": "2026-08-19T23:38:21.250138+00:00",
       "resolve_by": "2026-09-02T23:38:21.241420+00:00",
-      "claim": "R0710 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0710 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.556343+00:00"
     },
     "rec:R0711": {
       "p": 0.6613,
       "kind": "recommendation",
       "updated": "2026-08-19T23:38:40.272032+00:00",
       "resolve_by": "2026-09-02T23:38:40.265914+00:00",
-      "claim": "R0711 reaches IMPLEMENTED by 2026-09-02"
+      "claim": "R0711 reaches IMPLEMENTED by 2026-09-02",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.649561+00:00"
     },
     "conviction:2026-08-19T23:54:26.884401+00:00": {
       "p": 0.57,
@@ -4632,21 +4767,30 @@
       "kind": "recommendation",
       "updated": "2026-08-20T01:12:58.467279+00:00",
       "resolve_by": "2026-09-03T01:12:58.466046+00:00",
-      "claim": "R0716 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0716 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.766319+00:00"
     },
     "rec:R0717": {
       "p": 0.35,
       "kind": "recommendation",
       "updated": "2026-08-20T01:12:58.659326+00:00",
       "resolve_by": "2026-09-03T01:12:58.657798+00:00",
-      "claim": "R0717 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0717 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:49.887249+00:00"
     },
     "rec:R0719": {
       "p": 0.35,
       "kind": "recommendation",
       "updated": "2026-08-20T01:12:59.098993+00:00",
       "resolve_by": "2026-09-03T01:12:59.097598+00:00",
-      "claim": "R0719 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0719 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.016371+00:00"
     },
     "conviction:2026-08-20T01:56:47.802219+00:00": {
       "p": 0.56,
@@ -4673,21 +4817,30 @@
       "kind": "recommendation",
       "updated": "2026-08-20T03:07:47.117324+00:00",
       "resolve_by": "2026-09-03T03:07:47.112167+00:00",
-      "claim": "R0714 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0714 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.149847+00:00"
     },
     "rec:R0715": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T03:07:52.446733+00:00",
       "resolve_by": "2026-09-03T03:07:52.431743+00:00",
-      "claim": "R0715 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0715 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.350918+00:00"
     },
     "rec:R0721": {
       "p": 0.6667,
       "kind": "recommendation",
       "updated": "2026-08-20T03:14:17.443477+00:00",
       "resolve_by": "2026-09-03T03:14:17.440337+00:00",
-      "claim": "R0721 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0721 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.557996+00:00"
     },
     "llm_trader:2026-08-20T04:18:55.529970+00:00": {
       "p": 0.58,
@@ -4764,63 +4917,90 @@
       "kind": "recommendation",
       "updated": "2026-08-20T06:21:04.615744+00:00",
       "resolve_by": "2026-09-03T06:21:04.611353+00:00",
-      "claim": "R0727 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0727 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.727376+00:00"
     },
     "rec:R0728": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T06:23:11.767972+00:00",
       "resolve_by": "2026-09-03T06:23:11.760527+00:00",
-      "claim": "R0728 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0728 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:50.915374+00:00"
     },
     "rec:R0729": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T06:49:59.689686+00:00",
       "resolve_by": "2026-09-03T06:49:59.676206+00:00",
-      "claim": "R0729 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0729 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.113265+00:00"
     },
     "rec:R0730": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:31:23.771244+00:00",
       "resolve_by": "2026-09-03T07:31:23.766883+00:00",
-      "claim": "R0730 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0730 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.251052+00:00"
     },
     "rec:R0731": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:31:25.952994+00:00",
       "resolve_by": "2026-09-03T07:31:25.950899+00:00",
-      "claim": "R0731 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0731 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.380113+00:00"
     },
     "rec:R0732": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:31:28.328553+00:00",
       "resolve_by": "2026-09-03T07:31:28.326570+00:00",
-      "claim": "R0732 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0732 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.465279+00:00"
     },
     "rec:R0733": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:31:30.506000+00:00",
       "resolve_by": "2026-09-03T07:31:30.502239+00:00",
-      "claim": "R0733 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0733 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.553245+00:00"
     },
     "rec:R0734": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:33:55.631261+00:00",
       "resolve_by": "2026-09-03T07:33:55.628118+00:00",
-      "claim": "R0734 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0734 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.680964+00:00"
     },
     "rec:R0735": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T07:34:07.011459+00:00",
       "resolve_by": "2026-09-03T07:34:07.009361+00:00",
-      "claim": "R0735 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0735 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.841876+00:00"
     },
     "conviction:2026-08-20T08:03:08.973091+00:00": {
       "p": 0.58,
@@ -4837,7 +5017,10 @@
       "kind": "recommendation",
       "updated": "2026-08-20T08:56:47.567715+00:00",
       "resolve_by": "2026-09-03T08:56:47.563120+00:00",
-      "claim": "R0738 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0738 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:51.986132+00:00"
     },
     "conviction:2026-08-20T08:57:35.972833+00:00": {
       "p": 0.58,
@@ -4851,63 +5034,90 @@
       "kind": "recommendation",
       "updated": "2026-08-20T10:05:50.915962+00:00",
       "resolve_by": "2026-09-03T10:05:50.907567+00:00",
-      "claim": "R0743 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0743 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.134742+00:00"
     },
     "rec:R0744": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:06:52.956968+00:00",
       "resolve_by": "2026-09-03T10:06:52.948647+00:00",
-      "claim": "R0744 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0744 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.261805+00:00"
     },
     "rec:R0745": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:06:57.794843+00:00",
       "resolve_by": "2026-09-03T10:06:57.786392+00:00",
-      "claim": "R0745 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0745 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.468082+00:00"
     },
     "rec:R0746": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:07:26.959218+00:00",
       "resolve_by": "2026-09-03T10:07:26.956968+00:00",
-      "claim": "R0746 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0746 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.652252+00:00"
     },
     "rec:R0747": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:07:28.946408+00:00",
       "resolve_by": "2026-09-03T10:07:28.943969+00:00",
-      "claim": "R0747 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0747 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.787428+00:00"
     },
     "rec:R0748": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:09:33.892535+00:00",
       "resolve_by": "2026-09-03T10:09:33.890296+00:00",
-      "claim": "R0748 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0748 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:52.969607+00:00"
     },
     "rec:R0749": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:29:01.587422+00:00",
       "resolve_by": "2026-09-03T10:29:01.584390+00:00",
-      "claim": "R0749 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0749 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:53.136732+00:00"
     },
     "rec:R0750": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:29:13.176907+00:00",
       "resolve_by": "2026-09-03T10:29:13.174608+00:00",
-      "claim": "R0750 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0750 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:53.283329+00:00"
     },
     "rec:R0751": {
       "p": 0.6644,
       "kind": "recommendation",
       "updated": "2026-08-20T10:29:24.196617+00:00",
       "resolve_by": "2026-09-03T10:29:24.193147+00:00",
-      "claim": "R0751 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0751 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:53.493399+00:00"
     },
     "conviction:2026-08-20T10:57:41.258800+00:00": {
       "p": 0.58,
@@ -4924,7 +5134,10 @@
       "kind": "recommendation",
       "updated": "2026-08-20T11:22:21.532177+00:00",
       "resolve_by": "2026-09-03T11:22:21.527749+00:00",
-      "claim": "R0752 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0752 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:39:53.657040+00:00"
     },
     "probe:2026-08-20T12:07:58.528480+00:00:q1": {
       "p": 0.5,
@@ -5011,7 +5224,10 @@
       "kind": "recommendation",
       "updated": "2026-08-20T13:16:10.974953+00:00",
       "resolve_by": "2026-09-03T13:16:10.969385+00:00",
-      "claim": "R0753 reaches IMPLEMENTED by 2026-09-03"
+      "claim": "R0753 reaches IMPLEMENTED by 2026-09-03",
+      "resolved": true,
+      "outcome": 0.0,
+      "resolved_at": "2026-09-03T16:40:52.934974+00:00"
     },
     "rec:R0642": {
       "p": 0.35,
@@ -5514,6 +5730,104 @@
       "resolved": true,
       "outcome": 0.0,
       "resolved_at": "2026-08-31T00:57:20.378258+00:00"
+    },
+    "rec:R0754": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T16:40:53.962100+00:00",
+      "resolve_by": "2026-09-17T16:40:53.932916+00:00",
+      "claim": "R0754 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0755": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T16:42:24.829825+00:00",
+      "resolve_by": "2026-09-17T16:42:24.819036+00:00",
+      "claim": "R0755 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0756": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T17:09:14.242641+00:00",
+      "resolve_by": "2026-09-17T17:09:14.221723+00:00",
+      "claim": "R0756 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0757": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T17:09:39.351399+00:00",
+      "resolve_by": "2026-09-17T17:09:39.284805+00:00",
+      "claim": "R0757 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0758": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T17:10:00.933444+00:00",
+      "resolve_by": "2026-09-17T17:10:00.900700+00:00",
+      "claim": "R0758 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0759": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T17:34:48.319054+00:00",
+      "resolve_by": "2026-09-17T17:34:48.299676+00:00",
+      "claim": "R0759 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0760": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T17:35:18.663900+00:00",
+      "resolve_by": "2026-09-17T17:35:18.656177+00:00",
+      "claim": "R0760 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q1": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.426379+00:00",
+      "resolve_by": "2026-09-03T22:16:46.375445+00:00",
+      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q2": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.461887+00:00",
+      "resolve_by": "2026-09-04T06:16:46.375445+00:00",
+      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q3": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.507324+00:00",
+      "resolve_by": "2026-09-04T18:16:46.375445+00:00",
+      "claim": "Will SOLUSDT trade ABOVE 104.1 in 24 hours' time?"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q4": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.570743+00:00",
+      "resolve_by": "2026-09-03T22:16:46.375445+00:00",
+      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q5": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.611128+00:00",
+      "resolve_by": "2026-09-04T06:16:46.375445+00:00",
+      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?"
+    },
+    "probe:2026-09-03T18:16:46.375445+00:00:q6": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-03T18:16:46.647218+00:00",
+      "resolve_by": "2026-09-04T18:16:46.375445+00:00",
+      "claim": "Will XRPUSDT trade ABOVE 1.3872 in 24 hours' time?"
+    },
+    "rec:R0761": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T18:44:31.996660+00:00",
+      "resolve_by": "2026-09-17T18:44:31.986912+00:00",
+      "claim": "R0761 reaches IMPLEMENTED by 2026-09-17"
     }
   }
 }
