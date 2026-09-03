@@ -2546,3 +2546,40 @@ birth. They strengthen the existing desk repair only when paired with append-bef
 outcomes and a separately replaceable controller checkpoint. No alpha, operator, symbol or gate
 transfers. `[§33: screened ->
 data/brain_hunter_s46_open_autoresearch_ledger_screen.json]`
+
+## crypto_copula_alt_spread_banned_mt5_mandate
+**KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1).** "Copula-state BTC-hedged alt spread reversion
+at 5-min" is a crypto-exchange-native stat-arb axis (alt/BTC spreads priced on Binance/Bybit-class
+venues, hedged in BTC). The desk's sole hunted universe is MT5/Fusion; no crypto-exchange-native
+opportunity may ever be hunted again. There is no Fusion instrument on which this spread is
+constructible — the alts and the hedge leg are exchange-native. The hourly rung was already
+graveyard-KILLED for EV; the 5-min rung dies here for MANDATE, not EV. Re-entry is impossible
+unless the principal reverses the universe mandate. Mechanism of death: hunted universe forbidden.
+
+## bitbank_orderbook_banned_mt5_mandate
+**KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1).** "bitbank official historical ORDER-BOOK
+snapshots" is a JP crypto-exchange (bitbank.cc) order-book tape. Order-book microstructure exists
+only on the exchange-native crypto universe, which the desk may never hunt again; Fusion/MT5
+provides no order book. The card was technically clean and registration-granted, but access grade
+is irrelevant once the ground is forbidden. Distinct from the bitbank *candle* card (#28), which
+was wired earlier as crypto REFERENCE data informing MT5 — an order-book alpha axis is a hunted
+crypto-exchange universe, not reference. Mechanism of death: hunted universe forbidden.
+
+## polymarket_deribit_btc_wedge_banned_mt5_mandate
+**KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1).** "Polymarket-vs-Deribit binary wedge on BTC
+threshold contracts" trades a relative-value wedge between Polymarket prediction markets and the
+Deribit BTC options surface. Both legs are crypto-exchange-native venues outside MT5/Fusion; the
+trading leg cannot be expressed in the mandated universe. The measurement leg is free and §13-clean
+but measures a spread the desk may not trade and whose underlyings it does not hunt — it converts
+to zero deployable alpha. Mechanism of death: hunted universe forbidden (trading leg unexecutable
+on Fusion).
+
+## quarterhour_orderflow_leakage_banned_mt5_mandate
+**KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1), alpha leg only.** "Quarter-hour clock:
+scheduled-algo order-imbalance leakage" requires an order-imbalance / order-book feed to detect the
+leakage; that microstructure exists only on the crypto-exchange-native universe the desk may not
+hunt. Fusion/MT5 exposes no order-imbalance data, so the ALPHA axis is unconstructible here and is
+killed for mandate. The dual-use execution-hygiene leg (avoid trading into predictable
+scheduled-algo windows) carries NO alpha claim and may re-enter ONLY as an execution-cost study on
+the desk's own MT5 fills, never as a hunted order-flow axis. Mechanism of death: hunted universe
+forbidden for the alpha leg.

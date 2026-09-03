@@ -2569,7 +2569,7 @@ using this axis live than the archival decay is.
 
 ## LITMINER RUN-6 CARDS (2026-08-12, arXiv q-fin full-subcategory sweep — first execution; ground file `deep_sweep/20260812_litminer_arxiv.md` carries full evidence + URLs)
 
-### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: needs-monitoring (screen construction owed; hourly rung of the family is graveyard-KILLED) [§33: deferred(2026-09-01) tier:2]
+### 27. Copula-state BTC-hedged alt spread reversion at 5-min (STAT-ARB — the desk's only never-tested family, n=0) — grade: **KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1): crypto-exchange-native alt/BTC spread, no Fusion instrument to construct it on. Hourly rung was EV-killed; 5-min rung dies for MANDATE.** [§33: killed -> docs/graveyard.md `crypto_copula_alt_spread_banned_mt5_mandate`]
 > **§33 RE-DEFERRED 2026-08-24 with the active-venue blocker made explicit.** The original 5-minute
 > crypto construction still lacks its declared 5-minute multi-symbol panel, and the current venue
 > mandate is Fusion MT5 rather than Binance. `translate_to_mt5()` returns no mapping for this
@@ -2608,7 +2608,7 @@ using this axis live than the archival decay is.
   bars; owed by the alpha org via **R0459** (due 2026-08-24). Novelty gate re-run
   owed at screen time; every construction (bar size, α₁, copula family) logged as a charged trial.
 
-### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: needs-monitoring (dual-use; execution-hygiene leg needs NO alpha claim) [§33: deferred(2026-09-01) tier:2]
+### 28. Quarter-hour clock: scheduled-algo order-imbalance leakage, 4–12h horizon (EVENT-AND-CALENDAR × ORDER-FLOW, sub-daily) — grade: **KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1), alpha leg only: order-imbalance detection needs an order book, which is crypto-exchange-native; Fusion/MT5 has none. Execution-hygiene leg may re-enter ONLY as an MT5-fills execution-cost study, never a hunted order-flow axis.** [§33: killed -> docs/graveyard.md `quarterhour_orderflow_leakage_banned_mt5_mandate`]
 > **§33 RE-DEFERRED 2026-08-24 for an MT5 measurement gap, not lack of a mechanism.** Running
 > `translate_to_mt5("order imbalance")` maps this to broker-native bid/ask tick-change imbalance,
 > with DOM only when real. The current Fusion research inventory has bars and spread metadata but no
@@ -2647,7 +2647,7 @@ using this axis live than the archival decay is.
   the hygiene leg (mark-avoidance in the executor's child-order timing — but executor code is
   MONEY PATH: L1.38 change-window check applies to that consumer, not to the measurement).
 
-### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: needs-legitimacy-review (TRADING leg only; measurement leg is free and §13-clean) [§33: deferred(2026-09-01) tier:2]
+### 29. Polymarket-vs-Deribit binary wedge on BTC threshold contracts (VOL-AND-OPTIONS relative value — NOT the EV-rejected DVOL variance-carry) — grade: **KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1): both legs (Polymarket, Deribit) are crypto-exchange-native venues outside MT5/Fusion; trading leg unexecutable, measurement leg converts to zero deployable alpha.** [§33: killed -> docs/graveyard.md `polymarket_deribit_btc_wedge_banned_mt5_mandate`]
 > **§33 RE-DEFERRED 2026-08-24 because the active destination has no matching instrument.**
 > `translate_to_mt5()` returns no mapping for prediction-market binary contracts. The current
 > Fusion universe contains spot/CFD symbols (including BTCUSD/ETHUSD) but no listed binary option or
@@ -3230,7 +3230,7 @@ graveyard/method intelligence, routed to research_memory + inbox, not axes).
 
 ---
 
-### 34. bitbank official historical ORDER-BOOK snapshots (S3, registration-granted) — grade: **verified-documented, NOT SCREENABLE TODAY: access is a venue-granted registration (named human step, GAP #69 class) — mechanism prior stated, screen owed on access grant** [§33: deferred(2026-09-02) tier:2]
+### 34. bitbank official historical ORDER-BOOK snapshots (S3, registration-granted) — grade: **verified-documented, NOT SCREENABLE TODAY: access is a venue-granted registration (named human step, GAP #69 class) — mechanism prior stated, screen owed on access grant. KILLED 2026-09-03 — OUT OF MANDATE (LAWS §1): an order-book tape is crypto-exchange-native microstructure, a hunted universe the desk may never touch again; access grade is moot once the ground is forbidden. Distinct from the bitbank CANDLE card (#28, wired as crypto REFERENCE informing MT5).** [§33: killed -> docs/graveyard.md `bitbank_orderbook_banned_mt5_mandate`]
 _Discovered by EN frontier miner session I, 2026-08-19, while gathering §13 evidence for card 28
 (the org listing surfaced `bitbankinc/bitbank-historical-orderbooks-docs`). SOURCE:
 `github.com/bitbankinc/bitbank-historical-orderbooks-docs` README.md (read in full via
@@ -3740,12 +3740,12 @@ count. LIVE verified track records on the desk's own platform — the single ric
 reverse-engineering ground (RESEARCH §4). Extract stats + rank deltas; flag high-growth/low-dd
 signals for mechanism inference. [§33: deferred(2026-09-01) tier:1]
 
-### 50. [seed S10] Myfxbook public systems + community outlook — grade: **WALLED-AT-EDGE 2026-08-27 (unified frontier dig): Cloudflare managed challenge returns **HTTP 403 on robots.txt itself** — the §13 read is not merely unfavourable, it is UNOBTAINABLE from this box, which is its own status and NOT a licence verdict (L1.28a / WS-005). This is a ROUTE problem, not a ground verdict: OP-098 (CDX over `myfxbook.com/members/*`) is the untried rediscovery route and is the owed unit** [§33: deferred(2026-09-03) tier:1]
+### 50. [seed S10] Myfxbook public systems + community outlook — grade: **WALLED-AT-EDGE 2026-08-27 (unified frontier dig): Cloudflare managed challenge returns **HTTP 403 on robots.txt itself** — the §13 read is not merely unfavourable, it is UNOBTAINABLE from this box, which is its own status and NOT a licence verdict (L1.28a / WS-005). This is a ROUTE problem, not a ground verdict: OP-098 (CDX over `myfxbook.com/members/*`) is the untried rediscovery route and is the owed unit. **ROUTE SOLVED 2026-09-03 (unified frontier dig):** live direct is still Cloudflare-403 on robots.txt itself (5441 B challenge page, re-confirmed with `ClaudeBot` UA), BUT the Wayback CDX route returns HTTP 200 and enumerates the population — `web.archive.org/cdx/search/cdx?url=myfxbook.com/members/*&filter=statuscode:200` lists BOTH member profiles (`/members/<user>`) AND per-system track records (`/members/<user>/<system-name>/<id>`), and the archived snapshots are full 20–28KB text/html pages serving exactly the equity-curve/track-record content the live wall blocks. This is the same CDX-rescue pattern the desk used on FX Blue and Darwinex. NARROWED OWED UNIT (free python collector, NOT my context): walk the CDX population, fetch newest archived snapshot per system id, parse equity curve + per-trade history into `data/myfxbook_archived_track_records.jsonl`; consume WITH the standing B-book debias prior. Direct-live remains §13/route-unobtainable and is NOT owed.** [§33: deferred(2026-09-06) tier:1]
 Verified track records (equity curves, per-trade history where public) AND the community outlook
 endpoint (retail % long/short per pair) — the positioning axis, consumed WITH the standing
 B-book debias prior (retail ruin is cost extraction, never naive fade).
 
-### 51. [seed S11] Darwinex public DARWIN metrics — grade: **route HALF-SOLVED 2026-08-27 (unified frontier dig). POPULATION SOLVED: Wayback CDX over `darwinex.com/invest/*` = **1,479 DARWIN tickers** (OP-098). Per-entity page live and keyless — `/darwin/<T>` 302s to `/invest/<T>`, 165KB, robots-permitted (`Disallow` covers /api, /private, /darwinex-index, not /invest). RESIDUAL, stated so nothing reads as done: the 12 investable attributes + D-Score are client-side and the XHR was NOT found in the landing bundle — metrics extraction is OWED. `/api` is robots-BARRED, so that route is closed by §13, not by difficulty** [§33: deferred(2026-09-03) tier:1]
+### 51. [seed S11] Darwinex public DARWIN metrics — grade: **route HALF-SOLVED 2026-08-27 (unified frontier dig). POPULATION SOLVED: Wayback CDX over `darwinex.com/invest/*` = **1,479 DARWIN tickers** (OP-098). Per-entity page live and keyless — `/darwin/<T>` 302s to `/invest/<T>`, 165KB, robots-permitted (`Disallow` covers /api, /private, /darwinex-index, not /invest). RESIDUAL, stated so nothing reads as done: the 12 investable attributes + D-Score are client-side and the XHR was NOT found in the landing bundle — metrics extraction is OWED. `/api` is robots-BARRED, so that route is closed by §13, not by difficulty. **ROUTE VERIFIED TO ITS §13 BOUNDARY 2026-09-03 (unified frontier dig):** re-probed `/darwin/PLF` → 302 → `/invest/PLF` HTTP 200, 165KB, keyless with `ClaudeBot` UA. The static page yields ONLY 3 animated headline counters (`data-inc-value` = 51.71, 3.53, -26.42), at least one labeled `return-total`; the full 12 investable attributes and the D-Score TIME SERIES are client-side hydrated from `/api`, which robots BARS — so the full-metrics route is permanently §13-closed, not merely unbuilt. WHAT REMAINS HUNTABLE keyless: the 3 headline counters × the 1,479-ticker CDX population = a coarse manager-ranking leaderboard. NARROWED OWED UNIT (free python collector, NOT my context): harvest `data-inc-value` + adjacent labels across the CDX population into `data/darwinex_headline_leaderboard.jsonl`; do NOT re-attempt /api.** [§33: deferred(2026-09-06) tier:2]
 Public API: d-scores, return series, investor capacity per DARWIN. A regulated, curated
 track-record universe with its own risk-normalization to reverse-engineer.
 
