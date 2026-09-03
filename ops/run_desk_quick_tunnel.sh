@@ -11,6 +11,12 @@
 # The named tunnel stays primary -- it is permanent and belongs in a bookmark. This is the escape
 # hatch for exactly the situation the principal is in, and it prints its URL to a file the
 # dashboard link-checker can read.
+# SEALED against mid-run rewrite (max_audit launcher-unsealed, 2026-09-03). bash reads this
+# file by BYTE OFFSET, and this tree takes ~200 commits/day, so a length change while the
+# tunnel is up resumes execution inside a line -- measured on 63680c05, which killed a
+# frontier dig. The `exit` must be INSIDE the group: a bare `{ ... }` still lets bash read
+# past the closing brace and re-run the whole script.
+{
 set -uo pipefail
 cd /home/quant/quant-platform
 URL_FILE=data/desk_quick_url.txt
@@ -33,3 +39,6 @@ for _ in $(seq 1 45); do
 done
 [ -s "$URL_FILE" ] || echo "WARNING: no quick URL captured; see $LOG"
 wait $CF_PID
+
+exit $?
+}

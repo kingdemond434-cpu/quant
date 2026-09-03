@@ -6749,13 +6749,38 @@ def check_scheduled_scripts(defects) -> None:
     import re
     import subprocess as _sp
 
+    # The pattern must consume the WHOLE path token, not the tail that happens to start at a
+    # `scripts/`|`ops/`|`deploy/` segment. The unanchored form shipped until 2026-09-03 and was
+    # wrong in BOTH directions on any organ living under a sub-desk: it reported
+    # `desks/mt5/scripts/fxblue_track_record_miner.py` as the non-existent
+    # `scripts/fxblue_track_record_miner.py` (a false positive, which trains the desk to ignore
+    # this fence -- L1.43), and, worse, it would have resolved a genuinely MISSING
+    # `desks/<x>/scripts/foo.py` against a same-named `scripts/foo.py` that does exist and
+    # reported the dead organ HEALTHY. That silent direction is the exact failure this check was
+    # written for. The leading greedy class backtracks to the longest prefix, so absolute paths
+    # match whole too and are normalised against ROOT below.
+    _SCHED_PATH_RE = re.compile(
+        r"[A-Za-z0-9_./-]*(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)")
+
+    def _resolve(tok: str) -> Path:
+        """A scheduled token -> the path to stat. Absolute stays absolute unless it is inside
+        this checkout, in which case it is made repo-relative so the answer does not depend on
+        which worktree ran the audit."""
+        q = Path(tok)
+        if q.is_absolute():
+            try:
+                return ROOT / q.relative_to(ROOT)
+            except ValueError:
+                return q
+        return ROOT / q
+
     refs: dict[str, str] = {}                     # script path -> where it was scheduled
     try:
         _cr = _sp.run(["crontab", "-l"], capture_output=True, text=True, timeout=20, check=False)
         for ln in (_cr.stdout or "").splitlines():
             if ln.strip().startswith("#"):
                 continue
-            for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+            for m in _SCHED_PATH_RE.findall(ln):
                 refs.setdefault(m, "crontab")
     except (OSError, _sp.SubprocessError):
         pass                                       # no crontab on this box: unit files still count
@@ -6763,12 +6788,12 @@ def check_scheduled_scripts(defects) -> None:
         try:
             for ln in unit.read_text("utf-8").splitlines():
                 if ln.strip().startswith("ExecStart"):
-                    for m in re.findall(r"(?:scripts|ops|deploy)/[A-Za-z0-9_./-]+\.(?:py|sh)", ln):
+                    for m in _SCHED_PATH_RE.findall(ln):
                         refs.setdefault(m, unit.name)
         except OSError:
             continue
 
-    missing = sorted(p for p in refs if not Path(p).exists())
+    missing = sorted(p for p in refs if not _resolve(p).exists())
     if missing:
         shown = ", ".join(missing[:6]) + ("..." if len(missing) > 6 else "")
         defects.append((
