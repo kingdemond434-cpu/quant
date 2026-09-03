@@ -111,7 +111,20 @@ def tradeable_universe() -> dict[str, str]:
     except (OSError, ValueError):
         return {}
     uni = BASE / "data" / "universe"
-    return {str(k).upper(): str(k) for k in meta if (uni / f"{k}_H1.parquet").exists()}
+    out: dict[str, str] = {}
+    for k, v in meta.items():
+        if not (uni / f"{k}_H1.parquet").exists():
+            continue
+        # TRADEABLE WHEN THE REGISTRY KNOWS, PERMITTED WHEN IT DOES NOT. Fusion offers 250
+        # symbols and only 237 are SYMBOL_TRADE_MODE_FULL; the rest are CLOSE_ONLY and no new
+        # position can be opened on them, so hunting them spends the sweep on cells that could
+        # never trade. Rows written before `trade_mode` was recorded carry no flag, and those
+        # are ALLOWED rather than dropped -- a registry that predates the field must not
+        # silently collapse the docket to nothing (L1.28a). They tighten on the next fetch.
+        if isinstance(v, dict) and v.get("tradeable") is False:
+            continue
+        out[str(k).upper()] = str(k)
+    return out
 
 
 def main() -> int:

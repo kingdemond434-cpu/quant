@@ -401,6 +401,13 @@ def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
         return False, f"symbol {sym!r} is absent from the universe registry"
     if not (UNI / f"{sym}_H1.parquet").exists():
         return False, f"symbol {sym!r} has no {sym}_H1.parquet; no clock can replay it"
+    row = meta.get(sym)
+    if isinstance(row, dict) and row.get("tradeable") is False:
+        # CLOSE_ONLY is not tradeable. The broker will accept an exit and refuse an entry, so a
+        # certificate here could never open the position it was certified on. Absent flag =
+        # permitted; a registry that predates the field must not refuse the whole universe.
+        return False, (f"symbol {sym!r} is CLOSE_ONLY on this account "
+                       f"(trade_mode {row.get('trade_mode')}); no new position can be opened")
     return True, ""
 
 
