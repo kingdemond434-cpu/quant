@@ -14359,3 +14359,83 @@ gauntlet verdict and no in-sample number/threshold/grade is imported (L1.6). Scr
   search" neighbours (autonomous-research architectures on arXiv Portfolio Management) remain unmined;
   the practitioner-corpus WorldQuant rows are surface-scanned only for content-bearing items, not their
   comment/reply layers. Shared compute is quiet. The BRAIN ground remains open.
+
+## BRAIN HUNTER s49 — 2026-09-03 — both crowding organs are dead, and neither death shows in its own output
+
+Prefetched-corpus first, per the corpora-first order. **Corpus fact worth recording once:
+`data/intelligence/gpt_practitioner_corpus.jsonl` carries 710 rows and `text` is `None` on all
+710** — abstracts arrive in `description`. Abstract depth is the corpus ceiling, not a per-row
+miss, and no future session should re-diagnose it as one. Worked the ground s48 named: the arXiv
+Portfolio Management / q-fin Trading atom rows (84 rows, 46 distinct URLs) as the AgonAlpha
+citation-neighbour layer.
+
+**One artifact adopted.** arXiv 2608.08405v1 (*Robustness or Crowding: Experimental Design for
+Trading Strategy Capacity*) carries a genuine identification result: the same-date fixed effect
+that makes a capacity comparison robust absorbs the strategy's own accumulated crowding **exactly**,
+so a same-date design recovers a private response at the prevailing level of aggregate positioning
+and never the aggregate effect; and a fixed-length trial understates the eventual effect because
+capital erodes edge gradually. This is *convergent* with `libs/research/crowding.py`'s own
+level-versus-residual doctrine — the desk's design is right — while naming the blind spot the
+design cannot escape. Because L1.58 fixes the forward window at 14 days, capacity erosion measured
+across it is a lower bound and should be reported as one. Attenuation correction only; **no
+in-sample bar, fitness grade or submission threshold was imported from any artifact** (L1.6).
+
+**Pointing that result at the desk found three confirmed defects, all ledgered same-run.**
+
+- **R0750 — `desks/mt5/research/crowding_miner.py` has been dead since 2026-08-25T15:55 (9 days).**
+  Log ends on two repeats of `IndexError('list index out of range')`; `crowding_history.jsonl`
+  stops at 13:55 the same day. Root cause reproduced: lines 97 and 105 index `top_stars` unguarded,
+  and when a GitHub query returns zero results the key is **present as `[]`**, so the `[0]` default
+  never applies. Four sibling expressions on 98/101/102/104 already carry the `(... or [0])[0]`
+  guard. The query rotation is deterministic, so this is permanent, not transient.
+- **R0751 — the MT5 book has no market-data crowding instrument at all.** `check_crowding.py`
+  returns FLAT-BOOK / rc=2 off `data/funding_cross_section.jsonl`, frozen at 2026-08-20, fed only
+  by `collect_funding_cross_section.py` → Binance USD-M `premiumIndex` (`venue: binance_usdm`) —
+  permanently banned ground under LAWS §1, collector idled by `data/RECORDERS_OFF` since
+  2026-08-25. Its `next_action` still promises "the tape keeps accruing so the measure is live the
+  day a position opens", **false in both clauses**. WS-005 class: retired renders identically to
+  not-yet.
+- **R0752 — `translate_to_mt5()` returns `[]` across the whole capacity vocabulary**
+  (`strategy capacity`, `crowding`, `funding rate`, `borrow cost`, `holding period`,
+  `aggregate positioning`, `same-date fixed effect`), while `sector neutralization` and
+  `commitment of traders` map correctly — so every capacity-class finding routes as an unmapped
+  gap by default.
+
+**The compound finding, which is larger than any of the three.** L1.18a makes capacity parity
+absolute; §42 routes crowding evidence to a fence and a review. Both crowding organs are dead, on
+different universes, for different reasons, and **neither death is visible from its own output**:
+one reports FLAT-BOOK (which reads as "nothing to measure yet"), and the other's state file is
+mtime-fresh (2026-09-03T12:00) while its payload is 13 days stale (2026-08-21T22:55) — a
+snapshot/sync process rewriting stale content, so an mtime freshness check reads it green (s49-O1,
+observed, not root-caused; R0750 removes the staleness at source). The desk's capacity assumption
+is uninstrumented — precisely the condition `check_crowding.py`'s own docstring was written to end.
+I checked the publicity miner as a possible substitute before publishing this and it is not one:
+it counts GitHub stars and Reddit posts for a mechanism *keyword* and never touches price, fills,
+financing or the desk's own positions.
+
+**Counts, honestly.** 0 desk constructions, 0 target-horizon cells, 0 tradeable cards, 0 survivors,
+**0 trials run** — so no multiplicity is incurred and none is reported. The output is validated
+information (three confirmed defects) plus one adopted methodology. Traces and falsifiers:
+`data/brain_hunter_s49_capacity_identification_screen.json`.
+
+**Legitimacy.** Public arXiv abstracts already present in the desk's own prefetched corpus; no live
+browsing. No account wall, private BRAIN API, credentialed content or proprietary dataset touched.
+No third-party agent tooling installed, imported or run (supply-chain rule). Research-only freeze
+observed: `docs/research/*` and `data/*` written, `scripts/` and `libs/` untouched — every repair
+is named as an exact patch in its ledger row rather than applied.
+
+**video: 0 fetched, 0 newly locked. 0 new external venues** — a negative discovery result on this
+pass, not a ground verdict.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- arXiv 2608.08405v1: capacity-identification axis **EXHAUSTED on 2026-09-03** (abstract depth;
+  the full PDF's design rules and the priced calibration panel are NOT read and remain open).
+- The `gpt_practitioner_corpus.jsonl` `text: None` diagnosis: **SETTLED 2026-09-03**, do not re-run.
+- **Next:** (a) the full text of 2608.08405v1 for the fixed-holding-period correction formula, which
+  is the one piece the abstract states exists but does not give; (b) arXiv 2608.10410v1 (OOQI) —
+  deferred here as a fourth engine-shape card, re-enter when conversion is not binding; (c) arXiv
+  2608.08625v1 price-limit memory, blocked on the desk's zero-bar softs symbols, so it routes
+  behind the softs data gap rather than behind a hunting decision; (d) the 46 distinct atom URLs
+  were read at abstract depth only and their citation layers are untouched. The BRAIN ground
+  remains open.

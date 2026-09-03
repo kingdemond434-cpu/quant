@@ -9782,6 +9782,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0750",
+   "source": "cycle",
+   "summary": "BRAIN s49: desks/mt5/research/crowding_miner.py has been DEAD 9 days (last cycle 2026-08-25T15:55, repeating IndexError). EXACT PATCH: lines 97 and 105 index top_stars unguarded -- gh.get('top_stars',[0])[0] raises when a GitHub query returns zero results (key present as [], so the [0] default never applies). Four sibling expressions on lines 98/101/102/104 already carry the (... or [0])[0] guard; apply the same to line 97 and to prev['github'].get('top_stats'...) on line 105. Reproduced both. Rotation is deterministic so the death is permanent, not transient. Add a test with top_stars=[].",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T16:11:37.572046+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0751",
+   "source": "cycle",
+   "summary": "BRAIN s49: the MT5 book has ZERO market-data crowding/capacity instrument. scripts/check_crowding.py + libs/research/crowding.py measure residual funding compression on HELD names, but the only feed is scripts/collect_funding_cross_section.py = Binance USD-M perpetuals (permanently banned ground, LAWS 1); tape data/funding_cross_section.jsonl frozen 2026-08-20, collector idled by data/RECORDERS_OFF since 2026-08-25. Fence reports FLAT-BOOK with next_action 'the tape keeps accruing so the measure is live the day a position opens' -- FALSE in both clauses (tape frozen; an MT5 position can never appear in a perp held-book). WS-005 class: retired renders identically to not-yet. FIX: repoint the residual measure at the MT5 swap/financing cross-section (broker swap per symbol vs same-instant cross-section) plus the spread/slippage residual, or make the fence report RETIRED-UNIVERSE instead of FLAT-BOOK.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T16:12:06.269561+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0752",
+   "source": "cycle",
+   "summary": "BRAIN s49: libs/research/evidence_tier.translate_to_mt5() returns [] for the entire capacity/crowding vocabulary -- 'strategy capacity', 'crowding', 'funding rate', 'borrow cost', 'holding period', 'aggregate positioning', 'same-date fixed effect' all map to nothing, while 'sector neutralization' and 'commitment of traders' map correctly. Every capacity-class finding therefore routes as an unmapped data gap by default. FIX: add funding rate -> broker swap/financing per lot per night; borrow cost -> swap short leg; strategy capacity -> lot-size ceiling at measured spread/slippage impact on the Fusion book.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T16:12:23.786169+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

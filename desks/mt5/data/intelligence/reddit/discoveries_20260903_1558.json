@@ -1,0 +1,402 @@
+[
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Last hope lost hope! XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Me VS XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Looking for 1 more market to trade alongside XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "New york opening with XAUUSD SETUP",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Waiting for the profit. Will it break volume support or not?",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "support"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Gold taking support from major level",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "XAUUSD Trade",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "NASDAQ MONTHLY REVIEW",
+    "url": "",
+    "symbols": [
+      "NAS100"
+    ],
+    "patterns": [
+      "reversal",
+      "EMA",
+      "order block"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "One more with Gold /XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD",
+      "DXY"
+    ],
+    "patterns": [
+      "support",
+      "resistance"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Monday! Let's see XAUUSD",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "resistance",
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Xauusd at support",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "support",
+      "fibonacci"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Watching futures data while trading CFDs, anyone else do this?",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "liquidity"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Reverse-engineered an ML expert advisor on XAUUSD (H1) for MT5 with a near-flawless 11-year equity curve. The teardown revealed systemic methodological flaws.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "I added real slippage to 3 recommended setups. 2 lose money and 1 barely does anything",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "Need help: Circling around the zero $ mark on FTMO for 6 months. What does it mean?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "A follow up from last weekends post",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "pullback"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "Forex",
+    "title": "What was your favorite trade of the week?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "wallstreetbets",
+    "title": "The Heating Oil Short",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [
+      "EMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "wallstreetbets",
+    "title": "$50k WEAT Yolo",
+    "url": "",
+    "symbols": [
+      "USOIL"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "wallstreetbets",
+    "title": "SPY options+30k (for the month)",
+    "url": "",
+    "symbols": [
+      "US500"
+    ],
+    "patterns": [
+      "scalp",
+      "trend"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "wallstreetbets",
+    "title": "Yen weakens past \u00a5160 per dollar, eroding intervention gains",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Looking for people interested in IB / introducing broker work",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "RBI forex swap: Worst ever decision?",
+    "url": "",
+    "symbols": [
+      "DXY"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "India gold/forex traders \u2014 which broker do you trust, and how do you withdraw?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Reverse-engineered an ML expert advisor on XAUUSD (H1) for MT5 with a near-flawless 11-year equity curve. The teardown revealed systemic methodological flaws.",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "India gold/forex traders \u2014 which broker do you trust, and how do you withdraw?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Should I move to LTF for better trades? OB strategy",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Started trading with xm broker, any advice on the markets to trade?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Best reliable offshore broker for XAUUSD trading from India? (Safety, legality & real experiences)",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Yet another profitable \"IA Grail\" for trading gold on Forex?",
+    "url": "",
+    "symbols": [
+      "XAUUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "Most proven strats for forex",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [
+      "SMA"
+    ],
+    "confidence": 0.3
+  },
+  {
+    "source": "reddit",
+    "subreddit": "ForexTrading",
+    "title": "When a \u201cstable\u201d EA suddenly stops being stable",
+    "url": "",
+    "symbols": [
+      "EURUSD"
+    ],
+    "patterns": [],
+    "confidence": 0.3
+  }
+]

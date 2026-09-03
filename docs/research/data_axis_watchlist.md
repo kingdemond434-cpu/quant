@@ -11524,3 +11524,40 @@ axes survive as a gap. [§33: screened -> evidence artifact; no alpha card]
 - **Disposition:** free-frontier search only—official public archives or forward self-recording;
   no commercial vendor. No strategy test is authorized until licence, issuer join and PIT vintage
   coverage are measured.
+
+## BRAIN s49 — 2026-09-03 — the MT5 crowding/capacity axis has no feed
+
+**Why this is a data axis and not an engineering ticket.** The desk can only measure crowding on
+its own names against a *same-instant cross-section* (arXiv 2608.08405v1, improvement_inbox s49).
+On the retired perp universe that cross-section existed: 875 symbols of funding, 331 snapshots.
+On MT5 no equivalent tape is collected at all, so the measurement is not merely broken — its
+denominator has never been built.
+
+**AXIS: MT5 swap/financing cross-section (the funding-rate analogue).** Broker swap long/short per
+lot per night, per symbol, sampled on a schedule so a *residual* (our held symbol minus the
+same-instant cross-section) and a *cross-sectional percentile* can both be taken. Source is the
+desk's own terminal (`symbol_info`), so it is proprietary by construction and costs nothing but a
+scheduler — the self-footprint moat, not a purchase. Status: **NOT COLLECTED.** `carry_state.json`
+exists but is a state snapshot, not a dated cross-sectional tape; GAP #210 records the financing
+tape as one day on disk with no scheduler. This is the single highest-value missing axis for
+capacity work and it is already paid for.
+
+**AXIS: execution-residual (the fill-quality tell).** Slippage and effective spread at *unchanged*
+size, per symbol, versus the same-instant cross-section. `check_crowding.py` already names this as
+the second tell and reports it UNMEASURED — 20 of 533 execution-tape rows carry TCA fields. On MT5
+the equivalent tape is the desk's own fill record. Status: **PARTIAL, coverage-bound.**
+
+**MAPPING GAP (R0752).** `libs/research/evidence_tier.translate_to_mt5()` returns `[]` for
+`strategy capacity`, `crowding`, `funding rate`, `borrow cost`, `holding period`,
+`aggregate positioning` and `same-date fixed effect`, while correctly mapping
+`sector neutralization` and `commitment of traders`. Proposed additions, in the table's own form:
+`funding rate -> broker swap/financing per lot per night`; `borrow cost -> swap on the short leg`;
+`strategy capacity -> lot-size ceiling at measured spread/slippage impact on the Fusion book`;
+`crowding -> held-symbol swap and slippage residual against the same-instant MT5 cross-section`.
+Not applied here: this session is under the research-only freeze and does not write `libs/`.
+
+**What the axis can and cannot buy, stated up front so it is not oversold.** Per 2608.08405v1 a
+same-date residual identifies the desk's *private* response at the prevailing level of aggregate
+positioning. It will detect a competitor targeting the desk's specific names. It is provably blind
+to a cohort-wide compression, which needs time variation in aggregate positioning instead. Building
+the tape buys the first and not the second, and the second is not obtainable by collecting harder.

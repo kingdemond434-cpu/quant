@@ -5995,3 +5995,77 @@ neither moves, refuted for this desk. Video `g-Iwbrw0MXg` (4 claimed gold alphas
 18 routes 403/500/timeout, formulas behind a lead-magnet PDF, not chased. No third-party agent tool
 installed, imported or run. Exact traces: `data/brain_hunter_s48_agonalpha_engine_screen.json`.
 [§33: screened]
+
+## BRAIN s49 — 2026-09-03 — capacity is a causal question the desk answers with a dead proxy
+
+**Source:** arXiv 2608.08405v1, *Robustness or Crowding: Experimental Design for Trading Strategy
+Capacity* (public abstract, from the desk's own prefetched corpus). SOURCE: arXiv Portfolio
+Management atom row 133. DERIVES-FROM: NONE (checked) — this is not a restatement of the desk's
+`crowding.py` docstring; the docstring asserts the level/residual split, the paper proves what the
+split can and cannot identify and prices the cost.
+
+**The mechanism, stated so it can be implemented without the source.** Capacity is a causal
+question about deployed capital, and two features of the problem interact to constrain any answer:
+
+1. **The same-date design is self-defeating for the aggregate effect.** Comparing parallel
+   implementations on the same date removes market-wide shocks — that is what makes the comparison
+   credible. But the crowding created by the strategy's *own* accumulated position is common to
+   those implementations too, and an arbitrary date effect absorbs it exactly. A same-date design
+   recovers one implementation's **private response at the prevailing level of aggregate
+   positioning**, never the aggregate effect. Reaching the aggregate requires either
+   implementations with deliberately different exposure to that position, or variation in it over
+   time. There is no estimator that gets it from same-date comparison alone.
+2. **A fixed holding period understates the eventual effect**, because deployed capital erodes the
+   edge gradually rather than at once. The paper characterises how far, and how to correct.
+
+**Why this matters here, and it is not decoration.** `libs/research/crowding.py` computes exactly
+the same-date residual (our rate minus the same-instant cross-section). Its docstring already
+claims the split — "level is the market; residual is ours" — so the paper is *convergent evidence*
+that the desk's design is right, and simultaneously names the blind spot the design cannot escape:
+the residual arm is provably blind to cohort-wide crowding, and no amount of tape accrual fixes it.
+Second, the desk's forward window is a **fixed 14 days** (L1.58). Any capacity erosion measured
+across it is therefore a **lower bound** on the eventual effect, and should be reported as one.
+
+**L1.6 note, explicitly.** This is an attenuation *correction* — the measured effect understates
+the truth — never a bar loosening. No in-sample Sharpe bar, fitness grade or submission threshold
+was imported from this or any artifact this session.
+
+**Determining test (before/after, so this is not an opinion):** on the desk's own forward archive,
+regress realised per-sleeve expectancy against days-since-first-trade for sleeves whose size was
+increased, and compare the 14-day slope against the slope over the full live window. If the 14-day
+slope is materially flatter, the fixed-window understatement is real on this desk's data and the
+correction is worth carrying; if it is not distinguishable, the import is diagnostic only. **The
+population must exist before the test means anything** — see the routing note below, because it
+currently does not.
+
+**Routing — the three confirmed defects this artifact surfaced (traces:
+`data/brain_hunter_s49_capacity_identification_screen.json`):**
+
+- **R0750 — the MT5 crowding miner has been dead 9 days on a permanent IndexError.**
+  `desks/mt5/research/crowding_miner.py:97` and `:105` index `top_stars` unguarded; when a GitHub
+  query returns zero results the key is present as `[]`, so the `[0]` default never applies and
+  indexing raises. Four sibling expressions (98/101/102/104) already carry the `(... or [0])[0]`
+  guard. Both reproduced. The query rotation is deterministic, so the failing cycle recurs forever.
+- **R0751 — the MT5 book has no market-data crowding instrument at all.** `check_crowding.py`
+  returns FLAT-BOOK/rc=2 off a Binance USD-M perp tape frozen at 2026-08-20 whose collector is
+  idled by `data/RECORDERS_OFF` — permanently banned ground. Its `next_action` ("the tape keeps
+  accruing so the measure is live the day a position opens") is false in both clauses. WS-005
+  class. The publicity miner is not a substitute: it counts GitHub stars for a *keyword* and never
+  touches price, fills, financing or the desk's own positions.
+- **R0752 — `translate_to_mt5()` is empty across the entire capacity vocabulary**, so every
+  capacity-class finding routes as an unmapped data gap by default.
+
+**The compound consequence, which is the actual finding.** L1.18a makes capacity parity absolute
+and §42 routes crowding evidence to a fence and a review. Both crowding organs are dead, on
+different universes, for different reasons — and *neither death is visible from its own output*:
+one reports FLAT-BOOK (which reads as "nothing to measure yet"), the other's state file is
+mtime-fresh and content-stale by 13 days. The desk's capacity assumption is uninstrumented, which
+is precisely the condition `check_crowding.py`'s own docstring was written to end.
+
+**Deferred, named rather than dropped:** OOQI (arXiv 2608.10410v1) — specification-driven pipeline
+synthesis, satisfaction rate treated as a statistical object with deflation for search width. A
+fourth engine-shape card of the class s48 already delivered three of; re-enter when the conversion
+backlog is not the binding constraint. And arXiv 2608.08625v1 (retained hidden excess in
+price-limited markets) predicts a same-sign next-day mean return after a limit close, scaling with
+band width — the MT5 analogue is CME daily price limits on energy and softs, which is unscreenable
+today because the desk's softs symbols carry zero bars (FREE-DATA e).

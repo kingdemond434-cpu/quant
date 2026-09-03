@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-03T15:25:27+00:00",
+ "rebuilt_at": "2026-09-03T16:25:07+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -538,14 +538,15 @@
   },
   "artemveremienko": {
    "presences": {
-    "github_topics": 1
+    "github_topics": 2
    },
    "cohorts": [
-    "4969c01fe309ab1f"
+    "4969c01fe309ab1f",
+    "93de4edc9e8f37c0"
    ],
    "scores": {
     "independent_evidence": 1,
-    "record_count": 1,
+    "record_count": 2,
     "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
@@ -940,7 +941,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 6,
+    "longevity_max_d": 7,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -955,7 +956,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 6,
+    "longevity_max_d": 7,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1274,7 +1275,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 2,
+    "longevity_max_d": 3,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1334,7 +1335,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 1,
+    "longevity_max_d": 2,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1429,7 +1430,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 0,
+    "longevity_max_d": 1,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
