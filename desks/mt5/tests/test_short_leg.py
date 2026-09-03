@@ -175,42 +175,15 @@ def test_a_short_is_passed_on_the_first_call_not_only_the_fallback() -> None:
     assert "fam_fn(h1, side=-1, **call_params) if _short" in text
 
 
-# ------------------------------- 5. the gauntlet's third family population is reachable
+# ------------------------------- 5. two causes of refusal are not one message
 #
-# Certification and forward evidence must read the same certificate from the SAME registry.
-# `qquant_gates` resolves hunt16's corpus via `from run_hunt16 import FAMILIES as F16`, so a
-# cell can pass all ten gates on a family the forward engine has never heard of. Measured
-# 2026-09-03: 14 such families, every one taking `side: int`, unreachable from `_family_fn`.
-
-def test_the_gauntlets_hunt16_corpus_is_reachable_from_the_forward_engine() -> None:
-    """A family the gauntlet certifies from MUST resolve here, or evidence can never accrue."""
-    from run_hunt16 import FAMILIES as F16
-
-    for name, ctor in F16.items():
-        assert sf._family_fn(name) is ctor, (
-            f"{name} is certifiable by qquant_gates but unresolvable by the forward engine; "
-            f"a certificate naming it can never accrue forward evidence")
-
-
-def test_a_certified_short_on_a_hunt16_family_enrols_short(monkeypatch) -> None:
-    """The exact cell that was refused under text blaming it for a `side` it does take."""
-    logged: list[str] = []
-    monkeypatch.setattr(sf, "slog", logged.append)
-    run = {"symbol": "AUDNZD", "side": "SHORT"}
-    assert sf._runnable_side(run, "dav_range_filter_adx") == "SHORT"
-    assert not logged, f"a runnable short must not be refused: {logged}"
-
-
-def test_every_hunt16_family_can_actually_be_told_a_side() -> None:
-    """If one of these could not, enrolling it short would be the very bug this file exists for."""
-    from run_hunt16 import FAMILIES as F16
-
-    for name, ctor in F16.items():
-        assert sf._accepts_side(ctor) is True, f"{name} cannot be told a side"
-
+# `_runnable_side` refuses on `fn is None` and on a resolved family without a `side` parameter.
+# They are different defects fixed in different places: a RESOLVER gap versus a genuine
+# capability gap. Reporting "its family takes no `side`" for an unresolvable family sends the
+# reader to edit a function that already takes one -- measured on `dav_range_filter_adx`, which
+# takes `side: int` and was refused under that text anyway.
 
 def test_an_unresolvable_family_is_not_blamed_for_missing_a_side(monkeypatch) -> None:
-    """Two causes, two fixes, two messages. The old text sent readers to edit the wrong file."""
     monkeypatch.setattr(sf, "_family_fn", lambda fam: None)
     logged: list[str] = []
     monkeypatch.setattr(sf, "slog", logged.append)
@@ -221,7 +194,41 @@ def test_an_unresolvable_family_is_not_blamed_for_missing_a_side(monkeypatch) ->
         "an unresolvable family must not be blamed for a capability gap it may not have")
 
 
-def test_the_resolver_returns_published_families_only() -> None:
-    """A bare getattr on the module would resolve `main`, `cheap_gate` or a private helper."""
-    for attr in ("main", "cheap_gate", "_sigs", "FAMILIES", "WINDOWS"):
-        assert sf._family_fn(attr) is None, f"_family_fn resolved non-family attribute {attr!r}"
+def test_a_resolved_family_without_side_keeps_the_original_refusal(monkeypatch) -> None:
+    """The capability message must survive intact -- only the unresolvable case was split off."""
+    def truly_no_side(bars, rr=2.0):
+        return []
+
+    monkeypatch.setattr(sf, "_family_fn", lambda fam: truly_no_side)
+    logged: list[str] = []
+    monkeypatch.setattr(sf, "slog", logged.append)
+    assert sf._runnable_side({"symbol": "EURUSD", "side": "SHORT"}, "f") is None
+    assert "takes no `side`" in logged[0] and "opposite direction" in logged[0]
+
+
+# ------------------------------- 6. hunt16 is owned by qquant_shadow, not by this engine
+
+def test_hunt16_families_stay_out_of_this_engines_resolver() -> None:
+    """Resolving them here would DOUBLE-ENROL cells qquant_shadow already clocks.
+
+    `qquant_shadow` imports the same FAMILIES mapping and calls `FAMILIES[family](h1, side)`;
+    `authorized_runs` reads UNIVERSAL_SURVIVORS.json, which carries hunt16 cells. If this
+    resolver also served them, one certificate would hold two independent forward clocks in two
+    state files, both feeding promotion. The "ONE PIPELINE" dedupe is internal to this module's
+    rows and would not catch it. Widening the resolver to match the gauntlet's registry list is
+    therefore NOT the fix it looks like.
+    """
+    from run_hunt16 import FAMILIES as F16
+
+    for name in F16:
+        assert sf._family_fn(name) is None, (
+            f"{name} resolves here as well as in qquant_shadow -- that is a second clock for a "
+            f"certificate that already has one")
+
+
+def test_every_hunt16_family_can_be_told_a_side() -> None:
+    """Why the old refusal text was wrong: these families do take a side."""
+    from run_hunt16 import FAMILIES as F16
+
+    for name, ctor in F16.items():
+        assert sf._accepts_side(ctor) is True, f"{name} cannot be told a side"

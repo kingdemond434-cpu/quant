@@ -200,37 +200,27 @@ def _runnable_side(run: dict, fam: str) -> str | None:
 
 
 def _family_fn(fam: str):
-    """The one constructor for `fam`, wherever it lives -- same resolution as the gauntlet.
+    """The one constructor for `fam`, wherever it lives.
 
-    THE DOCSTRING WAS THE SPEC AND THE CODE DID NOT MEET IT. The gauntlet resolves three
-    populations; this resolved two. `qquant_gates` certifies hunt16's corpus through
-    `from run_hunt16 import FAMILIES as F16`, so a cell like
-    `AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` can pass all ten gates -- and then
-    reach a forward engine that has never heard of `dav_range_filter_adx`.
+    DELIBERATELY NOT EXTENDED TO hunt16's FAMILIES, and the reason is worth keeping. The
+    gauntlet resolves a third population here (`qquant_gates` does `from run_hunt16 import
+    FAMILIES as F16`), so it is tempting to match it and call the docstring honest. Measured
+    2026-09-03: hunt16 cells ALREADY have a forward clock -- `qquant_shadow.py` imports the same
+    FAMILIES mapping and calls `FAMILIES[family](h1, side)`, and
+    `qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is ACTIVE on it
+    at n=2. `authorized_runs` reads UNIVERSAL_SURVIVORS.json, which carries that same hunt16
+    cell, so resolving it here would enrol a SECOND clock for a certificate that already has one
+    -- two state files, two independent verdicts, both feeding promotion. The dedupe at "ONE
+    PIPELINE" below is internal to this module's own rows and would not catch it.
 
-    Measured 2026-09-03: 14 hunt16 families, EVERY ONE of them taking `side: int` and building a
-    genuinely mirrored strategy, were unreachable from here. The cost lands twice. A LONG
-    certificate on one of them enrols a clock that logs "constructor vanished" on every pass and
-    accrues nothing. A SHORT one is refused outright -- and, until the branch above was split,
-    was refused with text blaming the family for not taking a `side` it does in fact take.
-    Certification and forward evidence read the same certificate from two different registries,
-    which is the drift this function's own docstring already forbade.
-
-    Import is safe: run_hunt16 guards its entrypoint with `if __name__ == "__main__"`, and only
-    its published FAMILIES mapping is consulted -- never a bare getattr, which would resolve
-    `main` or a private helper for any certificate that happened to name one.
+    So the two registries here are the correct set for THIS engine, and hunt16 is owned by
+    qquant_shadow. A hunt16 family arriving here is a routing question, not a resolver gap.
     """
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:
             from mt5desk import families_orthogonal as _fo
             fn = _fo.ORTHOGONAL_FAMILIES.get(fam)
-        except ImportError:
-            fn = None
-    if fn is None:
-        try:
-            from run_hunt16 import FAMILIES as _F16
-            fn = _F16.get(fam)
         except ImportError:
             fn = None
     return fn
