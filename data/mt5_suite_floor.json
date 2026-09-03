@@ -1,8 +1,8 @@
 {
  "known_failing": [],
- "measured_at": "2026-09-02T19:48:30+00:00",
- "passed_at_measure": 838,
- "total_at_measure": 838,
+ "measured_at": "2026-09-03T07:48:28+00:00",
+ "passed_at_measure": 879,
+ "total_at_measure": 879,
  "command": "python scripts/check_mt5_suite.py",
  "why": "desks/mt5 is excluded from ruff, mypy and testpaths, so NOTHING else runs these. A name may only leave this list; a name arriving is a new red."
 }
