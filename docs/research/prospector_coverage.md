@@ -14337,3 +14337,25 @@ venues**. This is a negative discovery result, not a ground verdict.
   reconciliation; then continue the residual permissively licensed gplearn fork population outside
   s45's slice. RD-Agent factor proposals remain conditional on a novel MT5 mechanism. The BRAIN
   ground remains open.
+
+## BRAIN HUNTER s48 — 2026-09-03 — the reviewer that re-executes; artifact search before re-derivation
+
+Prefetched-corpus first (data/intelligence/gpt_practitioner_corpus.jsonl): 11 WorldQuant-tagged rows
+reviewed, of which two carry content — AgonAlpha (arXiv 2608.11250v1, an autonomous BRAIN alpha-mining
+architecture) and a "4 gold alphas" YouTube lead-magnet. AgonAlpha continues the s44–s47 provenance/
+adversarial-review thread and names three engine shapes as first-class: frozen-artifact search
+(hypotheses+expressions+evidence+rationale+review-status, not formulas), a fresh-context reviewer that
+RE-EXECUTES and can veto, and pending-aware parallel budget allocation. All three route to
+improvement_inbox as CONVERSION-THROUGHPUT ideas with a before/after determining test; none changes a
+gauntlet verdict and no in-sample number/threshold/grade is imported (L1.6). Screen:
+`data/brain_hunter_s48_agonalpha_engine_screen.json`.
+
+- **video_locked:** `g-Iwbrw0MXg` (Great Goat, "4 gold alphas") — 18 transcript routes attempted, all
+  403/500/timeout/interstitial; formulas gated behind a bit.ly PDF; equities in-sample, no MT5 transfer
+  expected; not chased. video: 0 fetched, 1 locked.
+- **0 new external venues.** No account wall, private BRAIN API, credentialed content or proprietary
+  dataset touched. No third-party agent tool installed, imported or run (supply-chain rule).
+- **Next un-exhausted ground:** the AgonAlpha citation graph and its "prompt economy / scalable agentic
+  search" neighbours (autonomous-research architectures on arXiv Portfolio Management) remain unmined;
+  the practitioner-corpus WorldQuant rows are surface-scanned only for content-bearing items, not their
+  comment/reply layers. Shared compute is quiet. The BRAIN ground remains open.

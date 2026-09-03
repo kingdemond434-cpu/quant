@@ -5958,3 +5958,40 @@ exposed confirmation cohort must retire from promotion authority or be replaced 
 fresh cohort/validated anytime-sequential design. Every prewritten Fusion identity must reconcile to
 a typed terminal outcome after restart. No third-party agent tool was installed, imported or run.
 Exact traces: `data/brain_hunter_s47_arbor_htr_state_screen.json`. [§33: screened]
+
+## 2026-09-03 — BRAIN HUNTER s48 — the reviewer that re-executes, and the store that stops re-derivation
+
+AgonAlpha (arXiv 2608.11250v1, "Autonomous Alpha Discovery via Prompt Economy and Scalable
+Agentic Search") is on the same thread as s44–s47 and is the first artifact to name three shapes as
+first-class architecture rather than incidental plumbing. Its claimed BRAIN results (Fitness 9.50,
+Sharpe 3.48, SPECTACULAR across 5 users / 6 backends) are external IN-SAMPLE submission ore —
+recorded as a fact about their process, never a gate (L1.6). No formula, threshold, grade or
+attempt-inflated ratchet is imported. What transfers is engine structure, and only if it moves a
+measured number:
+
+1. **Search over FROZEN artifacts, not formulas.** The mining loop retrieves prior hypotheses,
+   executable expressions, platform evidence, rationales AND review status — so a candidate that was
+   already screened is found before it is re-derived. The desk has the store (recommendation ledger,
+   §33 backlog, graveyard) and a lexical retriever (`vault_search`, BM25) but the dig loop does not
+   query it as a *pre-generation* step; re-derivation surfaces only downstream as a dedup hit.
+
+2. **Fresh-context adversarial reviewer with re-execution + veto.** The reviewer does not read the
+   producer's numbers; it RECOMPUTES from the frozen expression in a context that never saw the
+   producer's cached state, and can veto. Note the deliberate tension with the promotion rule
+   "import the number, never restate it": that rule binds the CONSUMER (a gate must import an
+   upstream gate's verdict, not re-state it); this binds the VERIFIER (must recompute, not import).
+   Both hold — the split is consumer-vs-verifier, and conflating them is how a producer's bug
+   launders through a reviewer that only re-reads.
+
+3. **Pending-aware budget allocation.** Evaluation budget is weighted by in-flight PENDING
+   candidates, not only completed ones. The desk's `MAX_FORWARD_SLOTS=12` is a static cap; a
+   pending-aware version would weight a new candidate's slot claim by its expected marginal
+   independence from what is already pending, so correlated pending work does not crowd the book.
+
+**Determining test (all three are CONVERSION-THROUGHPUT claims, none change a verdict):** measure
+duplicate-hypothesis rate and survivors-per-compute-unit before/after (a) wiring artifact retrieval
+as a pre-generation step and (b) forcing the verify stage to recompute in a fresh context. If
+neither moves, refuted for this desk. Video `g-Iwbrw0MXg` (4 claimed gold alphas) is video_locked —
+18 routes 403/500/timeout, formulas behind a lead-magnet PDF, not chased. No third-party agent tool
+installed, imported or run. Exact traces: `data/brain_hunter_s48_agonalpha_engine_screen.json`.
+[§33: screened]
