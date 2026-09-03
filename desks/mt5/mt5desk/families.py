@@ -507,7 +507,25 @@ def family_session_range_breakout(
     trend_filter: str = "none",
     range_filter: str = "all",
     vol_filter: str = "all",
+    midpoint_filter: str = "off",
 ) -> list[Signal]:
+    """`midpoint_filter="prev_day"` is Stefano Serafini's published conditioning, reverse-
+    engineered: take only the side of a session breakout that agrees with where price sits
+    relative to the PREVIOUS DAY'S midpoint.
+
+        MID_(d-1) = (H_(d-1) + L_(d-1)) / 2
+        long only if price > MID_(d-1);  short only if price < MID_(d-1)
+
+    IT IS A FILTER ON AN EXISTING TRIGGER, NOT A NEW FAMILY, and that is deliberate. The desk
+    already has this breakout; adding "Serafini opening range" as its own family would spend a
+    multiplicity slot on a duplicate and make the deflated-Sharpe bar harder for every other
+    candidate in the sweep. The falsifiable claim is precisely the conditioning -- does the same
+    trigger do better when it agrees with yesterday's structure -- so it is tested as an A/B
+    against the identical unfiltered parent, which `midpoint_filter="off"` still is.
+
+    The midpoint is computed on the desk's own daily aggregation of H1 bars rather than on
+    broker settlement bars, which is the point Serafini makes about synthetic 1,440-minute bars.
+    """
     h1 = _h1(df)
     atr = _atr(h1, atr_n)
     h1 = h1.assign(date=h1.index.date, hour=h1.index.hour)
@@ -525,6 +543,11 @@ def family_session_range_breakout(
     span_med = span_by_day.rolling(20, min_periods=10).median()
     atr_med = atr.rolling(200, min_periods=60).median()
     ema20 = h1["close"].ewm(span=20, min_periods=10).mean()
+    # PREVIOUS day's midpoint per date, shifted so a day never sees its own range.
+    prev_mid: dict = {}
+    if midpoint_filter == "prev_day":
+        day = h1.groupby("date").agg(hi=("high", "max"), lo=("low", "min"))
+        prev_mid = ((day["hi"] + day["lo"]) / 2.0).shift(1).to_dict()
     signals: list[Signal] = []
     for i in range(1, len(h1) - 2):
         ts = h1.index[i]
@@ -560,12 +583,23 @@ def family_session_range_breakout(
         if trend_filter == "aligned":
             if i >= 5:
                 slope = float(ema20.iloc[i] - ema20.iloc[i - 4])
+
+        # SERAFINI'S PRIOR-DAY MIDPOINT. Strictly one-sided lookback: the midpoint comes from the
+        # day BEFORE this signal's day, so a signal can never see its own session's range.
+        allow_long = allow_short = True
+        if midpoint_filter == "prev_day":
+            mid = prev_mid.get(h1["date"].iloc[i])
+            if mid is None or np.isnan(mid):
+                continue                  # no prior day: UNMEASURED, so no trade (L1.28a)
+            px = float(h1["close"].iloc[i])
+            allow_long, allow_short = px > mid, px < mid
+
         dist = max(1.2 * a, span)
-        if trend_filter != "aligned" or slope >= 0:
+        if allow_long and (trend_filter != "aligned" or slope >= 0):
             signals.append(Signal(time=ts, side=1, stop=hi - dist, target=hi + dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
                                   trigger=hi, wait_bars=wait_bars))
-        if trend_filter != "aligned" or slope < 0:
+        if allow_short and (trend_filter != "aligned" or slope < 0):
             signals.append(Signal(time=ts, side=-1, stop=lo + dist, target=lo - dist * rr,
                                   ttl_bars=ttl_bars, tag="session_range_breakout",
                                   trigger=lo, wait_bars=wait_bars))
