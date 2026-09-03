@@ -1,52 +1,58 @@
 {
- "swept_at": "2026-09-03T10:40:44+00:00",
- "symbols": 56,
+ "swept_at": "2026-09-03T16:31:18+00:00",
+ "symbols": 91,
  "families_ran": {
-  "correlation_regime": 54,
-  "cross_asset_residual": 54,
-  "drawdown_conditional": 54,
-  "fx_fixing_reversal": 54,
-  "generic": 10,
-  "hedging_demand_close": 11,
-  "liquidity_gamma_reversal": 53,
-  "overnight_gap_decay": 53,
-  "pca_residual": 53,
-  "relative_value": 54,
-  "turn_of_month": 54,
-  "vol_mean_reversion": 54,
-  "vol_transition": 54,
-  "lvc_asia_london": 8,
-  "session_handoff": 8
+  "correlation_regime": 89,
+  "cross_asset_residual": 89,
+  "drawdown_conditional": 87,
+  "fx_fixing_reversal": 89,
+  "generic": 27,
+  "hedging_demand_close": 32,
+  "liquidity_gamma_reversal": 88,
+  "overnight_gap_decay": 88,
+  "pca_residual": 88,
+  "relative_value": 89,
+  "turn_of_month": 89,
+  "vol_mean_reversion": 89,
+  "vol_transition": 89,
+  "lvc_asia_london": 23,
+  "session_handoff": 23,
+  "carry": 10,
+  "cot_positioning": 1,
+  "event_reaction": 8,
+  "orderflow_imbalance": 8,
+  "liquidity_regime": 2
  },
  "input_gaps": {
-  "calendar_month:needs-source-evidence (active_month, side_bias)": 54,
-  "carry:no-signals (contract/swap terms)": 54,
-  "cot_positioning:no-signals (COT net positioning)": 54,
-  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 54,
-  "event_reaction:no-signals (an economic calendar)": 54,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 54,
-  "lvc_asia_london:no-signals (unknown)": 46,
-  "macro_conditional:no-signals (a macro state series)": 54,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 54,
-  "session_handoff:no-signals (price only)": 46,
-  "generic:no-signals (price only)": 44,
-  "hedging_demand_close:no-signals (price only)": 43,
+  "calendar_month:needs-source-evidence (active_month, side_bias)": 89,
+  "carry:no-signals (contract/swap terms)": 79,
+  "cot_positioning:no-signals (COT net positioning)": 88,
+  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 89,
+  "event_reaction:no-signals (an economic calendar)": 81,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 87,
+  "lvc_asia_london:no-signals (unknown)": 66,
+  "macro_conditional:no-signals (a macro state series)": 89,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 81,
+  "session_handoff:no-signals (price only)": 66,
+  "generic:no-signals (price only)": 62,
+  "hedging_demand_close:no-signals (price only)": 57,
   "liquidity_gamma_reversal:no-signals (price only)": 1,
   "overnight_gap_decay:no-signals (price only)": 1,
-  "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1
+  "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1,
+  "drawdown_conditional:no-signals (price only)": 2
  },
  "family_errors": {},
  "family_errors_note": "exceptions raised BY THIS DESK'S CODE while calling a family. Distinct from input_gaps, which are data the box does not have: an error here is a defect to FIX, and folding the two together is how 297 identical TypeErrors read as a missing feed.",
  "untestable_by_family": {
   "correlation_regime:untestable (56 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (58 trading days < 60 the gates need)": 2,
+  "pca_residual:untestable (58 trading days < 60 the gates need)": 4,
   "vol_transition:untestable (56 trading days < 60 the gates need)": 4,
   "correlation_regime:untestable (57 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (47 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (45 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (33 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (54 trading days < 60 the gates need)": 2,
-  "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 3,
+  "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 4,
   "liquidity_gamma_reversal:untestable (51 trading days < 60 the gates need)": 3,
   "correlation_regime:untestable (33 trading days < 60 the gates need)": 1,
   "cross_asset_residual:untestable (42 trading days < 60 the gates need)": 1,
@@ -78,7 +84,7 @@
   "vol_transition:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 1,
-  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 1,
+  "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (30 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (51 trading days < 60 the gates need)": 1,
@@ -87,14 +93,14 @@
   "liquidity_gamma_reversal:untestable (52 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (56 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (56 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (50 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (50 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (52 trading days < 60 the gates need)": 2,
-  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 2,
   "correlation_regime:untestable (50 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (48 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (49 trading days < 60 the gates need)": 4,
   "pca_residual:untestable (50 trading days < 60 the gates need)": 1,
-  "vol_transition:untestable (59 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (59 trading days < 60 the gates need)": 2,
   "correlation_regime:untestable (58 trading days < 60 the gates need)": 3,
   "liquidity_gamma_reversal:untestable (43 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (49 trading days < 60 the gates need)": 1,
@@ -105,16 +111,30 @@
   "vol_mean_reversion:untestable (50 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (37 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (51 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (46 trading days < 60 the gates need)": 1,
-  "vol_transition:untestable (57 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (46 trading days < 60 the gates need)": 2,
+  "vol_transition:untestable (57 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (42 trading days < 60 the gates need)": 1,
   "cross_asset_residual:untestable (59 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (36 trading days < 60 the gates need)": 1,
   "pca_residual:untestable (43 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1
+  "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 2,
+  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 3,
+  "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (42 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (50 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (40 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (42 trading days < 60 the gates need)": 1,
+  "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
  "hypotheses": [
@@ -3464,6 +3484,403 @@
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 618,
+   "exp_r": 0.088,
+   "max_dd_r": -36.32,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 478,
+   "exp_r": 0.1907,
+   "max_dd_r": -2.06,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 265,
+   "exp_r": 0.0379,
+   "max_dd_r": -19.28,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 61,
+   "exp_r": 0.4192,
+   "max_dd_r": -7.08,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 727,
+   "exp_r": 0.1611,
+   "max_dd_r": -27.29,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDJPY"
+   },
+   "n": 1875,
+   "exp_r": 0.0387,
+   "max_dd_r": -57.13,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 683,
+   "exp_r": 0.0436,
+   "max_dd_r": -54.42,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 336,
+   "exp_r": 0.109,
+   "max_dd_r": -5.68,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 306,
+   "exp_r": 0.0059,
+   "max_dd_r": -32.96,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 627,
+   "exp_r": 0.0122,
+   "max_dd_r": -30.97,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 663,
+   "exp_r": 0.1192,
+   "max_dd_r": -2.44,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDNZD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 655,
+   "exp_r": 0.1253,
+   "max_dd_r": -67.45,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 438,
+   "exp_r": 0.4363,
+   "max_dd_r": -2.5,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 231,
+   "exp_r": 0.0091,
+   "max_dd_r": -16.42,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 204,
+   "exp_r": 0.0919,
+   "max_dd_r": -21.48,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "cot_positioning",
+   "params": {
+    "input_source": "cot_point_in_time"
+   },
+   "n": 109,
+   "exp_r": 0.0051,
+   "max_dd_r": -13.25,
+   "source": "orthogonal_sweep:cot_positioning",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "COT net positioning"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 241,
+   "exp_r": 0.0443,
+   "max_dd_r": -8.32,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDUSD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 806,
+   "exp_r": 0.0043,
+   "max_dd_r": -24.55,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 107,
+   "exp_r": 0.06,
+   "max_dd_r": -11.88,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "BCHUSD"
+   },
+   "n": 565,
+   "exp_r": 0.0428,
+   "max_dd_r": -40.18,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "drawdown_conditional",
+   "params": {},
+   "n": 120,
+   "exp_r": 0.0959,
+   "max_dd_r": -14.4,
+   "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BTCUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 466,
+   "exp_r": 0.0029,
+   "max_dd_r": -24.02,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "NZDJPY"
+   },
+   "n": 594,
+   "exp_r": 0.0366,
+   "max_dd_r": -24.62,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 259,
+   "exp_r": 0.1221,
+   "max_dd_r": -3.82,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "NZDJPY"
+   },
+   "n": 1044,
+   "exp_r": 0.0166,
+   "max_dd_r": -47.9,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "CADJPY",
+   "family": "vol_transition",
+   "params": {},
+   "n": 346,
+   "exp_r": 0.1084,
+   "max_dd_r": -18.67,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "carry",
+   "params": {
+    "input_symbol": "CHFDKK"
+   },
+   "n": 1837,
+   "exp_r": 0.0165,
+   "max_dd_r": -64.72,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 834,
+   "exp_r": 0.1853,
+   "max_dd_r": -2.0,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CHFDKK",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "GBPAUD",
+     "NZDJPY",
+     "BCHUSD",
+     "CHFHUF",
+     "JPN225",
+     "XAGUSD",
+     "XNGUSD",
+     "WHEAT"
+    ]
+   },
+   "n": 279,
+   "exp_r": 0.0109,
+   "max_dd_r": -14.18,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   }
  ],
  "partial": true

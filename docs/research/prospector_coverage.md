@@ -14439,3 +14439,202 @@ pass, not a ground verdict.
   behind the softs data gap rather than behind a hunting decision; (d) the 46 distinct atom URLs
   were read at abstract depth only and their citation layers are untouched. The BRAIN ground
   remains open.
+
+## BRAIN HUNTER s50 — 2026-09-03 — the sampling grid was the finding, and it killed my own first result
+
+Prefetched-corpus first per the corpora-first order. s49 exhausted the arXiv Portfolio Management /
+q-fin Trading atom rows; this session took the **untouched `arXiv Market Microstructure` slice** of
+`data/intelligence/gpt_practitioner_corpus.jsonl` (32 rows, 32 distinct URLs) — a breadth move
+alongside s49's named depth ground, chosen because it is the slice closest to the execution-and-cost
+bottleneck. Honest read of that slice: **29 of 32 are derivatives-pricing or stochastic-control
+mathematics with no MT5 analogue and no testable desk claim** (rough-Bergomi inverse options, SSVI
+transport geometry, CoCo valuation, Hull–White curve shapes, Skorokhod embeddings). That is a thin
+seam and it is recorded as one.
+
+**One artifact was directly falsifiable on the desk's own tape, which is why it was worth the whole
+session.** arXiv 2608.16749v1 (*Rough Volatility Across Assets*) publishes class-median Hurst
+estimates over 3,926 equities, 34 CME futures roots, rates, FX and commodities: 0.05 livestock,
+0.07–0.10 rates/FX/agriculture/energy/metals, 0.13 single stocks, 0.20 equity indices. Those are
+the desk's own asset classes, the statistic is computable from bars the desk already owns, and the
+comparison needs no vendor, no permission and no forward clock. **No in-sample bar, fitness grade or
+submission threshold was imported from it** (L1.6); only a measurement was replicated.
+
+**First result — and it is WITHDRAWN, which is the actual deliverable.** Gatheral–Jaisson–Rosenbaum
+absolute-moment scaling of log daily RV over **248 of 251 symbols**
+(`data/brain_hunter_s50_rough_volatility_replication.json`) returned Equities 0.029, Soft Commodity
+0.045, Commodities 0.071, Forex 0.075, Forex Exotics 0.084, Energy 0.088, Indices 0.109 — FX, energy
+and commodities inside the published band, which reads as independent replication. It is not one.
+The agreement was a coincidence of two errors.
+
+**The control that killed it (R0755).** Daily RV built from few intraday returns is a noisy variance
+estimate; the error is lag-independent, so it inflates the absolute-moment scaling equally at every
+lag and FLATTENS the slope, biasing H down exactly where the session is short.
+`data/brain_hunter_s50_hurst_precision_control.json`: Spearman(median bars per admitted day, H) =
+**+0.814, p = 6.1e-60, n = 248**; median H is 0.029 over the 109 symbols at ≤8 bars/day and 0.084
+over the 114 at ≥20. The decisive arm holds asset and days fixed and varies only RV precision by
+subsampling k evenly spaced hours: **EURUSD 0.014/0.020/0.017/0.029/0.033/0.034/0.053 at
+k=2/3/4/6/8/12/24, monotone rise in 6/6 symbols** (EURUSD, USDJPY, GBPUSD, AUDUSD, XAUUSD, USDCAD).
+US share CFDs trade ~6.5 H1 bars/day — the k=6 point — which is the entirety of "Equities 0.029".
+
+**The falsifier was named and then RUN, not assigned.** If H converged below the H1 grid the axis
+would survive at a known frequency. `data/brain_hunter_s50_hurst_m15_convergence.json`: on the four
+`*_M15.parquet` symbols (96 bars/day) the curve is **still rising at k=96 in 3/3 measurable
+symbols** — AUDCAD 0.0275→0.0444→0.0551→0.0591 across k=24/32/48/96, same in AUDNZD and NZDCAD.
+XAUUSD_M15 was **not measurable**: 214 admitted days against a 400-day minimum, and **the minimum
+was not lowered to obtain a number**. Quadrupling frequency moves the estimate ~0.05→~0.06 without
+flattening. Verdict: **volatility roughness is not identifiable on any tape the desk owns** →
+`docs/graveyard.md`, re-openable under L1.16a on one named enabling change (a sub-M15/tick tape
+with ≥400 days) and nothing else → `docs/research/data_axis_watchlist.md`.
+
+**One guard artifact caught and repaired mid-run, worth its own line.** The first pass used a fixed
+`MIN_BARS_PER_DAY = 20` splice guard — correct in intent (the desk's `_H1` parquets include D1/H1
+splices where a "day" holds one bar) but calibrated on 24h FX, so it silently excluded **every
+session-limited instrument**: 117 of 251 symbols measured, all 103 US share CFDs dropped, and the
+single-stock class the paper explicitly prices would have been reported as a data gap. Replacing it
+with a guard calibrated on each symbol's OWN median bars/day took coverage to 248/251. **A guard
+tuned on one instrument class reads as an absence in the others**, which is the WS-005 class in a
+new costume, and it is the reason the equities row exists to be explained at all.
+
+**A named audit, run this session, returning a clean negative.** The same confound would bite
+anywhere the desk compares a daily statistic derived from intraday bars ACROSS the universe. Grepped
+the vol-ranking sites in `desks/mt5/` and `libs/`: the two that exist — `mt5desk/analyst_rank.py:89`
+(ATR percentile in its own trailing history) and `libs/research/anomaly_miner.py:99`
+(`vol.rolling(500).rank(pct=True)`) — both rank **within a symbol's own history**, which is immune
+to the session-length confound. **Scope stated honestly: this was a grep, not a read of every call
+site**, so it is evidence against the obvious instance of the defect and not a clearance of the
+codebase.
+
+**Two further confirmed defects, both measured, both ledgered same-run (R0753, R0754).** Every dig
+prompt orders mechanisms through `libs/research/evidence_tier.translate_to_mt5()`. That door is
+**10 substring rules**. On the desk's own 691-row practitioner corpus it maps **5.8% of rows**, and
+**7 of the 10 rules fire zero times** (`sector neutral`, `industry neutral`, `futures basis`,
+`roll yield`, `market maker inventory`, `cross-sectional momentum`, `flight to quality`). Worse,
+the match is a bare substring with no word boundary: `carry` supplies **37 of the 41 total hits and
+36 of those 37 (97.3%) are the English verb** — "a business has to carry", "soliciting customers to
+carry out trading activities", "wallet histories carry short-horizon price information",
+"animations that should carry over across page loads" — each stamped with the analogue
+"point-in-time MT5 long/short swap plus futures-curve carry". **A false analogue is worse than a
+gap**, because it routes a finding as translatable. Netting them out, the true mapping rate is
+**5/691 = 0.7%**, so the organ's default verdict on ~99% of what it reads is "unmapped data gap" —
+an absence manufactured by the table. The volatility vocabulary is 0/6, which is how this was found.
+This generalises s49's R0752 from the capacity vocabulary to the entire vocabulary.
+
+**Counts, honestly.** 0 desk constructions, 0 target-horizon cells, 0 tradeable cards, 0 survivors,
+**0 gauntlet trials run** — no multiplicity is incurred against the canonical ten gates and none is
+reported. The measurements here are data-property estimates, not candidate evaluations, and no
+private threshold was applied in either direction (L1.60). Output is one graveyarded axis with its
+mechanism of death and its named reopening condition, one adopted methodology, one repaired guard,
+one clean negative audit, and three confirmed defects (R0753, R0754, R0755).
+
+**Legitimacy.** Public arXiv abstracts already present in the desk's prefetched corpus, plus the
+desk's own MT5 parquets. **No live browsing this session.** No account wall, private BRAIN API,
+credentialed content or proprietary dataset touched. No third-party agent tooling installed,
+imported or run (supply-chain rule). Research-only freeze observed: wrote `docs/research/*`,
+`docs/graveyard.md` and `data/*` only — `scripts/`, `libs/`, the executor, risk rails and live state
+untouched, and every repair is named as an exact patch in its ledger row rather than applied.
+
+**video: 0 fetched, 0 newly locked. 0 new external venues** — a negative discovery result on this
+pass, not a ground verdict.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- arXiv 2608.16749v1: **EXHAUSTED on 2026-09-03** at abstract depth AND on the desk's replication
+  axis — the claim was tested, the desk's instrument failed before the claim could be judged, and
+  re-testing needs new DATA, not another read. The paper's own Hurst estimator and its
+  option-implied identification for equity indices are NOT read and remain open.
+- `arXiv Market Microstructure` corpus slice (32 rows): **EXHAUSTED on 2026-09-03** at abstract
+  depth. Graded THIN — 29/32 carry no MT5-testable claim. Do not re-surface-scan; re-enter only for
+  the citation layers, which are untouched.
+- **Next:** (a) the free-frontier search for a sub-M15/tick FX tape, which is the one thing that
+  reopens the roughness axis and is owed before that gap may be graded residual (Dukascopy,
+  HistData, TrueFX named as unverified candidates, no legitimacy or licence check performed);
+  (b) the deeper audit the grep above only sampled — read the call sites of every daily-statistic
+  cross-sectional comparison, since the grep clears the obvious instance and not the class;
+  (c) s49's still-open ground carries forward unworked: the full text of 2608.08405v1 for the
+  fixed-holding-period correction formula, arXiv 2608.10410v1 (OOQI), and the 46 atom URLs' citation
+  layers. The BRAIN ground remains open.
+
+## BRAIN HUNTER s51 — 2026-09-03 — the corpus every seat is ordered to read first is 43.8% landing pages
+
+Corpora-first per the standing order. s50 named three next grounds; I took the breadth move — the
+**`AQR Research` (20 rows) and `Man Institute` (20 rows) slices** of
+`data/intelligence/gpt_practitioner_corpus.jsonl`, untouched by any prior session (`grep` of this
+file returns one incidental hit), and chosen because institutional FX/trend/carry research is the
+closest free ground to the MT5 mandate. **Those 40 rows carry 2 distinct URLs and zero articles.**
+The slice was the finding, and the finding generalises to the whole corpus.
+
+**The measurement (`data/brain_hunter_s51_corpus_landing_page_audit.json`).** 691 rows, **306
+distinct URLs**. **18 sources produce 303 rows (43.8%) from 18 distinct URLs** — one landing page
+each, re-scraped 12–20×: AQR Research, Man Institute, Flashbots Research Collective/Writings,
+Ethereum Research Latest, Paradigm Research, Jump Crypto Research, Wintermute Research, Bilibili
+Quant Search, Hugging Face Finance Datasets, Kaggle Trading Datasets, QuantConnect Community
+Research, Habr Algorithmic Trading, Qiita Algorithmic Trading, Forven, and three X handles. Every
+seat on this desk is ordered to consume this corpus BEFORE browsing; **43.8% of that budget buys 18
+index pages, and the row count reads as coverage.**
+
+**Why the existing dedupe cannot catch it, which is the mechanism and not the symptom (R0756).**
+`libs/research/public_strategy_hunter.py:283-289` keys item identity on `url#content_hash`. That is
+correct for an article and useless for a landing page, because a landing page's body changes without
+any new information. The proof is in the X rows: **20 distinct body hashes per handle, differing
+only by a ticking follower count** (`461 Following 17.2K Followers` → `463 / 17.3K`). A body hash is
+defeated by a counter. Patch named: for `source_kind == "site"`, identity is the bare URL; freshness
+belongs in source state, never in row count.
+
+**Why there are no articles, and it is deferred work rather than a wall (R0757).** `discover()`
+(same file, 145-172) fetches a `site` source at its landing URL only and never follows its links —
+its own comment says so: *"Specialized feeds discovered in its links can be added later."* That
+"later" is the defect. **Verified fixable for AQR in one hop:** the exact page the collector already
+fetches carries **11 distinct `/Insights/Research/<type>/<slug>` article URLs**, and the corpus holds
+0 of them after 20 runs. `aqr.com` serves **no robots.txt** (302 to homepage; a non-5xx is ALLOW-ALL
+under RFC 9309), so nothing was ever blocking this. **Man Institute is NOT one-hop fixable and is
+recorded as such:** `/maninstitute` is a JS hub whose 80 hrefs contain no article path; articles sit
+behind `/insights` and need a second hop, unverified this session. `man.com/robots.txt` disallows
+`/search/` and `/exclusive/` and permits both `/maninstitute` and `/insights`.
+
+**The X seeds route nothing (R0758).** 60 rows across three handles are login-wall chrome — profile
+bio, follower counts, the words `Posts Replies Reposts Media Articles`, and **no post text**, because
+X is client-rendered behind auth. The registry's own header calls X seeds "DISCOVERY ROUTERS, not
+authorities"; these are routers pointed at a closed door, banking 8.7% of the corpus as coverage.
+**No attempt was made to get behind that control** (§13) — the disposition owed is a content gate
+plus either a legitimate public surface or a WALLED grade, not a workaround.
+
+**An honest grade on the ground I actually came for, separate from the defect.** The 11 AQR article
+URLs now enumerated are **7 tax-aware-investing / concentrated-wealth pieces, 2 white papers
+(`Academic-Alpha`, `Investing-in-a-Warming-World`), 2 working papers on liquidity and pre-tax alpha,
+and 0 FX/trend/carry factor research.** The seat's prior — that AQR's research front page is factor
+ground — is **wrong at this vintage**. The factor library is elsewhere on the host and was not
+located this session. Titles only; **no article was read, so no mechanism is claimed.**
+
+**Counts, honestly.** 0 desk constructions, 0 target-horizon cells, 0 tradeable cards, 0 survivors,
+**0 gauntlet trials run** — no multiplicity is incurred against the canonical ten gates and none is
+reported. No BRAIN threshold, fitness grade or submission bar was imported (L1.6), and no private
+threshold was applied in either direction (L1.60). Output is one measured corpus-integrity audit with
+its artifact, three confirmed defects each carrying its exact patch (R0756, R0757, R0758), one
+verified-fixable route, one honestly-graded not-fixable route, and one refuted prior about AQR.
+
+**Legitimacy.** The desk's own prefetched corpus, plus three public unauthenticated GETs
+(`aqr.com/robots.txt`, `aqr.com/Insights/Research`, `man.com/robots.txt` + `/maninstitute`) made only
+to test whether R0757's patch is feasible. Robots checked BEFORE each fetch. No account wall, private
+BRAIN API, credentialed content or proprietary dataset touched; no auth control circumvented; no
+third-party agent tooling installed, imported or run. Research-only freeze observed: wrote
+`docs/research/*` and `data/*` only — `scripts/`, `libs/`, the executor, risk rails and live state
+untouched, and every repair is named as an exact patch in its ledger row rather than applied.
+
+**video: 0 fetched, 0 newly locked. 0 new external venues** — a negative discovery result on this
+pass, not a ground verdict.
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `AQR Research` and `Man Institute` corpus slices (40 rows): **EXHAUSTED on 2026-09-03**. They hold
+  two landing pages and nothing else; there is no depth in them to re-scan. Graded **THIN-BY-DEFECT**
+  — the ground behind them is untouched, the corpus route to it is broken, and the distinction is the
+  whole point (WS-005: absence manufactured by the collector, not by the source).
+- The 18 landing-page-only sources: **NOT exhausted, never entered.** Their entire article layer is
+  unmined and is gated on R0757.
+- **Next:** (a) the AQR article layer — 11 URLs enumerated and legitimate, plus the location of AQR's
+  actual factor/FX library, which the front page is not; (b) the Man Institute second hop
+  (`/insights`) to establish whether its article layer is reachable without JS; (c) s50's still-owed
+  free-frontier search for a sub-M15/tick FX tape (the one thing that reopens the roughness axis) and
+  the deeper call-site audit its grep only sampled; (d) s49's unworked ground — full text of
+  2608.08405v1, 2608.10410v1 (OOQI), and the 46 atom URLs' citation layers. The BRAIN ground remains
+  open.
