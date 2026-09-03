@@ -117,9 +117,30 @@ class RegimeEngine:
             # Scale the HMM posterior by the GMM's own posterior mass on the HMM's label; on
             # disagreement the winning GMM component carries a different label, so this factor
             # is strictly < 1 and a confident contradiction drives conf towards 0.
+            # AGREEMENT IS PER AXIS, NOT ON THE CONCATENATED STRING. This required an exact
+            # match on "trend/vol_tier", so if the GMM's state set simply did not CONTAIN the
+            # HMM's label the factor was exactly 0 -- however much the two models actually
+            # agreed. MEASURED 2026-09-02 on XAUUSD: the HMM's current state was bull/high_vol
+            # and the GMM's high-vol state was bear/high_vol, so `same` was empty, the factor was
+            # 0, and confidence came back 0.000 on every call. Two models clustering continuous
+            # features into three states will rarely produce identical label SETS, so an exact
+            # string match makes confidence zero almost always -- and a confidence that is always
+            # zero is not a measurement, it is a switch stuck off.
+            #
+            # The vol tier and the trend are separate claims and are scored separately: the GMM's
+            # posterior mass on states sharing the HMM's vol tier, and on states sharing its
+            # trend. Agreeing on volatility while differing on direction is partial agreement and
+            # is dampened, not annihilated. Total contradiction still drives the factor to 0,
+            # which is the conservative property the original was reaching for, and this branch
+            # can still only ever LOWER confidence.
             gp = gmm_posteriors(self.gmm, self.x[-1:])[0]
-            same = [m for m in range(self.k) if str(self.gmm_char[m]["label"]) == ch["label"]]
-            conf *= float(gp[same].sum())
+            same_vol = [m for m in range(self.k)
+                        if str(self.gmm_char[m]["vol_tier"]) == str(ch["vol_tier"])]
+            same_trend = [m for m in range(self.k)
+                          if str(self.gmm_char[m]["trend"]) == str(ch["trend"])]
+            agree_vol = float(gp[same_vol].sum()) if same_vol else 0.0
+            agree_trend = float(gp[same_trend].sum()) if same_trend else 0.0
+            conf *= 0.5 * (agree_vol + agree_trend)
         return {
             "regime": ch["label"], "trend": ch["trend"], "vol_tier": ch["vol_tier"],
             "confidence": round(conf, 3),
