@@ -95,11 +95,44 @@ def _identity(row: dict) -> str:
     }, sort_keys=True, default=str)
 
 
+def tradeable_universe() -> dict[str, str]:
+    """UPPERCASE -> the registry's own spelling, for every symbol the desk can actually replay.
+
+    A symbol needs BOTH a registry entry (the broker quotes it) and an H1 parquet (a clock can
+    replay it). The uppercase key exists because producers do not agree on casing: `broker_swaps`
+    reads Fusion's symbol table and emits `ACCENTURE` where the registry and every parquet spell
+    it `Accenture`.
+
+    An unreadable registry returns EMPTY, and the caller then filters NOTHING -- losing this file
+    must never silently shrink the docket to zero (L1.28a).
+    """
+    try:
+        meta = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+    uni = BASE / "data" / "universe"
+    return {str(k).upper(): str(k) for k in meta if (uni / f"{k}_H1.parquet").exists()}
+
+
 def main() -> int:
     now = datetime.now(tz=UTC)
+    # HUNT ONLY WHAT THE DESK CAN TRADE (principal, 2026-09-03: "limit all hunting to fusion
+    # tradeable symbols only so all compute is used fr tradeable edges").
+    #
+    # MEASURED 2026-09-02: 3,934 of 23,465 docket cells -- 17% -- were on symbols Fusion does not
+    # quote. They were minted, merged, ordered, and then refused at gate 0, having consumed the
+    # sweep's ordering and reporting the whole way. Gate 0 refusing them is correct and is not
+    # the same as never minting them: the budget they displaced was budget a testable cell did
+    # not get, and 5,821 cells were deferred that same run for want of exactly that budget.
+    #
+    # Filtered HERE because the merge is the one funnel every producer flows through, so a
+    # producer that starts emitting an untradeable symbol tomorrow is caught without editing it.
+    tradeable = tradeable_universe()
     started_at = _pipeline_started_at()
     merged: dict[str, dict] = {}
     unrouted = 0
+    untradeable = 0
+    untradeable_syms: dict[str, int] = {}
     per_source: dict[str, int] = {}
     source_state: dict[str, str] = {}
 
@@ -125,8 +158,20 @@ def main() -> int:
         for row in rows:
             if not isinstance(row, dict):
                 continue
-            if not (row.get("symbol") or row.get("sym")):
+            raw_sym = str(row.get("symbol") or row.get("sym") or "")
+            if not raw_sym:
                 continue
+            if tradeable:
+                canon = tradeable.get(raw_sym.upper())
+                if canon is None:
+                    untradeable += 1
+                    untradeable_syms[raw_sym] = untradeable_syms.get(raw_sym, 0) + 1
+                    continue
+                # CARRY THE REGISTRY'S SPELLING FORWARD. Everything downstream -- the frame
+                # loader, the cache key, the certificate, the forward clock -- keys on this
+                # string, so admitting a row under a producer's casing only moves the failure.
+                if canon != raw_sym:
+                    row = {**row, ("symbol" if row.get("symbol") else "sym"): canon}
             ident = _identity(row)
             if ident in merged:
                 continue
