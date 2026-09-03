@@ -132,7 +132,32 @@ def main() -> None:
                   f"retry later rather than rebuilding the registry from the seed list")
             return
     prior_n = len(registry)
-    candidates = _refresh_order(list(dict.fromkeys([*SEED_CANDIDATES, *registry])))
+    # THE UNIVERSE IS DERIVED FROM THE BROKER, not from a seed list plus whatever accreted.
+    # Measured 2026-09-03, the registry was wrong in BOTH directions: three symbols it still
+    # carried are no longer offered (BeyondMeat, BlockInc, Walgreens), and two the broker DOES
+    # offer were absent from it entirely (Palantir, SpaceX) -- so the desk had never hunted them
+    # and nothing in the system could notice, because absence of a symbol looks exactly like a
+    # symbol with no edge (L1.28a). Unioning the broker's own list means a new listing is hunted
+    # the next time this runs, with no edit anywhere.
+    offered: list[str] = []
+    try:
+        offered = [s.name for s in (mt5.symbols_get() or ())]
+        print(f"broker offers {len(offered)} symbol(s); "
+              f"{sum(1 for s in mt5.symbols_get() if s.trade_mode == 4)} fully tradeable")
+    except Exception as exc:                                    # noqa: BLE001
+        print(f"broker symbol list unavailable ({type(exc).__name__}); "
+              f"refreshing the seed and registry only")
+    delisted = [s for s in registry if offered and s not in offered]
+    if delisted:
+        # NAMED, NEVER DELETED. A row that vanishes reads exactly like a row resolved, and the
+        # registry is the desk's memory of what it has ever been able to price.
+        print(f"{len(delisted)} registry symbol(s) no longer offered: {sorted(delisted)[:10]}")
+        for s in delisted:
+            if isinstance(registry.get(s), dict):
+                registry[s]["tradeable"] = False
+                registry[s]["delisted_seen_at"] = datetime.now(timezone.utc).isoformat()
+    candidates = _refresh_order(
+        list(dict.fromkeys([*SEED_CANDIDATES, *registry, *offered])))
     print(f"refreshing {len(candidates)} symbol(s): {len(SEED_CANDIDATES)} seeded, "
           f"{prior_n} already in the registry; clocked and stalest first")
 
@@ -176,6 +201,14 @@ def main() -> None:
             "min_volume": float(info.volume_min),
             "volume_step": float(info.volume_step),
             "median_spread_pts": med_spread,
+            # WHAT THE BROKER WILL ACTUALLY LET US DO. Measured 2026-09-03: Fusion offers 250
+            # symbols of which only 237 are SYMBOL_TRADE_MODE_FULL; the other 13 (DocuSign,
+            # EOSUSD, EURRUB, EURTRY, GBPTRY, OJ, SUGAR, UKCOCOA, UKGILT, USDRUB, USDTRY,
+            # UST05Y, UST10Y) are CLOSE_ONLY -- no new position can be opened on them at all.
+            # The registry carried no trade_mode, so nothing downstream could tell a hunt-able
+            # symbol from one the desk can only exit, and the sweep spent budget on both.
+            "trade_mode": int(getattr(info, "trade_mode", -1)),
+            "tradeable": bool(int(getattr(info, "trade_mode", -1)) == 4),
         }
         print(f"{sym:8s} {len(df):6d} bars {df.index.min().date()} -> {df.index.max().date()} "
               f"contract={info.trade_contract_size} spread_med={med_spread:.1f}pts")
