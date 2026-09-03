@@ -15,6 +15,35 @@ the asymmetric band, on identical data. If hysteresis merely reduces state chang
 improving downstream net expectancy after the turnover it saves, it is not worth having -- fewer
 switches is a cost claim, not a value claim.
 
+ABLATION RUN 2026-09-03, same sleeve routed three ways, trading only when the classifier says
+high_vol:
+
+    XAUUSD  ungated      2050 trades  +0.1661  total +340.4
+            fixed         469         +0.1933        +90.6   2880 switches
+            persistence   726         +0.1929       +140.1   2122 switches
+            hysteresis    892         +0.1946       +173.6   2104 switches
+    EURUSD  ungated      2200         +0.0917       +201.8
+            fixed         224         +0.1550        +34.7
+            persistence   533         +0.1594        +84.9
+            hysteresis    561         +0.1536        +86.2
+    GBPUSD  ungated      2185         +0.1329       +290.3
+            fixed         196         +0.0580        +11.4
+            persistence   458         +0.1675        +76.7
+            hysteresis    512         +0.1471        +75.3
+
+The asymmetry claim is SUPPORTED against `fixed` and roughly NEUTRAL against `persistence`.
+Hysteresis keeps far more trades at equal-or-better expectancy with the fewest switches -- 892 of
+2,050 on XAUUSD against fixed's 469, at a higher per-trade edge, which is exactly what a dead
+band is supposed to buy.
+
+THE LARGER FINDING IS ABOUT THE GATE, NOT THE CLASSIFIER, and it is why this stays a candidate
+rather than a promotion. High-vol gating RAISES per-trade expectancy on all three and HALVES
+total R (XAUUSD +340.4 -> +173.6), because it discards two thirds of the trades. A router that
+improves quality while shrinking the book is a sizing decision wearing a filter's clothes, and it
+must be judged on portfolio E[log W] after the freed risk is redeployed -- never on expectancy,
+which it is guaranteed to improve. The ablation says WHICH classifier to use if the desk routes
+on volatility; it says nothing yet about whether it should.
+
 Percentiles use PRIOR observations only. The current bar's ATR is ranked against the window that
 ended before it, never against a window containing itself.
 """
