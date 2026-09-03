@@ -14638,3 +14638,77 @@ pass, not a ground verdict.
   the deeper call-site audit its grep only sampled; (d) s49's unworked ground — full text of
   2608.08405v1, 2608.10410v1 (OOQI), and the 46 atom URLs' citation layers. The BRAIN ground remains
   open.
+
+## BRAIN HUNTER s52 — 2026-09-03 — the collector's one-hop view understated a host by 83x, and an "elsewhere" library was one sitemap away
+
+Took s51's next-ground (a): the AQR article layer and the location of its actual factor library.
+
+**s51's prior is refuted, and the refutation is the method lesson.** s51 graded AQR's research
+front page as carrying "0 FX/trend/carry factor research" and concluded the factor library "is
+elsewhere on the host and was not located". It is not elsewhere — it is at `/insights/datasets`,
+and **one `sitemap.xml` fetch enumerates the host: 916 URLs** (564 `/insights/research`, 108
+`/insights/perspectives`, 46 insight-award, 26 quick-takes, **23 `/insights/datasets`**). s51 saw
+**11** article URLs because that is all the collector's landing page exposes. **The one-hop view
+understated the reachable population by ~83x**, and it did so while looking like a complete read of
+the page. Sitemap before hand-enumeration, always — this is the census-the-ground-first rule
+(BRAIN s7) recurring on a host instead of a repo.
+
+**The ground is genuinely on-mandate, which is the second correction.** Three of four AQR asset
+classes are Fusion-native. `Century-of-Factor-Premia-Monthly.xlsx`: **1,196 monthly rows,
+1926-07-30 → 2026-02-27, 46 columns**, carrying **Currencies**, **Commodities** and **Equity
+indices** Value/Momentum/Carry/Defensive legs. `Time-Series-Momentum-Factors-Monthly.xlsx`: **497
+rows, 1985-01-31 → 2026-05-29**, legs `TSMOM^FX/^CM/^EQ/^FI`. Public, unauthenticated, licence
+permissive (citation only). Held at `data/external/aqr/`; card in `data_axis_watchlist.md`.
+
+**Three measured constraints — I measured them rather than quoting the source (claimed-is-not-verified).**
+(1) **The stated lag is boilerplate:** AQR says "about two months" for every dataset; measured
+**TSMOM 3.2mo, Century 6.2mo** — 1.6x and 3.1x understated. (2) **Restatement is real but small:**
+original-paper vintage vs current file over an identical 300-month overlap gives corr **0.9312**
+(commodities) to 0.9989 (equities), Sharpe shifts **≤0.051**. So ~13% of commodity-leg variance
+*over a fixed historical window* is vintage artifact — **benchmarkable, and fatal for any PIT/live
+path**. (3) **Monthly only**, so it can never touch a 14-day forward decision.
+Artifact: `data/brain_hunter_s52_aqr_data_library.json`, `data/external/aqr/tsmom_restatement.json`.
+
+**A trap caught in passing.** The two vintages ship different column ORDER — updated
+`TSMOM,CM,EQ,FI,FX` vs original `TSMOM,EQ,FX,FI,CM`. A positional merge silently reads FX as CM and
+would have corrupted the restatement measurement into fiction. Matched by header name.
+
+**The desk gap this closes the instrument for (routed to `improvement_inbox.md`).**
+`desks/mt5/mt5desk/independence.py` measures `k_eff` **only from the desk's own sleeve ledger**, and
+grep finds no external factor benchmark anywhere in the repo. A sleeve can therefore be perfectly
+uncorrelated with every other sleeve — full marks on marginal independence — while being a
+repackaging of free Currencies Carry. Internal-only correlation is blind to this **by
+construction**, because the desk owns no copy of the public factor to correlate against. Proposed as
+a **diagnostic with no pass/fail path** on the `wq_operators.fitness()` precedent; **not a gate**
+(L1.60), backtest histories only.
+
+**Counts, honestly.** 0 desk constructions, 0 target-horizon cells, **0 gauntlet trials run**, 0
+tradeable cards, 0 survivors — no multiplicity incurred against the canonical ten gates and none
+reported. **No AQR Sharpe, threshold or fitness bar imported as a desk gate (L1.6)**; their numbers
+are recorded as facts about their process. No private threshold applied in either direction (L1.60).
+
+**Legitimacy.** Seven public unauthenticated GETs to `www.aqr.com` (robots, sitemap, 4 dataset
+pages, 3 xlsx), robots checked first, 2s spacing. No account wall, private BRAIN API, credentialed
+content or proprietary dataset touched; no access control circumvented; no third-party agent tooling
+installed, imported or run — the xlsx files were parsed with **stdlib `zipfile`+`ElementTree`** after
+confirming `openpyxl` is absent, rather than installing anything. Research-only freeze observed:
+wrote `docs/research/*` and `data/*` only; `scripts/`, `libs/`, the executor, risk rails and live
+state untouched, and the independence gap is named as a proposal rather than applied.
+
+**video: 0 fetched, 0 newly locked. 0 new external venues.**
+
+### Artifact exhaustion and next un-exhausted ground
+
+- `/insights/datasets` **index**: EXHAUSTED 2026-09-03 — all 23 dataset slugs enumerated. The
+  **contents** of 20 of them are NOT exhausted (3 downloaded, 20 untouched).
+- AQR host **census**: EXHAUSTED 2026-09-03 via sitemap (916 URLs). The 564-row
+  `/insights/research` layer is **NOT exhausted — never entered**. Graded **RICH**.
+- **Next:** (a) the 564 `/insights/research` items, filtered to FX/commodity/index-futures
+  mechanisms — the highest-density on-mandate layer this seat has found on a free host, and the
+  sitemap makes it a one-pass enumeration; (b) the remaining 20 datasets, particularly
+  `commodities-for-the-long-run-index-level-data-monthly` and `value-and-momentum-everywhere-*`,
+  which carry the same three Fusion-native asset classes; (c) s51's still-owed Man Institute second
+  hop (`/insights`) — and note **`man.com` should be sitemap-censused first**, which is the direct
+  transfer of this session's lesson and may dissolve the "needs JS" grade entirely; (d) s50's owed
+  free-frontier search for a sub-M15/tick FX tape; (e) s49's unworked full text of 2608.08405v1 and
+  2608.10410v1 (OOQI). The BRAIN ground remains open.

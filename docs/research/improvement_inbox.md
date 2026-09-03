@@ -6069,3 +6069,70 @@ backlog is not the binding constraint. And arXiv 2608.08625v1 (retained hidden e
 price-limited markets) predicts a same-sign next-day mean return after a limit close, scaling with
 band width — the MT5 analogue is CME daily price limits on energy and softs, which is unscreenable
 today because the desk's softs symbols carry zero bars (FREE-DATA e).
+
+## s50 — the estimator's sampling grid is part of the hypothesis, and must be reported with it
+**2026-09-03, BRAIN HUNTER s50. Adopted as methodology, from arXiv 2608.16749v1 pointed at the
+desk's own tape.** A published cross-asset parameter table is the cheapest falsifiable thing a
+paper can give you, because the desk can compute the same statistic on its own data and the
+comparison needs no permission, no vendor and no forward clock. This one paid immediately — but
+what it paid was a defect in the desk's measurement, not a market fact.
+
+**The transferable rule, which is not specific to Hurst.** Any statistic estimated from a
+*derived* daily series (realized variance, realized skew, jump counts, intraday range, effective
+spread) inherits the estimation error of that derivation, and where the error is lag-independent it
+biases the scaling exponent DOWNWARD. Instruments differ in session length — 24h FX at ~24 H1
+bars/day versus US share CFDs at ~6.5 — so any cross-asset comparison of such a statistic is
+confounded by session length **by construction**, and the confound produces a plausible, orderly,
+publishable-looking ranking. The desk's run produced exactly such a ranking and it was wrong.
+
+**Make it operational, three rules:**
+1. **Report the k-curve, never the point estimate.** Recompute the statistic on k evenly spaced
+   intraday slots for a ladder of k and publish the curve. A curve still rising at the finest k
+   available means the tape cannot identify the parameter, and that is a verdict — "UNMEASURED",
+   per L1.28a — not a number to be used with a caveat attached.
+2. **The within-symbol control outranks the cross-symbol correlation.** Both were run here; the
+   cross-symbol arm (ρ=+0.814) is suggestive and confoundable, the within-symbol arm (asset fixed,
+   days fixed, only precision varied, monotone in 6/6) is decisive. Prefer designs that hold the
+   asset fixed and vary only the instrument of measurement.
+3. **Never compare a derived-series statistic across instruments of different session length**
+   without first showing the k-curves have converged for both.
+
+**Where this bites next, unprompted by the paper.** The same confound applies anywhere the desk
+computes a daily statistic from intraday bars and compares it across the universe — volatility
+targeting and Kelly's gamma, realized-vol regime classification, any cross-sectional rank of a
+realized moment, and the volatility trails of standing intelligence family (a). Those uses were not
+audited this session and are NOT claimed clean; the audit is the named next work, and until it runs
+their status is UNMEASURED rather than fine.
+
+## External factor redundancy is unmeasured — internal-only independence cannot see a free premium (BRAIN HUNTER s52, 2026-09-03)
+
+**The gap, verified in code.** `desks/mt5/mt5desk/independence.py` measures `k_eff` strictly from
+the desk's **own** sleeve ledger: `daily_returns(rows)` → `mean_pairwise_corr` → `effective_bets`.
+A grep across `libs/`, `scripts/` and `desks/` finds **no external factor benchmark of any kind**.
+
+**Why that is a real hole and not a tidiness complaint.** A sleeve can be perfectly uncorrelated
+with every other sleeve in the book — scoring full marks on marginal independence — and still be a
+repackaging of a free, public, century-old factor premium such as Currencies Carry. Internal-only
+correlation cannot detect this **by construction**: the desk owns no copy of the public factor, so
+there is nothing for the sleeve to correlate *with*. L1.61 requires selection to optimise marginal
+independence directly; against the book only, that optimisation is blind in exactly the direction
+that costs the most — paying research capital for a premium obtainable for free.
+
+**The instrument now exists and is free.** AQR's asset-class factor legs (see the s52 card in
+`data_axis_watchlist.md`; files at `data/external/aqr/`) cover Currencies, Commodities and Equity
+indices back to 1926.
+
+**Proposed use — DIAGNOSTIC, with NO pass/fail path.** Regress a candidate's *backtest monthly*
+returns on its matching legs (FX sleeves → Currencies V/M/C; metals+energy → Commodities V/M/C;
+indices → Equity indices V/M/C/D) and report residual alpha **alongside** the existing verdict.
+
+**Explicitly not a gate (L1.60).** No screen, searcher or miner may apply a private threshold in
+either direction, and this must not become one. It is proposed on the exact precedent this seat's
+brief already names: `wq_operators.fitness()` is carried as a diagnostic with no pass/fail path —
+*do not add one*. It reports a number; the canonical ten gates keep sole authority.
+
+**Known limit, stated up front.** Monthly data only, so this can **never** inform a 14-day forward
+decision — backtest histories exclusively. Vintage restatement (measured: ≤0.051 Sharpe) is
+acceptable for ex-post benchmarking and disqualifying for any live path.
+
+**Research-freeze:** proposed, not applied. No file under `scripts/`, `libs/` or the executor touched.

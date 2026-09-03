@@ -11561,3 +11561,69 @@ same-date residual identifies the desk's *private* response at the prevailing le
 positioning. It will detect a competitor targeting the desk's specific names. It is provably blind
 to a cohort-wide compression, which needs time variation in aggregate positioning instead. Building
 the tape buys the first and not the second, and the second is not obtainable by collecting harder.
+
+**AXIS: sub-M15 / tick tape for volatility-parameter identification (opened 2026-09-03, s50).**
+The desk cannot identify a roughness or long-memory volatility parameter from the tape it owns.
+Measured, not asserted: the Hurst estimate off log daily RV rises monotonically with bars-per-day
+and does not converge — Spearman(bars/day, H) = +0.814 (p=6.1e-60, n=248) across the universe, and
+within-symbol at fixed asset and fixed days EURUSD goes 0.014→0.053 over k=2→24 H1 bars while
+AUDCAD/AUDNZD/NZDCAD go on rising to k=96 on the M15 tape (0.0275→0.0591 for AUDCAD across
+k=24→96). Full kill record and mechanism: `docs/graveyard.md#volatility_roughness_hurst_unidentifiable_on_desk_tape`.
+**What would close it:** M5-or-finer bars, or broker ticks, with ≥400 admitted days of history —
+the desk currently holds M15 for exactly four symbols (AUDCAD, AUDNZD, NZDCAD, XAUUSD) and XAUUSD's
+M15 history is only 214 admitted days, short of the bar. **What it buys:** volatility scaling is an
+input to Kelly's gamma and to the volatility-trail exits of standing intelligence family (a), so a
+mis-specified persistence parameter mis-sizes every sleeve that uses it — this is a sizing-quality
+axis, not a signal axis, and under the bottleneck law that is the cheaper kind to fix.
+**Free-frontier status: NOT yet searched.** Free sub-M15 FX sources (Dukascopy tick archives,
+HistData M1, TrueFX) are named as candidates and have NOT been legitimacy-checked or licence-checked
+by this session; the free-alternative loop is owed before this is graded a residual gap.
+
+**MAPPING GAP, WIDENED (R0753/R0754, supersedes the R0752 note above as the general case).**
+R0752 recorded that `translate_to_mt5()` returns `[]` across the capacity vocabulary. Measured on
+the desk's own 691-row `data/intelligence/gpt_practitioner_corpus.jsonl`, the table is 10 substring
+rules and maps **5.8% of rows**, with **7 of the 10 rules firing zero times** — and the headline
+rule is worse than useless: `carry` is a bare substring with no word boundary, it accounts for 37
+of the 41 total hits, and **36 of those 37 (97.3%) are the English verb** ("a business has to
+carry", "soliciting customers to carry out trading activities", "wallet histories carry
+short-horizon price information", "animations that should carry over across page loads"), each
+stamped with the analogue "point-in-time MT5 long/short swap plus futures-curve carry". Netting the
+false positives out the true mapping rate is **5/691 = 0.7%**. The volatility vocabulary
+(`rough volatility`, `realized volatility`, `Hurst`, `volatility scaling`, `volatility forecast`,
+`position sizing`) is 0/6. Because every dig prompt orders mechanisms through this one door, the
+organ's default verdict on ~99% of what it reads is "unmapped data gap" — an absence manufactured
+by the table, not observed in the market, which is the WS-005 class. Fixes are named as exact
+patches in R0753/R0754; not applied here under the research-only freeze.
+
+## AQR Data Library — free century-length asset-class factor returns (BRAIN HUNTER s52, 2026-09-03)
+
+**Source.** `https://www.aqr.com/insights/datasets` — 23 dataset pages, direct `.xlsx` under
+`/-/media/AQR/Documents/Insights/Data-Sets/`. Public, unauthenticated, no paywall.
+**Licence: permissive.** AQR asks only for the citation `AQR Capital Management, LLC.`
+`robots.txt` is a soft-404 (302 → homepage HTML) = ALLOW-ALL under RFC 9309.
+
+**Why it is on the MT5 mandate and not equity ground.** Three of the four asset classes are
+Fusion-native. `Century-of-Factor-Premia-Monthly.xlsx` carries **Currencies**, **Commodities** and
+**Equity indices** legs (Value / Momentum / Carry / Defensive / Multi-style, plus Market for
+indices and commodities): **1,196 monthly rows, 1926-07-30 → 2026-02-27, 46 columns.**
+`Time-Series-Momentum-Factors-Monthly.xlsx` carries `TSMOM^FX`, `TSMOM^CM`, `TSMOM^EQ`, `TSMOM^FI`:
+**497 rows, 1985-01-31 → 2026-05-29.** Held at `data/external/aqr/`.
+
+**MEASURED constraints — three, and they decide the use.**
+1. **The stated lag is boilerplate.** AQR states "a lag of about two months" for every dataset.
+   Measured: **TSMOM 3.2 months, Century 6.2 months** (1.6x and 3.1x understated). Liveness is
+   `max(observation_date)` per dataset, never the stated cadence. (Same class as FREE-DATA v/t.)
+2. **The entire history is restated on every update — measured, not quoted.** Original-paper
+   vintage vs current file over an identical 300-month overlap (1985-01..2009-12):
+   corr **0.9312** (CM) / 0.9746 (FI) / 0.9744 (TSMOM) / 0.9925 (FX) / 0.9989 (EQ); annualised
+   Sharpe shifts ≤ **0.051**. So ~13% of commodity-leg variance *over a fixed historical window*
+   is vintage artifact. **Small enough to benchmark against; fatal for any PIT/live signal path** —
+   the vintage on disk today never existed at any past date.
+3. **Monthly only.** A 14-day forward window yields zero observations. Applicable to backtest
+   histories only (2015–2026 ≈ 130 obs, sufficient).
+
+**Trap, recorded so it is not repeated.** Column order differs between vintages — updated file is
+`TSMOM,CM,EQ,FI,FX`, original-paper file is `TSMOM,EQ,FX,FI,CM`. A positional merge silently reads
+FX as CM. **Match by header name.**
+
+**No AQR threshold, Sharpe bar or fitness grade is imported as a desk gate (L1.6).**

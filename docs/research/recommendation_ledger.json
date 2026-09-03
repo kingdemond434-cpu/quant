@@ -9908,6 +9908,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0759",
+   "source": "cycle",
+   "summary": "BRAIN s52: external factor redundancy is UNMEASURED -- independence.py computes k_eff only from the desk's own sleeve ledger and no external factor benchmark exists in the repo, so a sleeve that is a repackaging of free public Currencies Carry scores full marks on marginal independence (L1.61). Instrument now free and on disk (data/external/aqr/, 1926-2026 Currencies/Commodities/Equity-index V/M/C legs). Patch: report residual alpha vs matching AQR legs on BACKTEST monthly returns as a DIAGNOSTIC with no pass/fail path, on the wq_operators.fitness() precedent -- explicitly NOT a gate (L1.60).",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T17:34:48.132509+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0760",
+   "source": "cycle",
+   "summary": "BRAIN s52: public_strategy_hunter's site collector fetches a landing page only and never censuses the host, understating AQR's reachable population by ~83x (11 landing-page hrefs vs 916 sitemap URLs, including the entire 23-item /insights/datasets factor library s51 graded 'located elsewhere, not found'). Patch: for source_kind=='site', attempt <host>/sitemap.xml FIRST and enumerate from it, falling back to link-following only when absent. Generalises to every one of the 18 landing-page-only sources in R0756.",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T17:35:18.597226+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
