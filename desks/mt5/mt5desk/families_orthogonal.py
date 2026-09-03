@@ -680,13 +680,26 @@ def family_turn_of_month(
     d = _h1(df)
     signals: list[Signal] = []
     atr = _atr(d, atr_n)
-    # tz_localize(None) first: to_period drops tz and warns, and `filterwarnings=error`
-    # in this repo turns that warning into a test failure.
-    month_ends = pd.Series(d.index.tz_localize(None).to_period("M"), index=d.index)
-    last_of_month = month_ends != month_ends.shift(-1)
+    # CALENDAR, NOT THE REALIZED BAR SEQUENCE. This built `last_of_month` as
+    # `month_ends != month_ends.shift(-1)` -- the last bar of a month AS THE DATASET HAPPENED TO
+    # END IT -- and then scanned a window reaching `days_after * 24` bars FORWARD of the decision
+    # bar. Those bars do not exist at decision time. The information wanted ("is a month boundary
+    # near?") is knowable from the timestamp alone, so nothing about the hypothesis needed the
+    # future; what leaked was bar AVAILABILITY -- whether the market turned out to be open, and
+    # which bar turned out to be the month's last. A live implementation could not reproduce it,
+    # which is the definition of a backtest that cannot be traded.
+    #
+    # Distance to the month boundary is now computed from each bar's own date. Identical
+    # intention, zero lookahead, and the live and replayed rules are the same rule.
+    idx_naive = d.index.tz_localize(None)
+    month_end_day = (idx_naive + pd.offsets.MonthEnd(0)).normalize()
+    month_start_day = idx_naive.to_period("M").to_timestamp()
+    days_to_end = (month_end_day - idx_naive.normalize()).days.to_numpy()
+    days_from_start = (idx_naive.normalize() - month_start_day).days.to_numpy()
     for i in range(atr_n, len(d) - 1):
-        window = last_of_month.iloc[max(0, i - days_before * 24):i + days_after * 24]
-        if not bool(window.any()):
+        # "within `days_before` of a month end" OR "within `days_after` of a month start" --
+        # the same turn-of-month window the original scan approximated.
+        if not (days_to_end[i] <= days_before or days_from_start[i] <= days_after):
             continue
         a = float(atr.iloc[i])
         if not np.isfinite(a) or a <= 0:
