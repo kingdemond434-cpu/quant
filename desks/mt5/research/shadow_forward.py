@@ -618,6 +618,10 @@ def main() -> None:
                     family=fam, symbol=sym, direction=str(side).upper(), timeframe="H1",
                     selector=win, condition=None, params=params,
                     code=_reg.code_hash(fam_fn),
+                    # BYTECODE ALONGSIDE SOURCE. code_hash covers the source text, so editing a
+                    # comment in families.py breaks every clock on that family terminally. The
+                    # behaviour hash lets verify() tell "the logic changed" from "the prose did".
+                    behaviour=_reg.behaviour_hash(fam_fn),
                     cost=_reg.cost_hash(costs),
                     # THE VENUE, NOT THE ROUTE. `bars.source` is how the bars reached this process
                     # (live terminal vs the parquet cache OF THAT SAME BROKER), so freezing it made

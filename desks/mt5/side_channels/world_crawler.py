@@ -300,6 +300,19 @@ _DATA_HOSTS = (
     "stats.gov.cn", "chinabond.com.cn", "eastmoney.com", "csrc.gov.cn",
     # ja / ko
     "boj.or.jp", "jpx.co.jp", "bok.or.kr", "estat.go.jp",
+    # ---- MT5-INSTRUMENT TICK AND BAR ARCHIVES (2026-09-03) -----------------------------------
+    # Free historical tick/M1 for exactly the instrument classes Fusion quotes -- FX majors and
+    # crosses, metals, indices, energy. This is the raw material the ten gates measure on, and
+    # the desk has none of it beyond what its own recorder has collected since it started.
+    "dukascopy.com", "histdata.com", "truefx.com", "forextester.com",
+    "firstratedata.com", "kibot.com", "tickstory.com", "pepperstone.com",
+    # ---- BROKER CONTRACT SPECIFICATIONS -------------------------------------------------------
+    # THE HIGHEST-CONVERTING CLASS THE DESK HAS EVER MINED. `broker_swaps` turned 248 evidence
+    # rows into 248 executable candidates -- 100%, the only source that ever did -- because a swap
+    # and spec table IS structured causal data: a carry number per symbol per side, dated. Every
+    # MT5 broker publishes one, and the desk was mining exactly one of them.
+    "fusionmarkets.com", "icmarkets.com", "fpmarkets.com", "vantagemarkets.com",
+    "eightcap.com", "tickmill.com", "axi.com", "blueberrymarkets.com", "thinkmarkets.com",
 )
 
 
@@ -452,6 +465,43 @@ SEEDS = (
     "https://www.boj.or.jp/en/statistics/index.htm",
     "https://www.jpx.co.jp/markets/statistics-equities/index.html",
     "https://ecos.bok.or.kr/",
+    # ---- TICK AND BAR ARCHIVES FOR THE INSTRUMENTS THIS DESK ACTUALLY TRADES (2026-09-03) -----
+    #
+    # Principal direction: hunt edge-strategy candidates and free tick-class datasets, and only
+    # ones relative to MT5. These are free-at-point-of-use historical tick/M1 archives whose
+    # coverage IS the Fusion universe -- FX majors and crosses, XAU/XAG, indices, energy -- not
+    # equities-only feeds that would resolve to symbols this desk cannot trade.
+    "https://www.dukascopy.com/swiss/english/marketwatch/historical/",
+    "https://www.histdata.com/download-free-forex-data/",
+    "https://www.truefx.com/truefx-historical-downloads/",
+    "https://forextester.com/data/datasources",
+    "https://firstratedata.com/free-intraday-data",
+    "https://www.kibot.com/free_historical_data.aspx",
+    # ---- BROKER CONTRACT SPECS: the one class measured at 100% conversion ---------------------
+    #
+    # `broker_swaps` produced 248 candidates from 248 rows. Nothing else the desk mines comes
+    # close, and the reason is structural: a swap/spec table is a dated carry number per symbol
+    # per side, which is exactly what the compiler's "structured causal data" rule admits. The
+    # desk was mining ONE broker's table. These are the other MT5 brokers quoting the same
+    # instruments, so the same extractor applies to all of them.
+    "https://fusionmarkets.com/trading/forex",
+    "https://www.icmarkets.com/global/en/trading-conditions/contract-specifications",
+    "https://www.fpmarkets.com/forex-trading/trading-conditions/",
+    "https://www.vantagemarkets.com/trading-info/contract-specifications/",
+    "https://www.eightcap.com/trading/contract-specifications/",
+    "https://www.tickmill.com/trading/contract-specifications",
+    "https://www.axi.com/int/trading-conditions",
+    "https://blueberrymarkets.com/trading-conditions/",
+    # ---- EXECUTABLE RECIPES: source code, not articles about source code ----------------------
+    #
+    # The compiler admits "exact recipe or structured causal data only; no prose-to-family
+    # guessing". An article cannot supply a registered family with exact params -- but an EA's
+    # SOURCE can: it names its entry condition, its parameters and their defaults. This is the
+    # only prose-adjacent ground with a route to a candidate, and it is MT5-native.
+    "https://www.mql5.com/en/code/mt5/experts",
+    "https://www.mql5.com/en/code/mt5/indicators",
+    "https://github.com/topics/mql5",
+    "https://github.com/topics/metatrader5",
 )
 
 

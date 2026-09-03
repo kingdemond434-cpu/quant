@@ -128,6 +128,46 @@ def _write(reg: dict) -> None:
         Path(tmp).unlink(missing_ok=True)
 
 
+def behaviour_hash(fn: Any) -> str:
+    """Hash of what the function DOES -- bytecode and constants -- not how its source reads.
+
+    WHY THIS EXISTS. `code_hash` below hashes `inspect.getsource`, which includes the docstring
+    and every comment. So editing a COMMENT breaks every live clock on that family, terminally,
+    against a code state that then no longer exists anywhere and that `reconcile()` can never see
+    come back. Measured 2026-09-03: 15 of 52 sleeves (29% of the forward book) sat
+    IDENTITY_BROKEN on `code_hash changed after the clock froze`, frozen at 32b3bc38d228df35
+    while both the VPS and the desk box agreed the current value is 38d9ca40fbd659c6 -- one
+    stable answer on both machines, and no clock able to reach it. The same family's hash was
+    implicated in the 2026-08-28 incident too, so this is a recurring class, not an incident.
+
+    Bytecode is the right identity for a pre-registration: `co_code` and `co_consts` change when
+    the LOGIC changes and do not change when the prose around it does. The docstring is dropped
+    explicitly because it is `co_consts[0]` and would otherwise reintroduce exactly the
+    sensitivity this removes.
+
+    NOT A LOOSENING, AND IT IS ADDITIVE. This is recorded ALONGSIDE `code_hash`, never instead of
+    it, and it is NOT in IDENTITY_FIELDS -- so `sleeve_id` is unchanged and no existing clock is
+    re-blessed by its introduction. It is consulted only by `verify()`, and only to answer the
+    narrow question "is a code_hash difference a real behaviour change?". A logic edit still
+    breaks the clock, which is the property the two-stage law actually needs.
+    """
+    code = getattr(fn, "__code__", None)
+    if code is None:
+        return "nocode:" + getattr(fn, "__qualname__", str(fn))
+    try:
+        consts = tuple(repr(c) for c in (code.co_consts or ())[1:])   # [0] is the docstring
+        blob = "|".join((
+            code.co_code.hex(),
+            ",".join(consts),
+            ",".join(code.co_names or ()),
+            ",".join(code.co_varnames or ()),
+            str(code.co_argcount),
+        ))
+    except (AttributeError, TypeError):
+        return "nocode:" + getattr(fn, "__qualname__", str(fn))
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+
 def code_hash(fn: Any) -> str:
     """Hash of the signal function's own source -- the thing a parameter name cannot capture.
 
@@ -165,8 +205,15 @@ def cost_hash(costs: Any) -> str:
 def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: str = "H1",
              selector: str = "", condition: str | None = None,
              params: dict | None = None, code: str = "", cost: str = "",
-             data_venue: str = "") -> dict:
-    """Build the canonical identity dict plus its stable id."""
+             data_venue: str = "", behaviour: str = "") -> dict:
+    """Build the canonical identity dict plus its stable id.
+
+    `behaviour` is the OPTIONAL bytecode hash from `behaviour_hash`. It is recorded on the row
+    but is deliberately NOT in IDENTITY_FIELDS, so it never enters `sleeve_id` and its arrival
+    re-blesses nothing. `verify()` consults it for one narrow question -- whether a `code_hash`
+    difference is a real behaviour change or only edited prose -- which is what stopped 15 clocks
+    dead on 2026-09-03 for a source-text edit that changed no logic.
+    """
     ident = {
         "family": str(family), "symbol": str(symbol), "direction": str(direction).upper(),
         "timeframe": str(timeframe), "selector": str(selector),
@@ -174,6 +221,8 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
         "params": {k: params[k] for k in sorted(params or {})},
         "code_hash": code, "cost_hash": cost, "data_venue": data_venue,
     }
+    if behaviour:
+        ident["behaviour_hash"] = str(behaviour)
     blob = json.dumps({k: ident[k] for k in IDENTITY_FIELDS}, sort_keys=True, default=str)
     ident["sleeve_id"] = hashlib.sha256(blob.encode("utf-8")).hexdigest()[:20]
     return ident
@@ -244,9 +293,21 @@ def verify(key: str, ident: dict) -> list[str]:
     if not row or not row.get("identity"):
         return []                       # never frozen -- freeze() is the caller's next move
     frozen = row["identity"]
-    return [f for f in IDENTITY_FIELDS
-            if json.dumps(frozen.get(f), sort_keys=True, default=str)
-            != json.dumps(ident.get(f), sort_keys=True, default=str)]
+    drift = [f for f in IDENTITY_FIELDS
+             if json.dumps(frozen.get(f), sort_keys=True, default=str)
+             != json.dumps(ident.get(f), sort_keys=True, default=str)]
+    # A COMMENT IS NOT A STRATEGY CHANGE. `code_hash` hashes source text, so a docstring or
+    # comment edit reads here as a drifted strategy and kills the clock terminally. When BOTH
+    # sides recorded a behaviour hash and those AGREE, the bytecode is identical: the function
+    # computes exactly what it computed when the clock froze, and the difference is prose.
+    # Anything else -- params, symbol, venue, direction, or a behaviour hash that genuinely
+    # differs -- still drifts, so a logic change is still a new clock. Rows frozen before this
+    # field existed carry no behaviour hash and are unaffected: absence never clears a drift.
+    if drift == ["code_hash"]:
+        fb, cb = frozen.get("behaviour_hash"), ident.get("behaviour_hash")
+        if fb and cb and fb == cb and not str(fb).startswith("nocode:"):
+            return []
+    return drift
 
 
 def mark(key: str, status: str, why: str) -> None:
@@ -388,6 +449,66 @@ def rebase_cost(key: str, ident: dict, cost_fields: dict) -> str | None:
     row["cost_rebase_cheaper"] = cheaper
     row["cost_rebase_count"] = int(row.get("cost_rebase_count") or 0) + 1
     reg["updated_at"] = row["status_at"]
+    _write(reg)
+    return why
+
+
+def rebase_code(key: str, ident: dict) -> str | None:
+    """Restart a clock whose frozen code identity can never be reached again. RESETS the window.
+
+    THE HOLE NEITHER `reconcile()` NOR `rebase_cost()` FILLS. `reconcile` clears IDENTITY_BROKEN
+    when the frozen hash comes BACK -- right for a transient, useless when the desk deliberately
+    edited the family and the old source exists nowhere. `rebase_cost` re-freezes a corrected COST
+    and explicitly keeps `forward_start`, because repricing does not un-observe a day. A CODE
+    change is different in exactly the way that matters: if the logic moved, the replayed series
+    is a DIFFERENT strategy's output over the old window, and keeping `forward_start` would credit
+    one strategy with another's days. That is the precise thing the two-stage law forbids.
+
+    SO THIS RESETS THE WINDOW. The clock lives again, its accrued record is preserved under
+    `window_before_rebase` for audit, and `forward_start` becomes now: the sleeve re-earns its
+    days against the code that is actually running. Nothing is laundered -- the price of the
+    recovery is paid in days, which is the only currency that cannot be faked here.
+
+    MEASURED 2026-09-03: 15 of 52 sleeves (29% of the forward book) were terminal on `code_hash
+    changed after the clock froze`, frozen at 32b3bc38d228df35 while both machines agreed the
+    current value is 38d9ca40fbd659c6. They had been dead for hours accruing nothing while their
+    day counter ran -- "the clock matures on stale data", the worst combination. Going forward
+    `behaviour_hash` prevents the common cause (a comment edit reading as a strategy change), so
+    this is the recovery path for rows frozen BEFORE that field existed, and for genuine logic
+    edits, which should be rare and should cost a window.
+
+    Fires only when `code_hash` is the SOLE drift. Any other field and the clock stays terminal.
+    """
+    reg = _read(REGISTRY)
+    row = reg.get("sleeves", {}).get(key)
+    if not row or not row.get("identity"):
+        return None
+    if str(row.get("status") or "").upper() != "IDENTITY_BROKEN":
+        return None
+    if verify(key, ident) != ["code_hash"]:
+        return None                     # sole-cause rule: anything else and the clock stays dead
+    now = datetime.now(tz=UTC).isoformat(timespec="seconds")
+    old_code = row["identity"].get("code_hash")
+    why = (f"frozen code identity {old_code} exists nowhere on either machine (current "
+           f"{ident.get('code_hash')}); the clock is restarted rather than resumed, so the "
+           f"window RESETS and the sleeve re-earns its days against the running code")
+    row["window_before_rebase"] = {
+        "forward_start": row.get("forward_start"),
+        "code_hash": old_code,
+        "ended_at": now,
+        "why": row.get("status_why") or "",
+    }
+    row["identity"]["code_hash"] = ident.get("code_hash")
+    if ident.get("behaviour_hash"):
+        row["identity"]["behaviour_hash"] = ident["behaviour_hash"]
+    row["forward_start"] = now
+    row["status"] = "LIVE"
+    row["status_why"] = ""
+    row["status_at"] = now
+    row["code_rebased_at"] = now
+    row["code_rebase_why"] = why
+    row["code_rebase_count"] = int(row.get("code_rebase_count") or 0) + 1
+    reg["updated_at"] = now
     _write(reg)
     return why
 

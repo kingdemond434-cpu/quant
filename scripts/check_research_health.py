@@ -52,6 +52,27 @@ def _read(p: Path):
         return None
 
 
+def _revocation_recorded(doc: object) -> bool:
+    """Did this artifact record an explicit revocation? Delegates to the authority ratchet.
+
+    ONE DETECTOR, NOT FOUR. The ratchet defines what counts as a sanctioned fall in earned
+    evidence; every other fence that reacts to a falling count must ask IT, or the desk ends up
+    with several answers to one question and finds out which is wrong only when they disagree.
+    An unavailable ratchet returns False -- the alarm still fires, which is the safe direction.
+    """
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location(
+            "_car_for_health", ROOT / "scripts" / "check_authority_ratchet.py")
+        if spec is None or spec.loader is None:
+            return False
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return bool(mod._has_revocation(doc))
+    except Exception:
+        return False
+
+
 def _age_h(ts: str | None, now: datetime) -> float | None:
     if not ts:
         return None
@@ -226,7 +247,16 @@ def collect(now: datetime) -> tuple[list[str], dict]:
                             f"(hourly cadence) -- the desk gauntlet or the cert pull stopped")
         prior = _read(STATE) or {}
         last_n = int((prior.get("ratchet") or {}).get("certs_n") or 0)
-        if m["certs_n"] < last_n:
+        # A RECORDED REVOCATION IS NOT A WIPE, AND THIS IS THE THIRD PLACE THAT HAD TO LEARN IT.
+        # check_authority_ratchet owns the question "was this fall sanctioned"; the precommit
+        # guard re-implemented the answer and got it wrong, and so did this. Measured 2026-09-03:
+        # eight uncashable certificates (six AFG, two AFL, on symbols absent from the registry
+        # with no H1 parquet -- L1.49, a gate that cannot be cashed is not a survivor) were
+        # retired WITH a full `retired_certificates` record, and this fence reported it as "a
+        # wipe got past the writer seals; restore from canon before anything else". Acting on
+        # that advice would have restored the very rows the desk had just decided it can never
+        # trade. Import the one detector rather than writing a fourth copy of it.
+        if m["certs_n"] < last_n and not _revocation_recorded(surv):
             breaches.append(f"GAUNTLET: canon SHRANK {last_n} -> {m['certs_n']} -- a wipe got "
                             f"past the writer seals; restore from canon before anything else")
 
