@@ -162,10 +162,46 @@ print(f"universe pull: desk={new} local={cur}")
 if not new or new < cur:
     sys.exit(1)
 nf, cf = fields(new_d), fields(cur_d)
-dropped = sorted(k for k, c in cf.items() if c * 4 >= cur and nf.get(k, 0) == 0)
-if dropped:
-    print("universe pull: desk copy DROPS column(s) the local registry carries: "
-          + ", ".join(f"{k} (on {cf[k]}/{cur} local rows, 0 incoming)" for k in dropped))
+
+# ALL-OR-NOTHING MISSED PARTIAL LOSS, WHICH IS THE COMMON CASE. This refused only when a field
+# was absent from EVERY incoming row, so a desk copy carrying `currency_profit` on 200 of 251
+# symbols and dropping it from the other 51 sailed through -- `nf[k] > 0`, therefore "not
+# dropped". Measured 2026-09-03: the local registry went 4,067 fields -> 3,864 through this
+# guard, 203 records gone, `currency_profit` among them, and the protected-records fence caught
+# it only at commit time. That field is MetaTrader5's own answer to what a symbol is denominated
+# in and the only correct route for a share or index CFD whose name carries no denomination.
+#
+# UNION, NOT REFUSAL, AND IT IS STRICTLY BETTER THAN EITHER PREVIOUS OUTCOME. Refusing kept the
+# local copy and threw away every fresh value the desk had just measured; installing kept the
+# fresh values and threw away the fields. The union keeps both: the incoming row wins on every
+# field it HAS -- it is the newer measurement of the broker's own registry -- and any field the
+# local row carries and the incoming one lacks is carried forward. A field can therefore only
+# ever be added by a pull, never removed, which is what a ratcheting registry means (L1.50).
+#
+# A genuine retirement is still possible; it just cannot happen silently through a sync. It is
+# done on the file itself, deliberately, and named -- the same standard the certificate ratchet
+# holds revocations to.
+restored = 0
+for sym, row in new_d.items():
+    cur_row = cur_d.get(sym)
+    if not isinstance(row, dict) or not isinstance(cur_row, dict):
+        continue
+    for k, v in cur_row.items():
+        if k not in row:
+            row[k] = v
+            restored += 1
+for sym, row in cur_d.items():
+    if sym not in new_d:
+        new_d[sym] = row                 # a symbol the desk stopped reporting is not a deletion
+        restored += 1
+if restored:
+    print(f"universe pull: union kept {restored} record(s) the desk copy omitted")
+    json.dump(new_d, open(sys.argv[1], "w"), indent=1, sort_keys=True)
+nf2 = fields(new_d)
+still = sorted(k for k, c in cf.items() if nf2.get(k, 0) < c)
+if still:
+    print("universe pull: REFUSING -- union still loses: "
+          + ", ".join(f"{k} ({cf[k]} local -> {nf2.get(k, 0)})" for k in still[:6]))
     sys.exit(2)
 sys.exit(0)
 PY
