@@ -890,6 +890,15 @@ def run_gauntlet(cells: list, hunt_name: str, meta: dict) -> dict:
     }
 
 
+#: Set ONLY by `--only`. None means the ordinary whole-docket run, byte-for-byte as before --
+#: every branch below is guarded on this being non-None, so the certifying path is untouched.
+_REPRO: dict[str, object] | None = None
+
+
+def _repro_active() -> bool:
+    return _REPRO is not None
+
+
 def main():
     meta = json.loads((UNI / "universe.json").read_text("utf-8"))
 
@@ -927,6 +936,19 @@ def main():
                 "mechanism_status": h.get("mechanism_status"),
                 "mechanism_note": h.get("mechanism_note"),
             }
+
+    # REPRODUCTION RESTRICTS THE DOCKET, NOTHING ELSE. Every gate below runs exactly as it does
+    # on the full sweep -- same code, same costs, same data -- on one named cell. That identity is
+    # the point: a reproducer judging by its own second implementation would prove only that two
+    # programs agree, which is what "one canonical validator" exists to forbid.
+    if _repro_active():
+        want = str((_REPRO or {}).get("only") or "")
+        cells = {k: v for k, v in cells.items() if want in k}
+        if not cells:
+            print(f"REPRODUCE: no cell matches {want!r} in this docket -- "
+                  f"UNMEASURED, not a refutation (L1.28a)")
+            return
+        print(f"REPRODUCE: {len(cells)} cell(s) matching {want!r}")
 
     print(f"Unique cells to evaluate: {len(cells)}")
     families_submitted: dict[str, int] = {}
@@ -1103,10 +1125,13 @@ def main():
         int(result.get("gate_fails", {}).get("economic_prior", 0)) + len(prior_rejections)
     )
 
-    # Save
-    out = REPORTS / "universal_gates_external.json"
-    out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
-    print(f"\nSaved to {out}")
+    # Save. REPRODUCTION WRITES ITS OWN FILE AND NOTHING ELSE. This report is read by the
+    # research-health fence and the funnel census; a one-cell re-run overwriting it would make the
+    # whole docket look like it had shrunk to a single candidate.
+    if not _repro_active():
+        out = REPORTS / "universal_gates_external.json"
+        out.write_text(json.dumps(result, indent=2, default=str), encoding="utf-8")
+        print(f"\nSaved to {out}")
 
     # Update UNIVERSAL_SURVIVORS.json -- FULL AUTHORITY OR NOTHING. An earlier revision of this
     # block wrote certificates without the top-level `gate_policy` attestation and without a
@@ -1114,6 +1139,25 @@ def main():
     # attestation, so one run of this script would have stripped promotion authority from EVERY
     # certificate in the file while printing "Updated". A certifier that demotes what it did not
     # examine is the certifier-wipe defect again, one layer up.
+    # A REPRODUCER THAT CAN WRITE CERTIFICATES IS NOT A REPRODUCER. Its verdict must be able to
+    # DISAGREE with the record without altering it, or the check and the thing checked are one
+    # act. So it exits before the authority block entirely, having written its findings to the
+    # path the caller named.
+    if _repro_active():
+        out = Path(str((_REPRO or {}).get("report_to") or ""))
+        payload = {
+            "reproduced_at": datetime.now(UTC).isoformat(),
+            "only": (_REPRO or {}).get("only"),
+            "n_cells": int(result.get("cells_evaluated") or 0),
+            "result": result,
+            "note": ("Independent re-run of the canonical ten gates on a restricted docket. "
+                     "Wrote no certificate and touched no authority file."),
+        }
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, indent=1, default=str), encoding="utf-8")
+        print(f"REPRODUCE: wrote {payload['n_cells']} cell result(s) -> {out}")
+        return
+
     sys.path.insert(0, str(BASE / "desks" / "mt5" / "research"))
     from gate_policy import ATTESTATION
 
@@ -1364,12 +1408,38 @@ def main():
 
 
 def _cli_main() -> int:
+    global _REPRO
+    import argparse
+
+    ap = argparse.ArgumentParser(
+        description="The canonical ten-gate sweep. With --only it re-runs ONE cell and writes no "
+                    "certificate -- the independent-reproduction path.")
+    ap.add_argument("--only", default=None,
+                    help="substring of a cell key (SYM.family.params-json) restricting the "
+                         "docket. Implies reproduction: no authority file is written.")
+    ap.add_argument("--report-to", default=None,
+                    help="where reproduction writes findings "
+                         "(default reports/reproduction_<stamp>.json)")
+    args = ap.parse_args()
+
+    if args.only:
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+        _REPRO = {"only": args.only,
+                  "report_to": args.report_to or str(REPORTS / f"reproduction_{stamp}.json")}
+
     from research.job_lock import exclusive_job
 
     # Headroom from the MEASURED peak on 2026-08-28 (1926MB RSS), not a guess -- but a
     # FIRST estimate all the same: tighten it from observed successful runs, never from
     # another guess. Below this the box cannot fit the job beside the live terminal.
-    with exclusive_job("external_gauntlet", need_mb=1200) as acquired:
+    # A SEPARATE LOCK NAME. Reproduction writes no authority file, so it is not a duplicate of
+    # the certifying sweep and must not be refused while one runs -- but it is still heavy.
+    # ONE CELL IS NOT A DOCKET: 1200MB is the measured peak of a sweep over thousands of cells,
+    # and asking for it made every reproduction stand down on admission and report UNMEASURED
+    # (rc=75) -- honest, and useless, because a reproducer that is never admitted checks nothing.
+    _job = "external_gauntlet_repro" if _REPRO is not None else "external_gauntlet"
+    _need = 300 if _REPRO is not None else 1200
+    with exclusive_job(_job, need_mb=_need) as acquired:
         if not acquired:
             return 75
         main()
