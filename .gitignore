@@ -21,6 +21,25 @@ data/*
 # claimed, and the seal proving it was written before any other agent's conclusion was read.
 !data/deepseek_evidence.jsonl
 !data/deepseek_seals/
+!data/deepseek_survivors.jsonl
+!data/deepseek_edge_intake.jsonl
+!data/deepseek_graveyard.jsonl
+!data/deepseek_lifecycle.jsonl
+!data/deepseek_auction.jsonl
+!data/edge_intake.jsonl
+!data/alpha_lifecycle.jsonl
+# EVERY OTHER SEAT'S OUTPUT, same defect and the same fix. `data/*` swallowed the answer of every
+# organ that calls a model: the CRO's recommendations, the survivor and external panels' verdicts,
+# and -- the one that makes the rest auditable -- the SPEND LEDGER. A desk that cannot see what it
+# was told, or what it paid to be told, cannot act on either. These are small decision-bearing
+# text artifacts; the data lake, the parquets and data/secrets/ stay ignored exactly as before.
+!data/cro_review.json
+!data/survivor_panel.jsonl
+!data/external_panel_log.jsonl
+!data/panel_budget.json
+!data/panel_budget_state.json
+!data/panel_funding_state.json
+!data/llm_spend.jsonl
 # The universe map is the documented routing target for EVERY digger's data-source finds
 # (R0311): box-local it is invisible to review and dies on reclone, which silently discards
 # every seat's universe-map contribution. It is institutional memory, same class as the
