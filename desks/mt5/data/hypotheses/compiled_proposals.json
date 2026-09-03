@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T03:19:05+00:00",
+ "built_at": "2026-09-03T07:19:14+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1742,6 +1742,26 @@
    "promotion_authority": false
   },
   {
+   "name": "carry_change",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "volatility_shock",
+    "context": "high_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "volatility_shock|high_liquidity|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): bar range minus its 20-bar mean measures realised volatility relative to its own recent level. range IS a realised-volatility measure at bar resolution",
+   "data_source": "named by deep audit; capability checked at compile",
+   "kill": null,
+   "lens": "blind_spot",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:benchmark_flow|continuation",
    "compiled": true,
    "family": "generic",
@@ -1772,17 +1792,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:cross_market_move|continuation",
+   "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "cross_market_move",
+    "event": "forced_deleveraging",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

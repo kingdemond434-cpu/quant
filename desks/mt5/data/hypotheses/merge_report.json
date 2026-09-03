@@ -1,6 +1,6 @@
 {
- "merged_at": "2026-09-03T03:02:21+00:00",
- "pipeline_started_at": "2026-09-03T01:43:23+00:00",
+ "merged_at": "2026-09-03T06:40:43+00:00",
+ "pipeline_started_at": "2026-09-03T05:41:50+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
   "miner_candidates.json": 126,
