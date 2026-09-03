@@ -1,28 +1,25 @@
 {
     "free_gb":  15.7,
-    "checked_at":  "2026-09-02T23:42:13.4084677Z",
+    "checked_at":  "2026-09-03T00:04:03.6490144Z",
     "actions":  [
                     "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
+                    "RAM-LOW: 134MB free (phys 134MB / virt 19289MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box",
                     "FEED LAG: 26 CLOCKED symbol(s) \u003e6h stale: AUDCAD,AUDCHF,AUDNZD,AUDUSD,CADCHF,CADJPY,CHFDKK,CHFNOK,EURCHF,EURGBP,EURJPY,EURNOK,EURUSD,EURZAR,GBPCHF,GBPJPY,GBPMXN,GBPNOK,GBPSEK,GBPZAR,USDCAD,USDCHF,USDJPY,USDMXN,USDZAR,XAUUSD",
                     "FEED LAG fixer: re-selected 26 symbol(s) in MarketWatch"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  1,
     "procs":  {
-                  "shadow_cycle.1336":  {
-                                            "cpu":  5.640625,
-                                            "at":  "2026-09-03T01:30:22.5923774+02:00"
-                                        },
-                  "moat_silver.3916":  {
-                                           "cpu":  322.609375,
-                                           "at":  "2026-09-03T01:30:22.5923774+02:00"
-                                       },
+                  "external_gauntlet.6128":  {
+                                                 "cpu":  1008.265625,
+                                                 "at":  "2026-09-03T02:01:30.8199320+02:00"
+                                             },
                   "fail.MT5-MoatRecorder":  {
                                                 "cpu":  1,
-                                                "at":  "2026-09-03T01:30:22.5923774+02:00"
+                                                "at":  "2026-09-03T02:01:30.8199320+02:00"
                                             },
-                  "external_gauntlet.10016":  {
-                                                  "cpu":  3290.4375,
-                                                  "at":  "2026-09-03T01:30:22.5923774+02:00"
-                                              }
+                  "shadow_cycle.3080":  {
+                                            "cpu":  384.140625,
+                                            "at":  "2026-09-03T02:01:30.8199320+02:00"
+                                        }
               }
 }

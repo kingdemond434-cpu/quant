@@ -2,7 +2,7 @@
  "3M": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -29,7 +29,7 @@
  "ADAUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -56,7 +56,7 @@
  "ADP": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -83,7 +83,7 @@
  "AMD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -110,7 +110,7 @@
  "AT&T": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -137,7 +137,7 @@
  "AUDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -164,7 +164,7 @@
  "AUDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -195,7 +195,7 @@
  "AUDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -222,7 +222,7 @@
  "AUDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -230,7 +230,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -256,7 +256,7 @@
  "AUDNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -264,7 +264,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -290,7 +290,7 @@
  "AUDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -317,7 +317,7 @@
  "AUDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -325,7 +325,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -351,7 +351,7 @@
  "AUS200": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -378,7 +378,7 @@
  "AVAXUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -405,7 +405,7 @@
  "Accenture": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -432,7 +432,7 @@
  "Adobe": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -459,7 +459,7 @@
  "Airbnb": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -486,7 +486,7 @@
  "AlibabaGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -513,7 +513,7 @@
  "Alphabet-A": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -540,7 +540,7 @@
  "Alphabet-C": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -567,7 +567,7 @@
  "Amazon": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -594,7 +594,7 @@
  "AmericanExpress": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -621,7 +621,7 @@
  "Amgen": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -648,7 +648,7 @@
  "Apple": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -675,7 +675,7 @@
  "AppliedMaterials": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -702,7 +702,7 @@
  "Atlassian": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -729,7 +729,7 @@
  "BCHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -756,7 +756,7 @@
  "BNBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -783,7 +783,7 @@
  "BTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -791,7 +791,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -817,7 +817,7 @@
  "Baidu": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -844,7 +844,7 @@
  "BankofAmericaCorp": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -871,7 +871,7 @@
  "Berkshire": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -898,7 +898,7 @@
  "BeyondMeat": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -915,7 +915,7 @@
  "BlackRock": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -942,7 +942,7 @@
  "BlockInc": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -959,7 +959,7 @@
  "Boeing": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -986,7 +986,7 @@
  "Booking": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1013,7 +1013,7 @@
  "Broadcom": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1040,7 +1040,7 @@
  "CA60": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1067,7 +1067,7 @@
  "CADCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1098,7 +1098,7 @@
  "CADJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1110,7 +1110,7 @@
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -1136,7 +1136,7 @@
  "CHFDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1163,7 +1163,7 @@
  "CHFHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1190,7 +1190,7 @@
  "CHFJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1198,7 +1198,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -1224,7 +1224,7 @@
  "CHFNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1251,7 +1251,7 @@
  "CHFPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1278,7 +1278,7 @@
  "CHFSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1305,7 +1305,7 @@
  "CHFSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1332,7 +1332,7 @@
  "CHINAH": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1359,7 +1359,7 @@
  "COFARA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1386,7 +1386,7 @@
  "COFROB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1413,7 +1413,7 @@
  "CORN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1440,7 +1440,7 @@
  "COTTON": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1467,7 +1467,7 @@
  "CVSHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1494,7 +1494,7 @@
  "Caterpillar": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1521,7 +1521,7 @@
  "CharlesSchwab": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1548,7 +1548,7 @@
  "Charter": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1575,7 +1575,7 @@
  "Chevron": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1602,7 +1602,7 @@
  "Cisco": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1629,7 +1629,7 @@
  "Citigroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1656,7 +1656,7 @@
  "Coca-Cola": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1683,7 +1683,7 @@
  "Coinbase": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1710,7 +1710,7 @@
  "Comcast": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1737,7 +1737,7 @@
  "CostcoWholesale": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1764,7 +1764,7 @@
  "DOGEUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1791,7 +1791,7 @@
  "DOTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1818,7 +1818,7 @@
  "DocuSign": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1845,7 +1845,7 @@
  "Doordash": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1872,7 +1872,7 @@
  "Dow": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1899,7 +1899,7 @@
  "E35": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1926,7 +1926,7 @@
  "EOSUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1953,7 +1953,7 @@
  "ETHUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1961,7 +1961,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -1987,7 +1987,7 @@
  "EURAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -1995,7 +1995,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2021,7 +2021,7 @@
  "EURCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2048,7 +2048,7 @@
  "EURCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2056,11 +2056,11 @@
     "source": "refresh_cost_fields"
    },
    "median_spread_pts": {
-    "at": "2026-09-02T21:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2086,7 +2086,7 @@
  "EURCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2113,7 +2113,7 @@
  "EURDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2140,7 +2140,7 @@
  "EURGBP": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2148,7 +2148,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2174,7 +2174,7 @@
  "EURHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2201,7 +2201,7 @@
  "EURHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2228,7 +2228,7 @@
  "EURILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2255,7 +2255,7 @@
  "EURJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2267,7 +2267,7 @@
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2293,7 +2293,7 @@
  "EURMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2320,7 +2320,7 @@
  "EURNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2347,7 +2347,7 @@
  "EURNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2374,7 +2374,7 @@
  "EURPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2401,7 +2401,7 @@
  "EURRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2428,7 +2428,7 @@
  "EURSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2455,7 +2455,7 @@
  "EURSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2482,7 +2482,7 @@
  "EURTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2509,7 +2509,7 @@
  "EURUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2517,7 +2517,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2543,7 +2543,7 @@
  "EURZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2570,7 +2570,7 @@
  "EUSTX50": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2597,7 +2597,7 @@
  "ElectronicArts": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2624,7 +2624,7 @@
  "ExxonMobil": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2651,7 +2651,7 @@
  "FRA40": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2678,7 +2678,7 @@
  "Ford": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2705,7 +2705,7 @@
  "GBPAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2717,7 +2717,7 @@
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2743,7 +2743,7 @@
  "GBPCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2770,7 +2770,7 @@
  "GBPCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2801,7 +2801,7 @@
  "GBPDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2828,7 +2828,7 @@
  "GBPHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2855,7 +2855,7 @@
  "GBPJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2863,7 +2863,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -2889,7 +2889,7 @@
  "GBPMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2916,7 +2916,7 @@
  "GBPNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2943,7 +2943,7 @@
  "GBPNZD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2970,7 +2970,7 @@
  "GBPPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -2997,7 +2997,7 @@
  "GBPSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3024,7 +3024,7 @@
  "GBPSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3051,7 +3051,7 @@
  "GBPTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3078,7 +3078,7 @@
  "GBPUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3086,7 +3086,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -3112,7 +3112,7 @@
  "GBPZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3139,7 +3139,7 @@
  "GER40": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3166,7 +3166,7 @@
  "GeneralElectric": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3193,7 +3193,7 @@
  "GeneralMotors": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3220,7 +3220,7 @@
  "GileadSciences": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3247,7 +3247,7 @@
  "GoldmanSachs": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3274,7 +3274,7 @@
  "HK50": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3301,7 +3301,7 @@
  "HKDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3328,7 +3328,7 @@
  "HomeDepot": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3355,7 +3355,7 @@
  "Honeywell": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3382,7 +3382,7 @@
  "IBM": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3409,7 +3409,7 @@
  "Intel": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3436,7 +3436,7 @@
  "Intuit": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3463,7 +3463,7 @@
  "IntuitiveSurgical": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3490,7 +3490,7 @@
  "JPMorganChase": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3517,7 +3517,7 @@
  "JPN225": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3544,7 +3544,7 @@
  "Johnson&Johnson": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3571,7 +3571,7 @@
  "LNKUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3598,7 +3598,7 @@
  "LTCUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3625,7 +3625,7 @@
  "LucidGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3652,7 +3652,7 @@
  "Lyft": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3679,7 +3679,7 @@
  "MATICUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3706,7 +3706,7 @@
  "MXNJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3733,7 +3733,7 @@
  "Mastercard": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3760,7 +3760,7 @@
  "McDonalds": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3787,7 +3787,7 @@
  "Medtronic": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3814,7 +3814,7 @@
  "Merck": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3841,7 +3841,7 @@
  "Meta": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3868,7 +3868,7 @@
  "MicronTechnology": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3895,7 +3895,7 @@
  "Microsoft": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3922,7 +3922,7 @@
  "MorganStanley": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3949,7 +3949,7 @@
  "NAS100": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -3976,7 +3976,7 @@
  "NETH25": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4003,7 +4003,7 @@
  "NIO": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4030,7 +4030,7 @@
  "NOKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4057,7 +4057,7 @@
  "NOKSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4084,7 +4084,7 @@
  "NVIDIA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4111,7 +4111,7 @@
  "NZDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4119,7 +4119,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -4145,7 +4145,7 @@
  "NZDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4172,7 +4172,7 @@
  "NZDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4199,7 +4199,7 @@
  "NZDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4211,7 +4211,7 @@
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -4237,7 +4237,7 @@
  "NZDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4264,7 +4264,7 @@
  "NZDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4272,7 +4272,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -4298,7 +4298,7 @@
  "Netflix": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4325,7 +4325,7 @@
  "Nike": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4352,7 +4352,7 @@
  "OJ": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4379,7 +4379,7 @@
  "Oracle": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4406,7 +4406,7 @@
  "PayPal": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4433,7 +4433,7 @@
  "Pepsi": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4460,7 +4460,7 @@
  "Pfizer": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4487,7 +4487,7 @@
  "PhilipMorrisInternational": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4514,7 +4514,7 @@
  "Pinterest": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4541,7 +4541,7 @@
  "Procter&Gamble": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4568,7 +4568,7 @@
  "Qualcomm": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4595,7 +4595,7 @@
  "RobinhoodMarkets": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4622,7 +4622,7 @@
  "Roku": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4649,7 +4649,7 @@
  "S&PGlobal": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4676,7 +4676,7 @@
  "SEKJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4703,7 +4703,7 @@
  "SGDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4730,7 +4730,7 @@
  "SOLUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4757,7 +4757,7 @@
  "SOYBEAN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4784,7 +4784,7 @@
  "SUGAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4811,7 +4811,7 @@
  "SUGARRAW": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4838,7 +4838,7 @@
  "Salesforce": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4865,7 +4865,7 @@
  "ServiceNow": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4892,7 +4892,7 @@
  "Shopify": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4919,7 +4919,7 @@
  "Snapchat": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4946,7 +4946,7 @@
  "Snowflake": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -4973,7 +4973,7 @@
  "Spotify": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5000,7 +5000,7 @@
  "Starbucks": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5027,7 +5027,7 @@
  "TMEGroup": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5054,7 +5054,7 @@
  "TSMC": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5081,7 +5081,7 @@
  "Target": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5108,7 +5108,7 @@
  "Tesla": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5135,7 +5135,7 @@
  "TexasInstruments": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5162,7 +5162,7 @@
  "ThermoFisherScientific": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5189,7 +5189,7 @@
  "Toyota": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5216,7 +5216,7 @@
  "Travelers": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5243,7 +5243,7 @@
  "Twilio": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5270,7 +5270,7 @@
  "UK100": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5297,7 +5297,7 @@
  "UKCOCOA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5324,7 +5324,7 @@
  "UKGILT": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5351,7 +5351,7 @@
  "US2000": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5378,7 +5378,7 @@
  "US30": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5405,7 +5405,7 @@
  "US500": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5432,7 +5432,7 @@
  "USCOCOA": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5459,7 +5459,7 @@
  "USDBRL": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5486,7 +5486,7 @@
  "USDCAD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5494,7 +5494,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -5520,7 +5520,7 @@
  "USDCHF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5528,7 +5528,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -5554,7 +5554,7 @@
  "USDCNH": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5581,7 +5581,7 @@
  "USDCZK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5608,7 +5608,7 @@
  "USDDKK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5635,7 +5635,7 @@
  "USDHKD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5662,7 +5662,7 @@
  "USDHUF": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5689,7 +5689,7 @@
  "USDIDR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5716,7 +5716,7 @@
  "USDILS": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5743,7 +5743,7 @@
  "USDINR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5770,7 +5770,7 @@
  "USDJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5778,7 +5778,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -5804,7 +5804,7 @@
  "USDKRW": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5831,7 +5831,7 @@
  "USDMXN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5858,7 +5858,7 @@
  "USDNOK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5885,7 +5885,7 @@
  "USDPLN": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5912,7 +5912,7 @@
  "USDRUB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5939,7 +5939,7 @@
  "USDSEK": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5966,7 +5966,7 @@
  "USDSGD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -5993,7 +5993,7 @@
  "USDTHB": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6020,7 +6020,7 @@
  "USDTRY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6047,7 +6047,7 @@
  "USDX": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6074,7 +6074,7 @@
  "USDZAR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6101,7 +6101,7 @@
  "UST05Y": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6128,7 +6128,7 @@
  "UST10Y": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6155,7 +6155,7 @@
  "Uber": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6182,7 +6182,7 @@
  "UnionPacific": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6209,7 +6209,7 @@
  "UnitedHealth": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6236,7 +6236,7 @@
  "UnitedParcelService": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6263,7 +6263,7 @@
  "Verizon": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6290,7 +6290,7 @@
  "Visa": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6317,7 +6317,7 @@
  "WHEAT": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6344,7 +6344,7 @@
  "Walgreens": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    }
   },
@@ -6361,7 +6361,7 @@
  "Walmart": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6388,7 +6388,7 @@
  "WaltDisney": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6415,7 +6415,7 @@
  "WellsFargo": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6442,7 +6442,7 @@
  "XAGEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6469,7 +6469,7 @@
  "XAGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6477,7 +6477,7 @@
     "source": "refresh_cost_fields"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -6503,7 +6503,7 @@
  "XALUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6530,7 +6530,7 @@
  "XAUAUD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6557,7 +6557,7 @@
  "XAUEUR": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6584,7 +6584,7 @@
  "XAUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6596,7 +6596,7 @@
     "source": "realized_fills"
    },
    "tick_value": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "broker_reported"
    }
   },
@@ -6622,7 +6622,7 @@
  "XBRUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6649,7 +6649,7 @@
  "XCUUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6676,7 +6676,7 @@
  "XLMUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6703,7 +6703,7 @@
  "XNGUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6730,7 +6730,7 @@
  "XNIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6757,7 +6757,7 @@
  "XPBUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6784,7 +6784,7 @@
  "XPDUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6811,7 +6811,7 @@
  "XPTUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6838,7 +6838,7 @@
  "XTIUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6865,7 +6865,7 @@
  "XZNUSD": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6892,7 +6892,7 @@
  "ZARJPY": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {
@@ -6919,7 +6919,7 @@
  "eBay": {
   "_provenance": {
    "bars": {
-    "at": "2026-09-02T23:43:00+00:00",
+    "at": "2026-09-03T00:23:00+00:00",
     "source": "parquet_on_disk"
    },
    "currency_profit": {

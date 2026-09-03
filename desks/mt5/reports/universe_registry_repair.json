@@ -1,10 +1,12 @@
 {
- "repaired_at": "2026-09-02T23:43:00+00:00",
+ "repaired_at": "2026-09-03T00:23:00+00:00",
  "account_ccy": "EUR",
  "symbols": 251,
  "broker_tick_values_restored": 23,
  "tick_values_derived": 0,
- "spreads_from_realized_fills": [],
+ "spreads_from_realized_fills": [
+  "EURCHF"
+ ],
  "underivable_tick_value": [
   "BeyondMeat",
   "BlockInc",
@@ -12,6 +14,7 @@
  ],
  "defects_before": [
   "tick_value: missing or stubbed on 3/251 symbol(s) (e.g. BeyondMeat, BlockInc, Walgreens)",
+  "median_spread_pts: 1 symbol(s) read 0 while this desk's OWN fills measured a positive spread (e.g. EURCHF)",
   "cost: 3/251 symbol(s) cannot be costed in EUR at all (e.g. BeyondMeat, BlockInc, Walgreens)"
  ],
  "defects_after": [
