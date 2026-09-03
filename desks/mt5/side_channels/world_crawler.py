@@ -210,8 +210,105 @@ _MECH = {
 _MECH_RE = {k: re.compile(v, re.IGNORECASE) for k, v in _MECH.items()}
 
 #: A symbol claim is a 6-letter FX pair or a metal/index the desk might quote. Resolved against
-#: the live registry by the compiler -- this only proposes.
+#: the live registry below -- this only proposes.
 _SYM = re.compile(r"\b(?:[A-Z]{6}|XAU[A-Z]{3}|XAG[A-Z]{3}|US30|US500|NAS100|GER40|UK100)\b")
+
+
+def _fusion_symbols() -> set[str]:
+    """The symbols Fusion actually quotes AND the desk can replay, UPPERCASED.
+
+    IMPORTED, NEVER RESTATED (protocol rule 5). `merge_hypotheses.tradeable_universe` already
+    answers this and already carries the principal's 2026-09-03 order to hunt only Fusion's
+    tradeable set; a second list here would be a second answer to one question, and the two
+    would disagree the first time the broker's offering changed.
+
+    WHY THIS FILTER EXISTS. `_SYM` matches any six capital letters, so the crawler's own output
+    named ONLINE 50 times, POINTS 27 and AVISOS 8 -- more often than every real instrument
+    combined. A page mentioning "ONLINE" was being carried forward as a claim about an
+    instrument. Resolving here rather than "later, by the compiler" is the point: the compiler
+    never saw a symbol column it could trust, and neither could anything reading the artifact.
+
+    DELIBERATELY A BROADER PREDICATE THAN `merge_hypotheses.tradeable_universe`, and the
+    difference is the point. That function requires a registry entry AND an H1 parquet, because
+    it answers "can a clock replay this?". The question HERE is only "is this token a real
+    instrument the broker quotes?" -- and a page naming XAUUSD is making a claim about gold
+    whether or not this machine happens to have gold bars cached. Measured while writing this:
+    on a checkout with thin parquet coverage the replay predicate returned 24 symbols, so
+    filtering on it would have silently discarded most real instrument mentions and looked
+    exactly like pages that name nothing.
+
+    Same file, same `tradeable` flag, one less condition -- not a second universe.
+
+    An unreadable registry returns EMPTY and the caller then filters NOTHING: losing the
+    universe file must never silently blank the symbol column, which would read as "this page
+    mentions no instruments" (L1.28a).
+    """
+    try:
+        meta = json.loads((BASE / "data" / "universe" / "universe.json").read_text("utf-8"))
+    except (OSError, ValueError) as exc:
+        log(f"universe unreadable ({type(exc).__name__}: {exc}); symbol column UNFILTERED")
+        return set()
+    # CLOSE_ONLY symbols are excluded for the same reason the hunt excludes them: no new
+    # position can be opened, so a claim about one can never become a trade. Rows predating the
+    # flag are ALLOWED rather than dropped (L1.28a) -- they tighten on the next fetch.
+    return {str(k).upper() for k, v in meta.items()
+            if not (isinstance(v, dict) and v.get("tradeable") is False)}
+
+
+#: A page that hands over DATA is worth more than a page that describes an idea, and this desk
+#: has measured exactly how much more. From `miner_candidates.per_source`, the conversion of
+#: evidence rows into executable candidates:
+#:
+#:     broker_swaps         248 rows -> 248 candidates      structured data
+#:     forexfactory          44 rows -> 107 candidates      structured calendar
+#:     cot                   11 rows ->   7 candidates      structured positioning
+#:     ff_calendar_vintage  113 rows ->   6 candidates      structured, point-in-time
+#:     ---------------------------------------------------------------------------
+#:     reddit / github / quant_se / bis_speeches / amarkets / world_crawler
+#:                          341 rows ->   0 candidates      PROSE
+#:
+#: Prose converts at ZERO and it is not a tuning failure: the compiler's stated rule is "exact
+#: recipe or structured causal data only; no prose-to-family guessing", and a blog post cannot
+#: supply a registered family with exact params. So a crawler pointed at articles is spending
+#: its hour on the one input class that provably cannot produce a candidate.
+#:
+#: These patterns steer it at the class that can: endpoints, dataset indexes, statistics
+#: portals, official archives. It is a PRIORITY, not a filter -- prose still enters as a
+#: deepening task, which is what prose is actually good for.
+_DATA_HINT = re.compile(
+    r"(?:/api/|/apis/|/data|/download|/export|\.csv|\.json|\.parquet|"
+    r"/statistics|/statement|/stats/|/historical|/history/|/archive|/bulk|/quotes?/|"
+    r"/opendata|/open-data|/document|developer|documentation|/docs/api|swagger|"
+    # zh: 数据(data) 接口(interface/API) 下载(download) 历史(history) 开放数据(open data)
+    r"数据|接口|下载|历史数据|开放数据|"
+    # ja / ko / ru
+    r"データ|ダウンロード|데이터|данные|статистик)",
+    re.IGNORECASE)
+
+
+#: Hosts that ARE data providers whatever their URL says. A path pattern alone misses them --
+#: `fred.stlouisfed.org/categories` is one of the largest free macro archives in the world and
+#: contains no data token at all, while `blog.example.com/my-data-journey` contains one. The
+#: host is the more reliable signal for the institutions, the path for everything else.
+#: Matched on the registrable suffix, so subdomains count.
+_DATA_HOSTS = (
+    "stlouisfed.org", "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
+    "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
+    "lbma.org.uk", "cmegroup.com", "datahub.io", "data.gov",
+    # zh
+    "tushare.pro", "akfamily.xyz", "shfe.com.cn", "sge.com.cn", "pbc.gov.cn",
+    "stats.gov.cn", "chinabond.com.cn", "eastmoney.com", "csrc.gov.cn",
+    # ja / ko
+    "boj.or.jp", "jpx.co.jp", "bok.or.kr", "estat.go.jp",
+)
+
+
+def is_data_source(url: str, title: str = "") -> bool:
+    """Does this look like a place that hands over DATA rather than opinions about it?"""
+    host = urlparse(url).netloc.lower()
+    if any(host == h or host.endswith("." + h) for h in _DATA_HOSTS):
+        return True
+    return bool(_DATA_HINT.search(url) or (title and _DATA_HINT.search(title)))
 
 
 def read_page(raw: bytes, url: str) -> dict[str, Any]:
@@ -231,9 +328,16 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
     if m:
         title = re.sub(r"\s+", " ", m.group(1)).strip()[:200]
 
+    # RESOLVED AGAINST FUSION, HERE, not "later by somebody". `_SYM` is six capital letters, so
+    # unfiltered it named ONLINE more often than every real instrument combined.
+    claimed = set(_SYM.findall(body))
+    known = _fusion_symbols()
+    symbols = sorted(claimed & known) if known else sorted(claimed)
+
     return {
         "links": [(urljoin(url, href), anchor) for href, anchor in parser.links[:400]],
-        "symbols": sorted(set(_SYM.findall(body)))[:24],
+        "symbols": symbols[:24],
+        "symbols_rejected": len(claimed) - len(symbols) if known else 0,
         "timeframes": sorted({t.upper() for t in _TF.findall(body)})[:8],
         "patterns": sorted({k for k, rx in _MECH_RE.items() if rx.search(body)}),
         "lang": parser.lang,
@@ -254,18 +358,30 @@ def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] 
     Confidence is the count of independent things the page asserted, not a feeling: a page naming
     a symbol, a timeframe and a mechanism is worth more than one naming a symbol.
     """
-    if not page["symbols"] and not page["patterns"]:
+    is_data = is_data_source(url, page.get("title") or "")
+    # A DATASET IS WORTH CARRYING EVEN WHEN IT NAMES NO PATTERN. An API index or a statistics
+    # portal is exactly the input class that converts (broker_swaps: 248 rows, 248 candidates),
+    # and it typically contains none of the mechanism prose this filter was written around --
+    # so the old rule discarded the only pages that could ever pay.
+    if not page["symbols"] and not page["patterns"] and not is_data:
         return None
     signals = (bool(page["symbols"]) + bool(page["timeframes"]) + bool(page["patterns"]))
     return {
         "source": "world_crawler",
+        # WHICH CLASS OF INPUT THIS IS, on the row. Measured conversion: structured data 100%,
+        # 96%, 64%; prose 0% across 341 rows and six sources. A consumer that cannot tell them
+        # apart must treat a blog post and a CSV endpoint as the same evidence, which is how a
+        # crawler's whole hour goes to the class that provably cannot produce a candidate.
+        "kind": "dataset" if is_data else "prose",
         "title": page["title"] or url[:120],
         "url": url,
         "published": datetime.now(tz=UTC).isoformat(timespec="seconds"),
         "symbols": page["symbols"],
         "timeframes": page["timeframes"],
         "patterns": page["patterns"],
-        "confidence": round(0.15 + 0.20 * signals, 2),
+        # A dataset page starts higher than a prose page asserting the same number of things,
+        # because the desk has measured that the two convert at 100% and 0%.
+        "confidence": round(min(0.95, 0.15 + 0.20 * signals + (0.20 if is_data else 0.0)), 2),
         # PROVENANCE, so a candidate that reaches the gauntlet can be traced to the exact bytes
         # that proposed it -- the vault entry is keyed by this hash.
         "lang": page["lang"],
@@ -300,6 +416,42 @@ SEEDS = (
     "https://github.com/topics/mt5",
     "https://arxiv.org/list/q-fin.TR/recent",
     "https://papers.ssrn.com/sol3/JELJOUR_Results.cfm?form_name=journalBrowse&journal_id=203",
+    # ---- FREE DATA, which is the only class that has ever converted here ----------------
+    #
+    # The seeds above are hubs of PROSE and they have produced, across every prose source the
+    # desk mines, exactly zero executable candidates from 341 rows. These are hubs of DATA:
+    # official statistics, point-in-time archives and open APIs. broker_swaps -- one structured
+    # feed -- produced 248 candidates from 248 rows on its own.
+    #
+    # Every one is free at the point of use and none needs a key to browse. What the desk does
+    # with them still goes through the same ten gates; a dataset is not an edge, it is the raw
+    # material an edge can be MEASURED on, which is the thing prose can never supply.
+    #
+    # en / official
+    "https://www.cftc.gov/MarketReports/CommitmentsofTraders/HistoricalCompressed/index.htm",
+    "https://fred.stlouisfed.org/categories",
+    "https://www.newyorkfed.org/markets/data-hub",
+    "https://www.bis.org/statistics/index.htm",
+    "https://www.ecb.europa.eu/stats/html/index.en.html",
+    "https://www.lbma.org.uk/prices-and-data",
+    "https://www.cmegroup.com/market-data/delayed-quotes/metals.html",
+    "https://data.worldbank.org/indicator",
+    "https://www.eia.gov/opendata/",
+    "https://datahub.io/collections/finance",
+    # zh -- the Chinese open-data and quant-library ground, which is large, free and almost
+    # entirely absent from English-language crawling
+    "https://tushare.pro/document/2",
+    "https://akshare.akfamily.xyz/data/index.html",
+    "https://www.shfe.com.cn/statements/dataview.html",
+    "https://www.sge.com.cn/sjzx/mrhq",
+    "https://www.pbc.gov.cn/diaochatongjisi/116219/index.html",
+    "https://www.stats.gov.cn/sj/",
+    "https://data.eastmoney.com/cjsj/",
+    "https://www.chinabond.com.cn/cb/cn/yjfx/zzsj/index.shtml",
+    # ja / ko / other
+    "https://www.boj.or.jp/en/statistics/index.htm",
+    "https://www.jpx.co.jp/markets/statistics-equities/index.html",
+    "https://ecos.bok.or.kr/",
 )
 
 

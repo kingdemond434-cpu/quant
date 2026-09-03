@@ -138,7 +138,16 @@ def score(s: Source, hosts: dict[str, tuple[float, float]], global_mean: float) 
     to yield a candidate is not the best source the desk owns, and ranking it first would spend
     every hour re-fetching lucky pages.
     """
-    raw = (s.candidates + 0.25 * s.leads) / s.fetches if s.fetches else 0.0
+    # A LEAD IS WORTH FAR LESS THAN A CANDIDATE, and 0.25 was not far enough. Candidates were
+    # zero everywhere, so this ranked purely on leads -- which rewards whatever emits the most
+    # LINKS. Measured 2026-09-03: the two biggest frontier expansions were
+    # `forexfactory.com/brokers` (247 pages) and `quantt.co.uk/quant-firms` (116), a broker
+    # directory and a firm directory. Neither can hold a testable claim, and both outranked
+    # every dataset because they are excellent at producing links.
+    #
+    # 0.05 keeps a lead worth something -- a hub with no candidates yet is still how the
+    # frontier grows -- while making one candidate worth twenty leads instead of four.
+    raw = (s.candidates + 0.05 * s.leads) / s.fetches if s.fetches else 0.0
     lam = s.fetches / (s.fetches + _PRIOR_FETCHES)
 
     # THE HOST MEAN IS ITSELF SHRUNK, by how many fetches the host has behind it. Without this
@@ -156,6 +165,23 @@ def score(s: Source, hosts: dict[str, tuple[float, float]], global_mean: float) 
     # the handful of pages it already understands -- which is how a crawler stops being wide.
     if s.fetches == 0:
         posterior += 0.35 * max(global_mean, 0.05)
+
+    # A PAGE THAT HANDS OVER DATA GOES FIRST. Not a preference -- the desk measured the two
+    # input classes and they do not compete: structured feeds convert rows into executable
+    # candidates at 100% (broker_swaps, 248 of 248), 96% and 64%, while PROSE converted 0 of
+    # 341 across reddit, github, quant_se, bis_speeches, amarkets and this crawler's own rows.
+    # That is not a tuning gap; the compiler's rule is "exact recipe or structured causal data
+    # only, no prose-to-family guessing", so an article structurally cannot produce one.
+    #
+    # Applied as a MULTIPLIER on the posterior rather than a filter, so a prose page with real
+    # measured yield still outranks a dataset that has repeatedly given nothing. Evidence wins;
+    # this only decides who gets tried while the evidence is thin.
+    try:
+        from world_crawler import is_data_source
+        if is_data_source(s.url):
+            posterior *= 3.0
+    except Exception:
+        pass                                                     # ranking is never load-bearing
 
     # An unchanged page is cheap to skip and expensive to keep re-reading. The streak decays its
     # score geometrically and any change resets it -- a live page recovers immediately.
