@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-03T07:55:25+00:00",
+ "rebuilt_at": "2026-09-03T08:24:53+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -818,7 +818,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 6,
+    "longevity_max_d": 7,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -962,14 +962,15 @@
   },
   "n30dyn4m1c": {
    "presences": {
-    "github_topics": 1
+    "github_topics": 2
    },
    "cohorts": [
-    "480f8cda793ed418"
+    "480f8cda793ed418",
+    "d4f52bc3fb040082"
    ],
    "scores": {
     "independent_evidence": 1,
-    "record_count": 1,
+    "record_count": 2,
     "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
