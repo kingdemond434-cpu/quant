@@ -1,0 +1,12 @@
+[
+ {
+  "source": "arxiv_qfin",
+  "kind": "fetch_error",
+  "title": "429 Client Error: Unknown Error for url: https://export.arxiv.org/api/query?search_query=cat:q-fin.TR+OR+cat:q-fin.PM+OR+cat:q-fin.ST&sortBy=submittedDate&sortOrder=descending&max_results=25",
+  "url": "",
+  "text": "",
+  "symbols": [],
+  "found_at": "2026-09-03T01:24:43+00:00",
+  "needs_selector_work": true
+ }
+]
