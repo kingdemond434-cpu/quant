@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-03T20:56:15+00:00",
+ "compiled_at": "2026-09-03T21:59:42+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4461,14 +4461,14 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 2,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 2
+   "deepening": 1
   },
   "reddit": {
-   "rows": 49,
+   "rows": 43,
    "candidates": 0,
-   "deepening": 49
+   "deepening": 43
   },
   "forexfactory": {
    "rows": 44,
@@ -4481,9 +4481,9 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 10,
+   "rows": 9,
    "candidates": 0,
-   "deepening": 10
+   "deepening": 9
   },
   "arxiv": {
    "rows": 2,
@@ -4496,9 +4496,9 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 37,
+   "rows": 38,
    "candidates": 0,
-   "deepening": 37
+   "deepening": 38
   },
   "litefinance": {
    "rows": 15,
@@ -4566,9 +4566,9 @@
    "deepening": 7
   },
   "forextsd_cdx": {
-   "rows": 120,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 120
+   "deepening": 1
   },
   "quant_se": {
    "rows": 30,
@@ -4636,13 +4636,13 @@
    "deepening": 3
   },
   "world_crawler": {
-   "rows": 46,
+   "rows": 34,
    "candidates": 0,
-   "deepening": 46
+   "deepening": 34
   }
  },
- "rows_accounted": 1141,
+ "rows_accounted": 1003,
  "executable_candidates": 370,
- "deepening_tasks": 690,
+ "deepening_tasks": 550,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

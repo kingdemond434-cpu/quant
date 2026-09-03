@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T21:19:11+00:00",
+ "built_at": "2026-09-03T22:19:36+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1859,6 +1859,51 @@
    "data_source": "Same MT5 session-range dataset",
    "kill": "If conditional opposite-direction hit rate not >=1.2x unconditional, or fills are too thin (<1R avg move), retire",
    "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:carry_change|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:forced_deleveraging|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:cross_market_move|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
  ]
