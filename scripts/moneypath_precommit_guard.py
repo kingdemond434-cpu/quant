@@ -122,17 +122,18 @@ def markers(spec: str | tuple[str, ...]) -> tuple[str, ...]:
     return (spec,) if isinstance(spec, str) else spec
 
 
-def load_ratchet_watch() -> tuple[dict, tuple[str, ...]]:
+def load_ratchet_watch() -> tuple[dict, tuple[str, ...], object | None]:
     spec = importlib.util.spec_from_file_location(
         "check_authority_ratchet", ROOT / "scripts" / "check_authority_ratchet.py")
     if spec is None or spec.loader is None:
-        return {}, ()
+        return {}, (), None
     mod = importlib.util.module_from_spec(spec)
     try:
         spec.loader.exec_module(mod)
     except Exception:
-        return {}, ()
-    return getattr(mod, "WATCH", {}), tuple(getattr(mod, "REVOCATION_KEYS", ()))
+        return {}, (), None
+    return (getattr(mod, "WATCH", {}), tuple(getattr(mod, "REVOCATION_KEYS", ())),
+            getattr(mod, "_has_revocation", None))
 
 
 def blob(rev_path: str) -> str | None:
@@ -181,7 +182,7 @@ def main() -> int:
     # Layer 3: earned evidence may never silently fall THROUGH A COMMIT. The ratchet catches a
     # fall on its next tick; this refuses it at the boundary, so the loss never enters history.
     if not os.environ.get("QUANT_ALLOW_EVIDENCE_FALL"):
-        watch, revocation_keys = load_ratchet_watch()
+        watch, revocation_keys, has_revocation = load_ratchet_watch()
         shrunk: list[str] = []
         for _name, (abs_path, counter) in watch.items():
             try:
@@ -202,7 +203,26 @@ def main() -> int:
                 idx_n: int | None = int(counter(json.loads(idx_raw or "")))
             except Exception:
                 idx_n = None  # a torn/deleted stage of an evidence artifact is refused below
-            sanctioned = bool(idx_raw) and any(k in idx_raw[:20000] for k in revocation_keys)
+            # THE RATCHET'S OWN DETECTOR, NOT A SECOND COPY OF IT. This read
+            # `any(k in idx_raw[:20000] ...)`, which is the very truncation the ratchet was
+            # fixed for on 2026-09-03: UNIVERSAL_SURVIVORS serialises its survivors map first,
+            # so a revocation recorded in `retired_certificates` lands past character 20,000 and
+            # is invisible. This module already imports REVOCATION_KEYS from the ratchet for
+            # "one source of truth" and then re-implemented the DETECTION -- so the retirement
+            # of eight uncashable certificates passed the ratchet and was refused here, by the
+            # same bug, in the same commit that fixed it.
+            sanctioned = False
+            if idx_raw:
+                try:
+                    parsed = json.loads(idx_raw)
+                except (TypeError, ValueError):
+                    parsed = None
+                if parsed is not None and callable(has_revocation):
+                    sanctioned = bool(has_revocation(parsed))
+                else:
+                    # Unparseable stage, or a ratchet too old to export the detector: fall back
+                    # to an UNTRUNCATED scan rather than reintroducing the window.
+                    sanctioned = any(k in idx_raw for k in revocation_keys)
             if idx_n is None or (idx_n < head_n and not sanctioned):
                 unstage_and_restore(rel, staged[rel])
                 shrunk.append(f"{rel}({head_n}->{idx_n})")
