@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-03T08:23:40+00:00",
+ "updated_at": "2026-09-03T09:23:21+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -28,20 +28,20 @@
    "trades": 2972.0,
    "win_pct": 2285.0,
    "algo_pct": 96.0,
-   "subscribers": 23.0,
+   "subscribers": 24.0,
    "author": "/en/users/datbh",
    "author_other_signals": [
     {
      "sid": "2231030",
      "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
-     "growth": "1415%",
+     "growth": "1418%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
     {
      "sid": "1988269",
      "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
-     "growth": "1027%",
+     "growth": "1030%",
      "curve_points": 20,
      "curve_dd": -4.0
     },
@@ -85,7 +85,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -137,7 +137,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -147,12 +147,12 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 50.29,
-   "growth_pct": 3156.45,
+   "ev_score": 50.28,
+   "growth_pct": 3155.8,
    "weeks": 132.0,
    "pf": 1.31,
    "max_dd_pct": null,
-   "trades": 5320.0,
+   "trades": 5321.0,
    "win_pct": 2112.0,
    "algo_pct": 82.0,
    "subscribers": 0.0,
@@ -209,7 +209,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -282,7 +282,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -312,16 +312,16 @@
     {
      "sid": "2361746",
      "title": "'GridWise 8015' by Ihor Hut",
-     "growth": "237%",
+     "growth": "238%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
     {
      "sid": "2385768",
      "title": "'QQ med 3398' by Ihor Hut",
-     "growth": "107%",
+     "growth": "108%",
      "curve_points": 20,
-     "curve_dd": -20.0
+     "curve_dd": -19.0
     }
    ],
    "hour_histogram": {
@@ -356,20 +356,20 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
     "low_dd_high_return",
     "algo_survivor"
    ],
-   "ev_score": 43.926,
-   "growth_pct": 3563.79,
+   "ev_score": 44.59,
+   "growth_pct": 3617.65,
    "weeks": 79.0,
-   "pf": 1.99,
+   "pf": 1.97,
    "max_dd_pct": null,
-   "trades": 4067.0,
-   "win_pct": 3348.0,
+   "trades": 4077.0,
+   "win_pct": 3353.0,
    "algo_pct": 100.0,
    "subscribers": 69.0,
    "author": "/en/users/mo2002",
@@ -377,7 +377,7 @@
     {
      "sid": "2379250",
      "title": "'World Peace Forex Strategy 02' by Nobeyo- Sano",
-     "growth": "71%",
+     "growth": "72%",
      "curve_points": 20,
      "curve_dd": 0.0
     }
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -420,13 +420,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 40.769,
-   "growth_pct": 2099.95,
+   "ev_score": 40.773,
+   "growth_pct": 2100.13,
    "weeks": 196.0,
    "pf": 1.96,
    "max_dd_pct": null,
-   "trades": 1851.0,
-   "win_pct": 1358.0,
+   "trades": 1854.0,
+   "win_pct": 1359.0,
    "algo_pct": 94.0,
    "subscribers": 4.0,
    "author": "/en/users/antonkon",
@@ -468,7 +468,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -476,21 +476,21 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 34.972,
-   "growth_pct": 3202.73,
+   "ev_score": 35.202,
+   "growth_pct": 3223.83,
    "weeks": 62.0,
    "pf": 1.36,
    "max_dd_pct": null,
-   "trades": 519.0,
-   "win_pct": 315.0,
+   "trades": 523.0,
+   "win_pct": 319.0,
    "algo_pct": 92.0,
-   "subscribers": 12.0,
+   "subscribers": 13.0,
    "author": "/en/users/x_alexander_x",
    "author_other_signals": [
     {
      "sid": "2356441",
      "title": "'FXtrading' by Alexander Pavlenko",
-     "growth": "1295%",
+     "growth": "1291%",
      "curve_points": 20,
      "curve_dd": -2.0
     }
@@ -519,7 +519,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -530,13 +530,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 21.846,
-   "growth_pct": 1414.71,
+   "ev_score": 21.9,
+   "growth_pct": 1418.17,
    "weeks": 124.0,
    "pf": 3.25,
    "max_dd_pct": null,
-   "trades": 1092.0,
-   "win_pct": 903.0,
+   "trades": 1095.0,
+   "win_pct": 905.0,
    "algo_pct": 96.0,
    "subscribers": 32.0,
    "author": "/en/users/datbh",
@@ -551,7 +551,7 @@
     {
      "sid": "1988269",
      "title": "'MSC Gold Invest Pro' by Bui Huy Dat",
-     "growth": "1027%",
+     "growth": "1030%",
      "curve_points": 20,
      "curve_dd": -4.0
     },
@@ -598,7 +598,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -607,13 +607,13 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 19.473,
-   "growth_pct": 969.0,
+   "ev_score": 19.243,
+   "growth_pct": 957.55,
    "weeks": 210.0,
    "pf": 1.19,
    "max_dd_pct": null,
-   "trades": 7910.0,
-   "win_pct": 4916.0,
+   "trades": 7917.0,
+   "win_pct": 4918.0,
    "algo_pct": 95.0,
    "subscribers": 0.0,
    "author": "/en/users/strueli",
@@ -637,7 +637,7 @@
      "title": "'Multi EA combo' by Profalgo Limited",
      "growth": "374%",
      "curve_points": 20,
-     "curve_dd": -2.0
+     "curve_dd": -5.0
     }
    ],
    "hour_histogram": {
@@ -660,7 +660,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -668,13 +668,13 @@
     "long_lived",
     "gold"
    ],
-   "ev_score": 18.452,
-   "growth_pct": 1026.56,
+   "ev_score": 18.506,
+   "growth_pct": 1029.58,
    "weeks": 168.0,
    "pf": 1.78,
    "max_dd_pct": null,
-   "trades": 1663.0,
-   "win_pct": 1325.0,
+   "trades": 1666.0,
+   "win_pct": 1327.0,
    "algo_pct": 73.0,
    "subscribers": 10.0,
    "author": "/en/users/datbh",
@@ -689,7 +689,7 @@
     {
      "sid": "2231030",
      "title": "'MSC Gold Stable Pro' by Bui Huy Dat",
-     "growth": "1415%",
+     "growth": "1418%",
      "curve_points": 20,
      "curve_dd": 0.0
     },
@@ -731,6 +731,7 @@
    "symbols": [
     "AUDCAD",
     "AUDJPY",
+    "AUDNZD",
     "AUDUSD",
     "CADCHF",
     "CADJPY",
@@ -739,10 +740,9 @@
     "EURUSD",
     "GBPAUD",
     "GBPCAD",
-    "GBPNZD",
-    "GBPUSD"
+    "GBPNZD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -751,13 +751,13 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 14.814,
-   "growth_pct": 1295.47,
+   "ev_score": 14.764,
+   "growth_pct": 1291.08,
    "weeks": 68.0,
-   "pf": 2.73,
+   "pf": 2.69,
    "max_dd_pct": null,
-   "trades": 325.0,
-   "win_pct": 245.0,
+   "trades": 328.0,
+   "win_pct": 246.0,
    "algo_pct": 87.0,
    "subscribers": 9.0,
    "author": "/en/users/x_alexander_x",
@@ -765,7 +765,7 @@
     {
      "sid": "2375343",
      "title": "'Multi EA Trading' by Alexander Pavlenko",
-     "growth": "3203%",
+     "growth": "3224%",
      "curve_points": 20,
      "curve_dd": -8.0
     }
@@ -793,7 +793,7 @@
     "US500",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -802,13 +802,13 @@
     "algo_survivor",
     "gold"
    ],
-   "ev_score": 12.171,
-   "growth_pct": 860.59,
+   "ev_score": 12.157,
+   "growth_pct": 859.64,
    "weeks": 104.0,
    "pf": 1.3,
    "max_dd_pct": null,
-   "trades": 4549.0,
-   "win_pct": 3152.0,
+   "trades": 4554.0,
+   "win_pct": 3156.0,
    "algo_pct": 100.0,
    "subscribers": 3.0,
    "author": "/en/users/aller.techno",
@@ -816,7 +816,7 @@
     {
      "sid": "2338047",
      "title": "'Techno Growth' by Nice Trader",
-     "growth": "78%",
+     "growth": "76%",
      "curve_points": 20,
      "curve_dd": -11.0
     },
@@ -830,7 +830,7 @@
     {
      "sid": "2357816",
      "title": "'Techno SteadyFlow' by Nice Trader",
-     "growth": "21%",
+     "growth": "22%",
      "curve_points": 20,
      "curve_dd": -26.0
     }
@@ -861,7 +861,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -877,7 +877,7 @@
    "trades": 281.0,
    "win_pct": 268.0,
    "algo_pct": 99.0,
-   "subscribers": 46.0,
+   "subscribers": 48.0,
    "author": "/en/users/thomaszhong",
    "author_other_signals": [
     {
@@ -925,20 +925,20 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 5.176,
-   "growth_pct": 544.46,
+   "ev_score": 5.184,
+   "growth_pct": 545.27,
    "weeks": 47.0,
-   "pf": 1.87,
+   "pf": 1.88,
    "max_dd_pct": null,
-   "trades": 2658.0,
-   "win_pct": 2102.0,
+   "trades": 2661.0,
+   "win_pct": 2104.0,
    "algo_pct": 84.0,
    "subscribers": 7.0,
    "author": "/en/users/lubot",
@@ -946,7 +946,7 @@
     {
      "sid": "2375767",
      "title": "'Main Account' by Luca Barone",
-     "growth": "449%",
+     "growth": "450%",
      "curve_points": 20,
      "curve_dd": -12.0
     }
@@ -968,7 +968,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -976,13 +976,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 5.077,
-   "growth_pct": 502.91,
+   "ev_score": 5.058,
+   "growth_pct": 501.05,
    "weeks": 53.0,
    "pf": 1.45,
    "max_dd_pct": null,
-   "trades": 794.0,
-   "win_pct": 464.0,
+   "trades": 798.0,
+   "win_pct": 467.0,
    "algo_pct": 98.0,
    "subscribers": 19.0,
    "author": "/en/users/archigenius",
@@ -1014,7 +1014,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1036,7 +1036,7 @@
     {
      "sid": "2204998",
      "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
-     "growth": "969%",
+     "growth": "958%",
      "curve_points": 20,
      "curve_dd": -6.0
     },
@@ -1052,7 +1052,7 @@
      "title": "'Multi EA combo' by Profalgo Limited",
      "growth": "374%",
      "curve_points": 20,
-     "curve_dd": -2.0
+     "curve_dd": -5.0
     }
    ],
    "hour_histogram": {
@@ -1093,7 +1093,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-09-03T08:23:40+00:00",
+   "found_at": "2026-09-03T09:23:21+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1101,15 +1101,15 @@
     "high_pf",
     "multi_fx"
    ],
-   "ev_score": 4.11,
-   "growth_pct": 592.77,
+   "ev_score": 4.114,
+   "growth_pct": 593.32,
    "weeks": 25.0,
    "pf": 2.02,
    "max_dd_pct": null,
-   "trades": 635.0,
-   "win_pct": 490.0,
+   "trades": 639.0,
+   "win_pct": 492.0,
    "algo_pct": 75.0,
-   "subscribers": 31.0,
+   "subscribers": 30.0,
    "author": "/en/users/osvaldasozzy",
    "author_other_signals": [],
    "hour_histogram": {
