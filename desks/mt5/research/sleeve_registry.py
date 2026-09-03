@@ -223,6 +223,13 @@ def identity(*, family: str, symbol: str, direction: str = "LONG", timeframe: st
     }
     if behaviour:
         ident["behaviour_hash"] = str(behaviour)
+    else:
+        # EVERY NEW CLOCK MUST CARRY ONE. A row frozen without a behaviour hash is one comment
+        # edit away from going terminal for a change that altered no logic -- the exact defect
+        # that stopped 15 of 52 clocks on 2026-09-03. Callers pass it (shadow_forward does); this
+        # names the omission loudly rather than silently minting another fragile row, because a
+        # missing hash is indistinguishable from a matching one at verify() time by design.
+        ident["behaviour_hash_missing"] = True
     blob = json.dumps({k: ident[k] for k in IDENTITY_FIELDS}, sort_keys=True, default=str)
     ident["sleeve_id"] = hashlib.sha256(blob.encode("utf-8")).hexdigest()[:20]
     return ident

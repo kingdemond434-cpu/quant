@@ -69,3 +69,24 @@ def test_behaviour_hash_is_not_part_of_the_sleeve_id() -> None:
 def test_a_function_without_bytecode_is_named_not_guessed() -> None:
     """UNMEASURED is a real answer (L1.28a): never emit a hash we did not compute."""
     assert behaviour_hash(len).startswith("nocode:")
+
+
+def test_the_forward_engine_stamps_a_behaviour_hash_on_every_new_clock() -> None:
+    """EVERY future clock must carry one, or the fix only protects the rows repaired by hand.
+
+    verify() requires the hash on BOTH sides, so a row frozen without one stays exactly as
+    fragile as every row was before this existed. The forward engine is the only place that
+    freezes a sleeve identity, so this pins its call site rather than trusting it.
+    """
+    src = (Path(__file__).resolve().parents[1] / "research" / "shadow_forward.py").read_text("utf-8")
+    assert "behaviour=_reg.behaviour_hash(fam_fn)" in src, (
+        "shadow_forward must pass behaviour= when it freezes an identity")
+
+
+def test_an_identity_minted_without_one_says_so() -> None:
+    """A silent omission is indistinguishable from a match at verify() time, so it is named."""
+    bare = identity(family="f", symbol="EURUSD", code="c", cost="k", data_venue="v")
+    assert bare.get("behaviour_hash_missing") is True
+    stamped = identity(family="f", symbol="EURUSD", code="c", cost="k", data_venue="v",
+                       behaviour="abc123")
+    assert "behaviour_hash_missing" not in stamped

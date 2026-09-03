@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1]
@@ -53,17 +54,74 @@ def current_identity(row: dict) -> dict | None:
     frozen = dict(row.get("identity") or {})
     if not frozen:
         return None
+    # THE SAME RESOLUTION THE FORWARD ENGINE USES, not a narrower one. `get_family_func` only
+    # searches FAMILY_REGISTRY, and the desk's most numerous family -- `discovered`, the one
+    # edge_search mints -- lives in ORTHOGONAL_FAMILIES. Resolving with the narrow lookup returned
+    # None for every one of those rows, so they were silently skipped and the backfill reported
+    # zero: a healer that appeared to run cleanly while covering none of the clocks that needed it.
+    fam = str(frozen.get("family") or "")
+    fn = None
     try:
-        from mt5desk.families import get_family_func
+        from mt5desk import families
+        fn = getattr(families, f"family_{fam}", None)
     except ImportError:
         return None
-    fn = get_family_func(str(frozen.get("family") or ""))
+    if fn is None:
+        try:
+            from mt5desk import families_orthogonal as _fo
+            fn = _fo.ORTHOGONAL_FAMILIES.get(fam)
+        except ImportError:
+            fn = None
     if fn is None:
         return None
     ident = dict(frozen)
     ident["code_hash"] = reg.code_hash(fn)
     ident["behaviour_hash"] = reg.behaviour_hash(fn)
     return ident
+
+
+def backfill_behaviour(registry_path: Path, *, apply: bool) -> int:
+    """Record a behaviour hash on every INTACT clock that lacks one. Returns rows immunised.
+
+    WHY THIS IS THE OTHER HALF OF THE FIX. `behaviour_hash` only stops a prose edit from killing a
+    clock when BOTH the frozen identity and the current one carry it -- absence never clears a
+    drift, deliberately, because a missing hash is not evidence of anything. So every row frozen
+    before the field existed is still one comment away from going terminal. Measured 2026-09-03
+    after the first repair: 15 of 52 rows carried the field (the ones just rebased) and 37 did
+    not. Those 37 were exactly as fragile as the 15 had been an hour earlier.
+
+    THE BACKFILL IS SAFE BECAUSE OF ITS PRECONDITION, WHICH IS NOT NEGOTIABLE. It fires only when
+    the frozen `code_hash` still EQUALS the current one. That equality means the function's source
+    is byte-identical to what the clock froze, so its bytecode is necessarily the bytecode that
+    was frozen too -- recording it asserts nothing new, it writes down a fact the identity check
+    has already verified this pass. A row whose code_hash has drifted is skipped entirely: for
+    that row the current behaviour is NOT known to be the frozen behaviour, and guessing would be
+    the laundering this whole mechanism exists to prevent.
+    """
+    reg = json.loads(registry_path.read_text("utf-8"))
+    changed = 0
+    for _key, row in (reg.get("sleeves") or {}).items():
+        frozen = row.get("identity") or {}
+        if not frozen or frozen.get("behaviour_hash"):
+            continue
+        ident = current_identity(row)
+        if ident is None:
+            continue
+        if frozen.get("code_hash") != ident.get("code_hash"):
+            continue                    # drifted: current behaviour is not the frozen behaviour
+        beh = ident.get("behaviour_hash")
+        if not beh or str(beh).startswith("nocode:"):
+            continue                    # UNMEASURED is a real answer -- never write a guess
+        if apply:
+            frozen["behaviour_hash"] = beh
+            row["behaviour_backfilled_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        changed += 1
+    if changed and apply:
+        reg["updated_at"] = datetime.now(tz=UTC).isoformat(timespec="seconds")
+        tmp = registry_path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(reg, indent=1), "utf-8")
+        tmp.replace(registry_path)
+    return changed
 
 
 def main() -> int:
@@ -73,6 +131,17 @@ def main() -> int:
     args = ap.parse_args()
 
     registry = json.loads((DESK / "data" / "sleeve_registry.json").read_text("utf-8"))
+    # BACKFILL FIRST, AND UNCONDITIONALLY. This ran after an early `return 0` taken when nothing
+    # was broken -- so it fired only on cycles where a clock had ALREADY died, which is precisely
+    # when immunisation is too late. Immunising healthy rows is the entire point: it is what stops
+    # the next prose edit from breaking them. Measured 2026-09-03: the first shipped version left
+    # 37 of 52 rows uncovered because every run took that early exit.
+    immunised = backfill_behaviour(DESK / "data" / "sleeve_registry.json", apply=args.apply)
+    if immunised:
+        print(f"identity healer: recorded a behaviour hash on {immunised} intact clock(s) "
+              f"-- a prose edit can no longer stop them")
+        registry = json.loads((DESK / "data" / "sleeve_registry.json").read_text("utf-8"))
+
     broken = {k: v for k, v in (registry.get("sleeves") or {}).items()
               if str(v.get("status") or "").upper() == "IDENTITY_BROKEN"}
     if not broken:

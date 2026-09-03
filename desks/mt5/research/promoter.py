@@ -23,19 +23,25 @@ The armed gold book is NOT managed here (hunt5 authority, armed by human).
 
 import json
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from mt5desk import provenance  # noqa: E402
-from shadow_admission import authorized_specs  # noqa: E402
+from mt5desk import provenance
+from shadow_admission import authorized_specs
 
 BASE = Path(__file__).resolve().parent.parent
 SHADOW_DIR = BASE / "reports" / "shadow"
 SLEEVES_FILE = BASE / "data" / "sleeves.json"
 LEDGER = BASE / "data" / "live_ledger.jsonl"
 LOG = BASE / "logs" / "promoter.log"
+
+#: A cross-process append collision on Windows clears in milliseconds. Six tries over ~0.5s
+#: outlasts it; longer would be a promoter that waits on a log file, the wrong priority.
+_LOG_RETRIES = 6
+_LOG_RETRY_SLEEP_S = 0.03
 
 # SIZING (principal 2026-08-25): the gateway sizes promoted sleeves at order time -- 3% of
 # equity base risk off the bracket's own stop distance (mt5desk/sizing.py), authority-ramped
@@ -52,11 +58,34 @@ GOLD_WINDOWS = ["asia", "london_am", "ny_open", "afternoon"]
 
 
 def plog(msg: str) -> None:
+    """Append one line to the promoter log. A locked log NEVER fails the promoter.
+
+    WINDOWS LOCKS FILES EXCLUSIVELY AND THIS RUNS ON WINDOWS. Two processes appending collide, and
+    the loser raised PermissionError out of `plog` -- called from inside the promotion pass, so a
+    LOGGING collision aborted the PROMOTION. Measured 2026-09-03 on the desk box, every shadow
+    cycle reported status FAILED with errors.promoter = PermissionError on promoter.log, a file
+    that was writable, appendable and last modified a week earlier. The cycle had 43 sleeves with
+    forward trades and zero evidence-blocked sleeves; the only thing that failed was note-taking.
+
+    `print` happens first and unconditionally, so the line still reaches the cycle's captured
+    output and nothing is lost -- a log the desk could not write is worth strictly less than a
+    promotion it did not run.
+    """
     line = f"{datetime.now(tz=UTC).isoformat(timespec='seconds')} {msg}"
-    LOG.parent.mkdir(parents=True, exist_ok=True)
-    with LOG.open("a", encoding="utf-8") as f:
-        f.write(line + "\n")
     print(line)
+    try:
+        LOG.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return
+    for attempt in range(_LOG_RETRIES):
+        try:
+            with LOG.open("a", encoding="utf-8") as f:
+                f.write(line + "\n")
+            return
+        except (PermissionError, OSError):
+            if attempt == _LOG_RETRIES - 1:
+                return
+            time.sleep(_LOG_RETRY_SLEEP_S * (attempt + 1))
 
 
 def load_shadow() -> dict:
@@ -107,7 +136,7 @@ def load_ledger() -> list[dict]:
     except Exception:
         return []
     try:
-        import MetaTrader5 as mt5  # noqa: PLC0415
+        import MetaTrader5 as mt5
         acc = provenance.current_account(mt5.account_info())
     except Exception:
         acc = provenance.current_account(None)
@@ -207,7 +236,7 @@ def load_qquant_shadow() -> dict:
 
 def load_cert_specs() -> dict[str, dict]:
     """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
-    from gate_policy import all_ten_pass, is_exact_policy  # noqa: PLC0415
+    from gate_policy import all_ten_pass, is_exact_policy
     p = BASE / "reports" / "UNIVERSAL_SURVIVORS.json"
     try:
         certs = json.loads(p.read_text(encoding="utf-8"))
@@ -414,6 +443,6 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
+    except Exception:
         import traceback
         plog("promoter error: " + traceback.format_exc())
