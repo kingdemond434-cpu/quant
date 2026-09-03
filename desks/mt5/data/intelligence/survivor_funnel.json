@@ -1,13 +1,13 @@
 {
- "updated_at": "2026-09-03T22:25:32+00:00",
+ "updated_at": "2026-09-03T23:25:53+00:00",
  "supreme_metric": "validated incremental E[log W] per unit of survivor-hunting capacity -- everything below is diagnostic, never the objective",
- "cohort_registry": 4667,
- "cohort_alive": 4667,
+ "cohort_registry": 4707,
+ "cohort_alive": 4707,
  "cohort_dead": 0,
  "credible_shortlist": 19,
  "external_stageA_survivors": 23465,
  "promoted_to_gauntlet_queue": 47110,
- "exact_certificates": 66,
+ "exact_certificates": 59,
  "frozen_clones": 0,
  "forward_clone_match_rate": null,
  "fusion_forward_survivors": null

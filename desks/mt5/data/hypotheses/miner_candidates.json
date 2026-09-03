@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-03T21:59:42+00:00",
+ "compiled_at": "2026-09-03T23:24:57+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4451,9 +4451,9 @@
    "deepening": 32
   },
   "mql5_signals": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "mql5_forum": {
    "rows": 1,
@@ -4461,14 +4461,14 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "reddit": {
-   "rows": 43,
+   "rows": 47,
    "candidates": 0,
-   "deepening": 43
+   "deepening": 47
   },
   "forexfactory": {
    "rows": 44,
@@ -4481,9 +4481,9 @@
    "deepening": 0
   },
   "sec_edgar": {
-   "rows": 9,
+   "rows": 10,
    "candidates": 0,
-   "deepening": 9
+   "deepening": 10
   },
   "arxiv": {
    "rows": 2,
@@ -4496,79 +4496,79 @@
    "deepening": 78
   },
   "trading_latam": {
-   "rows": 38,
+   "rows": 78,
    "candidates": 0,
-   "deepening": 38
+   "deepening": 78
   },
   "litefinance": {
-   "rows": 15,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 15
+   "deepening": 30
   },
   "instaforex_copy": {
-   "rows": 4,
+   "rows": 8,
    "candidates": 0,
-   "deepening": 4
+   "deepening": 8
   },
   "amarkets": {
-   "rows": 111,
+   "rows": 224,
    "candidates": 0,
-   "deepening": 111
+   "deepening": 224
   },
   "fbs_tape": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "global_frontier": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "mql5_survivors": {
-   "rows": 18,
+   "rows": 36,
    "candidates": 0,
-   "deepening": 18
+   "deepening": 36
   },
   "myfxbook_outlook": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "darwinex": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "tradingview_scripts": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "fxblue": {
-   "rows": 40,
+   "rows": 80,
    "candidates": 0,
-   "deepening": 40
+   "deepening": 80
   },
   "collective2": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "forexpeacearmy": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "ff_calendar_vintage": {
-   "rows": 114,
+   "rows": 228,
    "candidates": 6,
-   "deepening": 7
+   "deepening": 14
   },
   "forextsd_cdx": {
-   "rows": 1,
+   "rows": 120,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 120
   },
   "quant_se": {
    "rows": 30,
@@ -4636,13 +4636,13 @@
    "deepening": 3
   },
   "world_crawler": {
-   "rows": 34,
+   "rows": 23,
    "candidates": 0,
-   "deepening": 34
+   "deepening": 23
   }
  },
- "rows_accounted": 1003,
+ "rows_accounted": 1469,
  "executable_candidates": 370,
- "deepening_tasks": 550,
+ "deepening_tasks": 704,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T22:19:36+00:00",
+ "built_at": "2026-09-03T23:19:13+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1862,47 +1862,32 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "audit:benchmark_flow|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
+    "event": "benchmark_flow",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "audit:benchmark_flow|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "benchmark_flow",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:cross_market_move|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "cross_market_move",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
