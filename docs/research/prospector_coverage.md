@@ -15056,3 +15056,102 @@ imported as a desk gate (L1.6). Video: 0 fetched, 0 locked. 0 new external venue
    atom URLs' citation layers.
 
 The BRAIN ground remains open.
+
+## BRAIN HUNTER s60 — 2026-09-03 — the placebo out-dispersed the real signal, so the "hidden trial dimension" was noise
+
+**Note on s58 and s59 (chain repair, L1.35).** Both ran tonight (21:11–21:47), both ledgered
+(R0771 RC4/V2 decryption, R0772 the pure-stdlib AES-128-CBC primitive passing FIPS-197 C.1,
+R0773 the stats artifact that outlived its own extraction), and **neither wrote a coverage row** —
+the second and third consecutive breaks after s56. Recorded here so the chain is not lost:
+between them they closed s57's next-ground items 1–3. The AQR corpus is now **136/137 readable,
+5,286,179 chars** (measured this session from `article_pdf_text.json`); the single remainder is a
+CCITTFax scan with no text layer — a real negative, not a broken read. **One item is still owed
+from s58: `data/brain_hunter_s58_corr_regime.py` (does lagged average absolute pairwise
+correlation forecast TSMOM performance — the paper's Exhibit 10 Panel B, separating the breadth
+mechanism from the vol-targeting artifact) was written and had NO result artifact.** It was never
+run to completion. Unrun is not null (L1.49) — so this session RAN it rather than re-ledgering it
+(second result, below; R0775 closed same day).
+
+**THE MINE.** AQR *Craftsmanship Alpha: An Application to Style Investing* (JPM Multi-Asset
+Special Issue 2018): "innocuous" implementation choices produce large dispersion in realised
+performance; their Exhibit 7 varies rebalance FREQUENCY on a US equity long/short. The equity
+sleeve does not transfer; the CHOICE-DISPERSION claim is universe-independent. The sharper and
+cheaper sibling is rebalance OFFSET — a monthly sleeve can rebalance on the 1st..21st trading day
+of the month. Same signal, same data, same frequency, 21 sleeves differing only in a choice
+nobody records as a choice. That made it the one reading worth chasing: **if offset is a real
+axis, it is a trial dimension the desk's multiplicity accounting has never counted.**
+
+**DECLARED BEFORE MEASUREMENT (s29 rule).** H1 max − mean > 0.3 Sharpe. H2 the offset-averaged
+ensemble beats the mean individual offset (sign positive).
+
+**MEASURED.** Desk MT5 daily panel, 122 symbols with ≥2000 obs, 19.3–19.8 years, TSMOM sign ×
+inverse-60d-vol weights, gross. Trials, all reported: 2 lookbacks × 21 offsets + 8 placebo reps.
+
+| arm | Sharpe range | sd | ρ̄ (sleeves) | H0 bound | sd/bound | ens − mean |
+|---|---|---|---|---|---|---|
+| tsmom_252 | 0.192 – 0.359 | 0.050 | 0.956 | 0.049 | **1.03** | +0.0079 |
+| tsmom_126 | 0.076 – 0.392 | 0.087 | 0.921 | 0.064 | **1.36** | +0.0089 |
+| placebo (8 reps) | — | 0.034 | — | — | **1.49** | +0.0026 |
+
+**THE FINDING, and it killed the reading I was chasing.** The offsets share 92–96% of their daily
+returns, so the H0 spread is not zero — it is sd ≈ sqrt((1−ρ̄)(1+S²/2)/years), which is what the
+bound column computes. Observed dispersion sits AT that bound. The decisive arm is the placebo:
+each symbol's own weight series circular-shifted in time (persistence preserved, alignment with
+returns destroyed) gives sd/bound = **1.49 — more relative dispersion than the real signal**. So
+the 0.076→0.392 spread is sampling noise about a common mean. **My declared H1 failed** (0.080 and
+0.186, not >0.3). H2's sign held but at +0.008 Sharpe, and the placebo gains +0.003, so the return
+gain is not the reason to ensemble.
+
+**Why the refutation is worth more than the claim would have been.** The two readings of this
+mechanism demand OPPOSITE actions, and without the placebo the range alone would have justified
+the wrong one: adding an offset penalty to `deflated_sharpe`, rejecting real candidates to price
+noise, and making the desk more conservative on a control that reduces no ruin probability
+(LAWS §2a, and exactly what L1.60 forbids when a producer-supplied trial count reaches a gate).
+What survives is not an alpha claim: the offset-ensemble as a free ESTIMATION-VARIANCE reduction,
+and the observation that the gauntlet prints a single-offset Sharpe with no implementation error
+bar when that bar is ±0.05–0.09 before any sampling error. Routed to
+`docs/research/improvement_inbox.md` as a reported diagnostic with no pass/fail path — same
+standing as `wq_operators.fitness()` and s57's variance ratio.
+
+**L1.57.** The underlying sleeve is Sharpe 0.21–0.29 gross before costs. A ranking over an
+unprofitable-to-marginal population is not an edge. **0 cards, 0 survivors, 0 forward clocks; no
+multiplicity incurred, none reported.**
+
+**Artifacts:** `data/brain/s60_timing_luck.py`, `data/brain_hunter_s60_timing_luck.json`.
+
+**§13.** No live browsing this session — all work on PDFs already on disk and the desk's own MT5
+parquets. No account wall, private BRAIN API, credentialed content or proprietary dataset touched;
+no access control circumvented. No AQR or BRAIN Sharpe, fitness grade or submission bar imported
+as a desk gate (L1.6). Video: 0 fetched, 0 locked. 0 new external venues.
+
+**SECTION-EXHAUSTED:** `craftsmanship-alpha-an-application-to-style-investing` — read in full;
+its transferable content is the choice-dispersion claim, now tested and refuted on the offset axis.
+Its rebalance-FREQUENCY axis (the paper's own Exhibit 7) is NOT exhausted and is item 2 below.
+
+**SECOND RESULT — the owed s58 screen, run this session (R0775 closed).** Rather than leave it
+ledgered, `data/brain_hunter_s58_corr_regime.py` was executed here: lagged avg |pairwise corr| →
+next-month TSMOM, 175 symbols, 2008-07-17 → 2026-08-28, n = 202 months, 8/8 cells reported. The
+declared NEGATIVE sign held on all four avg|corr| cells and the realvol negative control is flat
+everywhere (p 0.51–0.74), so it is not a generic conditioning artifact — but the best TRADABLE arm
+is ρ = −0.139, p = 0.049 on 8 trials and survives no multiplicity correction, and lag-0 beats lag-1
+on every construction. The mechanism split the screen was built for is **INSUFFICIENT-EVIDENCE**:
+breadth-only (unscaled) −0.107 p = 0.131 vs vol-scaled −0.139 p = 0.049 — leaning toward the
+sizing artifact the authors' own construction would manufacture, but not a distinguishable
+difference at n = 202 on overlapping samples, and calling it one would be the error the registry
+exists to prevent. Routed to `docs/research/weak_signal_registry.md` with a paired-bootstrap
+falsifier. 0 cards, 0 clocks. Artifact: `data/brain_hunter_s58_corr_regime.json`.
+
+**NEXT UN-EXHAUSTED GROUND (in order):**
+1. The paired test the s58 screen now needs: bootstrap the ρ difference between the unscaled and
+   vol-scaled arms on the SAME months, and extend the panel before 2008 to raise n on the
+   breadth-only arm. This decides whether the paper's headline is its own portfolio construction.
+2. The paper's actual axis: rebalance FREQUENCY (daily/weekly/monthly/quarterly) on the same MT5
+   sleeve, where turnover and cost make the trade-off real — and where the desk's cost model is
+   known broken on 7 symbols (s54), so it needs the cost census first.
+3. The AQR corpus at its new full length: 5.29M chars over 136 readable documents, of which this
+   seat has now mined 4 (streakiness, century-of-evidence ×2, craftsmanship). **132 unmined.**
+   Lead with the 33 documents carrying "turnover" and the 41 carrying "carry".
+4. Still owed from s55: full text of arXiv 2608.08405v1 and 2608.10410v1 (OOQI), and the 46 atom
+   URLs' citation layers.
+
+The BRAIN ground remains open.

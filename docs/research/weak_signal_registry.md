@@ -659,3 +659,46 @@ cluster removes a common drift rather than the signal; at 5–120d the cluster *
 **Falsifier and next step:** pre-register signs for 150 / 180 / 200 / 250 / 300d against the exact
 size-matched control and require a monotone sign change at a single crossover. A scattered or
 absent crossover kills it. This is s30's ranked-first ground.
+
+## Lagged average pairwise correlation → next-month TSMOM (BRAIN s58 screen, RUN in s60)
+
+**Pre-registered, and the sign held.** `data/brain_hunter_s58_corr_regime.py` was written by s58
+and never executed (R0775, disposed same day). SOURCE: AQR *A Century of Evidence on Trend-Following
+Investing* (JPM Fall 2017) Exhibit 10 Panel B — of S&P volatility, 3-month change in volatility,
+T-bill yield and average absolute pairwise correlation, the correlation is "the ONLY indicator with
+a monotonic relation to the performance of time-series momentum." Sign declared NEGATIVE before
+measurement; negative control = trailing realised vol, which the paper reports as non-monotone.
+
+Desk MT5 daily panel, 175 symbols, 2008-07-17 → 2026-08-28, 60d correlation window, n = 202–203
+months. **All 8 cells reported** (2 conditioners × 2 sleeve constructions × lag-1/lag-0).
+
+| conditioner | sleeve | arm | ρ | p |
+|---|---|---|---|---|
+| avg\|corr\| | unscaled | **lag-1 (tradable)** | −0.107 | 0.131 |
+| avg\|corr\| | vol-scaled | **lag-1 (tradable)** | −0.139 | 0.049 |
+| avg\|corr\| | unscaled | lag-0 (untradable) | −0.145 | 0.039 |
+| avg\|corr\| | vol-scaled | lag-0 (untradable) | −0.173 | 0.014 |
+| realvol (control) | both | both | −0.02 … −0.05 | 0.51 … 0.74 |
+
+**Verdict: WEAK, not banked.** Three things are clean: the declared sign holds on all four
+avg|corr| cells, the negative control is flat everywhere (so this is not a generic conditioning
+artifact), and the effect is not a vol proxy. Two things stop it: (a) the best TRADABLE p is 0.049
+on 8 reported trials — Holm-corrected it survives nothing; (b) the lag-0 arm beats the lag-1 arm on
+every construction, the desk's recurring "the information arrives in the bar you cannot trade"
+pattern (PROSPECTOR s19, FREE-DATA q), though here the tradable arm retains most of it rather than
+collapsing.
+
+**The mechanism split the screen was built for is INSUFFICIENT-EVIDENCE, not resolved.** The paper
+names two separable causes: breadth ("fewer truly different trends to bet on") and vol-targeting
+sizing (positions shrink when correlations rise). The unscaled arm isolates breadth and does NOT
+reach significance (−0.107, p = 0.131); the vol-scaled arm is stronger (−0.139, p = 0.049). That
+leans toward the sizing artifact — the direction the authors' own portfolio construction would
+manufacture — but −0.107 vs −0.139 at n = 202 on near-identical samples is not a distinguishable
+difference, and reporting it as one would be the error this registry exists to prevent.
+
+**Falsifier / next step:** the arms need to be compared directly, not by their separate p-values —
+paired bootstrap on the ρ difference with the same months, plus an unscaled arm at larger n
+(extend the panel before 2008, where the desk's tape thins). If breadth survives at n ≫ 200 with
+the sizing arm removed, it is a real conditioner and becomes a regime candidate under the regime
+specialization law; if the gap holds under a paired test, the paper's headline is its own
+construction. **0 cards, 0 forward clocks.** Artifact: `data/brain_hunter_s58_corr_regime.json`.

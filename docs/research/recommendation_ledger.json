@@ -10090,6 +10090,62 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0772",
+   "source": "cycle",
+   "summary": "libs/research/pdf_text.extract() cannot read AES-encrypted PDFs and reports them as chars=0 with no flag, so 'AES-encrypted' and 'this document says nothing' are the same claim (WS-005 inside the reader). s59 built the missing primitive in pure stdlib -- AES-128-CBC inverse cipher, passing the FIPS-197 C.1 known-answer vector -- in data/brain_hunter_s59_aes_pdf.py; it unlocked the two files s57 called 'genuinely unreadable' (the-5-percent-solution 0 -> 38,314 chars; taking-control-of-your-risk-allocation 351 -> 11,893). PORT aes_cbc_decrypt/aes_obj_key/extract_aes into libs/research/pdf_text under the owning seat, together with the /CFM detection, and make extract() return an explicit encrypted/scanned diagnosis instead of a bare zero.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T21:45:30.225306+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0773",
+   "source": "cycle",
+   "summary": "data/external/aqr/article_pdf_text.json asserted chars=0 for 7 documents whose extracted text was already on disk in pdftext/ one directory away -- the stats artifact was written before the s58/s59 decrypt passes and never restated, so any consumer reading it concluded ~268k chars of AQR text did not exist. 39 of 137 char counts were stale. Fixed by data/external/aqr/pdf_readability_audit.py, which restates counts from disk and writes a readability_class per file (OK / ENCRYPTED-AES / ENCRYPTED-RC4 / SCANNED-IMAGE-ONLY / LOW-YIELD) so a zero always carries its diagnosis. Corpus now 136/137 readable; the one remainder is a 13-page CCITTFax scan with no text layer, which is a real negative and not a broken read. WIRE the audit into the fetch path so the stats artifact can never again outlive its own extraction.",
+   "roi_bps": null,
+   "rank": 6.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T21:46:01.543328+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0774",
+   "source": "cycle",
+   "summary": "BRAIN s60: the gauntlet reports a candidate's Sharpe as a point estimate when the rebalance-offset choice alone moves it by 0.076->0.392 (126d MT5 TSMOM, 122 symbols, 19.8y) -- an implementation error bar of +/-0.05-0.09 Sharpe that no candidate record contains. Do NOT convert this into a multiplicity penalty: the placebo control (circular-shifted weights, persistence preserved) out-dispersed the real signal (sd/H0-bound 1.49 vs 1.03-1.36), so the spread is sampling noise about a common mean, not a countable trial dimension, and an offset penalty in deflated_sharpe would reject real candidates to price noise (L1.60). The correct conversion is REPORTING: print the offset-ensemble Sharpe and the cross-offset spread alongside the constructed number for any candidate with a discretionary rebalance phase, as a diagnostic with no pass/fail path (same standing as wq_operators.fitness). Evidence: data/brain_hunter_s60_timing_luck.json, docs/graveyard.md::rebalance_offset_timing_luck_as_craftsmanship_alpha.",
+   "roi_bps": null,
+   "rank": 4.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T21:58:21.851278+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0775",
+   "source": "cycle",
+   "summary": "BRAIN s58 wrote data/brain_hunter_s58_corr_regime.py -- the screen separating AQR's breadth mechanism (lagged avg |pairwise corr| -> next-month TSMOM) from the vol-targeting artifact that could manufacture it -- and NEVER RAN IT: there is no result artifact on disk. Unrun is not null (L1.49); the screen is written, the panel it needs (data/brain_hunter_s58_daily_panel.parquet) exists, and a declared sign is already in its docstring. Run it to completion and route the verdict, or kill it with a reason.",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T21:58:30.811968+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

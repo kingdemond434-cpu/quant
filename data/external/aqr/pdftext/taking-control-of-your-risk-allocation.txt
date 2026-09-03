@@ -1,3 +1,427 @@
-Ñ+Q]ïX³Á¿¡#Úäÿäè Ï'=cA
-Õ-T¼QùÌ²;¢á&5J³GÊnZ1¹_SÄãáÇ©KV¶ÿ£j^Â
-k¯ÓVÒ#Á¾[eÜ«MÏ¹©±ÀÐþó3îÀÌ¤CãrÚ{ÏR~oË6ÂgYoÅÏlxîIíè6B:'Eæceè	»4Pü]6à?òÎÅ¼]eFû1ôóÈoµâýWgy8è+ròã¬´×Rmæ²ÅÅd½¬[â7ßj©iÞêx üLN¸o42ÍÌÍýó]XòÈ¢ÖWã«ª»ÇP+£ó¶ÌûÿaKQcº¼»¸½mÔûßã£Ç¢ÿ%&ZvÛì9ÏV²â0hmw×>­#»Å­®jÂÚ:
+R
+isk parity strategies are built on a few 
+simple observations and the implica
+-
+tions that immediately follow. Risk-
+adjusted returns across asset classes are 
+more similar than not, most traditional portfolios 
+concentrate risk in just one asset class, and invest
+-
+ing in each market pays off, but not necessarily 
+at the same time. This leads to a straightforward 
+conclusion: adding a risk-balanced portfolio to a 
+traditional asset allocation should increase its risk-
+adjusted return and provide much needed diversi
+-
+risk parity, but it still leaves a couple of important 
+questions unaddressed. First, should we seek to be 
+risk-balanced only on average over time, or to be 
+risk-balanced at each point in time? Second, does 
+allocation, or is choosing to tilt the risk budget 
+away from balance consistent with the logic of risk 
+parity?
+We see risk parity as a better starting point 
+from which to express the full range of active asset 
+
+away from risk parity should be driven merely by 
+changes in the market risk environment. Instead, to 
+the extent possible, the risks investors take should 
+be their active choice, not a passive consequence of 
+changing market volatility.CONSISTENT DIVERSIFICATIONMarket risk levels evolve through time and follow 
+different paths for each asset class. Unless proac-
+tively managed, a risk parity strategy (really any 
+asset allocation strategy) tends to become unbal
+-
+anced across assets as well as variable in total risk. 
+Held passively, it rarely remains on its targets for 
+either. For example, in some periods, like 2008, port
+-
+folio volatility may become uncomfortably high 
+During this period, equity and credit risks quad
+-
+rupled, but government bond risk merely doubled. 
+By comparison, in periods like 1979 to 1981, sharp 
+increases in bond volatility could make a risk-bal
+-
+anced portfolio overly concentrated in interest rate 
+risk. Fortunately, the structure of risk parity port
+-
+folios enables us to maintain better risk balancing 
+and steadier total portfolio risk through a dynamic 
+approach to asset exposures.
+Figure 1 shows how a portfolio that is only risk 
+
+becomes risk concentrated in some situations. Taking Control of Your 
+Risk AllocationBy John Huss and Michael MendelsonHowever, by dynamically adjusting asset expo
+-
+sures as the market risk environment changes, we 
+may maintain a much better balance. The risk con
+-
+centrations in static risk parity portfolios, though 
+much less severe than those of traditional portfo
+-
+lios, still can become uncomfortable for investors 
+to hold in the most hostile market environments.  
+These concentrations also degrade portfolio Sharpe 
+ratio. Similarly, Figure 2 shows that a static risk par
+-
+ity strategy, by failing to control total portfolio risk 
+through time, can realize much higher risk in some 
+market environments than others, reducing time 
+periods. While this is also true for traditional port
+-
+investor can vary exposures though time to coun
+-
+teract much of the adverse effect.
+Altogether, Figure 1 and Figure 2 show that 
+
+-
+cation and experience less variation in its overall 
+level of risk. That is, while being risk-balanced 
+(only) on average is better than being risk concen-
+trated, better still is to be risk-balanced all of the 
+time. That requires some ability to forecast risk and 
+a willingness to rebalance the portfolio to adapt to 
+changing forecasts. The good news is that risks can 
+be forecast to an imperfect but useful extent and 
+risk is easier to forecast than returns. Dynamic risk 
+parity uses changing risk forecasts to decrease posi
+-
+tion sizes when asset volatility rises and increase 
+them when asset volatility falls (though only within 
+limits). It is the reasonable ability to forecast risk 
+that allows investors to choose their risks instead of 
+having risks chosen for them by the vagaries of the 
+market environment.ACTIVELY CHOOSING AGAINST 
+BALANCE
+express tactical views) is a well-balanced portfolio 
+an investor might want to own for the long term. 
+For many investors, a strategic risk parity alloca-
+
+to take meaningful active allocation views  they 
+simply choose to take those views outside of their 
+risk parity allocation. Other investors prefer the 
+ability to express tactical views anywhere in their 
+portfolio, and the structure of a risk parity portfolio 
+can readily accommodate this choice. Risk parity 
+offers an excellent starting point from which to 
+take active views as it allows investors to get mean
+-
+ingfully over- or underweight each asset class as 
+suggested by those views. In contrast, traditional 
+portfolios possess such highly concentrated equity 
+risk that most plausible active allocations will still 
+remain risk concentrated in equities.
+The hurdles for active management to add 
+value to a risk parity allocation are several: reduced 
+-
+33%
+33%
+33%Ta
+rg
+et 
+Risk 
+
+A
+llo
+ca
+ti
+on
+Realiz
+ed 
+Risk A
+llo
+ca
+ti
+onGl
+ob
+al
+ 
+Fi
+nanc
+ial 
+Cr
+isis
+Vo
+lc
+ker 
+Fe
+d 
+Fi
+gh
+ting
+ 
+In
+flat
+ion
+
+Eq
+ui
+ti
+es
+Bo
+nd
+s
+Co
+mmo
+di
+ti
+es
+St
+at
+ic
+ R
+isk
+ Parity
+Dy
+na
+mi
+c 
+Risk 
+Parity29%
+23%
+48%
+45%
+12%
+43%
+33%
+29%
+38%
+36%
+35%
+29%
+
+*Source: AQR. Static and dynamic realized risk allocation pie charts are based on hypothetical simple risk parity portfolios. Both 
+portfolios are composed of developed equities, developed nominal bonds and commodities. Static risk parity exposures remain 
+constant while dynamic risk parity adjusts exposures based on changes in volatility forecasts. Volcker Fed ghting ination sce
+-
+nario is based on realized volatility contribution for 120 days ending September 30, 1980. Global nancial crisis scenario is based 
+on realized volatility contribution for 120 days ending April 30, 2009.Figure 1: Dynamic risk management can better maintain diversication in periods of 
+unusual asset volatility* 
+Volatility contribution for a simple risk parity portfolio of equities, bonds and commodities 
+John Huss 
+Vice President
+Michael Mendelson
+ 
+Principal, Portfolio  
+Manager
+
+ing the probability that your views will eventually 
+be correct. But there are circumstances in which 
+risk management does interact with the choice of 
+-
+ple version of trend following  a strategy that buys 
+winners and sells losers based off of recent absolute 
+of that strategy having had some bias toward 
+(see Figure 3a). This is in part due to the tendency 
+of large market drawdowns to evolve over an 
+extended period of time, giving trend following 
+signals the potential opportunity to add value by 
+developing meaningful underweight positions in 
+the assets that are falling in price. It is also impor
+-
+tant to note that this relationship has only been true 
+Contrast the experience shown in Figure 3a 
+with the results presented in Figure 3b, where we 
+examine another common approach to forming 
+active asset allocation views, the use of valuation 
+metrics (like market aggregate earnings to price 
+ratio) to time markets. With a value-based timing 
+strategy, an investor forms an allocation based on 
+strategy is a useful complement to trend following 
+applied to a risk parity strategy is a tilt away from 
+it provides enough net-of-transaction-cost return 
+to compensate. We believe that active risk parity 
+strategies can overcome these obstacles and the 
+best way to do so is to incorporate a diverse set of 
+active views, appropriately scaled for the best risk/
+reward tradeoff.
+Active risk parity strategies that utilize a com
+-
+bination of different predictive signals  e.g. time 
+series trends, value, fundamental momentum, 
+relative value, and carry  should be more likely 
+to outperform a strategic-only risk parity allocation 
+than an active strategy that relies only on a single 
+signal or theme. In addition to the return boosting 
+not all, of the active themes we favor also may have 
+-
+WHEN ACTIVE MANAGEMENT IS (AND 
+ISNT) RISK MANAGEMENTWe believe that active views (like having a value 
+bias) are about seeking return, not about managing 
+risk. Managing risk means attempting to control 
+for the uncertainty around outcomes, not increas-
+value-based timing strategies has not tended to 
+markets. Though some commentators would have 
+knew underlying asset values, there is nothing to 
+keep cheap assets from getting cheaper or expen
+-
+sive assets from getting more expensive for a very 
+long time. Nevertheless, a value-based strategy 
+may still be useful when combined with trend fol-
+lowing signals as these two approaches tend to be 
+negatively correlated. PUTTING IT ALL TOGETHERAmidst the discussion of how best to implement 
+a risk parity strategy, we believe investors should 
+keep in mind that the most important thing is to 
+diversify across asset classes by risk rather than 
+consistent total portfolio risk at each point in time, 
+of that central decision to risk-balance. And, by 
+tactical tilts to risk parity, investors may generate 
+additional uncorrelated returns with little loss of 
+one should be under the illusion that tactical tilts 
+are a suitable replacement for disciplined risk man
+-
+-
+risk through time, and then adding value through 
+help investors take the risks they want to take and 
+also getting better risk-adjusted returns than a tra
+-
+ditional portfolio. This, in fact, has been our real
+-
+ized experience over nine years of managing risk 
+parity strategies.AQR is a global investment management rm that employs a 
+systematic, research-driven approach to manage alternative 
+and traditional strategies. As of March 31, 2015, we managed 
+approximately $131.6 billion* for institutional investors and 
+investment professionals. 
+* Includes assets managed by CNH Partners, an AQR aliate
+This document has been provided to you solely for informa
+-
+tion purposes and does not constitute an oer or solicitation 
+of an oer or any advice or recommendation to purchase any 
+securities or other nancial instruments and may not be con
+-
+strued as such.  The factual information set forth herein has 
+been obtained or derived from sources believed to be reliable 
+but it is not necessarily all-inclusive and is not guaranteed as 
+to its accuracy and is not to be regarded as a representation or 
+warranty, express or implied, as to the informations accuracy 
+or completeness, nor should the attached information serve as 
+the basis of any investment decision.
+0%
+5%
+10%
+15%
+20%
+25%
+30%
+200
+62
+00
+7
+200
+82
+00
+92
+01
+02
+01
+12
+01
+22
+01
+32
+01
+4
+St
+at
+ic 
+Ri
+sk
+ 
+Pa
+ri
+ty
+Dy
+na
+mi
+c 
+Ri
+sk 
+Pa
+rity
+P
+eak
+: 
+26.5%
+P
+eak
+: 
+11.5%
+**Source: AQR. Static and dynamic realized volatility based on hypothetical portfolios. Both portfolios are composed of developed 
+equities, developed nominal bonds and commodities. Static risk parity exposures remain constant while dynamic risk parity adjusts 
+exposures based on changes in volatility forecasts.Figure 2: A static exposure strategy is a variable risk strategy** 
+Realized volatility of static and dynamic risk parity strategies
+-6
+0%
+-4
+0%
+-2
+0%
+0%
+20%
+40%
+60%
+-4
+0%
+-3
+0%
+-2
+0%
+-1
+0%
+0%Tr
+en
+d 
+Fo
+llo
+wi
+ng
+ 
+Re
+turn
+sMa
+r
+ket
+ 
+Re
+turn
+s
+***Source: AQR. Scatter plots and quadratic models of best-t are based on calendar year returns of multiple global assets which 
+include equity, nominal bond and commodity markets normalized to 10% volatility. Trend following returns are generated by going 
+long or short the asset in proportion to its past 12-month return. Value returns are long or short the asset based on the level relative to 
+history of Shiller E/P ratios for equity markets, real bond yields for nominal bond markets and 5 year reversal for commodity markets. Figure 3: Active views can exhibit some, but not nearly certain downside protection*** 
+-6
+0%
+-4
+0%
+-2
+0%
+0%
+20%
+40%
+60%
+-4
+0%
+-3
+0%
+-2
+0%
+-1
+0%
+0%Va
+lu
+e 
+Re
+turn
+sMa
+r
+ket
+ 
+Re
+turn
+s
+3a. Downside asset returns vs. 12-month 
+trend following
+3b. Downside asset returns vs. common 
+value signals

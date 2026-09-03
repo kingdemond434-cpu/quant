@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-03T21:27:05.204562+00:00",
+  "generated_at": "2026-09-03T22:58:42.618629+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
@@ -2983,6 +2983,7 @@
       "path": "libs/research/mechanism_adapters.py",
       "status": "REACHABLE_MT5_STATIC",
       "direct_mt5_consumers": [
+        "desks/mt5/research/compile_anomalies.py",
         "desks/mt5/scripts/run_discovery_cycle.py"
       ],
       "proof_level": "STATIC_REACHABILITY_ONLY"

@@ -6261,3 +6261,35 @@ unprofitable population. Under L1.57 that is not a card and gets no clock. **Rou
 a reported diagnostic on generated candidates (alongside turnover and fitness), never as a gate
 and never as a threshold** — same standing as `wq_operators.fitness()`, which deliberately has
 no pass/fail path.
+
+## BRAIN s60 — the gauntlet reports a single-offset Sharpe and no implementation error bar
+
+The refutation is in `docs/graveyard.md::rebalance_offset_timing_luck_as_craftsmanship_alpha`:
+rebalance-offset dispersion is sampling noise (placebo out-dispersed the real signal, 1.49 vs
+1.03–1.36 × the shared-data null bound), so it is NOT a trial dimension and must NOT reach
+`deflated_sharpe`. Two things survive as measurement practice.
+
+**1. The error bar the desk does not print.** On the 126d arm a monthly MT5 TSMOM sleeve scores
+Sharpe **0.076** or **0.392** depending only on which trading day of the month it rebalances —
+a choice no candidate record contains. The gauntlet reports whichever draw the constructor
+happened to code, as a point estimate. Under LAWS ("everything is an estimate; give value,
+uncertainty and confidence — never a point estimate dressed as a fact") that number is
+missing its uncertainty, and the uncertainty is ±0.05–0.09 Sharpe *before* any statistical
+sampling error is added.
+
+**2. The free variance reduction.** Averaging the 21 offset sleeves (the standard overlapping-
+portfolio construction) raises Sharpe by **+0.0079 (252d)** and **+0.0089 (126d)** vs the mean
+individual offset — sign as declared, but economically ~zero, and the placebo also gains +0.0026,
+so *the return gain is not the reason to do it*. The reason is that the ensemble has no offset
+draw to be lucky or unlucky in: it removes the ±0.09 reporting noise at zero cost in turnover
+terms per unit of the same signal.
+
+**Route: a REPORTED DIAGNOSTIC, no pass/fail path** — the same standing as `wq_operators.fitness()`
+and s57's variance ratio. For any candidate whose construction has a discretionary rebalance phase,
+report the offset-ensemble Sharpe alongside the constructed one, and the cross-offset spread as
+the implementation error bar. NEVER as a gate, NEVER as a threshold, and specifically NEVER as a
+trial count — the placebo control is what forbids that.
+
+**Not an edge in either direction (L1.57).** The underlying sleeve is Sharpe 0.21–0.29 gross over
+19.3 years on 122 symbols, before costs. 0 cards, 0 survivors, 0 forward clocks, no multiplicity
+incurred. Artifacts: `data/brain/s60_timing_luck.py`, `data/brain_hunter_s60_timing_luck.json`.

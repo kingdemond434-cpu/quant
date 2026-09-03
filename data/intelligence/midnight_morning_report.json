@@ -3,7 +3,7 @@
  "candidate_conservation": {
   "accounted": 23370,
   "balanced": false,
-  "blocked": 6,
+  "blocked": 40,
   "cell_checkpoint": "content-addressed external_gauntlet series cache by cell+data-day",
   "discovered": 23465,
   "formula": "discovered = tested + queued + rejected + blocked; lost must equal zero",
@@ -105,93 +105,93 @@
    "WELLSFARGO.carry.p=efc657932b1ff292",
    "EBAY.carry.p=bb704a352af82749"
   ],
-  "queued": 6617,
-  "rejected": 16724,
-  "resumable_deferred": 6665,
-  "tested": 23
+  "queued": 5808,
+  "rejected": 17496,
+  "resumable_deferred": 5847,
+  "tested": 26
  },
  "compute_efficiency": {
   "allocation_rule": "unfinished canonical cells first; among discretionary research organs prefer measured certificate yield per CPU-hour",
-  "certificates_added": 0,
-  "certificates_per_cpu_hour": 0.0,
-  "measured_cpu_hours": 0.004008,
+  "certificates_added": -7,
+  "certificates_per_cpu_hour": -251.124467,
+  "measured_cpu_hours": 0.027875,
   "stage_rows": [
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 0.0,
-    "duration_seconds": 7652.284,
+    "certificate_delta": -7,
+    "cpu_seconds": 81.961506,
+    "duration_seconds": 4710.92,
     "name": "canonical_external_pipeline"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.81404,
-    "duration_seconds": 16.626,
+    "cpu_seconds": 1.855953,
+    "duration_seconds": 30.208,
     "name": "external_queue_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 5.151497,
-    "duration_seconds": 33.246,
+    "cpu_seconds": 5.53977,
+    "duration_seconds": 34.693,
     "name": "external_queue_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.070777,
-    "duration_seconds": 4.507,
+    "cpu_seconds": 0.068648,
+    "duration_seconds": 7.114,
     "name": "certificate_projection"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 1.957023,
-    "duration_seconds": 35.367,
+    "cpu_seconds": 3.941233,
+    "duration_seconds": 62.228,
     "name": "fusion_state_pull"
    },
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 1.009251,
-    "duration_seconds": 11.332,
+    "certificate_delta": -8,
+    "cpu_seconds": 1.131355,
+    "duration_seconds": 32.786,
     "name": "forward_identity_reconciliation"
    },
    {
-    "certificate_delta": 0,
-    "cpu_seconds": 0.062797,
-    "duration_seconds": 8.731,
+    "certificate_delta": 1,
+    "cpu_seconds": 0.065467,
+    "duration_seconds": 14.826,
     "name": "forward_clock_reconciliation"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 3.371183,
-    "duration_seconds": 29.975,
+    "cpu_seconds": 4.741023,
+    "duration_seconds": 123.718,
     "name": "forward_lane_heal"
    },
    {
     "certificate_delta": 0,
     "cpu_seconds": 0.0,
-    "duration_seconds": 8.723,
+    "duration_seconds": 15.87,
     "name": "zero_capital_shadow_forward"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.240996,
-    "duration_seconds": 10.703,
+    "cpu_seconds": 0.232352,
+    "duration_seconds": 5.427,
     "name": "mechanism_independence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.100875,
-    "duration_seconds": 8.483,
+    "cpu_seconds": 0.078656,
+    "duration_seconds": 5.991,
     "name": "same_day_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.568195,
-    "duration_seconds": 13.119,
+    "cpu_seconds": 0.639662,
+    "duration_seconds": 12.258,
     "name": "certificate_yield_fence"
    },
    {
     "certificate_delta": 0,
-    "cpu_seconds": 0.083464,
-    "duration_seconds": 9.332,
+    "cpu_seconds": 0.09302,
+    "duration_seconds": 9.33,
     "name": "forward_clock_fence"
    }
   ]
@@ -199,34 +199,34 @@
  "failure_root_causes": [
   {
    "cause": "in_sample_screen",
-   "count": 7778,
+   "count": 8245,
    "sample_cells": [
     "EURSGD.carry.p=f33ee19442eed424",
-    "USCOCOA.carry.p=a64a19509ec2befb",
-    "USCOCOA.turn_of_month.p=44136fa355b3678a",
-    "USCOCOA.vol_mean_reversion.p=44136fa355b3678a",
-    "USDBRL.carry.p=cf6af4160681105b",
-    "USDBRL.cross_asset_residual.p=c86a8db914144923",
-    "USDBRL.vol_transition.p=44136fa355b3678a",
-    "USDCAD.discovered.p=e4475a474e8b9425",
-    "USDCAD.discovered.p=ad4b59c0ae4c8376",
-    "USDCAD.discovered.p=20ef93ce83d847da"
+    "USDCNH.carry.p=6d7fa14f76045b2f",
+    "USDCNH.vol_transition.p=44136fa355b3678a",
+    "USDCZK.carry.p=af11d1b328ab1b82",
+    "USDHKD.carry.p=aef7f52cf6196e24",
+    "USDHKD.correlation_regime.p=ac73a3ef40a21e6f",
+    "USDHKD.cross_asset_residual.p=f1f1d03d92e199f7",
+    "USDHKD.cross_asset_residual.p=c86a8db914144923",
+    "USDHKD.fx_fixing_reversal.p=44136fa355b3678a",
+    "USDHKD.overnight_gap_decay.p=44136fa355b3678a"
    ]
   },
   {
    "cause": "NOT_RUN_BUILD_BUDGET_DEFERRED",
-   "count": 6665,
+   "count": 5847,
    "sample_cells": [
-    "USDCHF.discovered.p=e4475a474e8b9425",
-    "USDCHF.discovered.p=a1623362b2225b91",
-    "USDCHF.discovered.p=ae5789071852a251",
-    "USDCHF.discovered.p=4cba1afa572a99cd",
-    "USDCHF.discovered.p=78cdd50f5739184d",
-    "USDCHF.discovered.p=9d4ef8cdb3c6361d",
-    "USDCHF.discovered.p=a579c7d39e14ffea",
-    "USDCHF.discovered.p=f5d25843e6345ecb",
-    "USDCHF.discovered.p=6c56a5dcb1c46888",
-    "USDCHF.discovered.p=526d0a2fe45fce35"
+    "XAUUSD.discovered.p=b32bb6caccc6257a",
+    "XAUUSD.discovered.p=b746b5bd1873ff04",
+    "XAUUSD.discovered.p=e8ae5d172c171fc2",
+    "XAUUSD.discovered.p=60314b48c0a180ac",
+    "XAUUSD.discovered.p=0ef4d3a334b2a984",
+    "XAUUSD.discovered.p=e1d40bb8686a7561",
+    "XAUUSD.discovered.p=b3b804060c56e8f0",
+    "XAUUSD.discovered.p=5fbdcf4cabb5253c",
+    "XAUUSD.discovered.p=502d125fc8ff9f09",
+    "XAUUSD.discovered.p=2799993af06371a8"
    ]
   },
   {
@@ -247,34 +247,34 @@
   },
   {
    "cause": "observations",
-   "count": 2751,
+   "count": 2807,
    "sample_cells": [
     "EURSGD.event_reaction.p=4715a17a13ae8cc2",
-    "USDBRL.event_reaction.p=4715a17a13ae8cc2",
-    "USDCAD.discovered.p=5bc45f83fc4087ed",
-    "USDCAD.discovered.p=d0a0180df2b5a8b4",
-    "USDCAD.discovered.p=b3eb55ee9a39742e",
-    "USDCAD.discovered.p=f1071472b555444d",
-    "USDCAD.discovered.p=3d2fa60cd2dd760c",
-    "USDCAD.discovered.p=2a89261b8233638e",
-    "USDCAD.discovered.p=7092fe9e6aa75a95",
-    "USDCAD.discovered.p=62a0ad65e8b7e315"
+    "USDCNH.event_reaction.p=4715a17a13ae8cc2",
+    "USDCZK.event_reaction.p=4715a17a13ae8cc2",
+    "USDDKK.event_reaction.p=4715a17a13ae8cc2",
+    "USDHKD.event_reaction.p=4715a17a13ae8cc2",
+    "USDHUF.event_reaction.p=4715a17a13ae8cc2",
+    "USDIDR.event_reaction.p=4715a17a13ae8cc2",
+    "USDILS.event_reaction.p=4715a17a13ae8cc2",
+    "USDINR.event_reaction.p=4715a17a13ae8cc2",
+    "USDJPY.discovered.p=d0a0180df2b5a8b4"
    ]
   },
   {
    "cause": "deflated_sharpe",
-   "count": 1586,
+   "count": 1844,
    "sample_cells": [
     "EURSGD.cross_asset_residual.p=c86a8db914144923",
     "EURSGD.overnight_gap_decay.p=44136fa355b3678a",
-    "USCOCOA.cross_asset_residual.p=aa3d91c8b8b7b603",
-    "USCOCOA.relative_value.p=c5d0835716f7dd6e",
-    "USCOCOA.relative_value.p=4d5206231de2c743",
-    "USDBRL.correlation_regime.p=d86e1a3440681757",
-    "USDBRL.cross_asset_residual.p=00beb01ea8970934",
-    "USDBRL.cross_asset_residual.p=91641f7afb4a9e41",
-    "USDBRL.cross_asset_residual.p=aa3d91c8b8b7b603",
-    "USDBRL.relative_value.p=c5d0835716f7dd6e"
+    "USDCNH.correlation_regime.p=c5d0835716f7dd6e",
+    "USDCNH.cross_asset_residual.p=00beb01ea8970934",
+    "USDCNH.cross_asset_residual.p=f1f1d03d92e199f7",
+    "USDCNH.cross_asset_residual.p=91641f7afb4a9e41",
+    "USDCNH.cross_asset_residual.p=c86a8db914144923",
+    "USDCNH.cross_asset_residual.p=aa3d91c8b8b7b603",
+    "USDCNH.overnight_gap_decay.p=44136fa355b3678a",
+    "USDCNH.relative_value.p=c5d0835716f7dd6e"
    ]
   },
   {
@@ -295,14 +295,18 @@
   },
   {
    "cause": "NOT_RUN_BUILD_FAILED",
-   "count": 6,
+   "count": 40,
    "sample_cells": [
-    "USCOCOA.pca_residual.p=00beb01ea8970934",
-    "USCOCOA.pca_residual.p=f1f1d03d92e199f7",
-    "USCOCOA.pca_residual.p=91641f7afb4a9e41",
-    "USCOCOA.pca_residual.p=aa3d91c8b8b7b603",
-    "USDBRL.pca_residual.p=aa3d91c8b8b7b603",
-    "USDCAD.pca_residual.p=431ae322763eb1b1"
+    "USDCNH.pca_residual.p=00beb01ea8970934",
+    "USDCNH.pca_residual.p=91641f7afb4a9e41",
+    "USDCZK.lvc_asia_london.p=44136fa355b3678a",
+    "USDDKK.pca_residual.p=00beb01ea8970934",
+    "USDHKD.pca_residual.p=f1f1d03d92e199f7",
+    "USDHUF.pca_residual.p=00beb01ea8970934",
+    "USDHUF.pca_residual.p=91641f7afb4a9e41",
+    "USDIDR.pca_residual.p=aa3d91c8b8b7b603",
+    "USDILS.pca_residual.p=aa3d91c8b8b7b603",
+    "USDINR.pca_residual.p=aa3d91c8b8b7b603"
    ]
   },
   {
@@ -314,21 +318,22 @@
   }
  ],
  "forward_truth": {
-  "active_clocks": 52,
-  "fusion_native": 52,
+  "active_clocks": 53,
+  "fusion_native": 53,
   "proxy": 0,
   "rule": "proxy or stale evidence may accumulate diagnostically but cannot become native proof",
   "source_unmeasured": 0,
   "stale": 0,
   "stale_keys": []
  },
- "generated_at": "2026-09-03T21:26:10.694700+00:00",
+ "generated_at": "2026-09-03T22:57:27.043822+00:00",
  "headline": {
   "candidates_discovered": 23465,
   "candidates_lost": 95,
-  "certificates_added": 0,
-  "forward_clocks": 85,
+  "certificates_added": -7,
+  "forward_clocks": 86,
   "hard_failures": [
+   "canonical_external_pipeline",
    "forward_lane_heal"
   ]
  },
@@ -460,18 +465,18 @@
    "why": "N_eff is the participation ratio of the correlation eigenvalues: it cannot be inflated by adding a variant of something already held. Unmeasured pairs are assumed FULLY correlated, the conservative direction."
   },
   "forward_sleeves_with_observations": 21,
-  "measured_at": "2026-09-03T21:24:56+00:00",
+  "measured_at": "2026-09-03T22:56:07+00:00",
   "note": "Forward-phase observations only. Historical rows are excluded: allocation is a forward decision and may not be informed by evidence gathered during selection."
  },
  "rerouting": {
   "canonical_lane": "quant-external-pipeline.service",
   "policy": "restart the same canonical service while deferred work decreases; escalate no-progress or missing-data cells by root cause",
-  "stalled_cells": 6712
+  "stalled_cells": 5903
  },
  "resource_execution": {
   "collision_control": "systemd uses one quant-external-pipeline.service instance; hourly and midnight starts cannot duplicate the heavy worker",
   "external_pipeline_memory_max": "1500M",
-  "mem_available_mb": 381.9,
+  "mem_available_mb": 531.7,
   "remote_control": "desk-box job locks and per-stage timeouts remain authoritative"
  },
  "schema_version": 1,
@@ -618,13 +623,6 @@
     "overdue": true
    },
    {
-    "cell": "USDZAR.overnight_gap_decay.p=44136fa355b3678a",
-    "certificate": "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a",
-    "deadline_at": "2026-09-03 02:29:50.591219+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
     "cell": "AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "certificate": "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a",
     "deadline_at": "2026-09-02 00:13:35.223752+00:00",
@@ -644,74 +642,11 @@
     "deadline_at": "2026-08-31 23:50:19.808289+00:00",
     "enrolled": false,
     "overdue": true
-   },
-   {
-    "cell": "USDMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "certificate": "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a",
-    "deadline_at": "2026-09-03 02:29:50.591182+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=fff3ce17a104b37b",
-    "certificate": "external.AFG.discovered.p=fff3ce17a104b37b",
-    "deadline_at": "2026-09-03 13:07:21.412516+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=fb2786aabb7c21de",
-    "certificate": "external.AFG.discovered.p=fb2786aabb7c21de",
-    "deadline_at": "2026-09-03 13:07:21.412601+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=ef2e258721b52ea3",
-    "certificate": "external.AFG.discovered.p=ef2e258721b52ea3",
-    "deadline_at": "2026-09-03 13:07:21.412625+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=c76420808dcb4657",
-    "certificate": "external.AFG.discovered.p=c76420808dcb4657",
-    "deadline_at": "2026-09-03 13:07:21.412641+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=3d2353cfa7f07a5e",
-    "certificate": "external.AFG.discovered.p=3d2353cfa7f07a5e",
-    "deadline_at": "2026-09-03 13:07:21.412661+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFG.discovered.p=62c7a7478424a92f",
-    "certificate": "external.AFG.discovered.p=62c7a7478424a92f",
-    "deadline_at": "2026-09-03 13:07:21.412695+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFL.discovered.p=8b760805b40b5e55",
-    "certificate": "external.AFL.discovered.p=8b760805b40b5e55",
-    "deadline_at": "2026-09-03 13:07:21.412745+00:00",
-    "enrolled": false,
-    "overdue": true
-   },
-   {
-    "cell": "AFL.discovered.p=f75a215dda6b2030",
-    "certificate": "external.AFL.discovered.p=f75a215dda6b2030",
-    "deadline_at": "2026-09-03 13:07:21.412762+00:00",
-    "enrolled": false,
-    "overdue": true
    }
   ],
-  "certificates": 66,
-  "certificates_not_enrolled": 65,
-  "certificates_overdue": 33,
+  "certificates": 59,
+  "certificates_not_enrolled": 58,
+  "certificates_overdue": 23,
   "policy": "queued candidates and certificates have a 24h maximum waiting-room SLA",
   "queue_active": 17,
   "queue_overdue": 17,
