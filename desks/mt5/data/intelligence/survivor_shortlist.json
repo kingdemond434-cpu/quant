@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-03T20:23:44+00:00",
+ "updated_at": "2026-09-03T20:32:29+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -85,7 +85,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -137,7 +137,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -209,7 +209,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -282,7 +282,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -356,7 +356,7 @@
     "BEFORE",
     "BROKER"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -453,6 +453,65 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
+   "url": "https://www.mql5.com/en/signals/2375343",
+   "symbols": [
+    "AUDCAD",
+    "AUDJPY",
+    "AUDNZD",
+    "AUDUSD",
+    "CADCHF",
+    "EURJPY",
+    "EURNZD",
+    "EURUSD",
+    "GBPAUD",
+    "GBPCAD",
+    "GBPNZD",
+    "GBPUSD"
+   ],
+   "found_at": "2026-09-03T20:32:29+00:00",
+   "platform": "mt5",
+   "phenotypes": [
+    "max_growth",
+    "low_dd_high_return",
+    "algo_survivor",
+    "multi_fx"
+   ],
+   "ev_score": 35.202,
+   "growth_pct": 3223.83,
+   "weeks": 62.0,
+   "pf": 1.36,
+   "max_dd_pct": null,
+   "trades": 523.0,
+   "win_pct": 319.0,
+   "algo_pct": 92.0,
+   "subscribers": 13.0,
+   "author": "/en/users/x_alexander_x",
+   "author_other_signals": [
+    {
+     "sid": "2356441",
+     "title": "'FXtrading' by Alexander Pavlenko",
+     "growth": "1291%",
+     "curve_points": 20,
+     "curve_dd": -2.0
+    }
+   ],
+   "hour_histogram": {
+    "08": 2,
+    "13": 3,
+    "15": 2,
+    "14": 1,
+    "06": 1,
+    "02": 2,
+    "05": 1,
+    "01": 1,
+    "12": 2,
+    "07": 1
+   }
+  },
+  {
+   "source": "mql5_survivors",
+   "kind": "track_record",
+   "title": "",
    "url": "https://www.mql5.com/en/signals/2231030",
    "symbols": [
     "CHOICE",
@@ -460,7 +519,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -539,7 +598,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -601,7 +660,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -683,7 +742,7 @@
     "GBPCAD",
     "GBPNZD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -734,7 +793,7 @@
     "US500",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -802,7 +861,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -866,7 +925,7 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -909,7 +968,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -955,7 +1014,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1034,7 +1093,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-09-03T20:23:44+00:00",
+   "found_at": "2026-09-03T20:32:29+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1070,65 +1129,6 @@
     "16": 1,
     "05": 1,
     "00": 2
-   }
-  },
-  {
-   "source": "mql5_survivors",
-   "kind": "track_record",
-   "title": "",
-   "url": "https://www.mql5.com/en/signals/2375343",
-   "symbols": [
-    "AUDCAD",
-    "AUDJPY",
-    "AUDNZD",
-    "AUDUSD",
-    "CADCHF",
-    "EURJPY",
-    "EURNZD",
-    "EURUSD",
-    "GBPAUD",
-    "GBPCAD",
-    "GBPNZD",
-    "GBPUSD"
-   ],
-   "found_at": "2026-09-03T19:23:58+00:00",
-   "platform": "mt5",
-   "phenotypes": [
-    "max_growth",
-    "low_dd_high_return",
-    "algo_survivor",
-    "multi_fx"
-   ],
-   "ev_score": 35.202,
-   "growth_pct": 3223.83,
-   "weeks": 62.0,
-   "pf": 1.36,
-   "max_dd_pct": null,
-   "trades": 523.0,
-   "win_pct": 319.0,
-   "algo_pct": 92.0,
-   "subscribers": 13.0,
-   "author": "/en/users/x_alexander_x",
-   "author_other_signals": [
-    {
-     "sid": "2356441",
-     "title": "'FXtrading' by Alexander Pavlenko",
-     "growth": "1291%",
-     "curve_points": 20,
-     "curve_dd": -2.0
-    }
-   ],
-   "hour_histogram": {
-    "08": 2,
-    "13": 3,
-    "15": 2,
-    "14": 1,
-    "06": 1,
-    "02": 2,
-    "05": 1,
-    "01": 1,
-    "12": 2,
-    "07": 1
    }
   },
   {

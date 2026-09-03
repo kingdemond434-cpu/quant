@@ -1,11 +1,11 @@
 {
- "merged_at": "2026-09-03T18:52:47+00:00",
- "pipeline_started_at": "2026-09-03T17:52:56+00:00",
+ "merged_at": "2026-09-03T20:26:39+00:00",
+ "pipeline_started_at": "2026-09-03T18:53:36+00:00",
  "per_source": {
   "external_backtest_results.json": 141,
   "miner_candidates.json": 370,
   "edge_search_results.json": -2,
-  "orthogonal_candidates.json": 26,
+  "orthogonal_candidates.json": 41,
   "coverage_search_results.json": -2,
   "requeue_named.json": -2
  },
@@ -17,12 +17,12 @@
   "coverage_search_results.json": "STALE_SKIPPED",
   "requeue_named.json": "STALE_SKIPPED"
  },
- "total": 19729,
+ "total": 19734,
  "families": {
   "asia_momentum": 15,
   "calendar_month": 2,
   "carry": 343,
-  "correlation_regime": 251,
+  "correlation_regime": 252,
   "cot_positioning": 10,
   "cross_asset_residual": 560,
   "discovered": 17082,
@@ -33,8 +33,8 @@
   "liquidity_gamma_reversal": 17,
   "lvc_asia_london": 17,
   "overnight_gap_decay": 196,
-  "pca_residual": 232,
-  "relative_value": 341,
+  "pca_residual": 234,
+  "relative_value": 343,
   "session_handoff": 17,
   "session_range_breakout": 126,
   "turn_of_month": 145,
