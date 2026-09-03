@@ -51,6 +51,10 @@ vocabulary. Do not decide something the desk already decided.
 - **Never share a worktree with another live session (R0423)** — stage EXPLICIT PATHS, never
   `git commit -a`, never `git stash`.
 - `data/secrets/**` never leaves the box; no tool ever prints a key.
+- **COMMIT BEFORE YOU RUN PYTEST (R0748, measured 2026-09-03)** — a test writes to a
+  tracked file, and the suite's integrity guard repairs it by restoring *git HEAD*, which
+  silently reverts YOUR uncommitted edits in the same sweep. Its message reads identically
+  whether the tree was clean or your work was just discarded. Gate, commit, then test.
 
 ## Gates (all four, before any push)
 

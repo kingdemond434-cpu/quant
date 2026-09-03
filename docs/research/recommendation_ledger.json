@@ -1185,11 +1185,11 @@
    "summary": "SYNTH0731 P3-18 [DI-8/DI-11]: feed repairs — fix dead futclose path (+0 closes x139 symbols, 7d stale) + hole-drain tranche in dl_oi_ls_universe (312-1663d holes self-logged daily); revive COT via CFTC direct weekly CSV (free; MT5 transport dead since 06-21)",
    "roi_bps": 30.0,
    "raised": "2026-07-31T03:45:45.950552+00:00",
-   "status": "scheduled",
-   "reason": "EV-ranked (roi 30): dead futclose path + hole-drain tranche + COT revive.",
+   "status": "rejected",
+   "reason": "VERIFIED THREE-WAY SPLIT, and two of the three clauses are void by standing order rather than by judgement. (1) 'dead futclose path' and (2) 'hole-drain tranche in dl_oi_ls_universe' both target the Binance futures OI/LS feed -- scripts/dl_oi_ls_universe.py:12 pins its fields to /fapi/v1/openInterest and globalLongShortAccountRatio, i.e. crypto-exchange-native ground, which LAWS section 1 (MT5 UNIVERSE MANDATE, principal 2026-08-18/08-25) forbids any miner or query from targeting ever again; the desk-state block independently reads 'oi/ls clock 23/40 days FROZEN, banned-universe feed; RETIRED, never resurrect'. Repairing a feed the desk is ordered never to hunt is negative work, not deferred work. (3) 'revive COT via CFTC direct weekly CSV' is ALREADY DONE and is the half that survived the mandate, because CFTC positioning is FX/metals/energy ground: scripts/fetch_cot.py and scripts/screen_cot_positioning.py both exist, quant-cot-zcache.timer fires Tue/Wed/Sat 07:35, and the artifacts are accruing -- data/cot_zcache.parquet stamped 2026-08-29 07:35:03, data/cot_screen_summary.json 2026-08-28, data/cot_change_screen.json 2026-08-25. So the row has nothing left to build. Rejecting rather than marking implemented because two thirds of it must never be built, and that distinction is the durable information: a future sweep re-reading this row should learn the mandate killed it, not that somebody ran out of time.",
    "commit": null,
-   "due": "2026-09-01",
-   "disposed": "2026-08-11T15:57:39.305868+00:00"
+   "due": null,
+   "disposed": "2026-09-03T15:42:59.285189+00:00"
   },
   {
    "id": "R0086",
@@ -1221,11 +1221,11 @@
    "summary": "SYNTH0731 P1-8b [meta M3/X8 + infra F4]: decide deep-sweep cadence from measured marginal yield (new-vs-repeat tagging + brain-hours by organ); revive quota_verdict referee (dead 8d, logs empty); collapse dual deep-sweep cron entries; assign estate topics to one seat per sweep",
    "roi_bps": 40.0,
    "raised": "2026-07-31T03:45:46.164528+00:00",
-   "status": "scheduled",
-   "reason": "EV-ranked (roi 40): measured marginal-yield cadence decision + quota_verdict referee revive.",
+   "status": "rejected",
+   "reason": "THREE OF FOUR CLAUSES ARE VOID BECAUSE THE SUBSTRATE THEY NAME NO LONGER EXISTS, and the fourth is now owned by a live defect with a better handle. VERIFIED THIS CYCLE BY FRESH READ. (a) 'collapse dual deep-sweep cron entries': there are ZERO cron entries of any kind. crontab -l is a comment-only file whose own first line reads 'RETIRED 2026-08-31. Intentionally empty' -- cron.service was root-OOM-killed 2026-08-20 20:48 UTC, quant has no sudo to restart it, and the surviving jobs were migrated to systemd --user timers (126 loaded, all firing; measured via systemctl --user list-timers --all). There is no duplicate to collapse and deliberately re-populating the crontab is FORBIDDEN by that same header: a future cron restart would fire every job alongside its systemd twin on a swapless box that is already OOM-killing units. (b) 'revive quota_verdict referee': scripts/quota_verdict.py still exists (5704 bytes) but is scheduled by nothing -- and its own subject matter is dead, since it was built 2026-07-23 (commit 340e6c04) to answer whether the Anthropic Pro tier sustained the desk cadence, a question the Max seat settled. Reviving it would schedule an organ to re-answer a closed question. (c) 'assign estate topics to one seat per sweep' and (d) 'decide deep-sweep cadence from measured marginal yield' both presuppose the 2026-07-31 crypto-era estate; ops/run_deep_sweep.sh survives but has no scheduler, which is not this row's problem to solve -- it is one of the 108 rows already carried by the LIVE max_audit defect 'manifest-backlog' (201.6h), whose own triage text states the decision correctly (allowlist the venue-agnostic positive-EV rows in run_manifest_dispatch.py, or retire the crypto-era rows OUT of ops/crontab.manifest so the backlog is honest). Rejecting here rather than re-scheduling is the anti-treadmill call: a 34-day-old row re-dated without new evidence is the behaviour the section 37 brief exists to stop, and the surviving work is already tracked under a handle that is measured daily. The durable lesson recorded by this rejection: cadence rows written against cron are all suspect after 2026-08-20, and should be re-read against the timer set, never against the manifest.",
    "commit": null,
-   "due": "2026-09-03",
-   "disposed": "2026-08-11T15:57:46.337336+00:00"
+   "due": null,
+   "disposed": "2026-09-03T15:44:06.098101+00:00"
   },
   {
    "id": "R0089",
@@ -9754,6 +9754,34 @@
    "commit": null,
    "due": "2026-08-31",
    "disposed": "2026-08-30T06:09:20.449805+00:00"
+  },
+  {
+   "id": "R0748",
+   "source": "cycle",
+   "summary": "THE TEST SUITE'S TRACKED-FILE RESTORE GUARD SILENTLY DESTROYS UNCOMMITTED WORK, and it destroyed some of mine this cycle before I noticed. MEASURED 2026-09-03: a test under tests/scripts/ writes to tracked files, and the session-level guard reacts by restoring each written file 'to its pre-run contents' -- meaning git HEAD, not the contents the file had when the run STARTED. I had two uncommitted edits in the tree (scripts/max_audit.py, ops/run_desk_quick_tunnel.sh). Running pytest reverted BOTH to HEAD. The guard printed its message about the files it restored, but that message is indistinguishable from the ordinary case where the pre-run contents WERE HEAD, so nothing said 'your edit is gone'; I only caught it because a later grep for my own new symbol returned 0. Compounding it, my /tmp backup copy was taken AFTER the revert, so the single copy of the fix was overwritten by the file it was backing up. THE DEFECT IS THE WORD 'RESTORED': the guard's contract is 'a test run is an OBSERVATION and must never be a write to the thing observed', which is correct and must stay -- but it currently satisfies that contract by writing HEAD over the observer's own working tree, which is itself a write to the thing observed, one level up. FIX (two parts, both small): (1) snapshot the file's ACTUAL pre-run bytes and restore those, not the output of `git show HEAD:<path>` -- then an uncommitted edit survives and the guard still does its job; (2) if part 1 is not taken, the message must say explicitly that a DIRTY file was reverted and print the discarded diff stat, so the loss is loud rather than indistinguishable from a no-op. This is the desk's own dominant defect class from the 2026-08-29 gap-fixer memory -- a verdict computed then discarded by the layer above -- pointed at the developer instead of at an artifact. Every organ that edits code and then runs pytest before committing is exposed; the mitigation until fixed is COMMIT BEFORE ANY PYTEST RUN, which is worth stating in CLAUDE.md whether or not the code fix lands.",
+   "roi_bps": null,
+   "rank": 70.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T15:44:34.892684+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0749",
+   "source": "cycle",
+   "summary": "THE FORWARD-CONFIRMATION COHORT IS OVER ITS OWN LAW CAP AND AT LEAST 4 OF ITS 14 SLOTS ARE PROVABLY NOT ACCRUING, so every MT5 candidate is paying a measured 0.19 t-unit tax to clocks that can never promote. MEASURED 2026-09-03 by fresh read. libs.research.slot_registry.cohort_m_for_bar() returns CohortM(m=14, provenance=MEASURED, 'every source readable') against MAX_FORWARD_SLOTS=12 -- the two-stage discovery law's cap, whose own docstring says the fixed-for-life forward bar is fixed ONLY while the cohort stays at or below it. derive_slots() enumerates the 14: 10 axis, 2 standing, 2 derivative. THE COMPOSITION IS THE PROBLEM. Six are crypto-exchange-native and therefore unpromotable under LAWS section 1 (defi_utilisation, stablecoin_supply_momentum, cny_premium, perpdex_funding::aster_BTCUSDT_level_rate::8h, plus derivatives ls_contrarian and oi_divergence, which run on the Binance OI/LS feed the desk-state block reports FROZEN 13.8d and RETIRED, never resurrect). WORSE, FOUR ARE NOT ACCRUING AT ALL, and the state files say so: data/derivative_shadow_state.json DOES NOT EXIST on disk while its two slots are counted; data/crossasset_shadow_state.json was last written 2026-08-20 06:42 (14d stale); data/trend_regime_shadow_state.json 2026-07-08 23:40 (57d stale). THE CODE IS NOT THE DEFECT AND MUST NOT BE CHANGED. slot_registry is explicit that a dormant clock is counted until RETIRED by an explicit ledgered decision, because over-counting only tightens the bar and that is the safe error. It is behaving exactly as designed. The defect is that the retirement decision has never once been exercised, so a deliberate fail-safe default has silently compounded into an ownerless permanent tax. THE ARITHMETIC, via libs.validation.forward_stats.holm_bar: the rank-1 forward t bar is 2.69 at m=14 and 2.50 at m=8. Every legitimate MT5 candidate must clear 2.69 instead of 2.50 -- 0.19 t-units bought with nothing, since a retired-universe clock cannot produce a promotion however it resolves. Note the DIRECTION carefully, because it decides who may act: over-counting m makes promotion HARDER, so there is no phantom-edge exposure here and no urgency of the safety kind. This is timidity manufactured by stale state, which is a scored defect (LAWS 2a) but on the conservative side. NOT ACTIONED AUTONOMOUSLY, ON PURPOSE. Retiring a clock lowers a statistical bar, and NON-NEGOTIABLE 5 forbids relaxing validation-gate strictness without the principal. clock_retirement is the sanctioned channel and a ledgered decision is its required input, so the ask is narrow and specific: authorise retirement of the six banned-universe clocks through libs.research.clock_retirement, which brings m to 8, restores the cohort below its own cap, and frees 4 slots for MT5 candidates under the clock-saturation duty. The two provably-dead standing clocks (crossasset 14d, trend_regime 57d) need a separate verdict -- repair the producer or retire -- because unlike the crypto six their universe is not itself void.",
+   "roi_bps": null,
+   "rank": 95.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T15:48:47.163347+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
