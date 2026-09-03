@@ -164,9 +164,46 @@ def resolve(mechanism: str, required_observable: str = "",
                 why=c.verdict(), evidence=f"hand-written contract for event {event!r}",
                 contract=c)
 
-    toks = set(_tokens(need)) | set(_tokens(mechanism))
+    # THE REQUIRED OBSERVABLE OUTRANKS THE PROSE AROUND IT, and getting this backwards was a real
+    # defect. `need` is what the caller says it must measure; `mechanism` is a sentence describing
+    # the cause, and sentences contain incidental words. Measured 2026-09-03: the `scheduled_flow`
+    # adapter requires `calendar` -- which this desk HOLDS -- and resolved UNMEASURABLE anyway,
+    # because its causal story reads "a recurring, calendar-driven order FLOW", and "flow" is in
+    # the named-absent table. A held observable was overruled by an adjective. So the requirement
+    # is resolved on its own tokens first, and the prose is consulted only when the requirement
+    # itself decides nothing.
+    need_toks = set(_tokens(need))
+    prose_toks = set(_tokens(mechanism))
+    have = _holdings()
 
-    # 2. Named-absent beats everything else: say WHY, so the loop can choose to acquire data.
+    # 2. The REQUIRED observable, on its own terms: recorded and present, or price-native.
+    for key, (rel, why) in _RECORDED.items():
+        if key not in need_toks:
+            continue
+        if have.get(key):
+            return Resolution(
+                mechanism=mechanism, required_observable=need, resolved_observable=key,
+                measurement_class="DIRECT",
+                why=f"DIRECT: {why}; the desk records it and the artifact is present.",
+                evidence=rel)
+        return Resolution(
+            mechanism=mechanism, required_observable=need, resolved_observable="",
+            measurement_class="UNMEASURABLE",
+            why=(f"UNMEASURABLE: {need!r} needs {key!r}, which this desk is supposed to record "
+                 f"at {rel} -- and that artifact is ABSENT. A missing feed is not a null result."),
+            evidence=rel, unmet=(key,))
+    for key in _PRICE_NATIVE:
+        if key in need_toks:
+            return Resolution(
+                mechanism=mechanism, required_observable=need, resolved_observable=key,
+                measurement_class="DIRECT",
+                why=f"DIRECT: {key!r} is arithmetic on H1 bars this desk holds.",
+                evidence="H1 bars")
+
+    toks = need_toks | prose_toks
+
+    # 3. Named-absent: the requirement did not resolve, so the prose may now speak. Saying WHY
+    #    lets the research loop choose between acquiring the data and dropping the hypothesis.
     for key, why in _KNOWN_ABSENT.items():
         if key in toks:
             return Resolution(
@@ -176,8 +213,7 @@ def resolve(mechanism: str, required_observable: str = "",
                      f"under this mechanism's name would test something else."),
                 evidence="named-absent observable", unmet=(key,))
 
-    # 3. Recorded observables -- but only if the artifact is on disk.
-    have = _holdings()
+    # 4. Recorded observables named only in the PROSE, still checked on disk.
     for key, (rel, why) in _RECORDED.items():
         if key not in toks:
             continue
@@ -194,7 +230,7 @@ def resolve(mechanism: str, required_observable: str = "",
                  f"at {rel} -- and that artifact is ABSENT. A missing feed is not a null result."),
             evidence=rel, unmet=(key,))
 
-    # 4. Price-native: arithmetic on bars the desk already holds.
+    # 5. Price-native named only in the prose.
     for key in _PRICE_NATIVE:
         if key in toks:
             return Resolution(
@@ -203,7 +239,7 @@ def resolve(mechanism: str, required_observable: str = "",
                 why=f"DIRECT: {key!r} is arithmetic on H1 bars this desk holds.",
                 evidence="H1 bars")
 
-    # 5. Nothing matched. THIS IS A REFUSAL, NOT A FALLBACK.
+    # 6. Nothing matched. THIS IS A REFUSAL, NOT A FALLBACK.
     return Resolution(
         mechanism=mechanism, required_observable=need, resolved_observable="",
         measurement_class="UNMEASURABLE",

@@ -291,6 +291,19 @@ _DATA_HINT = re.compile(
 #: contains no data token at all, while `blog.example.com/my-data-journey` contains one. The
 #: host is the more reliable signal for the institutions, the path for everything else.
 #: Matched on the registrable suffix, so subdomains count.
+#: File and API shapes that ARE the data rather than a page about it. A dataset page is only
+#: worth an hour if something downloadable comes off it: measured 2026-09-03, the crawler had
+#: banked 724 leads and produced ZERO executable candidates, because "this page concerns COT
+#: data" is not COT data. These extensions turn a lead into an acquirable artifact.
+_ENDPOINT_RE = re.compile(
+    r"""href=["']([^"']+?\.(?:csv|tsv|json|jsonl|parquet|zip|gz|xlsx?|txt)(?:\?[^"']*)?)["']""",
+    re.IGNORECASE)
+#: API shapes that serve data without a file extension -- the majority of official statistics.
+_API_RE = re.compile(
+    r"""href=["']([^"']*(?:/api/|/download|/dataset|/series|/data\?|format=csv|"""
+    r"""type=csv|export|bulkdownload|/sdmx|/rest/data)[^"']*)["']""", re.IGNORECASE)
+
+
 _DATA_HOSTS = (
     "stlouisfed.org", "newyorkfed.org", "federalreserve.gov", "cftc.gov", "sec.gov",
     "bis.org", "ecb.europa.eu", "imf.org", "worldbank.org", "eia.gov", "bls.gov",
@@ -324,17 +337,44 @@ def is_data_source(url: str, title: str = "") -> bool:
     return bool(_DATA_HINT.search(url) or (title and _DATA_HINT.search(title)))
 
 
+def data_endpoints(text: str, base: str) -> list[str]:
+    """Absolute URLs on this page that ARE data: files and data APIs, deduped and capped.
+
+    THE DIFFERENCE BETWEEN A LEAD AND AN ASSET. A page ABOUT the CFTC archive converts at zero,
+    exactly like every other prose row -- the desk measured 341 of those. The .csv links ON that
+    page are the archive. Extracting them here is what lets a dataset page produce something the
+    compiler can admit, instead of one more row asserting that data exists somewhere.
+    """
+    from urllib.parse import urljoin
+    out: list[str] = []
+    seen: set[str] = set()
+    for rx in (_ENDPOINT_RE, _API_RE):
+        for m in rx.findall(text or ""):
+            try:
+                full = urljoin(base, str(m))
+            except ValueError:
+                continue
+            if full.startswith(("http://", "https://")) and full not in seen:
+                seen.add(full)
+                out.append(full)
+            if len(out) >= 200:
+                return out
+    return out
+
+
 def read_page(raw: bytes, url: str) -> dict[str, Any]:
     """Links, language and the trading claims a page makes. Pure; no network, no state."""
     try:
         text = raw.decode("utf-8", errors="replace")
     except Exception:
         return {"links": [], "symbols": [], "timeframes": [], "patterns": [], "lang": "",
-                "title": "", "text_len": 0}
+                "title": "", "text_len": 0, "endpoints": []}
     parser = _Extract()
     with contextlib.suppress(Exception):
         parser.feed(text)                       # a malformed page still yields what it parsed
     body = " ".join(parser.text)[:400_000]
+
+    endpoints = data_endpoints(text, url)
 
     title = ""
     m = re.search(r"<title[^>]*>(.*?)</title>", text, re.IGNORECASE | re.DOTALL)
@@ -356,6 +396,7 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
         "lang": parser.lang,
         "title": title,
         "text_len": len(body),
+        "endpoints": endpoints,
     }
 
 
@@ -398,6 +439,12 @@ def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] 
         # PROVENANCE, so a candidate that reaches the gauntlet can be traced to the exact bytes
         # that proposed it -- the vault entry is keyed by this hash.
         "lang": page["lang"],
+        # THE ACQUIRABLE ARTIFACTS ON THIS PAGE. A dataset row with an empty list is still only a
+        # claim that data exists; a row carrying endpoints is something the desk can go and get.
+        # Counted separately in the report so "valuable datasets found" is a measured number
+        # rather than a count of pages that mentioned the word.
+        "endpoints": page.get("endpoints") or [],
+        "n_endpoints": len(page.get("endpoints") or []),
         "vault_sha": digest,
         "host": urlparse(url).netloc,
     }
