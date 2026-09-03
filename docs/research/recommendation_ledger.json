@@ -10006,6 +10006,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0766",
+   "source": "cycle",
+   "summary": "BRAIN s56: libs/research/operators.py group_zscore CRASHES (IndexError) on the 1-D cross-section its own sibling group_rank documents and accepts -- it calls _as_panel(), which is the TIME-SERIES contract (1-D => obs x 1 series), so an N-name cross-section becomes N obs x 1 name and the length-N group mask cannot index the length-1 row (operators.py:277 vs group_rank's own ndim branch at :326). Every one of the 5 existing tests passes 2-D [[...]] input, so 1-D has zero coverage. FIX: in group_zscore replace 'panel, shape = _as_panel(x)' with group_rank's own ndim guard (1-D => reshape(1,-1), remember shape), and add tests/test_operators.py cases asserting group_zscore(1-D) == group_zscore(2-D row)[0] for group_rank's three documented cases (singleton, non-finite x, missing label).",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T20:12:16.375675+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0767",
+   "source": "cycle",
+   "summary": "BRAIN s56: the desk has TWO group_rank implementations that return DIFFERENT numbers on identical input, and the sibling carries the exact defect the other's docstring names. libs/alpha_factory/wq_operators.py:104 uses pandas rank(pct=True) = r/m, an interior-only mapping whose MINIMUM is 1/m -- so group SIZE becomes a position weight nobody chose. Measured on one cross-section with groups of size 2 and 5: the bottom member scores 0.50 (m=2) vs 0.20 (m=5) under wq_operators, but 0.0 for both under libs/research/operators.py:_group_rank_1d, which uses (r-1)/(m-1) precisely so 'endpoints actually REACH 0 and 1'. Worse, 0.50 is also the desk's documented NO-VIEW value (SINGLETON_RANK), so 'worst of a pair' is numerically indistinguishable from 'no signal' downstream. This is not hypothetical: the desk's own measured best grouping is currency_quote (BRAIN s24/s25), whose group sizes on the 251-symbol MT5 registry are wildly uneven (large USD-quote bucket vs 2-3 name exotic buckets), so the size bias is largest exactly where the grouping was chosen to add information. Same-input divergence also exists for zero-dispersion group_zscore: operators.py returns 0.0 (neutral, documented, after a 1.4e31 incident on 2026-08-01) while wq_operators.py:118 replaces sd 0.0 with NaN. FIX: make libs/alpha_factory/wq_operators.py group_rank/group_zscore delegate to libs/research/operators.py rather than reimplement (one semantics, one place); add tests/alpha_factory/test_wq_operators.py cases asserting the two agree on a group-size-2 vs group-size-5 cross-section and on a zero-dispersion group.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T20:12:45.323463+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0768",
+   "source": "cycle",
+   "summary": "BRAIN s56: libs/research/pdf_text.py -- the desk's ONLY PDF reader -- hangs indefinitely on real journal PDFs because _SHOW_RE's array branch has AMBIGUOUS ALTERNATION. At pdf_text.py:52 the TJ branch is \\[(?:\\\\.|[^\\]])*\\], and [^\\]] includes the backslash that \\\\. also matches, so every backslash is a fork: any '[' not closed by ']TJ' within the stream backtracks exponentially. Measured on data/external/aqr/pdfs/relaxed-constraint-portfolios.pdf (1.1MB): original NEVER FINISHES (>45s, faulthandler traceback pinned at pdf_text.py:89 _stream_text), fixed completes in 1.7s. The Tj branch at :51 already excludes the backslash ((?:\\\\.|[^\\\\()])*) -- the array branch is the lone unfixed one, and it is exactly the one that hangs. This is WHY s55's 137-PDF AQR manifest was never read: the corpus is unreadable with the current reader, and the failure mode is a silent hang, not an error, so it reads as a slow job rather than a broken tool. FIX (one character class): change [^\\]] to [^\\\\\\]] in the arr group at libs/research/pdf_text.py:52. VERIFIED SAFE: on craftsmanship-alpha.pdf, which the original DOES complete, fixed output is BYTE-IDENTICAL (65,814 chars, same stats streams=145/decoded=93/failed=13) at 0.6s. Add a tests/ case that extracts a PDF containing an unclosed '[' inside a content stream under a wall-clock assertion, since the defect presents as a hang and no correctness test can catch it.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T20:14:57.462082+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }
