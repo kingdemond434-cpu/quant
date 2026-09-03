@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T12:20:44+00:00",
+ "built_at": "2026-09-03T13:19:31+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1782,32 +1782,37 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "CONSTRAINED_REDEEMATION_FX_FLOW",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
+    "event": "session_transition",
+    "context": "month_end",
+    "direction": "reversal",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
+   "coordinate": "session_transition|month_end|magnitude|reversal|1h",
+   "measurement_class": "DIRECT",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (DIRECT): close - open, masked to the session's broker hours measures displacement within a named session window. the session clock comes from the bar index and the displacement IS the quantity the claim is about; nothing is standing in for anything",
+   "data_source": "ICI monthly fund flow data + EPFR global fund flows + MT5 tick data on EURUSD, USDJPY, USDMXN crosses month-end windows",
+   "kill": "If post-event 5-day mean reversion captures <30% of the spread blow-out, or effect disappears after 2018, kill",
+   "lens": "PARTICIPANT CONSTRAINT",
    "promotion_authority": false
   },
   {
-   "name": "audit:carry_change|continuation",
+   "name": "audit:forced_deleveraging|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "carry_change",
+    "event": "forced_deleveraging",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
