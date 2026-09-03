@@ -88,7 +88,7 @@
    "queries_exercised": 33,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-02T20:22:06+00:00",
+   "last_swept": "2026-09-03T10:22:03+00:00",
    "native_terms_available": 11
   },
   "de": {
@@ -97,7 +97,7 @@
    "queries_exercised": 30,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-02T21:22:03+00:00",
+   "last_swept": "2026-09-03T11:22:14+00:00",
    "native_terms_available": 10
   },
   "fr": {
@@ -106,7 +106,7 @@
    "queries_exercised": 30,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-02T22:22:02+00:00",
+   "last_swept": "2026-09-03T12:22:03+00:00",
    "native_terms_available": 10
   },
   "en": {

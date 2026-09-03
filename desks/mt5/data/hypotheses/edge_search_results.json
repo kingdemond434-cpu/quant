@@ -1,18 +1,18 @@
 {
- "searched_at": "2026-09-03T07:54:13+00:00",
+ "searched_at": "2026-09-03T11:33:36+00:00",
  "symbols": 1,
  "symbols_offered": 40,
  "unsearched": [],
- "total_trials": 283332,
+ "total_trials": 288192,
  "hypotheses": [],
  "per_symbol": [
   {
    "symbol": "XAUUSD",
    "status": "OK",
    "bars": 49758,
-   "primitives": 4941,
-   "trials": 283332,
-   "candidates_scored": 138282,
+   "primitives": 5022,
+   "trials": 288192,
+   "candidates_scored": 140712,
    "untestable_dropped": 20,
    "selected": [
     {
@@ -1721,7 +1721,7 @@
  "naming_queue_written": 0,
  "arbiter": "the canonical ten-gate policy, and nothing else. This searcher discovers and reports; it sets no threshold of its own. Pipeline: discovery -> backtest -> ten gates -> certificate -> forward window -> live.",
  "honesty": {
-  "trials_counted": 283332,
+  "trials_counted": 288192,
   "why": "every (feature, band, horizon, direction) combination evaluated is counted and carried into each hypothesis, so deflated Sharpe deflates against the real multiplicity of the search rather than a flattering subset",
   "oos_only": "scored on the held-out 40% only; band edges derived from the fit window so the condition itself does not leak",
   "selection": "greedy on marginal independence, |corr| < 0.5 against everything already chosen -- diversity is the objective, not a filter"
