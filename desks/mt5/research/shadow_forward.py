@@ -100,7 +100,10 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
                 # was gauntleted with. Certificate wins on overlap: it is the thing that passed.
                 params = dict(WINDOWS[run["selector"]])
                 params.update(run["params"])
-                rows.append((run["symbol"], run["selector"], params, fam))
+                side = _runnable_side(run, fam)
+                if side is None:
+                    continue                # refused and logged by _runnable_side
+                rows.append((run["symbol"], run["selector"], params, fam, side))
                 continue
             # EVERY certified family owes a clock (one-pipeline law; the same-day fence carried
             # CERTIFIED-NOT-ENROLLED on two overnight_gap_decay certificates while this branch
@@ -122,11 +125,66 @@ def certified_sleeves() -> list[tuple[str, str, dict]]:
             # the desk's only non-directional mechanism and the book's constraint is orthogonality.
             # Whether the inputs actually rebuild is decided per pass, at signal time, where the
             # bars exist -- not guessed here.
-            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam))
+            side = _runnable_side(run, fam)
+            if side is None:
+                continue                    # refused and logged by _runnable_side
+            rows.append((run["symbol"], run["selector"], dict(run["params"] or {}), fam, side))
     except Exception as exc:
         slog(f"certified_sleeves FAILED ({type(exc).__name__}: {exc}); "
              f"running grandfathered sleeves only this pass")
     return rows
+
+
+def _accepts_side(fn) -> bool:
+    """Can this family function be told which way to trade?
+
+    Asked of the SIGNATURE rather than discovered by catching TypeError, because the
+    existing `except TypeError: fam_fn(..., side=1)` fallback cannot tell "this family
+    takes no side" from "something inside it raised TypeError" -- and under the second
+    reading it would silently re-run a short certificate long.
+    """
+    try:
+        import inspect
+        sig = inspect.signature(fn)
+    except (TypeError, ValueError):
+        return False
+    if "side" in sig.parameters:
+        return True
+    return any(p.kind is p.VAR_KEYWORD for p in sig.parameters.values())
+
+
+def _runnable_side(run: dict, fam: str) -> str | None:
+    """The side this certificate must run on, or None when it must NOT be enrolled.
+
+    FAIL CLOSED (protocol rule 1: absence is never permission). Three outcomes:
+
+      declared LONG, or a family that can be told a side -> run it on that side
+      declared SHORT on a family with no side parameter   -> REFUSED, logged by name
+      undeclared                                          -> LONG, and the identity
+                                                             records `assumed_legacy`
+
+    The undeclared case is the only assumption here and it is a narrow one: every
+    certificate written before `_shadow_spec` began emitting `side` came out of a
+    long-only publisher. It is recorded rather than hidden, so a spec that turns up
+    undeclared for some NEW reason is visible in the identity instead of being quietly
+    traded long.
+    """
+    side = (run.get("side") or "").upper()
+    if not side:
+        return "LONG"
+    if side == "LONG":
+        return "LONG"
+    if side != "SHORT":
+        slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} declares side {side!r}, which is "
+             f"neither LONG nor SHORT; refusing to guess -- certificate stands, no clock")
+        return None
+    fn = _family_fn(fam)
+    if fn is None or not _accepts_side(fn):
+        slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} is SHORT and its family takes no "
+             f"`side`; refusing to enrol it LONG -- that would accrue forward evidence for the "
+             f"opposite direction under an identity claiming LONG. Certificate stands.")
+        return None
+    return "SHORT"
 
 
 def _family_fn(fam: str):
@@ -153,17 +211,27 @@ def _family_needs(fam: str) -> str | None:
     return None if desc[1] is None else str(desc[0])
 
 
-def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_breakout") -> str:
+def sleeve_key(sym: str, win: str, params: dict, family: str = "session_range_breakout",
+               side: str = "LONG") -> str:
     """One clock per parameterization -- the key carries what makes them different.
 
     Breakout keys keep their historical `SYM.window` shape (running clocks must not be renamed);
     every other family carries its family name, because `EURZAR.asia` alone cannot say WHICH
     certified strategy's forward evidence this is.
+
+    SIDE IS APPENDED ONLY FOR SHORT, and that asymmetry is deliberate rather than untidy. Every
+    key ever written by this desk is a long clock, and adding `.LONG` to all of them would rename
+    every running clock at once -- orphaning the entire forward book against ledgers, registry
+    rows and shadow state keyed by the old name. A long key is therefore byte-identical to what it
+    has always been, and a short clock on the same symbol, window and parameterization gets a
+    distinct key instead of colliding with its long twin and splicing two directions into one
+    forward series.
     """
     extra = {k: v for k, v in sorted(params.items()) if WINDOWS.get(win, {}).get(k) != v}
     sig = "_".join(f"{k}={v}" for k, v in extra.items())
     stem = f"{sym}.{win}" if family == "session_range_breakout" else f"{sym}.{family}.{win}"
-    return stem + (f"#{sig}" if sig else "")
+    tail = (f"#{sig}" if sig else "")
+    return stem + tail + ("" if str(side).upper() != "SHORT" else ".SHORT")
 
 
 FETCH_DAYS = 45
@@ -310,7 +378,11 @@ def main() -> None:
     h1_cache = {}
     # ONE PIPELINE: grandfathered rows plus every certificate, deduped. Certificates enrol
     # here automatically -- the same day they are written -- with their clock stamped below.
-    enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout") for s, w in SLEEVES]
+    # Grandfathered rows are long by construction -- they predate the side field entirely --
+    # and are stated as such rather than left to a default, so every row in `enrolled` has the
+    # same arity and the loop below never has to guess which shape it is holding.
+    enrolled = ([(s, w, dict(WINDOWS.get(w, {})), "session_range_breakout", "LONG")
+                 for s, w in SLEEVES]
                 + certified_sleeves())
     # Keep variants of one symbol adjacent so their bars are loaded once, while never retaining
     # the full multi-symbol history set. The old unbounded h1_cache crossed the service's 400 MB
@@ -321,8 +393,16 @@ def main() -> None:
     if breached:
         slog(f"forward-clock ratchet: {len(breached)} breached key(s) will be quarantined")
     seen: set[str] = set()
-    for sym, win, params, fam in enrolled:
-        key = sleeve_key(sym, win, params, fam)
+    for row in enrolled:
+        # SLICED, NOT DESTRUCTURED. A rigid five-way unpack here would break on any
+        # row built by an older `certified_sleeves` -- which is precisely the failure
+        # `forward_reconcile._engine_clock_keys` already carries a scar from, where a
+        # 3->4 widening raised on every pass and disabled orphan retirement for a day.
+        # The default is LONG because that is what every row without a side field is.
+        sym, win, params = row[0], row[1], row[2]
+        fam = row[3] if len(row) > 3 else "session_range_breakout"
+        side = row[4] if len(row) > 4 else "LONG"
+        key = sleeve_key(sym, win, params, fam, side)
         if key in seen:
             continue
         seen.add(key)
@@ -413,10 +493,24 @@ def main() -> None:
                 state[key] = st
                 continue
             call_params.update(extra)
+            # THE CERTIFIED DIRECTION, NOT A HARDCODED 1.
+            #
+            # `side=1` appeared ONLY in the TypeError fallback, so a family that accepts
+            # `side` with a default of long was called without it, succeeded on the first
+            # attempt, and replayed long -- whatever its certificate said. Passing it in the
+            # fallback alone would therefore have fixed nothing for exactly the families that
+            # can actually take a side.
+            #
+            # A short is passed EXPLICITLY on the first call. A long is not, so the call is
+            # byte-identical to what it has always been and no running clock changes behaviour
+            # because this landed. `_runnable_side` has already refused any short whose family
+            # has no `side` parameter, so reaching here with SHORT means it takes one.
+            _short = str(side).upper() == "SHORT"
             try:
-                sigs = fam_fn(h1, **call_params)
+                sigs = (fam_fn(h1, side=-1, **call_params) if _short
+                        else fam_fn(h1, **call_params))
             except TypeError:
-                sigs = fam_fn(h1, side=1, **call_params)
+                sigs = fam_fn(h1, side=-1 if _short else 1, **call_params)
             # THE WINDOW RUNS ON THE COST BASIS IT FROZE WITH. Rebuilding costs from live universe
             # metadata every cycle meant the spread re-measure (~2x/day) changed cost_hash and
             # terminally broke every clock mid-window -- 15 clocks in one afternoon, none of them
@@ -518,7 +612,10 @@ def main() -> None:
             try:
                 import sleeve_registry as _reg
                 _ident = _reg.identity(
-                    family=fam, symbol=sym, direction="LONG", timeframe="H1",
+                    # THE DIRECTION THIS CLOCK ACTUALLY REPLAYS. Hardcoded "LONG" here meant
+                    # a short certificate's clock froze an identity asserting long, so the
+                    # one field that would have exposed the mismatch agreed with the bug.
+                    family=fam, symbol=sym, direction=str(side).upper(), timeframe="H1",
                     selector=win, condition=None, params=params,
                     code=_reg.code_hash(fam_fn),
                     cost=_reg.cost_hash(costs),

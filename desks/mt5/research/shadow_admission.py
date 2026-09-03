@@ -353,6 +353,24 @@ def authorized_runs(base: Path = BASE) -> list[dict]:
             "family": str(spec.get("family") or "session_range_breakout"),
             "condition": spec.get("condition") or None,
             "params": dict(params),
+            # THE SIDE THE CERTIFICATE WAS EARNED ON, CARRIED RATHER THAN ASSUMED.
+            #
+            # `survivor_publication._shadow_spec` has been writing `side` into every
+            # published spec, straight off the certificate id -- and this reader
+            # dropped it on the floor. The forward engine then stamped
+            # direction="LONG" on the clock and replayed `fam_fn(side=1)`, so a
+            # certified SHORT strategy accrued forward evidence for the OPPOSITE
+            # direction under an identity claiming it was LONG all along.
+            #
+            # That is protocol rule 4 exactly: the side gate held at
+            # `authorized_specs` and was absent here, and this -- not that one --
+            # is the door the engine actually walks through.
+            #
+            # None means the spec predates the field. It is NOT silently read as
+            # LONG here; `side_basis` carries the distinction to the engine, which
+            # decides, and the identity records which of the two it was.
+            "side": (str(spec["side"]).upper() if spec.get("side") else None),
+            "side_basis": "declared" if spec.get("side") else "undeclared",
         })
     return runs
 
@@ -384,5 +402,10 @@ def run_key(run: dict) -> str:
     except ImportError:
         from research.shadow_forward import sleeve_key  # type: ignore[no-redef]
 
+    # SIDE IS PART OF THE IDENTITY, so it is part of the key. This function exists
+    # precisely because two builders for one identity disagreed once already and
+    # reported 34 of 35 certificates as clockless while every one of them ran; a
+    # short clock whose key here omitted the side would recreate that exact split.
     return sleeve_key(run["symbol"], run["selector"], run.get("params") or {},
-                      run.get("family") or "session_range_breakout")
+                      run.get("family") or "session_range_breakout",
+                      run.get("side") or "LONG")

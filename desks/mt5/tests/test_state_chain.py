@@ -151,5 +151,12 @@ def test_no_verdict_without_sufficient_evidence():
     verdict_zone = src[src.index(gate):]
     assert '"KILL"' in verdict_zone and '"PROMOTION CANDIDATE"' in verdict_zone
     before_gate = src[:src.index(gate)]
-    loop_body = before_gate[before_gate.index("for sym, win, params, fam in enrolled:"):]
+    # ANCHORED ON `in enrolled:` RATHER THAN THE FULL UNPACK. The assertion below is
+    # the invariant -- nothing kills a sleeve before the evidence gate -- and it does
+    # not depend on the loop's binding shape. Pinning the exact tuple made a source
+    # detail load-bearing: widening the row to carry the certified side turned this
+    # into `ValueError: substring not found`, which reads as a broken invariant when
+    # the invariant is untouched. A test that fails for the wrong reason teaches its
+    # reader to edit it, which is how a real one eventually gets edited away.
+    loop_body = before_gate[before_gate.index("in enrolled:"):]
     assert '= "KILL"' not in loop_body, "nothing may kill a sleeve before the evidence gate"

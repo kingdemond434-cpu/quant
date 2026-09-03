@@ -81,7 +81,23 @@ def _engine_clock_keys() -> set[str]:
     for row in sf.certified_sleeves():
         sym, win, params = row[0], row[1], row[2]
         family = row[3] if len(row) > 3 else "session_range_breakout"
-        keys.add(sf.sleeve_key(sym, win, params, family))
+        # SIDE IS SLICED WITH A DEFAULT, for the same reason `family` is: this reader
+        # destructured three when the engine widened to four and raised
+        # `too many values to unpack` on EVERY pass for a full day, silently disabling
+        # orphan retirement. Widening to five must not repeat that, and a default of
+        # LONG here is correct rather than merely safe -- `sleeve_key` only appends a
+        # side marker for SHORT, so a long key is unchanged either way.
+        side = row[4] if len(row) > 4 else "LONG"
+        try:
+            keys.add(sf.sleeve_key(sym, win, params, family, side))
+        except TypeError:
+            # AN ENGINE REVISION THAT PREDATES THE SIDE PARAMETER. Passing five
+            # positionally to a four-argument `sleeve_key` is the same defect this
+            # function's docstring is about, committed from the other end -- and it
+            # would again return "nothing is enrolled" for the whole book.
+            # Nothing is lost by falling back: a LONG key is identical either way,
+            # and an engine that cannot take a side cannot be running a short clock.
+            keys.add(sf.sleeve_key(sym, win, params, family))
     return keys
 
 
