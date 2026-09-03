@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T13:19:31+00:00",
+ "built_at": "2026-09-03T14:20:38+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1802,32 +1802,52 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:forced_deleveraging|continuation",
+   "name": "brent_dubai_exchange_settlement_basis",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "forced_deleveraging",
+    "event": "carry_change",
+    "context": "overlap",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|overlap|magnitude|continuation|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "MT5:UKOIL (Brent CFD) vs public DME Oman/Dubai daily settlements from DME website + ICE Brent settlement",
+   "kill": "Kill if mean EFS < 5 bbl-bps with half-life <1 day OR futures settlement times overlap allowing retail arb",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:liquidity_shock|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
+   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
   {
-   "name": "audit:inventory_rebalance|continuation",
+   "name": "audit:cross_market_move|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "inventory_rebalance",
+    "event": "cross_market_move",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "inventory_rebalance|asia|magnitude|continuation|1h",
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

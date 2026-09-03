@@ -1,0 +1,916 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/GBP.html",
+  "published": "2026-09-03T14:13:59+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "c48fd70d02dec70d705e",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/JPY.html",
+  "published": "2026-09-03T14:14:01+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "baa1fbfa3897888301e3",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/AUD.html",
+  "published": "2026-09-03T14:14:03+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "895ec5f9c9a94680648e",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/CAD.html",
+  "published": "2026-09-03T14:14:05+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "429afcd401af689f51e6",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/CHF.html",
+  "published": "2026-09-03T14:14:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "41e2275fbcd5c18e7aea",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u7f51,\u5916\u6c47\u9891\u9053,\u5916\u6c47",
+  "url": "http://forex.eastmoney.com/NZD.html",
+  "published": "2026-09-03T14:14:10+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "fe4548de462e31145581",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u7ecf\u6d4e\u65e5\u5386_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://forex.eastmoney.com/FC.html",
+  "published": "2026-09-03T14:14:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "",
+  "vault_sha": "0030b9245285c730c59c",
+  "host": "forex.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u7cfb\u7edf\u67b6\u6784 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/meta/architecture/",
+  "published": "2026-09-03T14:14:14+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh",
+  "vault_sha": "9004638f6a5951c5c6d7",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u53c2\u6570\u4f18\u5316\u6307\u5357 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/guide/optimization/",
+  "published": "2026-09-03T14:14:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh",
+  "vault_sha": "0ea2c503b31aa7499275",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u793a\u4f8b\u96c6\u5408 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/guide/examples/",
+  "published": "2026-09-03T14:14:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "\u65e5\u7ebf"
+  ],
+  "patterns": [
+   "breakout",
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "zh",
+  "vault_sha": "488cecc1efa663e2edc5",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5feb\u901f\u5f00\u59cb - AKQuant",
+  "url": "https://akquant.akfamily.xyz/start/quickstart/",
+  "published": "2026-09-03T14:14:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "zh",
+  "vault_sha": "db7e9c1a44ffb834b42c",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u91cf\u5316\u4ea4\u6613\u65b0\u624b\u6307\u5357 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/guide/quant_basics/",
+  "published": "2026-09-03T14:14:22+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "mean_reversion",
+   "momentum",
+   "volatility"
+  ],
+  "confidence": 0.95,
+  "lang": "zh",
+  "vault_sha": "181c6030bbb80c0a80a3",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u65f6\u533a\u5904\u7406 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/advanced/timezone/",
+  "published": "2026-09-03T14:14:24+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "zh",
+  "vault_sha": "8dcd633118d33d24a225",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u591a\u7b56\u7565\u6307\u5357 - AKQuant",
+  "url": "https://akquant.akfamily.xyz/advanced/multi_strategy_guide/",
+  "published": "2026-09-03T14:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh",
+  "vault_sha": "a8223888d86f029f575e",
+  "host": "akquant.akfamily.xyz"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Background for Review",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-background-for-review-2019-2020.htm",
+  "published": "2026-09-03T14:14:26+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "8a5fc2f6c626f576eaf3",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Historical Statements on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://federalreserve.gov/monetarypolicy/historical-statements-on-longer-run-goals-and-monetary-policy-strategy-2019-2020.htm",
+  "published": "2026-09-03T14:14:28+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "5d13914eededec498254",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Conference on Monetary Policy Strategy, Tools, and Communication Practices (A Fed Listens Event)",
+  "url": "https://federalreserve.gov/conferences/conference-monetary-policy-strategy-tools-communications-20190605.htm",
+  "published": "2026-09-03T14:14:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "97a440ba52414a5154ed",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Federal Reserve Board - Federal Reserve to review strategies, tools, and communication practices it uses to pursue its mandate of maximum employment and price stability",
+  "url": "https://federalreserve.gov/newsevents/pressreleases/monetary20181115a.htm",
+  "published": "2026-09-03T14:14:32+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "c3a018ffc601211f1ab7",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Stock Trading Platform - CFDs on Stocks and ETFs | Dukascopy",
+  "url": "https://www.dukascopy.com/swiss/english/platforms/stockcfd/",
+  "published": "2026-09-03T14:15:00+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "orderflow"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "0ab92156abed0256f0fe",
+  "host": "www.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "High Volume Forex Cashback - Trading Bonus | Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/ecn-account-programs/volume-cashback/",
+  "published": "2026-09-03T14:15:03+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "76f18f450bb608e41dd4",
+  "host": "www.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Equity Bonus :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/ecn-account-programs/bonus-program/",
+  "published": "2026-09-03T14:15:11+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "ea674a9a6b823ead3fcf",
+  "host": "www.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Volume Trading Commission Discount Program :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/about/fee-schedule/trading-commission-discount-program/",
+  "published": "2026-09-03T14:15:18+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "68d77788b56ae7a98869",
+  "host": "www.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Experience Sharing :: Dukascopy Bank SA",
+  "url": "https://www.dukascopy.com/swiss/english/forex/ecn-account-programs/experience-sharing/",
+  "published": "2026-09-03T14:15:19+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "9e850fad553deaec48b6",
+  "host": "www.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-data/?/ninjatrader/tick-bid-quotes",
+  "published": "2026-09-03T14:15:19+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "407e3e3e91e6b91fde02",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-data/?/ninjatrader/tick-ask-quotes",
+  "published": "2026-09-03T14:15:21+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "7e5837f46fac0aca8db5",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-data/?/metastock/1-minute-bar-quotes",
+  "published": "2026-09-03T14:15:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "2d70a05bf3477231d997",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/category/forex-historical-data/",
+  "published": "2026-09-03T14:15:25+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en-US",
+  "vault_sha": "dffdfa53a34b17e08773",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Pass Prop Firm Challenges with Forex Tester Online Simulator",
+  "url": "https://forextester.com/en/pass-prop-firm-challenge/",
+  "published": "2026-09-03T14:15:27+00:00",
+  "symbols": [],
+  "timeframes": [
+   "1M",
+   "DAILY"
+  ],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "59862c29a7f4f8ad83b1",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How to Make the Most Out of Our Trading Simulator [detailed video]",
+  "url": "https://forextester.com/video",
+  "published": "2026-09-03T14:15:29+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "08ebdf9a48c13667bad0",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "All you wanted to know about best trading simulator [Ultimate List]",
+  "url": "https://forextester.com/faq",
+  "published": "2026-09-03T14:15:30+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "fbd554c2f343f41eb825",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Desktop: Buy Historical Tick Data for Backtesting",
+  "url": "https://forextester.com/historyservicedescription",
+  "published": "2026-09-03T14:15:33+00:00",
+  "symbols": [
+   "AUDCAD",
+   "AUDCHF",
+   "AUDHUF",
+   "AUDJPY",
+   "AUDNZD",
+   "AUDSGD",
+   "AUDUSD",
+   "CADCHF",
+   "CADJPY",
+   "CHFDKK",
+   "CHFHUF",
+   "CHFJPY",
+   "CHFNOK",
+   "CHFPLN",
+   "CHFSEK",
+   "CHFSGD",
+   "COTTON",
+   "EURAUD",
+   "EURCAD",
+   "EURCHF",
+   "EURCZK",
+   "EURDKK",
+   "EURGBP",
+   "EURHKD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "vault_sha": "8933fb285a19ed71dbfa",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Ultimate guide on the best materials to get the most of backtesting",
+  "url": "https://forextester.com/howtouse",
+  "published": "2026-09-03T14:15:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "099fb27c8f1079271aad",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Support Center - Forex Tester Online",
+  "url": "https://forextester.com/contacts",
+  "published": "2026-09-03T14:15:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "65fe06646b3c9926156c",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Forex Tester Online Features | FTO - Forex Tester Online",
+  "url": "https://forextester.com/features",
+  "published": "2026-09-03T14:15:39+00:00",
+  "symbols": [
+   "AUDUSD",
+   "EURUSD",
+   "GBPUSD",
+   "US30",
+   "USDJPY",
+   "XAUUSD"
+  ],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "correlation",
+   "gap",
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.95,
+  "lang": "en",
+  "vault_sha": "5b1d9c63cfb269f34638",
+  "host": "forextester.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - 2025 Statement on Longer-Run Goals and Monetary Policy Strategy",
+  "url": "https://federalreserve.gov/monetarypolicy/monetary-policy-strategy-tools-and-communications-statement-on-longer-run-goals-monetary-policy-strategy-2025.htm",
+  "published": "2026-09-03T14:15:39+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "fec3c2051ec04c3f743d",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "The Fed - Fed Listens 2025",
+  "url": "https://federalreserve.gov/monetarypolicy/review-of-monetary-policy-strategy-tools-and-communications-fed-listens-events-2025.htm",
+  "published": "2026-09-03T14:15:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "584fb7fa23db0c558be9",
+  "host": "federalreserve.gov"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/EURUSD",
+  "published": "2026-09-03T14:15:41+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "a6c6bcf234e507f63bf0",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/EURCHF",
+  "published": "2026-09-03T14:15:43+00:00",
+  "symbols": [
+   "EURCHF"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "65532cd119989840d42c",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Free Forex Historical Data &#8211; HistData.com",
+  "url": "https://www.histdata.com/download-free-forex-historical-data/?/metatrader/1-minute-bar-quotes/EURGBP",
+  "published": "2026-09-03T14:15:45+00:00",
+  "symbols": [
+   "EURGBP"
+  ],
+  "timeframes": [
+   "M1"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en-US",
+  "vault_sha": "e32c5c32d509f0570944",
+  "host": "www.histdata.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Binary Search Algorithm for Market Data Files, Kibot Documentation",
+  "url": "https://www.kibot.com/file-format/binary-search-algorithm.html",
+  "published": "2026-09-03T14:15:46+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "9f6c601d101b16d5f7ba",
+  "host": "www.kibot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Hours, Kibot Documentation",
+  "url": "https://www.kibot.com/futures/trading-hours.html",
+  "published": "2026-09-03T14:15:47+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "gap",
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "3b90188b012f91284955",
+  "host": "www.kibot.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade with Confidence / Axi EU",
+  "url": "https://www.axi.com/eu/our-edge/trade-with-confidence",
+  "published": "2026-09-03T14:15:49+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "4ae15ace479fcc09a3f9",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Making your online safety our #1 priority / Axi EU",
+  "url": "https://www.axi.com/eu/our-edge/trade-with-confidence/trade-safely",
+  "published": "2026-09-03T14:15:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "095fb0d2ecdfae2d6203",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Award-Winning Service / Axi EU",
+  "url": "https://www.axi.com/eu/our-edge/award-winning-service",
+  "published": "2026-09-03T14:15:55+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "0f5999af526c6f8d5ce9",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trade Forex CFDs Online / Axi EU",
+  "url": "https://www.axi.com/eu/trade/cfds/forex",
+  "published": "2026-09-03T14:16:01+00:00",
+  "symbols": [
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "17e00a3df5f459ad4080",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Trading Accounts / Axi EU",
+  "url": "https://www.axi.com/eu/trading-accounts",
+  "published": "2026-09-03T14:16:05+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "9d6d18f50de62d486d06",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Axi Professional / Axi EU",
+  "url": "https://www.axi.com/eu/trading-accounts/professional-account",
+  "published": "2026-09-03T14:16:07+00:00",
+  "symbols": [
+   "BTCUSD",
+   "ETHUSD",
+   "EURUSD"
+  ],
+  "timeframes": [
+   "WEEKLY"
+  ],
+  "patterns": [],
+  "confidence": 0.75,
+  "lang": "en",
+  "vault_sha": "e9a997695b7e72a06d3b",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "MetaTrader 4 Download - MT4 App for PC, Mac, Android, iPhone",
+  "url": "https://www.axi.com/eu/trading-platforms/metatrader-4",
+  "published": "2026-09-03T14:16:12+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "84c43b8abdebb1c66094",
+  "host": "www.axi.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/center/forex.html",
+  "published": "2026-09-03T14:16:13+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "ac5e34bf44581ea96ba5",
+  "host": "quote.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://guba.eastmoney.com/list,waihui.html",
+  "published": "2026-09-03T14:16:16+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "vault_sha": "cb2c2120ac841c968b4a",
+  "host": "guba.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u5168\u7403\u8d22\u7ecf\u5feb\u8baf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://kuaixun.eastmoney.com/wh.html",
+  "published": "2026-09-03T14:16:20+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "1f2fa3e2858ed31f9df5",
+  "host": "kuaixun.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "https://quote.eastmoney.com/center/gridlist.html",
+  "published": "2026-09-03T14:16:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "876b477b994a8f04b255",
+  "host": "quote.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
+  "url": "http://quote.eastmoney.com/center/gridlist.html",
+  "published": "2026-09-03T14:16:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "vault_sha": "876b477b994a8f04b255",
+  "host": "quote.eastmoney.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "https://live-login.dukascopy.com/rto3/",
+  "url": "https://live-login.dukascopy.com/rto3/",
+  "published": "2026-09-03T14:16:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "a5e4ed7cca3d321b9983",
+  "host": "live-login.dukascopy.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Cabinet",
+  "url": "https://live-login.dukascopy.com/cabinet/trader/?lang=en",
+  "published": "2026-09-03T14:16:24+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "vault_sha": "593ec1dc082184d435dc",
+  "host": "live-login.dukascopy.com"
+ }
+]
