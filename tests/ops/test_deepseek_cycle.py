@@ -2,10 +2,13 @@
 second desk."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import ClassVar
 
 import pytest
+
+from libs.ops import deepseek_cycle as ds
 
 from libs.ops.deepseek_cycle import (
     CONTAMINATION_KEYS,
@@ -443,3 +446,78 @@ class TestRunRole:
         second = ds_mod.run_role("cold_alpha_inventor", "brief", deep=False, env=self._LIT_ENV,
                                  root=tmp_path, run_id="fixed-id")
         assert second["status"] == "SEAL_CONFLICT"
+
+
+class TestDonation:
+    """The flywheel published nothing for the life of it, and reported success.
+
+    Its donate step is `git add -- data/ docs/research/`, and every DeepSeek output store was
+    matched by `.gitignore:11 data/*`. `git add` on an ignored path is a SILENT NO-OP, so the
+    cycle ran daily, committed, pushed, and shipped none of its own findings -- while the commits
+    it made carried other organs' files swept up by the same blanket add. Findings now go to
+    `data/intelligence/deepseek/`, which is allowlisted AND is the tree
+    `miner_candidate_compiler` globs, so one write fixes visibility and conversion together.
+    """
+
+    _LIT: ClassVar[dict[str, str]] = dict(TestRunRole._LIT_ENV)
+
+    def _run(self, tmp_path, monkeypatch, reply: str):
+        monkeypatch.setattr(ds, "policy_gate", lambda root=None: {"ok": True, "policy_hash": "h"})
+        monkeypatch.setattr(ds, "budget_gate", lambda: {"ok": True, "why": ""})
+        from libs.ops import llm_seat
+        monkeypatch.setattr(llm_seat, "chat", lambda *a, **k: (reply, ""))
+        return ds.run_role("cold_alpha_inventor", "invent", deep=False, state={},
+                           root=tmp_path, env=dict(self._LIT))
+
+    def test_a_finding_is_published_where_every_brain_can_read_it(self, tmp_path, monkeypatch):
+        out = self._run(tmp_path, monkeypatch, json.dumps({"findings": [
+            {"title": "JPY month-end fixing drift", "mechanism": "forced rebalancing",
+             "testable_claim": "drift is positive", "symbols": ["USDJPY"],
+             "family": "session_range_breakout"}]}))
+        assert out["status"] == "OK"
+        assert out["donated_to"], "a finding that is not donated is a finding nobody receives"
+        donated = sorted((tmp_path / ds.DONATE_DIR).glob("discoveries_*.json"))
+        assert donated, "nothing written to the donation directory"
+        doc = json.loads(donated[0].read_text(encoding="utf-8"))
+        assert doc["source"] == "deepseek"
+        row = doc["discoveries"][0]
+        assert row["symbols"] == ["USDJPY"], "symbols must survive to the compiler"
+        assert row["family"] == "session_range_breakout"
+
+    def test_the_donation_lands_in_the_tree_the_compiler_globs(self, tmp_path, monkeypatch):
+        """Not a new pipeline -- the existing one. The compiler walks data/intelligence/*/."""
+        self._run(tmp_path, monkeypatch, json.dumps({"findings": [
+            {"title": "t", "mechanism": "m", "testable_claim": "c", "symbols": ["EURUSD"]}]}))
+        written = sorted((tmp_path / "data" / "intelligence" / "deepseek").glob("discoveries_*.json"))
+        assert written, "must be under data/intelligence/<source>/discoveries_*.json"
+
+    def test_a_general_finding_still_publishes_and_becomes_a_deepening_task(self, tmp_path,
+                                                                           monkeypatch):
+        """No symbols is honest, not a reason to drop it -- the reader works it later."""
+        out = self._run(tmp_path, monkeypatch, json.dumps({"findings": [
+            {"title": "carry crowding", "mechanism": "m", "testable_claim": "c", "symbols": []}]}))
+        assert out["donated_to"]
+        doc = json.loads(sorted((tmp_path / ds.DONATE_DIR).glob("*.json"))[0].read_text("utf-8"))
+        assert doc["discoveries"][0]["symbols"] == []
+
+    def test_no_findings_writes_no_file(self, tmp_path, monkeypatch):
+        out = self._run(tmp_path, monkeypatch, json.dumps({"findings": []}))
+        assert out["donated_to"] is None
+        assert not list((tmp_path / ds.DONATE_DIR).glob("*.json"))
+
+    def test_a_missing_challenger_module_costs_the_walk_not_the_cycle(self, tmp_path, monkeypatch):
+        """The absent module raised for EVERY finding naming a source -- which the prompt asks for."""
+        import builtins
+        real = builtins.__import__
+
+        def no_challenger(name, *a, **k):
+            if "capability_challenger" in name:
+                raise ImportError("No module named 'libs.research.capability_challenger'")
+            return real(name, *a, **k)
+
+        monkeypatch.setattr(builtins, "__import__", no_challenger)
+        out = self._run(tmp_path, monkeypatch, json.dumps({"findings": [
+            {"title": "t", "mechanism": "m", "testable_claim": "c", "symbols": ["EURUSD"],
+             "capability_source": "Renaissance", "evidence_grade": "PEER_REPORTED"}]}))
+        assert out["status"] == "OK", "a missing enrichment must not crash the cycle"
+        assert out["donated_to"], "the finding must still be donated"
