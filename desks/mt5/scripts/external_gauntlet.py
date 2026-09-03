@@ -366,6 +366,21 @@ def build_cell(sym: str, family: str, params: dict, meta: dict,
             "costs": costs, "_cost_basis": cost_basis, "_fill_hour": hour}
 
 
+def canonical_symbol(sym: str, meta: dict) -> str:
+    """The registry's own spelling of `sym`, or `sym` unchanged when it knows no such symbol.
+
+    MEASURED 2026-09-03: 95 cells were refused as UNTRADEABLE for their CASING. `broker_swaps`
+    reads Fusion's symbol table and emits `ACCENTURE`; the registry -- and every parquet on disk
+    -- spells it `Accenture`. The symbol is quoted, the bars exist, and the cell was thrown away
+    at gate 0 with the message "absent from the universe registry", which is exactly the kind of
+    true-sounding, wrong finding that makes a docket smaller for no reason.
+    """
+    if sym in meta:
+        return sym
+    folded = {str(k).upper(): str(k) for k in meta}
+    return folded.get(sym.upper(), sym)
+
+
 def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     """Can this desk ever place an order on `sym`, and hold bars to run a forward clock on it?
 
@@ -381,6 +396,7 @@ def symbol_is_tradeable(sym: str, meta: dict) -> tuple[bool, str]:
     the cell is UNTRADEABLE, named as such rather than failed -- it is not a bad edge, it is an
     edge on an instrument this desk does not have.
     """
+    sym = canonical_symbol(sym, meta)
     if sym not in meta:
         return False, f"symbol {sym!r} is absent from the universe registry"
     if not (UNI / f"{sym}_H1.parquet").exists():
@@ -402,7 +418,13 @@ def partition_at_economic_prior(specs: list[dict],
     rejected: list[dict] = []
     for spec in specs:
         if meta is not None:
-            ok, why = symbol_is_tradeable(str(spec.get("sym") or ""), meta)
+            # NORMALISE BEFORE JUDGING, and keep the canonical spelling on the spec: everything
+            # downstream (_h1_for, the cache key, the certificate, the forward clock) keys on
+            # this string, so a cell admitted under the wrong casing would fail later instead.
+            canon = canonical_symbol(str(spec.get("sym") or ""), meta)
+            if canon != spec.get("sym"):
+                spec["sym"] = canon
+            ok, why = symbol_is_tradeable(canon, meta)
             if not ok:
                 rejected.append({
                     "cell": cell_id(spec),
