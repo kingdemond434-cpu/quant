@@ -11684,3 +11684,24 @@ instruments, different construction and different vendors put the 12-month FX tr
 is **not** a tape, clock or cost artifact — it is the period. Recorded as a fact about the window,
 never as a gate (L1.6/L1.60); no AQR threshold imported in either direction. Monthly resolution
 means this can never touch a 14-day forward decision — backtest histories only.
+
+---
+
+## FREE-DATA ad — 2026-09-03 — SESSION NOTE (WRITTEN FIRST, per the completion contract)
+
+Backlog: `source_backlog_next.py` = **0 pending verification, 0 pending legitimacy** (102
+catalogued, 78 resolved, 24 deferred, next return 2026-09-05). No verification debt.
+
+**RESUME, DO NOT RESTART.** Run **(ac)** (same date) wrote its header naming three items and then
+died before landing any artifact — `data/external/forexbenchmark/` does not exist and the map holds
+only run (ab)'s `forexbenchmark_fusion_spreads_20260830.json`. Per the resume rule I finish **(ac)'s
+unfinished items** rather than opening new ground.
+
+**Items taken this run:**
+1. **forexbenchmark INTRADAY cost surface** — `POST /spreads_data_chart/`, minute-of-day buckets.
+   The desk prices every session-boundary/rollover/news hypothesis off ONE flat cost number.
+2. **forexbenchmark PEER brokers** (41 available) — splits desk cost into *market* cost vs *broker*
+   cost. Never measured.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — a new source class, not a re-scan.
+
+Status: **IN PROGRESS**
