@@ -1515,3 +1515,121 @@ def family_retail_overlap_reversal(
         signals.append(Signal(time=ts, side=side, stop=stop, target=target,
                               ttl_bars=ttl_bars, tag="retail_overlap_reversal"))
     return signals
+
+
+def _adx(df: pd.DataFrame, n: int = 14) -> pd.Series:
+    """Wilder's ADX -- trend STRENGTH, direction-blind, which is the whole point of the gate.
+
+    Wilder smoothing (an EMA at alpha=1/n), not a simple mean: the published rule this serves
+    is stated in Wilder's terms and a rolling mean would answer a different question at every
+    parameter the sweep tries.
+    """
+    h, low, c = df["high"], df["low"], df["close"]
+    up, dn = h.diff(), -low.diff()
+    plus = np.where((up > dn) & (up > 0), up, 0.0)
+    minus = np.where((dn > up) & (dn > 0), dn, 0.0)
+    prev = c.shift(1)
+    tr = pd.concat([(h - low), (h - prev).abs(), (low - prev).abs()], axis=1).max(axis=1)
+    atr = tr.ewm(alpha=1.0 / n, min_periods=n, adjust=False).mean()
+    pdi = 100.0 * pd.Series(plus, index=df.index).ewm(
+        alpha=1.0 / n, min_periods=n, adjust=False).mean() / atr.replace(0.0, np.nan)
+    mdi = 100.0 * pd.Series(minus, index=df.index).ewm(
+        alpha=1.0 / n, min_periods=n, adjust=False).mean() / atr.replace(0.0, np.nan)
+    dx = 100.0 * (pdi - mdi).abs() / (pdi + mdi).replace(0.0, np.nan)
+    return dx.ewm(alpha=1.0 / n, min_periods=n, adjust=False).mean()
+
+
+@register_family(
+    # PREREGISTERED, NARROW, AND CENTRED ON THE PUBLISHED POINT. Davey's article settles near a
+    # 34-bar channel with a 10-bar ADX lag and explicitly shows the system evaluated across a
+    # parameter NEIGHBOURHOOD rather than at one magic point -- so the grid brackets that
+    # neighbourhood and stops. Sweeping 8..64 would be searching for the number, which is the
+    # multiplicity this desk deflates against.
+    param_grid={"channel": [21, 34, 55], "adx_lag": [5, 10], "rr": [1.5, 2.0]},
+    tags=["external", "davey", "trend_state", "channel"],
+)
+def family_adx_channel_hybrid(
+    df: pd.DataFrame,
+    *,
+    channel: int = 34,
+    adx_n: int = 11,
+    adx_lag: int = 10,
+    atr_n: int = 20,
+    ttl_bars: int = 24,
+    rr: float = 2.0,
+    stop_atr: float = 1.5,
+) -> list[Signal]:
+    """Channel extreme x ADX state: the SAME extreme is continuation or fade by trend state.
+
+    REVERSE-ENGINEERED FROM KEVIN DAVEY'S PUBLISHED CRUDE-OIL RULES, which are unusually exact
+    for public material and are the reason this card is worth a family of its own:
+
+        HI_t = (close == max(close[t-channel+1 : t]))
+        LO_t = (close == min(close[t-channel+1 : t]))
+        TREND_t = ADX_n[t] >= ADX_n[t - adx_lag]          (strengthening, not "above 25")
+
+        new high + trend strengthening -> LONG      (continuation)
+        new low  + trend strengthening -> SHORT     (continuation)
+        new low  + trend weakening     -> LONG      (fade)
+        new high + trend weakening     -> SHORT     (fade)
+
+    THE HYPOTHESIS IS THE INTERACTION, not "ADX works": a price extreme means opposite things
+    depending on whether trend strength is building or decaying. That is falsifiable in a way
+    "trade with the trend" is not, which is why it clears the economic-prior gate as a NAMED
+    mechanism rather than a statistical find.
+
+    WHAT IS OURS AND NOT DAVEY'S, stated so no reader mistakes it for his: the published system
+    is stop-and-reverse with no fixed stop, which this desk's engine cannot express -- every
+    sleeve here is sized from a stop. The stop is therefore an ATR-based structural distance and
+    the exit an rr target plus a TTL, matching how every other family on this desk is judged.
+    The stop-and-reverse management rule is a SEPARATE challenger, not smuggled in here.
+    """
+    h1 = _h1(df)
+    if len(h1) < max(channel, adx_n + adx_lag) + 5:
+        return []
+    atr = _atr(h1, atr_n)
+    adx = _adx(h1, adx_n)
+    close = h1["close"]
+    hi = close.rolling(channel, min_periods=channel).max()
+    lo = close.rolling(channel, min_periods=channel).min()
+    strengthening = adx >= adx.shift(adx_lag)
+
+    c, a = close.to_numpy(), atr.to_numpy()
+    hi_a, lo_a = hi.to_numpy(), lo.to_numpy()
+    st = strengthening.to_numpy()
+    ok = (~np.isnan(adx.to_numpy())) & (~np.isnan(hi_a)) & (~np.isnan(a))
+
+    signals: list[Signal] = []
+    last_side = 0
+    for i in range(len(h1) - 2):
+        if not ok[i] or not (a[i] > 0):
+            continue
+        at_high = c[i] >= hi_a[i]
+        at_low = c[i] <= lo_a[i]
+        if not (at_high or at_low):
+            continue
+        if at_high and at_low:
+            continue                      # a flat channel is not an extreme
+        # The interaction table above, in one expression: an extreme is followed when trend
+        # strength is building and faded when it is decaying.
+        side = 1 if (at_high == bool(st[i])) else -1
+        # STATE TRANSITIONS ONLY. Davey's published system is STOP-AND-REVERSE: it holds exactly
+        # one position and flips it, so a signal exists when the implied side CHANGES -- not on
+        # every bar that happens to sit at an extreme. Firing on every such bar is not a stricter
+        # reading of his rule, it is a different and much heavier-trading strategy: measured, it
+        # produced 8,484 signals and 3,359 trades on XAUUSD alone, and the cost of that turnover
+        # is most of what it lost. Emitting on the flip is the faithful transfer.
+        if side == last_side:
+            continue
+        last_side = side
+        # ENTRY IS THE NEXT BAR'S OPEN, as published -- `trigger=None` is exactly that on this
+        # engine, so no resting order and no intrabar fill assumption.
+        entry = h1["open"].to_numpy()[i + 1]
+        if not (entry > 0):
+            continue
+        stop_dist = stop_atr * a[i]
+        stop = entry - side * stop_dist
+        target = entry + side * stop_dist * rr
+        signals.append(Signal(time=h1.index[i + 1], side=side, stop=stop, target=target,
+                              ttl_bars=ttl_bars, tag="adx_channel_hybrid"))
+    return signals
