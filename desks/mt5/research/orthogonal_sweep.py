@@ -397,7 +397,12 @@ def sweep() -> dict:
     # the same parquets 297 times; this loads them once and keeps them resident in `_bars`' cache.
     factor_syms = _factor_symbols(symbols, meta)
 
-    for sym in symbols:
+    for _sym_i, sym in enumerate(symbols):
+        # CHECKPOINT WHAT IS ALREADY DONE. See _write_report: the stage timeout is shorter than
+        # a full sweep, so anything not written by now is written by nobody.
+        if _sym_i:
+            _write_report(_build_report(symbols[:_sym_i], ran, gaps, errors, untestable,
+                                        hypotheses), partial=True)
         df = _bars(sym)
         if df is None or len(df) < 2000:
             continue
@@ -525,6 +530,10 @@ def sweep() -> dict:
                 "mechanism_note": FAMILY_INPUTS.get(fam, ("", None))[0],
             })
 
+    return _build_report(symbols, ran, gaps, errors, untestable, hypotheses)
+
+
+def _build_report(symbols, ran, gaps, errors, untestable, hypotheses) -> dict[str, object]:
     return {"swept_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
             "symbols": len(symbols), "families_ran": ran,
             "input_gaps": gaps,
@@ -543,10 +552,32 @@ def sweep() -> dict:
             "hypotheses": hypotheses}
 
 
+def _write_report(report: dict[str, object], *, partial: bool) -> None:
+    """Write the sweep artifact, atomically. Called after every symbol, not only at the end.
+
+    SAME DEFECT AS edge_search, SAME SHAPE. The sweep built its whole report and wrote it once
+    after the symbol loop, while the pipeline allots the search a 20-minute remote stage that
+    `timeout ssh` enforces by killing the client -- so a run longer than the slot left the
+    artifact untouched no matter how much work it did. MEASURED 2026-09-03:
+    orthogonal_candidates.json was 15.5 hours stale with orthogonal_sweep alive throughout, which
+    the health report could only describe as "alive but has produced nothing".
+
+    Temp-file-and-replace so a kill mid-write cannot leave a torn artifact for merge_hypotheses
+    to read, and `partial` is stamped so a consumer can tell an interrupted sweep from a finished
+    one rather than inferring it from a timestamp (L1.28a).
+    """
+    import os as _os
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    body = dict(report)
+    body["partial"] = partial
+    tmp = OUT.with_suffix(OUT.suffix + ".tmp")
+    tmp.write_text(json.dumps(body, indent=1, default=str), "utf-8")
+    _os.replace(tmp, OUT)
+
+
 def main() -> int:
     report = sweep()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(report, indent=1, default=str), "utf-8")
+    _write_report(report, partial=False)
     hyp = report["hypotheses"]
     print(f"orthogonal sweep: {report['symbols']} symbol(s), "
           f"{len(report['families_ran'])} family(ies) produced signals, "

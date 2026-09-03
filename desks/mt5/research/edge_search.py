@@ -761,6 +761,56 @@ def search_symbol(symbol: str, extra: dict | None = None) -> dict:
             "selected": rows}
 
 
+
+def _emit(now: datetime, symbols: list[str], results: list[dict[str, object]],
+          hypotheses: list[dict[str, object]], unsearched: list[dict[str, str]],
+          total_trials: int, naming_written: int, *, partial: bool) -> None:
+    """Write the results artifact. Called after EVERY symbol, not only at the end.
+
+    A PRODUCER THAT WRITES ONLY ON COMPLETION CANNOT PRODUCE UNDER A TIMEOUT SHORTER THAN ITS
+    RUNTIME. This ran as one `write_text` after the whole symbol loop, and the pipeline allots
+    the search a 20-minute remote stage while a full run takes well over 50 -- so `timeout ssh`
+    killed the client, the remote process died, and the artifact was never written. The per-cell
+    cursor advanced every run, so the search genuinely did work every hour and had nothing to
+    show for it: MEASURED 2026-09-03, edge_search_results.json was 27.8 hours stale and
+    orthogonal_candidates.json 15.5, with both jobs alive the whole time. That is the exact
+    shape the health report named -- "alive but has produced nothing" -- and it is structural,
+    not a resource problem.
+
+    Written to a temp file and replaced, so a kill mid-write can never leave a torn artifact for
+    the merge to read. `partial` says plainly whether the loop finished, because a consumer must
+    be able to tell a complete sweep from an interrupted one (L1.28a) rather than inferring it.
+    """
+    import os as _os
+    OUT.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "searched_at": now.isoformat(timespec="seconds"),
+        "symbols": len(results), "symbols_offered": len(symbols),
+        "unsearched": unsearched, "total_trials": total_trials,
+        "hypotheses": hypotheses, "per_symbol": results,
+        "naming_queue_written": naming_written,
+        "arbiter": ("the canonical ten-gate policy, and nothing else. This searcher discovers "
+                    "and reports; it sets no threshold of its own. Pipeline: discovery -> "
+                    "backtest -> ten gates -> certificate -> forward window -> live."),
+        "honesty": {
+            "trials_counted": total_trials,
+            "why": ("every (feature, band, horizon, direction) combination evaluated is counted "
+                    "and carried into each hypothesis, so deflated Sharpe deflates against the "
+                    "real multiplicity of the search rather than a flattering subset"),
+            "oos_only": f"scored on the held-out {int((1 - FIT_FRACTION) * 100)}% only; "
+                        f"band edges derived from the fit window so the condition itself does "
+                        f"not leak",
+            "selection": f"greedy on marginal independence, |corr| < {REDUNDANCY_CORR} against "
+                         f"everything already chosen -- diversity is the objective, not a filter",
+        },
+    }
+    payload["partial"] = partial
+    payload["symbols_completed"] = len(results)
+    tmp = OUT.with_suffix(OUT.suffix + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=1, default=str), "utf-8")
+    _os.replace(tmp, OUT)
+
+
 def main(symbols: list[str] | None = None) -> int:
     now = datetime.now(tz=UTC)
     if symbols is None:
@@ -898,6 +948,10 @@ def main(symbols: list[str] | None = None) -> int:
             continue
         results.append(res)
         total_trials += int(res.get("trials") or 0)
+        # CHECKPOINT EVERY SYMBOL. See _emit: the stage timeout is shorter than a full run, so
+        # anything not written by now is written by nobody.
+        _emit(now, symbols, results, hypotheses, unsearched, total_trials,
+              len(naming_queue), partial=True)
         for row in res.get("selected", []):
             mechanism_status, mechanism_note = mechanism_for_feature(str(row["feature"]))
             if mechanism_status != "NAMED":
@@ -957,28 +1011,8 @@ def main(symbols: list[str] | None = None) -> int:
         print(f"  mechanism-naming queue: +{added} question(s) "
               f"({len(naming_queue)} unnamed effects this run, {len(existing)} banked)")
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps({
-        "searched_at": now.isoformat(timespec="seconds"),
-        "symbols": len(results), "symbols_offered": len(symbols),
-        "unsearched": unsearched, "total_trials": total_trials,
-        "hypotheses": hypotheses, "per_symbol": results,
-        "naming_queue_written": len(naming_queue),
-        "arbiter": ("the canonical ten-gate policy, and nothing else. This searcher discovers "
-                    "and reports; it sets no threshold of its own. Pipeline: discovery -> "
-                    "backtest -> ten gates -> certificate -> forward window -> live."),
-        "honesty": {
-            "trials_counted": total_trials,
-            "why": ("every (feature, band, horizon, direction) combination evaluated is counted "
-                    "and carried into each hypothesis, so deflated Sharpe deflates against the "
-                    "real multiplicity of the search rather than a flattering subset"),
-            "oos_only": f"scored on the held-out {int((1 - FIT_FRACTION) * 100)}% only; "
-                        f"band edges derived from the fit window so the condition itself does "
-                        f"not leak",
-            "selection": f"greedy on marginal independence, |corr| < {REDUNDANCY_CORR} against "
-                         f"everything already chosen -- diversity is the objective, not a filter",
-        },
-    }, indent=1, default=str), "utf-8")
+    _emit(now, symbols, results, hypotheses, unsearched, total_trials,
+          len(naming_queue), partial=False)
     print(f"edge search: {len(symbols)} symbol(s), {total_trials:,} trials evaluated, "
           f"{len(hypotheses)} DIVERSE hypotheses emitted")
     print(f"  all {len(hypotheses)} go to the ten gates AS DEFINED -- no bar set here, no "
