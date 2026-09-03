@@ -10076,6 +10076,20 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0771",
+   "source": "cycle",
+   "summary": "libs/research/pdf_text.extract() never inspects /Encrypt: an ENCRYPTED PDF and an EMPTY one both return chars=0 (WS-005 inside the reader). Signature is failed>>decoded (115 vs 2). 7 of 89 AQR PDFs are encrypted; 5 recovered +215k chars by implementing the standard security handler (RC4/V2, empty user password, accessibility-extraction permission bit set) in data/brain_hunter_s58_pdf_decrypt.py. Port decryption + an explicit ENCRYPTED status into libs/research/pdf_text, and add AESV2 (2 files still unread).",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T21:17:47.412832+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

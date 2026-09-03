@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T18:03:40.611071+00:00",
+      "updated": "2026-09-03T21:07:13.884200+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T18:03:40.624345+00:00",
+      "updated": "2026-09-03T21:07:13.946571+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T18:03:40.694100+00:00",
+      "updated": "2026-09-03T21:07:14.052003+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -5856,6 +5856,48 @@
       "updated": "2026-09-03T19:46:14.446690+00:00",
       "resolve_by": "2026-09-17T19:46:14.444200+00:00",
       "claim": "R0765 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0766": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T20:12:16.696974+00:00",
+      "resolve_by": "2026-09-17T20:12:16.666970+00:00",
+      "claim": "R0766 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0767": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T20:12:45.596229+00:00",
+      "resolve_by": "2026-09-17T20:12:45.571304+00:00",
+      "claim": "R0767 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0768": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T20:14:57.532947+00:00",
+      "resolve_by": "2026-09-17T20:14:57.529734+00:00",
+      "claim": "R0768 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0769": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T20:47:30.554565+00:00",
+      "resolve_by": "2026-09-17T20:47:30.548966+00:00",
+      "claim": "R0769 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0770": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T20:48:05.526701+00:00",
+      "resolve_by": "2026-09-17T20:48:05.461627+00:00",
+      "claim": "R0770 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "rec:R0771": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-03T21:17:47.588308+00:00",
+      "resolve_by": "2026-09-17T21:17:47.560947+00:00",
+      "claim": "R0771 reaches IMPLEMENTED by 2026-09-17"
     }
   }
 }
