@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T17:20:39+00:00",
+ "built_at": "2026-09-03T18:19:44+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1822,17 +1822,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:benchmark_flow|continuation",
+   "name": "audit:liquidity_shock|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "benchmark_flow",
+    "event": "liquidity_shock",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
@@ -1852,17 +1852,17 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:liquidity_shock|continuation",
+   "name": "audit:benchmark_flow|continuation",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "liquidity_shock",
+    "event": "benchmark_flow",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

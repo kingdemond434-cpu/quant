@@ -1,5 +1,5 @@
 {
- "rebuilt_at": "2026-09-03T17:26:26+00:00",
+ "rebuilt_at": "2026-09-03T18:25:05+00:00",
  "authors": {
   "meridiansz": {
    "presences": {
@@ -668,7 +668,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -683,7 +683,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -698,7 +698,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -713,7 +713,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -728,7 +728,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 7,
+    "longevity_max_d": 8,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1108,7 +1108,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
@@ -1123,7 +1123,7 @@
    "scores": {
     "independent_evidence": 1,
     "record_count": 1,
-    "longevity_max_d": 5,
+    "longevity_max_d": 6,
     "deleted_or_dead": 0,
     "mortality": 0.0
    }
