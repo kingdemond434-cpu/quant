@@ -69421,5 +69421,645 @@
 "status": "ALIVE",
 "observations": 0,
 "next_due_d": 30
+},
+"1858500234df3fde": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-23",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-23&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f1d30ee2d9d7936b": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-24",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-24&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0c51b96051a6d0c1": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-25",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-25&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"00850912c5b64ced": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-26",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-26&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"04fa3d62be3ac5a1": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-27",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-27&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"852b42232bc1a449": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-28",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-28&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"72c415d1c0637b2d": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-29",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-29&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f6ac68448151320a": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-30",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-30&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c08f52808b094090": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-31",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-31&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"fc9bfdf4ae1d0ae3": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-32",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-32&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"6677de2c08db542b": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-33",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-33&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"452c3e9b06c9f085": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-34",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-34&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"feb3b0d44fd2148f": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-35",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-35&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"7b0ceb9799260877": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-36",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-36&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f7928275e13633ac": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-37",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-37&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"580f04cdbcc239b2": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-38",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-38&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"007a296f465ce206": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-39",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-39&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"04f51695ad7050d9": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-40",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-40&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"1c6274006a4aefd2": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-41",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-41&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"0456d6ef388cab3a": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-42",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-42&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"456902f08de78820": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-43",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-43&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a86a1d531d8d5086": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-44",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-44&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4b2af03de8648d3f": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-45",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-45&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"a18ea5e1aded23e2": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-46",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-46&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"b03c07d82ce9a6db": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-47",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-47&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"59e13d5321f0e8a5": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-48",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-48&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"cb0f4365e0fb93c5": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-49",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-49&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"24b048fd101a5406": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-50",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-50&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"06646927296b9dc6": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-51",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-51&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"4adad4129cf2613d": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-52",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-52&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"e9c1191a168563f6": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-53",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-53&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"d01bb4b50027ec23": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-54",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-54&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f363a040e8c6d0b3": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-55",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-55&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"c0744228902087ab": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-56",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-56&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"f535e81488ffdd01": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-57",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-57&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"689086e24cab88da": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-58",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-58&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"dfbe494e0c04de8a": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-59",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-59&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"03a927c1d3f1a313": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-60",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-60&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"034ad122c9dfe8ee": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-61",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-61&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
+},
+"5d99050d9cf9877e": {
+"t0": "2026-09-03T03:25:27+00:00",
+"frozen": {
+"source": "fxblue",
+"kind": "track_record",
+"title": "FX Blue user y-62",
+"url": "https://api.fxblue.com/wl/view.aspx?id=y-62&mode=overview&isinline=1",
+"text": "",
+"symbols": [],
+"found_at": "2026-09-03T03:24:25+00:00"
+},
+"mechanism_tags": [],
+"status": "ALIVE",
+"observations": 0,
+"next_due_d": 30
 }
 }

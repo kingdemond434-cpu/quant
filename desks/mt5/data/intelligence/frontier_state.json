@@ -1,5 +1,5 @@
 {
-"cursor": 184,
+"cursor": 185,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -169,6 +169,9 @@
 "retroceso m\u00e1ximo MT4",
 "retroceso m\u00e1ximo MT5",
 "retroceso m\u00e1ximo ranking",
+"robot de trading MT4",
+"robot de trading MT5",
+"robot de trading ranking",
 "se\u00f1ales MT4",
 "se\u00f1ales MT5",
 "se\u00f1ales ranking"
