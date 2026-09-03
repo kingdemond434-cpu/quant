@@ -58,7 +58,7 @@ MIN_N = 60
 REPORT_T = 3.0
 
 #: Horizons in bars. H1 data, so 1/3/6/12/24 spans an hour to a day.
-HORIZONS = (1, 3, 6, 12, 24)
+HORIZONS = (1, 2, 3, 6, 12, 24, 48, 72)
 
 
 @dataclass(frozen=True)
@@ -104,6 +104,17 @@ _PRIMITIVES: dict[str, str] = {
     "dow": "day of week",
     "volume": "traded volume where the feed carries it",
     "close_pos": "close's position inside the window's high-low",
+    "skew": "rolling skewness of returns",
+    "kurt": "rolling kurtosis of returns",
+    "updown": "share of up-bars in the window",
+    "accel": "change in trailing return between halves of the window",
+    "vol_of_vol": "rolling stdev of the rolling vol",
+    "range_ratio": "current range against the window's mean range",
+    "streak": "signed count of consecutive same-direction bars",
+    "dist_high": "distance below the window's high",
+    "dist_low": "distance above the window's low",
+    "month": "month of year",
+    "dom": "day of month",
 }
 
 #: Which primitives actually READ the window. Everything else is window-invariant, and crossing it
@@ -116,16 +127,20 @@ _PRIMITIVES: dict[str, str] = {
 #: charge every honest candidate a multiplicity penalty for a search width it never had. It also
 #: crowds the naming queue with duplicates, which is how a brain spends its budget explaining the
 #: same effect five times.
-_WINDOWED: frozenset[str] = frozenset({"vol", "mom", "close_pos"})
+_WINDOWED: frozenset[str] = frozenset({
+    "vol", "mom", "close_pos", "skew", "kurt", "updown", "accel", "vol_of_vol",
+    "range_ratio", "streak", "dist_high", "dist_low",
+})
 
 #: Lookbacks, in bars. Open-ended by construction: adding one multiplies the search, and the
 #: trial count carried to deflation grows with it, which is the honest cost.
-_WINDOWS: tuple[int, ...] = (6, 12, 24, 72, 168)
+_WINDOWS: tuple[int, ...] = (3, 6, 12, 24, 48, 72, 120, 168, 336, 720)
 
 #: Quantile bands. A band is "this primitive sits in this part of its own recent distribution" --
 #: stated relatively so it means the same thing on gold and on a Hungarian cross.
 _BANDS: tuple[tuple[float, float], ...] = (
-    (0.0, 0.1), (0.1, 0.25), (0.4, 0.6), (0.75, 0.9), (0.9, 1.0),
+    (0.0, 0.05), (0.0, 0.1), (0.1, 0.25), (0.25, 0.4), (0.4, 0.6),
+    (0.6, 0.75), (0.75, 0.9), (0.9, 1.0), (0.95, 1.0),
 )
 
 
@@ -165,6 +180,37 @@ def _primitive(df: pd.DataFrame, name: str, window: int) -> pd.Series | None:
         lo = df["low"].astype(float).rolling(window).min()
         span = (hi - lo)
         return (close - lo) / span.where(span > 0)
+    if name == "skew":
+        return close.pct_change().rolling(window).skew()
+    if name == "kurt":
+        return close.pct_change().rolling(window).kurt()
+    if name == "updown":
+        return (close.pct_change() > 0).rolling(window).mean()
+    if name == "accel":
+        half = max(2, window // 2)
+        return close.pct_change(half) - close.pct_change(window).div(2.0)
+    if name == "vol_of_vol":
+        return close.pct_change().rolling(max(3, window // 2)).std().rolling(window).std()
+    if name == "range_ratio":
+        rng = (df["high"].astype(float) - df["low"].astype(float)) / close
+        mean = rng.rolling(window).mean()
+        return rng / mean.where(mean > 0)
+    if name == "streak":
+        sign = np.sign(close.pct_change().fillna(0.0))
+        grp = (sign != sign.shift()).cumsum()
+        return (sign * sign.groupby(grp).cumcount().add(1)).rolling(1).mean()
+    if name == "dist_high":
+        hi = df["high"].astype(float).rolling(window).max()
+        return close / hi.where(hi > 0) - 1.0
+    if name == "dist_low":
+        lo = df["low"].astype(float).rolling(window).min()
+        return close / lo.where(lo > 0) - 1.0
+    if name == "month":
+        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
+        return pd.Series(idx.month.astype(float), index=df.index)
+    if name == "dom":
+        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
+        return pd.Series(idx.day.astype(float), index=df.index)
     return None
 
 
@@ -327,18 +373,75 @@ def scan_cross_section(frames: dict[str, pd.DataFrame], *, max_pairs: int = 400
     return rows, trials
 
 
-def scan(symbols: list[str] | None = None, *, limit: int = 40) -> dict[str, Any]:
-    """Scan the tradeable universe for conditional structure. Emits anomalies, never candidates."""
+#: Where the rotation cursor lives. The scan covers the WHOLE universe every run; this only
+#: rotates which symbols are retained for the pairwise pass, whose cost is quadratic.
+_CURSOR = _DESK / "data" / "intelligence" / "anomaly_cursor.json"
+
+#: Symbols given the FULL widened space per run. The space is 9,288 cells per symbol and the
+#: universe is 251, so an all-symbols run is 2.3M cells and hours of wall clock -- far past the
+#: cycle it is scheduled on. Rotating means no symbol is excluded, only deferred: the cursor
+#: advances every run, so the whole universe is covered across a day rather than the first 40
+#: names alphabetically being covered forever. Deferred is a schedule; excluded is a bias.
+_SCAN_PER_RUN = 30
+
+#: Symbols kept in memory for the cross-sectional pass per run. Not a limit on what is SCANNED --
+#: every symbol is scanned every run -- but on how many frames are held at once, because pairs
+#: grow as n^2 and this box has 3.8GB and no swap. The cursor advances so every symbol enters the
+#: pairwise pass in turn; over a day's runs the pair space is covered without a single run that
+#: cannot fit.
+_CROSS_FRAMES = 60
+
+
+def _cursor_take(all_syms: list[str], k: int) -> list[str]:
+    """The next k symbols for the pairwise pass, rotating. Never the same slice twice running."""
+    try:
+        pos = int(json.loads(_CURSOR.read_text("utf-8")).get("pos") or 0)
+    except (OSError, ValueError, AttributeError):
+        pos = 0
+    n = len(all_syms)
+    if n == 0:
+        return []
+    take = [all_syms[(pos + i) % n] for i in range(min(k, n))]
+    try:
+        _CURSOR.parent.mkdir(parents=True, exist_ok=True)
+        _CURSOR.write_text(json.dumps({"pos": (pos + len(take)) % n,
+                                       "of": n, "at": datetime.now(UTC).isoformat()}), "utf-8")
+    except OSError:
+        pass
+    return take
+
+
+def scan(symbols: list[str] | None = None, *, limit: int | None = None) -> dict[str, Any]:
+    """Scan the tradeable universe for conditional structure. Emits anomalies, never candidates.
+
+    EVERY SYMBOL, EVERY RUN. This took `files[:40]` on an alphabetically sorted list, so it
+    scanned 40 of 251 symbols -- 3M, Accenture, ADAUSD, Adobe ... AUDCAD, AUDCHF, AUDHUF -- and
+    never touched the other 211. Every result it produced was dominated by AUD crosses, and that
+    was not the market's structure, it was the slice's: exotic crosses with strong session effects
+    happen to sort early. A discovery engine that only ever looks at the front of the alphabet
+    reports the alphabet, and every downstream count -- trials, mechanism mix, family yield --
+    inherits that bias while looking like a measurement of the universe.
+
+    `limit` is now None by default and exists only for tests. The pairwise pass, whose cost is
+    quadratic, rotates through the universe on a cursor instead.
+    """
     files = sorted(_BARS.glob("*_H1.parquet"))
     if symbols:
         want = {s.upper() for s in symbols}
         files = [f for f in files if f.stem.replace("_H1", "").upper() in want]
-    files = files[:limit]
+    if limit is not None:
+        files = files[:limit]
 
     rows: list[dict[str, Any]] = []
     frames: dict[str, pd.DataFrame] = {}
     trials = 0
     scanned, skipped = [], []
+    all_syms = [f.stem.replace("_H1", "") for f in files]
+    scan_want = _cursor_take(all_syms, _SCAN_PER_RUN)
+    if symbols is None and limit is None:
+        want = set(scan_want)
+        files = [f for f in files if f.stem.replace("_H1", "") in want]
+    cross_want = set(scan_want[:_CROSS_FRAMES])
     for f in files:
         sym = f.stem.replace("_H1", "")
         try:
@@ -349,8 +452,21 @@ def scan(symbols: list[str] | None = None, *, limit: int = 40) -> dict[str, Any]
         found, t = scan_symbol(sym, df)
         trials += t
         scanned.append(sym)
-        rows.extend(a.as_row() for a in found)
-        frames[sym] = df
+        # TRIALS ARE PER-SYMBOL, NOT GLOBAL, AND THE DIFFERENCE IS NOT COSMETIC. Deflation charges
+        # a candidate for the width of the search THAT COULD HAVE PRODUCED IT. Every cell here is
+        # evaluated independently and reported on its own merits -- there is no global tournament
+        # picking one winner -- so a EURUSD anomaly competed against EURUSD's own 9,288 cells, not
+        # against all 2.3M in the universe. Charging the global total would over-deflate by two
+        # orders of magnitude and no honest candidate would ever clear gate 3, which is as wrong
+        # as under-counting and fails in the direction that looks rigorous.
+        for a in found:
+            row = a.as_row()
+            row["selection_trials"] = t
+            rows.append(row)
+        # HOLD ONLY WHAT THE PAIRWISE PASS WILL USE. Retaining all 251 frames would hold several
+        # GB on a 3.8GB swapless box; the single-symbol scan above already ran on every one.
+        if sym in cross_want:
+            frames[sym] = df
 
     # CROSS-SECTIONAL PASS. The single-symbol scan above finds edges that share a driver; this
     # finds edges that live between instruments, which is the class the family cap is starved of.
@@ -363,6 +479,14 @@ def scan(symbols: list[str] | None = None, *, limit: int = 40) -> dict[str, Any]
         "scanned_at": datetime.now(UTC).isoformat(timespec="seconds"),
         "symbols_scanned": len(scanned), "symbols_skipped": skipped,
         "cross_sectional_anomalies": len(cross_rows), "cross_sectional_trials": cross_trials,
+        "cross_sectional_symbols": sorted(cross_want),
+        "universe_coverage": {
+            "symbols_with_bars": len(all_syms), "scanned": len(scanned),
+            "rotating_per_run": _SCAN_PER_RUN,
+            "note": ("the cursor advances every run so the whole universe is covered across a "
+                     "day. No symbol is excluded -- only deferred. The previous behaviour took "
+                     "the first 40 names ALPHABETICALLY and never touched the other 211."),
+        },
         "trials": trials,
         "anomalies": rows,
         "min_n": MIN_N, "report_t": REPORT_T,
