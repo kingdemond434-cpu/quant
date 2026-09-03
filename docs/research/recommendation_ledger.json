@@ -9950,6 +9950,62 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0762",
+   "source": "deep_sweep",
+   "summary": "COST INPUT PRICES 7 FX SYMBOLS AS FREE TO TRADE (re-card of the id s54 claimed but never wrote). expand_universe.py:144 sets median_spread_pts from a plain df['spread'].median() over ALL H1 bars, but the spread column is zero on a median 20.6% of bars (max 83.6%, HKDJPY). Where zeros exceed half the bars the median is exactly 0.0: HKDJPY, USDHKD, CADCHF, AUDCHF, EURCAD, NZDCHF, USDSGD -- 7 of 7 tape-median 0, no exceptions. Every MT5 cost consumer multiplies that scalar, so those symbols are costless in every screen and gauntlet run. MEASURED COST (data/brain_hunter_s55_partial_adjustment_interior.json, 76 FX symbols, 8318 days): a 160-cell TSMOM partial-adjustment table priced with the naive median vs the nonzero-bar median differs by 0.1133 vs 0.0741 Sharpe at L252/a=0.02 -- a 35% overstatement, and the sign of several cells flips (a=0.05 L252: +0.0189 naive vs -0.0414 fixed). FIX: median over nonzero bars plus a physical floor at ingest (a zero FX CFD spread is impossible -- a bound, never a z-score) at expand_universe.py:144; the sibling writer validate_fusion.py:125 sets the same field from a live poll and must be reconciled, not left racing.",
+   "roi_bps": null,
+   "rank": 80.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T19:43:17.440151+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0763",
+   "source": "deep_sweep",
+   "summary": "THE COST SCALAR UNDERSTATES THE HOURS THE DESK ACTUALLY TRADES BY ~4x (re-card of the id s54 claimed but never wrote). median_spread_pts is ONE scalar per symbol, constant for all time, while the H1 parquets carry a spread column with ~50k observations per symbol that nothing reads as a series. MEASURED (data/brain_hunter_s54_spread_timevariation.json, 76 FX symbols): median across symbols of (worst hour-of-day median spread / all-bar median) = 3.894; p95/median = 5.522. The worst hour is hour 0 in 51/76 symbols and hour 1 in 24/76 -- 75 of 76 peak at the midnight/rollover boundary, which is exactly where the asia, overnight-gap-decay and session-boundary sleeves in the shadow book trade and exactly where swap is charged. So the sleeves most exposed to the peak are costed at the trough. FIX: carry an hour-of-day spread profile (median per symbol per hour, nonzero bars, floored per R0762) beside the scalar and have the cost model index it by the bar's own hour; keep the scalar as the fallback for symbols with no tape.",
+   "roi_bps": null,
+   "rank": 75.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T19:44:16.220950+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0764",
+   "source": "deep_sweep",
+   "summary": "A SESSION NOTE CAN CLAIM A LEDGER ID THAT WAS NEVER WRITTEN, AND NOTHING CHECKS. BRAIN s54's note (docs/research/prospector_coverage.md) states 'Carded R0762' and 'Carded R0763' for its two cost findings and closes on 'Two ledger rows raised, both with their fix named at a file and line (L1.28b)'. Neither row existed: the ledger's max id at the time of this session was R0761. MEASURED: 173 distinct R0xxx ids are cited across prospector_coverage.md; exactly 2 are absent from docs/research/recommendation_ledger.json, and both are s54's. So this is not historical drift -- it is a live, unfenced surface, and it is the L1.28b conversion law failing in the one direction the law cannot see: the note asserts the conversion, the conversion is what the note is graded on, and the ledger is never consulted. Both rows are now written (R0762, R0763 of this session) so the specific loss is repaired; the surface is not. FIX: a fence that extracts every R0xxx cited in docs/research/*.md and docs/*.md and fails on any id absent from the ledger -- roughly the grep-and-set-difference already run in this session, ~15 lines, and it belongs in the same gate family as check_doctrine_diff.py. Research freeze observed: NOT applied here, scripts/ untouched.",
+   "roi_bps": null,
+   "rank": 60.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T19:44:52.634756+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0765",
+   "source": "deep_sweep",
+   "summary": "A TIME-PERMUTATION CONTROL IS NOT NULL-PRESERVING WHEN THE POLICY SMOOTHS -- IT BECOMES AN IN-SAMPLE ORACLE, AND ITS LEAK GROWS AS THE SMOOTHER LENGTHENS. Permuting a signal in time preserves that series' FULL-SAMPLE MEAN. Any downstream long-memory smoother (EWM, partial adjustment, slow filter) drives the permuted position toward that mean, which is a full-sample drift oracle available from bar 1. MEASURED on the desk's own MT5 FX tape (data/brain_hunter_s55c_permutation_leak.json; 76 FX symbols, 8318 days, TSMOM L=63, gross, 12 draws/cell): the permuted-sign control returns Sharpe 0.232 unsmoothed (a=1.0) but 0.717 / 1.087 / 1.050 at a=0.1 / 0.01 / 0.001, while a properly mean-zero i.i.d. +-1 control returns -0.040 / -0.002 / -0.073 / -0.076 across the SAME grid and an explicit full-sample-mean-sign oracle returns 0.66-0.74. A valid null is invariant in a at ~0; this one's a-dependence IS the leak, and at a=0.001 it exceeds the sign-oracle because permutation preserves the mean's MAGNITUDE too. CONSEQUENCE ALREADY OBSERVED: run under this control (data/brain_hunter_s55b_static_control.json) the permuted arm beat real momentum in 16/16 cells at z down to -38, which reads as a decisive refutation of TSMOM and is an artifact. AUDITED, HONEST NEGATIVE: libs/validation/random_baseline.py:matched_random_positions permutes the POSITION series and is NOT an instance -- it applies no downstream smoother and explicitly decomposes exposure from timing (exposure_share), which is the correct handling. It is nonetheless the hazard's live surface: any future caller that smooths its output inherits the leak silently. FIX: add a mean-zero i.i.d. control alongside the exposure-matched permutation wherever a permutation null is used, and assert the null's a-invariance (or smoother-invariance) as the test that the control is actually null. Research freeze observed: NOT applied, libs/ untouched.",
+   "roi_bps": null,
+   "rank": 70.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T19:46:14.409360+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

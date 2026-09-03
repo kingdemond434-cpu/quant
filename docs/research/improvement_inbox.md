@@ -6182,3 +6182,44 @@ largest |t| in the whole table is 2.63 (Commodities L126, gross of costs), again
 threshold of 5.236. **This is a diagnostic on the `wq_operators.fitness()` precedent and must not
 acquire a pass/fail path (L1.60): no screen, searcher or miner may turn k_eff into a threshold in
 either direction.** Artifact: `data/brain_hunter_s53_tsmom_horizon_redundancy.json`.
+
+## BRAIN s55 — 2026-09-03 — a permutation control stops being a null the moment the policy smooths
+
+**(1) The finding, and it is a general rule about controls, not about momentum.** A time-permuted
+signal preserves that series' **full-sample mean**. Any long-memory smoother downstream — EWM,
+partial adjustment, a slow filter — drives the permuted position toward that mean, so the
+"control" becomes a full-sample drift oracle available from bar 1. Measured on the desk's own MT5
+FX tape (76 FX symbols, 8,318 days, TSMOM L=63, gross, 12 draws per cell,
+`data/brain_hunter_s55c_permutation_leak.json`):
+
+| smoother a | permuted-sign control | i.i.d. ±1 control | explicit full-sample-mean-sign oracle |
+|---|---|---|---|
+| 1.0 (none) | 0.232 | −0.040 | 0.735 |
+| 0.1 | 0.717 | −0.002 | 0.735 |
+| 0.01 | **1.087** | −0.073 | 0.699 |
+| 0.001 | **1.050** | −0.076 | 0.658 |
+
+A valid null is invariant in `a` at ~0. The i.i.d. arm is; the permuted arm is not, and its
+`a`-dependence **is** the leak. At `a`=0.001 it *exceeds* the sign-oracle because permutation
+preserves the mean's magnitude as well as its sign.
+
+**(2) It had already produced a false refutation, in this same session.** Run under the permuted
+control (`data/brain_hunter_s55b_static_control.json`), the control beat real momentum in **16/16**
+cells at z down to **−38.1**. Read at face value that is a decisive refutation of TSMOM on the FX
+book. It is an artifact of the control. Any seat that had stopped at s55b would have graveyarded
+a family on a lookahead.
+
+**(3) Honest negative on the desk's own permutation null.**
+`libs/validation/random_baseline.py:matched_random_positions` permutes the **position** series and
+is **not** an instance of this defect: it applies no downstream smoother and explicitly decomposes
+exposure from timing (`exposure_share`), which is the correct handling — the docstring's
+exposure-matching argument is sound. It is nonetheless the live surface, because any future caller
+that smooths its output inherits the leak silently and nothing would say so. **Fix (carded R0765,
+not applied — research freeze):** pair every permutation null with a mean-zero i.i.d. control, and
+assert the null's smoother-invariance as the test that the control is actually null.
+
+**(4) What this leaves of s54's Gârleanu–Pedersen test.** With a valid control the market verdict
+is unchanged and now properly attributed: at `a`=0.001 the real signal returns gross Sharpe
+0.41–0.51 against an honest static vol-scaled always-long book at **0.35**, so the momentum timing
+buys ~0.06–0.16 gross Sharpe and **every** cell is negative net of the tape's own spread beyond
+`a` ≥ 0.05. **No pass/fail path is attached to any number here (L1.60).**
