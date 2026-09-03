@@ -21,6 +21,18 @@ requires an application-level ping every <=20s or it drops the connection after 
 
 from __future__ import annotations
 
+# PARK BEFORE THE HEAVY IMPORTS (2026-09-03). This module's stack is the expensive part: checking
+# the kill switch after importing it means a switched-OFF unit still holds every library resident.
+# Guarded by __main__ so importing this module (tests, tools) never parks -- only a real run does.
+if __name__ == "__main__":  # pragma: no cover - process entry, not importable behaviour
+    import sys as _sys
+    from pathlib import Path as _P
+    _sys.path.insert(0, str(_P(__file__).resolve().parent))
+    from recorder_switch import park_before_imports as _park
+
+    _park('liquidation_listener')
+
+
 import asyncio
 import contextlib
 import json

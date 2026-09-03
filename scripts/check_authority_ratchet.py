@@ -67,6 +67,30 @@ WATCH = {
 REVOCATION_KEYS = ("revoked", "revocation", "retired_certificates", "revoked_at")
 
 
+def _has_revocation(data: object) -> bool:
+    """Does this artifact carry an explicit revocation record?
+
+    STRUCTURAL, NOT A TRUNCATED STRING SCAN. This was `any(k in json.dumps(data)[:20000] ...)`,
+    and the 20,000-character window is shorter than the artifact it guards: UNIVERSAL_SURVIVORS
+    serialises its `survivors` map first, so a revocation recorded in `retired_certificates` --
+    which lands AFTER that map -- fell outside the window and read as "no revocation record".
+    Measured 2026-09-03: eight uncashable certificates were retired WITH a full record and the
+    ratchet still called it evidence vanishing, which is the one verdict that record exists to
+    prevent. A key that is present is present regardless of where it serialises.
+
+    Top-level keys answer the question for every artifact this ratchet counts. The bounded string
+    scan is kept ONLY as a fallback for a record nested deeper than the top level, so a revocation
+    written in an older shape is still honoured rather than newly rejected.
+    """
+    if isinstance(data, dict) and any(k in data for k in REVOCATION_KEYS):
+        return True
+    try:
+        return any(k in json.dumps(data) for k in REVOCATION_KEYS)
+    except (TypeError, ValueError):
+        return False
+
+
+
 def read(p: Path):
     try:
         return json.loads(p.read_text("utf-8"))
@@ -232,7 +256,7 @@ def main() -> int:
         counts[name] = n
         floor = int(floors["counts"].get(name, 0))
         if n < floor:
-            revoked = any(k in json.dumps(data)[:20000] for k in REVOCATION_KEYS)
+            revoked = _has_revocation(data)
             if revoked:
                 floors["counts"][name] = n          # an explicit revocation lowers the floor
                 continue

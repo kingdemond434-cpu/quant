@@ -53,6 +53,12 @@ QUOTA_LOG = ROOT / "data" / "brain_quota_windows.jsonl"
 #: as "this region really produced today" for its resume rule, so the fence and the resume logic
 #: agree on what counts as output. A stub death is 58-686 bytes; a real dig is tens of KB.
 _REAL_LOG_BYTES = 1500
+#: Phrases that mean "this run completed and there was no work", never "this run died". Anchored
+#: on the organs' own wording so a genuinely silent crash still reads as a crash.
+_NOOP_RE = re.compile(
+    r"nothing to append|nothing to do|no new \w+ (?:reports|rows|records)|"
+    r"^\s*\w*\s*dark\b|\bdark --|\bdark:|no change since last|already up to date",
+    re.MULTILINE)
 
 #: An hour with this many attempts and zero output is a dead window, not bad luck.
 _DEAD_HOUR_MIN = 3
@@ -99,6 +105,18 @@ def classify(text: str, size: int) -> str:
         return "AUTH_UNAVAILABLE"      # quota wall; the seat never launched, cost ~one ping
     if "deferred" in low:
         return "MUTEX_DEFERRED"        # correct behaviour: organ_catchup re-fires the loser
+    # A COMPLETED RUN WITH NOTHING TO DO IS NOT A DEATH (L1.28a -- absence is a real answer, and
+    # so is "there was no work"). Two shapes were being counted as crashes, and both are the
+    # organ behaving exactly as designed: a cache whose upstream has published nothing new since
+    # the last cycle ("nothing to append"), and a seat that reports DARK because a credential is
+    # absent -- which the seats do deliberately at exit 0 so that the desk's improvement rate
+    # never depends on a key. MEASURED 2026-09-03: `cot_zcache.log` said "no new CFTC reports
+    # since the cache's last week -- nothing to append" and was counted DIED_AT_ATTEMPT, and the
+    # deepseek seat's own clean DARK stand-down would have been counted the same way the moment
+    # its crash was fixed -- so repairing a seat would have LOWERED its measured health. A meter
+    # that cannot tell a corpse from a completed no-op reports the repair as a regression.
+    if _NOOP_RE.search(low):
+        return "STOOD_DOWN_NOTHING_TO_DO"
     if " start " in low:
         return "DIED_AFTER_START"      # launched and was killed -- usually the OOM killer
     # A log holding ONLY its attempt header (~60 bytes) is a SILENT death: the wrapper wrote

@@ -243,12 +243,20 @@ def policy_gate(root: Path | None = None) -> dict[str, Any]:
     "we could not check" and "it checks out" are different answers.
     """
     try:
-        # The resolver is future wiring shared with the other brains; until it lands this
-        # import fails and the except below REFUSES the cycle -- which is the designed
-        # behavior, not an oversight. mypy cannot know an absent module is intentional.
-        from libs.ops import canonical_policy  # type: ignore[attr-defined]
+        # The resolver landed 2026-09-03 (libs/ops/canonical_policy.py). The except below is
+        # still the designed behaviour, not dead code: it covers a tree where the resolver or
+        # the constitution checker it delegates to is absent, and refusing there is the point.
+        from libs.ops import canonical_policy
     except ImportError as exc:
+        # ONE RETURN CONTRACT, ALWAYS. This branch used to omit `policy_hash` and `version`, and
+        # the caller reads them unconditionally to report the refusal -- so the designed visible
+        # refusal (BLOCKED_POLICY, exit 2) was replaced by `KeyError: 'version'` and exit 1.
+        # Measured 2026-09-03: that crash was NINE of the fifteen dead seat launches in 24h, and
+        # the seat-yield meter counted every one as DIED_AT_ATTEMPT -- a defect whose only cause
+        # was the refusal being unable to describe itself. UNKNOWN is still not a pass; it is
+        # simply reported as UNKNOWN (None) rather than by raising.
         return {"ok": False, "verdict": "RESOLVER_UNAVAILABLE",
+                "policy_hash": None, "version": None, "detail": {},
                 "why": f"cannot import the canonical resolver ({exc}); refusing to run "
                        "consequential work on unverified policy. UNKNOWN is not a pass"}
     res = canonical_policy.resolve(root)

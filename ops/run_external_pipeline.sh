@@ -244,6 +244,20 @@ scp -q data/cot_zcache.parquet \
 # alternating halves the wall clock without losing any work -- a search simply advances every
 # other hour instead of every hour, against a docket already 20,000 deep. The gauntlet, which is
 # terminal and whose stand-down costs everything, keeps its slot every single cycle.
+# RE-VERIFY CODE IDENTITY IMMEDIATELY BEFORE LAUNCHING, NOT ONLY AT STAGE 0. Stage 0 ships and
+# hash-verifies the modules, but stages 1, 2, 2a and 2a.1 run between there and here -- fifteen
+# minutes and more -- and the box's copy drifts inside that window. MEASURED 2026-09-03: the box
+# ran edge_search at 05:20 against a `job_lock.py` of 4,644 bytes while this repo's was 13,703
+# (and `orthogonal_sweep.py` at 15,905 against 32,015), so the search executed WITHOUT the
+# commit-aware memory guard and the dead-owner lock recovery that were written precisely to keep
+# it alive. edge_search_results.json was 27.8 hours stale and orthogonal_candidates.json 15.5,
+# with both jobs "running" the whole time -- a producer that runs, is fenced by rules it no
+# longer contains, and emits nothing. The drift healer already existed and runs every 13 minutes;
+# nothing ordered it against the launch, so it healed the box reliably at every moment except the
+# one that mattered. Healing HERE makes the window zero: the code that runs is the code that was
+# gated, or this cycle says so out loud.
+$PY scripts/check_desk_module_drift.py || echo "module drift heal reported drift (healed above; see data/desk_module_drift.json)"
+
 _HOUR=$(date -u +%H)
 if [ $(( 10#$_HOUR % 2 )) -eq 0 ]; then _SEARCH=orthogonal; else _SEARCH=familyfree; fi
 echo "stage 2b: running the $_SEARCH frontier this cycle (they alternate hourly; both resume from cache)"

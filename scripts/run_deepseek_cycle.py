@@ -64,8 +64,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # ---- 1. POLICY GATE, before anything else.
     gate = ds.policy_gate()
-    report["policy"] = {"verdict": gate["verdict"], "version": gate["version"],
-                        "hash": gate["policy_hash"]}
+    # .get, not []: a gate that REFUSES must still be able to report the refusal. Reading a
+    # key the refusing branch cannot supply turns a clean exit-2 verdict into a crash.
+    report["policy"] = {"verdict": gate.get("verdict"), "version": gate.get("version"),
+                        "hash": gate.get("policy_hash")}
     if not gate["ok"]:
         report["result"] = "BLOCKED_POLICY"
         report["why"] = gate["why"]
