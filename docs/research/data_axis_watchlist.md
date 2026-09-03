@@ -11627,3 +11627,22 @@ indices and commodities): **1,196 monthly rows, 1926-07-30 → 2026-02-27, 46 co
 FX as CM. **Match by header name.**
 
 **No AQR threshold, Sharpe bar or fitness grade is imported as a desk gate (L1.6).**
+
+---
+
+## FREE-DATA ac — 2026-09-03 — SESSION NOTE (WRITTEN FIRST, per the completion contract)
+
+Backlog: `source_backlog_next.py` = **0 pending verification, 0 pending legitimacy** (102
+catalogued, 78 resolved, 24 deferred, next return 2026-09-05). No verification debt; mining
+authorised. Resuming at run **(ab)**'s named next ground.
+
+**Items taken this run (bounded per completion contract; depth per item unbounded):**
+1. **forexbenchmark INTRADAY cost surface** — (ab) next-ground #2. `POST /spreads_data_chart/`,
+   1,320 minute-of-day buckets. The desk holds ONE cost number per symbol; every session-boundary,
+   rollover and news-window hypothesis is currently priced off a flat average. Bottleneck law: cost.
+2. **forexbenchmark PEER brokers** — (ab) next-ground #3. Fusion vs the 41-broker cross-section
+   per symbol: splits the desk's cost into *market* cost and *broker* cost. That split is directly
+   actionable and has never been measured.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — a new source class, not a re-scan.
+
+Status: **IN PROGRESS**
