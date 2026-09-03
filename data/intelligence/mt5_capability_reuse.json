@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-02T21:08:39.586819+00:00",
+  "generated_at": "2026-09-03T01:47:54.031816+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 73,
-    "UNWIRED_REVIEW": 558,
+    "UNWIRED_REVIEW": 560,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2196,6 +2196,13 @@
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
+      "module": "libs.regime.hysteresis",
+      "path": "libs/regime/hysteresis.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
       "module": "libs.research.agents",
       "path": "libs/research/agents.py",
       "status": "UNWIRED_REVIEW",
@@ -3595,6 +3602,13 @@
     {
       "module": "libs.research_os.store",
       "path": "libs/research_os/store.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.risk.adaptive_stop",
+      "path": "libs/risk/adaptive_stop.py",
       "status": "UNWIRED_REVIEW",
       "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
