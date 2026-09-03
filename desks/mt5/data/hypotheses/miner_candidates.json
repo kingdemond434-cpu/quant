@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-03T18:27:27+00:00",
+ "compiled_at": "2026-09-03T19:43:16+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4466,9 +4466,9 @@
    "deepening": 1
   },
   "reddit": {
-   "rows": 35,
+   "rows": 46,
    "candidates": 0,
-   "deepening": 35
+   "deepening": 46
   },
   "forexfactory": {
    "rows": 44,
@@ -4636,13 +4636,13 @@
    "deepening": 3
   },
   "world_crawler": {
-   "rows": 41,
+   "rows": 47,
    "candidates": 0,
-   "deepening": 41
+   "deepening": 47
   }
  },
- "rows_accounted": 1123,
+ "rows_accounted": 1140,
  "executable_candidates": 370,
- "deepening_tasks": 674,
+ "deepening_tasks": 690,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

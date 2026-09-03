@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T18:27:27+00:00",
+ "built_at": "2026-09-03T19:43:16+00:00",
  "tasks": [
   {
    "source": "github",
@@ -1512,17 +1512,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1425506/",
    "symbols": [],
@@ -1547,6 +1536,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1206689/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1412705/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1658,8 +1658,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1669,8 +1669,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1393092/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1103610/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1713,8 +1713,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1724,8 +1724,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1418910/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1424374/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1878,17 +1878,6 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1197229/",
    "symbols": [],
@@ -1922,6 +1911,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1430078/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1343266/",
    "symbols": [],
@@ -1944,8 +1944,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -1955,8 +1955,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1419069/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1431571/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2021,8 +2021,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2032,8 +2032,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1187260/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1147805/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2142,6 +2142,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1381578/",
    "symbols": [],
@@ -2155,17 +2166,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1120504/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1340135/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2252,6 +2252,17 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1417721/",
    "symbols": [],
@@ -2274,8 +2285,8 @@
   {
    "source": "amarkets",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1434231/",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2298,17 +2309,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1426384/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1438137/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2386,17 +2386,6 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1414868/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1414868/",
-   "symbols": [],
-   "mechanism_tags": [
-    "ea_robot",
-    "gold"
-   ]
-  },
-  {
-   "source": "amarkets",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "https://www.amarkets.com/copy-trading-rating/strategy1444407/",
-   "url": "https://www.amarkets.com/copy-trading-rating/strategy1444407/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2653,6 +2642,17 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
    "url": "https://www.amarkets.com/copy-trading-rating/strategy1441718/",
+   "symbols": [],
+   "mechanism_tags": [
+    "ea_robot",
+    "gold"
+   ]
+  },
+  {
+   "source": "amarkets",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "https://www.amarkets.com/copy-trading-rating/strategy1444407/",
+   "url": "https://www.amarkets.com/copy-trading-rating/strategy1444407/",
    "symbols": [],
    "mechanism_tags": [
     "ea_robot",
@@ -2971,320 +2971,320 @@
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-036",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-036&mode=overview&isinline=1",
+   "title": "FX Blue user 22-076",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-076&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-037",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-037&mode=overview&isinline=1",
+   "title": "FX Blue user 22-077",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-077&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-038",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-038&mode=overview&isinline=1",
+   "title": "FX Blue user 22-078",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-078&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-039",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-039&mode=overview&isinline=1",
+   "title": "FX Blue user 22-079",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-079&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-040",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-040&mode=overview&isinline=1",
+   "title": "FX Blue user 22-080",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-080&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-041",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-041&mode=overview&isinline=1",
+   "title": "FX Blue user 22-081",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-081&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-042",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-042&mode=overview&isinline=1",
+   "title": "FX Blue user 22-082",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-082&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-043",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-043&mode=overview&isinline=1",
+   "title": "FX Blue user 22-083",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-083&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-044",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-044&mode=overview&isinline=1",
+   "title": "FX Blue user 22-084",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-084&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-045",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-045&mode=overview&isinline=1",
+   "title": "FX Blue user 22-085",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-085&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-046",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-046&mode=overview&isinline=1",
+   "title": "FX Blue user 22-086",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-086&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-047",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-047&mode=overview&isinline=1",
+   "title": "FX Blue user 22-087",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-087&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-048",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-048&mode=overview&isinline=1",
+   "title": "FX Blue user 22-088",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-088&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-049",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-049&mode=overview&isinline=1",
+   "title": "FX Blue user 22-089",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-089&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-050",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-050&mode=overview&isinline=1",
+   "title": "FX Blue user 22-090",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-090&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-051",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-051&mode=overview&isinline=1",
+   "title": "FX Blue user 22-091",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-091&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-052",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-052&mode=overview&isinline=1",
+   "title": "FX Blue user 22-092",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-092&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-053",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-053&mode=overview&isinline=1",
+   "title": "FX Blue user 22-093",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-093&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-054",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-054&mode=overview&isinline=1",
+   "title": "FX Blue user 22-094",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-094&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-055",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-055&mode=overview&isinline=1",
+   "title": "FX Blue user 22-095",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-095&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-056",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-056&mode=overview&isinline=1",
+   "title": "FX Blue user 22-096",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-096&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-057",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-057&mode=overview&isinline=1",
+   "title": "FX Blue user 22-097",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-097&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-058",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-058&mode=overview&isinline=1",
+   "title": "FX Blue user 22-098",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-098&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-059",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-059&mode=overview&isinline=1",
+   "title": "FX Blue user 22-099",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-099&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-060",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-060&mode=overview&isinline=1",
+   "title": "FX Blue user 22-100",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-100&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-061",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-061&mode=overview&isinline=1",
+   "title": "FX Blue user 22-101",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-101&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-062",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-062&mode=overview&isinline=1",
+   "title": "FX Blue user 22-102",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-102&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-063",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-063&mode=overview&isinline=1",
+   "title": "FX Blue user 22-103",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-103&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-064",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-064&mode=overview&isinline=1",
+   "title": "FX Blue user 22-104",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-104&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-065",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-065&mode=overview&isinline=1",
+   "title": "FX Blue user 22-105",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-105&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-066",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-066&mode=overview&isinline=1",
+   "title": "FX Blue user 22-106",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-106&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-067",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-067&mode=overview&isinline=1",
+   "title": "FX Blue user 22-107",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-107&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-068",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-068&mode=overview&isinline=1",
+   "title": "FX Blue user 22-108",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-108&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-069",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-069&mode=overview&isinline=1",
+   "title": "FX Blue user 22-109",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-109&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-070",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-070&mode=overview&isinline=1",
+   "title": "FX Blue user 22-110",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-110&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-071",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-071&mode=overview&isinline=1",
+   "title": "FX Blue user 22-111",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-111&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-072",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-072&mode=overview&isinline=1",
+   "title": "FX Blue user 22-112",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-112&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-073",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-073&mode=overview&isinline=1",
+   "title": "FX Blue user 22-113",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-113&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-074",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-074&mode=overview&isinline=1",
+   "title": "FX Blue user 22-114",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-114&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "fxblue",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "FX Blue user 22-075",
-   "url": "https://api.fxblue.com/wl/view.aspx?id=22-075&mode=overview&isinline=1",
+   "title": "FX Blue user 22-115",
+   "url": "https://api.fxblue.com/wl/view.aspx?id=22-115&mode=overview&isinline=1",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4747,14 +4747,6 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The everyday work of inclusion",
-   "url": "https://www.bis.org/speeches/20260901-everyday-work-inclusion",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Monetary policy, the yield curve and financial markets",
    "url": "https://www.bis.org/speeches/20260901-monetary-policy-yield-curve-and-financial-markets",
    "symbols": [],
@@ -4803,8 +4795,8 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opportunities and risks for CCPs and their overseers in a changing environment",
-   "url": "https://www.bis.org/speeches/20260817-opportunities-and-risks-ccps-and-their-overseers-changing-environment",
+   "title": "The everyday work of inclusion",
+   "url": "https://www.bis.org/speeches/20260901-everyday-work-inclusion",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4885,6 +4877,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Remarks on the MAS Annual Report 2025/2026",
    "url": "https://www.bis.org/speeches/20260817-remarks-mas-annual-report-20252026",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opportunities and risks for CCPs and their overseers in a changing environment",
+   "url": "https://www.bis.org/speeches/20260817-opportunities-and-risks-ccps-and-their-overseers-changing-environment",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -4979,14 +4979,6 @@
   {
    "source": "bis_speeches",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opening remarks - Joint Workshop \"Global interconnections and financial stability\"",
-   "url": "https://www.bis.org/speeches/20260731-opening-remarks-joint-workshop-global-interconnections-and-financial-stability",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "bis_speeches",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "The euro in a fragmented world - stability, sovereignty, and global responsibility",
    "url": "https://www.bis.org/speeches/20260731-euro-fragmented-world-stability-sovereignty-and-global-responsibility",
    "symbols": [],
@@ -5061,6 +5053,38 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Modernizing financial regulation",
    "url": "https://www.bis.org/speeches/20260731-modernizing-financial-regulation",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "bis_speeches",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Opening remarks - Joint Workshop \"Global interconnections and financial stability\"",
+   "url": "https://www.bis.org/speeches/20260731-opening-remarks-joint-workshop-global-interconnections-and-financial-stability",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "ZovraT/MT5-volume-profile-indicator",
+   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "url": "https://github.com/mobilesitebytim/Forex-Trend-Dashboard-Engine",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "github_topics",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Wendy-Bay/PropFirm-Tracker-Elite",
+   "url": "https://github.com/Wendy-Bay/PropFirm-Tracker-Elite",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5163,24 +5187,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "softwaredevelop/mql5",
-   "url": "https://github.com/softwaredevelop/mql5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "NulveKN/MT5-Forex-Session-indicator",
-   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
-   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "title": "foxelabs/foxelabs.com",
+   "url": "https://github.com/foxelabs/foxelabs.com",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5203,24 +5211,8 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ajayprabhuraj/institutional-orderflow-mt5",
-   "url": "https://github.com/ajayprabhuraj/institutional-orderflow-mt5",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "github_topics",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
-   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "title": "NulveKN/MT5-Forex-Session-indicator",
+   "url": "https://github.com/NulveKN/MT5-Forex-Session-indicator",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5243,24 +5235,24 @@
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "youcefbibo53/PropGuard-Trailing-Equity-Armor",
-   "url": "https://github.com/youcefbibo53/PropGuard-Trailing-Equity-Armor",
+   "title": "peridotfoundation/MT5-Directional-Flow-Dashboard",
+   "url": "https://github.com/peridotfoundation/MT5-Directional-Flow-Dashboard",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "bipbopcompany-droid/Risk-Nexus-Command",
-   "url": "https://github.com/bipbopcompany-droid/Risk-Nexus-Command",
+   "title": "dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
+   "url": "https://github.com/dbgucci1017/MT5-Equity-Guardian-Trailing-Pro",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "github_topics",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "ZovraT/MT5-volume-profile-indicator",
-   "url": "https://github.com/ZovraT/MT5-volume-profile-indicator",
+   "title": "Dream-XR/MT5-Post-Trade-Insight-Reporter",
+   "url": "https://github.com/Dream-XR/MT5-Post-Trade-Insight-Reporter",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -5299,7 +5291,7 @@
   {
    "source": "cnn_fear_greed",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Fear & Greed: 35.8571428571429 (fear)",
+   "title": "Fear & Greed: 35.4285714285714 (fear)",
    "url": "",
    "symbols": [
     "NAS100",
@@ -5328,6 +5320,16 @@
   {
    "source": "reddit",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Gold Algo",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
    "title": "FINAL UPDATE: Turning Around a 1$ blown account",
    "url": "",
    "symbols": [
@@ -5339,12 +5341,10 @@
   },
   {
    "source": "reddit",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Gold Algo",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Why I passed on USD/JPY",
    "url": "",
-   "symbols": [
-    "XAUUSD"
-   ],
+   "symbols": [],
    "mechanism_tags": []
   },
   {
@@ -5463,6 +5463,121 @@
     "support",
     "resistance",
     "EMA"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Everyone says trading is 90% psychology. I ran the version with zero psychology and I'm not sure what to make of the result.",
+   "url": "",
+   "symbols": [
+    "NAS100"
+   ],
+   "mechanism_tags": [
+    "breakout",
+    "support",
+    "resistance",
+    "RSI",
+    "trend",
+    "mean reversion"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "First trade of the month ended well",
+   "url": "",
+   "symbols": [
+    "BTCUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Why does gold trade so differently from everything else?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "What\u2019s the best platform for day trading gold in 2026?",
+   "url": "",
+   "symbols": [
+    "US500",
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "support"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Best month trading options",
+   "url": "",
+   "symbols": [
+    "BTCUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Where to start?",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "What about india\u2019s market on friday",
+   "url": "",
+   "symbols": [],
+   "mechanism_tags": [
+    "trend"
+   ]
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "I\u2019ve been trading XAUUSD for ~1 year and have 200+ logged trades. Looking for someone experienced to brutally review them.",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Ninjatrader Price Action \"Glitch\"?",
+   "url": "",
+   "symbols": [
+    "US500"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "reddit",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Two 12R Trades in a row on XAUUSD. Any Questions/Thoughts?",
+   "url": "",
+   "symbols": [
+    "XAUUSD"
+   ],
+   "mechanism_tags": [
+    "breakout",
+    "SMA",
+    "trend",
+    "momentum"
    ]
   },
   {
@@ -5974,8 +6089,22 @@
   {
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Statistics &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/tag/statistics/",
+   "title": "Data Analysis | QuantStrat TradeR",
+   "url": "https://quantstrattrader.wordpress.com/category/data-analysis/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "correlation",
+    "momentum",
+    "seasonality",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Product Status/Developers - Trading System Lab",
+   "url": "https://tradingsystemlab.com/developers/",
    "symbols": [],
    "mechanism_tags": [
     "seasonality"
@@ -5984,16 +6113,26 @@
   {
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
-   "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
+   "title": "Data Library",
+   "url": "https://www.quantrocket.com/data/",
    "symbols": [],
    "mechanism_tags": []
   },
   {
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
-   "url": "http://js1.eastmoney.com/tg.aspx?ID=731",
+   "title": "API Reference",
+   "url": "https://www.quantrocket.com/docs/api/",
+   "symbols": [],
+   "mechanism_tags": [
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How do I access World Development Indicators (WDI) online tables? \u2013 World Bank Data Help Desk",
+   "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/191128-how-do-i-access-world-development-indicators-wdi",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6008,20 +6147,20 @@
   {
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
+   "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "\u5916\u6c47(waihui)\u80a1\u5427_\u5916\u6c47\u600e\u4e48\u6837_\u5206\u6790\u8ba8\u8bba\u793e\u533a\u2014\u4e1c\u65b9\u8d22\u5bcc\u7f51",
    "url": "http://guba.eastmoney.com/list,waihui.html",
    "symbols": [],
    "mechanism_tags": [
     "momentum"
    ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "How does the World Bank code its indicators? \u2013 World Bank Data Help Desk",
-   "url": "https://datahelpdesk.worldbank.org/knowledgebase/articles/201175-how-does-the-world-bank-code-its-indicators",
-   "symbols": [],
-   "mechanism_tags": []
   },
   {
    "source": "world_crawler",
@@ -6080,30 +6219,6 @@
   {
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
-   "url": "https://js1.eastmoney.com/tg.aspx?ID=667",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "\u884c\u60c5\u4e2d\u5fc3\uff1a\u56fd\u5185\u5feb\u6377\u5168\u9762\u7684\u80a1\u7968\u3001\u57fa\u91d1\u3001\u671f\u8d27\u3001\u7f8e\u80a1\u3001\u6e2f\u80a1\u3001\u5916\u6c47\u3001\u9ec4\u91d1\u3001\u503a\u5238\u884c\u60c5\u7cfb\u7edf_\u4e1c\u65b9\u8d22\u5bcc\u7f51",
-   "url": "http://js1.eastmoney.com/tg.aspx?ID=667",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
-   "url": "https://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_03_01_14_0",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Cabinet",
    "url": "https://live-login.dukascopy.com/cabinet/trader/?lang=en",
    "symbols": [],
@@ -6114,6 +6229,14 @@
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "Cabinet",
    "url": "https://live-login.dukascopy.com/cabinet/trader/auth/forgot",
+   "symbols": [],
+   "mechanism_tags": []
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "\u5927\u5b97\u4ea4\u6613\u9996\u9875 _ \u4e1c\u65b9\u8d22\u5bcc\u7f51_ \u6570\u636e\u9891\u9053",
+   "url": "https://acttg.eastmoney.com/pub/web_dfcfsy_wzl_dhl_03_01_14_0",
    "symbols": [],
    "mechanism_tags": []
   },
@@ -6135,97 +6258,18 @@
   },
   {
    "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Opendata - U.S. Energy Information Administration (EIA)",
-   "url": "https://www.eia.gov/opendata/",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Excess VIX: A Predictive Volatility Model &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2018/02/28/excess-vol/",
-   "symbols": [],
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Algorithmic Trading Articles \u2014 Guides &amp; Examples | MetaTrader",
+   "url": "https://www.metatrader.com/en/algotrading",
+   "symbols": [
+    "EURUSD",
+    "GBPUSD",
+    "USDCAD",
+    "USDCHF"
+   ],
    "mechanism_tags": [
-    "correlation",
-    "seasonality",
-    "volatility"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "September 2019 &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2019/09/",
-   "symbols": [],
-   "mechanism_tags": [
-    "seasonality"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "August 2019 &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2019/08/",
-   "symbols": [],
-   "mechanism_tags": [
-    "seasonality"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "December 2018 &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2018/12/",
-   "symbols": [],
-   "mechanism_tags": [
-    "seasonality"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "September 2018 &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2018/09/",
-   "symbols": [],
-   "mechanism_tags": [
-    "seasonality"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "August 2018 &#8211; Quant Fiction",
-   "url": "https://quantfiction.com/2018/08/",
-   "symbols": [],
-   "mechanism_tags": [
-    "seasonality"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "API Dashboard - U.S. Energy Information Administration (EIA)",
-   "url": "https://www.eia.gov/opendata/browser/crude-oil-imports",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "API Dashboard - U.S. Energy Information Administration (EIA)",
-   "url": "https://www.eia.gov/opendata/browser/coal/exports-imports-quantity-price",
-   "symbols": [],
-   "mechanism_tags": []
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Home - Quant For Hire",
-   "url": "https://quantforhire.com/",
-   "symbols": [],
-   "mechanism_tags": [
+    "breakout",
+    "gap",
     "mean_reversion",
     "momentum",
     "volatility"
@@ -6234,35 +6278,53 @@
   {
    "source": "world_crawler",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Quant Trader&#39;s Journey",
-   "url": "https://quantsjourney.blogspot.com/",
+   "title": "Copy Trading Signals \u2014 Forex, Stocks &amp; Crypto | MetaTrader",
+   "url": "https://www.metatrader.com/en/signals",
    "symbols": [
-    "EURUSD"
+    "XAUUSD"
    ],
-   "mechanism_tags": []
+   "mechanism_tags": [
+    "breakout",
+    "orderflow"
+   ]
   },
   {
    "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Blog - Quantifiable Edges",
-   "url": "https://quantifiableedges.com/blog/",
-   "symbols": [],
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "FAQ: Ideas \u2014 MetaTrader Help Center",
+   "url": "https://www.metatrader.com/en/help/ideas",
+   "symbols": [
+    "EURUSD",
+    "XAUUSD"
+   ],
    "mechanism_tags": [
-    "correlation",
-    "momentum",
+    "breakout",
+    "mean_reversion",
     "orderflow",
-    "seasonality",
     "volatility"
    ]
   },
   {
    "source": "world_crawler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "GBPUSD H4 ANALYSIS - Trading Idea by Abdul Qayoom | MetaTrader",
+   "url": "https://www.metatrader.com/en/ideas/currencies/4vj84r",
+   "symbols": [
+    "GBPUSD"
+   ],
+   "mechanism_tags": [
+    "breakout"
+   ]
+  },
+  {
+   "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Articles - Quantish",
-   "url": "https://blog.quantish.io/",
+   "title": "About | QuantStrat TradeR",
+   "url": "https://quantstrattrader.wordpress.com/about/",
    "symbols": [],
    "mechanism_tags": [
     "breakout",
+    "correlation",
     "momentum",
     "volatility"
    ]
@@ -6271,7 +6333,7 @@
    "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
    "title": "QuantStrat TradeR | Trading, QuantStrat, R, and more.",
-   "url": "https://quantstrattrader.wordpress.com/",
+   "url": "https://quantstrattrader.wordpress.com",
    "symbols": [],
    "mechanism_tags": [
     "correlation",
@@ -6281,106 +6343,260 @@
   },
   {
    "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Services - Quant For Hire",
+   "url": "https://quantforhire.com/services/",
+   "symbols": [],
+   "mechanism_tags": [
+    "mean_reversion",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Services - Quant For Hire",
+   "url": "http://quantforhire.com/services/",
+   "symbols": [],
+   "mechanism_tags": [
+    "mean_reversion",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
    "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Quantum Financier &#8211; On algorithmic trading",
-   "url": "https://quantumfinancier.wordpress.com/",
+   "title": "Two Strategies you can start trading tomorrow - Time of Day effects in FX continued",
+   "url": "https://quantsjourney.blogspot.com/2017/09/two-strategies-you-can-start-trading.html",
    "symbols": [
-    "USDCAD",
+    "AUDUSD",
+    "EURGBP",
+    "EURUSD",
+    "GBPUSD",
     "USDJPY"
    ],
    "mechanism_tags": [
-    "mean_reversion",
-    "momentum",
-    "volatility"
+    "orderflow"
    ]
   },
   {
    "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "The Sober Quant &#8211; Quantitative Research, Analysis and Trading",
-   "url": "https://www.thesoberquant.com/",
-   "symbols": [],
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Time of Day effects in FX",
+   "url": "https://quantsjourney.blogspot.com/2017/09/time-of-day-effects-in-fx.html",
+   "symbols": [
+    "EURUSD",
+    "USDCAD"
+   ],
    "mechanism_tags": [
-    "mean_reversion"
+    "gap"
    ]
   },
   {
    "source": "world_crawler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Quant Trader&#39;s Journey",
+   "url": "https://quantsjourney.blogspot.com/2017/",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
+   "title": "Quant Trader&#39;s Journey",
+   "url": "https://quantsjourney.blogspot.com/2017/09/",
+   "symbols": [
+    "EURUSD"
+   ],
+   "mechanism_tags": []
+  },
+  {
+   "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Trading with Python",
-   "url": "https://tradingwithpython.blogspot.com/",
+   "title": "Quantitative Market Research &amp; Trading Studies - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/",
    "symbols": [],
    "mechanism_tags": [
     "correlation",
+    "orderflow",
+    "seasonality",
     "volatility"
    ]
   },
   {
    "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "MetaTrader | World Financial Markets for Smarter Trading",
-   "url": "https://www.metatrader.com",
-   "symbols": [
-    "BTCUSD",
-    "ETHUSD",
-    "EURCHF",
-    "EURUSD",
-    "NVIDIA",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout",
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_EXACT_RULE_EXTRACTION",
-   "title": "Trading Ideas, Strategies &amp; Technical Analysis from Top Traders | MetaTrader",
-   "url": "https://www.metatrader.com/en/ideas",
-   "symbols": [
-    "BTCUSD",
-    "ETHUSD",
-    "EURCHF",
-    "EURUSD",
-    "GBPUSD",
-    "XAGUSD",
-    "XAUUSD"
-   ],
-   "mechanism_tags": [
-    "breakout",
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
    "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Home - Hispatrading Magazine",
-   "url": "https://hispatrading.es/",
+   "title": "About Rob - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/about-rob/",
    "symbols": [],
    "mechanism_tags": [
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quantivity | Uncommon Returns through Quantitative and Algorithmic Trading",
-   "url": "https://quantivity.wordpress.com/",
-   "symbols": [],
-   "mechanism_tags": [
-    "momentum"
-   ]
-  },
-  {
-   "source": "world_crawler",
-   "disposition": "NEEDS_SYMBOL_EXTRACTION",
-   "title": "Quant Trading Blog - Quant Savvy",
-   "url": "https://quantsavvy.com/quant-trading-blog/",
-   "symbols": [],
-   "mechanism_tags": [
+    "correlation",
     "gap",
+    "orderflow",
+    "seasonality",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Contact - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/contact/",
+   "symbols": [],
+   "mechanism_tags": [
+    "correlation",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Terms and Conditions - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/terms-and-conditions/",
+   "symbols": [],
+   "mechanism_tags": [
+    "correlation",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Privacy Policy - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/privacy-policy/",
+   "symbols": [],
+   "mechanism_tags": [
+    "correlation",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "One Backtest Might Just Be Lucky (Video) - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/one-backtest-might-just-be-lucky/",
+   "symbols": [],
+   "mechanism_tags": [
+    "correlation",
+    "orderflow",
+    "seasonality"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Rob Hanna - Quantifiable Edges",
+   "url": "https://quantifiableedges.com/author/wpnight/",
+   "symbols": [],
+   "mechanism_tags": [
+    "correlation",
+    "orderflow"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Refining The 0DTE SPX Breakout Strategy with Evidence-Based Exclusions (2.2 Sharpe) - Quantish",
+   "url": "https://blog.quantish.io/2025/09/24/refining-the-0dte-spx-breakout-strategy/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "quantish - Quantish",
+   "url": "https://blog.quantish.io/author/blog_1r0y42/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
     "momentum",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Profitably Trading the SPX Opening Range. Code Included. - Quantish",
+   "url": "https://blog.quantish.io/2025/09/09/0dte-spx-opening-range-breakouts/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "mean_reversion",
+    "momentum",
+    "orderflow",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Reweighted Price Relative Tracking for Portfolio Optimization - Quantish",
+   "url": "https://blog.quantish.io/2025/05/07/reweighted-price-portfolio-optimization/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "gap",
+    "mean_reversion",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "KER and FCF Yield Factor Optimization - Quantish",
+   "url": "https://blog.quantish.io/2024/08/02/ker-fcf-yield-factor-optimization/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "correlation",
+    "momentum",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "On ML: For \u2018Feature\u2019 Consideration - Quantish",
+   "url": "https://blog.quantish.io/2022/12/15/smart-friends-with-options-2/",
+   "symbols": [],
+   "mechanism_tags": [
+    "mean_reversion",
+    "momentum"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Trading Earnings Volatility With Options - Quantish",
+   "url": "https://blog.quantish.io/2022/08/22/trading-earnings-volatility/",
+   "symbols": [],
+   "mechanism_tags": [
+    "breakout",
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Disclaimer | QuantStrat TradeR",
+   "url": "https://quantstrattrader.wordpress.com/disclaimer/",
+   "symbols": [],
+   "mechanism_tags": [
+    "volatility"
+   ]
+  },
+  {
+   "source": "world_crawler",
+   "disposition": "NEEDS_SYMBOL_EXTRACTION",
+   "title": "Volatility Strategy | QuantStrat TradeR",
+   "url": "https://quantstrattrader.wordpress.com/volatility-trading-strategy-subscription/",
+   "symbols": [],
+   "mechanism_tags": [
     "volatility"
    ]
   }
