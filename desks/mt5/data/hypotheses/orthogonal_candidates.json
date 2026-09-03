@@ -1,168 +1,215 @@
 {
- "swept_at": "2026-09-03T20:26:30+00:00",
- "symbols": 106,
+ "swept_at": "2026-09-03T21:19:30+00:00",
+ "symbols": 90,
  "families_ran": {
-  "correlation_regime": 104,
-  "cross_asset_residual": 104,
-  "drawdown_conditional": 101,
-  "fx_fixing_reversal": 104,
-  "generic": 38,
-  "hedging_demand_close": 40,
-  "liquidity_gamma_reversal": 103,
-  "overnight_gap_decay": 103,
-  "pca_residual": 103,
-  "relative_value": 104,
-  "turn_of_month": 104,
-  "vol_mean_reversion": 104,
-  "vol_transition": 104,
-  "lvc_asia_london": 32,
-  "session_handoff": 31,
-  "carry": 20,
+  "correlation_regime": 88,
+  "cross_asset_residual": 88,
+  "drawdown_conditional": 87,
+  "fx_fixing_reversal": 88,
+  "generic": 26,
+  "hedging_demand_close": 31,
+  "liquidity_gamma_reversal": 87,
+  "overnight_gap_decay": 87,
+  "pca_residual": 87,
+  "relative_value": 88,
+  "turn_of_month": 88,
+  "vol_mean_reversion": 88,
+  "vol_transition": 88,
+  "lvc_asia_london": 22,
+  "session_handoff": 22,
+  "carry": 9,
   "cot_positioning": 1,
-  "event_reaction": 22,
-  "orderflow_imbalance": 21,
-  "liquidity_regime": 9
+  "event_reaction": 7,
+  "orderflow_imbalance": 7,
+  "liquidity_regime": 1
  },
  "input_gaps": {
-  "calendar_month:needs-source-evidence (active_month, side_bias)": 104,
-  "carry:no-signals (contract/swap terms)": 84,
-  "cot_positioning:no-signals (COT net positioning)": 103,
-  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 104,
-  "event_reaction:no-signals (an economic calendar)": 82,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 95,
-  "lvc_asia_london:no-signals (unknown)": 72,
-  "macro_conditional:no-signals (a macro state series)": 104,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 83,
-  "session_handoff:no-signals (price only)": 73,
-  "generic:no-signals (price only)": 66,
-  "hedging_demand_close:no-signals (price only)": 64,
+  "calendar_month:needs-source-evidence (active_month, side_bias)": 88,
+  "carry:no-signals (contract/swap terms)": 79,
+  "cot_positioning:no-signals (COT net positioning)": 87,
+  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 88,
+  "event_reaction:no-signals (an economic calendar)": 81,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 87,
+  "lvc_asia_london:no-signals (unknown)": 66,
+  "macro_conditional:no-signals (a macro state series)": 88,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 81,
+  "session_handoff:no-signals (price only)": 66,
+  "generic:no-signals (price only)": 62,
+  "hedging_demand_close:no-signals (price only)": 57,
   "liquidity_gamma_reversal:no-signals (price only)": 1,
   "overnight_gap_decay:no-signals (price only)": 1,
   "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1,
-  "drawdown_conditional:no-signals (price only)": 3
+  "drawdown_conditional:no-signals (price only)": 1
  },
  "family_errors": {},
  "family_errors_note": "exceptions raised BY THIS DESK'S CODE while calling a family. Distinct from input_gaps, which are data the box does not have: an error here is a defect to FIX, and folding the two together is how 297 identical TypeErrors read as a missing feed.",
  "untestable_by_family": {
-  "correlation_regime:untestable (56 trading days < 60 the gates need)": 3,
-  "pca_residual:untestable (58 trading days < 60 the gates need)": 4,
+  "correlation_regime:untestable (55 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (56 trading days < 60 the gates need)": 4,
-  "correlation_regime:untestable (57 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (47 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (45 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (33 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (54 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (32 trading days < 60 the gates need)": 4,
   "liquidity_gamma_reversal:untestable (51 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (33 trading days < 60 the gates need)": 1,
-  "cross_asset_residual:untestable (42 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (31 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (41 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (37 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (44 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (32 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (41 trading days < 60 the gates need)": 1,
-  "correlation_regime:untestable (42 trading days < 60 the gates need)": 2,
-  "cross_asset_residual:untestable (57 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (41 trading days < 60 the gates need)": 1,
   "generic:untestable (34 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (31 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (41 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (19 trading days < 60 the gates need)": 1,
   "generic:untestable (36 trading days < 60 the gates need)": 1,
-  "relative_value:untestable (34 trading days < 60 the gates need)": 1,
+  "relative_value:untestable (36 trading days < 60 the gates need)": 1,
   "session_handoff:untestable (39 trading days < 60 the gates need)": 1,
   "turn_of_month:untestable (23 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (31 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (38 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (38 trading days < 60 the gates need)": 2,
   "pca_residual:untestable (55 trading days < 60 the gates need)": 2,
-  "correlation_regime:untestable (54 trading days < 60 the gates need)": 4,
-  "pca_residual:untestable (54 trading days < 60 the gates need)": 1,
-  "correlation_regime:untestable (55 trading days < 60 the gates need)": 2,
   "liquidity_gamma_reversal:untestable (33 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (58 trading days < 60 the gates need)": 2,
   "liquidity_gamma_reversal:untestable (30 trading days < 60 the gates need)": 2,
-  "pca_residual:untestable (53 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (48 trading days < 60 the gates need)": 1,
-  "correlation_regime:untestable (59 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (32 trading days < 60 the gates need)": 2,
-  "vol_transition:untestable (55 trading days < 60 the gates need)": 3,
+  "liquidity_gamma_reversal:untestable (32 trading days < 60 the gates need)": 1,
+  "vol_transition:untestable (55 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (37 trading days < 60 the gates need)": 2,
   "lvc_asia_london:untestable (56 trading days < 60 the gates need)": 1,
   "overnight_gap_decay:untestable (30 trading days < 60 the gates need)": 2,
-  "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 2,
+  "drawdown_conditional:untestable (40 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (30 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (51 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (47 trading days < 60 the gates need)": 2,
+  "correlation_regime:untestable (57 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (41 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (52 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (56 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (56 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (50 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (50 trading days < 60 the gates need)": 3,
   "vol_transition:untestable (52 trading days < 60 the gates need)": 2,
-  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 3,
-  "correlation_regime:untestable (50 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (48 trading days < 60 the gates need)": 1,
+  "liquidity_gamma_reversal:untestable (55 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (49 trading days < 60 the gates need)": 4,
-  "pca_residual:untestable (50 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (53 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (48 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (59 trading days < 60 the gates need)": 2,
-  "correlation_regime:untestable (58 trading days < 60 the gates need)": 3,
   "liquidity_gamma_reversal:untestable (43 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (49 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (31 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (59 trading days < 60 the gates need)": 1,
   "correlation_regime:untestable (29 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (32 trading days < 60 the gates need)": 1,
+  "pca_residual:untestable (49 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (50 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (37 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (51 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (46 trading days < 60 the gates need)": 2,
   "vol_transition:untestable (57 trading days < 60 the gates need)": 2,
   "drawdown_conditional:untestable (42 trading days < 60 the gates need)": 1,
-  "cross_asset_residual:untestable (59 trading days < 60 the gates need)": 1,
+  "correlation_regime:untestable (50 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (36 trading days < 60 the gates need)": 1,
-  "pca_residual:untestable (43 trading days < 60 the gates need)": 1,
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 2,
-  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 4,
+  "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 3,
   "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (44 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (42 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 2,
+  "drawdown_conditional:untestable (31 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (50 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (41 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (40 trading days < 60 the gates need)": 1,
   "lvc_asia_london:untestable (48 trading days < 60 the gates need)": 1,
   "vol_transition:untestable (42 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 2,
-  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (40 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (32 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (44 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (35 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (54 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (49 trading days < 60 the gates need)": 1,
-  "drawdown_conditional:untestable (43 trading days < 60 the gates need)": 1,
-  "vol_transition:untestable (58 trading days < 60 the gates need)": 1
+  "drawdown_conditional:untestable (46 trading days < 60 the gates need)": 1,
+  "lvc_asia_london:untestable (45 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
  "hypotheses": [
+  {
+   "symbol": "3M",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 229,
+   "exp_r": 0.2683,
+   "max_dd_r": -9.35,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "3M",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 559,
+   "exp_r": 0.0841,
+   "max_dd_r": -15.45,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "3M",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 68,
+   "exp_r": 0.0884,
+   "max_dd_r": -5.16,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "3M",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 527,
+   "exp_r": 0.2255,
+   "max_dd_r": -22.35,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "3M",
+   "family": "vol_transition",
+   "params": {},
+   "n": 63,
+   "exp_r": 0.2094,
+   "max_dd_r": -8.53,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
   {
    "symbol": "A",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 186,
-   "exp_r": 0.1992,
-   "max_dd_r": -11.56,
+   "n": 198,
+   "exp_r": 0.3131,
+   "max_dd_r": -8.26,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -191,13 +238,35 @@
   },
   {
    "symbol": "A",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 86,
+   "exp_r": 0.03,
+   "max_dd_r": -8.51,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "A",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 142,
-   "exp_r": 0.1587,
-   "max_dd_r": -17.1,
+   "n": 103,
+   "exp_r": 0.3787,
+   "max_dd_r": -17.28,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -229,19 +298,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 166,
-   "exp_r": 0.3447,
-   "max_dd_r": -8.01,
+   "n": 204,
+   "exp_r": 0.0773,
+   "max_dd_r": -18.45,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -273,19 +342,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 72,
-   "exp_r": 0.2625,
-   "max_dd_r": -8.0,
+   "n": 88,
+   "exp_r": 0.35,
+   "max_dd_r": -5.47,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -294,11 +363,11 @@
    "symbol": "AA",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 148,
-   "exp_r": 0.0559,
-   "max_dd_r": -9.77,
+   "n": 130,
+   "exp_r": 0.1225,
+   "max_dd_r": -11.53,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -327,51 +396,25 @@
   },
   {
    "symbol": "AAL",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 84,
-   "exp_r": 0.1035,
-   "max_dd_r": -5.49,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AAL",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 191,
-   "exp_r": 0.4021,
-   "max_dd_r": -7.67,
+   "n": 222,
+   "exp_r": 0.2385,
+   "max_dd_r": -12.77,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "AAL",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 181,
-   "exp_r": 0.1338,
-   "max_dd_r": -10.99,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AAL",
@@ -386,35 +429,22 @@
   },
   {
    "symbol": "AALB",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 86,
-   "exp_r": 0.084,
-   "max_dd_r": -11.41,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AALB",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 234,
-   "exp_r": 0.2176,
-   "max_dd_r": -16.87,
+   "n": 235,
+   "exp_r": 0.2389,
+   "max_dd_r": -17.09,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -429,6 +459,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AALB",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 142,
+   "exp_r": 0.0787,
+   "max_dd_r": -14.61,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AALB",
@@ -456,11 +499,11 @@
    "symbol": "AALG",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 85,
-   "exp_r": 0.145,
-   "max_dd_r": -12.0,
+   "n": 84,
+   "exp_r": 0.306,
+   "max_dd_r": -6.61,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -470,19 +513,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 199,
-   "exp_r": 0.1357,
-   "max_dd_r": -12.58,
+   "n": 247,
+   "exp_r": 0.0917,
+   "max_dd_r": -12.18,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -514,19 +557,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 99,
-   "exp_r": 0.0756,
-   "max_dd_r": -9.22,
+   "n": 106,
+   "exp_r": 0.2202,
+   "max_dd_r": -8.83,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -535,11 +578,11 @@
    "symbol": "AALG",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 194,
-   "exp_r": 0.0491,
-   "max_dd_r": -27.65,
+   "n": 163,
+   "exp_r": 0.0528,
+   "max_dd_r": -15.89,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -568,6 +611,28 @@
   },
   {
    "symbol": "AAOI",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 120,
+   "exp_r": 0.3476,
+   "max_dd_r": -21.58,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAOI",
    "family": "turn_of_month",
    "params": {},
    "n": 115,
@@ -581,11 +646,11 @@
    "symbol": "AAPL",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 136,
-   "exp_r": 0.1859,
-   "max_dd_r": -9.82,
+   "n": 157,
+   "exp_r": 0.077,
+   "max_dd_r": -13.31,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -595,19 +660,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 208,
-   "exp_r": 0.2507,
-   "max_dd_r": -14.42,
+   "n": 357,
+   "exp_r": 0.1993,
+   "max_dd_r": -12.93,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -622,6 +687,41 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 129,
+   "exp_r": 0.036,
+   "max_dd_r": -10.59,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 220,
+   "exp_r": 0.213,
+   "max_dd_r": -16.8,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AAPL",
@@ -658,6 +758,28 @@
   },
   {
    "symbol": "AAPL.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 130,
+   "exp_r": 0.2765,
+   "max_dd_r": -9.67,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAPL.24H",
    "family": "fx_fixing_reversal",
    "params": {},
    "n": 210,
@@ -677,6 +799,19 @@
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AAPL.24H",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 103,
+   "exp_r": 0.1653,
+   "max_dd_r": -20.76,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AAPL.24H",
@@ -702,35 +837,22 @@
   },
   {
    "symbol": "ABBV.24H",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 167,
-   "exp_r": 0.0597,
-   "max_dd_r": -11.63,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ABBV.24H",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 357,
-   "exp_r": 0.1112,
-   "max_dd_r": -25.25,
+   "n": 410,
+   "exp_r": 0.2123,
+   "max_dd_r": -23.23,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -795,35 +917,22 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 149,
-   "exp_r": 0.0515,
-   "max_dd_r": -18.49,
+   "n": 170,
+   "exp_r": 0.1279,
+   "max_dd_r": -18.88,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "ABBV.24H",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 316,
-   "exp_r": 0.1714,
-   "max_dd_r": -19.28,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ABBV.24H",
@@ -849,35 +958,22 @@
   },
   {
    "symbol": "ABBVIE",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 133,
-   "exp_r": 0.0419,
-   "max_dd_r": -14.23,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ABBVIE",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 215,
-   "exp_r": 0.1182,
-   "max_dd_r": -16.21,
+   "n": 311,
+   "exp_r": 0.3109,
+   "max_dd_r": -14.44,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -908,11 +1004,11 @@
    "symbol": "ABBVIE",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 276,
-   "exp_r": 0.1135,
-   "max_dd_r": -19.04,
+   "n": 192,
+   "exp_r": 0.0549,
+   "max_dd_r": -22.04,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -952,22 +1048,35 @@
   },
   {
    "symbol": "ABDN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 114,
+   "exp_r": 0.0758,
+   "max_dd_r": -20.45,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABDN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 255,
-   "exp_r": 0.2074,
-   "max_dd_r": -20.0,
+   "n": 281,
+   "exp_r": 0.3155,
+   "max_dd_r": -24.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -985,6 +1094,19 @@
   },
   {
    "symbol": "ABDN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 139,
+   "exp_r": 0.1824,
+   "max_dd_r": -12.32,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABDN",
    "family": "turn_of_month",
    "params": {},
    "n": 222,
@@ -999,19 +1121,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 215,
-   "exp_r": 0.2662,
-   "max_dd_r": -17.28,
+   "n": 214,
+   "exp_r": 0.2531,
+   "max_dd_r": -15.48,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1051,60 +1173,38 @@
   },
   {
    "symbol": "ABN",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 75,
-   "exp_r": 0.1231,
-   "max_dd_r": -7.0,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ABN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 245,
-   "exp_r": 0.2119,
-   "max_dd_r": -15.59,
+   "n": 234,
+   "exp_r": 0.0115,
+   "max_dd_r": -21.24,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "ABN",
-   "family": "pca_residual",
+   "family": "relative_value",
    "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
+    "peer_symbol": "ETHUSD"
    },
-   "n": 89,
-   "exp_r": 0.0222,
-   "max_dd_r": -12.13,
-   "source": "orthogonal_sweep:pca_residual",
+   "n": 133,
+   "exp_r": 0.0851,
+   "max_dd_r": -16.82,
+   "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ABN",
@@ -1133,19 +1233,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 127,
-   "exp_r": 0.4919,
-   "max_dd_r": -8.02,
+   "n": 139,
+   "exp_r": 0.4731,
+   "max_dd_r": -8.93,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1174,35 +1274,13 @@
   },
   {
    "symbol": "ABNB",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 68,
-   "exp_r": 0.1275,
-   "max_dd_r": -7.04,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "ABNB",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 144,
-   "exp_r": 0.0989,
-   "max_dd_r": -10.24,
+   "n": 115,
+   "exp_r": 0.16,
+   "max_dd_r": -9.93,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -1220,22 +1298,35 @@
   },
   {
    "symbol": "ABT",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 80,
+   "exp_r": 0.1292,
+   "max_dd_r": -6.83,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ABT",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 165,
-   "exp_r": 0.073,
-   "max_dd_r": -13.59,
+   "n": 179,
+   "exp_r": 0.1165,
+   "max_dd_r": -19.22,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1253,13 +1344,35 @@
   },
   {
    "symbol": "ABT",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 70,
+   "exp_r": 0.2023,
+   "max_dd_r": -11.78,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "ABT",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 152,
-   "exp_r": 0.1733,
-   "max_dd_r": -13.01,
+   "n": 112,
+   "exp_r": 0.0888,
+   "max_dd_r": -20.53,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -1288,22 +1401,35 @@
   },
   {
    "symbol": "AC",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 84,
+   "exp_r": 0.2695,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AC",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
    "n": 219,
-   "exp_r": 0.3062,
-   "max_dd_r": -12.96,
+   "exp_r": 0.108,
+   "max_dd_r": -11.82,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1318,6 +1444,19 @@
    "source": "orthogonal_sweep:liquidity_gamma_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AC",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 129,
+   "exp_r": 0.09,
+   "max_dd_r": -25.59,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AC",
@@ -1357,19 +1496,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 212,
-   "exp_r": 0.0608,
-   "max_dd_r": -23.9,
+   "n": 217,
+   "exp_r": 0.0126,
+   "max_dd_r": -24.82,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1423,19 +1562,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 160,
-   "exp_r": 0.1401,
-   "max_dd_r": -14.36,
+   "n": 182,
+   "exp_r": 0.4028,
+   "max_dd_r": -8.73,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1464,6 +1603,19 @@
   },
   {
    "symbol": "ACN",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 106,
+   "exp_r": 0.265,
+   "max_dd_r": -6.66,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ACN",
    "family": "vol_mean_reversion",
    "params": {},
    "n": 133,
@@ -1478,19 +1630,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 239,
-   "exp_r": 0.1024,
-   "max_dd_r": -29.9,
+   "n": 309,
+   "exp_r": 0.1741,
+   "max_dd_r": -24.94,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1519,6 +1671,28 @@
   },
   {
    "symbol": "ADAJPY",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 125,
+   "exp_r": 0.0207,
+   "max_dd_r": -17.51,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "ADAJPY",
    "family": "vol_mean_reversion",
    "params": {},
    "n": 310,
@@ -1540,23 +1714,78 @@
    "mechanism_note": "price only"
   },
   {
+   "symbol": "ADAUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 992,
+   "exp_r": 0.1012,
+   "max_dd_r": -23.52,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADAUSD",
+   "family": "hedging_demand_close",
+   "params": {},
+   "n": 768,
+   "exp_r": 0.0059,
+   "max_dd_r": -27.59,
+   "source": "orthogonal_sweep:hedging_demand_close",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADAUSD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 862,
+   "exp_r": 0.0323,
+   "max_dd_r": -64.02,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADAUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 349,
+   "exp_r": 0.0259,
+   "max_dd_r": -22.91,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
    "symbol": "ADBE",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 171,
-   "exp_r": 0.2448,
-   "max_dd_r": -14.39,
+   "n": 173,
+   "exp_r": 0.3215,
+   "max_dd_r": -8.0,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1585,19 +1814,6 @@
   },
   {
    "symbol": "ADBE",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 145,
-   "exp_r": 0.0145,
-   "max_dd_r": -13.35,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ADBE",
    "family": "vol_transition",
    "params": {},
    "n": 63,
@@ -1609,22 +1825,35 @@
   },
   {
    "symbol": "ADBE.24H",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 175,
+   "exp_r": 0.0623,
+   "max_dd_r": -12.99,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADBE.24H",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 361,
-   "exp_r": 0.1617,
-   "max_dd_r": -24.65,
+   "n": 431,
+   "exp_r": 0.3104,
+   "max_dd_r": -14.65,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1689,19 +1918,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 168,
-   "exp_r": 0.2619,
-   "max_dd_r": -13.18,
+   "n": 173,
+   "exp_r": 0.182,
+   "max_dd_r": -8.6,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1730,13 +1959,35 @@
   },
   {
    "symbol": "ADI",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 76,
+   "exp_r": 0.1717,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "ADI",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 140,
-   "exp_r": 0.0773,
-   "max_dd_r": -16.24,
+   "n": 104,
+   "exp_r": 0.0914,
+   "max_dd_r": -9.39,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -1768,45 +2019,148 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 152,
-   "exp_r": 0.1479,
-   "max_dd_r": -17.67,
+   "n": 172,
+   "exp_r": 0.2732,
+   "max_dd_r": -12.49,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "ADM",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 72,
+   "exp_r": 0.1394,
+   "max_dd_r": -12.61,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "ADM",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 136,
-   "exp_r": 0.1361,
-   "max_dd_r": -6.7,
+   "n": 110,
+   "exp_r": 0.1461,
+   "max_dd_r": -20.86,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
   {
+   "symbol": "ADP",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 83,
+   "exp_r": 0.0654,
+   "max_dd_r": -15.3,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADP",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 256,
+   "exp_r": 0.0788,
+   "max_dd_r": -23.43,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADP",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 479,
+   "exp_r": 0.0161,
+   "max_dd_r": -18.13,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADP",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 570,
+   "exp_r": 0.0717,
+   "max_dd_r": -15.52,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADP",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 132,
+   "exp_r": 0.2243,
+   "max_dd_r": -11.48,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADP",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 208,
+   "exp_r": 0.0634,
+   "max_dd_r": -17.47,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
    "symbol": "ADPR",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 72,
-   "exp_r": 0.0381,
-   "max_dd_r": -13.41,
+   "n": 79,
+   "exp_r": 0.3476,
+   "max_dd_r": -10.82,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -1816,19 +2170,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 211,
-   "exp_r": 0.3116,
-   "max_dd_r": -7.79,
+   "n": 235,
+   "exp_r": 0.322,
+   "max_dd_r": -12.85,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1846,16 +2200,25 @@
   },
   {
    "symbol": "ADPR",
-   "family": "relative_value",
+   "family": "pca_residual",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
    },
-   "n": 162,
-   "exp_r": 0.2329,
-   "max_dd_r": -10.63,
-   "source": "orthogonal_sweep:relative_value",
+   "n": 86,
+   "exp_r": 0.0268,
+   "max_dd_r": -12.35,
+   "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "ADPR",
@@ -1878,19 +2241,6 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "ADS",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 84,
-   "exp_r": 0.2903,
-   "max_dd_r": -6.02,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ADS",
@@ -1919,19 +2269,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 174,
-   "exp_r": 0.0895,
-   "max_dd_r": -11.89,
+   "n": 183,
+   "exp_r": 0.0889,
+   "max_dd_r": -25.98,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -1951,11 +2301,11 @@
    "symbol": "ADSK",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 141,
-   "exp_r": 0.0452,
-   "max_dd_r": -17.19,
+   "n": 113,
+   "exp_r": 0.2291,
+   "max_dd_r": -15.28,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -1973,35 +2323,22 @@
   },
   {
    "symbol": "ADYEN",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 87,
-   "exp_r": 0.028,
-   "max_dd_r": -16.65,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "ADYEN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 211,
-   "exp_r": 0.0905,
-   "max_dd_r": -13.86,
+   "n": 210,
+   "exp_r": 0.1925,
+   "max_dd_r": -13.66,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2030,35 +2367,13 @@
   },
   {
    "symbol": "ADYEN",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 88,
-   "exp_r": 0.0815,
-   "max_dd_r": -8.43,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "ADYEN",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 165,
-   "exp_r": 0.0641,
-   "max_dd_r": -13.3,
+   "n": 142,
+   "exp_r": 0.0603,
+   "max_dd_r": -24.69,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2068,19 +2383,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 199,
-   "exp_r": 0.1103,
-   "max_dd_r": -17.23,
+   "n": 202,
+   "exp_r": 0.2378,
+   "max_dd_r": -10.66,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2101,22 +2416,35 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 85,
-   "exp_r": 0.2251,
-   "max_dd_r": -6.0,
+   "n": 91,
+   "exp_r": 0.1303,
+   "max_dd_r": -8.0,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AENA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 139,
+   "exp_r": 0.0805,
+   "max_dd_r": -16.17,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AENA",
@@ -2142,22 +2470,35 @@
   },
   {
    "symbol": "AEP",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 74,
+   "exp_r": 0.0472,
+   "max_dd_r": -13.62,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AEP",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 177,
-   "exp_r": 0.1446,
-   "max_dd_r": -16.0,
+   "n": 207,
+   "exp_r": 0.1957,
+   "max_dd_r": -19.22,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2189,19 +2530,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 168,
-   "exp_r": 0.7798,
-   "max_dd_r": -7.44,
+   "n": 169,
+   "exp_r": 0.3943,
+   "max_dd_r": -13.08,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2221,11 +2562,11 @@
    "symbol": "AFG",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 150,
-   "exp_r": 0.4395,
-   "max_dd_r": -9.8,
+   "n": 96,
+   "exp_r": 0.063,
+   "max_dd_r": -15.37,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2235,19 +2576,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 145,
-   "exp_r": 0.2897,
-   "max_dd_r": -26.71,
+   "n": 153,
+   "exp_r": 0.3745,
+   "max_dd_r": -21.74,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2278,11 +2619,11 @@
    "symbol": "AFL",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 131,
-   "exp_r": 0.0016,
-   "max_dd_r": -16.7,
+   "n": 109,
+   "exp_r": 0.1288,
+   "max_dd_r": -11.02,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2302,11 +2643,11 @@
    "symbol": "AFX",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 105,
-   "exp_r": 0.1607,
-   "max_dd_r": -8.25,
+   "n": 100,
+   "exp_r": 0.0477,
+   "max_dd_r": -17.83,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2316,19 +2657,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 89,
-   "exp_r": 0.011,
-   "max_dd_r": -12.58,
+   "n": 95,
+   "exp_r": 0.1128,
+   "max_dd_r": -12.0,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -2357,35 +2698,22 @@
   },
   {
    "symbol": "AGG",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 84,
-   "exp_r": 0.1022,
-   "max_dd_r": -6.65,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AGG",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 211,
-   "exp_r": 0.3114,
-   "max_dd_r": -7.74,
+   "n": 184,
+   "exp_r": 0.5929,
+   "max_dd_r": -7.38,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2414,19 +2742,6 @@
   },
   {
    "symbol": "AGG",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 141,
-   "exp_r": 0.0975,
-   "max_dd_r": -29.13,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AGG",
    "family": "vol_mean_reversion",
    "params": {},
    "n": 140,
@@ -2438,35 +2753,22 @@
   },
   {
    "symbol": "AGN",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "GBPAUD"
-   },
-   "n": 95,
-   "exp_r": 0.1665,
-   "max_dd_r": -11.01,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "AGN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 221,
-   "exp_r": 0.4361,
-   "max_dd_r": -8.02,
+   "n": 215,
+   "exp_r": 0.3307,
+   "max_dd_r": -10.32,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2487,19 +2789,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 95,
-   "exp_r": 0.1164,
-   "max_dd_r": -9.81,
+   "n": 88,
+   "exp_r": 0.0545,
+   "max_dd_r": -12.79,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -2508,11 +2810,11 @@
    "symbol": "AGN",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 163,
-   "exp_r": 0.2394,
-   "max_dd_r": -9.56,
+   "n": 123,
+   "exp_r": 0.2133,
+   "max_dd_r": -10.52,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2541,22 +2843,35 @@
   },
   {
    "symbol": "AGNC",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 81,
+   "exp_r": 0.193,
+   "max_dd_r": -7.56,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AGNC",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 227,
-   "exp_r": 0.081,
-   "max_dd_r": -11.47,
+   "n": 221,
+   "exp_r": 0.0639,
+   "max_dd_r": -23.92,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2584,23 +2899,36 @@
    "mechanism_note": "price only"
   },
   {
+   "symbol": "AGNC",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 113,
+   "exp_r": 0.0771,
+   "max_dd_r": -16.16,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
    "symbol": "AI",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 260,
-   "exp_r": 0.1745,
-   "max_dd_r": -13.0,
+   "n": 376,
+   "exp_r": 0.0961,
+   "max_dd_r": -29.38,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2631,11 +2959,11 @@
    "symbol": "AI",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 437,
-   "exp_r": 0.0807,
-   "max_dd_r": -19.39,
+   "n": 266,
+   "exp_r": 0.1458,
+   "max_dd_r": -25.48,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2656,19 +2984,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 170,
-   "exp_r": 0.3575,
-   "max_dd_r": -6.74,
+   "n": 173,
+   "exp_r": 0.4271,
+   "max_dd_r": -19.27,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2697,6 +3025,28 @@
   },
   {
    "symbol": "AIG",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 71,
+   "exp_r": 0.0951,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AIG",
    "family": "turn_of_month",
    "params": {},
    "n": 187,
@@ -2721,11 +3071,11 @@
    "symbol": "AIR",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 156,
-   "exp_r": 0.0466,
-   "max_dd_r": -15.08,
+   "n": 171,
+   "exp_r": 0.0656,
+   "max_dd_r": -14.82,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2735,19 +3085,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 275,
-   "exp_r": 0.3193,
-   "max_dd_r": -13.0,
+   "n": 398,
+   "exp_r": 0.2553,
+   "max_dd_r": -14.66,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2768,19 +3118,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 94,
-   "exp_r": 0.0924,
-   "max_dd_r": -8.49,
+   "n": 126,
+   "exp_r": 0.0339,
+   "max_dd_r": -10.94,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -2789,11 +3139,11 @@
    "symbol": "AIR",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 406,
-   "exp_r": 0.0256,
-   "max_dd_r": -23.1,
+   "n": 262,
+   "exp_r": 0.0148,
+   "max_dd_r": -18.33,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2813,11 +3163,11 @@
    "symbol": "AKAM",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 80,
-   "exp_r": 0.1923,
-   "max_dd_r": -9.7,
+   "n": 73,
+   "exp_r": 0.1343,
+   "max_dd_r": -8.31,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -2827,19 +3177,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 152,
-   "exp_r": 0.1869,
-   "max_dd_r": -11.32,
+   "n": 171,
+   "exp_r": 0.1664,
+   "max_dd_r": -18.97,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2868,6 +3218,19 @@
   },
   {
    "symbol": "AKAM",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 120,
+   "exp_r": 0.1246,
+   "max_dd_r": -15.75,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKAM",
    "family": "vol_mean_reversion",
    "params": {},
    "n": 122,
@@ -2879,22 +3242,35 @@
   },
   {
    "symbol": "AKZA",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 102,
+   "exp_r": 0.1265,
+   "max_dd_r": -20.27,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AKZA",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 282,
-   "exp_r": 0.128,
-   "max_dd_r": -22.14,
+   "n": 272,
+   "exp_r": 0.3385,
+   "max_dd_r": -15.74,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2915,22 +3291,35 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 104,
-   "exp_r": 0.0706,
-   "max_dd_r": -7.44,
+   "n": 88,
+   "exp_r": 0.1961,
+   "max_dd_r": -7.33,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AKZA",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 139,
+   "exp_r": 0.1585,
+   "max_dd_r": -10.9,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AKZA",
@@ -2948,19 +3337,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 101,
-   "exp_r": 0.1476,
-   "max_dd_r": -11.0,
+   "n": 117,
+   "exp_r": 0.1435,
+   "max_dd_r": -8.32,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -2991,11 +3380,11 @@
    "symbol": "ALB",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 68,
-   "exp_r": 0.2555,
-   "max_dd_r": -5.1,
+   "n": 78,
+   "exp_r": 0.0568,
+   "max_dd_r": -7.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3005,19 +3394,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 208,
-   "exp_r": 0.1757,
-   "max_dd_r": -13.49,
+   "n": 214,
+   "exp_r": 0.1909,
+   "max_dd_r": -11.41,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3038,22 +3427,35 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 86,
-   "exp_r": 0.0872,
-   "max_dd_r": -8.0,
+   "n": 74,
+   "exp_r": 0.2968,
+   "max_dd_r": -7.49,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "ALB",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 138,
+   "exp_r": 0.0702,
+   "max_dd_r": -12.73,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "ALB",
@@ -3068,22 +3470,35 @@
   },
   {
    "symbol": "ALGN",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 66,
+   "exp_r": 0.0673,
+   "max_dd_r": -9.69,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALGN",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 172,
-   "exp_r": 0.0888,
-   "max_dd_r": -11.62,
+   "n": 183,
+   "exp_r": 0.2563,
+   "max_dd_r": -12.23,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3115,19 +3530,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 91,
-   "exp_r": 0.0,
-   "max_dd_r": -13.5,
+   "n": 87,
+   "exp_r": 0.3322,
+   "max_dd_r": -5.0,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3136,12 +3551,25 @@
    "symbol": "ALGN",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 159,
-   "exp_r": 0.125,
-   "max_dd_r": -12.22,
+   "n": 118,
+   "exp_r": 0.0643,
+   "max_dd_r": -19.88,
    "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALGUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 571,
+   "exp_r": 0.0429,
+   "max_dd_r": -47.19,
+   "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
@@ -3150,19 +3578,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 774,
-   "exp_r": 0.1455,
-   "max_dd_r": -43.65,
+   "n": 1258,
+   "exp_r": 0.1109,
+   "max_dd_r": -40.46,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3212,23 +3640,45 @@
    "mechanism_note": "price only"
   },
   {
+   "symbol": "ALGUSD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 491,
+   "exp_r": 0.0109,
+   "max_dd_r": -31.7,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
    "symbol": "ALIBABA",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 280,
-   "exp_r": 0.2262,
-   "max_dd_r": -10.01,
+   "n": 387,
+   "exp_r": 0.1627,
+   "max_dd_r": -14.43,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3249,19 +3699,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 92,
-   "exp_r": 0.0077,
-   "max_dd_r": -8.89,
+   "n": 144,
+   "exp_r": 0.0131,
+   "max_dd_r": -17.12,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3270,11 +3720,11 @@
    "symbol": "ALIBABA",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 325,
-   "exp_r": 0.1034,
-   "max_dd_r": -18.97,
+   "n": 262,
+   "exp_r": 0.0532,
+   "max_dd_r": -15.64,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3300,6 +3750,28 @@
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ALIBABA.24H",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 140,
+   "exp_r": 0.3364,
+   "max_dd_r": -12.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "ALIBABA.24H",
@@ -3336,6 +3808,19 @@
   },
   {
    "symbol": "ALIBABA.24H",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 96,
+   "exp_r": 0.2683,
+   "max_dd_r": -10.03,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALIBABA.24H",
    "family": "session_handoff",
    "params": {},
    "n": 76,
@@ -3360,14 +3845,36 @@
    "symbol": "ALK",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 68,
-   "exp_r": 0.0167,
-   "max_dd_r": -11.43,
+   "n": 81,
+   "exp_r": 0.1185,
+   "max_dd_r": -8.0,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ALK",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 194,
+   "exp_r": 0.1354,
+   "max_dd_r": -18.03,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "ALK",
@@ -3418,19 +3925,19 @@
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 156,
-   "exp_r": 0.4445,
-   "max_dd_r": -11.39,
+   "n": 176,
+   "exp_r": 0.446,
+   "max_dd_r": -8.74,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3448,35 +3955,13 @@
   },
   {
    "symbol": "ALLC",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 72,
-   "exp_r": 0.2414,
-   "max_dd_r": -7.52,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "ALLC",
    "family": "relative_value",
    "params": {
-    "peer_symbol": "GBPAUD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 150,
-   "exp_r": 0.1291,
-   "max_dd_r": -8.45,
+   "n": 120,
+   "exp_r": 0.1498,
+   "max_dd_r": -14.8,
    "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3493,23 +3978,170 @@
    "mechanism_note": "price only"
   },
   {
+   "symbol": "AMD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 286,
+   "exp_r": 0.1076,
+   "max_dd_r": -32.97,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AMD",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 606,
+   "exp_r": 0.0181,
+   "max_dd_r": -53.59,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AMD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 228,
+   "exp_r": 0.0253,
+   "max_dd_r": -15.48,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AMD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 67,
+   "exp_r": 0.1919,
+   "max_dd_r": -5.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 84,
+   "exp_r": 0.0795,
+   "max_dd_r": -8.77,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 247,
+   "exp_r": 0.182,
+   "max_dd_r": -11.49,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 426,
+   "exp_r": 0.089,
+   "max_dd_r": -15.67,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 463,
+   "exp_r": 0.0854,
+   "max_dd_r": -11.91,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 134,
+   "exp_r": 0.0496,
+   "max_dd_r": -14.94,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 157,
+   "exp_r": 0.0036,
+   "max_dd_r": -23.8,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AT&T",
+   "family": "vol_transition",
+   "params": {},
+   "n": 69,
+   "exp_r": 0.3696,
+   "max_dd_r": -6.85,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
    "symbol": "AUDCAD",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 618,
-   "exp_r": 0.088,
-   "max_dd_r": -36.32,
+   "n": 1096,
+   "exp_r": 0.2368,
+   "max_dd_r": -28.9,
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
@@ -3519,8 +4151,8 @@
    "family": "overnight_gap_decay",
    "params": {},
    "n": 478,
-   "exp_r": 0.1907,
-   "max_dd_r": -2.06,
+   "exp_r": 0.2071,
+   "max_dd_r": -2.03,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3530,30 +4162,144 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 265,
-   "exp_r": 0.0379,
-   "max_dd_r": -19.28,
+   "n": 401,
+   "exp_r": 0.0439,
+   "max_dd_r": -33.38,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "session_handoff",
+   "params": {},
+   "n": 740,
+   "exp_r": 0.0168,
+   "max_dd_r": -34.06,
+   "source": "orthogonal_sweep:session_handoff",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCAD",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 717,
+   "exp_r": 0.0048,
+   "max_dd_r": -30.95,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 1175,
+   "exp_r": 0.0591,
+   "max_dd_r": -46.47,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 653,
+   "exp_r": 0.2494,
+   "max_dd_r": -2.03,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDCHF",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "EURCHF"
+   },
+   "n": 837,
+   "exp_r": 0.0121,
+   "max_dd_r": -40.32,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDHUF"
+   },
+   "n": 1998,
+   "exp_r": 0.069,
+   "max_dd_r": -53.92,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 1082,
+   "exp_r": 1.1186,
+   "max_dd_r": -36.03,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 664,
+   "exp_r": 0.0635,
+   "max_dd_r": -12.47,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
   },
   {
    "symbol": "AUDHUF",
    "family": "liquidity_gamma_reversal",
    "params": {},
    "n": 61,
-   "exp_r": 0.4192,
-   "max_dd_r": -7.08,
+   "exp_r": 0.7008,
+   "max_dd_r": -2.1,
    "source": "orthogonal_sweep:liquidity_gamma_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3563,41 +4309,65 @@
    "family": "overnight_gap_decay",
    "params": {},
    "n": 727,
-   "exp_r": 0.1611,
-   "max_dd_r": -27.29,
+   "exp_r": 0.3009,
+   "max_dd_r": -5.91,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
-   "symbol": "AUDJPY",
-   "family": "cross_asset_residual",
+   "symbol": "AUDHUF",
+   "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 683,
-   "exp_r": 0.0436,
-   "max_dd_r": -54.42,
-   "source": "orthogonal_sweep:cross_asset_residual",
+   "n": 402,
+   "exp_r": 0.0017,
+   "max_dd_r": -35.57,
+   "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUDHUF",
+   "family": "session_handoff",
+   "params": {},
+   "n": 577,
+   "exp_r": 0.0066,
+   "max_dd_r": -24.7,
+   "source": "orthogonal_sweep:session_handoff",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDJPY",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "EURJPY"
+   },
+   "n": 503,
+   "exp_r": 0.006,
+   "max_dd_r": -36.54,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "AUDJPY",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 336,
-   "exp_r": 0.109,
-   "max_dd_r": -5.68,
+   "exp_r": 0.0521,
+   "max_dd_r": -7.07,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3607,41 +4377,30 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 306,
-   "exp_r": 0.0059,
-   "max_dd_r": -32.96,
+   "n": 395,
+   "exp_r": 0.0348,
+   "max_dd_r": -22.4,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
   },
   {
    "symbol": "AUDNZD",
-   "family": "fx_fixing_reversal",
-   "params": {},
-   "n": 627,
-   "exp_r": 0.0122,
-   "max_dd_r": -30.97,
-   "source": "orthogonal_sweep:fx_fixing_reversal",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDNZD",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 663,
-   "exp_r": 0.1192,
-   "max_dd_r": -2.44,
+   "exp_r": 0.0539,
+   "max_dd_r": -9.94,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3651,32 +4410,41 @@
    "family": "turn_of_month",
    "params": {},
    "n": 655,
-   "exp_r": 0.1253,
-   "max_dd_r": -67.45,
+   "exp_r": 0.0494,
+   "max_dd_r": -87.18,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
    "symbol": "AUDSGD",
-   "family": "carry",
+   "family": "cross_asset_residual",
    "params": {
-    "input_symbol": "AUDSGD"
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
    },
-   "n": 1791,
-   "exp_r": 0.01,
-   "max_dd_r": -53.37,
-   "source": "orthogonal_sweep:carry",
+   "n": 1007,
+   "exp_r": 0.1143,
+   "max_dd_r": -65.79,
+   "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "AUDSGD",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 438,
-   "exp_r": 0.4363,
-   "max_dd_r": -2.5,
+   "exp_r": 0.4483,
+   "max_dd_r": -2.44,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3686,19 +4454,19 @@
    "family": "pca_residual",
    "params": {
     "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
     ]
    },
-   "n": 231,
-   "exp_r": 0.0091,
-   "max_dd_r": -16.42,
+   "n": 389,
+   "exp_r": 0.0172,
+   "max_dd_r": -22.83,
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
@@ -3708,55 +4476,1644 @@
    "family": "vol_transition",
    "params": {},
    "n": 204,
-   "exp_r": 0.0919,
-   "max_dd_r": -21.48,
+   "exp_r": 0.1016,
+   "max_dd_r": -21.24,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
-   "symbol": "AUDUSD",
-   "family": "cot_positioning",
+   "symbol": "AUS200",
+   "family": "cross_asset_residual",
    "params": {
-    "input_source": "cot_point_in_time"
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
    },
-   "n": 109,
-   "exp_r": 0.0051,
-   "max_dd_r": -13.25,
-   "source": "orthogonal_sweep:cot_positioning",
+   "n": 1029,
+   "exp_r": 0.2412,
+   "max_dd_r": -25.65,
+   "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
-   "mechanism_note": "COT net positioning"
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
-   "symbol": "AUDUSD",
-   "family": "overnight_gap_decay",
+   "symbol": "AUS200",
+   "family": "fx_fixing_reversal",
    "params": {},
-   "n": 241,
-   "exp_r": 0.0443,
-   "max_dd_r": -8.32,
-   "source": "orthogonal_sweep:overnight_gap_decay",
+   "n": 760,
+   "exp_r": 0.0277,
+   "max_dd_r": -33.13,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
-   "symbol": "AUDUSD",
+   "symbol": "AUS200",
+   "family": "generic",
+   "params": {},
+   "n": 2019,
+   "exp_r": 0.0014,
+   "max_dd_r": -38.44,
+   "source": "orthogonal_sweep:generic",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "hedging_demand_close",
+   "params": {},
+   "n": 332,
+   "exp_r": 0.1946,
+   "max_dd_r": -19.38,
+   "source": "orthogonal_sweep:hedging_demand_close",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 430,
+   "exp_r": 0.0975,
+   "max_dd_r": -18.07,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 539,
+   "exp_r": 0.0252,
+   "max_dd_r": -39.49,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "session_handoff",
+   "params": {},
+   "n": 1022,
+   "exp_r": 0.0088,
+   "max_dd_r": -29.57,
+   "source": "orthogonal_sweep:session_handoff",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUS200",
    "family": "turn_of_month",
    "params": {},
-   "n": 806,
-   "exp_r": 0.0043,
-   "max_dd_r": -24.55,
+   "n": 764,
+   "exp_r": 0.0441,
+   "max_dd_r": -23.92,
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 852,
+   "exp_r": 0.0332,
+   "max_dd_r": -60.05,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUS200",
+   "family": "vol_transition",
+   "params": {},
+   "n": 224,
+   "exp_r": 0.0588,
+   "max_dd_r": -10.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 436,
+   "exp_r": 0.0226,
+   "max_dd_r": -25.87,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 732,
+   "exp_r": 0.1092,
+   "max_dd_r": -21.77,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
   },
   {
    "symbol": "AVAXUSD",
    "family": "drawdown_conditional",
    "params": {},
    "n": 107,
-   "exp_r": 0.06,
-   "max_dd_r": -11.88,
+   "exp_r": 0.1541,
+   "max_dd_r": -9.19,
    "source": "orthogonal_sweep:drawdown_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "generic",
+   "params": {},
+   "n": 1213,
+   "exp_r": 0.0125,
+   "max_dd_r": -22.25,
+   "source": "orthogonal_sweep:generic",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "hedging_demand_close",
+   "params": {},
+   "n": 667,
+   "exp_r": 0.0431,
+   "max_dd_r": -17.94,
+   "source": "orthogonal_sweep:hedging_demand_close",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 316,
+   "exp_r": 0.0117,
+   "max_dd_r": -18.15,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 762,
+   "exp_r": 0.0315,
+   "max_dd_r": -39.87,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AVAXUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 269,
+   "exp_r": 0.0628,
+   "max_dd_r": -11.05,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 76,
+   "exp_r": 0.0668,
+   "max_dd_r": -13.96,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 215,
+   "exp_r": 0.1712,
+   "max_dd_r": -10.71,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 396,
+   "exp_r": 0.1018,
+   "max_dd_r": -13.69,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 543,
+   "exp_r": 0.0358,
+   "max_dd_r": -21.65,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 125,
+   "exp_r": 0.3225,
+   "max_dd_r": -5.82,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 220,
+   "exp_r": 0.0274,
+   "max_dd_r": -16.05,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 156,
+   "exp_r": 0.0293,
+   "max_dd_r": -20.45,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Accenture",
+   "family": "vol_transition",
+   "params": {},
+   "n": 62,
+   "exp_r": 0.3534,
+   "max_dd_r": -6.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 95,
+   "exp_r": 0.0307,
+   "max_dd_r": -8.98,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 226,
+   "exp_r": 0.2661,
+   "max_dd_r": -14.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 512,
+   "exp_r": 0.0321,
+   "max_dd_r": -19.17,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 560,
+   "exp_r": 0.1685,
+   "max_dd_r": -16.61,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 149,
+   "exp_r": 0.0339,
+   "max_dd_r": -23.61,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 221,
+   "exp_r": 0.0014,
+   "max_dd_r": -19.06,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Adobe",
+   "family": "vol_transition",
+   "params": {},
+   "n": 78,
+   "exp_r": 0.3801,
+   "max_dd_r": -4.85,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 159,
+   "exp_r": 0.3885,
+   "max_dd_r": -6.94,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 425,
+   "exp_r": 0.0648,
+   "max_dd_r": -19.33,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 481,
+   "exp_r": 0.1194,
+   "max_dd_r": -13.19,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 64,
+   "exp_r": 0.308,
+   "max_dd_r": -4.18,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 122,
+   "exp_r": 0.1628,
+   "max_dd_r": -9.96,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 166,
+   "exp_r": 0.0699,
+   "max_dd_r": -20.89,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Airbnb",
+   "family": "vol_transition",
+   "params": {},
+   "n": 62,
+   "exp_r": 0.2608,
+   "max_dd_r": -6.11,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 89,
+   "exp_r": 0.2012,
+   "max_dd_r": -7.82,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 260,
+   "exp_r": 0.2518,
+   "max_dd_r": -17.77,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 356,
+   "exp_r": 0.0368,
+   "max_dd_r": -27.25,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 106,
+   "exp_r": 0.0812,
+   "max_dd_r": -22.0,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 818,
+   "exp_r": 0.072,
+   "max_dd_r": -45.0,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AlibabaGroup",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 144,
+   "exp_r": 0.2587,
+   "max_dd_r": -9.11,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 79,
+   "exp_r": 0.027,
+   "max_dd_r": -14.91,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 248,
+   "exp_r": 0.1526,
+   "max_dd_r": -11.53,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 531,
+   "exp_r": 0.0235,
+   "max_dd_r": -26.41,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 572,
+   "exp_r": 0.0499,
+   "max_dd_r": -29.69,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 104,
+   "exp_r": 0.1313,
+   "max_dd_r": -9.71,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 124,
+   "exp_r": 0.0667,
+   "max_dd_r": -14.46,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 215,
+   "exp_r": 0.0594,
+   "max_dd_r": -13.88,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-A",
+   "family": "vol_transition",
+   "params": {},
+   "n": 65,
+   "exp_r": 0.2785,
+   "max_dd_r": -9.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 80,
+   "exp_r": 0.1586,
+   "max_dd_r": -6.0,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 245,
+   "exp_r": 0.185,
+   "max_dd_r": -11.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 526,
+   "exp_r": 0.0679,
+   "max_dd_r": -18.16,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 578,
+   "exp_r": 0.1128,
+   "max_dd_r": -27.72,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 93,
+   "exp_r": 0.1511,
+   "max_dd_r": -9.5,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 133,
+   "exp_r": 0.1141,
+   "max_dd_r": -11.29,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 221,
+   "exp_r": 0.1126,
+   "max_dd_r": -11.86,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Alphabet-C",
+   "family": "vol_transition",
+   "params": {},
+   "n": 69,
+   "exp_r": 0.2717,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 77,
+   "exp_r": 0.0948,
+   "max_dd_r": -7.26,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 245,
+   "exp_r": 0.203,
+   "max_dd_r": -10.44,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 94,
+   "exp_r": 0.061,
+   "max_dd_r": -13.9,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 544,
+   "exp_r": 0.0384,
+   "max_dd_r": -16.21,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 124,
+   "exp_r": 0.2151,
+   "max_dd_r": -11.95,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 135,
+   "exp_r": 0.1278,
+   "max_dd_r": -13.89,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amazon",
+   "family": "vol_transition",
+   "params": {},
+   "n": 60,
+   "exp_r": 0.0017,
+   "max_dd_r": -14.69,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 96,
+   "exp_r": 0.004,
+   "max_dd_r": -14.08,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 215,
+   "exp_r": 0.2029,
+   "max_dd_r": -10.87,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 518,
+   "exp_r": 0.0349,
+   "max_dd_r": -23.73,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 592,
+   "exp_r": 0.0871,
+   "max_dd_r": -16.25,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 136,
+   "exp_r": 0.0048,
+   "max_dd_r": -17.28,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 203,
+   "exp_r": 0.0409,
+   "max_dd_r": -15.49,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AmericanExpress",
+   "family": "vol_transition",
+   "params": {},
+   "n": 72,
+   "exp_r": 0.2387,
+   "max_dd_r": -15.0,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amgen",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 213,
+   "exp_r": 0.3778,
+   "max_dd_r": -7.76,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Amgen",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 510,
+   "exp_r": 0.0456,
+   "max_dd_r": -18.01,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amgen",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 457,
+   "exp_r": 0.0248,
+   "max_dd_r": -19.76,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amgen",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 220,
+   "exp_r": 0.0543,
+   "max_dd_r": -11.86,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Amgen",
+   "family": "vol_transition",
+   "params": {},
+   "n": 77,
+   "exp_r": 0.0909,
+   "max_dd_r": -13.08,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 96,
+   "exp_r": 0.1435,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Apple",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 233,
+   "exp_r": 0.1749,
+   "max_dd_r": -14.29,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Apple",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 521,
+   "exp_r": 0.0377,
+   "max_dd_r": -18.47,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 92,
+   "exp_r": 0.0835,
+   "max_dd_r": -7.82,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 556,
+   "exp_r": 0.0528,
+   "max_dd_r": -21.57,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 116,
+   "exp_r": 0.0914,
+   "max_dd_r": -6.83,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Apple",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 142,
+   "exp_r": 0.242,
+   "max_dd_r": -14.22,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Apple",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 223,
+   "exp_r": 0.0208,
+   "max_dd_r": -16.36,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 170,
+   "exp_r": 0.2235,
+   "max_dd_r": -12.5,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Apple",
+   "family": "vol_transition",
+   "params": {},
+   "n": 69,
+   "exp_r": 0.1017,
+   "max_dd_r": -6.38,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 249,
+   "exp_r": 0.2702,
+   "max_dd_r": -14.21,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 485,
+   "exp_r": 0.0136,
+   "max_dd_r": -47.77,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 102,
+   "exp_r": 0.005,
+   "max_dd_r": -9.45,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 686,
+   "exp_r": 0.0129,
+   "max_dd_r": -25.67,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 247,
+   "exp_r": 0.0876,
+   "max_dd_r": -13.29,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AppliedMaterials",
+   "family": "vol_transition",
+   "params": {},
+   "n": 66,
+   "exp_r": 0.3543,
+   "max_dd_r": -5.02,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 80,
+   "exp_r": 0.2798,
+   "max_dd_r": -13.88,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 239,
+   "exp_r": 0.0988,
+   "max_dd_r": -8.9,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 498,
+   "exp_r": 0.083,
+   "max_dd_r": -17.23,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 568,
+   "exp_r": 0.0943,
+   "max_dd_r": -22.71,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 111,
+   "exp_r": 0.0473,
+   "max_dd_r": -8.53,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 166,
+   "exp_r": 0.0212,
+   "max_dd_r": -31.2,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 238,
+   "exp_r": 0.034,
+   "max_dd_r": -15.22,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 162,
+   "exp_r": 0.0893,
+   "max_dd_r": -14.54,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Atlassian",
+   "family": "vol_transition",
+   "params": {},
+   "n": 68,
+   "exp_r": 0.0686,
+   "max_dd_r": -10.54,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 550,
+   "exp_r": 0.0312,
+   "max_dd_r": -29.69,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 1089,
+   "exp_r": 0.1925,
+   "max_dd_r": -22.92,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 1029,
+   "exp_r": 0.009,
+   "max_dd_r": -40.29,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "generic",
+   "params": {},
+   "n": 1628,
+   "exp_r": 0.0068,
+   "max_dd_r": -31.48,
+   "source": "orthogonal_sweep:generic",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 488,
+   "exp_r": 0.0827,
+   "max_dd_r": -16.93,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "session_handoff",
+   "params": {},
+   "n": 964,
+   "exp_r": 0.0339,
+   "max_dd_r": -28.05,
+   "source": "orthogonal_sweep:session_handoff",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 848,
+   "exp_r": 0.023,
+   "max_dd_r": -53.61,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BCHUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 447,
+   "exp_r": 0.1022,
+   "max_dd_r": -28.89,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 985,
+   "exp_r": 0.1337,
+   "max_dd_r": -30.12,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "generic",
+   "params": {},
+   "n": 1552,
+   "exp_r": 0.0245,
+   "max_dd_r": -22.73,
+   "source": "orthogonal_sweep:generic",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "hedging_demand_close",
+   "params": {},
+   "n": 750,
+   "exp_r": 0.0234,
+   "max_dd_r": -15.35,
+   "source": "orthogonal_sweep:hedging_demand_close",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "session_handoff",
+   "params": {},
+   "n": 904,
+   "exp_r": 0.019,
+   "max_dd_r": -33.5,
+   "source": "orthogonal_sweep:session_handoff",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 825,
+   "exp_r": 0.0553,
+   "max_dd_r": -60.76,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BNBUSD",
+   "family": "vol_transition",
+   "params": {},
+   "n": 356,
+   "exp_r": 0.019,
+   "max_dd_r": -24.49,
+   "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
@@ -3764,11 +6121,11 @@
    "symbol": "BTCUSD",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "BCHUSD"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 565,
-   "exp_r": 0.0428,
-   "max_dd_r": -40.18,
+   "n": 604,
+   "exp_r": 0.0194,
+   "max_dd_r": -24.35,
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
@@ -3778,8 +6135,8 @@
    "family": "drawdown_conditional",
    "params": {},
    "n": 120,
-   "exp_r": 0.0959,
-   "max_dd_r": -14.4,
+   "exp_r": 0.0989,
+   "max_dd_r": -14.32,
    "source": "orthogonal_sweep:drawdown_conditional",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
@@ -3789,22 +6146,790 @@
    "family": "vol_transition",
    "params": {},
    "n": 466,
-   "exp_r": 0.0029,
-   "max_dd_r": -24.02,
+   "exp_r": 0.0089,
+   "max_dd_r": -23.9,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
   },
   {
-   "symbol": "CADJPY",
+   "symbol": "Baidu",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 224,
+   "exp_r": 0.3537,
+   "max_dd_r": -8.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Baidu",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 397,
+   "exp_r": 0.0185,
+   "max_dd_r": -28.59,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Baidu",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 794,
+   "exp_r": 0.0157,
+   "max_dd_r": -42.39,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Baidu",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 243,
+   "exp_r": 0.0097,
+   "max_dd_r": -27.98,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Baidu",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 177,
+   "exp_r": 0.2401,
+   "max_dd_r": -14.84,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Baidu",
+   "family": "vol_transition",
+   "params": {},
+   "n": 67,
+   "exp_r": 0.1433,
+   "max_dd_r": -6.77,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 195,
+   "exp_r": 0.3023,
+   "max_dd_r": -19.02,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 458,
+   "exp_r": 0.0163,
+   "max_dd_r": -25.92,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 560,
+   "exp_r": 0.0985,
+   "max_dd_r": -16.21,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 82,
+   "exp_r": 0.0129,
+   "max_dd_r": -11.61,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 130,
+   "exp_r": 0.0812,
+   "max_dd_r": -13.82,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 165,
+   "exp_r": 0.2258,
+   "max_dd_r": -13.15,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BankofAmericaCorp",
+   "family": "vol_transition",
+   "params": {},
+   "n": 64,
+   "exp_r": 0.1667,
+   "max_dd_r": -9.15,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Berkshire",
    "family": "correlation_regime",
    "params": {
-    "peer_symbol": "NZDJPY"
+    "peer_symbol": "ETHUSD"
    },
-   "n": 594,
-   "exp_r": 0.0366,
-   "max_dd_r": -24.62,
+   "n": 70,
+   "exp_r": 0.303,
+   "max_dd_r": -8.11,
    "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 201,
+   "exp_r": 0.0082,
+   "max_dd_r": -11.79,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 449,
+   "exp_r": 0.0864,
+   "max_dd_r": -14.54,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 389,
+   "exp_r": 0.1865,
+   "max_dd_r": -9.05,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 79,
+   "exp_r": 0.1166,
+   "max_dd_r": -8.44,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Berkshire",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 205,
+   "exp_r": 0.0225,
+   "max_dd_r": -27.29,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 69,
+   "exp_r": 0.0324,
+   "max_dd_r": -15.94,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 231,
+   "exp_r": 0.4321,
+   "max_dd_r": -15.67,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 431,
+   "exp_r": 0.0357,
+   "max_dd_r": -15.44,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 68,
+   "exp_r": 0.2423,
+   "max_dd_r": -4.33,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 504,
+   "exp_r": 0.1147,
+   "max_dd_r": -10.12,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "BlackRock",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 103,
+   "exp_r": 0.2927,
+   "max_dd_r": -10.97,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 97,
+   "exp_r": 0.1448,
+   "max_dd_r": -11.41,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 247,
+   "exp_r": 0.0523,
+   "max_dd_r": -19.3,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "fx_fixing_reversal",
+   "params": {},
+   "n": 522,
+   "exp_r": 0.0492,
+   "max_dd_r": -19.78,
+   "source": "orthogonal_sweep:fx_fixing_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 491,
+   "exp_r": 0.0296,
+   "max_dd_r": -27.46,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 209,
+   "exp_r": 0.0726,
+   "max_dd_r": -14.57,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Boeing",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 172,
+   "exp_r": 0.0511,
+   "max_dd_r": -27.55,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Booking",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 82,
+   "exp_r": 0.0005,
+   "max_dd_r": -12.84,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Booking",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 216,
+   "exp_r": 0.0835,
+   "max_dd_r": -21.64,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Booking",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 103,
+   "exp_r": 0.0137,
+   "max_dd_r": -12.65,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Booking",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 566,
+   "exp_r": 0.1626,
+   "max_dd_r": -15.36,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Booking",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 89,
+   "exp_r": 0.2871,
+   "max_dd_r": -5.63,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "Booking",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 136,
+   "exp_r": 0.1759,
+   "max_dd_r": -19.87,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Booking",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 210,
+   "exp_r": 0.0332,
+   "max_dd_r": -11.98,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Booking",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 180,
+   "exp_r": 0.0001,
+   "max_dd_r": -22.39,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "correlation_regime",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 102,
+   "exp_r": 0.1881,
+   "max_dd_r": -8.0,
+   "source": "orthogonal_sweep:correlation_regime",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 242,
+   "exp_r": 0.344,
+   "max_dd_r": -16.0,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 613,
+   "exp_r": 0.0773,
+   "max_dd_r": -21.12,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 149,
+   "exp_r": 0.0829,
+   "max_dd_r": -13.48,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 220,
+   "exp_r": 0.07,
+   "max_dd_r": -9.47,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "Broadcom",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 133,
+   "exp_r": 0.3268,
+   "max_dd_r": -7.0,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CA60",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 543,
+   "exp_r": 0.1154,
+   "max_dd_r": -48.42,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CA60",
+   "family": "liquidity_gamma_reversal",
+   "params": {},
+   "n": 175,
+   "exp_r": 0.0468,
+   "max_dd_r": -9.53,
+   "source": "orthogonal_sweep:liquidity_gamma_reversal",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CA60",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 638,
+   "exp_r": 0.0996,
+   "max_dd_r": -21.54,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CA60",
+   "family": "pca_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 200,
+   "exp_r": 0.1748,
+   "max_dd_r": -11.0,
+   "source": "orthogonal_sweep:pca_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
+  },
+  {
+   "symbol": "CA60",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "ETHUSD"
+   },
+   "n": 268,
+   "exp_r": 0.0545,
+   "max_dd_r": -29.51,
+   "source": "orthogonal_sweep:relative_value",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "CA60",
+   "family": "turn_of_month",
+   "params": {},
+   "n": 448,
+   "exp_r": 0.1013,
+   "max_dd_r": -13.62,
+   "source": "orthogonal_sweep:turn_of_month",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CA60",
+   "family": "vol_mean_reversion",
+   "params": {},
+   "n": 440,
+   "exp_r": 0.0625,
+   "max_dd_r": -35.02,
+   "source": "orthogonal_sweep:vol_mean_reversion",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CA60",
+   "family": "vol_transition",
+   "params": {},
+   "n": 122,
+   "exp_r": 0.2178,
+   "max_dd_r": -6.9,
+   "source": "orthogonal_sweep:vol_transition",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "cross_asset_residual",
+   "params": {
+    "factor_symbols": [
+     "ETHUSD",
+     "BTCUSD",
+     "EURCHF",
+     "EURJPY",
+     "GBPUSD",
+     "USDCAD",
+     "EURUSD",
+     "GBPAUD"
+    ]
+   },
+   "n": 976,
+   "exp_r": 0.1823,
+   "max_dd_r": -48.56,
+   "source": "orthogonal_sweep:cross_asset_residual",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "overnight_gap_decay",
+   "params": {},
+   "n": 547,
+   "exp_r": 0.2403,
+   "max_dd_r": -2.07,
+   "source": "orthogonal_sweep:overnight_gap_decay",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "price only"
+  },
+  {
+   "symbol": "CADCHF",
+   "family": "relative_value",
+   "params": {
+    "peer_symbol": "EURCHF"
+   },
+   "n": 743,
+   "exp_r": 0.0362,
+   "max_dd_r": -27.92,
+   "source": "orthogonal_sweep:relative_value",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
   },
@@ -3813,297 +6938,19 @@
    "family": "overnight_gap_decay",
    "params": {},
    "n": 259,
-   "exp_r": 0.1221,
-   "max_dd_r": -3.82,
+   "exp_r": 0.068,
+   "max_dd_r": -6.35,
    "source": "orthogonal_sweep:overnight_gap_decay",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CADJPY",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "NZDJPY"
-   },
-   "n": 1044,
-   "exp_r": 0.0166,
-   "max_dd_r": -47.9,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
   },
   {
    "symbol": "CADJPY",
    "family": "vol_transition",
    "params": {},
    "n": 346,
-   "exp_r": 0.1084,
-   "max_dd_r": -18.67,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "carry",
-   "params": {
-    "input_symbol": "CHFDKK"
-   },
-   "n": 1837,
-   "exp_r": 0.0165,
-   "max_dd_r": -64.72,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 834,
-   "exp_r": 0.1853,
-   "max_dd_r": -2.0,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFDKK",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 279,
-   "exp_r": 0.0109,
-   "max_dd_r": -14.18,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "CHFHUF",
-   "family": "liquidity_gamma_reversal",
-   "params": {},
-   "n": 69,
-   "exp_r": 0.2705,
-   "max_dd_r": -2.57,
-   "source": "orthogonal_sweep:liquidity_gamma_reversal",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFHUF",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 875,
-   "exp_r": 0.1811,
-   "max_dd_r": -13.34,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFJPY",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 602,
-   "exp_r": 0.2777,
-   "max_dd_r": -3.43,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFJPY",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "NZDJPY"
-   },
-   "n": 908,
-   "exp_r": 0.0614,
-   "max_dd_r": -27.57,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "CHFJPY",
-   "family": "vol_transition",
-   "params": {},
-   "n": 291,
-   "exp_r": 0.0244,
-   "max_dd_r": -20.24,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "carry",
-   "params": {
-    "input_symbol": "CHFNOK"
-   },
-   "n": 1849,
-   "exp_r": 0.1461,
-   "max_dd_r": -37.81,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "liquidity_gamma_reversal",
-   "params": {},
-   "n": 63,
-   "exp_r": 0.8196,
-   "max_dd_r": -1.63,
-   "source": "orthogonal_sweep:liquidity_gamma_reversal",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 990,
-   "exp_r": 0.4406,
-   "max_dd_r": -16.25,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 246,
-   "exp_r": 0.0137,
-   "max_dd_r": -26.64,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "CHFNOK",
-   "family": "relative_value",
-   "params": {
-    "peer_symbol": "CHFHUF"
-   },
-   "n": 710,
-   "exp_r": 0.0107,
-   "max_dd_r": -39.8,
-   "source": "orthogonal_sweep:relative_value",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "CHFPLN",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 975,
-   "exp_r": 0.2004,
-   "max_dd_r": -4.56,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFSEK",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 1036,
-   "exp_r": 0.2898,
-   "max_dd_r": -3.79,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "carry",
-   "params": {
-    "input_symbol": "CHFSGD"
-   },
-   "n": 1594,
-   "exp_r": 0.0077,
-   "max_dd_r": -40.18,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "correlation_regime",
-   "params": {
-    "peer_symbol": "CHFHUF"
-   },
-   "n": 359,
-   "exp_r": 0.0708,
-   "max_dd_r": -25.73,
-   "source": "orthogonal_sweep:correlation_regime",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "a peer instrument's H1"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 375,
-   "exp_r": 0.2821,
-   "max_dd_r": -6.34,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 272,
-   "exp_r": 0.0183,
-   "max_dd_r": -26.95,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "CHFSGD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 224,
-   "exp_r": 0.0052,
-   "max_dd_r": -25.43,
+   "exp_r": 0.0549,
+   "max_dd_r": -23.17,
    "source": "orthogonal_sweep:vol_transition",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"

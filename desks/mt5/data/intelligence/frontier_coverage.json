@@ -31,10 +31,10 @@
   "ar": {
    "region": "MENA",
    "open_frontier": false,
-   "queries_exercised": 33,
+   "queries_exercised": 36,
    "populations_found": 0,
    "graduated": 0,
-   "last_swept": "2026-09-03T02:22:03+00:00",
+   "last_swept": "2026-09-03T21:22:06+00:00",
    "native_terms_available": 15
   },
   "es": {

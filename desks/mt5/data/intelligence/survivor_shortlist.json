@@ -1,5 +1,5 @@
 {
- "updated_at": "2026-09-03T20:32:29+00:00",
+ "updated_at": "2026-09-03T21:23:46+00:00",
  "ranking_law": "growth x sqrt(weeks/52) / dd, trades>=100; EV per hunting capacity",
  "shortlist": [
   {
@@ -12,7 +12,7 @@
     "OSMOSE",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -85,7 +85,7 @@
     "USDJPY",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -137,7 +137,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -147,13 +147,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 50.28,
-   "growth_pct": 3155.8,
-   "weeks": 132.0,
-   "pf": 1.31,
+   "ev_score": 50.293,
+   "growth_pct": 3144.76,
+   "weeks": 133.0,
+   "pf": 1.3,
    "max_dd_pct": null,
-   "trades": 5321.0,
-   "win_pct": 2112.0,
+   "trades": 5335.0,
+   "win_pct": 2117.0,
    "algo_pct": 82.0,
    "subscribers": 0.0,
    "author": "/en/users/liehtw",
@@ -175,7 +175,7 @@
     {
      "sid": "2299696",
      "title": "'Chicken dinner' by LU KUEI LIEH",
-     "growth": "2636%",
+     "growth": "2576%",
      "curve_points": 20,
      "curve_dd": -7.0
     }
@@ -209,7 +209,7 @@
     "AUDCAD",
     "SIGNAL"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -224,7 +224,7 @@
    "trades": 5864.0,
    "win_pct": 3749.0,
    "algo_pct": 14.0,
-   "subscribers": 64.0,
+   "subscribers": 65.0,
    "author": "/en/users/tec_daniel",
    "author_other_signals": [
     {
@@ -244,7 +244,7 @@
     {
      "sid": "2308095",
      "title": "'UpFuji MT5' by Daniel Moraes Da Silva",
-     "growth": "103%",
+     "growth": "104%",
      "curve_points": 20,
      "curve_dd": -59.0
     }
@@ -275,6 +275,52 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
+   "url": "https://www.mql5.com/en/signals/2379208",
+   "symbols": [
+    "BEFORE",
+    "BROKER"
+   ],
+   "found_at": "2026-09-03T21:23:46+00:00",
+   "platform": "mt5",
+   "phenotypes": [
+    "max_growth",
+    "low_dd_high_return",
+    "algo_survivor"
+   ],
+   "ev_score": 44.844,
+   "growth_pct": 3638.25,
+   "weeks": 79.0,
+   "pf": 1.97,
+   "max_dd_pct": null,
+   "trades": 4084.0,
+   "win_pct": 3358.0,
+   "algo_pct": 100.0,
+   "subscribers": 69.0,
+   "author": "/en/users/mo2002",
+   "author_other_signals": [
+    {
+     "sid": "2379250",
+     "title": "'World Peace Forex Strategy 02' by Nobeyo- Sano",
+     "growth": "72%",
+     "curve_points": 20,
+     "curve_dd": 0.0
+    }
+   ],
+   "hour_histogram": {
+    "10": 2,
+    "08": 3,
+    "16": 2,
+    "15": 1,
+    "17": 1,
+    "22": 6,
+    "12": 1,
+    "02": 1
+   }
+  },
+  {
+   "source": "mql5_survivors",
+   "kind": "track_record",
+   "title": "",
    "url": "https://www.mql5.com/en/signals/2280569",
    "symbols": [
     "AUDCAD",
@@ -282,7 +328,7 @@
     "NADCAD",
     "NZDCAD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -351,52 +397,6 @@
    "source": "mql5_survivors",
    "kind": "track_record",
    "title": "",
-   "url": "https://www.mql5.com/en/signals/2379208",
-   "symbols": [
-    "BEFORE",
-    "BROKER"
-   ],
-   "found_at": "2026-09-03T20:32:29+00:00",
-   "platform": "mt5",
-   "phenotypes": [
-    "max_growth",
-    "low_dd_high_return",
-    "algo_survivor"
-   ],
-   "ev_score": 44.59,
-   "growth_pct": 3617.65,
-   "weeks": 79.0,
-   "pf": 1.97,
-   "max_dd_pct": null,
-   "trades": 4077.0,
-   "win_pct": 3353.0,
-   "algo_pct": 100.0,
-   "subscribers": 69.0,
-   "author": "/en/users/mo2002",
-   "author_other_signals": [
-    {
-     "sid": "2379250",
-     "title": "'World Peace Forex Strategy 02' by Nobeyo- Sano",
-     "growth": "72%",
-     "curve_points": 20,
-     "curve_dd": 0.0
-    }
-   ],
-   "hour_histogram": {
-    "10": 2,
-    "08": 3,
-    "16": 2,
-    "15": 1,
-    "17": 1,
-    "22": 6,
-    "12": 1,
-    "02": 1
-   }
-  },
-  {
-   "source": "mql5_survivors",
-   "kind": "track_record",
-   "title": "",
    "url": "https://www.mql5.com/en/signals/2300694",
    "symbols": [
     "AUDCAD",
@@ -410,7 +410,7 @@
     "XAGUSD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -468,7 +468,7 @@
     "GBPNZD",
     "GBPUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -476,13 +476,13 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 35.202,
-   "growth_pct": 3223.83,
+   "ev_score": 35.336,
+   "growth_pct": 3236.12,
    "weeks": 62.0,
    "pf": 1.36,
    "max_dd_pct": null,
-   "trades": 523.0,
-   "win_pct": 319.0,
+   "trades": 527.0,
+   "win_pct": 321.0,
    "algo_pct": 92.0,
    "subscribers": 13.0,
    "author": "/en/users/x_alexander_x",
@@ -490,7 +490,7 @@
     {
      "sid": "2356441",
      "title": "'FXtrading' by Alexander Pavlenko",
-     "growth": "1291%",
+     "growth": "1299%",
      "curve_points": 20,
      "curve_dd": -2.0
     }
@@ -519,7 +519,7 @@
     "STRESS",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -598,7 +598,7 @@
     "EURNZD",
     "EURUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -607,13 +607,13 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 19.243,
-   "growth_pct": 957.55,
+   "ev_score": 19.112,
+   "growth_pct": 951.06,
    "weeks": 210.0,
    "pf": 1.19,
    "max_dd_pct": null,
-   "trades": 7917.0,
-   "win_pct": 4918.0,
+   "trades": 7926.0,
+   "win_pct": 4923.0,
    "algo_pct": 95.0,
    "subscribers": 0.0,
    "author": "/en/users/strueli",
@@ -637,7 +637,7 @@
      "title": "'Multi EA combo' by Profalgo Limited",
      "growth": "374%",
      "curve_points": 20,
-     "curve_dd": -5.0
+     "curve_dd": -2.0
     }
    ],
    "hour_histogram": {
@@ -660,7 +660,7 @@
     "AUDCAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -742,7 +742,7 @@
     "GBPCAD",
     "GBPNZD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -751,21 +751,21 @@
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 14.764,
-   "growth_pct": 1291.08,
+   "ev_score": 14.857,
+   "growth_pct": 1299.2,
    "weeks": 68.0,
-   "pf": 2.69,
+   "pf": 2.71,
    "max_dd_pct": null,
-   "trades": 328.0,
-   "win_pct": 246.0,
+   "trades": 329.0,
+   "win_pct": 247.0,
    "algo_pct": 87.0,
-   "subscribers": 9.0,
+   "subscribers": 11.0,
    "author": "/en/users/x_alexander_x",
    "author_other_signals": [
     {
      "sid": "2375343",
      "title": "'Multi EA Trading' by Alexander Pavlenko",
-     "growth": "3224%",
+     "growth": "3236%",
      "curve_points": 20,
      "curve_dd": -8.0
     }
@@ -793,7 +793,7 @@
     "US500",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -802,13 +802,13 @@
     "algo_survivor",
     "gold"
    ],
-   "ev_score": 12.157,
-   "growth_pct": 859.64,
+   "ev_score": 12.453,
+   "growth_pct": 880.56,
    "weeks": 104.0,
    "pf": 1.3,
    "max_dd_pct": null,
-   "trades": 4554.0,
-   "win_pct": 3156.0,
+   "trades": 4560.0,
+   "win_pct": 3162.0,
    "algo_pct": 100.0,
    "subscribers": 3.0,
    "author": "/en/users/aller.techno",
@@ -816,21 +816,21 @@
     {
      "sid": "2338047",
      "title": "'Techno Growth' by Nice Trader",
-     "growth": "76%",
+     "growth": "79%",
      "curve_points": 20,
      "curve_dd": -11.0
     },
     {
      "sid": "2377446",
      "title": "'Techno Long Term IC' by Nice Trader",
-     "growth": "77%",
+     "growth": "83%",
      "curve_points": 20,
-     "curve_dd": -12.0
+     "curve_dd": -11.0
     },
     {
      "sid": "2357816",
      "title": "'Techno SteadyFlow' by Nice Trader",
-     "growth": "22%",
+     "growth": "23%",
      "curve_points": 20,
      "curve_dd": -26.0
     }
@@ -861,7 +861,7 @@
     "XAUUAD",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -877,7 +877,7 @@
    "trades": 281.0,
    "win_pct": 268.0,
    "algo_pct": 99.0,
-   "subscribers": 48.0,
+   "subscribers": 49.0,
    "author": "/en/users/thomaszhong",
    "author_other_signals": [
     {
@@ -925,28 +925,28 @@
     "EURCAD",
     "EURCHF"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
     "algo_survivor",
     "multi_fx"
    ],
-   "ev_score": 5.184,
-   "growth_pct": 545.27,
+   "ev_score": 5.196,
+   "growth_pct": 546.59,
    "weeks": 47.0,
    "pf": 1.88,
    "max_dd_pct": null,
-   "trades": 2661.0,
-   "win_pct": 2104.0,
+   "trades": 2674.0,
+   "win_pct": 2113.0,
    "algo_pct": 84.0,
-   "subscribers": 7.0,
+   "subscribers": 6.0,
    "author": "/en/users/lubot",
    "author_other_signals": [
     {
      "sid": "2375767",
      "title": "'Main Account' by Luca Barone",
-     "growth": "450%",
+     "growth": "452%",
      "curve_points": 20,
      "curve_dd": -12.0
     }
@@ -968,7 +968,7 @@
     "XAUEUR",
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -976,13 +976,13 @@
     "gold",
     "multi_fx"
    ],
-   "ev_score": 5.058,
-   "growth_pct": 501.05,
+   "ev_score": 5.143,
+   "growth_pct": 509.38,
    "weeks": 53.0,
    "pf": 1.45,
    "max_dd_pct": null,
-   "trades": 798.0,
-   "win_pct": 467.0,
+   "trades": 808.0,
+   "win_pct": 474.0,
    "algo_pct": 98.0,
    "subscribers": 19.0,
    "author": "/en/users/archigenius",
@@ -1014,7 +1014,7 @@
    "symbols": [
     "XAUUSD"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1030,13 +1030,13 @@
    "trades": 855.0,
    "win_pct": 617.0,
    "algo_pct": 99.0,
-   "subscribers": 41.0,
+   "subscribers": 40.0,
    "author": "/en/users/strueli",
    "author_other_signals": [
     {
      "sid": "2204998",
      "title": "'Gold Reaper Goldtrade Pro Daytrade Pro' by Profalgo Limited",
-     "growth": "958%",
+     "growth": "951%",
      "curve_points": 20,
      "curve_dd": -6.0
     },
@@ -1052,7 +1052,7 @@
      "title": "'Multi EA combo' by Profalgo Limited",
      "growth": "374%",
      "curve_points": 20,
-     "curve_dd": -5.0
+     "curve_dd": -2.0
     }
    ],
    "hour_histogram": {
@@ -1093,7 +1093,7 @@
     "USDCAD",
     "USDJPY"
    ],
-   "found_at": "2026-09-03T20:32:29+00:00",
+   "found_at": "2026-09-03T21:23:46+00:00",
    "platform": "mt5",
    "phenotypes": [
     "max_growth",
@@ -1119,16 +1119,16 @@
     "20": 1,
     "19": 1,
     "03": 1,
+    "14": 6,
     "02": 2,
     "01": 3,
-    "14": 3,
     "08": 2,
     "07": 1,
     "06": 1,
     "04": 1,
     "16": 1,
     "05": 1,
-    "00": 2
+    "00": 1
    }
   },
   {
