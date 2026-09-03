@@ -46,6 +46,54 @@ ELIGIBLE = ("external_gauntlet.py", "edge_search.py", "orthogonal_sweep.py")
 #: timeout is 25 minutes, so 60 leaves more than double the headroom before anything is touched.
 DEFAULT_MINUTES = 60
 
+#: Job name -> script, for the lock lookup below. `exclusive_job(name)` writes
+#: desks/mt5/data/.job_locks/<name>.json holding the pid that legitimately owns the job.
+_LOCK_NAMES = {"external_gauntlet.py": "external_gauntlet",
+               "edge_search.py": "edge_search",
+               "orthogonal_sweep.py": "orthogonal_sweep"}
+
+#: NO QUOTES OF ITS OWN, ON PURPOSE. This has to survive python -> ssh -> cmd.exe -> the remote
+#: interpreter, and the first version used nested PowerShell quoting that cmd.exe ate: the command
+#: returned nothing, `lock_holders()` read {} and the duplicate rule below could never fire --
+#: a silent zero that looked exactly like "no locks held". Path segments and separators are built
+#: from chr() so the payload contains no quote character at all and nothing can eat it.
+_PS_LOCKS = (
+    'py -3 -c "import os;'
+    'p=os.path.join(chr(67)+chr(58),os.sep,'
+    'chr(111)+chr(112)+chr(116),'                        # opt
+    'chr(113)+chr(117)+chr(97)+chr(110)+chr(116),'       # quant
+    'chr(100)+chr(101)+chr(115)+chr(107)+chr(115),'      # desks
+    'chr(109)+chr(116)+chr(53),'                         # mt5
+    'chr(100)+chr(97)+chr(116)+chr(97),'                 # data
+    'chr(46)+chr(106)+chr(111)+chr(98)+chr(95)+chr(108)+chr(111)+chr(99)+chr(107)+chr(115));'
+    'print(chr(10).join(f.rsplit(chr(46),1)[0]+chr(61)+open(os.path.join(p,f)).read() '
+    'for f in os.listdir(p))) if os.path.isdir(p) else None"'
+)
+
+
+def lock_holders() -> dict[str, int]:
+    """job name -> pid that holds its lock, for every lock currently on the box.
+
+    A MISSING ANSWER IS NOT AN EMPTY ONE. If the locks cannot be read this returns {}, and the
+    duplicate rule below simply does not fire -- it never guesses that a job is unlocked, because
+    "no lock" and "could not read the lock" would then kill the legitimate holder.
+    """
+    out: dict[str, int] = {}
+    rc, body_text = _ssh(_PS_LOCKS)
+    if rc != 0:
+        return out
+    for line in body_text.splitlines():
+        if "=" not in line:
+            continue
+        name, _, body = line.partition("=")
+        try:
+            pid = int(json.loads(body)["pid"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        out[name.strip()] = pid
+    return out
+
+
 #: ISO-8601 IS ASKED FOR EXPLICITLY. Win32_Process returns CreationDate as .NET
 #: `/Date(1788008440823)/`, which no ISO parser reads -- the first version of this survey silently
 #: failed to parse every row and reported the box as unsurveyable.
@@ -103,6 +151,8 @@ def main() -> int:
         print("desk orphan reaper: SURVEY FAILED -- nothing reaped (UNMEASURED, not clean)")
         return 2
 
+    holders = lock_holders()
+    report["lock_holders"] = dict(holders)
     for r in rows:
         cmd = str(r.get("CommandLine") or "")
         script = next((e for e in ELIGIBLE if e in cmd), None)
@@ -122,6 +172,28 @@ def main() -> int:
         mb = round(float(r.get("WorkingSetSize") or 0) / 1048576.0)
         entry = {"pid": r.get("ProcessId"), "script": script,
                  "age_min": round(age_min, 1), "mb": mb}
+        # A DUPLICATE IS A DUPLICATE AT ANY AGE. Age answers "was this abandoned"; it cannot
+        # answer "should this be running at all", and that is the question that was costing the
+        # desk its search. MEASURED 2026-09-03: TWO external_gauntlet.py processes ran at once
+        # under two different invocations, holding 3.3GB between them on an 8GB box that also
+        # runs the live terminal. Only one held the lock. Physical memory available fell to
+        # 1,085MB, edge_search needs 2,000MB to be admitted, so it waited its twelve minutes and
+        # stood down -- every hour, while both gauntlets thrashed. This reaper surveyed both,
+        # found them inside the 60-minute window, and spared them: correct by its own rule and
+        # useless against the actual defect.
+        #
+        # The lock settles it without guessing. exclusive_job names the pid that legitimately
+        # owns the job; anyone else running that script slipped past admission and is a second
+        # writer, which is the exact condition the lock exists to prevent. Killing the LOCK
+        # HOLDER is never right, so it is spared explicitly rather than by accident.
+        holder = holders.get(_LOCK_NAMES.get(script, ""))
+        if holder is not None and int(r.get("ProcessId") or 0) != holder:
+            if not args.dry_run:
+                _ssh(f"powershell -NoProfile -Command \"Stop-Process -Id "
+                     f"{r.get('ProcessId')} -Force\"")
+            report["reaped"].append({**entry, "why": f"duplicate: {script} lock is held by "
+                                                     f"pid {holder}, not this one"})
+            continue
         if age_min < args.minutes:
             report["spared"].append({**entry, "why": "still inside its supervisor's window"})
             continue
