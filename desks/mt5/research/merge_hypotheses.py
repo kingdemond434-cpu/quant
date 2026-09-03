@@ -242,6 +242,20 @@ def main() -> int:
                 merged[ident].setdefault("first_seen", row.get("first_seen")
                                          or row.get("merged_at") or now.isoformat())
                 continue
+            # THE BANK MUST BE FILTERED TOO. Without this, every untradeable row ever minted is
+            # re-admitted from the bank on every run and the filter above only catches the ones
+            # arriving fresh -- measured, 262 dropped against 3,934 already banked. A docket bank
+            # is a memory of what was proposed, not a licence to re-propose what cannot trade.
+            bank_sym = str(row.get("symbol") or row.get("sym") or "")
+            if tradeable and bank_sym:
+                bank_canon = tradeable.get(bank_sym.upper())
+                if bank_canon is None:
+                    untradeable += 1
+                    untradeable_syms[bank_sym] = untradeable_syms.get(bank_sym, 0) + 1
+                    continue
+                if bank_canon != bank_sym:
+                    row = {**row,
+                           ("symbol" if row.get("symbol") else "sym"): bank_canon}
             row.setdefault("first_seen", row.get("merged_at") or now.isoformat())
             row["banked"] = True
             merged[ident] = row
@@ -255,6 +269,15 @@ def main() -> int:
     if unrouted:
         print(f"   {unrouted} row(s) dropped as UNROUTABLE (no family named) -- never "
               f"relabelled as the dominant family")
+
+    if untradeable:
+        top = sorted(untradeable_syms.items(), key=lambda kv: -kv[1])[:8]
+        print(f"   {untradeable} row(s) dropped as UNTRADEABLE across "
+              f"{len(untradeable_syms)} symbol(s) Fusion does not quote -- the sweep's budget "
+              f"now goes to cells that can certify: {dict(top)}")
+    elif not tradeable:
+        print("   universe registry unreadable: NOTHING filtered by tradeability this run "
+              "(UNMEASURED, not clean -- the docket may carry symbols the desk cannot trade)")
 
     rows_out = list(merged.values())
     TARGET.parent.mkdir(parents=True, exist_ok=True)
