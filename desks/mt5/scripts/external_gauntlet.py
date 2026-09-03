@@ -1286,7 +1286,43 @@ def main():
         print("REFUSING to write an EMPTY canon: 0 survivors is a missing input, not a verdict.")
         return
 
+    # PURGE UNCASHABLE ROWS ON EVERY WRITE, NOT ONCE BY HAND (L1.49).
+    #
+    # This block MERGES into the survivor dict it loaded, so a row minted before gate 0 learned to
+    # refuse untradeable symbols lives forever -- nothing here ever removes one. Eight such rows
+    # (six AFG, two AFL, one 13:07 pass on symbols absent from the registry with no H1 parquet)
+    # were retired BY HAND on 2026-09-03 and came back FIVE times: the authority ratchet sees the
+    # count fall below its floor and restores the file from canon or git, which is exactly what
+    # that ratchet is for and exactly wrong here, because these rows are not lost evidence -- they
+    # are certificates the desk can never cash. Retiring downstream of a writer that re-merges
+    # them is a race the writer always wins.
+    #
+    # Doing it HERE ends it: the gauntlet runs hourly and holds the pen, so no restorer outlasts
+    # it. `symbol_is_tradeable` is the same predicate gate 0 already applies to new candidates --
+    # this simply stops the file grandfathering rows that predate it.
+    #
+    # NOT A DELETION. They move to `retired_certificates` with the reason that disqualified them,
+    # which is the explicit revocation record the authority ratchet accepts as grounds for a floor
+    # to fall (check_authority_ratchet.REVOCATION_KEYS). Dropping them silently would read to that
+    # ratchet as evidence vanishing -- the alarm it exists to raise.
+    retired = dict(old_doc.get("retired_certificates") or {})
+    if meta:
+        stamp = datetime.now(UTC).isoformat()
+        for key in list(survivors_all):
+            sym = str((survivors_all[key] or {}).get("sym") or "")
+            ok, why = symbol_is_tradeable(sym, meta) if sym else (False, "no symbol on the row")
+            if not ok:
+                row = dict(survivors_all.pop(key) or {})
+                row["retired_at"] = stamp
+                row["retired_reason"] = why
+                retired[key] = row
+        if retired:
+            print(f"purged {len(retired)} uncashable certificate(s) to retired_certificates")
+
     doc = dict(old_doc)
+    if retired:
+        doc["retired_certificates"] = retired
+        doc["revoked_at"] = datetime.now(UTC).isoformat()
     doc.update({
         "n": len(survivors_all),
         "gate_policy": ATTESTATION,
