@@ -1,0 +1,2175 @@
+ 
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+f
+or Major Asset Classes
+ 
+1
+ 
+ 
+E
+xecutive Summary
+ 
+ 
+Investors often need 
+to construct estimates of 
+long
+-
+term expected returns 
+for major asset 
+classes.
+ 
+We 
+discuss our take on 
+how
+ 
+to do this, 
+highlight
+ing
+ 
+key inputs and 
+the issues 
+associated with them
+.
+ 
+The main goal is to 
+provide fra
+m
+eworks
+ 
+which investors may adapt 
+according to their own 
+views
+.
+ 
+ 
+We focus on stock markets and government 
+bonds
+, but also look beyond them. Yield
+-
+based 
+estimates are often the best
+ 
+starting point, 
+supplemented by considerations of historical 
+average returns 
+and finance theory.
+ 
+ 
+-
+run 
+real return is 4%, lower than in European and 
+emerging markets. Our current estimate for U.S. 
+10
+-
+-
+run real return 
+is 1.4%, higher than in many other 
+countries
+. 
+ 
+Introduction and Framework
+ 
+This 
+Alternative Thinking
+ 
+presents our capital 
+market assumptions for major asset classes. Capital 
+market assumptions are typically made on expected 
+returns and risks. We focus here on multi
+-
+year
+ 
+expected returns
+1
+ 
+of stock market
+s and government 
+bonds, but also briefly discuss
+ 
+other assets and 
+strategies.
+2
+ 
+While we provide point estimates for 
+expected returns, they come with significant 
+uncertainty. Indeed, the frameworks we discuss for 
+how to make such estimates are perhaps more 
+important than the numbers themselves. Here we 
+present expectations for 
+real (inflation
+-
+adjusted) 
+annual compound rates of return
+; the same views 
+for arithmetic nominal mean returns could be 3
+-
+5
+ 
+                                        
+                    
+ 
+1
+ 
+Volatilities and correlations are relatively easier to forecast 
+ 
+both over 
+short and long horizons 
+ 
+than returns because they are more persistent. 
+We may discuss risk assumptions in other reports. 
+ 
+2
+ 
+See Ilmanen 
+Expected Returns
+ 
+(2011), especially the F
+oreword and 
+Chapters 1, 8, 9 and 21, as well as 
+Alternative Thinking
+ 
+April 2013. Note 
+that the capital market assumptions published here are not directly used 
+would have limited impact o
+n most funds that emphasize diversification 
+across many cross
+-
+sectional opportunities. These are also not set in 
+stone, as our assumptions may evolve with market conditions and be 
+refined based on new research. 
+ 
+percentage points
+ 
+higher
+, an issue we describe in the 
+appendi
+x
+.
+ 
+Our return assumptions are 
+made for 5
+-
+10 
+-
+year 
+horizons.
+3
+ 
+Over such intermediate horizons, initial 
+market yields and valuations are 
+typically  
+the most 
+important inputs. More generally, we argue that 
+expected return assessments should rely on
+ 
+three 
+anch
+ors 
+ 
+current market conditions,
+ 
+historical 
+average returns and 
+finance theory
+ 
+ 
+exploiting our 
+knowledge of each, without being overly dependent 
+on any one. Horizon matters. For extremely long 
+forecast horizons (say, decades), the impact of 
+current market conditions is diluted, so theory and 
+historical average returns matter more. 
+For short 
+horizons (say, some months), returns are largely 
+unpredictable but any predictability mainly reflects 
+market conditions. 
+Momentum and macro 
+environment
+s
+ 
+dominate at such short horizons but 
+tend to wash out at intermediate horizons, leaving 
+value 
+and carry (initial yield) as the best predictors. 
+ 
+Market yields are a good starting
+ 
+point but not the 
+final 
+determinant
+. Higher y
+ields always
+ 
+reflect some 
+mixture
+ 
+of 
+higher 
+required returns (which we would 
+seek
+ 
+to capture
+ 
+as they tend to predict higher fu
+ture 
+returns
+) and market
+ 
+expectations 
+of yield or price 
+moves causing 
+capital losses that offset the initial 
+carry advantage 
+(
+this part
+ 
+we woul
+d 
+like to filter 
+out). For example,
+ 
+abnormally high eq
+uity yields in 
+one country can
+ 
+reflect market expectations 
+of 
+abnormally
+ 
+slow future growth instead of high 
+demanded equity premia
+. F
+or 
+government 
+bonds, 
+abnormally steep yield curves may reflect market 
+expectations of f
+ast rate rises instead of high
+ 
+required
+ 
+bond returns. For credit
+s
+, abnormally wide 
+spreads coul
+d reflect market expectations o
+f larger 
+default and downgrade
+ 
+losses instead of 
+high 
+required 
+credit 
+returns
+. However, empirically 
+we
+ 
+h
+a
+ve
+ 
+found that 
+carry has tended to be a 
+g
+ood 
+predictor of future excess returns
+ 
+in all asset 
+                                        
+                    
+ 
+3
+ 
+Why not make more tactical forecasts? They
+ 
+require even greater 
+humility than long
+-
+term forecasts. Empirically, short
+-
+term predictability of 
+asset returns is limited and timing bets are highly concentrated. (We make 
+implicit forecasts given tactical tilts in several AQR strategies, but 
+we 
+think
+ 
+the main risk is taken in strategic allocations.)
+ 
+
+2
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+for
+ 
+Major Asset Classes
+ 
+ 
+ 
+classes
+.
+4
+ 
+Thus, we make only
+ 
+modest adjustments to 
+initial market yields. 
+ 
+Short
+-
+term realized performance can, as 2013 
+demonstrated, deviate hugely from our best guesses 
+at long
+-
+term expectations, but this does not 
+necessarily prove those expectations invalid. 
+Even if 
+we correctly f
+orecast a moderately higher long
+-
+term 
+return for one market than another, volatility 
+ensures that 
+the more attractive market 
+may 
+likely 
+underperform in
+, say,
+ 
+4 years out of 10. Long
+-
+term 
+expected return estimates are nevertheless useful 
+and often required 
+of investors.
+ 
+Equity Markets 
+ 
+We measure the expected real return on various 
+equity markets by averaging two common 
+approaches:
+ 
+1.
+ 
+Earnings yield
+ 
+(E/P)
+:
+ 
+The inverse of a P/E ratio 
+measures the ex
+-
+ante real return on equities, 
+albeit under quite strict assumpti
+ons. Many 
+industry participants
+ 
+favor 
+forward
+-
+looking 
+operating earnings but these are often 
+overoptimistic. We prefer trailing, as
+-
+reported 
+earnings but 
+use 
+multi
+-
+year averages to smooth 
+the excessive cyclicality in annual earnings. 
+Thus, we like the Shiller E/P ratio which 
+                                        
+                    
+ 
+4
+ 
+Pedersen, Vrught (2013). 
+ 
+compares 10
+-
+year a
+verage (real) earnings with 
+5
+  
+ 
+2.
+ 
+DDM yield
+:
+ 
+According to the dividend discount 
+model (DDM), the expected real return on 
+equities is a sum of dividend yield (DY), 
+expected trend growth in real dividends or 
+earnings per share (
+G), and expected change in 
+valu
+ations (
+V), that is: DY+G+
+V.
+6
+ 
+We use the 
+first two terms 
+ 
+country
+-
+specific dividend yield 
+and country
+-
+specific real growth rate 
+ 
+but 
+assume no mean reversion in valuations. 
+ 
+Both approaches (and thus the average, our bott
+om 
+line) currently point to an expected real return near 
+4% in the U.S and Japan, and closer to 6% in 
+emerging markets, Europe and Australia, as shown 
+in 
+Exhibit 1
+.
+7
+ 
+Historical context for 
+these
+ 
+four 
+markets is shown in 
+Exhibit 2
+. 
+ 
+                                        
+                    
+ 
+5
+ 
+Our adjusted Shiller E/P scales up the normal Shiller E/P by 1.075 to 
+correct for the 
+fact that the
+ 
+10
+-
+ye
+ar average 
+of a series that grows over 
+time will systematically underestimate its current value 
+(
+here we assume
+ 
+a trend annual growth rate of 1.5% in real earnings per share and 
+a 
+5
+-
+year average 
+staleness
+ 
+to current earnings: 1.5% 
+x
+ 
+5 = 7.5%). We use 
+thi
+s simple 1.075 scalar even if we assume a slightly different growth in 
+earnings per share for some countries.
+ 
+6
+ 
+This approximate relation can also be expressed in nominal terms by 
+adding (expected) inflation to equity returns on the left
+-
+hand side and to 
+d
+ividend growth on the right
+-
+hand side. The relation also applies to 
+realized returns and allows an insightful decomposition of historical 
+average stock market returns.
+ 
+7
+ 
+These are local real returns. To convert these to the expected returns 
+seen by a forei
+gn investor, we must first correct for any difference in 
+expected inflation in the two countries, and then correct for the expected 
+cash rate differential (if hedged) or the expected exchange rate return (if 
+ 
+Exhibit 1  |  
+Building expe
+cted returns for equity markets
+ 
+ 
+Source: 
+ 
+Bloomberg, Consensus Economics and AQR. Estimates as of December 31, 2013
+.
+ 
+ 
+Euro
+-
+-
+weighted average of Germany, France, Ita
+ly, the 
+Netherlands and Spain; 
+ 
+Emerging
+-
+ 
+Return assumptions are subject to change.
+ 
+ 
+
+E
+DY
+G
+DDM=DY+G
+avg(E,DDM)
+Adj. Shiller 
+Earnings Yld
+Dividend     
+Yield
+Earnings 
+Growth Est.
+DDM Yield
+Real Equity 
+Yield
+U.S.
+4.4%
+1.8%
+1.8%
+3.6%
+4.0%
+Euro-5
+6.8%
+3.0%
+1.6%
+4.6%
+5.7%
+Japan
+3.9%
+1.4%
+1.6%
+3.0%
+3.5%
+U.K.
+6.5%
+3.3%
+1.8%
+5.1%
+5.8%
+Australia
+6.0%
+3.7%
+1.9%
+5.5%
+5.8%
+Canada
+5.1%
+2.7%
+1.7%
+4.3%
+4.7%
+Emerging-5
+7.2%
+2.7%
+2.8%
+5.5%
+6.3%
+
+ 
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+f
+or Major Asset Classes
+ 
+3
+ 
+ 
+Key questions
+:
+ 
+The DDM f
+ramework 
+may be 
+ 
+especially useful for investors who want to use their 
+own inputs in capital market assumptions. Each of 
+the three building blocks of real equity returns can 
+be debated: 
+ 
+ 
+Yield, DY, is naturally proxied by the dividend 
+yield. But since espe
+cially in the U.S., firms have 
+partly replaced dividends with share buybacks, 
+some observers suggest using a buyback
+-
+adjusted dividend yield or adding, say, 0.5% to 
+dividend yields to capture this effect. A 
+counterargument is that the relevant adjustment 
+i
+s net buybacks, which have averaged less than 
+zero even in recent decades (as gross share 
+issuance has exceeded gross buybacks). 
+ 
+ 
+Growth, G, (more specifically, the trend real 
+growth in dividends per share (DPS) or earnings 
+per share (EPS)) could be assumed to be 
+constant, say, 1.5% per annum, loosely based on 
+the 
+post
+-
+WWII evidence in the U.S.
+8
+ 
+It is a 
+common error to assume too hig
+h G
+,
+ 
+as many 
+investors do not realize that long
+-
+run EPS 
+growth has persistently lagged GDP growth (and 
+lagged even more the optimistic analyst 
+forecasts of earnings growth). We discuss G 
+further below.
+ 
+                                        
+                                        
+                      
+ 
+unhedged). For many developed markets these corr
+ections may be small.
+ 
+8
+ 
+Longer histories point to lower estimates, more recent histories to 
+higher estimates. Dividend growth rates and international evidence point 
+to slightly lower estimates. See Ilmanen (2011, ch. 8 and 16, and 
+references therein).
+ 
+ 
+Change in Valuations, 
+V, is hardest to predict
+ 
+accura
+tely. We would
+ 
+rather assume zero 
+V 
+unless current valuations are 
+unprecedented
+,
+ 
+such as during the tech bubble
+. Equity market 
+valuations do tend to exhibit slow mean 
+reversion, but it is plausible that Shiller P/E 
+ratios could remain at the elevated leve
+ls of the 
+past 20 years, especially if bond yields and 
+inflation rates remain relatively benign. 
+Assuming mean reverting valuations would tend 
+to compound the return impact of abnormally 
+high (or low) initial yields by assuming further 
+capital gains (or lo
+sses) when yields revert to 
+9
+  
+ 
+Focus on G
+:
+  
+We allow 
+some
+ 
+country
+-
+specific 
+variation in G guided by real GDP
+-
+per
+-
+capita growth 
+data.
+10
+ 
+Our
+ 
+latest bottom
+-
+line G estimate is near 
+                                        
+                    
+ 
+9
+ 
+As
+ 
+we assume no mean reversion in valuation ratios (except maybe at 
+extreme conditions) we are less bearish than observers who expect Shiller 
+P/Es to revert to their long
+-
+run mean near mid
+-
+teens. We thus predict 
+about 4% real annual return for U.S. equities 
+instead of near zero (the 
+prediction if one assumes both low starting yields and capital losses from 
+normalizing valuations).
+ 
+On the other hand, we are less bullish than 
+observers who use valuation ratios based on analyst forecasts of pro
+-
+forma earnings; 
+these are available only since 1980s and are upward
+-
+biased for many reasons. 
+ 
+Another key debating point is that according to 
+some bullish commentators, changing accounting regulations have made 
+reported
+ 
+ 
+earnings more conservative in the past decade, wher
+eas some 
+bearish commentators claim that firm managements have become more 
+incentivized to boost and smooth earnings (and pro
+-
+forma earnings give 
+them more room to do this). It is hard to empirically judge the net impact 
+of such changes, so we like our pos
+ition between either extreme view. 
+ 
+ 
+10
+ 
+We start with a survey forecast of next
+-
+decade average real GDP 
+growth (published by Consensus Economics), subtract a slow
+-
+moving 
+or adjust, ea
+-
+country 
+average (near 2%).
+ 
+Exhibit 2
+  
+|  
+Historical context: ex
+-
+ante real equity yields 1980
+-
+2013
+ 
+ 
+Source: 
+  
+Bloomberg, Consensus Economics and AQR.
+ 
+Return assumptions are subject to change.
+ 
+
+4
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+for
+ 
+Major Asset Classes
+ 
+ 
+ 
+1.8% for the U.S. and the developed markets 
+average, and near 2.8% for the emerging markets 
+average. These are slightly below historical average 
+G estimates since 1990 (2.0% for the U.S., 2.1% for 
+developed and 3.1% for emerging).  
+ 
+ 
+We recognize that GDP growth does not 
+translate directly to corporate profits or earnings 
+growth, which partly 
+motivates
+ 
+incorporating 
+a 
+cross
+-
+country average.
+11
+  
+ 
+ 
+GDP
+-
+per
+-
+capita growth is conceptually closer to 
+EPS and DPS growth than is GDP growth, and 
+lo
+ng
+-
+run historical growth rates are more similar 
+after subtracting population growth. We tend to 
+anchor our G estimates to the long
+-
+run U.S. 
+experience (near 1.5% for real EPS), but we allow 
+here slightly higher anchors (near 2%), justified 
+by th
+e growing u
+se of share buybacks
+ 
+or by faster 
+earnings growth in recent decades. 
+ 
+Most earnings yield and DDM
+-
+based estimates of 
+prospective real equity returns are in the same 
+ballpark with each other (4
+-
+6%) and only mildly 
+below long
+-
+run historical returns. More bul
+lish views 
+tend to rely on optimistic G estimates, while more 
+bearish predictions emphasize mean
+-
+reverting 
+(lower) valuations. 
+ 
+Government Bonds and Cash
+ 
+We turn next to government bonds that 
+are 
+generally 
+deemed to be default
+-
+free.
+12
+ 
+For fixed 
+coupons and 
+maturity value, bonds only suffer from 
+interest rate risk (their price varies inversely with 
+prospective nominal returns, especially over long 
+                                        
+                    
+ 
+11
+ 
+is a compromise between
+ 
+in our opinion
+ 
+two faulty 
+views: using the same G for all countries versus using country
+-
+specific 
+GDP growth forecasts. Relying fully on the 
+latter would be misleading: 
+while emerging economies have experienced significantly faster GDP 
+growth in recent decades than developed economies, emerging markets 
+do not tend to have a similar edge in DPS or EPS growth or in equity 
+returns.
+ 
+12
+ 
+We will not a
+nalyze bonds in countries like Greece and Italy where 
+to sovereign yields. For G
+-
+3 country bonds, these effects are deemed 
+minimal (as countries with their own printing press are tho
+ught more likely 
+to resort to inflation and financial repression than to defaults). S
+till, s
+ome 
+critics argue that such thinking may be careless as CDS spreads even for 
+these countries have occasionally widened in recent years.
+ 
+horizons, are strongly anchored by their yields. To 
+assess prospective r
+eal returns, we can subtract a 
+(say, survey
+-
+based) measure of expected inflation 
+from nominal bond yields.
+13
+  
+ 
+What adjustments might one make to these yield
+-
+based 
+estimates?
+ 
+It boils down to reasonable expecta
+tions 
+of future yield changes.
+14
+ 
+Three possible 
+base cases 
+are that the yield curve is expected to stay 
+unchanged, or shift to the levels implied by the 
+forwards, or rev
+ert to their historical average
+ 
+levels.   
+ 
+ 
+Using an unchanged yield curve as the base case 
+is equivalent to assuming random walk behavi
+or 
+in yields. If the yield curve is upward
+-
+sloping (as 
+it normally is), this implies rolldown gains when 
+bond yields fall simply due to their ageing (as 
+they roll down the unchanged curve). Expected 
+returns then exceed the yield. For example, the 
+10
+-
+year T
+reasury with its current yield of 3.0% 
+and 20bp annual rolldown has an expected 
+annual (nominal) return of 4.6%, given an 
+unchanged curve. This would also be the 
+expected annual return of a multi
+-
+year constant
+-
+maturity 10
+-
+year strategy.   
+ 
+ 
+Using the implie
+d forward yield curve as the 
+base case means that each bond 
+should
+ 
+earn the 
+same return as the horizon
+-
+matching riskless 
+asset. (This is by construction: forward yields 
+are calculated as break
+-
+even future yields that 
+ 
+yield 
+(carry) advantage over the riskless asset with 
+same
+-
+sized capital losses.)  For example, if the 
+10
+-
+year Treasury yield over the next five years 
+rises from 3.0% to 4.3%, as forwards imply, long
+-
+term Treasuries 
+should
+ 
+earn the same annual 
+return (1.3%
+) as the 5
+-
+year Treasury. Thus a 
+scenario where forwards are realized is a neutral 
+                                        
+                    
+ 
+13
+ 
+We could also study direct
+ly the 
+(real) 
+yields of inflation
+-
+linked bonds
+,
+ 
+which are sometimes contaminated by some illiquidity or other premia. 
+Our yield forecasts 
+for inflation
+-
+linked bonds 
+are close to our real return 
+forecasts for nominal bonds.
+ 
+14
+ 
+Capital gains (losses) caused b
+y yield declines (increases) are well 
+approximated by the product of (minus) bond duration and the yield 
+change. Over short horizons these capital gains or losses 
+often
+ 
+dominate 
+bond return fluctuations, but over long horizons their (pro
+-
+rated) impact 
+on a
+nnual returns tends to be more modest.
+ 
+
+ 
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+f
+or Major Asset Classes
+ 
+5
+ 
+ 
+one where neither bond bulls nor bears 
+(duration longs or shorts) outperform cash.  
+ 
+ 
+Using the mean reversion assumption, bond 
+yields will rise to their historical average y
+ields. 
+Specific models or assumptions are needed to 
+determine the mean reversion speed and mean 
+level (how long a historical window?). A quick 
+reversion to 5% or higher mean yields (without 
+time to benefit from the positive carry implied in 
+the steep yield
+ 
+curve) would be a bond
+-
+bearish 
+scenario. A more gradual reversion, or a mean 
+yield below forwards, would be a bond
+-
+bullish 
+scenario despite rising yields.
+ 
+Which of these base cases is best supported by empirical 
+evidence?
+ 
+In our view
+ 
+the first one of an u
+nchanged 
+yield curve (random walk): steeper yield curves have 
+predicted higher bond returns as bonds have tended 
+to retain their carry and rolldown advantage. A 
+purely evidence
+-
+based observer would be bond
+-
+bullish and only tilt expected bond returns higher
+ 
+due to rolldown gains. Yields have historically 
+shown little tendency to shift toward forward
+-
+implied yields or to revert toward long
+-
+run mean 
+yield levels. The la
+tter
+ 
+idea has especially missed the 
+mark in the past century, which has been rather 
+characte
+-
+nominal yields due to some persistent up
+-
+ 
+and 
+down
+-
+trends in inflation rates. Real yields have 
+exhibited clearer mean
+-
+reversion tendencies. 
+ 
+Given that current real yields are still abnormally 
+low (in many countries n
+egative, especially at short 
+maturities), it seems reasonable to assume some 
+normalization. Moreover, not just market forwards 
+but also economist survey consensus as well as 
+central bank projections predict rising real and 
+nominal rates from the partly
+-
+art
+ificially low levels 
+caused by QE. Assuming an unchanged yield curve 
+would not be consistent with the survey and 
+policymaker forecasts of rising rates.
+15
+  
+ 
+                                        
+                    
+ 
+15
+ 
+If yield levels were not exceptionally low from 
+a 
+historical perspective 
+we would not assume the mean
+-
+reversion (rising yield) tendencies we 
+assume now. At the same time, it is likely that the yield curve would not 
+be 
+as steep as it is today if there were not as obvious mean
+-
+reversion 
+ 
+One approach
+ 
+to building an expected return 
+estimate
+ 
+is to start with
+ 
+the yield of a constant
+-
+maturit
+y portfolio
+ 
+(Y)
+, add on the rolldown gains in 
+an unchanged yield curve scenario
+ 
+(RR)
+, but then 
+add the return impact of assuming
+ 
+that yields will 
+rise halfway toward levels implied by forwards over 
+the next five years
+ 
+(F
+Y)
+. For example, if the 10
+-
+year 
+Tre
+asury yield were to rise from 3.0% to 3.7%, 
+halfway toward the forward
+-
+implied 4.3%, a 10
+-
+year 
+constant maturity strategy should earn 3.6%.
+16
+  
+ 
+We use these estimates as a baseline 
+in 
+Exhibit 3
+ 
+but 
+concede that they depend on the yield view and are 
+approximate. Readers can weigh differently the 
+effects of roll
+-
+down and (their own) yield outlook. 
+For judging prospective bond returns, 
+we believe
+ 
+the 
+key question is the net tilt away from current bo
+nd 
+yields 
+ 
+is it toward higher returns thanks to 
+rolldown gains in an unchanged steep curve 
+scenario or toward lower returns due to (mean
+-
+reversion or macro
+-
+based) expectations of rising 
+yields?
+ 
+It is important to note that we quoted 
+nominal
+ 
+returns throu
+ghout this section. Expected real 
+returns would be about 2.2% lower given consensus 
+forecasts of U.S. long
+-
+term inflation: 3.6% 
+-
+ 
+2.2% = 
+1.4%, as shown in 
+Exhibit 3
+.
+ 
+The expected real 
+return on long Treasuries is historically low but not 
+extreme
+ 
+(near 10
+th
+ 
+percentile over the past century)
+, 
+and easily exceeds the expected real return on cash 
+(T
+-
+bills). Bonds may be 
+expensive 
+but cash is 
+more 
+expensive
+.
+ 
+                                        
+                                        
+                      
+ 
+prospects.
+ 
+16
+ 
+This 3.6% annual return reflects the approximate sum of three terms: 
+3.0% bond yield
+ 
+(Y)
+, the 1.6% annual rolldown gains (
+20bp 
+x
+ 
+Dur 8), 
+and the partly offsetting 1.0% 
+annual capital losses cause
+d by the 
+gradual yield rises (F
+Y
+ 
+ 
+x
+ 
+Dur 8 / pro
+-
+rating 5 years).
+ 
+ 
+The choice of yields rising halfway toward the forwards is an ad
+-
+hoc 
+compromise. Future research may guide us to use (instead of this) survey
+-
+based or econometric estimates of future yield rises. 
+ 
+
+6
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+for
+ 
+Major Asset Classes
+ 
+ 
+ 
+T
+-
+bills
+:
+ 
+The prospects for cash returns depend on the 
+expected path of inflation and of real cash rates. 
+Long
+-
+term inflation expectations have been 
+extremely well anchored. Economist forecasts in the 
+U.S. have stayed in the narrow range between 2.1% 
+and 2.7% for t
+he past 15 years (now 2.2%), and 
+market
+-
+based break
+-
+even inflation rates are also 
+stable. A more imminent question is the pace at 
+which real cash rates normalize from their 
+exceptional negative levels (still 
+below 
+-
+1% in the 
+, says the forwa
+rd guidance from 
+central banks, and we have little reason to doubt 
+this. World economies and financial institutions do 
+not appear ready yet for the medicine of steeply 
+rising real yields, suggesting that a persistent low 
+expected return  environment may re
+main with us 
+for 
+ 
+several years. Interestingly, market forwards and 
+economist expectations predict that real U.S. cash 
+rates will normalize to above 1% (nominals to above 
+3%) by 2018, overall averaging about 0.2
+-
+0.6% for 
+the next 5
+-
+10 years.
+17
+ 
+ 
+                                        
+                    
+ 
+17
+ 
+We can conceptually decompose the 10
+-
+year Treasury yield 
+into three 
+parts: average expected inflation and 
+the 
+average expected short
+-
+term 
+real rate over the next decade, plus a required bond risk premium (or term 
+premium). (The first two sum to the expected nominal cash rate, the latter 
+two sum to the expected r
+eal bond yield.) We cannot observe these 
+components directly but might estimate them with the help of survey data 
+or term structure models (purely statistical models or macro finance 
+models). We could use surveys if forecasts for the next decade were 
+avail
+able both for the expected inflation and expected short
+-
+term rates. 
+Alternatively, we could use macro
+-
+finance models whose assessments of 
+the short
+-
+rate path is often based on Taylor rules which capture central 
+bank policy reactions to different growth and
+ 
+inflation environments. Here 
+we mix consensus forecasts of U.S. inflation with the Kim
+-
+Wright (2005) 
+ 
+The big 
+picture, then, is that the real expected 
+returns for U.S. assets over the next 5
+-
+10 years are 
+just north of 0% for cash, above 1% for long
+-
+term 
+Treasuries, and above 4% for equities. Broadly 
+speaking, asset class prospects are similar for other 
+countries, 
+though in
+ 
+an
+ 
+international comparison 
+U.S. prospective real returns are on the low side for 
+equities and on the high side for bonds (see Exhibits 
+1
+-
+3). These yield
+-
+ 
+or value 
+-
+oriented estimates have 
+historically been reasonably good predictors of 
+subsequen
+t
+ 
+5
+-
+10 
+-
+year returns. However, their 
+predictive ability over short horizons 
+ 
+and thus 
+market timing ability 
+ 
+is quite limited.  
+ 
+Other Investments   
+ 
+Credits
+ 
+Traditionally, government bonds are deemed to 
+offer riskless cash flows, while other bonds offer
+ 
+uncertain cash flows. 
+We believe
+ 
+i
+t is important to 
+use option
+-
+adjusted spreads when analyzing 
+corporate bonds with embedded (call/put/
+ 
+conversion) options or mortgage
+-
+backed securities 
+cash flows are fixed,
+ 
+they are subject to default risk, 
+which can only reduce future returns. Thus, the 
+yields of such credit
+-
+risky bonds (or their yield 
+spreads over duration
+-
+matched Treasuries) 
+overstate the expected return (or excess return). 
+                                        
+                                        
+                      
+ 
+model estimates of forward rates, term premia and short
+-
+rate 
+expectations (this model relies both on statistical estimates and survey 
+data) which are regu
+larly published on the Fed website.
+ 
+Exhibit 3
+  
+|  
+ 
+Building expected returns for government bonds
+ 
+ 
+Source: 
+   
+Bloomberg, Consensus 
+Economics and AQR.
+ 
+ 
+Estimates as of December 31, 2013
+.
+ 
+Return assumptions are subject to change.
+ 
+
+Y
+RR
+F
+Y
+I
+Y+RR+F
+Y-I
+10Y Nominal 
+Govt. Yield
+5Y Rolldown 
+Return
+Half Fwd-Imp 
+Yld Chg Return
+10Y F/C 
+Inflation
+Exp Real 10Y 
+Bond Return
+U.S.
+3.0%
+1.6%
+-1.0%
+2.2%
+1.4%
+Japan
+0.7%
+0.7%
+-0.7%
+1.4%
+-0.7%
+Germany
+1.9%
+1.1%
+-1.0%
+1.9%
+0.2%
+U.K.
+3.0%
+0.9%
+-0.9%
+3.3%
+-0.3%
+Australia
+4.2%
+0.8%
+-0.9%
+2.6%
+1.6%
+Canada
+2.8%
+1.5%
+-0.7%
+2.0%
+1.6%
+
+ 
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+f
+or Major Asset Classes
+ 
+7
+ 
+ 
+How much should we discount the
+ 
+spreads for 
+expected credit losses? The empirical answer based 
+-
+-
+grade 
+(junk) bonds. Note that because our forecast horizon 
+is 5
+-
+10 years, we care less about t
+he current cyclical 
+conditions than short
+-
+horizon investors do.
+18
+   
+ 
+Commodity Futures
+ 
+Unlike bonds and equities, commodities do not have 
+obvious starting yields to use as anchors. Thus, 
+historical average returns are a more important 
+anchor (even though lo
+ng commodity cycles may 
+mean that average returns for individual decades 
+vary significantly from a multi
+-
+decade average). 
+To 
+get a long
+-
+run return estimate for the asset class, we 
+constructed an equally weighted index of 
+commodity futures going back to 194
+7.
+19
+ 
+The 
+simulated
+ 
+index earned a compound average excess 
+return over cash of around 5% from 1947 to 2013, 
+with 
+a realized Sharpe Ratio of 0.38
+. Contrary to 
+popular belief, virtually all of the excess return over 
+this period has
+ 
+come from spot price changes
+ 
+and 
+diversification gains, rather than 
+futures 
+roll 
+returns.
+ 
+(This is also true for investors in the S&P 
+GSCI index since 1970.)
+ 
+Theoretical justifications for a positive reward for 
+holding a commodity futures portfolio include a 
+attenuated by the increasing role of financial index 
+                                        
+                    
+ 
+18
+ 
+There are many devils in the details which could point to lower 
+estimates (see chapter 10 in Ilmanen 2011). Very long histories suggest 
+higher default rates than those experienced in recent decades. Top
+-
+rated 
+bonds hav
+e an asymmetric tendency to suffer downgrade losses versus 
+upgrade gains. Times of historically narrow credit spreads may be 
+followed by mean reversion and thus capital losses. Bond index investors 
+have historically realized a surprisingly small fraction o
+f yield spreads, 
+soon after they leave the index. Trading costs on corporate bonds are not 
+trivial.  Finally, self
+-
+financed (levered) bond positions will need an option
+-
+ 
+and defa
+ult
+-
+adjusted yield spread that exceeds the financing spread 
+between credit
+-
+risky and government bonds, before they really offer a 
+positive carry.
+ 
+19
+ 
+This
+ 
+simulated 
+ 
+index
+ 
+is rebalanced each month to equal nominal 
+weights to ensure diversification; this approach is simple but consistent 
+over time. The commodity universe grows from 3 in 1947  to 
+over 20 by 
+early 1990s. 
+ 
+investors), positive equity beta
+, growing scarcity of 
+commodities,
+ 
+or 
+so
+-
+called
+ 
+diversification return.
+20
+ 
+ 
+Finally, we can study statistically the time series 
+predictability of commodity returns, regressing a 
+(backwardation/contango), past momentum and 
+long
+-
+run m
+ean
+-
+reversion. We find less time
+-
+series 
+than cross
+-
+sectional predictability. Over short 
+horizons, carry and momentum have some timing 
+ability, but over a five
+-
+year horizon, all three 
+regression slope coefficients are insignificant (carry 
+has the largest t
+-
+stat of 1.0, while the intercept has a 
+t
+-
+stat near 3). Thus, tactical forecasts tied to current 
+market conditions do not appear to predict long
+-
+term returns that meaningfully differ from the 
+historical 
+mean 
+low real yield
+s in other asset classes and the greater 
+commodity demand by institutional investors, it 
+may be reasonable to assume somewhat lower 
+returns in the coming decade than in the past.
+ 
+Illiquids
+ 
+For illiquid alternative assets, expected returns are 
+even harder
+ 
+t
+o predict
+ 
+than for liquid asset classes. 
+We leave their numerical analysis to a later date but 
+make some comments. Besides a sometimes 
+significant beta premium, we expect some positive 
+illiquidity premium for such investments. However, 
+we note that recent 
+academic surveys
+21
+ 
+see the 
+empirical record on such premia as weaker than 
+many investors think, perhaps because investors 
+                                        
+                    
+ 
+20
+ 
+Diversification reduces portfolio volatility, which i
+mplies that a 
+portfolio's compound return is higher than the weighted average 
+compound return of its constituents. Diversification Return (DR) can be 
+chnically, DR boosts only 
+compound returns (geometric means), not arithmetic means, because the 
+former are penalized by high volatility or variance.
+ 
+(Geometric mean 
+arithmetic mean return minus half the variance.) DR is most significant 
+when portfolio co
+nstituents have high volatilities and low correlations, 
+which makes commodity futures ideal beneficiaries. Even if each 
+individual commodity has a zero expected compound return, a portfolio of 
+them can have a significantly positive compound return. Indeed,
+ 
+between 
+1993 and 2012, the compound return across 23 major commodity 
+futures averaged essentially zero over cash, while an equal
+-
+weighted 
+portfolio of the same 23 commodity futures earned a compound return of 
+3.2% over cash.
+ 
+21
+ 
+See, for example,
+ 
+De Jong an
+at 
+ 
+http://papers.ssrn.com/sol3/papers.cfm?abstract_id=2337939
+.
+ 
+
+ùë¤åpþ±N^@,ÍÀÀÈ!:0>1   S  -Í ' d@§D%$§D&ª% ¸ÿð@H	
+
+8
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+for
+ 
+Major Asset Classes
+ 
+ 
+ 
+pay for the return
+-
+smoothing characteristics of slow 
+marking to market. Moreover, volatility and Sharpe 
+ratio assumptions are problemat
+ic for illiquid assets 
+because of these return
+-
+smoothing effects.
+ 
+Alternative Risk Premia
+ 
+Alternative risk premia (dynamic long
+-
+short 
+strategies in liquid assets
+, which we refer to as hedge 
+fund premia and style premia
+) are not our focus here 
+but we provid
+e some general comments. 
+ 
+ 
+Because such long
+-
+short strategies can be 
+invested at any volatility level, 
+we think
+ 
+it makes 
+sense to focus on Sharpe ratios and then scale 
+them by the chosen volatility target to get ex
+-
+ante estimates of excess return over cash.
+ 
+ 
+Again, we think that balancing historical 
+evidence, theory and starting valuations is 
+helpful. Because the portfolios are dynamic, 
+starting valuations may be the least useful input, 
+unless they are extreme.
+22
+ 
+Historical 
+performance is the natural starting 
+point but 
+some s
+k
+epticism is warranted. Such evidence 
+should be supported by out
+-
+of
+-
+sample evidence, 
+robustness ove
+r time and across asset classes
+, 
+economically intuitive explanations, and 
+manageable trading costs. Having reviewed 
+these considerations, we 
+ 
+notably: value, 
+momentum, carry, defensive 
+ 
+while being 
+s
+k
+eptical on more elaborate and perhaps over
+-
+fitted strategies.
+ 
+ 
+The degree of diversification is essential. 
+Individual alternative risk premia (
+a
+ 
+single long
+-
+short style in a single asset class) might have 
+                                        
+                    
+ 
+22
+ 
+We 
+refer here to starting valuations of systematic strategies, not of 
+assets. 
+-
+short strategy involves buying 
+cheap stocks (or other assets) against rich ones. One can track the 
+relative cheapness of value stocks against other stocks 
+ 
+say, using 
+price/book measures 
+ 
+to assess the tactical attractive
+ness of the value 
+strategy (and apply similar measures to other assets and styles). 
+However, empirical research shows limited return predictability based on 
+such tactical signals. Style timing seems at least as difficult as market 
+timing. Thus, we prefer s
+trategic holdings in classic alternative risk 
+-
+despite their excellent diversifying characteristics and because tactical 
+timing can easily degenerate into harmful multi
+-
+year return chasing.
+ 
+similar forward
+-
+looking Sharpe ratios as market 
+risk premia on asset classes (0.2
+-
+0.4), but a 
+diversified composite of alternative risk premia 
+(multiple styles applied across multiple asset 
+class
+es) can have ex
+-
+ante Sharpe ratios of 0.7
+-
+1.0, net of trading costs and fees. In contrast, 
+  
+very few 
+long
+-
+only portfolios may 
+reach
+ 
+realistic 
+ex
+-
+ante Sharpe ratios of 0.5
+-
+0.6
+.
+ 
+For alternative 
+risk premia portfolios, it is plausible to assume a 
+higher Shar
+pe ratio thanks to 
+more
+-
+effective 
+diversification (enabled by the use of techniques 
+such as leverage and shorting which can 
+magnify any edge but which many investors are 
+constrained from using), without assuming high 
+standalone Sharpe ratios.
+ 
+ 
+ 
+
+ 
+ 
+Alternative Thinking   |  
+Capital Market Assumptions 
+f
+or Major Asset Classes
+ 
+9
+ 
+ 
+Appendix: What 
+E
+xactly 
+A
+re 
+W
+e 
+F
+orecasting? 
+ 
+When discussing capital market assumptions, we must be very precise in describing which measure of 
+returns we have chosen, before explaining how we calculate its level. Too often, debates on expected returns 
+are confused by two 
+speakers agreeing in substance but talking about different measures. Some possible 
+choices are illustrated in 
+Exhibit 4
+.
+23
+ 
+Excess returns over cash are especially useful because they represent the returns of long
+-
+short or futures 
+investments
+24
+ 
+and they approximate well currency
+-
+hedged excess returns (we simply add local cash to them 
+to get a currency
+-
+hedged return). 
+ 
+For simplicity, when assembling our estimates we ignore compounding and interaction effects [a+b rather 
+ 
+-
+diversified portfolios 
+can have higher risk
+-
+adjusted returns (GMs or Sharpe ratios) than
+, say, single asset class premia.  
+ 
+For scalable long
+-
+short strategies, 
+ 
+we beli
+e
+ve
+ 
+the most natural measure of expectation is the long
+-
+run Sharpe 
+ratio. This can be multiplied by a target volatility to give the expected arithmetic excess return over cash.
+ 
+We 
+can then adjust for cash income (to get total return), for inflation (to get real return), for fees (to get net 
+25
+). 
+ 
+For passive stock and bond investments, liquidity and low turnover 
+may
+ 
+enable institu
+tional investors to 
+access market exposure at negligible cost. For less liquid investments and dynamic strategies with higher 
+turnover, both trading costs and fees are likely higher, so it is essential to distinguish between gross and net 
+ 
+ 
+Exhibit 4  |
+   
+Investment returns can be expressed (and decomposed) in many ways
+ 
+ 
+Source:    AQR. For illustrative purposes only.
+ 
+ 
+                                        
+                    
+ 
+23
+ 
+Of course t
+he time
+ 
+period must also be clear; 
+we present 
+multi
+-
+year 
+projections in terms of annual 
+rates of
+ 
+return
+.
+ 
+T
+his is what most studies do
+,
+ 
+though 
+a few present cumulative multi
+-
+year returns or monthly average returns.
+ 
+Other possible distinctions 
+besides those in Exhibit 4 are between income 
+returns and capital gains/losses as well as between the returns on constant
+-
+notional and risk
+-
+targeted strategies.
+ 
+24
+ 
+But note that only e
+xcess arithmetic returns can be fully scaled by leverage.
+ 
+25
+ 
+The gap between 
+AM and GM mean 
+ 
+return is higher for more volatile assets; it is approximately 1.5
+-
+2% for assets with volatilities of 17
+-
+20% and 
+0.3
+-
+0.5% for assets with volatilities of 7
+-
+10%.
+ 
+Total                     
+Gross            
+Arithmetic           
+Nominal               
+Return
+ 
+Geometric            
+Return
+ 
+Variance                 
+Drain
+ 
+Real                         
+Return
+ 
+Inflation
+ 
+Net                           
+Return
+ 
+T
+-
+costs                            
+and Fees
+ 
+Excess                         
+Return
+ 
+Cash
+ 
+0%
+1%
+2%
+3%
+4%
+5%
+Illustrative Investment 
+Return
+ 
+
+10 
+Alternative Thinking   |  
+Capital Market Assumptions for Major Asset Classes
+ 
+Disclosures 
+
+1
+ 
+Alternative Thinking   |  
+Capital Market Assumptions for Major Asset Classes
+ 
+
+AQR Capital Management,
+ 
+LLC
+ 
+Two Greenwich Plaza, Greenwich, CT 06830
+ 
+p: +1.203.742.3600  I  f: +1.203.742.3100  I  w: aqr.com
+ 
+
+ &56W>"     7ÿöS* : F@C	 #"B   j h S CC S D   : :+%'$+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;   ÿöJð  5 <@9.-B   [ S C S D 42
+ 
+ 
+AQR Capital Management, LLC
+ 
+Two Greenwich Plaza
+ 
+Greenwich, CT 06830
+ 
+ 
+p:
+ 
++1.203.742.3600
+ 
+f: 
+ 
++1.203.742.3100
+ 
+w:
+ 
+aqr.com
+ 
+Thinking
+ 
+Capital Market Assumptions
+ 
+f
+or Major Asset Classes
+ 
+This issue presents our capital market assumptions 
+for major asset classes. Our primary aim is to 
+explore justifiable frameworks for estimating multi
+-
+year expected returns, which investors may then 
+develop or adapt according to their
+ 
+beliefs
+.
+ 
+We focus on s
+tock markets and government bonds, 
+but also briefly discuss other assets and strategies. 
+ 
+ 
+Alternative
+ 
+ 
+First Quarter 2014
+ 
+
++#77''3773#'Ô!'j!b!!b!j'é.5

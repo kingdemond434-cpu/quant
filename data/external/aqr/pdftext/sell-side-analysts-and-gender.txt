@@ -1,0 +1,1722 @@
+March/April 2013
+ 
+www.cfapubs.org 
+ 
+83Financial Analysts Journal
+Volume 69 · Number 2
+©2013 CFA Institute
+Sell-Side Analysts and Gender: A Comparison of 
+Performance, Behavior, and Career OutcomesXi Li, 
+R
+
+odney N. 
+S
+ullivan, CFA, 
+D
+anielle Xu, and Guodong Gao, CFA Using a comprehensive sample of investment recommendations, the authors investigated differences in the 
+performance, behavior, and career outcomes of male and female sell-side analysts. They found that the recom-
+mendations of female analysts, compared with those of their male counterparts, produce similar abnormal 
+returns but with lower idiosyncratic risks. Further, gender does not seem to negatively affect female analysts 
+career outcomes as dened by their star rankings and job mobility among brokerage rms.S
+ell-side analysts are prominent gures in the 
+investment arena. Investors make enormous 
+efforts to identify those analysts with the 
+most reliable earnings forecasts and investment 
+recommendations and are willing to pay consid-
+erable sums for access to star analyst research 
+(excellent examples include Kothari 2001 and Lee 
+2001; see also Boni and Womack 2006; Green 2006; 
+Loh and Mian 2006; Sorescu and Subrahmanyam 
+2006; Emery and Li 2009).
+Using a large sample of investment recom-
+mendations from January 1994 through December 
+2005, we examined whether female sell-side ana-
+lysts perform and behave differently from their 
+male counterparts.
+1 We also examined whether 
+the career outcomes of female analysts differ from 
+those of male analysts after controlling for analyst 
+performance and behavior.
+Specically, we compared male and female 
+analysts in terms of their (1) performance, as mea-
+sured by the excess return (alpha) of investment 
+recommendations, (2) risk taking, measured as 
+the portfolio residual risk implied by investment 
+recommendations, (3) bias, measured as the per
+-
+centage of sell recommendations, and (4) career 
+outcomes, measured as the probability of moving 
+among brokerage rms of different sizes and by the 
+probability of their being 
+Institutional Investor (I.I.) 
+or Wall Street Journal (WSJ) stars.2
+ 
+
+Discussion of ndings.
+ 
+We found that the 
+investment recommendations of female analysts 
+as compar
+ed with those of male analysts produce 
+similar abnormal returns but with lower idiosyn-
+cratic risks. Taken together, our results imply that 
+the recommendations of female analysts may 
+generate slightly higher information ratios than 
+the recommendations of male analysts, a nding 
+consistent with prior research on individual inves-
+tors (see, e.g., Sunden and Surette 1998; Barber and 
+Odean 2001). Further, we detected no evidence of 
+discrimination against female analysts regarding 
+their career outcomes. In fact, female analysts seem 
+to have a better chance of being recognized as star 
+analysts in both the Institutional Investor and the 
+Wall Street Journal rankings, inuential components 
+of analysts compensation (see, e.g., Stickel 1992; 
+Womack 1996).
+Our study is related to prior research on the 
+determinants of analyst performance (see, e.g., Lys 
+and Sohn 1990; Stickel 1995; Clement 1999; Jacob, 
+Lys, and Neale 1999), analyst bias and analyst risk-
+taking behavior (see, e.g., Lin and McNichols 1998; 
+Michaely and Womack 1999; Dollar, Fisman, and 
+Gatti 2001; Clement and Tse 2005; Li and Masulis 
+2007), and career outcomes (see, e.g., Hong and 
+Kubik 2003; Emery and Li 2009). Our study com-
+plements prior research by exploring previously 
+unexamined gender effects after controlling for 
+various analyst-related characteristics.
+Xi Li is managing partner at XL Partners, Boston, 
+and assistant professor at Hong Kong University of 
+Science and Technology. Rodney N. Sullivan, CFA, is 
+head of publications at CFA Institute, Charlottesville, 
+
+-
+ness administration at Gonzaga University, Spokane, 
+Washington, and visiting professor of nance and sta-
+tistics at the Hanken School of Economics, Helsinki. 
+Guodong Gao, CFA, is a quantitative analyst at Chi-
+cago Equity Partners. Editors Note: Rodney N. Sullivan, CFA, is editor of the       
+Financial Analysts Journal. He was recused from the ref-
+eree and acceptance processes and took no part in the 
+scheduling and placement of this article. See the FAJ
+ poli-
+cies section of cfapubs.org for more information.
+
+84
+ 
+www.cfapubs.org
+ 
+©2013 CFA InstituteOur study also relates to the literature on gen-
+der differences. On the relation between gender and 
+performance, researchers have found that women 
+may be less effective than men in competitive envi-
+ronments (Gneezy, Niederle, and Rustichini 2003) 
+and that women tend to shy away from competition 
+whereas men embrace it (Niederle and Vesterlund 
+2007). On the relation between gender and risk tak-
+ing, researchers have found that women tend to take 
+less risk than men across a variety of settings (for a 
+review, see Byrnes, Miller, and Schafer 1999). In nan-
+cial markets, research has shown that among individ-
+ual investors, females tend to be more risk averse and 
+less overcondent than males and to underperform 
+males on a risk-adjusted basis (see, e.g., Sunden and 
+Surette 1998; Barber and Odean 2001). Research has 
+also shown that women are more effective in promot-
+ing fairness and honestyimportant attributes in 
+the nance industry. For example, as compared with 
+men, women base their votes more on social issues 
+(Goertzel 1983), score higher on integrity tests (Ones 
+and Viswesvaran 1998), and take stronger stances 
+on unethical behavior (Reiss and Mitra 1998). Also, 
+female members of Parliament are associated with 
+lower levels of corruption (Dollar et al. 2001).
+Previous studies have suggested that women 
+may face a glass ceiling whereby they are under
+-
+represented among the ranks of senior level (and 
+higher-paid) personnel within their rms because 
+of workplace discrimination against women 
+(Wenneras and Wold 1997; Goldin and Rouse 2000; 
+Black and Strahan 2001) and because women are 
+less effective in competitive environments (Gneezy 
+et al. 2003). Our study complements and extends 
+prior research by determining the existence of any 
+gender effect for sell-side analysts through the 
+objective measuring of performance and behav-
+ior with respect to investment recommendations 
+while controlling for other important characteris-
+tics. In addition, objectivity was provided by the 
+market response to analysts research reports. This 
+approach works because market participants can 
+react to analysts research reports anonymously 
+and quickly and should thus be more likely to 
+reveal their true attitude toward such research.
+The studies closest in spirit to ours are Kumar 
+(2010) and Green, Jegadeesh, and Tang (2009). 
+Using earnings forecasts, Kumar provided a care-
+ful and detailed analysis of the performance, risk-
+taking behavior, and career outcomes of female 
+and minority analysts. He found that female ana-
+lysts provide more accurate earnings forecasts than 
+male analysts and that stock market prices reect 
+this nding. He also found that female analysts 
+issue bolder forecasts by way of upward revisions 
+and that female analysts are more likely to move to 
+larger brokerage rms. After controlling for various 
+characteristics, Green et al. showed that although 
+the earnings forecasts of female analysts are less 
+accurate than those of male analysts, women are 
+signicantly more likely to be designated 
+I.I. stars. 
+They found that an analysts gender is a better pre-
+dictor of forecast accuracy than I.I. star status, sug-
+gesting that brokerages do not discriminate against 
+women in assessing forecasting skills.
+Our study extends the literature in several 
+important ways. Using investment recommenda-
+tions (including revisions to recommendations) 
+instead of earnings forecasts, we examined the 
+impact of gender on both performance and risk-
+taking behavior. Making recommendations and 
+issuing forecasts are the two most important aspects 
+of a sell-side analysts job. These two aspects are 
+separate though intimately related. Many consider 
+recommendations to be more important to inves-
+tors than earnings forecasts (Womack 1996; Francis 
+and Soffer 1997) because recommendations offer 
+a direct way to compare the risk and return per
+-
+formance of the analyst against that of the market. 
+Stocks added to the buy list are expected to outper
+-
+form, and stocks added to the sell list are expected 
+to underperform.
+The importance of studying analyst recommen-
+dations is well illustrated by the $1.4 billion Global 
+Settlement of 2003. The Global Settlement between 
+regulators and investment banks concerned biased 
+analyst recommendations related to the business 
+of investment banking (Smith, Craig, and Solomon 
+2003). Moreover, studying investment recommen-
+dations is particularly important because bias in 
+recommendations is more severe than it is in fore-
+casts (Lin and McNichols 1998), as evidenced by 
+the focus on bias in stock recommendations in the 
+Global Settlement. On this point, our results indi-
+cate that female analysts tend to issue fewer sell 
+recommendations than male analysts. This nding 
+may be related to our additional nding that female 
+analysts take less risk than their male counterparts.
+Further, we studied both I.I. and WSJ star rank-
+ings as well as analyst job mobility among broker
+-
+age rms of different sizes. Being an I.I. or WSJ star 
+can lead to an analysts earning millions of dollars 
+in additional annual compensation. In fact, being an 
+I.I. star is reportedly among the three most important 
+determinants of analyst compensation (Stickel 1992; 
+Michaely and Womack 1999; Hong and Kubik 2003; 
+Li 2005). We controlled for analyst performance and 
+behavior in our analysis of career outcomes.
+
+Sell-Side Analysts and Gender
+March/April 2013
+ 
+www.cf
+apubs.org 
+ 
+85Data and Analyst CharacteristicsIn this section, we report the particulars of the data 
+we used and our measures of performance, risk 
+taking, bias, and other analyst characteristics, as 
+well as summary statistics of those characteristics.
+Data.
+ 
+We obtained our primary data from the 
+Institutional 
+Brokers Estimate System (I/B/E/S). 
+The I/B/E/S database provides the last name, 
+rst-name initial, brokerage afliation, and invest-
+ment recommendations for each analyst, as well as 
+a unique code for each analyst that allows one to 
+track analysts should they change afliations.3 The 
+I/B/E/S investment recommendation database 
+starts in October 1993; our sample begins in 1994. 
+I/B/E/S provides standardized recommendations 
+with integer ratings from 1 through 5, correspond-
+ing to strong buy, buy, hold, underper
+-
+form, and sell, respectively.
+Following Clement (1999) and Jacob et al. 
+(1999), we excluded analysts with pre-1984 forecasts 
+in the I/B/E/S database to avoid a left-censored 
+bias in the experience measure. We also excluded 
+those analysts who issued only hold recom-
+mendations. This procedure yielded a sample of 
+33,399 analysts and 828,355 analyst-year observa-
+tions. Because the I/B/E/S database sometimes 
+assigns multiple codes to a single analyst, merging 
+the data for those analysts reduced the sample to 
+27,514 analysts. Requiring CRSP stock returns for 
+creating a three-month recommendation portfolio 
+within each year for estimation purposes further 
+reduced the sample to 6,195 analysts and 35,992 
+analyst-year observations. (Later in the article, we 
+will describe the process that we used in creating 
+the recommendation portfolio.) Finally, excluding 
+analysts whose gender could not be determined 
+left us with a sample of 5,189 analysts and 25,512 
+analyst-year observations.
+To obtain gender information, we rst con-
+ducted a search on the rst name of each analyst. 
+The I/B/E/S database provides only the last name 
+and rst initial of each analyst. Therefore, we had to 
+search news articles in such databases as LexisNexis 
+and ProQuest to nd the rst name of each analyst. 
+In addition, the I.I. and WSJ star rankings include 
+the full names of all ranked analysts. If our search 
+resulted in multiple analysts with the same rst and 
+last names, we matched information on brokerage 
+rm afliation with the I/B/E/S database to ensure 
+the proper identication of each analyst.
+Identifying rst names determined the gender 
+of about two-thirds of our analysts. We were able 
+to determine the gender of additional analysts 
+by searching news articles in such databases as 
+LexisNexis and ProQuest to see whether analysts 
+were referred to as he or she, his or her, or Mr. or 
+Ms./Mrs. The photos of star analysts provided by 
+I.I. and the WSJ further helped us determine gender.
+Panel A of 
+Table 1 reports the proportion 
+of analysts by gender. Of the 5,189 sample ana-
+lysts, we determined that 796 analysts, or about 
+15%, were female. In untabulated results, we found 
+that the proportion of male analysts has increased 
+slowly but steadilyfrom 82.9% in 1994 to 84.7% 
+in 2005.
+Table 1. 
+  
+Summary Statistics, January 1994December 2005 
+A. Gender composition
+Female
+796
+15.34%
+Male
+4,393
+84.66%
+    Total
+5,189
+100.00%
+Full Sample
+Male
+Female
+B. Analyst performance and characteristics
+ALPHA (bps)
+2.10
+2.17
+1.69
+RESIRISK (%)
+1.90
+1.90
+1.91
+PCTSELL (%)
+4.89
+4.92
+4.80***
+IISTAR (%)
+8.58
+8.28
+10.42***
+WSJSTAR (%)
+5.11
+5.07
+5.28***
+EXPERIENCE
+8.07
+8.21
+7.28***
+COVERAGE
+7.37
+7.35
+7.44***
+NREPORT
+11.51
+11.76
+10.11***
+NCOMPANY
+7.91
+8.07
+7.04***
+BROKERSIZE
+427
+418
+477***
+COMPANYSIZE ($ billions)
+6.82
+6.76
+7.11***
+N
+25,512
+21,783
+3,729
+***Signicant at the 1% level.
+
+86
+ 
+www.cfapubs.org
+ 
+©2013 CFA InstituteMeasures of Performance, Risk Taking, and 
+Bias.
+ 
+With respect to the measur
+es of performance 
+and risk-taking behavior in investment recom-
+mendations, we rst created a recommendation 
+portfolio for each analyst in our sample, follow-
+ing Emery and Li (2009). This portfolio consisted 
+of long positions in those stocks with an analyst 
+rating of 1 or 2 and short positions in those stocks 
+with an analyst rating of 4 or 5. Stocks were added 
+to the portfolio on the recommendation date and 
+removed from the portfolio on the date when the 
+rating was revised to 3. A stocks classication 
+changed when a superseding recommendation 
+altered the stocks classication as a buy or a sell. 
+For example, we considered a change from 1 or 2 to 
+4 or 5 a revision. We did not consider an upgrade 
+from 2 to 1 a revision because the stock had already 
+been classied as a long position. Reiteration of a 
+previous recommendation did not change a stocks 
+classication. Returns within each year accumu-
+lated from the recommendation date until either 
+(1) the date of revision or (2) the end of the year if 
+there was no revision during the remainder of the 
+year. In determining the portfolio return for each 
+analyst, we used equally weighted CRSP daily 
+returns for each recommendation. For estimation 
+purposes, we required a minimum period of three 
+months for the overall recommendation portfolio 
+within each year.
+We then estimated the FamaFrench (1993) 
+three-factor model: 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                               
+(1)
+where 
+ 
+Rit
+ 
+= 
+ 
+the return on the recommendation port-
+folio of analyst i
+ in excess of the three-
+month T-bill return on day t 
+ 
+i
+ 
+= 
+ 
+the multifactor model Jensens alpha, 
+which measures the average daily abnor
+-
+mal return on the portfolio of analyst 
+i 
+ 
+j
+ 
+= 
+ 
+the regression coefcient for factor j 
+ 
+Rjt
+ 
+= 
+ 
+the return of factor j on day t 
+ 
+it
+ 
+= 
+ 
+an error term for the portfolio of analyst i 
+on day 
+t 
+The factors (j) are the return on the CRSP value-
+weighted NYSE/Amex/NASDAQ market index in 
+excess of the three-month T-bill return and the size 
+and book-to-market factors of Fama and French 
+(1993). Prior research has identied these factors 
+as being related to systematic return patterns. We 
+included them in our analysis to avoid rewarding 
+analysts for simply exploiting these well-known 
+return factors.
+We used ALPHA, the intercept of the Fama
+French three-factor model regression, to measure 
+analyst recommendation performance. Following 
+Chevalier and Ellison (1999) in their examination 
+of the risk-taking behavior of fund managers, we 
+measured analyst risk taking in recommendations 
+with 
+RESIRISK, the residual return standard devia-
+tion in the three-factor model regression.4One objective of the recent efforts to reduce 
+analyst bias, following the $1.4 billion Global 
+Settlement, is to increase the proportion of negative 
+recommendations (Opdyke 2002). Therefore, we 
+used the percentage of negative recommendations 
+among analysts recommendations (PCTSELL), 
+including both underperformance and sells, to 
+measure any bias in investment recommendations.
+Other Analyst Characteristics.
+ 
+We included 
+several control variables (see 
+Exhibit 1 for deni-
+tions of variables). Following Stickel (1992), among 
+others, we measured analyst reputation by using 
+IISTAR and WSJSTAR, dummy variables that 
+equaled 1 if the analyst was an Institutional Investor 
+or 
+Wall Street Journal star analyst, respectively, and 0 
+otherwise.5 We followed Jacob et al. (1999) in using 
+the number of research reports issued (NREPORT) 
+to measure the timeliness of reports, which should 
+proxy for the willingness of analysts to exert effort. 
+Clement (1999) and Jacob et al. (1999) argued that an 
+increase in the number of companies covered (i.e., 
+broader coverage) increases task complexity. Jacob 
+et al. also argued that broader coverage broadens 
+industry knowledge. Accordingly, we included 
+NCOMPANY to measure analyst breadth of cov-
+erage. Like Stickel (1995) and Hong and Kubik 
+(2003), we used brokerage rm size (BROKERSIZE) 
+as a proxy for marketing ability and the reputa-
+tion of analysts rms. We used COMPANYSIZE 
+as a proxy for the information environment of the 
+companies covered. Prior research has shown that 
+smaller companies have a more opaque informa-
+tion environment owing to less information disclo-
+sure and less news and research coverage (Stickel 
+1995). Finally, we used COVERAGE, the average 
+number of analysts who cover the same company 
+as a particular analyst, as another measure of the 
+information environment (see, e.g., Piotroski and 
+Roulstone 2004).
+We included EXPERIENCE, the number of 
+years that an analyst has been submitting reports 
+to I/B/E/S, to measure the impact of learning by 
+doing (see, e.g., Clement 1999; Jacob et al. 1999).
+Summary Statistics of Analyst Character
+-
+istics.
+ 
+Panel B of Table 1 reports summary sta
+-
+tistics for our measures of analyst performance, 
+behavior, and other characteristics. Analyst per
+-
+formance is summarized in the rst three rows of 
+variables, followed by results for our additional 
+variables concerning analyst characteristics. Female 
+
+/¸ÿð@
+
+Sell-Side Analysts and Gender
+March/April 2013
+ 
+www.cf
+apubs.org 
+ 
+87analysts are signicantly different from male ana-
+lysts in several respects. Female analysts have 
+statistically signicantly lower PCTSELL, higher 
+IISTAR and WSJSTAR, lower EXPERIENCE, higher 
+COVERAGE, lower NREPORT, lower NCOMPANY, 
+and higher BROKERSIZE. Thus, our ndings sug-
+gest that female analysts are more likely than their 
+male counterparts to be recognized as star perform-
+ers in both the I.I. and the WSJ analyst rankings. 
+They also tend to issue fewer sell recommendations, 
+have fewer years of work experience, select stocks 
+to cover that are most often followed by other ana-
+lysts, issue fewer reports, cover a smaller number of 
+companies, and cover larger companies.Test Methodologies and Empirical 
+ResultsIn this section, we report our test methodolo-
+gies and empirical results with respect to various 
+analyst characteristics and career outcomes and 
+describe our sensitivity tests.
+Performance, Risk Taking, and Bias.
+ 
+We exam-
+ined whether gender af
+fects analyst performance 
+and behavior. One approach we could use to exam-
+ine the effects of gender is the simple regression
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+(2)
+where the dependent 
+variables include our mea-
+sures of analyst performance (ALPHA)
+,
+ risk-
+taking behavior (RESIRISK), and bias behavior 
+(
+PCTSELL). We could also include yearly dum-
+mies (Year effects) to control for time variation in 
+performance. However, this simple specication 
+is incomplete because male and female analysts 
+are different across several characteristics. Our 
+selected characteristics might affect analyst perfor
+-
+mance and behavior. Therefore, we would need to 
+control for each characteristic separately in order 
+to properly account for any gender differences. In 
+this way, our model would yield unbiased param-
+eter estimates. Specically, we estimated the fol-
+lowing model:
+ 
+(3)
+Table 2 r
+eports the regression results, with 
+select measures of analyst performance and behav-
+ior included as dependent variables. Columns 15 
+report the results of gender effects on analyst per
+-
+formance, risk-taking behavior, recommendation 
+bias, and cumulative abnormal returns (CARs) 
+around upgrade and downgrade recommendation 
+Exhibit 1. 
+  
+Denitions of Variables 
+FEMALE
+Dummy variable that equals 1 for female analysts and 0 otherwise.
+ALPHA
+The intercept of the FamaFrench (1993) model regression (in basis points).
+RESIRISK
+Residual return standard deviation of the FamaFrench (1993) model regression (in basis points).
+CARs
+Return effects are measured by market-adjusted cumulative abnormal returns (CARs), which are 
+measured with an interval of t  1 to t + 1 days around analyst recommendation announcement 
+dates. The market model estimation period used to calculate CARs is t  210 to t  60 days prior to 
+the recommendation announcement.
+PCTSELL
+Percentage of sells and underperforms among the analysts recommendations.
+IISTAR and WSJSTAR
+Dummy variable that equals 1 if the analyst is an Institutional Investor or Wall Street Journal star 
+analyst, respectively, and 0 otherwise.
+EXPERIENCE
+Number of years that an analyst has been submitting reports to I/B/E/S.
+COVERAGE
+Logarithm of the average number of analysts who cover the same company that a particular 
+analyst covers at the end of the prior calendar year.
+NREPORT
+Logarithm of the number of research reports that an analyst issues.
+NCOMPANY
+Logarithm of the number of companies that an analyst covers.
+BROKERSIZE
+Logarithm of the number of analysts employed by the analysts house. For analysts who switch 
+houses within a given year, we used the time-weighted average of the two houses.
+COMPANYSIZE
+Logarithm of the mean market capitalization of the companies that an analyst covers at the end of 
+the prior calendar year.
+Note: All variables are calculated within a calendar year. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+88
+ 
+www.cfapubs.org
+ 
+©2013 CFA Instituteannouncements. In conducting our cumulative 
+abnormal returns analysis, we excluded analyst 
+recommendations that might conict with corpo-
+rate earnings releasesthat is, so as not to confuse 
+market reactions to corporate earnings releases 
+with market reactions to analyst recommendation 
+announcements, we excluded all those recommen-
+dations that occurred immediately after corporate 
+earnings announcements. Our results show that 
+the 
+FEMALE indicator is negative, but insigni-
+cant, for ALPHA, suggesting that the recommen-
+dations of female analysts produce abnormal 
+returns similar to those of their male counterparts. 
+The 
+FEMALE indicator is statistically signicantly 
+negative for RESIRISK, which suggests that the 
+recommendations of female analysts concern 
+stocks with slightly lower idiosyncratic volatil-
+ity. Taken together, these results imply that the 
+recommendations of female analysts, on average, 
+generate slightly higher information ratios than 
+those of male analysts.
+Next, we reviewed the relative performance 
+of men and women by separating their recom-
+mendations into upgrades and downgrades and 
+then calculating the associated cumulative abnor
+-
+mal returns within each category. The return 
+effects, or CARs model, results shown in columns 
+4 and 5 indicate that women underperform with 
+respect to their upgrade recommendations and 
+demonstrate some outperformance with respect 
+to their downgrades (although this outperfor
+-
+mance is statistically insignicant). The CARs
+ 
+results may be consistent with our other ndings 
+regarding female behavior whereby women tend 
+to take less risk in recommending upgrades. That 
+women may take less risk (column 2)6 could be 
+an underlying reason for their relatively poor 
+performance vis-à-vis men overall and also with 
+Table 2. 
+  
+Gender vis-à-vis Performance and Behavior, January 1994December 2005 
+(t
+-statistics in parentheses)
+CARs(1, 1)
+Performance ALPHAt 
+(1)
+Risk Taking RESIRISKt 
+(2)
+Bias PCTSELLt 
+(3)
+Upgrades 
+(4)
+Downgrades 
+(5)
+FEMALE
+0.29
+0.08***
+0.08***0.33***
+0.14
+(0.92)
+(4.31)
+(2.87)
+(2.04)
+(0.67)
+IISTAR
+0.15
+0.21***
+0.15***
+0.52***
+0.33
+(0.45)
+(10.99)
+(4.69)
+(2.75)
+(1.30)
+WSJSTAR
+0.64
+0.09***
+0.05
+0.62***
+0.39
+(1.69)
+(4.19)
+(1.35)
+(2.49)
+(1.28)
+EXPERIENCE
+0.07***
+0.04***
+0.02***
+0.00
+0.04**
+(2.57)
+(27.80)
+(9.09)
+(0.47)
+(2.01)
+COVERAGE
+0.87***
+0.97***
+0.78***
+0.14
+0.77***
+(3.55)
+(62.05)
+(30.44)
+(1.19)
+(4.38)
+NREPORT
+1.22***
+0.07***
+0.23***
+0.30
+0.70***
+(2.73)
+(2.55)
+(5.93)
+(1.51)
+(2.53)
+NCOMPANY
+1.46***
+0.41***
+0.09**
+0.13
+0.64**
+(2.78)
+(13.02)
+(1.99)
+(0.57)
+(2.02)
+BROKERSIZE
+0.01
+0.12***
+0.27***
+0.27***
+0.29***
+(0.14)
+(20.52)
+(27.86)
+(6.42)
+(5.01)
+COMPANYSIZE
+0.63***
+0.35***
+0.18***0.20***
+0.37***
+(6.28)
+(55.41)
+(18.57)
+(4.18)
+(5.34)
+R20.01
+0.23
+0.08
+0.02
+0.02
+N
+25,512
+25,512
+25,512
+17,463
+16,925
+Notes: Table 2 reports the estimated results from Equation 3, a model that uses ordinary least-squares regression. The 
+coefcient estimates are in basis points for the regressions when ALPHA and CARs are the dependent variables. A recom-
+mendation is considered an upgrade if the numerical change in two consecutive recommendations is negative and a down-
+grade otherwise. The observation is deleted if the recommendation date coincides with the quarterly or annual earnings 
+announcement date. The coefcient estimates are in percentages for the regressions when RESIRISK and PCTSELL are the 
+dependent variables.
+**Signicant at the 5% level.
+***Signicant at the 1% level.
+
+Sell-Side Analysts and Gender
+March/April 2013
+ 
+www.cf
+apubs.org 
+ 
+89respect to upgradesthat is, less willingness to 
+take risk may translate into a reduced willing-
+ness to recommend changes in recommenda-
+tions, leading to underperformance. In this way, 
+the evidence shown in columns 4 and 5 aligns in 
+a consistent manner.
+Column 3 reports the results of gender effects 
+on analyst bias behavior. The coefcient esti-
+mate on FEMALE is negative and signicant for 
+PCTSELL. These results suggest that female ana-
+lysts are less willing to issue sell recommendations 
+and so may be more cautious than men in their 
+sell recommendations. Curiously, this nding is 
+inconsistent with the prior ndings that women 
+are less biased than men (see, e.g., Goertzel 1983; 
+Ones and Viswesvaran 1998; Reiss and Mitra 1998; 
+Dollar et al. 2001). More research is needed to 
+address these ndings.
+With respect to the various control variables 
+used in each of our regression models in columns 
+15, we point the interested reader to prior research 
+that offers a review and rationale for each variable 
+included in our analysis.
+Career Outcomes. The relation between gender 
+and career outcomes is particularly interesting in 
+the nance industry. For example, Cari Dominguez, 
+a former U.S. Equal Employment Opportunity 
+Commission (EEOC) chairwoman, has suggested 
+that an increasing number of women are pursu-
+ing Wall Street careers, but the brokerage indus-
+try remains plagued by a longstanding, endemic 
+problem of discrimination.7 According to CFA 
+Institute, although the compensation gap between 
+female and male Chartered Financial Analysts 
+(CFA charterholders) is narrowing, female CFA 
+charterholders earn somewhat less, after adjusting 
+for experience. As we 
+reported earlier, only about 
+16% of our sample sell-side analysts were female, 
+with the proportion of male analysts increasing 
+steadily over our sample period.
+Our study extends prior research that exam-
+ined such career outcomes as job mobility among 
+brokerage rms (Hong and Kubik 2003) and being 
+an 
+I.I. or WSJ star (Emery and Li 2009) by inves-
+tigating whether gender meaningfully affects 
+career outcomes.
+Until now, the relation between gender and job 
+mobility (i.e., analysts improving their careers by 
+changing rms) has remained ambiguous. Prior 
+research has argued that moving to a larger bro-
+kerage rm represents a positive career outcome 
+because high-status brokerage rms are likely to 
+offer higher compensation. However, there may 
+be both implicit and explicit career discrimina-
+tion against female analysts seeking to move to 
+larger, higher-status brokerage rms given that 
+allegations of gender discrimination constantly 
+plague the larger rms and given that so many 
+more analysts are male. Even so, larger brokerage 
+rms may be more likely to have greater resources, 
+allowing adoption of formal policies to encourage 
+recruitment and retention of female analysts. For 
+instance, Kumar (2010) found that female analysts 
+have an increased likelihood of moving up to high-
+status rms and a smaller chance of moving down 
+to low-status rms as compared with their male 
+counterpartsevidence that job mobility among 
+brokerage rms is perhaps more favorable toward 
+female analysts.
+How gender affects I.I. star rankings is dif-
+cult to ascertain. On the one hand, Institutional 
+Investor asserts that because of ratings by this 
+magazine and others, research is the most closely 
+monitored Wall Street eld of all, making it emi-
+nently clear who the outstanding analysts are, 
+male or female (Galant 1996, p. 143). On the 
+other hand, the nature of the I.I. survey exposes 
+it to potential charges of gender discrimination. 
+In March, April, or May of each year, I.I. sends 
+surveys globally to such people as directors of 
+research and investment fund managers. In its 
+October issue, I.I. publishes its lists of rst, sec-
+ond, third, and runners-up teams of its rankings 
+based on the returned scores weighted by the 
+size of each respondents institution. However, 
+the respondents may be inuenced by gender 
+discrimination. For example, because the survey 
+respondents of buy-side fund managers are pre-
+dominantly male, they may be subconsciously 
+vulnerable to stereotypical gender prejudices.
+Compared with the I.I. rankings, the WSJ rank-
+ings seem less likely to be inuenced by gender 
+prejudices. The annual WSJ rankings name the 
+top ve performers in each industry on the basis 
+of industry-adjusted returns on portfolios cre-
+ated from analyst investment recommendations. 
+The 
+WSJ rankings have several explicit eligibility 
+requirements that eliminate most analysts from the 
+highly competitive listing. Although Emery and 
+Li (2009) showed that these explicit requirements 
+are likely dominated by recognitionsimilar to 
+the implicit requirements of the I.I. rankingsit is 
+unlikely that these requirements introduce implicit 
+gender discrimination. Owing to potential implicit 
+gender discrimination among the respondents for 
+the 
+I.I. rankings, we examined the WSJ rankings 
+purely as a robustness comparison in order to 
+
+90
+ 
+www.cfapubs.org
+ 
+©2013 CFA Instituteverify any signicant gender effects that we found 
+with the I.I. rankings.
+In analyzing gender as it relates to I.I. and WSJ 
+star status and job mobility, we followed Hong and 
+Kubik (2003) and Emery and Li (2009). We used 
+probit models in which IISTAR (WSJSTAR) equals 
+1 if the analyst was an I.I. (WSJ) star in year t and 
+0 otherwise. We expressed the probit models in the 
+following equation:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+(4)
+where 
+ 
+Job mobilityUp
+ 
+= 
+ 
+1 if an analyst works 
+for a low-status bro-
+kerage rm in year 
+t 
+ 1 and moves to a high-
+status rm in year 
+t and 0 
+otherwise 
+ 
+Job mobilityDown
+ 
+= 
+ 
+1 if an analyst works for 
+a high-status brokerage 
+rm in year t
+  1 and 
+moves to a low-status 
+rm in year t 
+and 0 
+otherwise8 
+We dened high-status brokerage rms as those 
+rms in the top 20% of all brokerage rms and 
+low-status rms as the bottom 20% of all brokerage 
+rms. Green et al. (2009) found that female analysts 
+are more likely than males to leave within the rst 
+two years of initial hiring. In order to isolate the 
+effects of gender, we controlled for all other analyst 
+characteristics.
+Table 3 reports the results of estimating 
+Equation 4. The coefcient estimate for FEMALE is 
+statistically insignicant after controlling for other 
+analyst characteristics and for all career outcomes, 
+except for IISTAR. This nding implies that being 
+a female analyst increases the chance of becoming 
+an 
+I.I. starthat is, our results show no evidence 
+of discrimination against female analysts in their 
+career outcomes.
+The control variable results largely reinforce 
+ndings from the prior literature. However, we 
+included a few control variables for job mobility 
+that were unexamined in previous research. The 
+coefcient estimate of ALPHA is insignicant 
+for all four models. The coefcient estimate of 
+PCTSELL is positive and signicant at the 1% level 
+for the probability of moving up, suggesting that 
+the likelihood of moving up may offer an incen-
+tive for analysts to be optimistic in their invest-
+ment recommendations. Neither WSJ star status 
+nor analyst risk-taking behavior in investment 
+recommendations appears to have any effect on 
+job mobility.
+Following Emery and Li (2009), we also exam-
+ined whether gender affects the probability of non-
+stars becoming stars and whether existing stars 
+tend to repeat across years. We did so by estimat-
+ing Equation 4 for nonstars and stars in the prior 
+year. We further studied the probability that stars 
+rankings will change across years by estimating 
+Equation 4 for the subset of analysts who are stars 
+in the prior year, where the dependent variable is 
+a binary (0, 1) variable that indicates the direction 
+of movement (DOM) in the analysts ranking from 
+the prior year. The lowest ranking corresponds 
+to those stars who do not repeat in the following 
+year. For an increase in the ranking probability, the 
+dependent variable equals 1 for stars whose rank 
+increases by at least one level or who repeat at rank 
+1. For a decline in probability, the dependent vari-
+able equals 1 for stars whose rank decreases by at 
+least one level. In untabulated results, we did not 
+nd a signicant gender effect on these career out-
+comes. Altogether, our results suggest that gender 
+does not signicantly affect the career outcomes of 
+sell-side analysts.
+Sensitivity Tests.
+ 
+To determine the robust
+-
+ness of our results, we performed a number of 
+sensitivity tests. First, we tested a variety of addi-
+tional performance measures. We used alterna-
+tive methodologies to measure recommendation 
+performance and risk-taking behavior, including 
+the value-weighted analyst portfolio, the market 
+model, and the Carhart (1997) four-factor model. 
+Because analysts cover related industries, we cre-
+ated an analyst-specic index by matching the 
+stocks in individual analyst portfolios with indus-
+try indices on the basis of two-digit SIC codes. We 
+replaced the market index with the analyst-specic 
+industry indices in the factor models to control 
+for industry momentum. To address the potential 
+effect of bias on analyst performance, we excluded 
+IPO research coverage in cases where the broker
+-
+age house of an analyst was the lead underwriter. 
+None of the performance measurements qualita-
+tively affected our results.
+
+Sell-Side Analysts and Gender
+March/April 2013
+ 
+www.cf
+apubs.org 
+ 
+91Table 3. 
+  
+Gender and Career Outcomes, January 1994December 2005
+Job MobilityUpt 
+Job MobilityDownt 
+IISTARt 
+WSJSTARtCoefcient
+t-Statistic
+Coefcient
+t-StatisticCoefcient
+t-Statistic
+Coefcient
+t-Statistic
+FEMALE
+0.03
+0.63
+0.08
+1.49
+0.15***3.25
+0.06
+1.30
+IISTAR
+0.27***
+5.73
+1.08***7.80
+2.53***60.58
+0.43***10.50
+WSJSTAR
+0.03
+0.47
+0.04
+0.53
+0.28***4.71
+0.62***13.04
+ALPHA
+0.09
+0.96
+0.15
+1.44
+0.03
+0.22
+0.04
+0.40
+EXPERIENCE
+0.00
+0.25
+0.00
+0.59
+0.03***6.00
+0.03***6.64
+COVERAGE
+0.14***
+3.93
+0.10***2.71
+0.12***2.66
+0.00
+0.11
+NREPORT
+0.33***5.23
+0.31***
+4.90
+0.10
+1.47
+0.04
+0.62
+NCOMPANY
+0.23***
+3.25
+0.22***3.00
+0.18**
+2.18
+0.27***3.69
+COMPANYSIZE
+0.07***
+5.47
+0.02
+1.20
+0.15***9.51
+0.05***4.18
+RESIRISK
+4.02***2.39
+4.62***
+2.88
+12.19***5.46
+5.52***2.93
+PCTSELL
+0.31**
+2.19
+0.29*
+1.75
+0.26
+1.50
+0.02
+0.10
+INTERCEPT
+1.93***18.31
+1.92***17.68
+2.70***21.13
+2.27***21.59
+Pseudo-R20.05
+0.03
+0.51
+0.08
+N
+23,329
+22,465
+21,203
+22,020
+Note: Table 3 reports the results of estimating probit models for both the mobility of analysts among brokerage rms and their being an I.I. or WSJ star, as expressed in Equation 4.
+*Signicant at the 10% level.
+**Signicant at the 5% level.
+***Signicant at the 1% level.
+
+92
+ 
+www.cfapubs.org
+ 
+©2013 CFA InstituteWe also tested different model specications. 
+Because some of the dependent variables are frac-
+tions (e.g., PCTSELL), we also performed logistic 
+regressions for these variables. Moreover, in addi-
+tion to panel regressions, we used FamaMacBeth 
+(1973) regressions to examine performance and 
+behavior. Again, these different specications did 
+not modify our conclusions.
+It is possible that individual analysts forecasts 
+and recommendations are not independent across 
+companies or over time. For example, Stickel (1990) 
+and Welch (2000) found evidence of herding in ana-
+lysts forecasts and recommendations, respectively. 
+Dependence across recommendations is likely to 
+introduce cross-sectional correlation in perfor
+-
+mance measures and, in turn, inate test statistics. 
+To address this potential problem, we excluded 
+recommendations whose time spans between the 
+recommendation and revision dates overlapped 
+with any prior recommendation for the same stock. 
+Although the resulting sample was only a subset 
+of the original sample, our results were similar to 
+those we presented earlier.
+Because nancial analysts are also industry 
+specialists, we further measured analyst per
+-
+formance and behavior against industry bench-
+marks. Following Boni and Womack (2006), we 
+used the 62 industries of the Standard & Poors/
+MSCI Barra Global Industry Classication System 
+(GICS) to classify industries. Boni and Womack 
+showed that industry groups constructed with 
+the 62 GICS industries are very good proxies for 
+Wall Street industry groups. They also showed that 
+the number of companies an analyst covers in her 
+most covered GICS industry (the industry with the 
+largest number of companies the analyst covers) is 
+more than 80% of the total number of companies 
+the analyst covers. They found that the value of 
+analyst recommendations lies in analysts ability 
+to pick stocks within industries. We conducted a 
+Notes1.
+ 
+Unfortunately, owing to 
+data availability constraints, we 
+were unable to extend our analysis beyond 2005.
+2.
+ 
+Each year, Institutional Investor
+ publishes its All-America 
+Research Team and the Wall Street Journal publishes its Best 
+on the Street analyst rankings. Here, we refer to the (sell-
+side) analysts in both groups as stars.
+3.
+ 
+First Call does not identify individual analysts, which pre-
+cludes 
+tracking analysts and merging the earnings fore-
+cast and investment recommendation databases. Zacks 
+Investment Research does not include such large rms as 
+Merrill Lynch, Goldman Sachs, and Donaldson, Lufkin & 
+Jenrette, which make up about 10% of all I/B/E/S recom-
+mendations. I/B/E/S includes all the major houses plus a 
+larger number of smaller houses.
+4.
+ 
+Chevalier and Ellison (1999) used two measures to examine 
+the risk-taking behavior of mutual fund managers, namely, 
+(1) r
+esidual return standard deviations in the market model 
+regression in which the mutual fund returns are the depen-
+dent variables and (2) absolute deviations of market betas 
+and residual return standard deviations of individual man-
+agers from the means of these two variables across all man-
+agers within a year. We similarly examined the same mea-
+sures for analysts. Because the results are similar, we report 
+only those for the residual return standard deviations in this 
+article.
+5.
+ 
+Formerly, the 
+WSJ published two sets of rankings, one based 
+on investment recommendations and the other on earnings 
+forecasts. The WSJ stopped providing the rankings based 
+on earnings forecasts in 2002. For brevity, we present only 
+the results based on the WSJs investment recommendation 
+rankings. We found similar results for the WSJs rankings 
+based on earnings forecasts.
+sensitivity analysis by using only the investment 
+recommendations in the analysts most covered 
+GICS industries. Our results are similar to these 
+industry benchmarks.
+For job mobility, we also dened top broker
+-
+age rms differently, using the number of analysts 
+employed or the annual IPO deal volume. Again, 
+we found similar results.ConclusionUsing a comprehensive sample of sell-side analyst 
+investment recommendations, we investigated dif-
+ferences in the performance, risk-taking and bias 
+behavior, and career outcomes of male and female 
+sell-side analysts over time.
+We found that the recommendations of female 
+analysts as compared with those of their male 
+counterparts produce similar abnormal returns but 
+with slightly lower idiosyncratic risks. Our results 
+suggest that female analysts underperform with 
+respect to their upgrade recommendations and 
+have little or no outperformance with their down-
+grades. This nding may be consistent with our 
+nding that female analysts tend to take less risk 
+in their recommendations than their male coun-
+terparts. Finally, our examination of the relation 
+between gender and career outcomes with respect 
+to job mobility among brokerage rms and 
+star 
+status based on Institutional Investor and Wall Street 
+Journal rankings found no evidence of discrimina-
+tion against female analysts. In fact, female analysts 
+seem to have a better chance of being recognized as 
+stars in both the 
+Institutional Investor and the Wall 
+Street Journal analyst rankings.
+We are grateful to Alok Kumar for providing gender data 
+for 20012005.This article qualies for 1 CE credit.
+
+Sell-Side Analysts and Gender
+March/April 2013
+ 
+www.cf
+apubs.org 
+ 
+936.
+ 
+This nding is consistent with Sunden and Surette (1998) 
+and Barber and Odean (2001), who found that females are 
+mor
+e risk averse and less overcondent than males among 
+individual investors. We also note that our results are gen-
+erally consistent with Kumar (2010), who found that female 
+analysts have greater forecast accuracy than male analysts.
+7.
+ 
+The EEOC led a class action lawsuit in 2001 on behalf of 
+about 100 women in Morgan Stanleys institutional stock 
+department, alleging 
+that the rm discriminated against 
+these employees in promotion, compensation, terms, 
+conditions, and privileges of employment; Morgan Stanley 
+settled the case for $54 million in 2004 and agreed to imple-
+ment far-reaching measures to enhance the role of women 
+in its work force (see http://online.wsj.com/article/0,
+,SB1000141174603082808.djm,00.html).
+8.
+ 
+We also estimated Equation 4 by adding analyst and broker
+-
+age rm xed ef
+fects and found similar results. Because the 
+coefcient estimates of xed-effect probit models are incon-
+sistent (see, e.g., Greene 2011), the results are not tabulated 
+but are available from the authors upon request.
+ReferencesBarber, Brad, and Terrance Odean. 2001. Boys Will Be Boys: 
+Gender, Overcondence, and Common Stock Investment. 
+Quarterly Journal of Economics, vol. 116, no. 1 (February):261292. 
+Black, Sandra, and Philip Strahan. 2001. The Division of Spoils: 
+Rent-Sharing and Discrimination in a Regulated Industry. 
+American Economic Review, vol. 91, no. 4 (September):814831. 
+Boni, Leslie, and Kent Womack. 2006. Analysts, Industries, and 
+Price Momentum. Journal of Financial and Quantitative Analysis, 
+vol. 41, no. 1 (March):85108. 
+Byrnes, James, David Miller, and William Schafer. 1999. Gender 
+Difference in Risk Taking: A Meta-Analysis. Psychological 
+Bulletin, vol. 125, no. 3 (May):367383. 
+Carhart, Mark. 1997. On Persistence in Mutual Fund 
+Performance. Journal of Finance, vol. 52, no. 1 (March):5782. 
+Chevalier, Judith, and Glenn Ellison. 1999. Career Concerns of 
+Mutual Fund Managers. Quarterly Journal of Economics, vol. 114, 
+no. 2 (May):389432. 
+Clement, Michael B. 1999. Analyst Forecast Accuracy: Do 
+Ability, Resources, and Portfolio Complexity Matter? Journal of 
+Accounting and Economics, vol. 27, no. 3 (July):285303. 
+Clement, Michael B., and Senyo Y. Tse. 2005. Financial Analyst 
+Characteristics and Herding Behavior in Forecasting. Journal of 
+Finance, vol. 60, no. 1 (February):307341. 
+Dollar, David, Raymond Fisman, and Roberta Gatti. 2001. Are 
+Women Really the Fairer Sex? Corruption and Women in 
+Government. 
+Journal of Economic Behavior & Organization, vol. 
+46, no. 4 (December):423429. 
+Emery, Douglas, and Xi Li. 2009. Are the Wall Street Analyst 
+Rankings Popularity Contests? Journal of Financial and 
+Quantitative Analysis, vol. 44, no. 2 (April):411437. 
+Fama, Eugene, and Kenneth French. 1993. Common Risk 
+Factors in the Returns on Stocks and Bonds. Journal of Financial 
+Economics, vol. 33, no. 1 (February):356. 
+Fama, Eugene, and James MacBeth. 1973. Risk, Return, and 
+Equilibrium: Empirical Tests. Journal of Political Economy, vol. 
+81, no. 3 (MayJune):607636. 
+Francis, Jennifer, and Leonard Soffer. 1997. The Relative 
+Informativeness of Analysts Stock Recommendations and 
+Earnings Forecast Revisions. Journal of Accounting Research, vol. 
+35, no. 2 (Autumn):193211. 
+Galant, Debbie. 1996. Can Wall Street Women Have It All? 
+Institutional Investor, vol. 30 (July):143146.
+Gneezy, Uri, Muriel Niederle, and Aldo Rustichini. 2003. 
+Performance in Competitive Environments: Gender 
+Differences. 
+Quarterly Journal of Economics, vol. 118, no. 3 
+(August):10491074. 
+Goertzel, T.G. 1983. That Gender Gap: Sex, Family Income, 
+and Political Opinions in the Early 1980s. Journal of Political and 
+Military Sociology, vol. 11, no. 2 (September):209222.
+Goldin, Claudia, and Cecilia Rouse. 2000. Orchestrating 
+Impartiality: The Impact of Blind Auditions on Female 
+Musicians. 
+American Economic Review, vol. 90, no. 4 
+(September):715741. 
+Green, Clifton. 2006. The Value of Client Access to Analyst 
+Recommendations. 
+Journal of Financial and Quantitative Analysis, 
+vol. 41, no. 1 (March):123. 
+Green, Clifton, Narasimhan Jegadeesh, and Yue Tang. 
+2009. Gender and Job Performance: Evidence from Wall 
+Street. 
+Financial Analysts Journal, vol. 65, no. 6 (November/
+December):6578. 
+Greene, William H. 2011. Econometric Analysis. 7th ed. Upper 
+Saddle River, NJ: Prentice Hall.
+Hong, Harrison, and Jeffrey Kubik. 2003. Analyzing the 
+Analysts: Career Concerns and Biased Earnings Forecasts. 
+Journal of Finance, vol. 58, no. 1 (February):313351. 
+Jacob, John, Thomas Lys, and Margaret Neale. 1999. Expertise 
+in Forecasting Performance of Security Analysts. Journal of 
+Accounting and Economics, vol. 28, no. 1 (November):5182. 
+Kothari, S.P. 2001. Capital Market Research in Accounting. 
+Journal of Accounting and Economics, vol. 31, no. 13 
+(September):105231. 
+Kumar, Alok. 2010. Self-Selection and the Forecasting Abilities 
+of Female Equity Analysts. Journal of Accounting Research, vol. 
+48, no. 2 (May):393435. 
+Lee, Charles M.C. 2001. Market Efciency and Accounting 
+Research: A Discussion of Capital Market Research in 
+Accounting by S.P. Kothari. Journal of Accounting and Economics, 
+vol. 31, no. 13 (September):233253. 
+Li, Xi. 2005. The Persistence of Relative Performance in Stock 
+Recommendations of Sell-Side Financial Analysts. Journal of 
+Accounting and Economics, vol. 40, no. 13 (December):129152. 
+Li, Xi, and Ronald Masulis. 2007. The Equity Ownership of 
+Brokerage Firms in IPOs and the Stock Recommendations of 
+Sell-Side Analysts. Working paper.
+Lin, Hsiou-Wei, and Maureen McNichols. 1998. Underwriting 
+Relationships, Analysts Earnings Forecasts and Investment 
+Recommendations. 
+Journal of Accounting and Economics, vol. 25, 
+no. 1 (February):101127. 
+Loh, Roger, and G. Mujtaba Mian. 2006. Do Accurate Earnings 
+Forecasts Facilitate Superior Investment Recommendations? 
+Journal of Financial Economics, vol. 80, no. 2 (May):455483. 
+
+94
+ 
+www.cfapubs.org
+ 
+©2013 CFA InstituteLys, Thomas, and Sungkyu Sohn. 1990. The Association 
+between Revisions of Financial Analysts Earnings Forecasts and 
+Security-Price Changes. Journal of Accounting and Economics, vol. 
+13, no. 4 (December):341363. 
+Michaely, Roni, and Kent Womack. 1999. Conict of Interest 
+and the Credibility of Underwriter Analyst Recommendations. 
+Review of Financial Studies, vol. 12, no. 4 (July):653686. 
+Niederle, Muriel, and Lise Vesterlund. 2007. Do Women 
+Shy Away from Competition? Do Men Compete Too 
+Much? 
+Quarterly Journal of Economics, vol. 122, no. 3 
+(August):10671101. 
+Ones, Deniz, and Chockalingam Viswesvaran. 1998. Gender, 
+Age, and Race Differences on Overt Integrity Tests: Results across 
+Four Large-Scale Job Applicant Datasets. Journal of Applied 
+Psychology, vol. 83, no. 1 (February):3542. 
+Opdyke, Jeff. 2002. Should You Trust Wall Streets New Rating? 
+Wall Street Journal (17 July).
+Piotroski, Joseph, and Darren Roulstone. 2004. The Inuence of 
+Analysts, Institutional Investors, and Insiders on the Incorporation 
+of Market, Industry, and Firm-Specic Information into Stock 
+Prices. Accounting Review, vol. 79, no. 4 (October):11191151. 
+Reiss, Michelle, and Kaushik Mitra. 1998. The Effects of 
+Individual Difference Factors on the Acceptability of Ethical and 
+Unethical Workplace Behaviors. Journal of Business Ethics, vol. 
+17, no. 14 (October):15811593. 
+Smith, R., S. Craig, and D. Solomon. 2003. Wall Street 
+Firms to Pay $1.4 Billion to End InquiryRecord Payment 
+Settles Conflict-of-Interest Charges. Wall Street Journal (29 
+April):A1.
+Sorescu, Sorin, and Avanidhar Subrahmanyam. 2006. The Cross 
+Section of Analyst Recommendations. Journal of Financial and 
+Quantitative Analysis, vol. 41, no. 1 (March):139166. 
+Stickel, Scott E. 1990. Predicting Individual Analyst Earnings 
+Forecasts. 
+Journal of Accounting Research, vol. 28, no. 2 
+(Autumn):409417. 
+. 1992. Reputation and Performance among Security 
+Analysts. 
+Journal of Finance, vol. 47, no. 5 (December):18111836. 
+. 1995. The Anatomy of the Performance of Buy and 
+Sell Recommendations. Financial Analysts Journal, vol. 51, no. 5 
+(September/October):2539. 
+Sunden, Annika, and Brian Surette. 1998. Gender Differences in 
+the Allocation of Assets in Retirement Savings Plans. American 
+Economic Review, vol. 88, no. 2 (May):207211.
+Welch, Ivo. 2000. Herding among Security Analysts. Journal of 
+Financial Economics, vol. 58, no. 3 (December):369396. 
+Wenneras, Christine, and Agnes Wold. 1997. Nepotism 
+and Sexism in Peer-Review. Nature, vol. 387, no. 6631 (22 
+May):341343. 
+Womack, Kent L. 1996. Do Brokerage Analysts 
+Recommendations Have Investment Value? Journal of Finance, 
+vol. 51, no. 1 (March):137167. 
+
+Sell-Side Analysts and Gender: A Comparison of
+ Performance, Behavior
+, and Career Outcomes 
+Copyright 2013, CFA Institute. Reproduced and republished from 
+Financial Analysts Journal with permission from CFA 
+Institute. All rights reserved. 
+
+Financial Analysts Journal

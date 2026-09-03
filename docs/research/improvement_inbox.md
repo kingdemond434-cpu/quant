@@ -6223,3 +6223,41 @@ is unchanged and now properly attributed: at `a`=0.001 the real signal returns g
 0.41–0.51 against an honest static vol-scaled always-long book at **0.35**, so the momentum timing
 buys ~0.06–0.16 gross Sharpe and **every** cell is negative net of the tape's own spread beyond
 `a` ≥ 0.05. **No pass/fail path is attached to any number here (L1.60).**
+
+## s57 (2026-09-03) — variance-ratio streakiness as a candidate-SELECTION diagnostic
+
+**Source:** AQR *Alternative Thinking* 2025 Issue 2, "The Hidden Value of Streaky Returns in
+Stock Portfolios" (PSG; Fattouche/Hecht/Kelly/Liew/Sachdev), extracted from
+`data/external/aqr/pdftext/the-hidden-value-of-streaky-returns-in-stock-portfolios.txt`.
+**DERIVES-FROM:** NONE (checked) — the desk holds no prior VR/streakiness note; `vault_search`
+returns nothing on "variance ratio streakiness". Readable only after the R0769 extractor fix;
+the pre-fix extraction of this file was 20,486 chars vs 39,392 and the mechanism section was in
+the discarded half.
+
+**Mechanism, not formula.** Streakiness — a return stream performing well or badly for extended
+runs — is a *complexity* risk (hard to hold, hard to size, monthly risk understates true risk).
+AQR's claim is that the marketplace PAYS for bearing it: high variance-ratio factors realise
+~2x the long-run Sharpe of low-VR factors on the Jensen-Kelly-Pedersen 153-factor database.
+The transferable part is not the equity factors — it is the STATISTIC (VR(q) = Var(q-sum)/(q·Var(1)))
+used as a property of a *strategy's own return stream*, which is universe-independent.
+
+**Measured on MT5 ground** (`data/brain_hunter_s57_streakiness.py`, screen +control artifacts).
+250 symbols × 4 TSMOM lookbacks (24/72/168/336 H1 bars), VR(q=20) on the first half of each
+stream, Sharpe on the disjoint second half. Sign declared POSITIVE before measurement.
+
+| arm | result |
+|---|---|
+| VR_first → Sharpe_second | ρ = **+0.167**, p = 1.1e-7 (3/4 lookbacks sig.) |
+| tercile hi vs lo mean Sharpe | −0.140 vs −0.468, Welch t = 4.35 |
+| circularity control (both full-sample) | ρ = +0.135 — *weaker* than the disjoint arm |
+| persistence control: VR_first → Sharpe_first | ρ = +0.025, **p = 0.43** |
+| partial, controlling Sharpe_first | +0.165 |
+| bounce control: VR_first → lag-1 autocorr(returns) | **ρ = +0.290** |
+| partial, controlling lag-1 autocorr | **+0.092**, p = 0.003 |
+
+**Verdict.** The sign replicates and is not circular and not symbol-quality persistence — but
+~45% of it is bid-ask bounce, and **both terciles are negative gross**, so this ranks an
+unprofitable population. Under L1.57 that is not a card and gets no clock. **Route: adopt VR as
+a reported diagnostic on generated candidates (alongside turnover and fitness), never as a gate
+and never as a threshold** — same standing as `wq_operators.fitness()`, which deliberately has
+no pass/fail path.

@@ -1,0 +1,1337 @@
+Thinking 
+Relaxed-Constraint Portfolios: 
+Ignore
+d bu
+t N
+ot Forgotten 
+We
+ discuss
+ how
+ active
+ equity
+ 
+ can
+ raise 
+expected
+ returns
+ of
+ their
+ portfolios
+ by
+ relaxing
+ the 
+long-
+identify
+ good
+
+ stocks
+ with
+ high
+ expected
+ returns
+ and 
+bad
+ stocks
+ with
+ low
+ expected
+ returns,
+ but
+ managers 
+can only partially take advantage of these insights in 
+
+bad
+ stocks
+ gives
+ them
+ 
+their
+ negative
+ views
+ and
+ in
+ turn
+ the
+ ability
+ to
+ take 
+larger
+ positions
+ in
+ the
+ favored
+ stocks,
+ giving
+ rise
+ to 
+better overall performance. Based on simulations and 
+historical
+ evidence
+ we
+ confirm
+ that
+ this
+ effect
+ has 
+allow
+ed
+ so
+-called
+ 120/20
+ and
+ 130/30
+ strategies
+ to 
+meaningfully
+ improve
+ returns.
+ We
+ show
+ that
+ the 
+investment community has largely turned away from 
+these
+ 
+ but
+ our
+ findings
+ suggest
+ that
+ they 
+should take a renewed look.
+ 
+ 
+AQR Capital Management, LLC 
+ Greenwich Plaza 
+Greenwich, CT 06830 
+p:
+ 
++1.203.742.3600
+
+ 
+f: 
+ 
++1.203.742.3100
+ 
+w:
+ 
+aqr.com
+ 
+Alternative
+ 
+Second Quarter 2016
+ 
+
++#77''3773#'Ô!'j!b!!b!j'é.5
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+1 
+1.
+Relaxed constraints: A largely forgotten 
+concept 
+To generate excess returns, active equity managers 
+take deviations from the benchmark (tracking error
+, 
+or TE). Allocators and consultants hope that these 
+deviations generate both an attractive r
+isk
+-reward 
+ratio
+1
+ and a high level of excess returns. However, 
+increased focus on the latter may lead to a
+n 
+undesirable tradeoff between the two goals. For 
+instance, in a low return environment, investors 
+hoping to earn particularly high excess returns may 
+push their managers to increase active risk to levels 
+where there is a diminishing benefit to doing so, 
+leading to inferior risk-adjusted returns.  
+About a decade ago the investment community 
+embraced a powerful approach that helps alleviate 
+this tradeoff: relaxing the long-only constraint, for 
+example in a 130/30 or a 120/20 format. These 
+strategies had their heyday in the mid-2000s, but 
+their popularity has all but disappeared since then. 
+This is unfortunate. The concepts behind these 
+1
+ Information ratio is a commonly-used measure of risk-adjusted returns 
+relative to a benchmark. It is the ratio of active return (alpha) over active 
+risk (tracking error).
+ 
+strategies remain as valid as ever, even if the 
+investment community no longer talks about them.  
+Exhibit 1 is a telling illustration of the decline in 
+investor interest. It presents the incidence of the 
+initial spike in popularity, the interest dropped to 
+almost zero, with nothing but crickets for the past 
+few years.  
+Unfortunately, the lack of interest is not consistent 
+with the strategies
+instead, the result of (short-term) performance 
+during the Global Financial Crisis. We believe that, 
+ironically, the strategies fell out of favor because 
+they did precisely what they were supposed to do: 
+models. By doing so, they amplified any negative 
+performance such models experienced 
+ and many 
+of these models had at least one bad year between 
+2007 and 2009.
+2
+  
+Despite these difficult years, relaxed-constraint 
+strategies have performed strongly over time. There 
+2
+ For a more detailed discussion of the history of relaxed-constraint 
+strategies, see for example D.E. Shaw (2012). For a more detailed 
+discussion of relaxed-
+experience, see the upcoming Reflections whitepaper by Aghassi, 
+Feghali, McQuinn, and Villalon (2016).
+ 
+Exhibit 1
+  
+|  
+Relaxed
+-
+constraint port
+folios 
+ 
+still relevant even though people stopped looking for them. 
+ 
+has been
+ 
+entered over time
+.  Google Trend
+s 
+reports 
+weekly search activity
+ 
+relative to total search volume
+,
+ 
+scal
+ing
+ 
+data so that the highest week = 100
+. We then 
+smooth the series
+ 
+and display the 
+average sea
+rch intensity per month.
+ 
+ 
+Source: Google Trends
+ 
+(www.google.com/trends)
+, accessed 4/13/2016.
+ 
+0%
+10%
+20%
+30%
+40%
+50%
+60%
+70%
+Jan-04
+Jan-06
+Jan-08
+Jan-10
+Jan-12
+Jan-14
+Jan-16
+Search Intensity vs. Peak 
+(Smoothed)
+ 
+
+2
+ 
+Alternative Thinking   |  
+Relaxed
+-
+Constraint Portfolios: Ignored but Not Forgotten
+ 
+ 
+ 
+are no generic relaxed
+-
+constraint equity indices 
+so 
+we collected a composite of managers from
+ 
+the
+ 
+eVestment 
+Alliance 
+database, searching for 
+all 
+managers with matching relaxed
+-
+constra
+int and 
+long
+-
+only mandates on the global equity universe 
+and at least eight years track record (from early 2008 
+to early 2016).
+3
+ 
+T
+he
+se
+ 
+relaxed
+-
+constrain
+t
+ 
+portfolios 
+have had attractive performance on a standalone 
+basis 
+and
+ 
+relative to the overall benchmark
+, 
+despite 
+some early underperformance. T
+hey have realized 
+similar 
+information ratios (
+IRs
+)
+ 
+as matching 
+long
+-
+only 
+portfolios (
+averaging 0.8
+ 
+across managers
+)
+ 
+while achieving much higher 
+active risk levels 
+(averaging 4.5% TE compared to long
+-
+only 
+Consequently, they 
+also realized considerably higher excess 
+of 
+benchmark 
+returns
+ 
+(3.2% average for relaxed
+-
+constraint, 1.5% for long
+-
+only)
+.
+4
+ 
+                                        
+                    
+ 
+3
+ 
+To construct our sample
+ 
+we star
+ted with the list of all USD denominated 
+global relaxed
+-
+constraint (Investment Focus category "extended equity") 
+managers in the eVestment Alliance database (there were 12) and then 
+matched them with long
+-
+only global equity strategies run by the same 
+firm.
+ 
+Of those strategies, we only retained the ones where the names of 
+the long
+-
+only and relaxed
+-
+constraint versions matched, for example, 
+"Global Equity" and "Global Equity 130/30." We require eight years of 
+data, from March 2008 through March 2016. The resul
+ting sample is five 
+strategy pairs from five different managers.
+ 
+4
+ 
+Requiring an eight
+-
+year long track record gave us five managers with 
+ 
+Simply raising the 
+active risk 
+of long
+-
+only 
+strategies
+ 
+may
+ 
+not 
+help investors limited to long
+-
+only 
+investments
+ 
+match the excess returns of 
+relaxed
+-
+constraint strategies
+.
+ 
+As alluded to earlier, 
+there can 
+be meaningful degradations in IR at higher levels of 
+TE
+ 
+in long
+-
+only por
+tfolios
+. For instance, a pure 
+stock selection strategy that is long
+-
+only and 
+neutralizes systematic risks like market beta, 
+country, and industry exposures will tend to offer a 
+highly diversified collection 
+of active tilts and may 
+thereby 
+have difficulty a
+chieving a high TE. 
+Concentration and systematic exposures are easy 
+ways to increase active risk, but as shown in Frazzini 
+et al. (2016), managers may not necessarily get 
+higher active returns merely by taking on more risk.
+ 
+To illustrate this point, we ran
+ 
+a Barra risk 
+decomposition on holdings data of 
+the 
+global 
+mutual funds in the Thomson Reuters database. 
+Exhibit 2 shows the contributions to active risk from 
+various types of risk for funds 
+at different TE levels 
+(based on 
+TE
+s
+ 
+estimated from their holding
+s as of 
+                                        
+                                        
+                      
+ 
+matching relaxed
+-
+constraint and long
+-
+only global equity portfolios. 
+Requiring a ninth year (to include 2007) would have 
+reduced the manager 
+universe from five to three. When we studied a seven
+-
+year track record 
+(dropping 2008), results were similar to those of the eight
+-
+year track 
+record with the one difference that the relaxed
+-
+constraint portfolios had 
+higher IRs than long
+-
+only portfolios. Returns are gross of fees. 
+ 
+Exhibit 2
+  
+|  
+ 
+High TE managers are relat
+ively more exposed to currency and country risks, but relatively 
+less exposed to stock
+-
+specific risks.
+ 
+We use December 31, 2015 holdings of all mutual funds benchmarked to 
+MSCI World, as reported in the Thomson Reuters holdings database, to run a risk deco
+mposition analysis. 
+ 
+from currency, country, industry, styles, and stock specific risks. We present the average contributions (expressed 
+a
+s
+ 
+the frac
+tion of the tracking error) for five groupings of funds sorted on their overall tracking error.
+ 
+ 
+ 
+Percentage contribution from:
+ 
+ 
+ 
+Systematic Risks
+ 
+Stock
+-
+Specific Risks
+ 
+ 
+Average TE
+ 
+C
+urrency
+ 
+Country
+ 
+Industry
+ 
+Style
+ 
+Concentration
+ 
+1 (lowest TE)
+ 
+0.3%
+ 
+8%
+ 
+12%
+ 
+6%
+ 
+7%
+ 
+68%
+ 
+2
+ 
+1.1%
+ 
+7%
+ 
+19%
+ 
+11%
+ 
+16%
+ 
+46%
+ 
+3
+ 
+2.1%
+ 
+17%
+ 
+22%
+ 
+13%
+ 
+22%
+ 
+26%
+ 
+4
+ 
+3.0%
+ 
+19%
+ 
+34%
+ 
+10%
+ 
+16%
+ 
+20%
+ 
+5 (highest TE)
+ 
+5.3%
+ 
+31%
+ 
+27%
+ 
+12%
+ 
+14%
+ 
+16%
+ 
+ 
+Source: Thomson Reuters, Barra
+. 
+Past performance is not a guarantee of future performance.
+ 
+
+ 
+ 
+Alternative Thinking   |  
+Relaxed
+-
+Constraint Portfolios: Ignored but Not Forgotten
+ 
+3
+ 
+ 
+December 31, 2015
+)
+. In principle, higher TE may 
+come either from 
+stock
+-
+specif
+i
+c risk by increasing 
+concentration (making fewer bets), or it may come 
+from taking on more systematic risks. In practice, 
+the second driver tends to be more dominant
+, 
+gen
+erally increasing with TE
+. High TE funds tend to 
+be 
+most
+ 
+exposed to currency and country risks, with 
+the two dimensions contributing 
+almost three times 
+as much to the active risk for funds in the top TE 
+quintile than for funds in the bottom TE quintile. At
+ 
+the same time, the contribution of stock
+-
+specific 
+risks is substantially smaller for high TE funds. This 
+may be
+ 
+an issue if stock
+-
+specific risks are better 
+compensated than country or industry tilts, which is 
+a reasonable assumption to make for the follow
+ing 
+reasons
+:
+ 
+t
+wo stocks within the same industry tend to 
+be more comparable than two industries or two 
+countries
+, and 
+there are more individual stocks 
+available for comparison than there are individual 
+industries or coun
+t
+ries. 
+If this is the case, we would 
+expect excess returns per unit of active risk to 
+deteriorate, as higher TE 
+strategies
+ 
+get more and 
+more of their risk from less compensated risks.
+ 
+To check whether excess returns per unit of active 
+risk 
+do 
+indeed deteriorate
+,
+ 
+we again turn to the data
+. 
+We look at the 10
+-
+year TE and IR for 
+global equity 
+portfolio returns reported in the eVestment Alliance 
+database. Exhibit 3 presents the relationship 
+between 
+the two quantities. Empirically, high
+-
+TE global equity 
+managers tend to earn lower IRs than low
+-
+TE 
+managers. That is, even though the level of excess 
+returns may be higher for the former, their risk
+-
+adjusted returns are somewhat lower. The 
+relation
+ship flattens beyond TEs of about 10%, but at 
+that stage IR is relatively close to zero anyway.
+ 
+ 
+2. The relaxed
+-
+constraint value proposition
+ 
+ 
+As discussed, we think investors interested in higher 
+active returns could do better with relaxed
+-
+Exhibit 
+3
+  
+|
+  
+Higher TE ten
+ds to resu
+lt in lower IR i
+n
+ 
+long
+-
+only 
+ 
+ 
+returns.
+ 
+We 
+present the 
+relationship between the TE and IR, computed using 10 years of data
+ 
+(January 2006
+December 2015)
+. The 
+figure shows 
+funds
+ 
+managed to MSCI World family of benchmarks (including MSCI World ND, MSCI 
+World GD, as well as the variants of the benchmar
+k that exclude smaller regions: ex Australia, ex UK, ex 
+Canada, and ex Switzerland), excluding those with TE below 50bps, as of the end of 2
+015.
+ 
+ 
+Source: eVestment Alliance. Past performance is not a guarantee of future performance.
+ 
+-1.00
+-.50
+.00
+.50
+1.00
+1.50
+2.00
+0%
+5%
+10%
+15%
+20%
+Information Ratio
+ 
+Tracking Error
+ 
+
+4 
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+constraint, say 130/30, strategies. Relaxing the long-
+only constraint may help investors attain higher 
+active risk without necessarily having to reduce 
+diversification or take large bets on countries
+, 
+currencies, or industries. Compared to Exhibit 2, 
+relaxed-constraint strategies could perhaps be 
+expected to have risk contributions similar to low-
+to
+-
+medium TE funds, while achieving active risks in 
+line with those of the high TE funds. 
+This argument is backed by strong economic 
+intuition. Benchmark-relative portfolios should be 
+negative views on attractive and unattractive stocks, 
+respectively. For portfolios that seek low active risk, 
+the translation of these views into active portfolio 
+weights is fairly efficient. Low risk requires only 
+small active weights, which may be comfortably 
+implemented in a long-only portfolio where negative 
+views can only go to a maximum underweight of 
+zero holding (and conversely positive views can be 
+implemented only up to an offsetting amount)
+. 
+However, as desired active risk increases, the 
+magnitude of desired negative tilts increases. The 
+zero floor eventually becom
+es
+ 
+a 
+binding constraint 
+as desired tilts 
+benchmark weights, causing distortions in the 
+portfolio. 
+In contrast, relaxed-constraint portfolios are capable 
+even as TE increases. Allowing some shorting 
+means that the portfolio can increase the size of its 
+benchmark.
+5
+ In other words, relaxing the long-only 
+constraint can 
+transfer coefficient, that is, the correlation between 
+(desired active weights). To the extent that the vie
+w 
+works (i.e., leads to higher returns in the future) this 
+will improve investment results. Of course, if the 
+5
+ The portfolio is then also able to hold larger overweights as well 
+ such 
+overweights can now be balanced by larger underweights and short 
+positions, such that the portfolio remains risk controlled and well 
+diversified. Diversification does not eliminate the risk of experiencing 
+investment losses. 
+view underperforms, the relaxed-constraint portfolio 
+will likely suffer more. 
+To illustrate these arguments in a simple and fairly 
+generic setting, we construct hypothetical long-only 
+and relaxed-constraint 130/30 portfolios that will help 
+us understand the consequences of deploying more 
+active risk. We use the same model and the same data 
+to build the two portfolios. We combine two well-
+known styles, value and momentum,
+6
+ as in Asness et 
+al. (2015) using a developed stock universe, similar to 
+MSCI World index constituents, over the period of 
+1995-2015. We account for the estimated trading costs 
+using a transaction costs model, based on live trading 
+data, similar to Frazzini, Israel, and Moskowitz 
+(2015). For the 130/30 portfolio, we also account for 
+the cost of shorting and the funding costs for the long 
+extension (the additional 30% of long exposure). We 
+believe the assumed shorting/funding costs are 
+conservative relative to the actual costs of 130/30 
+strategies. 
+Exhibit 4 presents a frontier of these long-only and 
+130/30 portfolios with increasing TE.
+7
+ Panel A shows 
+how much relaxing constraints helps, both ex ante 
+(using transfer coefficient, or TC, as defined above) 
+and ex post (realized net IR, which illustrates excess 
+return earned per unit of active risk). The results 
+overall confirm our first principles discussion, but 
+also allow us to highlight some nuances. Targeting 
+higher active risk indeed makes it more difficult to 
+align the portfolio with the model (TC drops) and 
+generally leads to lower realized IRs. The drop in IR, 
+apparent for both long-only and 130/30 portfolios, is 
+entirely driven by taking on more active risk. Excess 
+returns do go up mildly when TE increases 
+(although for the long-only strategy excess returns 
+flatten once TE exceeds 5%), but not enough to keep 
+6
+ We use book-
+to
+-
+most recent month, for momentum. 
+7
+ We focus on 130/30 portfolios here (that is, holding 130% of NAV in 
+long positions and 30% in short positions; netting to the same 100% as a 
+long-only portfolio), but our points generalize also for other relaxed-
+constraint portfolios, say 120/20 or 140/40. Prior research (e.g., Grinold 
+and Kahn, 2000) suggests that even a mild relaxation could go a long way 
+toward improving performance. We find the greatest improvements come 
+from the first 20-30% of shorting; beyond that, we see a lesser impact. 
+
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+5 
+Exhibit 
+4  
+|
+ 
+ 
+As TE increa
+ses, long
+-
+only portfolios become increasingly inferior to 130/30 ones.
+ 
+ 
+We construct hypothetical long
+-
+only and 130/30 portfolios based on value and momentum indicators 
+ 
+(book
+-
+to
+-
+market and past year returns, respectively). Portfolios are built on a global
+ 
+equity universe similar 
+to MSCI World, for a range of TEs. Panel A shows how ex ante portfolio attractiveness (Transfer Coefficient, 
+capturing the similarity between the portfolio and its underlying model view, right axis) and realized net 
+performance (IR
+ 
+net of estimated transaction costs and costs of shorting/financing for 130/30 portfolios, 
+ 
+left axis) change as a function of the TE of the two portfolios. Panel B shows net returns in excess of the 
+MSCI 
+World 
+benchmark, again as a function of the TE, and
+ 
+plots the 45
+-
+degree line that indicates the level of excess 
+returns that the long
+-
+only portfolio would achieve if it could preserve the same IR for higher levels of TE
+.
+ 
+ 
+Panel A:
+ 
+Information ratio and transfer coefficient as a function of tracking error.
+ 
+Panel B:
+ 
+Excess returns as a function of tracking error.
+ 
+Source: AQR. Based on hypothetical backtest run from January 1995 through December 2015. Hypothetical  performance results ha
+ve certain inherent 
+limitations, some of which are disclosed in 
+the back.
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1.0
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1.0
+1%
+2%
+3%
+4%
+5%
+6%
+7%
+Transfer Coefficient
+ 
+Information Ratio
+ 
+Tracking Error
+ 
+Long only IR (left axis)
+130/30 IR (left axis)
+Long only TC (right axis)
+130/30 TC (right axis)
+0.0%
+0.5%
+1.0%
+1.5%
+2.0%
+2.5%
+3.0%
+3.5%
+4.0%
+4.5%
+5.0%
+1%
+2%
+3%
+4%
+5%
+6%
+7%
+Tracking Error
+ 
+Long only
+130/30
+Constant IR
+
+6
+ 
+Alternative Thinking   |  
+Relaxed
+-
+Constraint Portfolios: Ignored but Not Forgotten
+ 
+ 
+ 
+pace with active risk. Consequently, the risk
+-
+return 
+tradeoff worsens.
+8
+ 
+Importantly, the decay in excess returns per unit of 
+active risk is much more pronounced for long
+-
+only 
+strategies. Moreover, the difference between the two 
+approaches widens
+ 
+as TE goes up. For TE of 2%, the 
+130/30 framework improves the TC by 20% and 
+increases excess returns (and the realized IR) by 
+about 30%, but for the highest TEs presented in 
+Exhibit 4 these improvements jump to about 40% 
+and 90%, respectively. Put differ
+ently, the long
+-
+only 
+portfolio achieves its highest TC and IR at around 
+1% TE, but the 130/30 beats or matches these figures 
+all the way to about 6% TE. Panel B translates this 
+evidence into excess returns and shows that higher 
+active risk makes the 130/30
+ 
+portfolio increasingly 
+more attractive than the long
+-
+only portfolio. These 
+patterns generalize beyond our simple value
+-
+momentum example. Even with a more powerful 
+model, the long
+-
+only constraint will eventually 
+induce a distortion large enough to consider
+ably 
+handicap the long
+-
+only portfolio versus the relaxed
+-
+constraint one. This distortion will still allow 
+investors to deploy more risk in a long
+-
+only 
+framework, but unfortunately it will prevent them 
+from earning much of the potential compensation 
+from th
+at active risk.
+9
+ 
+ 
+3. Costs of relaxing the long
+-
+only constraint
+ 
+Of course, the benefits of relaxed
+-
+constraint 
+strategies are not a free lunch. These strategies 
+entail more complexity than traditional long
+-
+only 
+portfolios and may also expose investors and 
+                                        
+                    
+ 
+8
+ 
+For very
+ 
+low values of TE, the IR of the 130/30 actually increases in 
+active risk. This occurs because we are forcing the 130/30 portfolio to 
+short 30% of NAV even at low levels of TE that could have been obtained 
+without any shorting. For example, Clarke, de Silv
+a, and Sapra (2004) 
+optimization is dominated by the need to restrict tracking error at a 
+ 
+9
+ 
+Differences in performance should be apparent over the long
+ 
+term, but 
+not necessarily over a shorter period (quarter, year). Moreover, we expect 
+excess returns of the two strategies to be highly, but certainly not 
+perfectly correlated even if they share the same model. Distortions on 
+both the short and long side w
+ill lead to differences in holdings and in 
+performance between the two strategies. Past performance is not a 
+guarantee of future performance.
+ 
+managers to additional challenges. While a 130/30 
+strategy may be no more than 100% net invested, it 
+will still have gross exposure of 160% of NAV, as 
+opposed to 100% for a long
+-
+only strategy. The use of 
+leverage and shorting poses additional risk 
+manageme
+nt
+ 
+challenges for managers,
+ 
+such as
+ 
+being more exposed to
+ 
+deleveraging and forcing 
+managers to monitor
+ 
+the stability of their
+ 
+counterparties
+ 
+or prime brokers.
+10
+ 
+In addition, relaxed
+-
+constraint strategies require 
+specific expertise. Managers of such portfolios must 
+be able to identify not only promising companies 
+but also poor prospects to underweight or short. 
+ 
+Such a skill may not be obvious: a manager used to 
+fi
+nding 100 stocks with some promise and 
+identifying 30 truly worthy holdings may not have 
+the experience necessary to select 100 potential duds 
+and short 30 that are truly horrible.
+11
+ 
+Additional 
+expertise is also required for implementing short 
+positions. Th
+e cost of shorting means that subpar 
+implementation may quickly erode potential 
+benefits of relaxed
+-
+constraint strategies. 
+ 
+Trading expertise is in fact important beyond just 
+shorting, as relaxed
+-
+constraint portfolios tend to have 
+higher turnover than thei
+r long
+-
+only counterparts 
+(e.g., if the typical holding period is one year, a 130/30 
+strategy will generate turnover of the order of 160% 
+per year, versus 100% for a 100/0 portfolio). Thus, 
+relaxed
+-
+constraint strategies will amplify differences 
+ 
+ability to trade cheaply and efficiently, 
+or to obtain cheap financing for the extended 
+positions on the long side of the portfolio. 
+ 
+Not surprisingly, we believe that the benefits of 
+relaxed
+-
+constraint strategies justify the added costs, 
+risks and comple
+xity. For example, our analysis 
+presented in Exhibit 4 suggests that at 4% TE, the 
+                                        
+                    
+ 
+10
+ 
+These risks are not insurmountable 
+ 
+managers may decide to use 
+enhanced custody to alleviate counterparty issue
+s, etc.
+ 
+11
+ 
+One could perhaps argue that quantitative managers tend to think more 
+themselves more naturally to the relaxed
+-
+constraint format. However, we 
+believe that relaxed
+-
+constraint 
+strategies will also benefit discretionary 
+managers. Indeed, the patterns we documented in Exhibits 2 and 3 used 
+data on all managers available in the database, including both quant and 
+fundamental strategies.
+ 
+
+ 
+ 
+Alternative Thinking   |  
+Relaxed
+-
+Constraint Portfolios: Ignored but Not Forgotten
+ 
+7
+ 
+ 
+130/30 strategy may deliver as much as 1% more in 
+excess returns than the long
+-
+only strategy over the 
+long term. This figure, which is net of estimated 
+trading costs and cos
+ts of shorting/leverage, 
+comfortably exceeds plausible differences in fees
+ 
+between long
+-
+only and relaxed
+-
+constraint strategies
+. 
+We expect that many, although clearly not all,
+ 
+investors would be well positioned to adopt relaxed
+-
+constraint strategies and rea
+lize such benefits in 
+practice
+. 
+ 
+ 
+4. 
+Conclusion
+s
+ 
+Investors who seek higher returns in their equity 
+portfolios should be interested in relaxed
+-
+constraint 
+strategies. Such strategies may achieve higher returns 
+without unduly increasing active risk, and 
+thus 
+deliver 
+high
+er
+ 
+risk
+-
+adjusted performance (e.g., IR) in the 
+process.
+ 
+Alongside potential benefits we also highlight the 
+costs of a relaxed
+-
+constraint approach. We 
+recommend each institution review whether 
+relaxing constraints and shorting is a possibility, 
+particularly if its risk budget allows for strategies 
+that seek higher TE. Relaxed
+-
+constraint strategies 
+appear to be a promising way to increase active risk, 
+maintain 
+or even improve 
+IR and boost total 
+returns. 
+ 
+Finally, why stop at only partial 
+relaxation of the 
+long
+-
+only constraint? Long
+/
+short portfolios have 
+much to offer and we do find them useful across 
+various asset classes.
+12
+ 
+However, they may clash too 
+much with many investor constraints and could face 
+capacity limits. Moreover, for most in
+vestors they 
+belong in the alternatives allocation. In contrast, 
+relaxed
+-
+constraint portfolios are designed to provide 
+investors with full market exposure. As such, 
+we 
+believe 
+allocations, and can be considered valid a
+lternatives 
+and potential replacements for long
+-
+only mandates
+.
+ 
+ 
+                                        
+                    
+ 
+12
+ 
+Asness et al. (2015). 
+ 
+
+8 
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+References 
+Aghassi, Michele, Gabriel 
+Ugly Duckling No 
+Longer: A Decade of Relaxed-Constraint Strategies
+Reflections whitepaper. 
+Journal of Investment Management
+, 13:1. 
+-Efficient 
+Portfolios: Relaxing the Long-
+Journal of Portfolio Management
+, Vol. 31, No. 1, 54-63. 
+4, No. 2.
+Financial Analysts Journal
+, 
+Vol. 72
+, No.
+ 2. 
+Frazzini, Andrea, Ronen Israel, and Tobias J. 
+ 
+-
+Financial Analysts Journal
+, Vol. 56, No. 6, 40-
+53.
+ 
+Appendix 
+Backtesting Methodology: 
+Universe: Liquid tradable universe roughly equivalent to the MSCI World Index
+Monthly rebalancing frequency for the backtesting period January 1995 to December 2015
+Risk Model: Barra Global Equity Model (GEM) from 1995 to 1998; Barra BIMDEV301L from 1999 to
+present
+For the 130/30 portfolio, we also account for the cost of shorting (the shorting fee) as well as the funding
+costs for the long extension (the additional 30% of long exposure).
+
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+9 
+Disclosures 
+T
+
+Alternative Thinking   |  
+Relaxed-Constraint Portfolios: Ignored but Not Forgotten
+ 
+
+AQR Capital Management, LLC 
+ Greenwich 
+Plaza, Greenwich, 
+CT 06830 
+p: +1.203.742.3600  I  f: 
++1.
+203.742.3100  I  w: aqr.com 
+
+ &56W>"     7ÿöS* : F@C	 #"B   j h S CC S D   : :+%'$+3>7'7733>323267#"&54>54&#"7M!!ES^2@1K-!%	49<6/=ve$1hÀ§3;pII'moa,&:B#!;HPK@&C[kv;   ÿöJð  5 <@9.-B   [ S C S D 42
+
+
+vbS%IF%%!&S3++@%16
+vbS%

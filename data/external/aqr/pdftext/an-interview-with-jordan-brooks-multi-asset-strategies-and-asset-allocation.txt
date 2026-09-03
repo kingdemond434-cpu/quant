@@ -1,0 +1,685 @@
+MULTI-ASSET STRATEGIES
+AND ASSET ALLOCATION
+
+March2026
+   
+Volume52
+   
+Number5  
+pm-research.com
+
+Interview with Jordan Brooks 
+of AQR Capital ManagementFrank J. Fabozzi, Editor
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+Interview with Jordan Brooks 
+of AQR Capital ManagementFrank J. Fabozzi, EditorFrank
+ J. Fabozzi: How do you determine the appropriate strategic asset allocation 
+for your portfolios? What inputs or assumptions are most critical in anchoring long-term 
+allocations?Jordan Brooks: A pair of lessons I came to appreciate more than two decades 
+apart informs my thinking about portfolio construction. The rst lesson was from day 
+one of freshman economicscasting economic problems in terms of objectives, 
+alternatives, and constraints is a very powerful organizational framework. The sec
+-
+ond lesson came through lived experience working with clients over my professional 
+career at AQRinvestors can often make better decisions by simplifying objectives, 
+expanding the universe of potential alternatives, and relaxing or eliminating unnec
+-
+essary and overly binding constraints. These lessons are very general, with applica
+-
+tions ranging from economic research to human resource management. However, 
+they are particularly relevant when considering strategic asset allocation (SAA) in a 
+multi-asset portfolio.
+Let us start with objectives. In designing a strategic allocation, we begin with the 
+premise that investors prefer returns and dislike volatility. If you churn through the 
+math, it turns out this statement is equivalent to saying investors seek to maximize 
+their risk-adjusted returns or Sharpe ratio.
+There are most assuredly things investors care about other than Sharpe ratio 
+and the absolute level of returns. Investors tend to be averse to tail risk, for example. 
+The average investor will pay more for an asset that tends to hedge equity market 
+crashes than for an asset that tends to crash alongside equities. This is why selling 
+insurance on the market (via, for example, out-of-the-money equity index puts) pays 
+so handsomely. But unless you are meaningfully less averse to tail risk than the 
+average investor, I wouldnt advocate writing puts. Balanced performance across dif
+-
+ferent macroeconomic regimes may also be important to investors, particularly those 
+who have liabilities indexed to ination. Tracking error relative to a policy portfolio 
+benchmark is yet another consideration that may enter investor objectives. Drawing 
+on that career-long learning curve, however, lets start simple: The aim of the SAA is 
+to maximize risk
+-
+adju
+sted expected returns.
+Next, we move on to the universe of eligible assets. More is generally better. I urge 
+investors to embrace geographic and asset class diversication. US stocks and bonds 
+are typically included in any SAA. But an SAA that consists of a broader universe of 
+global stocks and bonds is likely to have superior long-run returns and more resilient 
+performance in protracted bear markets, as noted by Clifford Asness, Roni Israelov, and 
+John Liew in their2011 Financial Analyst Journal article, International Diversication 
+Works (Eventually). Including commodities, ination-linked bonds, credit, and other 
+asset classes in an SAA can further improve long-run performance by helping to but-
+tress the SAA through a range of market and macroeconomic environments. In addition 
+to diversication, the other major consideration is liquidity. Investors build a strategic 
+asset allocation to generate returns to fund current or future liabilities, whether pension 
+obligations or personal retirement aspirations. Investors must design an SAA that can 
+provide liquidity when needed. Ideally, an SAA with sufcient exposure to highly liquid 
+instruments will provide investors with ample choices of where to tap liquidity and 
+adjust exposures based on respective opportunity sets and the market environment.
+Jordan Brooksis co-head of macro 
+strategies at AQR 
+Capital Management in 
+Greenwich, CT.
+jordan.brooks@aqr.com
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+2
+ 
+|
+ 
+Interview with Jordan Brooks of AQR Capital Management
+Multi-Asset Special Issue 2026That brings us to constraints. Here less is typically more. Many investors, for 
+example, constrain themselves to hold an unlevered portfolio. Forcing a portfolio to 
+be precisely100% invested may lead to more return-seeking investors overinvesting 
+in stocks. Removing this constraint and permitting leverage allows investors to hold 
+the optimal (i.e., Sharpe ratiomaximizing) mix of stocks, bonds, and other assets, 
+and to lever this tangency portfolio up or down based on desired risk tolerance or 
+to achieve their desired return target.
+What does all this add up to? We aim to build a liquid SAA with attractive 
+risk-adjusted returns by investing globally across asset classes. The remaining 
+inputs in this stylized example are expected risk-adjusted returns of different asset 
+classes and expected correlations across asset classes. To estimate these inputs, 
+we dig into the data. We use estimates of unconditional expected returns in SAA 
+construction (time-varying expected returns, whether slower-moving valuation-based or 
+higher-frequency momentum-based, are potential inputs in tactical asset allocation). 
+While over decade-long periods any one asset class may signicantly outperform, 
+over longer samples risk-adjusted returns of different asset classes (e.g.,stocks, 
+bonds, commodities) are similar. The last 10 years have been great for US stocks. 
+20002009, not so much, but it was a great period for bonds. Longer-term data also 
+shows that different asset classes have averaged low correlations to one another. 
+Asset class Sharpe ratios that are more similar than different, coupled with low 
+correlations across asset classes, imply the optimal SAA should have a good chunk 
+of risk coming from different asset classes.
+This simple exercise produces an SAA that is meaningfully different from most 
+traditional asset allocations. A typical policy benchmark for institutional and retail 
+investors is something like a60% stocks plus40% bonds (60/40) portfolio. Because 
+stocks are much more volatile than bonds, this policy portfolio is dominated by equity 
+risk. In contrast, the optimal SAA will be much more risk-balanced. You can play with 
+expected-return assumptions and layer in some of the other considerations I outlined 
+above. However, you will still end up with something that is much more risk-balanced 
+(and actually diversied) than a60/40 portfolio.Fabozzi: What role does tactical asset allocation play relative to strategic 
+allocation? How frequently do tactical decisions materially alter portfolio outcomes?Brooks: Tactical asset allocation (TAA), thoughtfully implemented and appro
+-
+priately sized, can be very complementary to an SAA. If a key input in SAA is 
+long-term, unconditional expected returns across asset classes, the key input in 
+TAA is shorter-term, conditional expected returns for each individual asset in the SAA 
+(and potentially assets outside the SAA).
+A powerful and transparent approach to TAA is trend following. Trend-following 
+strategies go long recent winners and short recent losers. Because asset prices tend 
+to underreact to new information, a strategy going long markets with rising prices 
+(good news) and short markets with falling prices (bad news) tends to be protable 
+on average. Trend-following strategies can be very complementary to SAAs for two 
+reasons. First, since trend programs take both long and short positions (typically with 
+close to equal frequency), they are very lowly correlated to an SAA. Second, because 
+the largest equity market drawdowns have tended to be persistentthink the tech 
+bust, global nancial crisis (GFC), and ination surge of2022trend following has 
+historically performed exceptionally well when equities have done poorly. In industry 
+parlance, trend following is convex to equities. Thats a nice feature.
+Trend-following strategies have generally delivered. Since2000, the SocGen 
+Trend index (SG Trend), an equal-weighted average of the 10 largest trend-following 
+managers, has delivered returns roughly on par with a global60/40 portfolio and 
+has performed exceptionally well during the three largest equity market drawdowns. 
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+The Journal of Portfolio Management
+ 
+|
+ 
+3
+Multi-Asset Special Issue 2026Typically, one needs to pay for insurance-like characteristics. Trend following has pro
+-
+vided exceptional diversication precisely when investors have needed it most and 
+has realized positive average returns. You dont need to look far back to see that trend 
+following materially improves portfolio outcomes. In2022, a global60/40 portfolio 
+returned 
+
+15%; the SG Trend index returned27%.
+An oft-cited complaint about trend following is performance may languish for long 
+periods between drawdowns. While the SG Trend index returned27% in2022, its 
+been effectively at from January2023 through December2025. My advice here is 
+two-fold. First, be patient! Middling performance in good times is a price worth paying 
+for an investment that pays off handsomely when you need it most. Second, this is 
+where manager selection comes into play. At AQR, trend following has been one of our 
+most innovative research areas over the past several years. Unfortunately, I cant go 
+too deep into details here in writing. But we utilize a much more sophisticated model 
+incorporating measures of fundamental trends in addition to price trends (which can 
+be particularly helpful in navigating turning points and whipsawing markets), and we 
+trade a vast and highly unique investment universe. These innovations have helped 
+us deliver on the dual mandate of trend following: strong average performance and 
+exceptional performance in bear-market environments.
+Trend following is not the only game in town when it comes to TAA, but it is 
+among the lowest-hanging fruit. It is easier to underwrite than many other strategies, 
+and its convexity to equities makes it particularly appealing. But a more elaborate 
+TAA program that takes relative value views across markets within an asset class 
+(e.g.,overweight US Treasuries and underweight German Bunds) or across different 
+stocks within an index, based on myriad inputs including but not limited to price and 
+fundamental trends, relative valuations, investor sentiment extracted via alternative 
+data, etc., can complement both an SAA and trend program.Fabozzi: How do macroeconomic conditions and regime shifts enter your 
+allocation process? Are regimes modeled explicitly, or reected through scenarios 
+and judgment?Brooks: Again, I think it is helpful to start with the basics. In our SAA, we aim to 
+maximize risk-adjusted returns. A key input in portfolio construction is asset class 
+correlations. But asset class correlations are deeply dependent on macroeconomic 
+regimes. For example, in a research article that I coauthored with my AQR colleagues 
+(Ale Brixton, Pete Hecht, Antti Ilmanen, Thomas Maloney, and Nicholas McQuinn), 
+published in the2023 JPM special issue on multi-asset strategies (A Changing 
+StockBond Correlation: Drivers and Implications), we discussed that low-frequency 
+variation in the stockbond correlation tends to be driven by the relative volatility 
+of growth versus ination shocks. When growth tends to be more variable (think 
+late1990s through2020), bonds and stocks tend to be negatively correlated. When 
+ination tends to be more variable (think1970s through1980s, and again more 
+recently), bonds and stocks tend to be positively correlated.
+Suppose your SAA is risk-balanced across equities and nominal bonds. If you are 
+sitting in late2020 or early2021 and you are estimating asset class correlations 
+using some trailing window, your SAA looks highly diversied. Stocks and bonds have 
+been negatively correlated with one another, and you expect that if the stock market 
+is down your bond allocation will offset some of the losses. But then you get a big 
+ination shock, and stocks and bonds drawdown together. You were sitting on a lot 
+more risk than you thought.
+If you could predict correlations with certainty, this wouldnt concern you. If you 
+knew the stockbond correlation was going to be higher over the next year, youd 
+hold less of each, and more of other diversifying assets. But it is challenging to 
+predict correlations with a high degree of accuracy because correlations depend on 
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+4
+ 
+|
+ 
+Interview with Jordan Brooks of AQR Capital Management
+Multi-Asset Special Issue 2026macroeconomic shocks that are themselves hard to forecast. Accordingly, we take 
+a much humbler approach. We design our strategic allocation so that performance 
+is somewhat balanced across different macroeconomic regimes. Continuing with 
+the example above, a risk-balanced stock-and-bond portfolio has a highly negative 
+sensitivity to an ination shock. Adding commodities or replacing some nominal 
+bonds with ination-linked bonds reins in this negative ination exposure. You can 
+do a similar exercise for growth and monetary policy (interest rate) sensitivity; we 
+do so.
+Simply stated, we dont attempt to forecast macroeconomic regime changes. 
+Counting on any investor to do that reliably is a fools errand. But we try to build an 
+SAA that is robust
+ to changing regimes.
+In our trend-followingbased TAA strategies, we explicitly aim to prot from mac
+-
+roeconomic shocks and regime changes. Asset prices underreact to new information, 
+so we go long markets with favorable macroeconomic shocks and short markets with 
+adverse macroeconomic shocks, betting that shocks will have a persistent impact 
+on prices. Indeed, we observe that performance tends to be better when macroeco
+-
+nomic volatility is higher.Fabozzi: How do you incorporate ination risk across a multi-asset portfolio? Which 
+assets or strategies have proven most effective in addressing ination uncertainty?Brooks: Ination is one of the primary macroeconomic risk factors we would like 
+to have minimal sensitivity to. That is easier said than done, since both stocks and 
+bonds tend to be negatively exposed to ination shocks. A multi-asset-class SAA is, 
+therefore, likely to trade short ination. The question is how short, and what can be 
+done in SAA and TAA programs to mitigate ination risk?
+Measuring the ination sensitivity of different asset classes is nontrivial. Consis
+-
+tent with academic literature (a good recent reference is the2025 Review of Financial 
+Studies
+ article by Xiang Fang, Yang Liu, and Nikolai Roussanov, Getting to the Core: 
+Ination Risks Within and Across Asset Classes), we nd it is important to separate 
+ination into two components: core ination and food and energy ination (which 
+together sum to headline ination). It turns out asset classes may have quite different 
+sensitivities to core and food/energy ination shocks. Nominal bonds are negatively 
+exposed to both. Equities are negatively exposed to core ination but hold up well in 
+food/energy ination. Commodities are often considered an inationary hedge, but 
+a caveat applies. Historically theyve been an excellent hedge against food/energy 
+ination but not core ination.
+Consider an SAA that is roughly risk-balanced between stocks, nominal bonds, 
+and commodities. The food/energy ination sensitivity of the SAA should be small: 
+Bonds will do poorly in an ination spike, but commodities will do well. The portfolio 
+is negatively exposed to core ination, however. In a core ination shock, stocks and 
+bonds sell off, and commodities dont help. Among liquid asset classes, ination 
+breakevens (long an ination-linked bond, short a nominal bond with equal duration) 
+are unique in their ability to hedge core ination shocks. To reduce the SAAs sensi
+-
+tivity to core ination, we therefore add ination breakevens. Since we are starting 
+with an allocation that contains nominal bonds, this amounts to substituting some 
+nominal bond exposure with ination-linked bonds.
+A trend-followingbased TAA program may also provide diversication against 
+ination risk. Generally, trend following strategies perform well when there are 
+substantial shocks to economic fundamentals, as such changes tend to produce 
+large asset price adjustmentstypically across multiple asset classes. Often, these 
+price adjustments are gradual and persistent as market participants underreact to 
+new fundamental realities, reecting one of the core inefciencies trend followers aim 
+to exploit. In other words, trend following tends to nd some of its best opportunities 
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+The Journal of Portfolio Management
+ 
+|
+ 
+5
+Multi-Asset Special Issue 2026during periods of macroeconomic shocks and fundamental volatility. An inationary 
+environment is one specic example of this, and we do, in fact, see trend-following 
+strategies perform very well during such episodes. In their2017 JPM paper, 
+ 
+A Century of Trend Following, Brian Hurst, Yao Hua Ooi, and Lasse Pedersen found 
+the best decade (returns and Sharpe ratio) for trend following was the1970s, a period 
+of strongly rising commodity prices, ination, and interest rates (alongside major 
+recessions). More recently, the rapid rise in core ination that took place in2022 
+was the best year for the SG Trend index in its history (since2000). Overall, we nd 
+trend following can be a key input in building a portfolio that can successfully navigate 
+core and headline inationary environments.Fabozzi: What role do alternatives play within your multi-asset framework? 
+ 
+How do you balance their potential diversication benets against liquidity and 
+valuation concerns?Brooks: Not all alternatives are created equalwith respect to their diversication 
+properties, their liquidity, and their transparency. We tend to focus on liquid, publicly 
+traded instruments to create exposures that are truly diversifying to traditional 
+investments like stocks and bonds.
+Commodity futures are a canonical example and serve an essential role in our 
+SAA. They are liquid, have historically paid a positive risk premium, and are diversi
+-
+fying relative to stocks and bonds, particularly during inationary episodes. Diversi
+-
+ed corporate credit spread exposure is another example. While credit spreads and 
+equities are positively correlated, they are not perfectly correlated. And credit risk 
+tends to outperform equities (beta-adjusted) in rising interest rate environments. 
+Including commodities and credit spread exposure in an SAA can help provide better 
+macroeconomic balance and superior long-term risk-adjusted returns.
+Longshort liquid alternatives (i.e.,trend-following, market-neutral stock 
+selection, and relative value global asset allocation) can be very additive on top of a 
+multi-asset-class SAA. They tend to be lowly correlated to traditional asset classes, 
+and portfolios that include them can potentially realize better risk-adjusted returns 
+and more balanced performance across macroeconomic regimes. Given the current 
+backdrop of exceptionally rich equity market valuations and market concentration, 
+longshort liquid alternatives are arguably even more important in a portfolio than 
+they have been historically.
+Many popular alternatives, however, are not that alternative. Private equity (PE), 
+for example, is subject to the same return driversthe ability of rms to grow cash 
+ows and the valuations investors put on those cash owsas public equities. A bad 
+decade for the stock market will be a bad decade for PE. Its lack of mark-to-market 
+might make it seem like a diversier, but that diversication is largely ephemeral. Does 
+this imply PE has no place in an SAA? Not necessarily, at least for investors who are 
+comfortable with the illiquidity (which may be a feature not a bug and, therefore, drive 
+down long-term expected returns, as Cliff Asness discusses in a short2019 note, 
+The Illiquidity Discount), assuming they account for its correlation to public equities.Fabozzi: How do you integrate quantitative models with qualitative judgment? 
+ 
+In which areas do models dominate, and where does discretion remain essential?Brooks: AQR stands for Applied Quantitative Researchwe are a quant rm. 
+This means we follow our models: Our positions and trades are determined by heav
+-
+ily researched and backtested algorithms. This does not mean, however, that our 
+investment process is devoid of discretion. Our discretion manifests in the design 
+of the models. For SAA, what are our objectives, alternatives, and constraints? How 
+much do we weigh having the best empirical Sharpe ratio based on historical cor
+-
+relations against having balanced performance across macroeconomic regimes? 
+ 
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+6
+ 
+|
+ 
+Interview with Jordan Brooks of AQR Capital Management
+Multi-Asset Special Issue 2026What methodologies do we use to estimate asset class expected returns? For TAA, 
+what are the different signals determining whether we are long or short each asset 
+(and with what size)? Our debates sitting around the table are not about whether to 
+be long or short crude, rather they are about the inputs to the models that determine 
+our ultimate view on crude.
+Quants exercising discretion in the design of their models is true for any systematic 
+rm, but it is especially true at AQR where the majority of the quantitative signals 
+we employ relate back to fundamentally driven market inefciencies. We identify 
+persistent and pervasive phenomena, like the tendency of asset prices to underreact 
+to new information. Then we build numerous quantitative signals using myriad data 
+sources (traditional, alternative, and proprietary) to capitalize on underreaction. 
+ 
+We are continuously looking to identify new market inefciencies, build new signals 
+to capitalize on these market inefciencies, and add new assets to our investable 
+universe. We are quantitative in implementation, but qualitative judgment is crucial 
+in the research process.Fabozzi: How has the availability of new data and AI-driven tools inuenced asset 
+allocation decisions? Where have these tools added the most value, and where have 
+expectations fallen short?Brooks: In SAA, the impact of new data and ML/AI-driven tools is modest. As weve 
+discussed, the primary inputs in SAA are estimates of long-run expected risk-adjusted 
+returns, correlations, and macroeconomic sensitivities. Alternative datasets and 
+natural language processing do not directly address these inputs.
+In TAA, however, new data and tools have already added signicant value. 
+ 
+In our investment approach, there are three potential avenues for novel data, ML, and 
+ 
+AI to add value: (1) identifying new market inefciencies, (2) improving our ability 
+to capitalize on previously identied market inefciencies through new signals, and 
+ 
+(3) better portfolio construction.
+I think (1) is what people typically think of when they hear about big data and 
+ML/AI at investment rms. You throw a whole bunch of data into a fancy estimation 
+algorithm, and it solves the market and spits out protable positions. Maybe there is 
+some scope for this in the high-frequency world of statistical arbitrage, but less so in 
+our investment strategies trading liquid markets with holding periods that range from 
+weeks to months. Samples are too short, and markets are too efcient. (Ronen Israel, 
+Bryan Kelly, and Tobias Moskowitz discuss these challenges in detail in their2019 
+Journal of Investment Management article, Can Machines Learn Finance?) (2) and 
+(3) are where we have found a lot of value in TAA (and especially in more data-rich 
+stock selection). New data sets and AI tools like natural language processing have 
+led to the development of new and complementary signals. And in an asset and 
+signalrich environment, ML-based estimation techniques have led to improvements 
+in strategic and tactical signal weighting. Here, again, I need to play it close to the 
+vest. But sufce it to say I think the marriage of a fundamentally driven investment 
+process where we aim to capitalize on a set of identiable market inefciencies and 
+new data and ML/AI-driven tools is a very powerful union.Fabozzi: How do you evaluate success in a multi-asset strategy? Beyond returns, 
+what performance dimensions are most informative?Brooks: OK, I need to start with returnsthey are what we eat at the end of 
+the day. We design our multi-asset-class portfolios with the explicit objective of 
+maximizing risk-adjusted returns. Examining historical long-run performance of dif
+-
+ferent asset classes, as well as their pairwise correlations, a risk-balanced SAA can 
+hopefully achieve a0.5 Sharpe ratio over the long runcash plus5%, assuming 
+the SAA targets10% volatility. How have risk-balanced SAAs performed in practice? 
+ 
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+The Journal of Portfolio Management
+ 
+|
+ 
+7
+Multi-Asset Special Issue 2026Since the inception of the HFR Risk Parity index in2003, its historical Sharpe ratio 
+is0.55. Absolute performance has been as advertised.
+But stand-alone absolute performance isnt the nal word. Too often investors 
+make a direct comparison between multi-asset SAA and more traditional portfolios, 
+such as60/40 or all equities. They ask which portfolio has greater returns or the 
+better Sharpe ratio. But this is relevant only when an investors choice set is limited 
+to investing all their money in one portfolio or the other. Portfolio choice, however, is 
+not binary! The relevant question is whether a multi-asset-class strategy is additive 
+on top of an investors existing portfolio, which is typically very heavily invested in 
+equities. When determining whether (and how much) to invest in a multi-asset-class 
+portfolio relative to a traditional all stock or60/40 portfolio, the stand-alone Sharpe 
+ratio of the multi-asset-class portfolio matters, but so does its correlation. The key 
+empirical question is whether the multi-asset SAA has alpha relative to traditional 
+portfolios (i.e.,is it complementary)? This is a lower bar, but the more important 
+one to clear. Viewed through this lens, the empirical case for including risk-balanced 
+multi-asset strategies within strategic allocations is strengthened, which Cliff Asness 
+discusses in detail in his2015 note, Risk Parity Is Even Better than We Thought.
+Additionally, and perhaps most critically, when you consider the ultimate purpose 
+of an SAA (i.e.,to grow and protect capital to meet some future obligations), 
+ 
+a risk-balanced SAA should provide more resilient performance through a range of 
+market and macroeconomic environments. Further, a risk-balanced SAA tends to have 
+more muted drawdowns than a more concentrated portfolio like the traditional60/40, 
+which is almost entirely beholden to the fate of equity markets. While modest under
+-
+performance of a risk-balanced SAA during bull markets can be frustrating, a multiyear 
+capital loss from a large equity drawdown (e.g.,the GFC or tech bust) in a traditional 
+portfolio can be catastrophic. The risk-balanced SAAs combination of an attractive 
+absolute return that tends to be more robust across macroeconomic and market 
+regimes, along with more muted drawdowns and highly liquid holdings, should help 
+set up an investor for better long-term success.Fabozzi: How do you think about tail risk in a multi-asset context? What approaches 
+have you found most effective in managing extreme but plausible outcomes?Brooks: Tail risk in a multi-asset context typically arises from one of two sources. 
+The rst is when an individual market or asset class experiences a large, discrete, 
+adverse event and sells off. The second is death by a thousand cuts, where assets 
+that had appeared to diversify one another become highly correlated and underperform 
+together.
+To address the rst source, we must move beyond volatility as the sole risk 
+metric used for sizing positions. Volatility, or standard deviation, measures dispersion 
+around the mean and treats positive and negative outcomes symmetrically. But not all 
+volatility is created equal. This is where blending SAA and TAA kicks in. By pairing an 
+SAA with a convex TAA program, such as trend following, you can distinguish between 
+bad volatility (e.g.,nominal bonds in2022) and good volatility (e.g.,equity markets 
+in2025), reducing downside participation while preserving upside participation.
+The second source is admittedly more challenging. Asset correlations are highly 
+uid, and rare or novel events can prompt co-movements that have not been observed 
+previously. This is where you need humility. As I talked about before, you cant reliably 
+forecast large changes in correlations, as they are dependent on macroeconomic 
+news. However, a robust portfolio design and investment process can help you reduce 
+portfolio sensitivity to correlation misestimation. In practice, this means estimating 
+correlations over long horizons to avoid overreliance on unstable cross-asset rela
+-
+tionships and imposing prudent leverage limits so that sudden correlation spikes do 
+not translate into outsize losses.
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+8
+ 
+|
+ 
+Interview with Jordan Brooks of AQR Capital Management
+Multi-Asset Special Issue 2026Fabozzi: How do you think about diversication when correlations rise during 
+periods of stress? Which forms of diversication remain most reliable in such 
+environments?Brooks: I have spilled a good amount of ink stressing the importance of geographic 
+and asset class diversication. But one dimension of diversication I have so far 
+neglected to discuss is time series diversication. In times of rising correlations 
+and market stress, the volatility of an SAA is likely to increase. However, unless the 
+forward-looking expected Sharpe ratio of the SAA rises in lockstep (and there is little 
+reason to think it typically should), investor risk tolerance probably has not.
+If you maintain constant exposure, you may be forced to sell parts of your portfolio 
+at a bad time (a fate many investors endured during the GFC). I think this point is 
+generally appreciated and motivates various drawdown control mechanisms. A less 
+appreciated point, however, is that a portfolio with time-varying risks, even if you 
+can hold it over the long term, isnt optimal either. Time-varying volatility reduces 
+risk-adjusted returns, so your long-term returns will come disproportionately from 
+stressful environments. A prudent SAA will aim to target a relatively constant level 
+of volatility over time. The benets arent just that such a portfolio is easier to hold 
+in stress environments, but that long-term returns arent driven by the handful of 
+periods when market volatility was high.
+Of course, volatility and correlation forecasting models arent perfect. They might 
+be easier to get right than returns, but you still want humility and guardrails. Having 
+prudent limits on asset class and overall leverage embedded in the portfolio construc
+-
+tion process can be helpful constraints to further enforce diversication through time.
+Finally, a trend-followingbased TAA program may help navigate periods of market 
+stress and rising correlations as well. Typically, prolonged periods of market stress 
+and shifts in correlation have a fundamental catalyst (e.g.,rising ination or a hawkish 
+shift in monetary policy). If the impact on markets unfolds gradually, trend-based TAA 
+programs will tend to reduce exposures to affected assets until the bearish catalyst 
+wears off. This is yet another reason a trend-following TAA program can be a powerful 
+addition to an SAA.
+
+It 
+is 
+illegal 
+to 
+make 
+unauthorized 
+copies 
+of 
+this 
+article, 
+forward 
+to 
+an 
+unauthorized 
+user 
+or 
+to 
+post 
+electronically 
+without 
+Publisher 
+permission. 
+
+¸2¢³§ÝkTV½eeþáõºî­O¥$üP¦Ôà»¹Äã     ð&   #2@6%/%F#+##+ +
+$UUUÐª$¸ÿü´U¸ÿî´U¸ÿø´U¸ÿô@UU¸ÿÀ@$%40  1ß%%¸ÿÀ@#40%%%U
+U		U¸ÿö@U
+U¸ÿò¶UE$ö++++++ý<q+]ö]]++++++íô]+++í ?í?í9/ý9 910Cy@3!%% &!	  
+"	<+++<++++++++]!2#!326654&##32674&&##k??Kc
+Ä»þ!´ÀsVDwÆírBjuÚ&3_Lq&^gI3TBýGW3W    ë&  d@+ 
+% ¸ÿö´U ¸ÿú@U U 
+U ¸ÿô´U ¸ÿü@U U U   Eö]++++++++í< ??í10!!#cþQ´&üo    þÓl&  ;@+ 	
++
+ ¸ÿî@U U ¸ÿò´U ¸ÿø´U ¸ÿê@U  @É  	%¸ÿô@UUÏ+¸ÿâ@U UU¸ÿö@UU¸ÿö@UUU¸ÿÚ´U¸ÿæ´U¸ÿõ@$U?¯¿ßïÿOßN+		¸ÿø´U	¸ÿô@Uß				<]qr++íörq]+++++++++++ý9/]q++í9/]íô]+++++í ?ý<</<?í10!3#!#3!äsü¼_¾;&ünþ?-þÓÁûýûøýÿÿ Kÿè> H   ÿû  `& 8¸@9'%%:/:?:`:p:¯:
+ ::0:O:::ß:ï:4;!!!533¸ÿø´U3¸ÿò@JU3+
+@+ $&#	&	 ?ÎÐí?9/9í99Ô99í99ö+++++++ýÀÖ+íÆ99]+}Ä9]+++}Ä10]]]]##&'&##3276767632"&#"3¢¬EõZwÂÂF%J>']´p4g9 37"9eÃkþi.Rºý~R+®;¨G'1S¨G'1S
+¨G'1S¨G'1S

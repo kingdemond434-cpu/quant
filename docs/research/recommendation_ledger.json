@@ -10048,6 +10048,34 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0769",
+   "source": "cycle",
+   "summary": "R0769 libs/research/pdf_text.extract() discards a page CONTENT stream whenever b'Image' appears in the 2KB window before the stream marker -- but for a content stream that window is the PAGE's own /Resources dict, and a page that DISPLAYS a logo names it there (/XObject<</Image38 38 0 R>>). Presence of an image on the page therefore throws away the page's TEXT. Measured on the-august-of-our-discontent.pdf: ALL 14 content streams (634,811 bytes of text operators) discarded, 125 chars of font-program garbage returned, failed=0 so the caller records a clean read. Across the 35-PDF AQR corpus 739,394 -> 1,127,654 chars (+52.5%), 18 files changed, 17 BYTE-IDENTICAL. Fix: test the stream's OWN dict (last '<<' before the marker) for /Subtype/Image; a Resources /XObject entry is evidence the stream IS a content stream. Second defect in the same lines: the image-skip 'continue' increments neither decoded nor failed, so 20 of 28 streams vanish from stats that the module's docstring promises keep 'said nothing' and 'unreadable' distinct. Fix applied under the research-only freeze in data/external/aqr/fetch_article_pdfs.py (_extract_fixed); libs/ owner to land it and add a fixture PDF with a logo on a text page.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T20:47:30.243962+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0770",
+   "source": "cycle",
+   "summary": "R0770 AQR Alternative Thinking 2025-2 'The Hidden Value of Streaky Returns' (readable only after R0769) claims high variance-ratio return streams earn ~2x the Sharpe of low-VR streams. Screened on desk MT5 H1 tape, 250 symbols x 4 TSMOM lookbacks, sign declared POSITIVE before measurement, VR on first half / Sharpe on disjoint second half: Spearman +0.167 (p=1.1e-7), 3/4 lookbacks individually significant, tercile Welch t=4.35. NOT persistence -- VR_first vs Sharpe_first is rho=0.025 (p=0.43) and the partial controlling Sharpe_first holds at 0.165. BUT the bounce control bites: VR_first vs lag-1 return autocorrelation is +0.290 and the partial controlling it falls to 0.092 (p=0.003), so ~45% of the effect is microstructure. And BOTH terciles have NEGATIVE gross Sharpe (-0.14 vs -0.47): this ranks an unprofitable population, so it is not a card (L1.57). Proposed disposition: adopt VR as a candidate-SELECTION diagnostic in the generator, never as a gate.",
+   "roi_bps": null,
+   "rank": 5.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-03T20:48:04.759096+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

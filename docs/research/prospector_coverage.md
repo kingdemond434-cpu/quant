@@ -14978,3 +14978,81 @@ executor, risk rails and live state untouched.
   trend (28) / value (21) abstract clusters, all still untriaged; (d) s53's owed `man.com` sitemap
   census; (e) the 3 AQR `video`-type items; (f) the remaining 20 AQR datasets; (g) s49's unworked
   full text of 2608.08405v1 and 2608.10410v1 (OOQI). The BRAIN ground remains open.
+
+## BRAIN HUNTER s57 — 2026-09-03 — a page that displays a logo had its text thrown away, and 43% of the desk's own AQR corpus was never read
+
+**Note on s56.** s56 (commit `b88d2aef`) landed R0766/R0767/R0768 and a collector, but wrote NO
+coverage row — the session note is the chain that makes exhaustion achievable across runs
+(L1.35), and its absence is why this run had to re-derive its ground from a commit message.
+Recorded here so the chain is not broken twice.
+
+**THE FINDING (R0769).** s56 fixed the hang in `libs/research/pdf_text` and the 137-PDF AQR
+manifest became fetchable. It is still not READ. `extract()` skips a stream when `b"Image"`
+appears anywhere in the 2KB window *before* the stream marker — but for a page content stream
+that window is **the page's own `/Resources` dict**, and a page that DISPLAYS an image names it
+there: `/XObject<</Image38 38 0 R>>`. So the presence of a logo on the page discards the page's
+TEXT. The premise is exactly inverted: a `/Resources` `/XObject` entry is evidence the stream
+**is** a content stream (only content streams have Resources); the image's own dict is where
+`/Subtype/Image` lives.
+
+Measured on `the-august-of-our-discontent.pdf`: **all 14 content streams — 634,811 bytes of text
+operators — discarded**, and the 125 chars returned are font-program bytes from streams that
+decompressed by chance. `failed = 0`, so the collector recorded a clean read. Second defect on
+the same lines: the image-skip `continue` increments neither `decoded` nor `failed`, so 20 of 28
+streams vanish from the stats whose docstring promises that *"this PDF said nothing"* and *"this
+PDF could not be read"* stay different claims (L1.28a / WS-005 again, this time inside the
+instrument that was supposed to prevent it).
+
+Fix: test the stream's OWN dict (last `<<` before the marker) for `/Subtype/Image`. Corpus-wide
+on the 35 downloaded AQR PDFs: **739,394 → 1,127,654 chars (+52.5%)**, 18 files changed, **17
+byte-identical** (the positive control — the fix adds text and alters nothing else). Worst case
+370x (125 → 46,302). Landed in `data/external/aqr/fetch_article_pdfs.py::_extract_fixed` under
+the research-only freeze and ledgered as R0769 for the `libs/` owner, with the fixture the
+existing five tests lack: a PDF with a logo on a text page.
+
+**Blast radius, stated honestly.** No non-AQR PDFs survive on disk (`find data -name '*.pdf'` →
+0 outside `aqr/`), so every prior arXiv/litminer read through this module is UNMEASURABLE, not
+clean — including s14's Unicode audit and s51's landing-page triage. Any paper the desk "read"
+whose pages carried a figure or a journal logo was read at partial depth and reported as read.
+
+**THE MINE (R0770).** From the newly-readable half of AQR *Alternative Thinking* 2025-2, "The
+Hidden Value of Streaky Returns": streakiness measured by the variance ratio VR(q) is a
+*complexity risk the marketplace compensates* — high-VR long-short factors earn ~2x the Sharpe of
+low-VR ones on the Jensen-Kelly-Pedersen database. The transferable object is the STATISTIC as a
+property of a strategy's own return stream, which is universe-independent; the equity factors are
+not. Screened on desk MT5 H1 tape, 250 symbols × 4 TSMOM lookbacks, **sign declared POSITIVE
+before measurement** (s29), VR on the first half and Sharpe on a disjoint second half (s55's
+circularity lesson): ρ = **+0.167** (p = 1.1e-7), 3/4 lookbacks significant, tercile Welch
+t = 4.35, and the full-sample circularity control is *weaker* (0.135) so it is not a same-window
+artifact. Not persistence either: VR_first → Sharpe_first is ρ = 0.025, **p = 0.43**.
+
+But the bounce control bites: VR_first correlates +0.290 with lag-1 return autocorrelation, and
+partialling it out cuts the effect to **+0.092** (p = 0.003) — ~45% of the headline is
+microstructure, not complexity premium. And **both terciles are negative gross** (−0.140 vs
+−0.468): this ranks an *unprofitable* population. Under L1.57 that is a ranking, not an edge.
+**0 cards, 0 survivors, 0 forward clocks; no multiplicity incurred.** Routed to
+`docs/research/improvement_inbox.md` as a candidate-SELECTION diagnostic with no pass/fail path,
+the same standing as `wq_operators.fitness()`.
+
+**Artifacts:** `data/brain_hunter_s57_streakiness.py`,
+`data/brain_hunter_s57_streakiness_screen.json`,
+`data/brain_hunter_s57_streakiness_control.json`, `data/external/aqr/pdftext/*` (rewritten,
++388,260 chars), `data/external/aqr/article_pdf_text.json` (stats restated).
+
+**§13.** No live browsing this session — all work on PDFs already on disk and on the desk's own
+MT5 parquets. No account wall, private BRAIN API, credentialed content or proprietary dataset
+touched; no access control circumvented. No AQR or BRAIN Sharpe, fitness grade or submission bar
+imported as a desk gate (L1.6). Video: 0 fetched, 0 locked. 0 new external venues.
+
+**SECTION-EXHAUSTED:** none — the corpus I believed was read turned out not to be.
+**NEXT UN-EXHAUSTED GROUND (in order):**
+1. The 35 downloaded AQR PDFs at their NEW length — 18 of them have text nobody has ever seen,
+   led by `low-volatility-cycles`, `covered-calls-uncovered`, `diversifiers-forever`,
+   `understanding-the-tax-efficiency-of-market-neutral`, `relaxed-constraint-portfolios`.
+2. The other **102 of 137** manifest PDFs, never downloaded (the collector stopped at 20 rows).
+3. `the-5-percent-solution` (0 chars at both settings) and `understanding-style-premia`
+   (6 chars) — genuinely unreadable, not empty; diagnose the filter/encoding.
+4. Still owed from s55: full text of arXiv 2608.08405v1 and 2608.10410v1 (OOQI), and the 46
+   atom URLs' citation layers.
+
+The BRAIN ground remains open.
