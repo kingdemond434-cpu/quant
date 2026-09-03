@@ -1,5 +1,5 @@
 {
- "swept_at": "2026-09-03T16:31:18+00:00",
+ "swept_at": "2026-09-03T18:52:29+00:00",
  "symbols": 91,
  "families_ran": {
   "correlation_regime": 89,
@@ -3564,19 +3564,6 @@
   },
   {
    "symbol": "AUDJPY",
-   "family": "carry",
-   "params": {
-    "input_symbol": "AUDJPY"
-   },
-   "n": 1875,
-   "exp_r": 0.0387,
-   "max_dd_r": -57.13,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "AUDJPY",
    "family": "cross_asset_residual",
    "params": {
     "factor_symbols": [
@@ -3662,6 +3649,19 @@
    "source": "orthogonal_sweep:turn_of_month",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "AUDSGD",
+   "family": "carry",
+   "params": {
+    "input_symbol": "AUDSGD"
+   },
+   "n": 1791,
+   "exp_r": 0.01,
+   "max_dd_r": -53.37,
+   "source": "orthogonal_sweep:carry",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "contract/swap terms"
   },
   {
    "symbol": "AUDSGD",

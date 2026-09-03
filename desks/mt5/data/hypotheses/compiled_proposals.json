@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-03T18:19:44+00:00",
+ "built_at": "2026-09-03T19:19:53+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1822,17 +1822,72 @@
    "promotion_authority": false
   },
   {
-   "name": "audit:liquidity_shock|continuation",
+   "name": "INDEX_CFD_BASIS_ARB",
    "compiled": true,
    "family": "generic",
    "params": {
-    "event": "liquidity_shock",
+    "event": "carry_change",
+    "context": "new_york",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|new_york|magnitude|convergence|1h",
+   "measurement_class": "VALIDATED_PROXY",
+   "attribution_allowed": true,
+   "measurement_note": "ATTRIBUTABLE (VALIDATED_PROXY): swap_money_per_lot_night, long minus short, from recorded contract terms (CarryAdapter) measures the swap/rate differential actually paid. UNBLOCKED 2026-08-29: 388KB of real financing sat unused while the generic family used a 24-bar price return. VALIDATED_PROXY not DIRECT because carry_state is a SNAPSHOT -- it gives today's level, not its history, so a cell measures cross-sectional carry rather than carry CHANGE. Recording a time series is what would make this DIRECT.",
+   "data_source": "CME/Eurex futures basis (free delayed via Quandl/IBKR), broker CFD swap rates (MT5), index dividend calendars (public Investing.com/IDX)",
+   "kill": "Convergence P&L \u2264 0 after costs in \u226570% of rolls across 10 indices",
+   "lens": "MEASUREMENT ADVANTAGE",
+   "promotion_authority": false
+  },
+  {
+   "name": "session_range_breakout_failure_reversal",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "inventory_rebalance",
+    "context": "low_liquidity",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "inventory_rebalance|low_liquidity|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: distance from a 20-bar mean is a heuristic stand-in for dealer inventory or a flow imbalance. The cell may run; its result may NOT be read as evidence about inventory_rebalance.",
+   "data_source": "Same MT5 session-range dataset",
+   "kill": "If conditional opposite-direction hit rate not >=1.2x unconditional, or fills are too thin (<1R avg move), retire",
+   "lens": "SECOND ORDER",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:benchmark_flow|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "benchmark_flow",
     "context": "asia",
     "direction": "continuation",
     "output": "1h",
     "quality_atr": 1.0
    },
-   "coordinate": "liquidity_shock|asia|magnitude|continuation|1h",
+   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:carry_change|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "carry_change",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "carry_change|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   },
@@ -1848,21 +1903,6 @@
     "quality_atr": 1.0
    },
    "coordinate": "forced_deleveraging|asia|magnitude|continuation|1h",
-   "source": "cold_audit_recommendation",
-   "promotion_authority": false
-  },
-  {
-   "name": "audit:benchmark_flow|continuation",
-   "compiled": true,
-   "family": "generic",
-   "params": {
-    "event": "benchmark_flow",
-    "context": "asia",
-    "direction": "continuation",
-    "output": "1h",
-    "quality_atr": 1.0
-   },
-   "coordinate": "benchmark_flow|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }
