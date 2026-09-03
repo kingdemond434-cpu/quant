@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-09-03T12:29:34.549909+00:00",
+  "generated_at": "2026-09-03T16:37:50.362532+00:00",
   "scope": "ALL_SHARED_LIBS_TO_MT5",
   "authority": "AUDIT_ONLY_NO_PROMOTION_NO_EXECUTION",
   "counts": {
     "DISPOSED_BLOCKED": 7,
     "DISPOSED_SUPERSEDED": 10,
     "REACHABLE_MT5_STATIC": 73,
-    "UNWIRED_REVIEW": 561,
+    "UNWIRED_REVIEW": 562,
     "VENUE_SPECIFIC_REVIEW": 11
   },
   "rows": [
@@ -2960,6 +2960,13 @@
       "direct_mt5_consumers": [
         "desks/mt5/mt5desk/family_generic.py"
       ],
+      "proof_level": "STATIC_REACHABILITY_ONLY"
+    },
+    {
+      "module": "libs.research.measurement_resolver",
+      "path": "libs/research/measurement_resolver.py",
+      "status": "UNWIRED_REVIEW",
+      "direct_mt5_consumers": [],
       "proof_level": "STATIC_REACHABILITY_ONLY"
     },
     {
