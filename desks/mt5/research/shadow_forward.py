@@ -179,7 +179,19 @@ def _runnable_side(run: dict, fam: str) -> str | None:
              f"neither LONG nor SHORT; refusing to guess -- certificate stands, no clock")
         return None
     fn = _family_fn(fam)
-    if fn is None or not _accepts_side(fn):
+    # TWO DIFFERENT CAUSES, AND THE MESSAGE USED TO NAME ONLY ONE. Both `fn is None` and a
+    # resolved family without a `side` parameter refuse the certificate, but they are not the
+    # same defect and they are not fixed in the same place: the first is a RESOLVER gap (the
+    # constructor exists, this function cannot see it), the second is a genuine capability gap
+    # in the family. Reporting "its family takes no `side`" for an unresolvable family sends the
+    # reader to edit a function that already takes one -- measured on
+    # `dav_range_filter_adx`, which takes `side: int` and was refused under that text anyway.
+    if fn is None:
+        slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} is SHORT and its constructor "
+             f"CANNOT BE RESOLVED here; this is a resolver gap, not a missing `side` -- the "
+             f"family may well take one. Certificate stands, no clock.")
+        return None
+    if not _accepts_side(fn):
         slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} is SHORT and its family takes no "
              f"`side`; refusing to enrol it LONG -- that would accrue forward evidence for the "
              f"opposite direction under an identity claiming LONG. Certificate stands.")
@@ -188,12 +200,37 @@ def _runnable_side(run: dict, fam: str) -> str | None:
 
 
 def _family_fn(fam: str):
-    """The one constructor for `fam`, wherever it lives -- same resolution as the gauntlet."""
+    """The one constructor for `fam`, wherever it lives -- same resolution as the gauntlet.
+
+    THE DOCSTRING WAS THE SPEC AND THE CODE DID NOT MEET IT. The gauntlet resolves three
+    populations; this resolved two. `qquant_gates` certifies hunt16's corpus through
+    `from run_hunt16 import FAMILIES as F16`, so a cell like
+    `AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` can pass all ten gates -- and then
+    reach a forward engine that has never heard of `dav_range_filter_adx`.
+
+    Measured 2026-09-03: 14 hunt16 families, EVERY ONE of them taking `side: int` and building a
+    genuinely mirrored strategy, were unreachable from here. The cost lands twice. A LONG
+    certificate on one of them enrols a clock that logs "constructor vanished" on every pass and
+    accrues nothing. A SHORT one is refused outright -- and, until the branch above was split,
+    was refused with text blaming the family for not taking a `side` it does in fact take.
+    Certification and forward evidence read the same certificate from two different registries,
+    which is the drift this function's own docstring already forbade.
+
+    Import is safe: run_hunt16 guards its entrypoint with `if __name__ == "__main__"`, and only
+    its published FAMILIES mapping is consulted -- never a bare getattr, which would resolve
+    `main` or a private helper for any certificate that happened to name one.
+    """
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:
             from mt5desk import families_orthogonal as _fo
             fn = _fo.ORTHOGONAL_FAMILIES.get(fam)
+        except ImportError:
+            fn = None
+    if fn is None:
+        try:
+            from run_hunt16 import FAMILIES as _F16
+            fn = _F16.get(fam)
         except ImportError:
             fn = None
     return fn

@@ -173,3 +173,55 @@ def test_a_short_is_passed_on_the_first_call_not_only_the_fallback() -> None:
     families that can take a side."""
     text = (RESEARCH / "shadow_forward.py").read_text(encoding="utf-8")
     assert "fam_fn(h1, side=-1, **call_params) if _short" in text
+
+
+# ------------------------------- 5. the gauntlet's third family population is reachable
+#
+# Certification and forward evidence must read the same certificate from the SAME registry.
+# `qquant_gates` resolves hunt16's corpus via `from run_hunt16 import FAMILIES as F16`, so a
+# cell can pass all ten gates on a family the forward engine has never heard of. Measured
+# 2026-09-03: 14 such families, every one taking `side: int`, unreachable from `_family_fn`.
+
+def test_the_gauntlets_hunt16_corpus_is_reachable_from_the_forward_engine() -> None:
+    """A family the gauntlet certifies from MUST resolve here, or evidence can never accrue."""
+    from run_hunt16 import FAMILIES as F16
+
+    for name, ctor in F16.items():
+        assert sf._family_fn(name) is ctor, (
+            f"{name} is certifiable by qquant_gates but unresolvable by the forward engine; "
+            f"a certificate naming it can never accrue forward evidence")
+
+
+def test_a_certified_short_on_a_hunt16_family_enrols_short(monkeypatch) -> None:
+    """The exact cell that was refused under text blaming it for a `side` it does take."""
+    logged: list[str] = []
+    monkeypatch.setattr(sf, "slog", logged.append)
+    run = {"symbol": "AUDNZD", "side": "SHORT"}
+    assert sf._runnable_side(run, "dav_range_filter_adx") == "SHORT"
+    assert not logged, f"a runnable short must not be refused: {logged}"
+
+
+def test_every_hunt16_family_can_actually_be_told_a_side() -> None:
+    """If one of these could not, enrolling it short would be the very bug this file exists for."""
+    from run_hunt16 import FAMILIES as F16
+
+    for name, ctor in F16.items():
+        assert sf._accepts_side(ctor) is True, f"{name} cannot be told a side"
+
+
+def test_an_unresolvable_family_is_not_blamed_for_missing_a_side(monkeypatch) -> None:
+    """Two causes, two fixes, two messages. The old text sent readers to edit the wrong file."""
+    monkeypatch.setattr(sf, "_family_fn", lambda fam: None)
+    logged: list[str] = []
+    monkeypatch.setattr(sf, "slog", logged.append)
+    assert sf._runnable_side({"symbol": "EURUSD", "side": "SHORT"}, "ghost") is None
+    assert logged, "an unresolvable short must still be reported"
+    assert "CANNOT BE RESOLVED" in logged[0]
+    assert "takes no `side`" not in logged[0], (
+        "an unresolvable family must not be blamed for a capability gap it may not have")
+
+
+def test_the_resolver_returns_published_families_only() -> None:
+    """A bare getattr on the module would resolve `main`, `cheap_gate` or a private helper."""
+    for attr in ("main", "cheap_gate", "_sigs", "FAMILIES", "WINDOWS"):
+        assert sf._family_fn(attr) is None, f"_family_fn resolved non-family attribute {attr!r}"
