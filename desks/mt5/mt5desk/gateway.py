@@ -951,11 +951,40 @@ def margin_ok(symbol: str, lot: float, price: float) -> bool:
 #: than inferred from an absence.
 INTENTS = BASE / "data" / "order_intents.jsonl"
 
+_SV_CACHE: tuple[float, str] = (0.0, "")
+
+
+def _state_vector_id() -> str:
+    """The id of the world description current at this placement, or "" if none is fresh.
+
+    WHY AN ID ON AN ORDER. Slippage is not a constant; it is a function of the conditions the
+    order was sent into -- session, event phase, liquidity state, volatility regime. Recording
+    the price paid without recording the world it was paid in gives an average that describes no
+    situation the desk will ever be in again. Stamping the state vector's id makes execution cost
+    a learnable function of a state that can be reconstructed exactly, months later, from the
+    artifact rather than re-derived from a timestamp and a guess.
+
+    Cached on mtime and NEVER raises: this is on the money path, and an unreadable telemetry file
+    must cost an empty string rather than an order.
+    """
+    global _SV_CACHE
+    try:
+        p = BASE / "data" / "state_vector.json"
+        mtime = p.stat().st_mtime
+        if mtime == _SV_CACHE[0]:
+            return _SV_CACHE[1]
+        sid = str(json.loads(p.read_text("utf-8")).get("id") or "")
+        _SV_CACHE = (mtime, sid)
+        return sid
+    except Exception:                                             # noqa: BLE001
+        return ""
+
 
 def _record_intent(**row) -> None:
     """Append one placement intent. NEVER raises -- telemetry must not break the money path."""
     try:
         row["time"] = now()
+        row.setdefault("state_vector_id", _state_vector_id())
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
@@ -1023,9 +1052,19 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
         # discovered its real execution cost was 50x its modelled one, on trades that needed
         # twelve days of funding to repay a single entry. Written at send time, joined by ticket
         # in `markout.py` when the deal closes.
+        # THE CONDITIONS AT DECISION, not just the price asked. Slippage measured without the
+        # market it was paid into averages over every situation at once and describes none of
+        # them; with the quote and spread recorded here, execution cost becomes a function of
+        # symbol, hour, spread and state rather than one scalar per symbol. `_t` was already read
+        # above for the legality check, so this costs nothing and cannot fail separately.
         _record_intent(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
                        intended=float(s["price"]), sl=float(s["sl"]), tp=float(s["tp"]),
-                       ticket=(getattr(res, "order", None) if res else None), retcode=code)
+                       ticket=(getattr(res, "order", None) if res else None), retcode=code,
+                       decision_bid=(float(_t.bid) if _t is not None else None),
+                       decision_ask=(float(_t.ask) if _t is not None else None),
+                       spread_at_decision=(float(_t.ask) - float(_t.bid)
+                                           if _t is not None else None),
+                       point=_point, stops_level=_lvl, order_type="pending_stop")
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "

@@ -211,20 +211,58 @@ def _regime_term(forecasts: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def _execution_term(basis: str) -> dict[str, Any]:
-    """Realized fill cost against the modelled cost.
+    """Realized fill cost against the modelled cost, from the intent/fill join.
 
     UNMEASURABLE FROM SHADOW EVIDENCE, AND SAYING SO IS THE POINT. Shadow-forward R multiples are
     computed with the same cost model the forecast used, so differencing them measures the model
     against itself and returns zero -- a zero that would read as "execution is perfect". Only
-    live fills can answer this, and the live ledger is where that answer will come from.
+    live fills can answer this.
+
+    THE ANSWER WAS ALREADY BEING COMPUTED. This used to return UNMEASURED with the reason
+    "per-fill slippage capture not yet wired (needs requested vs filled price on the ledger row)".
+    That was stale: `mt5desk.markout` has joined `order_intents.jsonl` to `live_ledger.jsonl` by
+    order ticket and reported `mean_slip_r` since the first trade -- requested versus filled, per
+    fill, in R. The capture was wired; this reader was not. Same shape as every other defect this
+    desk finds: the capability was present and unreachable.
+
+    SIGNED SO THE DIRECTION IS UNAMBIGUOUS. Slippage is a subtraction from edge, so the term is
+    NEGATIVE when fills are worse than intended. `edge_share` says what fraction of the book's
+    measured expectancy execution is eating, which is the number that decides whether an edge is
+    worth trading at all.
+
+    REFUSES A MIXED LEDGER. A demo server fills stops at the trigger with no slippage, so
+    averaging demo and live rows drags the mean toward "no slippage" using trades that could not
+    have slipped -- an error in the flattering direction. `markout` detects this; this reports it
+    rather than quietly taking the number.
     """
     if basis != "live":
         return {"value": UNMEASURED,
                 "why": f"basis is {basis}: shadow R already carries the modelled cost, so any "
                        f"difference would be the cost model measured against itself"}
-    return {"value": UNMEASURED,
-            "why": "live basis available; per-fill slippage capture not yet wired "
-                   "(needs requested vs filled price on the ledger row)"}
+    try:
+        from mt5desk import markout as _markout
+        m = _markout.compute(_markout.load_jsonl(BASE / "data" / "order_intents.jsonl"),
+                             _markout.load_jsonl(BASE / "data" / "live_ledger.jsonl"))
+    except Exception as exc:                                      # noqa: BLE001
+        return {"value": UNMEASURED, "why": f"markout unavailable: {type(exc).__name__}: {exc}"}
+
+    if getattr(m, "mixed", False):
+        return {"value": UNMEASURED, "why": m.why, "account_kind": m.account_kind}
+    if not m.n_matched:
+        return {"value": UNMEASURED, "why": m.why, "n_unfilled_intents": m.n_unfilled_intents,
+                "n_unmatched_deals": m.n_unmatched_deals}
+    return {
+        "value": round(-float(m.mean_slip_r), 8),
+        "mean_slip_r": round(float(m.mean_slip_r), 8),
+        "median_slip_quote": round(float(m.median_slip_quote), 8),
+        "worst_slip_quote": round(float(m.worst_slip_quote), 8),
+        "edge_share": (round(float(m.edge_share), 6) if m.edge_share is not None else None),
+        "n_matched_fills": int(m.n_matched),
+        "n_unfilled_intents": int(m.n_unfilled_intents),
+        "n_unmatched_deals": int(m.n_unmatched_deals),
+        "account_kind": m.account_kind,
+        "why": "requested versus filled price, per fill, joined by order ticket",
+    }
 
 
 def build(days: int = 30) -> dict[str, Any]:
