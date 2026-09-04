@@ -171,6 +171,146 @@ def check_bar_freshness(max_hours: float = 48.0) -> dict[str, Any]:
                     "about a market that has moved on" if med > max_hours else "bars current")}
 
 
+def check_dashboard() -> dict[str, Any]:
+    """What the principal actually looks at. A dashboard reporting stale numbers is a lie at rest.
+
+    It reads `web/desk_state.json`, which is pulled from the trading box every two minutes -- so a
+    stamp older than an hour means the pull is dead and every figure on the page is describing a
+    desk that has moved on, while looking perfectly current.
+    """
+    d = _json(ROOT / "web" / "desk_state.json")
+    if d is None:
+        return {"status": "UNKNOWN", "why": "desk_state.json unreadable -- the dashboard is blind"}
+    acct = d.get("account") or {}
+    age = acct.get("source_age_seconds")
+    stamp = d.get("generated_at") or acct.get("source_updated_at") or ""
+    stale = isinstance(age, (int, float)) and age > 3600
+    res = d.get("research") or {}
+    return {"status": "DEFECT" if stale else "OK",
+            "generated_at": str(stamp)[:19], "source_age_s": age,
+            "equity": acct.get("equity"), "canonical_survivors": res.get("canonical_survivors"),
+            "why": ("the dashboard is serving figures older than an hour -- the desk pull is dead "
+                    "and every number on the page is stale while looking current"
+                    if stale else "dashboard current")}
+
+
+def heal_forward_clocks() -> dict[str, Any]:
+    """Clocks terminal on a drift that no longer exists are healed by RUNNING the engine.
+
+    Not by rewriting a status. `shadow_forward` clears IDENTITY_BROKEN itself once `verify()`
+    returns no drift, so the repair is to give it a pass -- on the box, where the live bars are.
+    Rewriting the status here would empty this report and change nothing underneath, which is the
+    failure mode a fixer that can hide its own failure always has.
+    """
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json")
+    if st is None:
+        return {"acted": False, "why": "shadow_state unreadable"}
+    sl = st.get("sleeves") or st
+    broken = [k for k, v in sl.items()
+              if isinstance(v, dict) and str(v.get("status") or "") == "IDENTITY_BROKEN"]
+    if not broken:
+        return {"acted": False, "why": "no clock is terminal on identity"}
+    try:
+        subprocess.run(["systemctl", "--user", "start", "--no-block",
+                        "quant-forward-box.service"], timeout=60, check=False)
+    except (subprocess.SubprocessError, OSError) as exc:
+        return {"acted": False, "why": f"could not trigger the engine: {type(exc).__name__}"}
+    return {"acted": True, "identity_broken": len(broken),
+            "why": ("triggered the forward engine on the trading box; it clears the status itself "
+                    "when verify() finds no drift, so nothing here rewrites a verdict")}
+
+
+def check_conversion() -> dict[str, Any]:
+    """Every funnel stage's yield, and whether it is getting better or quietly rotting.
+
+    THE DESK'S FAILURE MODE IS A LEGITIMATE-LOOKING ZERO. A crawler with 75 sources and 474MB of
+    corpus that converts NOTHING reports exactly like a crawler that is switched off, and the
+    deep audit returned 0/0/0/1 findings for days while running on schedule. So this measures the
+    RATIO at each hop rather than whether the job ran.
+    """
+    out: dict[str, Any] = {}
+    comp = _json(ROOT / "data" / "proposal_compiler.json") or {}
+    ok, ref = comp.get("compiled"), comp.get("refused")
+    if isinstance(ok, int) and isinstance(ref, int) and (ok + ref):
+        rate = ok / (ok + ref)
+        out["compile"] = {"compiled": ok, "refused": ref, "rate": round(rate, 3)}
+
+    audit = _json(ROOT / "data" / "deep_audit.json") or {}
+    lenses = audit.get("results") or {}
+    found = sum(len(v.get("findings") or []) for v in lenses.values() if isinstance(v, dict))
+    out["deep_audit"] = {"lenses": len(lenses), "findings": found, "ran_at": audit.get("ran_at")}
+
+    free = _json(ROOT / "data" / "free_research.json") or {}
+    props = sum(len(r.get("proposals") or []) for r in (free.get("results") or []))
+    out["free_research"] = {"proposals": props, "ran_at": free.get("ran_at")}
+
+    mc = _json(ROOT / "data" / "miner_conversion.json") or {}
+    miners = mc.get("miners") or {}
+    zero = len(mc.get("zero_yield_miners") or [])
+    out["miners"] = {"total": len(miners), "zero_yield": zero}
+
+    # A LENS THAT RETURNS NOTHING IS A DEFECT, not a clean audit. Measured 2026-09-04: all four
+    # lenses read 0 for days because the parser scored the model's own instructions and the token
+    # cap truncated the answer -- the job ran perfectly on schedule the whole time.
+    bad = (found == 0 and len(lenses) > 0) or props == 0 or (
+        "compile" in out and out["compile"]["rate"] < 0.10)
+    out["status"] = "DEFECT" if bad else "OK"
+    out["why"] = ("a funnel stage is yielding nothing while running on schedule -- the shape of a "
+                  "silent zero, not of an honest negative result" if bad else "every stage yielding")
+    return out
+
+
+def next_growth_lever() -> dict[str, Any]:
+    """The next lever for E[log W], ranked by MEASURED deficit rather than by opinion.
+
+    Only the mechanical ones are acted on here. A lever with a trade-off -- lowering a gate,
+    resizing live risk, changing what a certificate asserts -- is named and left for the principal,
+    because an autonomous fixer that can relax its own bar will eventually relax it.
+    """
+    levers: list[dict[str, Any]] = []
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json") or {}
+    sl = st.get("sleeves") or st
+    act = [v for v in sl.values() if isinstance(v, dict) and v.get("status") == "ACTIVE"]
+    if act:
+        days = max(1.0, max((v.get("days_active") or 0) for v in act))
+        rate = sum(v.get("n", 0) or 0 for v in act) / len(act) / days
+        need = 50.0 / 14.0
+        if rate < need:
+            levers.append({
+                "lever": "forward throughput", "measured": f"{rate:.2f} trades/sleeve/day",
+                "needed": f"{need:.2f}", "shortfall": f"{need / max(rate, 1e-9):.1f}x",
+                "act": "AUTOMATIC: none -- breadth is the fix and adding sleeves is a research act",
+                "why": "n>=50 within a 14-day window is unreachable at this rate"})
+
+    canon = _json(DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    survivors = canon.get("survivors") or {}
+    fams: dict[str, int] = {}
+    for v in survivors.values():
+        f = str((v.get("shadow_spec") or {}).get("family") or "?")
+        fams[f] = fams.get(f, 0) + 1
+    if survivors:
+        top = max(fams.values()) / len(survivors)
+        if top > 0.30:
+            levers.append({
+                "lever": "book independence", "measured": f"{top:.1%} in one family",
+                "needed": "<30%", "act": "AUTOMATIC: none -- needs absent families to certify",
+                "why": ("concentration caps n_eff: fifty variants of one bet is one bet, and "
+                        "E[log W] pays for INDEPENDENT bets")})
+
+    comp = _json(ROOT / "data" / "proposal_compiler.json") or {}
+    if isinstance(comp.get("refused"), int) and comp.get("refused"):
+        levers.append({
+            "lever": "proposal conversion",
+            "measured": f"{comp.get('compiled')} compiled / {comp.get('refused')} refused",
+            "act": "AUTOMATIC: the axis contract is enforced at generation; refusals re-measured "
+                   "each pass",
+            "why": "a refusal for an unresolved axis is fixable at the prompt; a duplicate is not"})
+    return {"levers": levers, "n": len(levers),
+            "note": ("ranked by measured deficit. Levers with a TRADE-OFF (lowering a gate, "
+                     "resizing live risk, changing what a certificate asserts) are named and left "
+                     "for the principal -- a fixer that may relax its own bar eventually will.")}
+
+
 def check_failed_units() -> dict[str, Any]:
     try:
         out = subprocess.run(["systemctl", "--user", "list-units", "--state=failed",
@@ -198,7 +338,17 @@ def main() -> int:
             repairs.append({"check": name, "exit": rc, "acted": acted[:4]})
             print(f"  repair {name:20s} exit={rc}" + (f"  {acted[0][:80]}" if acted else ""))
 
+    if not a.report:
+        healed = heal_forward_clocks()
+        repairs.append({"check": "forward clocks", "exit": 0,
+                        "acted": [healed.get("why", "")] if healed.get("acted") else []})
+        if healed.get("acted"):
+            print(f"  repair forward clocks      {healed['identity_broken']} terminal clock(s) "
+                  f"-- engine triggered on the box")
+
     checks = {
+        "dashboard": check_dashboard(),
+        "conversion": check_conversion(),
         "uncommitted_code": check_uncommitted_code(),
         "record_pairs": check_record_pairs(),
         "forward_lane": check_forward_lane(),
@@ -211,12 +361,24 @@ def main() -> int:
         if r["status"] != "OK" and r.get("why"):
             print(f"           -> {str(r['why'])[:150]}")
 
+    lever = next_growth_lever()
+    if lever["levers"]:
+        print("\n  NEXT GROWTH LEVERS (measured deficit, largest first):")
+        for lv in lever["levers"]:
+            print(f"    {lv['lever']:22s} {str(lv.get('measured'))[:34]:34s} {lv['act'][:64]}")
+
     bad = [k for k, v in checks.items() if v["status"] == "DEFECT"]
     unknown = [k for k, v in checks.items() if v["status"] == "UNKNOWN"]
     OUT.write_text(json.dumps({"ran_at": now.isoformat(timespec="seconds"), "repairs": repairs,
-                               "checks": checks, "defects": bad, "unknown": unknown}, indent=1,
+                               "checks": checks, "defects": bad, "unknown": unknown,
+                               "growth_levers": lever}, indent=1,
                               default=str), "utf-8")
-    print(f"\n  {len(bad)} defect(s), {len(unknown)} unmeasured -> {OUT}")
+    if not bad and not unknown:
+        # A QUIET RUN IS THE POINT. On a healthy desk this says so in one line and does nothing --
+        # a sweep that always finds something to do trains its reader to stop looking.
+        print("\n  ALL CLEAR -- every pair agrees, no evidence frozen, nothing repaired")
+    else:
+        print(f"\n  {len(bad)} defect(s), {len(unknown)} unmeasured -> {OUT}")
     return 1 if (bad or unknown) else 0
 
 
