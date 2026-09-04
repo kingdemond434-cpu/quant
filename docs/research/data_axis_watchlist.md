@@ -11705,3 +11705,24 @@ unfinished items** rather than opening new ground.
 3. **SEARCH-SPACE EXPANSION (>=25%)** — a new source class, not a re-scan.
 
 Status: **IN PROGRESS**
+
+---
+
+## FREE-DATA ae — 2026-09-04 — SESSION NOTE (WRITTEN FIRST, per the completion contract)
+
+Backlog: `source_backlog_next.py` = **0 pending verification, 0 pending legitimacy** (102
+catalogued, 78 resolved, 24 deferred, next return 2026-09-05). No verification debt.
+
+**RESUME, DO NOT RESTART — THIRD ATTEMPT AT THE SAME ITEM.** Runs **(ac)** and **(ad)** both wrote
+a header naming the forexbenchmark intraday/peer items and then died before landing any artifact:
+`data/external/forexbenchmark/` still does not exist and the map still holds only (ab)'s
+`forexbenchmark_fusion_spreads_20260830.json`. Two dead runs on one item is itself the finding —
+the failure mode is holding results in context and writing at the end. This run writes the
+artifact to disk BEFORE any analysis.
+
+**Items taken this run (finishing (ac)/(ad), not opening new ground):**
+1. **forexbenchmark INTRADAY cost surface** — `POST /spreads_data_chart/`, minute-of-day buckets.
+2. **forexbenchmark PEER brokers** — market cost vs broker cost split.
+3. **SEARCH-SPACE EXPANSION (>=25%)** — new source class, after 1 and 2 land.
+
+Status: **IN PROGRESS**
