@@ -246,3 +246,10 @@ desks/mt5/data/intelligence/fxblue/track_records*.jsonl
 # box's sync for no recoverable information. The STATE VECTOR itself (state_vector.json) is a
 # record of what the desk believed at a moment and stays tracked.
 desks/mt5/data/state_fits.json
+
+# `reports/` above is ignored because reports are measurements. STATE_ADMISSION.json is not a
+# measurement, it is a DECISION: `pf_allocator._live_state` reads it and withdraws a state
+# dimension's access to the posterior when that dimension is in the graveyard. A `!` negation
+# cannot reach inside an excluded directory, so the file is force-added once and tracked
+# thereafter -- git reports changes to a tracked file regardless of these rules, which is exactly
+# the behaviour wanted: the box's re-judged verdicts travel back with its hourly sync.
