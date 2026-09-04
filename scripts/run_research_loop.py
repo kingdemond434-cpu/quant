@@ -338,8 +338,26 @@ def _measure_and_diagnose() -> dict[str, Any]:
 
     return {"cells_measured": measured, "policy": policy_report(diagnoses),
             "mutation": bred, "post_experiment": _diagnose_real_experiments(store),
+            "crossover": _crossover_pass(),
             "credit": credit.from_store(),
             "brain_ab": brain_ab.report(), "store": store.summary()}
+
+
+def _crossover_pass() -> dict[str, Any]:
+    """QuantaAlpha trajectory crossover over the recorded lineage.
+
+    `crossover_candidates` has existed and been UNCALLED, because nothing built the graph it needs:
+    the hypotheses table carrying parentage was empty until this session. It is called every pass
+    now, and returning zero pairs is a real answer -- the eligibility rule requires two lineages
+    whose FAILING STEPS DIFFER, and while every failure is MEASUREMENT_FAILED there is nothing for
+    two parents to exchange. It starts producing pairs when the post-experiment diagnosis above
+    begins yielding COST_FAILED and MECHANISM_REFUTED alongside it.
+    """
+    try:
+        from libs.research_os.lineage_bridge import crossover
+        return crossover(seed=int(datetime.now(tz=UTC).strftime("%j")))
+    except Exception as exc:
+        return {"skipped": f"{type(exc).__name__}: {str(exc)[:90]}"}
 
 
 def _diagnose_real_experiments(store: Any, limit: int = 400) -> dict[str, Any]:
