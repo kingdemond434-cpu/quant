@@ -179,7 +179,19 @@ def _runnable_side(run: dict, fam: str) -> str | None:
              f"neither LONG nor SHORT; refusing to guess -- certificate stands, no clock")
         return None
     fn = _family_fn(fam)
-    if fn is None or not _accepts_side(fn):
+    # TWO DIFFERENT CAUSES, AND THE MESSAGE USED TO NAME ONLY ONE. Both `fn is None` and a
+    # resolved family without a `side` parameter refuse the certificate, but they are not the
+    # same defect and they are not fixed in the same place: the first is a RESOLVER gap (the
+    # constructor exists, this function cannot see it), the second is a genuine capability gap
+    # in the family. Reporting "its family takes no `side`" for an unresolvable family sends the
+    # reader to edit a function that already takes one -- measured on
+    # `dav_range_filter_adx`, which takes `side: int` and was refused under that text anyway.
+    if fn is None:
+        slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} is SHORT and its constructor "
+             f"CANNOT BE RESOLVED here; this is a resolver gap, not a missing `side` -- the "
+             f"family may well take one. Certificate stands, no clock.")
+        return None
+    if not _accepts_side(fn):
         slog(f"ENROL-GAP: certified {run.get('symbol')}.{fam} is SHORT and its family takes no "
              f"`side`; refusing to enrol it LONG -- that would accrue forward evidence for the "
              f"opposite direction under an identity claiming LONG. Certificate stands.")
@@ -188,7 +200,22 @@ def _runnable_side(run: dict, fam: str) -> str | None:
 
 
 def _family_fn(fam: str):
-    """The one constructor for `fam`, wherever it lives -- same resolution as the gauntlet."""
+    """The one constructor for `fam`, wherever it lives.
+
+    DELIBERATELY NOT EXTENDED TO hunt16's FAMILIES, and the reason is worth keeping. The
+    gauntlet resolves a third population here (`qquant_gates` does `from run_hunt16 import
+    FAMILIES as F16`), so it is tempting to match it and call the docstring honest. Measured
+    2026-09-03: hunt16 cells ALREADY have a forward clock -- `qquant_shadow.py` imports the same
+    FAMILIES mapping and calls `FAMILIES[family](h1, side)`, and
+    `qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY` is ACTIVE on it
+    at n=2. `authorized_runs` reads UNIVERSAL_SURVIVORS.json, which carries that same hunt16
+    cell, so resolving it here would enrol a SECOND clock for a certificate that already has one
+    -- two state files, two independent verdicts, both feeding promotion. The dedupe at "ONE
+    PIPELINE" below is internal to this module's own rows and would not catch it.
+
+    So the two registries here are the correct set for THIS engine, and hunt16 is owned by
+    qquant_shadow. A hunt16 family arriving here is a routing question, not a resolver gap.
+    """
     fn = getattr(families, f"family_{fam}", None)
     if fn is None:
         try:

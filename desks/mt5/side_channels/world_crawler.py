@@ -67,8 +67,17 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 #: timer beside everything else on a 3.8 GB box: it stops on the clock, not when it runs out of
 #: world, and the frontier makes the next hour resume rather than restart.
 FETCH_TIMEOUT_S = 12
-RUN_BUDGET_S = 900
-DEFAULT_FETCHES = 60
+#: WIDENED 2026-09-03 (principal: "explore every area possible ... every time 24/7"). The run is
+#: hourly, so the old 900s/60-fetch pair spent a quarter of each slot and left the rest idle --
+#: 1,440 fetches a day against a frontier capped at 40,000. 2400s still lands well inside the
+#: hour with room for a slow tail, and 150 fetches raises the day to 3,600.
+#:
+#: BREADTH SCALES WITH IT AUTOMATICALLY, which is the point: `world_frontier.due()` sets its
+#: per-host cap at `budget // 8`, so a bigger budget widens the number of hosts touched rather
+#: than letting one prolific domain take the extra fetches. HOST_GAP_S is untouched -- politeness
+#: per host is not what was limiting coverage, the run clock was.
+RUN_BUDGET_S = 2400
+DEFAULT_FETCHES = 150
 MAX_BYTES = 1_500_000
 #: Politeness gap between two requests to the same host, seconds.
 HOST_GAP_S = 2.0
@@ -326,6 +335,30 @@ _DATA_HOSTS = (
     # MT5 broker publishes one, and the desk was mining exactly one of them.
     "fusionmarkets.com", "icmarkets.com", "fpmarkets.com", "vantagemarkets.com",
     "eightcap.com", "tickmill.com", "axi.com", "blueberrymarkets.com", "thinkmarkets.com",
+    # WIDENED 2026-09-03 (principal: "hunt maximum high value tick type free datasets ...
+    # force it to explore every area possible"). Ordered by the desk's OWN measured
+    # conversion, not by how interesting each class looks.
+    #
+    # (a) MORE BROKER SPEC TABLES. `broker_swaps` is the only source that has ever converted
+    #     at 100% (248 rows -> 248 candidates), because a swap/spec table IS structured causal
+    #     data: a dated carry number per symbol per side. Every one of these publishes one,
+    #     and each is an independent cross-section of the same measurable.
+    "exness.com", "xm.com", "hfm.com", "octafx.com", "roboforex.com", "instaforex.com",
+    "admiralmarkets.com", "oanda.com", "forex.com", "swissquote.com", "cmcmarkets.com",
+    "ig.com", "activtrades.com", "fxpro.com", "alpari.com", "global-prime.com",
+    "vtmarkets.com", "monetamarkets.com", "errante.com", "tradeviewforex.com",
+    # (b) FREE TICK / INTRADAY ARCHIVES beyond the first tranche -- the raw material the ten
+    #     gates measure on, for exactly the instrument classes Fusion quotes.
+    "stooq.com", "finam.ru", "eoddata.com", "alphavantage.co", "twelvedata.com",
+    "tiingo.com", "polygon.io", "marketstack.com", "exchangerate.host", "frankfurter.app",
+    "openexchangerates.org", "data-link.nasdaq.com",
+    # (c) CENTRAL BANKS -- the carry leg. Policy rates and official fixings are the published
+    #     half of every swap number in (a), which makes them its falsifier rather than a
+    #     second opinion.
+    "bundesbank.de", "banque-france.fr", "snb.ch", "rba.gov.au", "bankofcanada.ca",
+    "bankofengland.co.uk", "rbnz.govt.nz", "norges-bank.no", "riksbank.se", "cbr.ru",
+    # (d) EXCHANGES for the metals, energy and index underlyings the desk trades as CFDs.
+    "lme.com", "theice.com", "eurex.com", "nasdaq.com", "euronext.com", "tocom.or.jp",
 )
 
 

@@ -12,6 +12,15 @@ data/*
 !data/nav_attestation.jsonl
 !data/decision_ledger.json
 !data/cashcarry_config.json
+# DEEPSEEK'S OWN OUTPUT, allowlisted 2026-09-03. The flywheel's donate step is
+# `git add -- data/ docs/research/`, and `git add` on an ignored path is a SILENT NO-OP -- so the
+# second brain ran daily, committed, pushed, and published none of its own findings, while the
+# commits it made ("independent cold-phase findings") carried other organs' files swept up by the
+# same blanket add. Findings now also go to data/intelligence/deepseek/ (already allowlisted, and
+# the tree the candidate compiler globs); these two are the AUDIT trail behind them -- what was
+# claimed, and the seal proving it was written before any other agent's conclusion was read.
+!data/deepseek_evidence.jsonl
+!data/deepseek_seals/
 # The universe map is the documented routing target for EVERY digger's data-source finds
 # (R0311): box-local it is invisible to review and dies on reclone, which silently discards
 # every seat's universe-map contribution. It is institutional memory, same class as the

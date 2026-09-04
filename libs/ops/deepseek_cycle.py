@@ -519,6 +519,14 @@ def _build_prompt(role_name: str, role_brief: str, cold: dict[str, Any]) -> tupl
         '{"findings": [{"title": "short label", '
         '"mechanism": "the economic reason someone is FORCED to transact -- who pays, and why '
         'they cannot stop", "testable_claim": "one falsifiable, measurable statement", '
+        # SYMBOLS ARE THE DIFFERENCE BETWEEN A FINDING AND A CANDIDATE. `compile_row` cannot
+        # build an executable identity without one, so every finding that omitted them landed in
+        # the deepening queue to be re-read by a second model at a second cost -- for information
+        # the generating model already had. Naming the instruments its own claim is about is not
+        # a guess; refusing to invent them when the claim is general is the honest half.
+        '"symbols": ["the MT5/Fusion instruments THIS claim is about, e.g. EURUSD, XAUUSD; '
+        '[] if the claim is genuinely general and naming one would be arbitrary"], '
+        '"family": "the desk family this tests, if your claim maps to exactly one, else null", '
         '"capability_source": "name a real elite fund, paper, or open repo this generalises a '
         'KNOWN capability from, or null if this is a first-principles idea", '
         '"evidence_grade": one of FIRST_PARTY_TECHNICAL_DISCLOSURE | INDEPENDENT_REPRODUCTION | '
@@ -596,6 +604,7 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         findings = []
 
     routed: list[str] = []
+    donated: list[dict[str, Any]] = []
     capability_walks: list[dict[str, Any]] = []
     for f in findings:
         if not isinstance(f, dict) or not str(f.get("title", "")).strip():
@@ -604,13 +613,19 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
         # finding rather than trusted because the check is cheap and the alternative is trusting
         # free text to police itself.
         check = fence("generate_hypothesis")
+        syms = [str(s).upper().strip() for s in (f.get("symbols") or [])
+                if str(s).strip()] if isinstance(f.get("symbols"), list) else []
+        fam = f.get("family")
+        fam = str(fam).strip() if isinstance(fam, str) and fam.strip() else None
         row = {"ts": _now(), "role": role_name, "model": model, "deep": deep,
               "seal_path": sealed.get("path"), "title": str(f.get("title"))[:300],
               "mechanism": str(f.get("mechanism") or "")[:2000],
               "testable_claim": str(f.get("testable_claim") or "")[:2000],
               "capability_source": f.get("capability_source"),
+              "symbols": syms, "family": fam,
               "evidence_grade": f.get("evidence_grade"), "authority": check["verdict"]}
         _append_jsonl(base / EVIDENCE, row)
+        donated.append(row)
         routed.append(row["title"])
         # REVERSE-ENGINEERING PATH (principal 2026-08-20): a finding naming a real capability
         # source is a High-Flyer-class walk candidate, not a bare hypothesis -- route it into
@@ -625,10 +640,59 @@ def run_role(role_name: str, role_brief: str, *, deep: bool, state: dict[str, An
                 name=row["title"], source=str(src), mechanism=row["mechanism"],
                 evidence_grade=f.get("evidence_grade"), root=base))
 
+    donated_path = _donate(donated, role_name, root=base) if donated else None
+
     return {"status": "OK", "role": role_name, "model": model, "deep": deep,
            "seal": sealed["verdict"], "n_findings": len(findings), "routed_titles": routed,
            "capability_walks_proposed": len(capability_walks),
+           "donated_to": str(donated_path) if donated_path else None,
            "cold_context_removed_keys": cold["removed_keys"]}
+
+
+#: THE DONATION PATH, and why it is this directory and not the evidence store.
+#:
+#: The factory's whole stated purpose is that findings reach "every brain on every box within the
+#: hour", and its donate step is `git add -- data/ docs/research/`. Measured 2026-09-03: EVERY
+#: DeepSeek output store is matched by `.gitignore:11 data/*`, and `git add` on an ignored path is
+#: a SILENT NO-OP. So the flywheel ran, committed, pushed, and published none of its own findings
+#: -- while the commits it made ("independent cold-phase findings") carried other organs' files
+#: swept up by the same blanket add. This is the identical defect sync_shadow_to_git.ps1 documents
+#: about itself, in a second file, uncaught.
+#:
+#: `data/intelligence/` is ALLOWLISTED (`.gitignore:38`), and it is also the exact tree
+#: `miner_candidate_compiler.recent_rows` globs for `discoveries_*.json`. Writing here therefore
+#: fixes both halves at once: the finding becomes visible to every brain AND enters the same
+#: candidate pipeline as all forty miners, through the door that already exists. No new admission
+#: path, no compiler change, no gitignore exception.
+DONATE_DIR = "data/intelligence/deepseek"
+
+
+def _donate(rows: list[dict[str, Any]], role_name: str, *, root: Path | None = None) -> Path:
+    """Publish this cycle's findings in the miner-discovery contract. Returns the file written."""
+    base = root or _ROOT
+    out = base / DONATE_DIR
+    out.mkdir(parents=True, exist_ok=True)
+    path = out / f"discoveries_{_now().replace(':', '').replace('-', '')[:15]}.json"
+    path.write_text(json.dumps({
+        "source": "deepseek",
+        "role": role_name,
+        "generated_at": _now(),
+        # The compiler reads `discoveries`; each row carries what `compile_row` can actually use.
+        # A row without symbols is not dropped -- it becomes a deepening task like any other
+        # miner's, and is worked by research/deepening_worker.py rather than lost.
+        "discoveries": [{
+            "source": "deepseek",
+            "title": r["title"],
+            "symbols": r.get("symbols") or [],
+            "family": r.get("family"),
+            "mechanism": r.get("mechanism"),
+            "testable_claim": r.get("testable_claim"),
+            "mechanism_tags": [t for t in [r.get("family")] if t],
+            "kind": "hypothesis",
+            "url": f"deepseek://{role_name}/{r['ts']}",
+        } for r in rows],
+    }, indent=1, default=str), encoding="utf-8")
+    return path
 
 
 def _propose_capability_walk(*, name: str, source: str, mechanism: str,
@@ -638,11 +702,27 @@ def _propose_capability_walk(*, name: str, source: str, mechanism: str,
     does not persist, and record() needs a benchmark verdict this text response cannot produce,
     so the PROPOSAL itself is what gets written here for a later controlled test to complete.
     """
-    from libs.research.capability_challenger import (  # type: ignore[import-untyped]
-        EVIDENCE_GRADES,
-        Capability,
-        register,
-    )
+    # FAIL SOFT ON A MISSING OPTIONAL MODULE, and this is not defensive padding -- it is the bug
+    # that produced the zero. `libs/research/capability_challenger.py` was absent from the desk
+    # branch entirely, so this import raised ModuleNotFoundError for EVERY finding that named a
+    # capability_source -- which the prompt explicitly asks for. The exception left run_role()
+    # after the seal was written and before anything was donated, so a productive cycle became a
+    # crashed one, and `docs/research/capability_challengers.jsonl` (not gitignored, so its
+    # emptiness was real) stayed at zero records for the life of the flywheel.
+    #
+    # The module is now on this branch. This guard stays anyway: a reverse-engineering walk is an
+    # ENRICHMENT of a finding, and losing the enrichment must never cost the finding. A cycle that
+    # generated ten hypotheses and cannot structure one of them into a walk has still done nine
+    # tenths of its job, and the skip is recorded rather than swallowed.
+    try:
+        from libs.research.capability_challenger import (  # type: ignore[import-untyped]
+            EVIDENCE_GRADES,
+            Capability,
+            register,
+        )
+    except ImportError as exc:
+        return {"status": "CHALLENGER_UNAVAILABLE", "name": name, "source": source,
+                "why": f"{type(exc).__name__}: {exc}"}
 
     grade = str(evidence_grade or "").strip().upper()
     if grade not in EVIDENCE_GRADES:
