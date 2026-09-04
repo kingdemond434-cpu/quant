@@ -1,18 +1,1577 @@
 {
- "searched_at": "2026-09-03T23:32:31+00:00",
- "symbols": 1,
+ "searched_at": "2026-09-04T04:02:58+00:00",
+ "symbols": 2,
  "symbols_offered": 40,
  "unsearched": [],
- "total_trials": 281292,
- "hypotheses": [],
+ "total_trials": 630324,
+ "hypotheses": [
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_EURMXN_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2402,
+   "t_stat": 4.089258303080994,
+   "exp_r": 0.08343687744906314,
+   "source": "edge_search:ext_resid_EURMXN_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFSGD_1",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1575,
+   "t_stat": 3.635381136789655,
+   "exp_r": 0.0916029943702925,
+   "source": "edge_search:ext_lead_CHFSGD_1",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_OJ_24_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1961,
+   "t_stat": 3.6210073050369926,
+   "exp_r": 0.08176936104356168,
+   "source": "edge_search:ext_lead_OJ_24_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPNOK_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 5173,
+   "t_stat": 3.4586804977493175,
+   "exp_r": 0.04808827581169401,
+   "source": "edge_search:ext_lead_GBPNOK_24",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_GileadSciences",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 3723,
+   "t_stat": 3.4187693798045085,
+   "exp_r": 0.1940948045207458,
+   "source": "edge_search:ext_resid_GileadSciences",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AAL_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1732,
+   "t_stat": 3.418368390508513,
+   "exp_r": 0.08213815058369242,
+   "source": "edge_search:ext_lead_AAL_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AALG_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2518,
+   "t_stat": 3.351904524779181,
+   "exp_r": 0.0667980488199005,
+   "source": "edge_search:ext_residz_AALG_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Meta_1_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2016,
+   "t_stat": 3.348127128818873,
+   "exp_r": 0.07456871787740099,
+   "source": "edge_search:ext_lead_Meta_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ElectronicArts_6_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2848,
+   "t_stat": 3.334148476585236,
+   "exp_r": 0.06247624847544776,
+   "source": "edge_search:ext_lead_ElectronicArts_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ABBV.24H_6_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1644,
+   "t_stat": 3.296205950539165,
+   "exp_r": 0.0812949245757822,
+   "source": "edge_search:ext_lead_ABBV.24H_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "hour",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2536,
+   "t_stat": 3.292437034452928,
+   "exp_r": 0.11324094395152037,
+   "source": "edge_search:hour",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "session opens, fixes, option cuts and settlement windows carry SCHEDULED institutional flow tied to the clock, not to price"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFSEK_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3030,
+   "t_stat": 3.248840253029195,
+   "exp_r": 0.05902106518197928,
+   "source": "edge_search:ext_lead_CHFSEK_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_Netflix_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2738,
+   "t_stat": 3.204607686154957,
+   "exp_r": 0.061243238538451386,
+   "source": "edge_search:ext_residz_Netflix_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "dd_240",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2466,
+   "t_stat": 3.2014143936480948,
+   "exp_r": 0.11166214967000247,
+   "source": "edge_search:dd_240",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "distance below a rolling peak measures forced selling -- margin calls, stop cascades and risk-limit liquidations supply at prices unrelated to value; buying that supply earns the liquidity premium and fails when the decline is informed"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFHUF_12_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2005,
+   "t_stat": 3.1941251574866416,
+   "exp_r": 0.07133369834479121,
+   "source": "edge_search:ext_lead_CHFHUF_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Roku_1_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 4527,
+   "t_stat": 3.1816660648503485,
+   "exp_r": 0.08190491726779495,
+   "source": "edge_search:ext_lead_Roku_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AUDHUF_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4569,
+   "t_stat": 3.141685765895467,
+   "exp_r": 0.04647850660460119,
+   "source": "edge_search:ext_lead_AUDHUF_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURDKK_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1967,
+   "t_stat": 3.1351133133840885,
+   "exp_r": 0.07068887375161356,
+   "source": "edge_search:ext_lead_EURDKK_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AAL_12",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1560,
+   "t_stat": 3.130646793388284,
+   "exp_r": 0.07926323130246403,
+   "source": "edge_search:ext_lead_AAL_12",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDCHF_24",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3072,
+   "t_stat": 3.1301238532535156,
+   "exp_r": 0.05647430778977457,
+   "source": "edge_search:ext_lead_USDCHF_24",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_GileadSciences",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3723,
+   "t_stat": 3.1272711370029183,
+   "exp_r": 0.051252967824372976,
+   "source": "edge_search:ext_resid_GileadSciences",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_ALK",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 2242,
+   "t_stat": 3.112829207145772,
+   "exp_r": 0.2277341244383086,
+   "source": "edge_search:ext_residz_ALK",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ACA_3_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4606,
+   "t_stat": 3.105706526303585,
+   "exp_r": 0.04576130994105874,
+   "source": "edge_search:ext_lead_ACA_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GBPAUD_24_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2984,
+   "t_stat": 3.0700954590476885,
+   "exp_r": 0.056202090492784414,
+   "source": "edge_search:ext_lead_GBPAUD_24_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURGBP_3",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 5835,
+   "t_stat": 3.0684404256433613,
+   "exp_r": 0.040169577658664496,
+   "source": "edge_search:ext_lead_EURGBP_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Walmart_12_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3348,
+   "t_stat": 3.056922067932489,
+   "exp_r": 0.052831341983357184,
+   "source": "edge_search:ext_lead_Walmart_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_ETHUSD",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1714,
+   "t_stat": 3.056784304778522,
+   "exp_r": 0.073834508119375,
+   "source": "edge_search:ext_residz_ETHUSD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AT&T_1_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2856,
+   "t_stat": 3.01333762885653,
+   "exp_r": 0.05638566324986338,
+   "source": "edge_search:ext_lead_AT&T_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_EURNZD",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2480,
+   "t_stat": 3.010290087167327,
+   "exp_r": 0.060448079590409626,
+   "source": "edge_search:ext_residz_EURNZD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_S&PGlobal_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2790,
+   "t_stat": 2.989686870831219,
+   "exp_r": 0.056600934632722234,
+   "source": "edge_search:ext_residz_S&PGlobal_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Dow_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1903,
+   "t_stat": 2.975289203535214,
+   "exp_r": 0.11813277871641731,
+   "source": "edge_search:ext_lead_Dow_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_Toyota",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 3463,
+   "t_stat": 2.9649198616852352,
+   "exp_r": 0.12341340615249863,
+   "source": "edge_search:ext_residz_Toyota",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Procter&Gamble_12",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 2669,
+   "t_stat": 2.9607211826928874,
+   "exp_r": 0.14037793489247247,
+   "source": "edge_search:ext_lead_Procter&Gamble_12",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_TMEGroup_3",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 905,
+   "t_stat": 2.949102392196316,
+   "exp_r": 0.09803148056590077,
+   "source": "edge_search:ext_lead_TMEGroup_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ADP_12_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 4119,
+   "t_stat": 2.9338113621842803,
+   "exp_r": 0.04571263861003665,
+   "source": "edge_search:ext_lead_ADP_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_McDonalds_24",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3056,
+   "t_stat": 2.925375272260032,
+   "exp_r": 0.05291818144894408,
+   "source": "edge_search:ext_lead_McDonalds_24",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_Alphabet-A_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 3936,
+   "t_stat": 2.924552632993046,
+   "exp_r": 0.11418459663393797,
+   "source": "edge_search:ext_resid_Alphabet-A_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_LTCUSD",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 2327,
+   "t_stat": 2.9159617647002665,
+   "exp_r": 0.10469941636260563,
+   "source": "edge_search:ext_residz_LTCUSD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_RobinhoodMarkets_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1183,
+   "t_stat": 2.8999233635680843,
+   "exp_r": 0.08431292352908898,
+   "source": "edge_search:ext_lead_RobinhoodMarkets_12",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURNZD_1",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1247,
+   "t_stat": 2.899311866388944,
+   "exp_r": 0.0821035066534829,
+   "source": "edge_search:ext_lead_EURNZD_1",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_ALK",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2242,
+   "t_stat": 2.8922313610168056,
+   "exp_r": 0.06108227822044596,
+   "source": "edge_search:ext_residz_ALK",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_Qualcomm_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3839,
+   "t_stat": 2.891283598062916,
+   "exp_r": 0.04666396486797041,
+   "source": "edge_search:ext_residz_Qualcomm_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_CHFDKK",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1646,
+   "t_stat": 2.887219448750037,
+   "exp_r": 0.07116474198197559,
+   "source": "edge_search:ext_resid_CHFDKK",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURNZD_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2871,
+   "t_stat": 2.886642173649726,
+   "exp_r": 0.05387364449452701,
+   "source": "edge_search:ext_lead_EURNZD_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GER40_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1956,
+   "t_stat": 2.8752811358387125,
+   "exp_r": 0.06501235375017593,
+   "source": "edge_search:ext_lead_GER40_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AKAM_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2150,
+   "t_stat": 2.856279018983849,
+   "exp_r": 0.10669449867656158,
+   "source": "edge_search:ext_lead_AKAM_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "path_efficiency_48",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2746,
+   "t_stat": 2.850323487497132,
+   "exp_r": 0.05439310927188167,
+   "source": "edge_search:path_efficiency_48",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a measurable market-state transition changes continuation versus absorption odds"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ADYEN_3_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2740,
+   "t_stat": 2.8424858469328558,
+   "exp_r": 0.05430290077750614,
+   "source": "edge_search:ext_lead_ADYEN_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_GoldmanSachs_6",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 6,
+    "side": -1
+   },
+   "n": 3318,
+   "t_stat": 2.842375619775463,
+   "exp_r": 0.12087010620849736,
+   "source": "edge_search:ext_lead_GoldmanSachs_6",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_Berkshire",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2608,
+   "t_stat": 2.832276591547177,
+   "exp_r": 0.05546025593964,
+   "source": "edge_search:ext_resid_Berkshire",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AUDHUF_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3179,
+   "t_stat": 2.8189021877874563,
+   "exp_r": 0.04999594052194091,
+   "source": "edge_search:ext_lead_AUDHUF_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_NETH25_3_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 3919,
+   "t_stat": 2.8186431018535374,
+   "exp_r": 0.04502486890610424,
+   "source": "edge_search:ext_lead_NETH25_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AKAM_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 12,
+    "side": 1
+   },
+   "n": 2150,
+   "t_stat": 2.8142487833027516,
+   "exp_r": 0.21024897153950517,
+   "source": "edge_search:ext_lead_AKAM_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Starbucks_3",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1634,
+   "t_stat": 2.8069327431453304,
+   "exp_r": 0.12027257464409859,
+   "source": "edge_search:ext_lead_Starbucks_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Adobe_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1909,
+   "t_stat": 2.803660708887709,
+   "exp_r": 0.11114325677380145,
+   "source": "edge_search:ext_lead_Adobe_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Accenture_12_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2936,
+   "t_stat": 2.7942410284539987,
+   "exp_r": 0.051568659177498574,
+   "source": "edge_search:ext_lead_Accenture_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CHFHUF_1_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2008,
+   "t_stat": 2.7936209649487957,
+   "exp_r": 0.06234270284091537,
+   "source": "edge_search:ext_lead_CHFHUF_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_LNKUSD",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2341,
+   "t_stat": 2.7805540335260783,
+   "exp_r": 0.05746860195573537,
+   "source": "edge_search:ext_residz_LNKUSD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Shopify_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 594,
+   "t_stat": 2.7780303008062583,
+   "exp_r": 0.11398396390400216,
+   "source": "edge_search:ext_lead_Shopify_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_Medtronic",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 24,
+    "side": -1
+   },
+   "n": 2189,
+   "t_stat": 2.763640455410002,
+   "exp_r": 0.2893771809531886,
+   "source": "edge_search:ext_resid_Medtronic",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ADSK_12_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 1886,
+   "t_stat": 2.760553001084984,
+   "exp_r": 0.15570439477713538,
+   "source": "edge_search:ext_lead_ADSK_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Pepsi_12_z",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 3,
+    "side": -1
+   },
+   "n": 2883,
+   "t_stat": 2.7600848057403975,
+   "exp_r": 0.0890349937335612,
+   "source": "edge_search:ext_lead_Pepsi_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_USDPLN",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1823,
+   "t_stat": 2.7574680644555665,
+   "exp_r": 0.0645828426837394,
+   "source": "edge_search:ext_resid_USDPLN",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AGNC_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 686,
+   "t_stat": 2.757099257792239,
+   "exp_r": 0.18232699356657414,
+   "source": "edge_search:ext_lead_AGNC_12",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CVSHealth_3",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 2332,
+   "t_stat": 2.755179276816781,
+   "exp_r": 0.09882031127418453,
+   "source": "edge_search:ext_lead_CVSHealth_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURAUD_24",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2840,
+   "t_stat": 2.746453383405885,
+   "exp_r": 0.05153627939706285,
+   "source": "edge_search:ext_lead_EURAUD_24",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_SGDJPY_3",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1795,
+   "t_stat": 2.746209067942446,
+   "exp_r": 0.06481885727910497,
+   "source": "edge_search:ext_lead_SGDJPY_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_UnitedParcelService_3",
+    "band": [
+     0.75,
+     0.9
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2314,
+   "t_stat": 2.742074671129061,
+   "exp_r": 0.0570029851909303,
+   "source": "edge_search:ext_lead_UnitedParcelService_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDCNH_24",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 5669,
+   "t_stat": 2.740255726492734,
+   "exp_r": 0.03639467667304051,
+   "source": "edge_search:ext_lead_USDCNH_24",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_Berkshire",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 2608,
+   "t_stat": 2.7384843316264518,
+   "exp_r": 0.13135060941942692,
+   "source": "edge_search:ext_resid_Berkshire",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_HK50_1_z",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3617,
+   "t_stat": 2.7381126536160596,
+   "exp_r": 0.045527841208447065,
+   "source": "edge_search:ext_lead_HK50_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_EURNZD_24_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 2872,
+   "t_stat": 2.734545721557885,
+   "exp_r": 0.051026169972251435,
+   "source": "edge_search:ext_lead_EURNZD_24_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_resid_BCHUSD",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 4012,
+   "t_stat": 2.734380603790678,
+   "exp_r": 0.043169647510699856,
+   "source": "edge_search:ext_resid_BCHUSD",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AFG",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 6,
+    "side": 1
+   },
+   "n": 3515,
+   "t_stat": 2.7334651407795403,
+   "exp_r": 0.1129344653872412,
+   "source": "edge_search:ext_residz_AFG",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_Microsoft_12_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 3,
+    "side": 1
+   },
+   "n": 1824,
+   "t_stat": 2.732478909849237,
+   "exp_r": 0.11081665299139498,
+   "source": "edge_search:ext_lead_Microsoft_12_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_CharlesSchwab_6_z",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 2025,
+   "t_stat": 2.7223794682394056,
+   "exp_r": 0.06049732151643124,
+   "source": "edge_search:ext_lead_CharlesSchwab_6_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_ALLC_12",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1836,
+   "t_stat": 2.7202361194304694,
+   "exp_r": 0.06348487436486876,
+   "source": "edge_search:ext_lead_ALLC_12",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_residz_AFG",
+    "band": [
+     0.4,
+     0.6
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 3515,
+   "t_stat": 2.7158789134057972,
+   "exp_r": 0.04580867587974519,
+   "source": "edge_search:ext_residz_AFG",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "cross-instrument pricing residuals can converge when common risk is re-arbitraged"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_eBay_3",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1076,
+   "t_stat": 2.7109076055692487,
+   "exp_r": 0.0826434769392422,
+   "source": "edge_search:ext_lead_eBay_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_AI_3_z",
+    "band": [
+     0.0,
+     0.1
+    ],
+    "horizon": 1,
+    "side": -1
+   },
+   "n": 1987,
+   "t_stat": 2.7084807420106967,
+   "exp_r": 0.0607612666079313,
+   "source": "edge_search:ext_lead_AI_3_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_McDonalds_1_z",
+    "band": [
+     0.1,
+     0.25
+    ],
+    "horizon": 12,
+    "side": -1
+   },
+   "n": 2926,
+   "t_stat": 2.691655120661582,
+   "exp_r": 0.17237444286189765,
+   "source": "edge_search:ext_lead_McDonalds_1_z",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  },
+  {
+   "symbol": "XAUUSD",
+   "family": "discovered",
+   "params": {
+    "feature": "ext_lead_USDIDR_3",
+    "band": [
+     0.9,
+     1.0
+    ],
+    "horizon": 1,
+    "side": 1
+   },
+   "n": 1490,
+   "t_stat": 2.690780631590409,
+   "exp_r": 0.06970840708516003,
+   "source": "edge_search:ext_lead_USDIDR_3",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "information diffuses from a leading Fusion instrument into a slower target"
+  }
+ ],
  "per_symbol": [
   {
    "symbol": "XAUUSD",
    "status": "OK",
    "bars": 49758,
-   "primitives": 4907,
-   "trials": 281292,
-   "candidates_scored": 137262,
+   "primitives": 4922,
+   "trials": 282192,
+   "candidates_scored": 137712,
    "untestable_dropped": 20,
    "selected": [
     {
@@ -1716,16 +3275,1557 @@
      "n_days": 311
     }
    ]
+  },
+  {
+   "symbol": "A",
+   "status": "OK",
+   "bars": 7431,
+   "primitives": 5861,
+   "trials": 348132,
+   "candidates_scored": 170222,
+   "untestable_dropped": 30,
+   "selected": [
+    {
+     "feature": "ext_lead_ZARJPY_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 272,
+     "n_effective": 272.0,
+     "mean_fwd": -0.0020152059140966906,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.002036386548554454,
+     "t_stat": 4.415919266189423,
+     "sharpe_like": 0.2677544348338091,
+     "n_days": 219
+    },
+    {
+     "feature": "ext_lead_GBPPLN_12",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 204,
+     "n_effective": 204.0,
+     "mean_fwd": -0.0022809472248173962,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0023021278592751594,
+     "t_stat": 3.9535520120796104,
+     "sharpe_like": 0.27680400718419723,
+     "n_days": 165
+    },
+    {
+     "feature": "ext_lead_Shopify_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 288,
+     "n_effective": 288.0,
+     "mean_fwd": -0.0016325481477600903,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0016537287822178536,
+     "t_stat": 3.6621966506610035,
+     "sharpe_like": 0.21579700714342148,
+     "n_days": 216
+    },
+    {
+     "feature": "ext_lead_CADJPY_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 239,
+     "n_effective": 239.0,
+     "mean_fwd": -0.0019696910154226813,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0019908716498804446,
+     "t_stat": 3.6460780832121324,
+     "sharpe_like": 0.23584518527607756,
+     "n_days": 188
+    },
+    {
+     "feature": "ext_lead_Honeywell_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 292,
+     "n_effective": 292.0,
+     "mean_fwd": -0.0015595892226822742,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0015807698571400374,
+     "t_stat": 3.527150212902785,
+     "sharpe_like": 0.20641085362560907,
+     "n_days": 208
+    },
+    {
+     "feature": "ext_lead_CORN_1",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 453,
+     "n_effective": 453.0,
+     "mean_fwd": -0.001094563250533007,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0011157438849907703,
+     "t_stat": 3.4641738030784337,
+     "sharpe_like": 0.16276108343955256,
+     "n_days": 263
+    },
+    {
+     "feature": "ext_lead_AMD_6",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 371,
+     "n_effective": 371.0,
+     "mean_fwd": -0.0010223876046432435,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010435682391010067,
+     "t_stat": 3.40985397370061,
+     "sharpe_like": 0.17703079758532886,
+     "n_days": 256
+    },
+    {
+     "feature": "x_ext_resid_AFX__ext_resid_ALGN",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 24,
+     "side": -1,
+     "n_oos": 579,
+     "n_effective": 24.1,
+     "mean_fwd": -0.01979686490427668,
+     "unconditional_fwd": 0.0005256845027993296,
+     "edge_vs_unconditional": -0.020322549407076007,
+     "t_stat": 3.386930766664233,
+     "sharpe_like": 0.6895609481920913,
+     "n_days": 99
+    },
+    {
+     "feature": "x_ext_resid_ADI__ext_resid_AEP",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 324,
+     "n_effective": 108.0,
+     "mean_fwd": -0.0043536132594288925,
+     "unconditional_fwd": 6.403609405054107e-05,
+     "edge_vs_unconditional": -0.004417649353479433,
+     "t_stat": 3.385707968681252,
+     "sharpe_like": 0.3257899011859303,
+     "n_days": 64
+    },
+    {
+     "feature": "ext_lead_TexasInstruments_6_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 420,
+     "n_effective": 420.0,
+     "mean_fwd": -0.0011202722503990306,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0011414528848567938,
+     "t_stat": 3.371058862701428,
+     "sharpe_like": 0.16449082950120614,
+     "n_days": 280
+    },
+    {
+     "feature": "ext_lead_AppliedMaterials_12_z",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 412,
+     "n_effective": 412.0,
+     "mean_fwd": -0.0012086921935370524,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0012298728279948156,
+     "t_stat": 3.3659259584894947,
+     "sharpe_like": 0.16582726975164552,
+     "n_days": 272
+    },
+    {
+     "feature": "x_ext_resid_ADI__ext_resid_AEP",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 12,
+     "side": -1,
+     "n_oos": 324,
+     "n_effective": 27.0,
+     "mean_fwd": -0.014558092948239336,
+     "unconditional_fwd": 0.000268445160932479,
+     "edge_vs_unconditional": -0.014826538109171814,
+     "t_stat": 3.3525981746637887,
+     "sharpe_like": 0.645207819542262,
+     "n_days": 64
+    },
+    {
+     "feature": "ext_lead_Caterpillar_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 455,
+     "n_effective": 455.0,
+     "mean_fwd": 0.0012997838380948157,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0012786032036370524,
+     "t_stat": 3.334740356215716,
+     "sharpe_like": 0.15633503922963415,
+     "n_days": 286
+    },
+    {
+     "feature": "spread_z_48",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 378,
+     "n_effective": 378.0,
+     "mean_fwd": -0.0013683189824004152,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0013894996168581785,
+     "t_stat": 3.3003122382229955,
+     "sharpe_like": 0.1697497447595659,
+     "n_days": 231
+    },
+    {
+     "feature": "ext_lead_Oracle_6_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 263,
+     "n_effective": 263.0,
+     "mean_fwd": -0.002228425062502832,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.002249605696960595,
+     "t_stat": 3.243961147605584,
+     "sharpe_like": 0.20003121360205836,
+     "n_days": 197
+    },
+    {
+     "feature": "ext_resid_TMEGroup",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 48,
+     "side": -1,
+     "n_oos": 507,
+     "n_effective": 10.6,
+     "mean_fwd": -0.037427558991356455,
+     "unconditional_fwd": 0.0008217480372963902,
+     "edge_vs_unconditional": -0.03824930702865285,
+     "t_stat": 3.229726147071454,
+     "sharpe_like": 0.9937618914066012,
+     "n_days": 88
+    },
+    {
+     "feature": "ext_lead_AUDSGD_24_z",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 603,
+     "n_effective": 603.0,
+     "mean_fwd": 0.0010100374220199059,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0009888567875621427,
+     "t_stat": 3.2204002642663596,
+     "sharpe_like": 0.1311448369634399,
+     "n_days": 341
+    },
+    {
+     "feature": "ext_lead_XLMUSD_6",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 445,
+     "n_effective": 445.0,
+     "mean_fwd": -0.0007982875335184327,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008194681679761961,
+     "t_stat": 3.1764486060405424,
+     "sharpe_like": 0.1505781050590824,
+     "n_days": 299
+    },
+    {
+     "feature": "ext_lead_NIO_1",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 347,
+     "n_effective": 347.0,
+     "mean_fwd": -0.001045552408480073,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010667330429378363,
+     "t_stat": 3.1578489601582533,
+     "sharpe_like": 0.16952221429307082,
+     "n_days": 253
+    },
+    {
+     "feature": "ext_lead_ADSK_6",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 266,
+     "n_effective": 266.0,
+     "mean_fwd": -0.002211468009704454,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0022326486441622173,
+     "t_stat": 3.1549593499318953,
+     "sharpe_like": 0.19344296919191595,
+     "n_days": 200
+    },
+    {
+     "feature": "x_ext_resid_AALG__ext_resid_AIG",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 24,
+     "side": -1,
+     "n_oos": 490,
+     "n_effective": 20.4,
+     "mean_fwd": -0.023359851426317985,
+     "unconditional_fwd": 0.0005256845027993296,
+     "edge_vs_unconditional": -0.023885535929117314,
+     "t_stat": 3.133097138599697,
+     "sharpe_like": 0.6933961737055278,
+     "n_days": 96
+    },
+    {
+     "feature": "ext_lead_XTIUSD_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 226,
+     "n_effective": 226.0,
+     "mean_fwd": -0.0014126221040869176,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0014338027385446808,
+     "t_stat": 3.117978335307573,
+     "sharpe_like": 0.20740483369922358,
+     "n_days": 190
+    },
+    {
+     "feature": "ext_lead_TMEGroup_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 388,
+     "n_effective": 388.0,
+     "mean_fwd": -0.0009936823202714071,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010148629547291703,
+     "t_stat": 3.088586053439206,
+     "sharpe_like": 0.15679920025223384,
+     "n_days": 267
+    },
+    {
+     "feature": "ext_residz_CADJPY",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 499,
+     "n_effective": 499.0,
+     "mean_fwd": -0.0010032234508620909,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.001024404085319854,
+     "t_stat": 3.0872891260868105,
+     "sharpe_like": 0.13820604225698818,
+     "n_days": 100
+    },
+    {
+     "feature": "ext_lead_AGN_3_z",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 536,
+     "n_effective": 536.0,
+     "mean_fwd": -0.0008845057479477276,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009056863824054909,
+     "t_stat": 3.0695275914639044,
+     "sharpe_like": 0.1325833983858234,
+     "n_days": 169
+    },
+    {
+     "feature": "ext_residz_XCUUSD_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": 1,
+     "n_oos": 309,
+     "n_effective": 103.0,
+     "mean_fwd": 0.0037549519446100203,
+     "unconditional_fwd": 6.403609405054107e-05,
+     "edge_vs_unconditional": 0.003690915850559479,
+     "t_stat": 3.0482024608421288,
+     "sharpe_like": 0.3003483130440197,
+     "n_days": 85
+    },
+    {
+     "feature": "ext_lead_NIO_12_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 495,
+     "n_effective": 495.0,
+     "mean_fwd": 0.0010638735764792843,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0010426929420215211,
+     "t_stat": 3.0403606904633773,
+     "sharpe_like": 0.13665405062327043,
+     "n_days": 305
+    },
+    {
+     "feature": "ext_lead_Alphabet-A_24_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 286,
+     "n_effective": 286.0,
+     "mean_fwd": -0.0009337261479165468,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009549067823743101,
+     "t_stat": 3.024080697100048,
+     "sharpe_like": 0.17881764026665645,
+     "n_days": 217
+    },
+    {
+     "feature": "ext_lead_USDTRY_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 291,
+     "n_effective": 291.0,
+     "mean_fwd": -0.0007579446207430922,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007791252552008555,
+     "t_stat": 3.007265493990386,
+     "sharpe_like": 0.17628902532874308,
+     "n_days": 267
+    },
+    {
+     "feature": "ext_lead_ALK_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 292,
+     "n_effective": 292.0,
+     "mean_fwd": -0.0014223164528298074,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0014434970872875706,
+     "t_stat": 3.0018143389777245,
+     "sharpe_like": 0.17566789695187363,
+     "n_days": 215
+    },
+    {
+     "feature": "ext_lead_USDTHB_1",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 471,
+     "n_effective": 471.0,
+     "mean_fwd": -0.0008546527990064715,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008758334334642348,
+     "t_stat": 2.966320807828568,
+     "sharpe_like": 0.13668084801589978,
+     "n_days": 306
+    },
+    {
+     "feature": "ext_residz_McDonalds",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 375,
+     "n_effective": 125.0,
+     "mean_fwd": -0.0038042877214556443,
+     "unconditional_fwd": 6.403609405054107e-05,
+     "edge_vs_unconditional": -0.0038683238155061855,
+     "t_stat": 2.95776522838437,
+     "sharpe_like": 0.26455056448610564,
+     "n_days": 78
+    },
+    {
+     "feature": "ext_lead_Merck_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 458,
+     "n_effective": 458.0,
+     "mean_fwd": -0.0010899654915429362,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0011111461260006994,
+     "t_stat": 2.9522555896581477,
+     "sharpe_like": 0.137949844270333,
+     "n_days": 291
+    },
+    {
+     "feature": "ext_lead_XPDUSD_12",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 515,
+     "n_effective": 515.0,
+     "mean_fwd": -0.0008901872787242261,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009113679131819894,
+     "t_stat": 2.9506682289055237,
+     "sharpe_like": 0.1300219772093251,
+     "n_days": 322
+    },
+    {
+     "feature": "ext_corr_Chevron",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 24,
+     "side": -1,
+     "n_oos": 637,
+     "n_effective": 26.5,
+     "mean_fwd": -0.014823171798364265,
+     "unconditional_fwd": 0.0005256845027993296,
+     "edge_vs_unconditional": -0.015348856301163595,
+     "t_stat": 2.9412914769520695,
+     "sharpe_like": 0.5709183068705257,
+     "n_days": 110
+    },
+    {
+     "feature": "x_ext_resid_AALG__ext_resid_AUDHUF",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 431,
+     "n_effective": 143.7,
+     "mean_fwd": -0.003062347664023379,
+     "unconditional_fwd": 6.403609405054107e-05,
+     "edge_vs_unconditional": -0.00312638375807392,
+     "t_stat": 2.9143611679233845,
+     "sharpe_like": 0.2431450115440278,
+     "n_days": 81
+    },
+    {
+     "feature": "x_ext_resid_AFX__ext_resid_ALGN",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 579,
+     "n_effective": 579.0,
+     "mean_fwd": -0.0007840678153837973,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008052484498415606,
+     "t_stat": 2.904325414902245,
+     "sharpe_like": 0.12069964517269154,
+     "n_days": 99
+    },
+    {
+     "feature": "ext_residz_Merck",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 447,
+     "n_effective": 447.0,
+     "mean_fwd": -0.0008683003321086854,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008894809665664487,
+     "t_stat": 2.886259954409955,
+     "sharpe_like": 0.13651541139762075,
+     "n_days": 105
+    },
+    {
+     "feature": "ext_lead_LucidGroup_24",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 327,
+     "n_effective": 327.0,
+     "mean_fwd": 0.001169631893708335,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0011484512592505717,
+     "t_stat": 2.882645256415577,
+     "sharpe_like": 0.15941064693352583,
+     "n_days": 232
+    },
+    {
+     "feature": "ext_lead_Broadcom_3",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 390,
+     "n_effective": 390.0,
+     "mean_fwd": -0.00086233602572888,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008835166601866433,
+     "t_stat": 2.8816888011923023,
+     "sharpe_like": 0.14591998463257913,
+     "n_days": 262
+    },
+    {
+     "feature": "ext_lead_GeneralMotors_12",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 291,
+     "n_effective": 291.0,
+     "mean_fwd": -0.0013987460129621233,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0014199266474198865,
+     "t_stat": 2.8696130131003175,
+     "sharpe_like": 0.1682196939914577,
+     "n_days": 223
+    },
+    {
+     "feature": "ext_lead_Coca-Cola_12",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 448,
+     "n_effective": 448.0,
+     "mean_fwd": 0.0009795168509361487,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0009583362164783854,
+     "t_stat": 2.8592659701639254,
+     "sharpe_like": 0.13508761945077807,
+     "n_days": 298
+    },
+    {
+     "feature": "ext_lead_Snowflake_1",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 272,
+     "n_effective": 272.0,
+     "mean_fwd": 0.001136862025247918,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0011156813907901549,
+     "t_stat": 2.8580210213919597,
+     "sharpe_like": 0.17329297869756943,
+     "n_days": 198
+    },
+    {
+     "feature": "ext_residz_Boeing_z",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 336,
+     "n_effective": 336.0,
+     "mean_fwd": -0.0010730989431580091,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010942795776157724,
+     "t_stat": 2.8516488022060207,
+     "sharpe_like": 0.15557019632784816,
+     "n_days": 67
+    },
+    {
+     "feature": "ext_corr_eBay",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 321,
+     "n_effective": 321.0,
+     "mean_fwd": -0.0012596705624145419,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.001280851196872305,
+     "t_stat": 2.8479390684241768,
+     "sharpe_like": 0.15895645808963266,
+     "n_days": 63
+    },
+    {
+     "feature": "x_ext_resid_ALGUSD__ext_resid_AUDUSD",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 387,
+     "n_effective": 387.0,
+     "mean_fwd": 0.0015236216409848635,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0015024410065271002,
+     "t_stat": 2.8415064530602283,
+     "sharpe_like": 0.14444189056085177,
+     "n_days": 96
+    },
+    {
+     "feature": "ext_lead_USDHKD_1",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 487,
+     "n_effective": 487.0,
+     "mean_fwd": -0.0009324045336277347,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009535851680854981,
+     "t_stat": 2.8408460220513785,
+     "sharpe_like": 0.1287310211765301,
+     "n_days": 279
+    },
+    {
+     "feature": "ext_lead_PayPal_24_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 459,
+     "n_effective": 459.0,
+     "mean_fwd": -0.000902475615899384,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009236562503571474,
+     "t_stat": 2.831861225702859,
+     "sharpe_like": 0.1321799625027621,
+     "n_days": 281
+    },
+    {
+     "feature": "x_ext_resid_AALG__ext_resid_AI",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 462,
+     "n_effective": 462.0,
+     "mean_fwd": -0.0009856903659446461,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010068710004024093,
+     "t_stat": 2.8270252121625488,
+     "sharpe_like": 0.13152511611578194,
+     "n_days": 90
+    },
+    {
+     "feature": "ext_corr_GBPPLN",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 429,
+     "n_effective": 71.5,
+     "mean_fwd": -0.005367585904025207,
+     "unconditional_fwd": 0.00013749466358622888,
+     "edge_vs_unconditional": -0.005505080567611436,
+     "t_stat": 2.8180369410887445,
+     "sharpe_like": 0.3332680351241862,
+     "n_days": 69
+    },
+    {
+     "feature": "ext_lead_COFROB_1_z",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 258,
+     "n_effective": 258.0,
+     "mean_fwd": 0.0010558618397513554,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0010346812052935922,
+     "t_stat": 2.813167268942442,
+     "sharpe_like": 0.17514014413987877,
+     "n_days": 158
+    },
+    {
+     "feature": "ext_lead_Doordash_3",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 228,
+     "n_effective": 228.0,
+     "mean_fwd": 0.0013873040950504972,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.001366123460592734,
+     "t_stat": 2.810207204375755,
+     "sharpe_like": 0.18611051861264932,
+     "n_days": 183
+    },
+    {
+     "feature": "ext_lead_ExxonMobil_12",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 426,
+     "n_effective": 426.0,
+     "mean_fwd": 0.0010642132400785148,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0010430326056207516,
+     "t_stat": 2.802129390232035,
+     "sharpe_like": 0.1357636125650709,
+     "n_days": 280
+    },
+    {
+     "feature": "ext_lead_XAUAUD_6",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 504,
+     "n_effective": 504.0,
+     "mean_fwd": -0.0007312143480205343,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007523949824782976,
+     "t_stat": 2.801377679527543,
+     "sharpe_like": 0.12478327961604611,
+     "n_days": 316
+    },
+    {
+     "feature": "ext_lead_BlackRock_12_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 436,
+     "n_effective": 436.0,
+     "mean_fwd": 0.001112010999567819,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0010908303651100558,
+     "t_stat": 2.7960840051613203,
+     "sharpe_like": 0.1339081377914973,
+     "n_days": 285
+    },
+    {
+     "feature": "ext_lead_NZDJPY_24",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 374,
+     "n_effective": 374.0,
+     "mean_fwd": -0.0010777581025661412,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010989387370239044,
+     "t_stat": 2.794126489653378,
+     "sharpe_like": 0.14448084120887572,
+     "n_days": 257
+    },
+    {
+     "feature": "x_ext_resid_ADBE.24H__ext_resid_AEP",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 48,
+     "side": -1,
+     "n_oos": 330,
+     "n_effective": 6.9,
+     "mean_fwd": -0.03191730637362107,
+     "unconditional_fwd": 0.0008217480372963902,
+     "edge_vs_unconditional": -0.03273905441091746,
+     "t_stat": 2.7915486839407713,
+     "sharpe_like": 1.0646548944781173,
+     "n_days": 68
+    },
+    {
+     "feature": "ext_lead_XAUEUR_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 430,
+     "n_effective": 430.0,
+     "mean_fwd": -0.0009032702114217454,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009244508458795087,
+     "t_stat": 2.790943743081204,
+     "sharpe_like": 0.13459125871823335,
+     "n_days": 283
+    },
+    {
+     "feature": "ext_lead_USDMXN_3_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 273,
+     "n_effective": 273.0,
+     "mean_fwd": 0.000931302475584666,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0009101218411269027,
+     "t_stat": 2.779265836339206,
+     "sharpe_like": 0.16820882047582733,
+     "n_days": 203
+    },
+    {
+     "feature": "x_ext_resid_AFL__ext_resid_ALIBABA",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 344,
+     "n_effective": 344.0,
+     "mean_fwd": -0.0010042421415002122,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010254227759579754,
+     "t_stat": 2.770030716924613,
+     "sharpe_like": 0.14935004703234483,
+     "n_days": 81
+    },
+    {
+     "feature": "ext_corr_Chevron",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 637,
+     "n_effective": 106.2,
+     "mean_fwd": -0.003998413886069232,
+     "unconditional_fwd": 0.00013749466358622888,
+     "edge_vs_unconditional": -0.004135908549655461,
+     "t_stat": 2.769017772602957,
+     "sharpe_like": 0.2687395912334186,
+     "n_days": 110
+    },
+    {
+     "feature": "ext_lead_CharlesSchwab_24_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 426,
+     "n_effective": 426.0,
+     "mean_fwd": -0.0008544683581768489,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008756489926346122,
+     "t_stat": 2.765782759079354,
+     "sharpe_like": 0.13400261253164647,
+     "n_days": 280
+    },
+    {
+     "feature": "ext_corr_Nike",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 675,
+     "n_effective": 675.0,
+     "mean_fwd": -0.000681339621805799,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007025202562635623,
+     "t_stat": 2.7612629286620596,
+     "sharpe_like": 0.1062810596777583,
+     "n_days": 114
+    },
+    {
+     "feature": "ext_residz_Nike_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 557,
+     "n_effective": 557.0,
+     "mean_fwd": -0.0007903385326433354,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008115191671010987,
+     "t_stat": 2.759106828427011,
+     "sharpe_like": 0.1169071083214054,
+     "n_days": 125
+    },
+    {
+     "feature": "ext_lead_ALK_12_z",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 403,
+     "n_effective": 403.0,
+     "mean_fwd": 0.001209067359373276,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0011878867249155128,
+     "t_stat": 2.7533581406484995,
+     "sharpe_like": 0.13715453828219787,
+     "n_days": 274
+    },
+    {
+     "feature": "ext_lead_USDZAR_6_z",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 526,
+     "n_effective": 526.0,
+     "mean_fwd": -0.0007383937565486923,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007595743910064557,
+     "t_stat": 2.7465531030424293,
+     "sharpe_like": 0.11975540620477204,
+     "n_days": 318
+    },
+    {
+     "feature": "ext_lead_UnitedHealth_3",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 424,
+     "n_effective": 424.0,
+     "mean_fwd": -0.0008432127639946326,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008643933984523959,
+     "t_stat": 2.74599375589653,
+     "sharpe_like": 0.13335724566118118,
+     "n_days": 278
+    },
+    {
+     "feature": "ext_residz_Medtronic",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 6,
+     "side": 1,
+     "n_oos": 578,
+     "n_effective": 96.3,
+     "mean_fwd": 0.005270168049767813,
+     "unconditional_fwd": 0.00013749466358622888,
+     "edge_vs_unconditional": 0.005132673386181584,
+     "t_stat": 2.7403036382135157,
+     "sharpe_like": 0.2791967723265678,
+     "n_days": 120
+    },
+    {
+     "feature": "ext_lead_GileadSciences_12_z",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 434,
+     "n_effective": 434.0,
+     "mean_fwd": -0.0010773508196057677,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.001098531454063531,
+     "t_stat": 2.734916087113135,
+     "sharpe_like": 0.13128017321419092,
+     "n_days": 288
+    },
+    {
+     "feature": "ext_lead_ABN_24",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 337,
+     "n_effective": 337.0,
+     "mean_fwd": -0.0010775802829534273,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010987609174111905,
+     "t_stat": 2.7237794709908045,
+     "sharpe_like": 0.14837372221485193,
+     "n_days": 177
+    },
+    {
+     "feature": "ext_residz_AA_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 3,
+     "side": -1,
+     "n_oos": 313,
+     "n_effective": 104.3,
+     "mean_fwd": -0.003164126022174272,
+     "unconditional_fwd": 6.403609405054107e-05,
+     "edge_vs_unconditional": -0.0032281621162248133,
+     "t_stat": 2.722934866493988,
+     "sharpe_like": 0.2665788631762674,
+     "n_days": 70
+    },
+    {
+     "feature": "ext_lead_ADPR_24_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 420,
+     "n_effective": 420.0,
+     "mean_fwd": -0.001009338498528743,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010305191329865063,
+     "t_stat": 2.720733153802751,
+     "sharpe_like": 0.13275818416347987,
+     "n_days": 139
+    },
+    {
+     "feature": "x_ext_resid_ADBE.24H__ext_resid_AFL",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 425,
+     "n_effective": 425.0,
+     "mean_fwd": -0.0009974353454489015,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010186159799066648,
+     "t_stat": 2.7164079209047687,
+     "sharpe_like": 0.13176513859005676,
+     "n_days": 93
+    },
+    {
+     "feature": "ext_lead_ABT_6_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 462,
+     "n_effective": 462.0,
+     "mean_fwd": 0.001055192618938011,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0010340119844802478,
+     "t_stat": 2.7160241430795775,
+     "sharpe_like": 0.1263608790098292,
+     "n_days": 285
+    },
+    {
+     "feature": "ext_lead_Toyota_3_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 425,
+     "n_effective": 425.0,
+     "mean_fwd": -0.0007619223291312615,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007831029635890248,
+     "t_stat": 2.7137041651095224,
+     "sharpe_like": 0.13163398716970762,
+     "n_days": 272
+    },
+    {
+     "feature": "x_ext_resid_ADM__ext_resid_AEP",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 417,
+     "n_effective": 417.0,
+     "mean_fwd": -0.0010025070965162216,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0010236877309739848,
+     "t_stat": 2.7076944052287937,
+     "sharpe_like": 0.13259636550125434,
+     "n_days": 113
+    },
+    {
+     "feature": "ext_corr_ElectronicArts_z",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 367,
+     "n_effective": 367.0,
+     "mean_fwd": -0.0009048323660020258,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009260130004597892,
+     "t_stat": 2.7071965841764647,
+     "sharpe_like": 0.14131451139857035,
+     "n_days": 81
+    },
+    {
+     "feature": "x_ext_resid_AALG__ext_resid_ADBE.24H",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 661,
+     "n_effective": 661.0,
+     "mean_fwd": -0.000835675575471046,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008568562099288093,
+     "t_stat": 2.7059229495378223,
+     "sharpe_like": 0.10524820465072987,
+     "n_days": 148
+    },
+    {
+     "feature": "ext_resid_Boeing",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 438,
+     "n_effective": 438.0,
+     "mean_fwd": -0.0009244099162513819,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0009455905507091452,
+     "t_stat": 2.705010336953579,
+     "sharpe_like": 0.12925039345325517,
+     "n_days": 72
+    },
+    {
+     "feature": "ext_residz_AGN_z",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 393,
+     "n_effective": 393.0,
+     "mean_fwd": 0.0009310405020420147,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0009098598675842514,
+     "t_stat": 2.698111257979022,
+     "sharpe_like": 0.1361017090906177,
+     "n_days": 92
+    },
+    {
+     "feature": "ext_corr_EURNZD",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 675,
+     "n_effective": 112.5,
+     "mean_fwd": -0.003642339745841836,
+     "unconditional_fwd": 0.00013749466358622888,
+     "edge_vs_unconditional": -0.0037798344094280645,
+     "t_stat": 2.687515994558312,
+     "sharpe_like": 0.2533814379065988,
+     "n_days": 125
+    },
+    {
+     "feature": "ext_lead_AGN_3_z",
+     "band": [
+      0.75,
+      0.9
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 520,
+     "n_effective": 520.0,
+     "mean_fwd": 0.0009582704896979159,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0009370898552401526,
+     "t_stat": 2.6757888527982803,
+     "sharpe_like": 0.11734110356595438,
+     "n_days": 182
+    },
+    {
+     "feature": "ext_lead_EURNZD_1",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 788,
+     "n_effective": 788.0,
+     "mean_fwd": 0.0007590013301311404,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0007378206956733771,
+     "t_stat": 2.6753702209843273,
+     "sharpe_like": 0.09530611793531762,
+     "n_days": 370
+    },
+    {
+     "feature": "ext_lead_XAGEUR_24",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 401,
+     "n_effective": 401.0,
+     "mean_fwd": -0.0008188139014134513,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0008399945358712146,
+     "t_stat": 2.6688785646438156,
+     "sharpe_like": 0.13327743543094778,
+     "n_days": 256
+    },
+    {
+     "feature": "x_ext_resid_ADM__ext_resid_AFX",
+     "band": [
+      0.1,
+      0.25
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 284,
+     "n_effective": 284.0,
+     "mean_fwd": -0.0012272456658842191,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0012484263003419824,
+     "t_stat": 2.6674711132314237,
+     "sharpe_like": 0.15828528954724963,
+     "n_days": 61
+    },
+    {
+     "feature": "ext_lead_ALK_3",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 505,
+     "n_effective": 505.0,
+     "mean_fwd": -0.0007263245016848968,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007475051361426602,
+     "t_stat": 2.664031095704964,
+     "sharpe_like": 0.11854782782884138,
+     "n_days": 303
+    },
+    {
+     "feature": "ext_residz_XAUUSD",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": 1,
+     "n_oos": 307,
+     "n_effective": 307.0,
+     "mean_fwd": 0.0011244460662586185,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": 0.0011032654318008552,
+     "t_stat": 2.6607270801200444,
+     "sharpe_like": 0.1518557153666759,
+     "n_days": 75
+    },
+    {
+     "feature": "ext_lead_XPTUSD_12_z",
+     "band": [
+      0.9,
+      1.0
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 294,
+     "n_effective": 294.0,
+     "mean_fwd": -0.001108396514145344,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0011295771486031071,
+     "t_stat": 2.6553833318865614,
+     "sharpe_like": 0.15486510082413216,
+     "n_days": 215
+    },
+    {
+     "feature": "ext_resid_ElectronicArts",
+     "band": [
+      0.0,
+      0.1
+     ],
+     "horizon": 6,
+     "side": -1,
+     "n_oos": 560,
+     "n_effective": 93.3,
+     "mean_fwd": -0.004616945336752936,
+     "unconditional_fwd": 0.00013749466358622888,
+     "edge_vs_unconditional": -0.004754440000339165,
+     "t_stat": 2.652367558667889,
+     "sharpe_like": 0.27454612544305074,
+     "n_days": 91
+    },
+    {
+     "feature": "ext_lead_ADAJPY_1",
+     "band": [
+      0.4,
+      0.6
+     ],
+     "horizon": 1,
+     "side": -1,
+     "n_oos": 569,
+     "n_effective": 569.0,
+     "mean_fwd": -0.0007757346459644718,
+     "unconditional_fwd": 2.1180634457763318e-05,
+     "edge_vs_unconditional": -0.0007969152804222352,
+     "t_stat": 2.648481261391848,
+     "sharpe_like": 0.1110301103252927,
+     "n_days": 313
+    }
+   ]
   }
  ],
- "naming_queue_written": 0,
+ "naming_queue_written": 18,
  "arbiter": "the canonical ten-gate policy, and nothing else. This searcher discovers and reports; it sets no threshold of its own. Pipeline: discovery -> backtest -> ten gates -> certificate -> forward window -> live.",
  "honesty": {
-  "trials_counted": 281292,
+  "trials_counted": 630324,
   "why": "every (feature, band, horizon, direction) combination evaluated is counted and carried into each hypothesis, so deflated Sharpe deflates against the real multiplicity of the search rather than a flattering subset",
   "oos_only": "scored on the held-out 40% only; band edges derived from the fit window so the condition itself does not leak",
   "selection": "greedy on marginal independence, |corr| < 0.5 against everything already chosen -- diversity is the objective, not a filter"
  },
  "partial": true,
- "symbols_completed": 1
+ "symbols_completed": 2
 }

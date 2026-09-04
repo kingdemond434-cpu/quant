@@ -1,0 +1,192 @@
+[
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Does slippage really matter?",
+  "url": "https://www.quantconnect.com/forum/discussion/976/does-slippage-really-matter/",
+  "text": "A trader is struggling with slippage in mean reversion equity strategies, and wonders if negative and positive slippage evens out.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "976"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Bug Report: Backtest silently executes a ~1-day window ~90 days before &quot;today&quot; instead of the configured date range",
+  "url": "https://www.quantconnect.com/forum/discussion/21299/bug-report-backtest-silently-executes-a-1-day-window-90-days-before-quot-today-quot-instead-of-the-configured-date-range/",
+  "text": "Backtest date range silently shifts to phantom 1-day window",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21299"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "23,824 Doors: How We Turn Trading Ideas into Falsifiable Experiments",
+  "url": "https://www.quantconnect.com/forum/discussion/21291/23-824-doors-how-we-turn-trading-ideas-into-falsifiable-experiments/",
+  "text": "Turn trading ideas into falsifiable, evidence-based experiments.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21291"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "A consistent absolute-return metric for QuantConnect live algorithms",
+  "url": "https://www.quantconnect.com/forum/discussion/21290/a-consistent-absolute-return-metric-for-quantconnect-live-algorithms/",
+  "text": "Persistent AbsRet% tracks live performance from original capital across redeploys.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21290"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Problem with MICRO SILVER futures and Interative Brokers.",
+  "url": "https://www.quantconnect.com/forum/discussion/19622/problem-with-micro-silver-futures-and-interative-brokers/",
+  "text": "MICRO SILVER futures fail live on IB: &quot;No security definition found,&quot; but work in backtests.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "19622"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Would you pay for cheap point-in-time S&amp;P 500 data (survivorship-bias-free)?",
+  "url": "https://www.quantconnect.com/forum/discussion/21226/would-you-pay-for-cheap-point-in-time-s-amp-p-500-data-survivorship-bias-free/",
+  "text": "Would you buy cheap point-in-time S&amp;P 500 data?",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21226"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Ibkr passkey",
+  "url": "https://www.quantconnect.com/forum/discussion/21186/ibkr-passkey/",
+  "text": "Hong Kong IBKR passkey change may affect QuantConnect connection.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21186"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Non existing symbol",
+  "url": "https://www.quantconnect.com/forum/discussion/20188/non-existing-symbol/",
+  "text": "Paper algo queued a buy for unknown symbol MODI&mdash;why does QC allow non-existent tickers?",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20188"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Any plan on implementing Indian - Options",
+  "url": "https://www.quantconnect.com/forum/discussion/20029/any-plan-on-implementing-indian-options/",
+  "text": "Planning support for Indian brokers and NSE options in QuantConnect?",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20029"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Perturb Prices for Robustness Tests with a Data Filter",
+  "url": "https://www.quantconnect.com/forum/discussion/21206/perturb-prices-for-robustness-tests-with-a-data-filter/",
+  "text": "Use data filters to perturb prices and test strategy robustness across noisy paths.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21206"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Just checking if my posts are public",
+  "url": "https://www.quantconnect.com/forum/discussion/17831/just-checking-if-my-posts-are-public/",
+  "text": "Testing if posts are public after potential shadow ban.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "17831"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Log Downloads Blocked even though I upgraded my plan",
+  "url": "https://www.quantconnect.com/forum/discussion/21156/log-downloads-blocked-even-though-i-upgraded-my-plan/",
+  "text": "Team upgrade still blocked by daily backtest log download limit (Error 3001)",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21156"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Interactive Brokers FIX API Update",
+  "url": "https://www.quantconnect.com/forum/discussion/21140/interactive-brokers-fix-api-update/",
+  "text": "User asks for ETA on QC&rsquo;s paused IBKR FIX API integration.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21140"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Statistics of credit spreads backtests are innacurate",
+  "url": "https://www.quantconnect.com/forum/discussion/20952/statistics-of-credit-spreads-backtests-are-innacurate/",
+  "text": "Backtest stats inaccurate for credit spreads: win rate, P\\/L, settlement, orders.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20952"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "How to get every stock in research",
+  "url": "https://www.quantconnect.com/forum/discussion/20529/how-to-get-every-stock-in-research/",
+  "text": "Need a way to list all listed\\/delisted symbols in Research without loading data\\/OOM",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20529"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Alpaca Brokerage API no Longer Compatible with QuantConnect",
+  "url": "https://www.quantconnect.com/forum/discussion/21072/alpaca-brokerage-api-no-longer-compatible-with-quantconnect/",
+  "text": "Alpaca API changes break QuantConnect live deployments.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "21072"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Institutional XAUUSD Tokyo Range Liquidity Sweep Engine (76% WR \\/ 1% DD)",
+  "url": "https://www.quantconnect.com/forum/discussion/20960/institutional-xauusd-tokyo-range-liquidity-sweep-engine-76-wr-1-dd/",
+  "text": "XAUUSD Asian-session liquidity sweep strategy with 76% WR and 1% max DD.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20960"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Robust Backtesting Guide - Walk-Forward Validation, Transaction Costs, Out-of-Sample Testing",
+  "url": "https://www.quantconnect.com/forum/discussion/20140/robust-backtesting-guide-walk-forward-validation-transaction-costs-out-of-sample-testing/",
+  "text": "QuantConnect guide: walk-forward, costs &amp; out-of-sample tests for robust backtesting.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20140"
+ },
+ {
+  "source": "quantconnect",
+  "kind": "strategy_thread",
+  "title": "Invalid order in Live trading with SC",
+  "url": "https://www.quantconnect.com/forum/discussion/20944/invalid-order-in-live-trading-with-sc/",
+  "text": "Schwab rejected Liquidate order due to market-price and position warnings.",
+  "symbols": [],
+  "found_at": "2026-09-04T05:25:01+00:00",
+  "thread_id": "20944"
+ }
+]
