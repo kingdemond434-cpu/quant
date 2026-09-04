@@ -1821,8 +1821,33 @@ def main() -> None:
     # filled), the 95% UPPER bound on mean correlation is used rather than the point estimate, and
     # an unmeasurable book returns None, which routes back to the base budget rather than to the
     # ceiling.
+    # CURRENCY CONCENTRATION BINDS THE BUDGET TOO, from the positions actually open.
+    #
+    # Return correlation is backward-looking and estimated on the quiet sample: four sleeves each
+    # secretly SHORT USD measure as four independent bets for as long as the dollar does not move,
+    # and then move together on the day it does. `libs/risk/fx_factors` decomposes a book into its
+    # currency legs and reported `n_effective 1.019 across 17 sleeves` on the live survivor set --
+    # seventeen positions behaving as one bet. It had ZERO non-test callers.
+    #
+    # EXPOSURES COME FROM OPEN POSITIONS, NOT FROM THE SLEEVE ROSTER, and the distinction is not
+    # pedantry: a session bracket places a buy stop AND a sell stop, so its direction does not
+    # exist until one of them fills. Reading intent off the roster would assume a sign the desk
+    # has not taken, and could tighten the budget against a book that is genuinely two-sided.
+    # A flat book has nothing to concentrate and so correctly constrains nothing.
+    _exposure: dict[str, float] = {}
+    try:
+        for _p in mt5.positions_get() or []:
+            _sgn = 1.0 if int(getattr(_p, "type", 0)) == 0 else -1.0
+            _exposure[str(_p.symbol)] = _exposure.get(str(_p.symbol), 0.0) + _sgn * float(
+                getattr(_p, "volume", 0.0) or 0.0)
+    except Exception as _exc:                                        # noqa: BLE001
+        # A breadth MEASUREMENT must never stop the trading loop. An unreadable position list
+        # leaves exposures empty, which leaves the budget exactly as the return series set it.
+        log(f"factor breadth: positions unreadable ({type(_exc).__name__}: {_exc}); "
+            f"return breadth alone")
     k_eff, k_why = measure_from_ledger(
-        ledger_rows(), _prov.current_account(mt5.account_info()))
+        ledger_rows(), _prov.current_account(mt5.account_info()),
+        exposures=_exposure or None)
     log(k_why)
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
