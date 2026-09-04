@@ -488,6 +488,30 @@ def main() -> None:
                 # decision the desk already made -- the rule stated at _TERMINAL_STATUSES. The
                 # attempt and the reason are still recorded above, so the gap stays visible on a
                 # row whose verdict stands.
+                # A STALE IDENTITY MARK MUST CLEAR EVEN WHEN THE INPUTS ARE MISSING.
+                # This branch `continue`s and the identity-clearing code sits ~180 lines below it,
+                # so a row that is BOTH terminal-on-identity AND short an input can never reach the
+                # place that would revive it. Measured 2026-09-04: 17 clocks stayed IDENTITY_BROKEN
+                # across repeated engine passes -- 13 overnight_gap_decay, 1 carry, 3 discovered,
+                # exactly the families with runtime input gaps -- while their frozen behaviour hash
+                # MATCHED the running code on all 17. They were not broken; they were unreachable.
+                #
+                # The registry is the freeze-then-verify record. When it reads LIVE the identity
+                # holds by the desk's own authority, so a terminal identity mark in the state file
+                # is stale and clears. The row still cannot evaluate this pass -- that is what
+                # BLOCKED_INPUTS_UNAVAILABLE says, honestly -- but it is no longer frozen out of
+                # every future pass by a verdict that no longer holds.
+                if str(st.get("status") or "").upper() == "IDENTITY_BROKEN":
+                    try:
+                        _live = str((_reg.snapshot().get(key) or {}).get("status") or "").upper()
+                    except Exception:
+                        _live = ""
+                    if _live == "LIVE":
+                        slog(f"{key}: stale IDENTITY_BROKEN cleared -- the registry reads LIVE so "
+                             f"the identity holds; this pass still cannot evaluate ({why})")
+                        st["status"] = ""
+                        st.pop("identity_drift", None)
+                        st.pop("identity_reason", None)
                 if st.get("status") not in _TERMINAL_STATUSES:
                     st["status"] = "BLOCKED_INPUTS_UNAVAILABLE"
                 state[key] = st
