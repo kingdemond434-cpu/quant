@@ -392,6 +392,8 @@ def sweep() -> dict:
     errors: dict[str, int] = {}
     ran: dict[str, int] = {}
     untestable: dict[str, int] = {}
+    #: family -> pooled observations from cells individually short of MIN_TRADE_DAYS.
+    pooled: dict[str, dict] = {}
 
     # ONE BASKET FOR THE SWEEP, chosen before the loop. Rebuilding a factor set per symbol reread
     # the same parquets 297 times; this loads them once and keeps them resident in `_bars`' cache.
@@ -512,6 +514,22 @@ def sweep() -> dict:
             if _days < MIN_TRADE_DAYS:
                 key = f"{fam}:untestable ({_days} trading days < {MIN_TRADE_DAYS} the gates need)"
                 untestable[key] = untestable.get(key, 0) + 1
+                # POOL IT INSTEAD OF DROPPING IT. The 60-day floor is the gauntlet's own CPCV
+                # requirement and is not negotiable -- but it is a requirement about OBSERVATIONS,
+                # and a cell is not the only unit that can carry them. Measured 2026-09-04: six
+                # families were structurally untestable, every cell missing by 2-27 days
+                # (pca_residual by TWO), while their cells sat on DIFFERENT SYMBOLS whose trading
+                # days are largely disjoint. The observations existed; they were just split across
+                # cells and thrown away one cell at a time.
+                #
+                # This is the same move family_evidence already makes for FORWARD verdicts,
+                # applied to backtest: the FAMILY carries the evidence, members inherit. Pooling
+                # weakens nothing -- CPCV still receives its 60+ distinct days, they simply come
+                # from the family rather than from one parameterization.
+                _pool = pooled.setdefault(fam, {"days": set(), "rs": [], "members": []})
+                _pool["days"].update(t.entry_time.date() for t in trades)
+                _pool["rs"].extend(t.r_multiple for t in trades)
+                _pool["members"].append(f"{sym}:{_days}d")
                 continue
             rs = [t.r_multiple for t in trades]
             exp = sum(rs) / len(rs)
@@ -529,6 +547,31 @@ def sweep() -> dict:
                 "mechanism_status": "NAMED",
                 "mechanism_note": FAMILY_INPUTS.get(fam, ("", None))[0],
             })
+
+    # FAMILIES THE POOL RESCUES. Emitted as FAMILY-level candidates, never disguised as a cell:
+    # `pooled: True` and the member list travel with them, so nothing downstream can mistake
+    # family evidence for a single parameterization's certificate.
+    for _fam, _p in sorted(pooled.items()):
+        _nd = len(_p["days"])
+        if _nd < MIN_TRADE_DAYS or not _p["rs"]:
+            continue
+        _exp = sum(_p["rs"]) / len(_p["rs"])
+        if _exp <= MIN_EXP_R:
+            continue
+        _cum = _peak = _dd = 0.0
+        for _r in _p["rs"]:
+            _cum += _r
+            _peak = max(_peak, _cum)
+            _dd = min(_dd, _cum - _peak)
+        hypotheses.append({
+            "family": _fam, "symbol": "POOLED", "pooled": True,
+            "members": _p["members"], "trades": len(_p["rs"]), "trade_days": _nd,
+            "exp_r": round(_exp, 5), "max_dd_r": round(_dd, 3),
+            "why": (f"{len(_p['members'])} cells individually below {MIN_TRADE_DAYS} trading days "
+                    f"pool to {_nd} distinct days across different symbols. CPCV gets its "
+                    f"observations from the FAMILY; members inherit, exactly as family_evidence "
+                    f"already does for forward verdicts."),
+        })
 
     return _build_report(symbols, ran, gaps, errors, untestable, hypotheses)
 
