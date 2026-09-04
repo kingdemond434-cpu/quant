@@ -546,3 +546,19 @@ WHAT TO EXTRACT, IN PRIORITY ORDER:
 
 
 the row costs one line.
+
+=== DEEP-FOREST STORY GROUNDS (principal 2026-09-04 -- competition records and trader stories are mechanism fuel) ===
+The deep Chinese web is worth mining to exhaustion, because even a dubious trader story names a TESTABLE
+mechanism: 七禾网 (7hcn.com) 期货人物专访, 期货日报 (qhrb.com.cn) 全国期货实盘交易大赛 and 蓝海密剑 records and
+winner write-ups, 私募排排网 manager interviews, the 聚宽/优矿/米筐/掘金量化/BigQuant communities (strategy
+posts with code), 知乎/CSDN/雪球 (reach them through a search engine's index -- direct fetches are 403/WAF/
+timeout from this box), 淘股吧/集思录/经管之家/和讯期货/东方财富期吧 forums, Gitee (gitee.com/api/v5 works),
+Bilibili (search + public subtitles), 微信公众号 via 搜狗, 掘金. THE MACHINE ALREADY HARVESTS THESE:
+desks/mt5/research/deep_forest_miner.py writes reports/DEEP_FOREST.json (per-ground status re-measured each
+run) and queues every verbatim claim as kind=story_mechanism with the instrument mapped to its MT5 analogue
+(沪金->XAUUSD, 恒指->HK50, 螺纹钢->mechanism-class transfer only) -- READ THAT REPORT FIRST and dig DEEPER than
+it can: reply chains, the interviewee's other interviews, the competition's other years, the community
+post's comments and forks. Reverse-engineer each story into an exact rule (family + parameters + instrument
++ horizon) and route it as a mechanism card; a story's own performance numbers are NEVER evidence. Crypto-
+exchange grounds stay forbidden (the miner drops those claims and counts them). Feed every new ground URL
+you find to data/intelligence/world/frontier.json via the crawler contract, never a private list.

@@ -1,0 +1,101 @@
+{
+ "note": "Public repositories the miner reads for MECHANISM CLAIMS. Concepts are reimplemented; code is never copied unless the licence is copy-permitted (libs.data.datahub.COPY_PERMITTED) and a person decides to. Provenance of every extraction is written to data/mined_sources.jsonl. Gitee entries carry host=gitee and are read through gitee.com/api/v5 with the same bilingual claim grammar.",
+ "repos": [
+  {
+   "repo": "microsoft/qlib",
+   "why": "factor/model machinery, Alpha158/Alpha360, TRA, DDG-DA"
+  },
+  {
+   "repo": "microsoft/RD-Agent",
+   "why": "research-development-evaluation-feedback loop, factor/model co-evolution"
+  },
+  {
+   "repo": "RL-MLDM/alphagen",
+   "why": "RL formulaic alpha generation"
+  },
+  {
+   "repo": "robcarver17/pysystemtrade",
+   "why": "forecast normalisation, diversification multipliers, position buffering"
+  },
+  {
+   "repo": "nautechsystems/nautilus_trader",
+   "why": "deterministic research/live parity"
+  },
+  {
+   "repo": "nkaz001/hftbacktest",
+   "why": "latency and fill realism"
+  },
+  {
+   "repo": "wondertrader/wondertrader",
+   "why": "theoretical positions and portfolio netting"
+  },
+  {
+   "repo": "vnpy/vnpy",
+   "why": "execution algorithm registry, gateway abstraction"
+  },
+  {
+   "repo": "fasiondog/hikyuu",
+   "why": "composable strategy components"
+  },
+  {
+   "repo": "ricequant/rqalpha",
+   "why": "modular platform contracts, PIT data (non-commercial licence: concept only)"
+  },
+  {
+   "repo": "akfamily/akshare",
+   "why": "public data discovery surface"
+  },
+  {
+   "repo": "AI4Finance-Foundation/FinRL",
+   "why": "standardised RL market environments"
+  },
+  {
+   "repo": "cvxgrp/cvxportfolio",
+   "why": "multi-period optimisation"
+  },
+  {
+   "repo": "dcajasn/Riskfolio-Lib",
+   "why": "portfolio challengers"
+  },
+  {
+   "repo": "skfolio/skfolio",
+   "why": "hierarchical / stacking allocators"
+  },
+  {
+   "repo": "freqtrade/freqtrade",
+   "why": "lookahead and recursive analysis discipline (crypto venue ignored)"
+  },
+  {
+   "repo": "OpenBB-finance/OpenBB",
+   "why": "provider-extension data interface"
+  },
+  {
+   "repo": "vnpy/vnpy",
+   "host": "gitee",
+   "why": "Gitee mirror of the vn.py lineage; CTA strategy templates"
+  },
+  {
+   "repo": "fasiondog/hikyuu",
+   "host": "gitee",
+   "why": "Gitee home of Hikyuu; composable strategy components"
+  },
+  {
+   "repo": "wondertrader/wondertrader",
+   "host": "gitee",
+   "why": "Gitee home of WonderTrader; netting and theoretical positions"
+  },
+  {
+   "repo": "ricequant/rqalpha",
+   "host": "gitee",
+   "why": "Gitee mirror of RQAlpha (concept only, non-commercial licence)"
+  }
+ ],
+ "queries": [
+  "量化投研 因子挖掘 stars:>200",
+  "因子进化 自动化投研",
+  "策略工厂 实盘交易 python",
+  "alpha mining formulaic factor evolution",
+  "gflownet alpha generation"
+ ],
+ "policy": "every mined claim enters the deepening queue as kind=repo_mechanism; the worker seat extracts an exact recipe or rejects; nothing bypasses the gauntlet"
+}

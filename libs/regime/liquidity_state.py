@@ -40,8 +40,9 @@ that decision in here would hide it inside a classifier.
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -159,9 +160,10 @@ def classify(symbol: str, spread_history: Sequence[float] | None,
     else:
         gaps["activity_history"] = "no tick-activity series supplied; THIN cannot be separated"
 
-    common = dict(spread=cur, percentile=pct, cost_multiple=cost_mult, widening=widening,
-                  quiet=quiet, minutes_since_tick=minutes_since_tick, n_history=int(arr.size),
-                  gaps=gaps)
+    common: dict[str, Any] = {
+        "spread": cur, "percentile": pct, "cost_multiple": cost_mult, "widening": widening,
+        "quiet": quiet, "minutes_since_tick": minutes_since_tick, "n_history": int(arr.size),
+        "gaps": gaps}
 
     if pct >= EXTREME_PCT and widening:
         return LiquidityState(symbol, TOXIC,

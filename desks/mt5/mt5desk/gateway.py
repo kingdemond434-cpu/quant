@@ -20,24 +20,23 @@ appended to data/live_ledger.jsonl for retire/champion logic.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import math
+import sys
 import time
-import contextlib
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import MetaTrader5 as mt5
-import numpy as np
 import pandas as pd
-from mt5desk import position_manager as _pm  # noqa: E402
-from mt5desk import provenance as _prov  # noqa: E402
-from mt5desk.independence import measure_from_ledger  # noqa: E402
-from mt5desk.config import desk_root, gateway_paused, terminal_path  # noqa: E402
-from mt5desk.sizing import clamp_risk_frac, decay_factor  # noqa: E402
+from mt5desk import position_manager as _pm
+from mt5desk import provenance as _prov
+from mt5desk.config import desk_root, gateway_paused, terminal_path
+from mt5desk.independence import measure_from_ledger
+from mt5desk.sizing import MAX_RISK_FRAC, clamp_risk_frac, decay_factor
 
 BASE = desk_root()
 STATE = BASE / "data" / "gateway_state.json"
@@ -94,13 +93,11 @@ LOT = 0.02              # gold book lot; see Q_OPT below for the sizing policy
 #: drawdown tolerance rather than chosen: 1.27%, the risk that spends exactly MAX_DRAWDOWN_
 #: TOLERANCE over the book's worst -33.7R. See that module for the full argument.
 from mt5desk.gateway_config_fallback import (  # noqa: E402
-    BOOK_WORST_DD_R as _BOOK_WORST_DD_R,
     HEAT_HARD_CEILING,
     HEAT_TARGET,
-    MAX_DRAWDOWN_TOLERANCE,
-    MAX_SLEEVE_HEAT_SHARE,
     Q_OPT,
 )
+
 DIST_USD = 19.1         # ~1.2xATR stop distance (USD/oz), used for auto lot scaling
 
 #: GOLD'S contract size and a frozen EUR/USD rate. THESE ARE NO LONGER THE SIZING PATH and must
@@ -160,7 +157,7 @@ PROMOTED_MIN_EQUITY = 300.0  # EUR: below this, promoted sleeves stay dormant
 def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
                  symbol: str = GOLD_SYMBOL, info: object | None = None,
                  risk_frac: float | None = None,
-                 decay_faded: object = None) -> float:
+                 decay_faded: object = None, from_book: bool = False) -> float:
     """Dynamic lot for promoted sleeves: risk-fraction sizing x authority ramp.
 
     RISK BASE (principal order 2026-08-25): promoted sleeves target
@@ -188,7 +185,25 @@ def promoted_lot(equity: float, live_n: int, dist_usd: float | None = None,
     # The flag is now the single source of truth and it is applied here, alongside `ramp`,
     # which is the same shape for the same reason: authority and decay both scale RISK, not the
     # lot after the fact. Reduce-only by construction; it can never raise a fraction.
-    q_eff = clamp_risk_frac(risk_frac) * ramp * decay_factor(decay_faded)
+    if from_book:
+        # THE ALLOCATOR'S FRACTION IS THE FRACTION (principal, 2026-09-04: the book's 20-30% is
+        # deployed, not re-shrunk). h_i was solved on posterior worlds that ALREADY shrink each
+        # sleeve by its forward and live evidence, so applying the authority ramp again halved
+        # or quartered every leg a second time: MEASURED on the 2026-09-04 forecast log, a 20.5%
+        # book whose largest leg (5.1%) reached the venue at 1.3%, and the whole book at ~5%.
+        # The clamp is not applied either -- it FLOORS at 3%, which would raise a leg the
+        # allocator sized at 1.7%, and CEILS at 10%, which stays as the outer per-trade envelope
+        # (raising it is a principal act). The fade flag still applies: it is live decay the
+        # daily worlds have not yet absorbed, and it is reduce-only.
+        try:
+            h_i = float(risk_frac)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            h_i = 0.0
+        if not (h_i > 0.0):
+            return 0.0
+        q_eff = min(h_i, MAX_RISK_FRAC) * decay_factor(decay_faded)
+    else:
+        q_eff = clamp_risk_frac(risk_frac) * ramp * decay_factor(decay_faded)
     lot = auto_lot(equity, dist_usd, symbol, info, q=q_eff)
     # FLOOR, not nearest. Rounding up here reintroduced the overshoot `_lot_steps`
     # exists to prevent, on exactly the sleeves with the least forward evidence.
@@ -237,7 +252,7 @@ def _eur_per_price_unit(symbol: str, info: object | None = None) -> float:
     returning 92 for a JPY cross is exactly the defect this function exists to delete, and a
     number that looks plausible is worse than a refusal the caller must handle (L1.28a).
     """
-    from mt5desk import risk_units as _ru                      # noqa: PLC0415
+    from mt5desk import risk_units as _ru
 
     try:
         return _ru.eur_per_price_unit(symbol, info)             # type: ignore[arg-type]
@@ -469,7 +484,7 @@ def allocator_heat() -> tuple[float | None, str]:
         if not isinstance(ann, (int, float)) or not math.isfinite(float(ann)):
             return None, f"allocator book has no finite growth ({ann!r})"
         return total, f"allocator book ({age / 60:.0f} min old, binding={heat.get('binding')})"
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
@@ -498,14 +513,36 @@ def allocator_book() -> tuple[dict[str, float] | None, str]:
     try:
         from libs.portfolio.allocator_proof import read_certificate
         cert, cwhy = read_certificate(BASE.parent.parent)
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return None, f"proof unreadable ({type(exc).__name__}: {exc})"
-    if cert is None:
-        return None, f"allocator may rank but not size: {cwhy}"
     try:
         art = json.loads((BASE / "reports" / "pf_allocation.json").read_text(encoding="utf-8"))
+    except Exception as exc:
+        return None, f"pf_allocation unreadable ({type(exc).__name__})"
+    if cert is None:
+        # THE FLOOR IS DEPLOYED EITHER WAY (principal, 2026-09-04: 20% minimum, 24/7, and more
+        # when growth says so). Without a passing proof the DYNAMIC weights have no authority --
+        # that gate stands -- so the book the desk sizes is the best BASELINE the contest scored
+        # on the same worlds at the same total heat: equal weight, inverse vol or risk parity.
+        # The allocator writes it beside the dynamic book precisely so a stale or failed proof
+        # changes WHO allocates the floor, never WHETHER it is allocated.
+        fb = art.get("book_fallback") or {}
+        try:
+            book = {str(k): float(v) for k, v in (fb.get("book") or {}).items()
+                    if float(v) > 0.0}
+        except (TypeError, ValueError):
+            book = {}
+        if not book:
+            return None, f"allocator may rank but not size: {cwhy}; no fallback book either"
+        drift = abs(sum(book.values()) - total)
+        if drift > 0.005:
+            return None, (f"fallback book sums to {sum(book.values()):.4f}, heat says "
+                          f"{total:.4f}")
+        return book, (f"floor deployed with baseline {fb.get('name', '?')} "
+                      f"({len(book)} sleeve(s)); dynamic weights withheld: {cwhy}")
+    try:
         book = {str(k): float(v) for k, v in (art.get("book") or {}).items() if float(v) > 0.0}
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         return None, f"pf_allocation book unreadable ({type(exc).__name__})"
     if not book:
         # An EMPTY book is a real answer -- "hold nothing" -- but it is not a sizing instruction,
@@ -542,7 +579,7 @@ def allocator_order(sleeves: list[dict]) -> list[dict]:
         if not isinstance(mg, dict) or not mg:
             return sleeves
         rank = {str(k): float(v) for k, v in mg.items()}
-    except Exception:                                           # noqa: BLE001
+    except Exception:
         return sleeves
     known = [s for s in sleeves if str(s.get("name")) in rank]
     unknown = [s for s in sleeves if str(s.get("name")) not in rank]
@@ -702,7 +739,7 @@ def cap_by_heat(sleeves: list[dict], equity: float,
                 # cross needs a 3.9 yen stop at current equity). The first bracket replaces
                 # this estimate with the sleeve's own measured stop.
                 qs.append(float(Q_OPT))
-        except Exception:                                       # noqa: BLE001
+        except Exception:
             # UNMEASURABLE IS CHARGED AT THE MOST EXPENSIVE MEASURED LEG, never at gold's by
             # default. An instrument whose risk cannot be priced must not be the cheapest thing
             # in the book (L1.28a); if nothing at all is measurable the budget admits nobody.
@@ -924,7 +961,7 @@ def note_placement(st: dict, sleeve: str, orders: list) -> bool:
     PAUSED.write_text(
         f"AUTO-PAUSED {now()}: {n} consecutive placement passes with ZERO accepted "
         f"orders.\n\n" + "\n".join(f"  {d}" for d in diags) +
-        f"\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
+        "\n\nNothing has traded. Fix the cause, then delete this file to re-arm.\n",
         encoding="utf-8")
     log("GATEWAY AUTO-PAUSED: no order has been accepted in "
         f"{n} consecutive passes. Nothing is trading; the reason is in "
@@ -976,8 +1013,86 @@ def _state_vector_id() -> str:
         sid = str(json.loads(p.read_text("utf-8")).get("id") or "")
         _SV_CACHE = (mtime, sid)
         return sid
-    except Exception:                                             # noqa: BLE001
+    except Exception:
         return ""
+
+
+DECISIONS = BASE / "data" / "decision_ledger.jsonl"
+
+
+def _release_id() -> str:
+    """The canonical live release this process runs under (libs.ops.release). One SHA, named on
+    every intent and every decision, so a fill weeks later is attributable to one code state."""
+    try:
+        from libs.ops.release import release_id
+        return release_id()
+    except Exception:                                           # noqa: BLE001
+        return "unreleased"
+
+
+def _record_decision(**row) -> None:
+    """Append one CONSIDERED signal -- taken or not -- with why. NEVER raises.
+
+    THE DATASET NOBODY ELSE HAS. The intent ledger records what was sent to the broker. This
+    records everything the desk LOOKED AT: the bracket it would have placed, whether it placed it,
+    and if not, which filter said no -- regime hibernate, margin guard, an entry inside the freeze
+    band, a rejection, or simply shadow mode. Joined later to what the market did, that is the
+    P&L of every veto the desk runs, which is the number that decides whether a filter earns its
+    place. `counterfactual_markout` does the join; this only writes.
+
+    One row per (sleeve, side, day) is the natural key; the state vector id is carried so the
+    counterfactual can be conditioned on the world the decision was made in.
+    """
+    try:
+        row["time"] = now()
+        row.setdefault("state_vector_id", _state_vector_id())
+        try:
+            row.setdefault("release_id", _release_id())
+        except Exception:                                   # noqa: BLE001
+            row.setdefault("release_id", "unreleased")
+        DECISIONS.parent.mkdir(parents=True, exist_ok=True)
+        with DECISIONS.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(row, default=str) + "\n")
+    except Exception as exc:
+        log(f"decision record failed (non-fatal): {type(exc).__name__}: {exc}")
+
+
+def _record_vetoed_bracket(s: dict, df: pd.DataFrame, sym, reason: str,
+                           detail: str = "") -> bool:
+    """Record the bracket a VETOED sleeve would have placed today, both sides. NEVER raises.
+
+    A veto that fires before the bracket is computed (regime hibernate, the state gate) leaves
+    no trace of what it refused, and a filter with no trace cannot be valued. This computes the
+    same range and the same spec the bracket loop would have -- the identical `day_range` and
+    `bracket_spec` calls, on the identical bars -- and writes the two pending-stop levels with
+    the veto reason, so `counterfactual_markout` can replay them exactly as it replays a margin
+    veto. Nothing is sent to the broker; the sleeve is not sized; state is not touched.
+
+    Returns True when a record was written (range ready), False when the sleeve's range was not
+    yet formed at this hour -- in which case the next pass tries again, exactly as the live loop
+    would have.
+    """
+    try:
+        span = day_range(df, s.get("rng"), s["sig_hour"])
+        if span is None:
+            return False
+        hi, lo = span
+        tr = pd.concat([df["high"] - df["low"],
+                        (df["high"] - df["close"].shift(1)).abs(),
+                        (df["low"] - df["close"].shift(1)).abs()], axis=1).max(axis=1)
+        a = float(tr.ewm(alpha=1 / ATR_N, min_periods=ATR_N).mean().iloc[-1])
+        spec = bracket_spec(hi, lo, max(a, 5.0), sym.trade_tick_size,
+                            stops_level=int(getattr(sym, "trade_stops_level", 0) or 20))
+        for side in ("buy_stop", "sell_stop"):
+            leg = spec.get(side) or {}
+            _record_decision(sleeve=s["name"], symbol=s["symbol"], side=side, lot=None,
+                             price=leg.get("price"), sl=leg.get("sl"), tp=leg.get("tp"),
+                             taken=False, reason=reason, detail=detail)
+        return True
+    except Exception as exc:
+        log(f"vetoed-bracket record failed (non-fatal) [{s.get('name')}]: "
+            f"{type(exc).__name__}: {exc}")
+        return False
 
 
 def _record_intent(**row) -> None:
@@ -985,16 +1100,25 @@ def _record_intent(**row) -> None:
     try:
         row["time"] = now()
         row.setdefault("state_vector_id", _state_vector_id())
+        try:
+            row.setdefault("release_id", _release_id())
+        except Exception:                                   # noqa: BLE001
+            row.setdefault("release_id", "unreleased")
         INTENTS.parent.mkdir(parents=True, exist_ok=True)
         with INTENTS.open("a", encoding="utf-8") as f:
             f.write(json.dumps(row, default=str) + "\n")
-    except Exception as exc:                      # noqa: BLE001
+    except Exception as exc:
         log(f"intent record failed (non-fatal): {type(exc).__name__}: {exc}")
 
 
 def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) -> dict:
     if not st["armed"]:
         log(f"SHADOW [{sleeve}] would place bracket: {json.dumps(spec, default=str)}")
+        for side in ("buy_stop", "sell_stop"):
+            s = spec.get(side) or {}
+            _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                             price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                             taken=False, reason="shadow_not_armed")
         return {"shadow": True, "orders": []}
     sent = []
     # Current market, read ONCE for the legality check below. A pending order
@@ -1020,6 +1144,10 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
                 # the days its strategy has nothing to do.
                 sent.append({"side": side, "retcode": None, "unavailable": True,
                              "comment": why_illegal})
+                _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                                 price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                                 taken=False, reason="entry_inside_freeze_band",
+                                 detail=why_illegal)
                 continue
         req = {
             "action": mt5.TRADE_ACTION_PENDING,
@@ -1067,6 +1195,10 @@ def place_bracket(st: dict, spec: dict, sleeve: str, symbol: str, lot: float) ->
                        point=_point, stops_level=_lvl, order_type="pending_stop")
         sent.append({"side": side, "retcode": code,
                      "comment": res.comment if res else None})
+        _record_decision(sleeve=sleeve, symbol=symbol, side=side, lot=lot,
+                         price=s.get("price"), sl=s.get("sl"), tp=s.get("tp"),
+                         taken=(not why), reason=("placed" if not why else "broker_rejected"),
+                         detail=(why or ""), ticket=(getattr(res, "order", None) if res else None))
         log(f"ORDER [{sleeve}] {side} -> retcode={code} "
             f"{res.comment if res else ''}")
     # THE SUCCESS CHECK. Without it a pass where every order was refused is
@@ -1164,7 +1296,7 @@ def _expiry_request(symbol: str, sleeve: str = "", window: str | None = None) ->
             until = bracket_deadline(sleeve, window)
             return {"type_time": mt5.ORDER_TIME_SPECIFIED,
                     "expiration": int(until.timestamp())}
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"{symbol}: expiration mode unreadable ({type(exc).__name__}); bracket is GTC "
             f"and relies on the {BRACKET_TTL_HOURS:.0f}h sweep")
     return {"type_time": mt5.ORDER_TIME_GTC}
@@ -1180,7 +1312,7 @@ def expire_stale_brackets(st: dict) -> int:
     """
     try:
         orders = mt5.orders_get() or ()
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"TTL sweep skipped: orders_get failed ({type(exc).__name__})")
         return 0
     killed = 0
@@ -1482,7 +1614,7 @@ def _position_context(deal: object) -> tuple[float, float, float, str]:
             if getattr(x, "entry", None) == mt5.DEAL_ENTRY_IN:
                 entry = float(getattr(x, "price", 0.0) or 0.0)
                 break
-    except Exception as exc:                                    # noqa: BLE001
+    except Exception as exc:
         log(f"position {pid}: context unreadable ({type(exc).__name__}); R left unmeasured")
         return 0.0, 0.0, 0.0, comment
     return entry, sl, tp, comment
@@ -1689,7 +1821,7 @@ def sleeve_set() -> list[dict]:
     return sleeves
 
 
-def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, str]:
+def state_allows(sleeve: dict, h1: pd.DataFrame, day: object) -> tuple[bool, str]:
     """May a state-conditioned sleeve trade today? FAILS CLOSED on any doubt.
 
     An unconditioned sleeve always passes. A conditioned one must have its state computable from
@@ -1701,9 +1833,9 @@ def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, s
     if not want:
         return True, ""
     try:
-        from research.run_hunt12 import day_states           # noqa: PLC0415
+        from research.run_hunt12 import day_states
         got = day_states(h1).get(day)
-    except Exception as exc:                                  # noqa: BLE001
+    except Exception as exc:
         return False, f"state UNCOMPUTABLE ({type(exc).__name__}); refusing to trade unconditioned"
     if got is None:
         return False, "state unknown for today; refusing to trade unconditioned"
@@ -1715,6 +1847,21 @@ def state_allows(sleeve: dict, h1: "pd.DataFrame", day: object) -> tuple[bool, s
 #: `type nul > data\GENERIC_EXEC_ENABLED` is the deliberate human act that arms the lane.
 GENERIC_EXEC_ENABLED = BASE / "data" / "GENERIC_EXEC_ENABLED"
 
+
+
+def _policy_advice(symbol: str, side: int, entry_ref: float, tick, sym, dist: float, g) -> dict:
+    """The execution policy's shadow choice for one order. NEVER raises, never routes."""
+    try:
+        from mt5desk.execution_policy import Context, choose
+        spread = float(getattr(tick, "ask", entry_ref) - getattr(tick, "bid", entry_ref))
+        atr_frac = float(getattr(g, "atr_frac", 0.0) or dist / max(entry_ref, 1e-9))
+        return choose(Context(symbol=symbol, side=("buy" if side == 1 else "sell"),
+                              quote=entry_ref, spread_frac=max(spread, 0.0) / max(entry_ref, 1e-9),
+                              atr_frac=atr_frac, stop_frac=dist / max(entry_ref, 1e-9),
+                              edge_r=float(getattr(g, "edge_r", 0.3) or 0.3),
+                              hour=datetime.now(tz=UTC).hour, lot=0.0))
+    except Exception as exc:                                    # noqa: BLE001
+        return {"policy": "MARKET", "why": f"advice unavailable: {type(exc).__name__}"}
 
 def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     """Execute hunt-certified family sleeves with replay-faithful semantics (GAP 124).
@@ -1731,9 +1878,9 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
     if not fam_sleeves:
         return
     try:
-        from research.run_hunt12 import day_states                # noqa: PLC0415
-        from research.run_hunt16 import FAMILIES, WINDOWS         # noqa: PLC0415
-    except Exception as exc:                                      # noqa: BLE001
+        from research.run_hunt12 import day_states
+        from research.run_hunt16 import FAMILIES, WINDOWS
+    except Exception as exc:
         log(f"FAMILY-EXEC unavailable ({type(exc).__name__}: {exc}); "
             f"{len(fam_sleeves)} certified sleeve(s) NOT traded this pass")
         return
@@ -1772,7 +1919,7 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         try:
             sigs = [g for g in FAMILIES[family](closed, side)
                     if pd.Timestamp(g.time) == last_bar]
-        except Exception as exc:                                  # noqa: BLE001
+        except Exception as exc:
             log(f"[{name}] FAMILY-EXEC signal computation failed ({exc}); skipped")
             continue
         srec["last_signal_bar"] = str(last_bar)
@@ -1789,11 +1936,20 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         if not (dist > 0):
             log(f"[{name}] FAMILY-EXEC: degenerate stop distance; skipped")
             continue
+        # EXECUTION POLICY, IN SHADOW: what the utility-maximising plan would have been for this
+        # order (market / passive / pullback / split / skip), recorded on the intent so the
+        # counterfactual ledger can score the road not taken. Routing stays MARKET until the
+        # fill surface is fitted on enough of the box's own fills to make the choice measured.
+        policy_advice = _policy_advice(s["symbol"], side, entry_ref, tick, sym, dist, g)
         try:
             lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
-                               s.get("risk_frac"), s.get("decay_faded"))
-        except Exception as exc:                                  # noqa: BLE001
+                               s.get("risk_frac"), s.get("decay_faded"),
+                               from_book=(s.get("sized_by") == "allocator_book"))
+        except Exception as exc:
             log(f"[{name}] FAMILY-EXEC: cannot price risk ({exc}); skipped")
+            continue
+        if not (lot > 0):
+            log(f"[{name}] FAMILY-EXEC: allocator gave this sleeve no heat; skipped")
             continue
         ttl_until = (last_bar + pd.Timedelta(hours=int(g.ttl_bars) + 1)).isoformat()
         order_desc = (f"{'BUY' if side == 1 else 'SELL'} {lot} {s['symbol']} @market"
@@ -1817,7 +1973,8 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
         _record_intent(sleeve=name, symbol=s["symbol"],
                        side=("buy" if side == 1 else "sell"), lot=lot,
                        intended=entry_ref, sl=float(g.stop), tp=float(g.target),
-                       ticket=(getattr(res, "order", None) if res else None), retcode=rc)
+                       ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                       policy_advice=policy_advice)
         log(f"[{name}] FAMILY-EXEC ORDER -> retcode={rc} {diagnose(rc, getattr(res, 'comment', '') or '')} "
             f"| {order_desc}")
         if rc in (10008, 10009):
@@ -1878,7 +2035,7 @@ def main() -> None:
     # Shadow unless st["armed"]: unarmed passes log the modification they would have sent.
     try:
         manage_open_positions(st, sleeves)
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         # Never let management take the gateway down. A desk that cannot ratchet a stop is
         # degraded; a desk that cannot place or reconcile anything because management raised is
         # broken, and the second is strictly worse than the first.
@@ -1886,6 +2043,10 @@ def main() -> None:
     save_state(st)
 
     reg_killed = regime_hibernate(sleeves)
+    # THE VETOED SLEEVES ARE KEPT ASIDE, NOT FORGOTTEN. They are removed from `sleeves` so nothing
+    # downstream sizes or places them, and walked once more below -- after the bracket loop, on
+    # the same bars -- purely to write what they would have placed into the decision ledger.
+    _hibernated = [s for s in sleeves if s["name"] in reg_killed] if reg_killed else []
     if reg_killed:
         log(f"REGIME: auto-hibernate, no new brackets: {reg_killed}")
         sleeves = [s for s in sleeves if s["name"] not in reg_killed]
@@ -1927,7 +2088,7 @@ def main() -> None:
             _sgn = 1.0 if int(getattr(_p, "type", 0)) == 0 else -1.0
             _exposure[str(_p.symbol)] = _exposure.get(str(_p.symbol), 0.0) + _sgn * float(
                 getattr(_p, "volume", 0.0) or 0.0)
-    except Exception as _exc:                                        # noqa: BLE001
+    except Exception as _exc:
         # A breadth MEASUREMENT must never stop the trading loop. An unreadable position list
         # leaves exposures empty, which leaves the budget exactly as the return series set it.
         log(f"factor breadth: positions unreadable ({type(_exc).__name__}: {_exc}); "
@@ -1959,6 +2120,9 @@ def main() -> None:
         if _book is not None and _s["name"] in _book:
             _s["risk_frac"] = float(_book[_s["name"]])
             _s["sized_by"] = "allocator_book"
+            # BILLED AT EXACTLY THE FRACTION IT IS SIZED AT (see promoted_lot from_book): the
+            # heat cap and the sizer must price the same leg at the same number.
+            _s["q_charge"] = float(_book[_s["name"]]) * decay_factor(_s.get("decay_faded"))
         elif _s.get("lot") == "auto_ramp":
             _ramp = 0.25 if sleeve_live_n(_s["name"]) < 50 else (
                 0.5 if sleeve_live_n(_s["name"]) < 200 else 1.0)
@@ -1972,7 +2136,7 @@ def main() -> None:
     # session-window semantics they do not share.
     try:
         run_family_sleeves(st, sleeves, equity)
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     save_state(st)
     if st["last_bracket_date"] == day_key:
@@ -1998,6 +2162,12 @@ def main() -> None:
             ok_state, why_state = state_allows(s, df, datetime.now(tz=UTC).date())
             if not ok_state:
                 log(f"[{s['name']}] no trade today: {why_state}")
+                # The gate's refusal is a decision with a P&L; write what it refused, once.
+                _vetoed = st.setdefault("vetoed_today", {})
+                if _vetoed.get(s["name"]) != day_key and _record_vetoed_bracket(
+                        s, df, sym, "state_gate", why_state):
+                    _vetoed[s["name"]] = day_key
+                    save_state(st)
                 continue
             rng2 = day_range(df, s["rng"], s["sig_hour"])
             if rng2 is None:
@@ -2028,18 +2198,26 @@ def main() -> None:
             try:
                 lot = auto_lot(equity, dist, s["symbol"], sym) if s["lot"] == "auto" else (
                     promoted_lot(equity, sleeve_live_n(s["name"]), dist, s["symbol"], sym,
-                                 s.get("risk_frac"), s.get("decay_faded"))
+                                 s.get("risk_frac"), s.get("decay_faded"),
+                                 from_book=(s.get("sized_by") == "allocator_book"))
                     if s["lot"] == "auto_ramp" else float(s["lot"]))
                 q_real = realised_q(equity, dist, s["symbol"], sym, lot=lot)
-            except Exception as exc:                              # noqa: BLE001
+            except Exception as exc:
                 log(f"[{s['name']}] SKIPPED: cannot price {s['symbol']} risk in account "
                     f"currency ({exc}); refusing to size from the house average")
+                continue
+            if not (lot > 0):
+                log(f"[{s['name']}] SKIPPED: allocator gave this sleeve no heat")
                 continue
             log(f"[{s['name']}] stop {dist:.5g} -> lot {lot:.2f} "
                 f"(realised q {q_real:.2%})")
             # margin guard (machine kill switch): skip sleeve if tight
             if not margin_ok(s["symbol"], lot, max(hi, lo)):
                 log(f"[{s['name']}] SKIPPED: margin tight (lot={lot})")
+                for _side, _px in (("buy_stop", hi), ("sell_stop", lo)):
+                    _record_decision(sleeve=s["name"], symbol=s["symbol"], side=_side, lot=lot,
+                                     price=_px, sl=None, tp=None, taken=False,
+                                     reason="margin_guard")
                 st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo,
                                              "spec": spec, "result": {"margin": False}}
                 save_state(st)
@@ -2060,6 +2238,30 @@ def main() -> None:
             st["brackets"][s["name"]] = {"date": day_key, "hi": hi, "lo": lo,
                                          "spec": spec, "placed_at": now(), "result": res}
             save_state(st)
+        # THE HIBERNATE VETO'S LEDGER LINE. Each sleeve the regime monitor silenced today has its
+        # would-be bracket computed on the same bars the live loop reads and written as a not-taken
+        # decision, once per day. This is the only path by which a hibernated sleeve touches the
+        # broker API, and it is read-only: symbol_info and copy_rates, never an order.
+        _vetoed = st.setdefault("vetoed_today", {})
+        for s in _hibernated:
+            if s.get("exec") == "family_market" or _vetoed.get(s["name"]) == day_key:
+                continue
+            if hour < s.get("sig_hour", 0):
+                continue
+            try:
+                sym = mt5.symbol_info(s["symbol"])
+                h1 = mt5.copy_rates_from_pos(s["symbol"], mt5.TIMEFRAME_H1, 0, 400)
+                if sym is None or h1 is None:
+                    continue
+                df = pd.DataFrame(h1)
+                df["time"] = pd.to_datetime(df["time"], unit="s", utc=True)
+                df = df.set_index("time").sort_index()
+                if _record_vetoed_bracket(s, df, sym, "regime_hibernate",
+                                          f"hibernated by regime monitor: {s['name']}"):
+                    _vetoed[s["name"]] = day_key
+                    save_state(st)
+            except Exception as exc:
+                log(f"hibernate ledger [{s['name']}] skipped: {type(exc).__name__}: {exc}")
 
     # housekeeping: expire stale brackets FIRST (every pass, not just at CANCEL_HOUR), then the
     # end-of-day backstop and the force-close.

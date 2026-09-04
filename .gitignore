@@ -253,3 +253,10 @@ desks/mt5/data/state_fits.json
 # cannot reach inside an excluded directory, so the file is force-added once and tracked
 # thereafter -- git reports changes to a tracked file regardless of these rules, which is exactly
 # the behaviour wanted: the box's re-judged verdicts travel back with its hourly sync.
+
+# Discovery-loop caches (2026-09-04): fetched public READMEs, content-addressed feature blocks
+# and the typed research memory are rebuilt by their engines; none is a decision record.
+desks/mt5/data/repo_cache/
+desks/mt5/data/features/
+desks/mt5/data/memory/
+desks/mt5/data/deep_forest_seen.json

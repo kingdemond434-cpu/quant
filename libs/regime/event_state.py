@@ -37,9 +37,10 @@ is a task rather than a mystery.
 """
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from typing import Any, Iterable, Sequence
+from datetime import datetime
+from typing import Any
 
 PRE_EVENT = "PRE_EVENT"
 SHOCK = "SHOCK"
@@ -118,7 +119,7 @@ def currencies_of(symbol: str, meta: dict[str, Any] | None = None) -> tuple[str,
     return tuple(sorted(out)) if out else ("USD",)
 
 
-def _row_currencies(row: dict) -> tuple[str, ...]:
+def _row_currencies(row: dict[str, Any]) -> tuple[str, ...]:
     vals = row.get("symbols") or row.get("currency") or row.get("currencies") or ()
     if isinstance(vals, str):
         vals = [vals]
@@ -145,8 +146,8 @@ def _num(v: Any) -> float | None:
         return None
 
 
-def relevant(rows: Iterable[dict], symbol: str,
-             meta: dict[str, Any] | None = None) -> list[dict]:
+def relevant(rows: Iterable[dict[str, Any]], symbol: str,
+             meta: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     """Calendar rows whose currency scope touches this instrument, and whose impact is traded.
 
     A row scoped "All" is kept: a G20 meeting is everyone's event. A row with no parseable stamp
@@ -167,7 +168,7 @@ def relevant(rows: Iterable[dict], symbol: str,
 
 
 def classify(now: datetime, stamps: Sequence[datetime], symbol: str = "",
-             rows: Sequence[dict] | None = None,
+             rows: Sequence[dict[str, Any]] | None = None,
              shock_move: float | None = None, move_since: float | None = None,
              ) -> EventState:
     """Which phase `now` is in, given the release stamps already scoped to this instrument.
@@ -204,10 +205,11 @@ def classify(now: datetime, stamps: Sequence[datetime], symbol: str = "",
     fcast, prev = _num((row or {}).get("forecast")), _num((row or {}).get("previous"))
     expected = (fcast - prev) if (fcast is not None and prev is not None) else None
 
-    common = dict(minutes_to_next=to_next, minutes_since_last=since_last, impact=impact,
-                  title=title, currencies=ccy, expected_change=expected,
-                  shock_move=shock_move, move_since=move_since,
-                  n_events_scoped=len(stamps), gaps=gaps)
+    common: dict[str, Any] = {
+        "minutes_to_next": to_next, "minutes_since_last": since_last, "impact": impact,
+        "title": title, "currencies": ccy, "expected_change": expected,
+        "shock_move": shock_move, "move_since": move_since,
+        "n_events_scoped": len(stamps), "gaps": gaps}
 
     if since_last <= SHOCK_MIN:
         return EventState(SHOCK, **common)
@@ -230,7 +232,7 @@ def classify(now: datetime, stamps: Sequence[datetime], symbol: str = "",
     return EventState(NORMAL, **common)
 
 
-def parse_rows(rows: Iterable[dict]) -> list[dict]:
+def parse_rows(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
     """Attach a parsed UTC `_stamp` to each row, dropping any the calendar timestamps badly."""
     import pandas as pd
 

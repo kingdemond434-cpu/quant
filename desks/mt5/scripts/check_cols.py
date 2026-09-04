@@ -1,3 +1,4 @@
+import os
 import subprocess, textwrap
 
 code = textwrap.dedent("""\
@@ -8,12 +9,12 @@ for f in sorted(glob.glob('/home/quant/quant-platform/desks/mt5/data/universe/*_
 """)
 
 proc = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "cat > /tmp/check_cols.py << 'PYEOF'\n" + code + "\nPYEOF"],
     capture_output=True, text=True, timeout=10
 )
 proc2 = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "/home/quant/quant-platform/.venv/bin/python /tmp/check_cols.py 2>&1"],
     capture_output=True, text=True, timeout=30
 )

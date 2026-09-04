@@ -1,8 +1,9 @@
+import os
 import subprocess, json
 
 # Get universe symbols
 r = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "cat /home/quant/quant-platform/desks/mt5/data/universe/universe.json"],
     capture_output=True, text=True, timeout=15
 )
@@ -14,7 +15,7 @@ for k in sorted(uni.keys()):
 
 # Get parquet files
 r2 = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "ls /home/quant/quant-platform/desks/mt5/data/universe/*_H1.parquet 2>/dev/null | xargs -I{} basename {} _H1.parquet | sort"],
     capture_output=True, text=True, timeout=15
 )
@@ -26,7 +27,7 @@ for p in pqlist:
 
 # Check what MT5 can offer
 r3 = subprocess.run(
-    ["ssh", "quant@95.216.191.70",
+    ["ssh", os.environ.get("QUANT_VPS", "quant@VPS_HOST_REDACTED"),
      "cd /home/quant/quant-platform && PYTHONPATH=desks/mt5 .venv/bin/python -c '"
      "from mt5desk.engine import mt5; "
      "mt5.initialize(); "

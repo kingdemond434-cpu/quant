@@ -6,6 +6,8 @@ Returns + realised volatility + trend, standardised. Deliberately small and econ
 
 from __future__ import annotations
 
+from typing import cast
+
 import numpy as np
 import pandas as pd
 
@@ -30,7 +32,7 @@ def standardise(raw: np.ndarray, mu: np.ndarray | None = None,
     """Standardise an observation matrix, optionally with statistics measured elsewhere."""
     mu = raw.mean(axis=0) if mu is None else mu
     sd = (raw.std(axis=0) + 1e-9) if sd is None else sd
-    return (raw - mu) / sd
+    return cast("np.ndarray", (raw - mu) / sd)
 
 
 def regime_features(close: pd.Series, *, vol_window: int = 20) -> tuple[np.ndarray, np.ndarray]:

@@ -492,6 +492,21 @@ marked [UNVERIFIED] and must be negative-controlled before budget is spent on th
 | ошибка выжившего | survivorship bias — the RU term, and a smart-lab keyword tag. Finds the RU data-hygiene corpus, which is where the point-in-time/universe discussion actually lives | perennial | [V] smart-lab 1336741 keyword tags (2026-08-13) | `ошибка выжившего бэктест состав индекса` |
 | переподгонка | overfitting — RU practitioner term (not "оверфиттинг"); pairs with `подгонка` (fitting). Finds the validation-discipline layer rather than the vendor layer | perennial | [V] smart-lab 1335532 body (2026-08-13) | `переподгонка walk-forward количество попыток` |
 
+### OP-041 CN deep-forest story grounds via search-engine `site:` routes           [active]
+class: multilingual-pattern / route-ladder
+origin: principal order 2026-09-04 ("the deep Chinese web is still absolutely worth mining")
+technique: grounds that refuse a datacenter fetch (知乎 403, CSDN timeout, 雪球 WAF, 淘股吧, 经管之家) are
+  reached through Bing (`site:zhihu.com 黄金 日内 交易 策略 实盘 经验`, setlang=zh-CN) with DuckDuckGo html as
+  the second engine; platforms with APIs are read natively (Gitee api/v5 search+readme, Bilibili WBI search +
+  player/v2 subtitles, 掘金 search_api, 微信 via 搜狗); JS shells (聚宽/优矿/米筐/BigQuant) through the
+  rendered fetch. Query bank lives in desks/mt5/data/deep_forest_sources.json; every claim (quantity +
+  direction + horizon, zh or en) is queued as story_mechanism with the instrument mapped to its MT5
+  analogue and provenance; result URLs are fed to the world-crawler frontier. Competition records
+  (期货日报实盘大赛, 蓝海密剑) and interviews (七禾网, 私募排排网) are the highest-yield register: numbers plus
+  a stated method. A story's numbers are evidence about the story, never about the mechanism.
+adaptations: per-region site: lists (KR: dcinside/naver blogs, JP: note/qiita, RU: smart-lab) reuse the same
+  route ladder and claim grammar; add the region's instrument aliases to mechanism_claims.INSTRUMENT_ALIASES.
+
 ## ARCHIVED
 (none yet)
 

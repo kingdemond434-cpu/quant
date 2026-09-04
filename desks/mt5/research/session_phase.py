@@ -47,16 +47,51 @@ def broker_utc_offset_h() -> tuple[int | None, str]:
     """
     try:
         import MetaTrader5 as _mt5
-
         from h1_source import broker_utc_offset_hours
-        return int(round(float(broker_utc_offset_hours(_mt5)))), "live_terminal"
-    except Exception:                                                # noqa: BLE001
+        off = round(float(broker_utc_offset_hours(_mt5)))
+        _record_broker_clock(off)
+        return off, "live_terminal"
+    except Exception:
         pass
     try:
-        rec = json.loads((_DESK / "data" / "broker_clock.json").read_text("utf-8"))
-        return int(round(float(rec["utc_offset_hours"]))), "recorded_broker_clock"
-    except Exception:                                                # noqa: BLE001
+        rec = json.loads(BROKER_CLOCK.read_text("utf-8"))
+        return round(float(rec["utc_offset_hours"])), "recorded_broker_clock"
+    except Exception:
         return None, "unknown"
+
+
+BROKER_CLOCK = _DESK / "data" / "broker_clock.json"
+#: A recorded offset older than this is re-measured: the broker moves its clock with DST twice a
+#: year, and a record that survived the switch would label every hour wrong by one in the
+#: direction of a confident wrong conditional mean.
+RECORD_MAX_AGE_S = 24 * 3600
+
+
+def _record_broker_clock(off: int) -> None:
+    """Persist the live measurement so every host without a terminal inherits it. Never raises.
+
+    THE ONLY WRITER. Until this existed `broker_clock.json` had a reader and no producer: the
+    opportunity curve, the state vector and the allocator all degraded to 'unknown' on every box
+    except the one with a terminal, and that box never wrote the number down. Written once per
+    day or on change, from the process that has the terminal (the gateway, on its first pass).
+    """
+    try:
+        from datetime import UTC, datetime
+        now = datetime.now(tz=UTC)
+        try:
+            rec = json.loads(BROKER_CLOCK.read_text("utf-8"))
+            same = round(float(rec.get("utc_offset_hours"))) == off
+            age = (now - datetime.fromisoformat(str(rec.get("measured_at")))).total_seconds()
+            if same and age < RECORD_MAX_AGE_S:
+                return
+        except Exception:
+            pass
+        BROKER_CLOCK.parent.mkdir(parents=True, exist_ok=True)
+        BROKER_CLOCK.write_text(json.dumps({"utc_offset_hours": off, "measured_at":
+                                            now.isoformat(), "source": "live_terminal"},
+                                           indent=1), "utf-8")
+    except Exception:
+        return
 
 #: Session phases in broker stamp-hours as [start, end) over a 24h clock. Deliberately finer than
 #: the desk's asia/london_am/afternoon sleeve names: the London OPEN expansion and the London MID

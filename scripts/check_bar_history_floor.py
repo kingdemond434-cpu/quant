@@ -72,8 +72,8 @@ def _measure() -> dict[str, dict[str, int]]:
         try:
             df = pd.read_parquet(path)
             idx = pd.to_datetime(df.index)
-            out[sym] = {"rows": int(len(df)), "days": int(idx.normalize().nunique())}
-        except Exception as exc:                                    # noqa: BLE001
+            out[sym] = {"rows": len(df), "days": int(idx.normalize().nunique())}
+        except Exception as exc:
             out[sym] = {"rows": -1, "days": -1, "error": f"{type(exc).__name__}: {exc}"[:120]}
     return out
 

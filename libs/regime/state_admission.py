@@ -42,8 +42,9 @@ the per-trade error difference is deflated by E[max_N Z] over the dimensions tri
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Sequence
+from typing import Any, cast
 
 import numpy as np
 
@@ -90,7 +91,7 @@ class Verdict:
     dimensions_tried: int
     why: str = ""
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {"dimension": self.dimension, "verdict": self.verdict,
                 "mse_gain": round(self.mse_gain, 10), "t_paired": round(self.t_paired, 4),
                 "t_deflated": round(self.t_deflated, 4), "n_test": self.n_test,
@@ -111,7 +112,7 @@ def _blocks(n: int, k: int) -> list[tuple[int, int]]:
     """Expanding-window folds: train on everything before, score the next slice."""
     if n < k * 2:
         return []
-    edges = [int(round(n * i / k)) for i in range(k + 1)]
+    edges = [round(n * i / k) for i in range(k + 1)]
     return [(edges[i], edges[i + 1]) for i in range(1, k)]
 
 
@@ -184,15 +185,15 @@ def judge(trades: Sequence[Trade], dimension: str, dimensions_tried: int = 1,
     arr = np.asarray(diffs, dtype=float)
     sd = float(arr.std(ddof=1))
     gain = float(arr.mean())
-    t = gain / (sd / math.sqrt(arr.size)) if sd > 0 else 0.0
-    t_def = t - _expected_max_z(max(1, dimensions_tried)) if t > 0 else t
+    tstat = gain / (sd / math.sqrt(arr.size)) if sd > 0 else 0.0
+    t_def = tstat - _expected_max_z(max(1, dimensions_tried)) if tstat > 0 else tstat
     if t_def >= ADMIT_T:
         verdict, why = ADMIT, "predicts unseen trades better, after deflation for the search"
-    elif t <= GRAVEYARD_T:
+    elif tstat <= GRAVEYARD_T:
         verdict, why = GRAVEYARD, "measurably worse out of sample; conditioning on it adds noise"
     else:
         verdict, why = RETAIN_SHRUNK, "no measurable improvement; kept only by the shrinkage"
-    return Verdict(dimension, verdict, gain, t, t_def, n_test, len(buckets_seen),
+    return Verdict(dimension, verdict, gain, tstat, t_def, n_test, len(buckets_seen),
                    dimensions_tried, why=why)
 
 
@@ -226,7 +227,10 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
     """
     if name == "session":
         try:
-            from research.session_phase import broker_utc_offset_h, phase_at
+            from research.session_phase import (  # type: ignore[import-not-found]
+                broker_utc_offset_h,
+                phase_at,
+            )
         except ImportError:
             return None
         off, _src = broker_utc_offset_h()
@@ -236,7 +240,7 @@ def build_labeller(name: str) -> Callable[[Trade], str] | None:
         def _session(t: Trade) -> str:
             from datetime import datetime
             try:
-                return phase_at(datetime.fromisoformat(t.when), broker_utc_offset_h=off)
+                return str(phase_at(datetime.fromisoformat(t.when), broker_utc_offset_h=off))
             except (TypeError, ValueError):
                 return ""
         return _session
@@ -287,9 +291,9 @@ def _symbol_of(sleeve: str) -> str:
     return head.upper() if head else ""
 
 
-def _calendar() -> list[dict]:
-    from pathlib import Path
+def _calendar() -> list[dict[str, Any]]:
     import json
+    from pathlib import Path
 
     root = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "intelligence" \
         / "ff_calendar_vintage"
@@ -312,13 +316,13 @@ def _calendar() -> list[dict]:
     return out
 
 
-def _universe_meta() -> dict:
-    from pathlib import Path
+def _universe_meta() -> dict[str, Any]:
     import json
+    from pathlib import Path
 
     p = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "universe"
          / "universe.json")
     try:
-        return json.loads(p.read_text("utf-8"))
+        return cast("dict[str, Any]", json.loads(p.read_text("utf-8")))
     except (OSError, ValueError):
         return {}

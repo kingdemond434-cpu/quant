@@ -31,8 +31,8 @@ n/(n+k) on the number of days in the pool, so a twelve-day stress pool moves not
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import numpy as np
 

@@ -335,6 +335,18 @@ def _factor_symbols(symbols: list[str], meta: dict) -> list[str]:
 NOT_SOURCED_HERE = {
     "discovered": "the primitive is named by edge_search at search time; this sweep enumerates "
                   "families, it does not run the search that would name one",
+    "ensemble": "its members are named on the candidate by weak_signal_compiler, which chooses "
+                "them from the gauntlet's own failed-on-power cells; a sweep that enumerated "
+                "ensembles over bars would be inventing member lists, and the family refuses "
+                "without a runner for exactly that reason",
+    "formula": "the expression is named by alpha_evolution's genetic search, which charges every "
+               "expression it tried; a sweep that enumerated expressions here would be a second "
+               "uncharged search over the same grammar",
+    "lead_lag": "the driver and the lag are measured by cross_asset_graph on the information "
+                "graph; a sweep that paired every symbol with every other would be an uncharged "
+                "search over pairs",
+    "style_premia": "style_premia_sweep supplies the instrument's own rollover (broker_swaps) and "
+                    "the risk driver and charges the whole style x instrument grid itself",
 }
 
 
