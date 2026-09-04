@@ -365,6 +365,84 @@ def next_growth_lever() -> dict[str, Any]:
                      "for the principal -- a fixer that may relax its own bar eventually will.")}
 
 
+#: The modules the desk box RUNS. Drift here is silent and total: the box keeps executing the old
+#: code while every log says the sync verified.
+REMOTE_CRITICAL = (
+    "desks/mt5/research/job_lock.py",
+    "desks/mt5/research/sleeve_registry.py",
+    "desks/mt5/research/shadow_forward.py",
+    "desks/mt5/research/forward_reconcile.py",
+    "desks/mt5/research/h1_source.py",
+    "desks/mt5/research/orthogonal_sweep.py",
+    "desks/mt5/research/edge_search.py",
+    "desks/mt5/scripts/external_gauntlet.py",
+    "desks/mt5/mt5desk/families.py",
+    "desks/mt5/mt5desk/family_inputs.py",
+)
+
+
+def check_box_code_drift(repair: bool = True) -> dict[str, Any]:
+    """Hash the modules the trading box RUNS against this repo, and re-ship what drifted.
+
+    WHY, MEASURED 2026-09-04. The hourly pipeline reported `code sync verified: 14 module(s)
+    byte-identical` at 09:05, 10:10 and 11:08 -- and at 13:20 the box was running a job_lock.py
+    that predated the `need_mb` argument. external_gauntlet called
+    `exclusive_job(..., need_mb=1200)`, threw TypeError on every single hourly run, and the
+    pipeline logged `ten-gate gauntlet FAILED rc=255` and carried on. The desk produced 372
+    executable candidates an hour that nothing could ever judge, while every sync log said the
+    code was identical.
+
+    A sync that verifies ONCE AN HOUR cannot see a writer that reverts a file between syncs. This
+    checks the state that matters -- what is on the box RIGHT NOW -- and repairs it, because a
+    stale module on the box that runs the gauntlet is worth more attention than a stale one here.
+    """
+    import subprocess as _sp
+    try:
+        # The probe is BUILT, not formatted: it runs on the box's Python 3.14 and must hash
+        # git-blob-style so the digests compare directly with `git hash-object` here.
+        probe = "\n".join([
+            "import hashlib, os",
+            "for rel in " + repr(list(REMOTE_CRITICAL)) + ":",
+            "    p = rel.replace('/', os.sep)",
+            "    try:",
+            "        d = open(p, 'rb').read()",
+            "    except OSError:",
+            "        print(rel, 'ABSENT'); continue",
+            "    h = hashlib.sha1(b'blob ' + str(len(d)).encode() + b'\\0' + d).hexdigest()",
+            "    print(rel, h)",
+        ])
+        out = _sp.run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=15", "contabo-mt5",
+                       "cd C:\\opt\\quant && py -3 -"],
+                      input=probe, capture_output=True, text=True, timeout=180).stdout
+    except (_sp.SubprocessError, OSError) as exc:
+        return {"status": "UNKNOWN", "why": f"box unreachable ({type(exc).__name__})"}
+
+    remote = {}
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[0] in REMOTE_CRITICAL:
+            remote[parts[0]] = parts[1]
+    if not remote:
+        return {"status": "UNKNOWN", "why": "no hashes returned -- never a clean pass"}
+
+    drifted, reshipped = [], []
+    for rel, rh in remote.items():
+        local = _sp.run(["git", "hash-object", rel], cwd=ROOT,
+                        capture_output=True, text=True).stdout.strip()
+        if local and local != rh:
+            drifted.append(rel)
+            if repair:
+                r = _sp.run(["scp", "-q", "-o", "BatchMode=yes", rel,
+                             f"contabo-mt5:C:/opt/quant/{rel}"], cwd=ROOT, timeout=120)
+                if r.returncode == 0:
+                    reshipped.append(rel)
+    return {"status": "DEFECT" if drifted else "OK", "checked": len(remote),
+            "drifted": drifted, "reshipped": reshipped,
+            "why": ("the box was running code this repo does not have; a module stale THERE is "
+                    "invisible to every check that reads only HERE" if drifted
+                    else "every critical module on the box matches this repo")}
+
+
 def check_failed_units() -> dict[str, Any]:
     try:
         out = subprocess.run(["systemctl", "--user", "list-units", "--state=failed",
@@ -404,6 +482,7 @@ def main() -> int:
         "dashboard": check_dashboard(),
         "conversion": check_conversion(),
         "funnel": check_funnel(),
+        "box_code_drift": check_box_code_drift(repair=not a.report),
         "uncommitted_code": check_uncommitted_code(),
         "record_pairs": check_record_pairs(),
         "forward_lane": check_forward_lane(),
