@@ -58,12 +58,15 @@ _EVENT_WORDS: dict[str, tuple[str, ...]] = {
     "benchmark_flow": ("fix", "fixing", "benchmark", "rebalanc", "index", "close auction"),
     "options_hedging": ("gamma", "vega", "option", "hedg", "expiry", "dealer"),
     "liquidity_shock": ("liquidity", "spread", "depth", "illiquid", "thin"),
-    "volatility_shock": ("volatility", "vol spike", "variance", "realized vol"),
+    "volatility_shock": ("volatility", "vol spike", "variance", "realized vol",
+                         "vol regime", "regime transition", "squeeze", "expansion"),
     "forced_deleveraging": ("margin", "liquidation", "deleverag", "forced", "stop-out"),
     "inventory_rebalance": ("inventory", "imbalance", "flow", "positioning pressure"),
-    "macro_release": ("macro", "cpi", "nfp", "central bank", "release", "announcement"),
+    "macro_release": ("macro", "cpi", "nfp", "central bank", "release", "announcement",
+                      "intervention", "data surprise", "publication", "disclosure"),
     "carry_change": ("carry", "swap", "rate differential", "roll", "basis"),
-    "cross_market_move": ("cross", "lead", "lag", "correlat", "spillover", "transmission"),
+    "cross_market_move": ("cross", "lead", "lag", "correlat", "spillover", "transmission",
+                          "information asymmetry", "propagat", "transmit", "relative value"),
     "positioning_extreme": ("cot", "positioning", "crowd", "extreme", "sentiment"),
     "session_transition": ("session", "open", "handoff", "asia", "tokyo", "london", "overnight"),
 }
@@ -80,11 +83,39 @@ _CONTEXT_WORDS: dict[str, tuple[str, ...]] = {
     "low_liquidity": ("thin", "illiquid"),
 }
 
+#: COVER EVERY LEGAL DIRECTION. This table named four of the six values in semantic_space
+#: DIRECTIONS: volatility_expansion and volatility_compression were absent, so a proposal about
+#: a vol regime could never resolve a direction and was refused for being unreadable rather than
+#: for being wrong. 796 compilable proposals failed direction resolution on 2026-09-04.
 _DIRECTION_WORDS: dict[str, tuple[str, ...]] = {
-    "reversal": ("revers", "mean revert", "decay", "unwind", "correct", "fade", "pressure clears"),
-    "continuation": ("continu", "momentum", "persist", "drift", "trend", "extend"),
-    "convergence": ("converg", "narrow", "spread compress"),
-    "divergence": ("diverg", "widen", "decoupl"),
+    "reversal": ("revers", "mean revert", "decay", "unwind", "correct", "fade", "pressure clears",
+                 "retrace", "snap back", "overshoot", "exhaust", "give back", "normalis",
+                 "normaliz", "round-trip", "round trip"),
+    "continuation": ("continu", "momentum", "persist", "drift", "trend", "extend",
+                     "follow-through", "follow through", "propagat", "diffus", "transmit",
+                     "carry through", "sustain", "lead-lag", "leads the"),
+    "convergence": ("converg", "narrow", "spread compress", "re-couple", "recouple",
+                    "arbitrage away", "close the gap", "realign", "catch up", "catch-up"),
+    "divergence": ("diverg", "widen", "decoupl", "de-coupl", "disconnect", "dislocat",
+                   "asymmetr", "gap between", "separat", "break down"),
+    "volatility_expansion": ("volatility expansion", "vol expansion", "range expansion",
+                             "breakout", "expansion", "expands", "vol spike",
+                             "volatility increase", "variance rises", "regime shift to high"),
+    "volatility_compression": ("compress", "contraction", "squeeze", "coil", "narrowing range",
+                               "volatility decline", "vol collapse", "variance falls",
+                               "consolidat", "quiet regime"),
+}
+
+#: THE HORIZON IS PART OF THE CLAIM TOO. family_generic supports 1h/4h/daily, but the compiler
+#: pinned "1h" for every proposal, so a weekly-rebalance idea and an hourly one landed on the
+#: SAME coordinate and the second was refused as a duplicate of the first. 365 proposals were
+#: refused for duplicate_coordinate on 2026-09-04 with two of the five axes frozen.
+_OUTPUT_WORDS: dict[str, tuple[str, ...]] = {
+    "daily": ("daily", "weekly", "week", "multi-day", "multi day", "overnight hold", "t+1",
+              "monthly", "per day", "day-over-day", "8y sample", "quarterly"),
+    "4h": ("4h", "four-hour", "four hour", "intraday swing", "several hours", "half-session",
+           "multi-hour", "6h", "8h"),
+    "1h": ("hourly", "1h", "per hour", "one-hour", "one hour", "60-minute"),
 }
 
 #: Capabilities the generic family cannot express. Naming them turns a refusal into a build list.
@@ -274,6 +305,17 @@ _SATURATION: dict[str, int] = {}
 _SEEN: set[str] = set()
 
 
+def _declared(rec: dict[str, Any], field: str, legal: tuple[str, ...]) -> str | None:
+    """The proposal's OWN axis value, when it stated one and that value is legal.
+
+    Inferring an axis from keywords when the record already declares it throws away the only
+    unambiguous evidence in the row. Illegal values fall through to inference rather than
+    failing, because a generator typo is not a reason to refuse a stated mechanism.
+    """
+    v = str(rec.get(field) or "").strip().lower().replace(" ", "_")
+    return v if v in legal else None
+
+
 def _match(text: str, table: dict[str, tuple[str, ...]]) -> str | None:
     t = text.lower()
     best, best_hits = None, 0
@@ -325,17 +367,27 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
                                 f"the refusal names the operator worth adding.")}
     if missing:
         return {"name": rec.get("name"), "compiled": False, "missing_capability": missing,
+                "refused_for": "missing_capability",
                 "why": (f"needs {', '.join(missing)}, which family_generic cannot express. "
                         f"Recorded rather than approximated: an approximation would enter the "
                         f"docket as if it were this proposal and the gauntlet would judge "
                         f"something nobody meant to test.")}
 
-    event = _match(text, _EVENT_WORDS)
-    context = _match(text, _CONTEXT_WORDS)
-    direction = _match(text, _DIRECTION_WORDS)
+    from libs.research.semantic_space import CONTEXTS, DIRECTIONS, EVENTS, OUTPUTS
+
+    event = _declared(rec, "event", EVENTS) or _match(text, _EVENT_WORDS)
+    context = _declared(rec, "context", CONTEXTS) or _match(text, _CONTEXT_WORDS)
+    direction = _declared(rec, "direction", DIRECTIONS) or _match(text, _DIRECTION_WORDS)
+    # Unstated horizon stays "1h" -- the family's own default, and unchanged behaviour. What
+    # changes is that a proposal which DOES name its horizon now keeps it instead of being
+    # flattened onto 1h and refused as a duplicate of an unrelated hourly claim.
+    output = _declared(rec, "output", OUTPUTS) or _match(text, _OUTPUT_WORDS) or "1h"
+    if output not in supported["output"]:
+        output = "1h"
     unresolved = [n for n, v in (("event", event), ("direction", direction)) if not v]
     if unresolved:
         return {"name": rec.get("name"), "compiled": False, "missing_capability": [],
+                "refused_for": "unresolved_axis",
                 "why": (f"could not resolve {unresolved} from the proposal text. The axis is the "
                         f"claim: guessing 'continuation' for a mechanism that never said so would "
                         f"test the opposite of the hypothesis half the time.")}
@@ -343,11 +395,13 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
     # NO SILENT DEFAULT. `context = context or "asia"` turned an unresolved axis into a
     # confident specification -- the desk's own law is that absence is never permission, and a
     # compiler that fills in the missing half of a claim is deciding what the hypothesis says.
+    # STILL NO SILENT DEFAULT -- but refusal was not the only alternative to guessing. A proposal
+    # that names no session makes a claim about every bar, so it compiles to the UNCONDITIONED
+    # context and is tested there. `context = context or "asia"` remains forbidden: that would
+    # record the result against a session nobody named. This records it against all of them.
+    context_declared = context is not None
     if not context:
-        return {"name": rec.get("name"), "compiled": False, "refused_for": "unresolved_context",
-                "why": ("could not resolve CONTEXT from the proposal text. Defaulting to 'asia' "
-                        "would run the experiment in a session the hypothesis never named, and "
-                        "the result would be recorded against a claim nobody made.")}
+        context = "unconditioned"
 
     # MEASUREMENT CONTRACT. A mechanism whose implementation cannot see it does not compile.
     from libs.research.measurement import contract_for
@@ -362,7 +416,7 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
                 "missing_capability": [f"event:{event}"],
                 "why": f"{event}/{direction} is outside family_generic's vocabulary"}
 
-    coordinate = f"{event}|{context}|magnitude|{direction}|1h"
+    coordinate = f"{event}|{context}|magnitude|{direction}|{output}"
     veto = _roi_refusal(rec, text, coordinate, _SATURATION, _SEEN)
     if veto is not None:
         return veto
@@ -371,10 +425,13 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
     return {"name": rec.get("name"), "compiled": True,
             "family": "generic",
             "params": {"event": event, "context": context, "direction": direction,
-                       "output": "1h", "quality_atr": 1.0},
+                       "output": output, "quality_atr": 1.0},
             "coordinate": coordinate,
             # Carried onto the cell so every downstream reader knows whether this result may be
             # attributed to the mechanism, or is exploration under its own coordinate only.
+            # False means the proposal named no session and is running unconditioned -- a reader
+            # must not attribute an unconditioned result to a session-specific mechanism.
+            "context_declared": context_declared,
             "measurement_class": mc.measurement_class if mc else "UNKNOWN",
             "attribution_allowed": bool(mc.attribution_allowed) if mc else False,
             "measurement_note": mc.verdict() if mc else "no contract recorded for this event",

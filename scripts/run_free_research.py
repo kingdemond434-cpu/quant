@@ -149,6 +149,31 @@ def _axis_words() -> tuple[list[str], list[str], list[str]]:
 _AXIS_EVENT, _AXIS_CONTEXT, _AXIS_DIRECTION = _axis_words()
 
 
+#: The format spec, restated. A free model that cannot follow the contract often ECHOES it --
+#: "NAME | MECHANISM (<=25 words) | TEST | KILL CONDITION" parses as a perfectly well-formed
+#: row, and 435 of them (20.1% of the queue) had banked as hypotheses by 2026-09-04. The only
+#: content check was `len(mechanism) > 12`, and "MECHANISM (<=25 words)" is 22 characters.
+_ECHO_LITERALS = {
+    "name", "mechanism", "test", "kill", "kill condition", "data source", "data_source",
+    "mechanism (<=25 words)", "mechanism(<=25 words)", "lens", "context", "direction", "event",
+}
+_ECHO_INSTRUCTION = re.compile(
+    r"we need to (output|produce|write|give|propose)|each line|<=\s*\d+\s*words|"
+    r"exactly \d+ hypothes|^format:", re.I)
+
+
+def _is_template_echo(rec: dict[str, str]) -> bool:
+    """True when the row restates the PROMPT rather than answering it.
+
+    Two independent tells, either sufficient: a field whose whole value is its own placeholder,
+    or a name carrying the instruction text. Echoes are dropped at the parser, not refused later,
+    because a queue that contains its own prompt makes every conversion rate downstream a lie.
+    """
+    if _ECHO_INSTRUCTION.search(str(rec.get("name") or "")):
+        return True
+    return sum(1 for f in ("name", "mechanism", "test", "kill", "data_source")
+               if str(rec.get(f) or "").strip().lower() in _ECHO_LITERALS) >= 2
+
 def _parse_proposals(text: str) -> list[dict[str, str]]:
     """Pipe-delimited lines into records. Anything malformed is DROPPED, never repaired.
 
@@ -171,7 +196,8 @@ def _parse_proposals(text: str) -> list[dict[str, str]]:
             if raw.startswith("["):
                 with suppress(json.JSONDecodeError):
                     rec["factor"] = json.loads(raw)
-        if all(rec.get(f) for f in _REQUIRED) and len(rec["mechanism"]) > 12:
+        if (all(rec.get(f) for f in _REQUIRED) and len(rec["mechanism"]) > 12
+                and not _is_template_echo(rec)):
             rows.append(rec)
     return rows
 

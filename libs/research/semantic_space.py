@@ -63,6 +63,11 @@ CONTEXTS = (
     "high_vol", "low_vol", "high_liquidity", "low_liquidity",
     "asia", "london", "new_york", "overlap",
     "trend", "range", "pre_event", "post_event", "month_end", "risk_on", "risk_off",
+    # A HYPOTHESIS THAT NAMES NO SESSION IS A CLAIM ABOUT EVERY BAR, and until this value
+    # existed the compiler had to choose between guessing a session the proposal never named
+    # and refusing it outright. 240 proposals were refused for exactly that on 2026-09-04.
+    # This is a real region, not a null: it is the unconditioned test of the mechanism.
+    "unconditioned",
 )
 
 #: HOW IT IS MEASURED. The observable that scales the event -- what makes a big instance different
