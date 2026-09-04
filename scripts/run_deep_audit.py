@@ -134,19 +134,61 @@ _LENSES: dict[str, tuple[str, str]] = {
 }
 
 
+#: Placeholder words from the lens templates themselves. A reasoning model restates the requested
+#: format before answering, and that restatement is a perfectly well-formed `A | B | C` line -- so
+#: the parser scored the INSTRUCTION as a finding. One shipped: "We need to output exactly three
+#: lines, each with format: ASSUMPTION | why it is load-bearing | the cheap check", stored as the
+#: audit's sole discovery. Anything downstream would have treated it as a research lead.
+_TEMPLATE_ECHOES = (
+    "why it is load-bearing", "the cheap check", "the compelled payer",
+    "why nobody looks there", "what is masking it", "the cheapest test",
+    "evidence in the state", "the one change that fixes it",
+    "mechanism | the", "weakness | ", "assumption | ", "candidate | ",
+    "are discarded", "fields separated", "emit only", "at most 3 lines", "no preamble",
+    "three fields", "separated by", "the format", "output format", "lines without",
+)
+
+#: Reasoning models spend their output budget thinking before answering, and 1200 tokens was
+#: consumed by the preamble -- the real answer was truncated away and never reached the parser.
+#: The context window is a million tokens; the OUTPUT cap was the binding constraint all along.
+_MAX_OUTPUT_TOKENS = 4000
+
+#: Appended to every lens system prompt. Cheap, and it moves the answer ahead of the reasoning.
+_ANSWER_ONLY = "Output ONLY the final answer lines. No thinking, no preamble, no restatement."
+
+#: A lens gets more than one shot, on whatever model the rotation hands it next. An empty lens is
+#: ONE MODEL FAILING TO ANSWER, never evidence that the desk has no blind spot there.
+_ATTEMPTS_PER_LENS = 3
+
+
+def _is_echo(a: str, b: str, c: str) -> bool:
+    """Is this the model repeating the instruction rather than answering it?"""
+    blob = f"{a} | {b} | {c}".lower()
+    return any(t in blob for t in _TEMPLATE_ECHOES)
+
+
 def _parse(text: str, want: int = 3) -> list[tuple[str, str, str]]:
-    """`A | B | C` lines only. Prose is dropped, never salvaged."""
+    """`A | B | C` lines only, read from the END. Prose is dropped, never salvaged.
+
+    FROM THE END, because these are reasoning models: they emit a long thinking preamble and the
+    actual answer arrives last. Parsing forward returned whatever the model restated while
+    thinking -- which is how a template echo became the audit's only finding -- and stopped at
+    `want`, so it never reached the real answer at all.
+    """
     out: list[tuple[str, str, str]] = []
-    for raw in (text or "").splitlines():
+    for raw in reversed((text or "").splitlines()):
         line = raw.strip().lstrip("-*#0123456789. ")
         if line.count("|") < 2:
             continue
         a, b, c = (p.strip(" *`") for p in line.split("|", 2))
         if len(a) > 100 or not a or not b:
             continue
+        if _is_echo(a, b, c):
+            continue
         out.append((a, b, c))
         if len(out) >= want:
             break
+    out.reverse()
     return out
 
 
@@ -163,9 +205,9 @@ def main() -> int:
     results: dict[str, Any] = {}
     for lens, (system, ask) in _LENSES.items():
         try:
-            r = panel.ask("deep_audit", system,
+            r = panel.ask("deep_audit", f"{system} {_ANSWER_ONLY}",
                           f"=== DESK STATE ===\n{state}\n\n=== TASK ===\n{ask}",
-                          max_tokens=1200, temperature=0.7)
+                          max_tokens=_MAX_OUTPUT_TOKENS, temperature=0.7)
         except panel.PanelExhausted as exc:
             results[lens] = {"panel_exhausted": str(exc)[:160]}
             print(f"\n  [{lens}] panel exhausted")
