@@ -808,11 +808,31 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 
     labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
                                   else ((), (), {"skipped": f"{mode} clock"}))
+    # CRISIS SEVERITY, MEASURED RATHER THAN ASSUMED. `crisis_common_share` IS the pairwise
+    # correlation the crisis worlds impose (a one-factor overlay with share s has pairwise
+    # correlation exactly s), and it was the constant 0.55 with nothing behind it. The book's own
+    # return matrix can be asked. The calibration RATCHETS ONLY UPWARD: a quiet sample never
+    # licenses modelling crises as gentler than the standing assumption, because that is how a
+    # book finds out its real correlations at the worst possible moment.
+    cov_cal = None
+    try:
+        from libs.portfolio.conditional_covariance import calibrate as _calibrate_cov
+        _base = WorldConfig()
+        _hist = daily.to_numpy(dtype=float)
+        cov_cal = _calibrate_cov(_hist, labels or None,
+                                 standing_share=_base.crisis_common_share,
+                                 standing_vol_mult=_base.crisis_vol_mult)
+        _log(f"crisis calibration: common_share={cov_cal.crisis_common_share:.3f} "
+             f"vol_mult={cov_cal.crisis_vol_mult:.2f} ({cov_cal.note})")
+    except Exception as exc:                                         # noqa: BLE001
+        _log(f"crisis calibration unavailable ({type(exc).__name__}: {exc}); constants stand")
+
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
                       n_worlds=256 if heavy else 128,
-                      n_rows=384 if heavy else 256)
+                      n_rows=384 if heavy else 256,
+                      **(cov_cal.as_overrides() if cov_cal else {}))
 
     cachef = CACHE / "worlds.npz"
     worlds: Worlds | None = None
@@ -1025,6 +1045,18 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         "state_vector": ({"id": state_vec.id, "at": state_vec.at, "why": sv_why,
                           **state_vec.to_dict()} if state_vec is not None
                          else {"id": None, "why": sv_why}),
+        # What the crisis worlds assumed, and the measurement behind it. Recorded so the
+        # correlation the book is being stressed at is a number anyone can check.
+        "crisis_calibration": ({
+            "crisis_common_share": cov_cal.crisis_common_share,
+            "crisis_vol_mult": cov_cal.crisis_vol_mult,
+            "stress_regime": cov_cal.stress_regime,
+            "note": cov_cal.note,
+            "by_regime": {k: {"n_days": v.n_days, "mean_corr": round(v.mean_corr, 4),
+                              "mean_vol": round(v.mean_vol, 6),
+                              "diversification_ratio": round(v.diversification_ratio, 4)}
+                          for k, v in cov_cal.by_regime.items()},
+        } if cov_cal else {"note": "calibration unavailable; standing constants used"}),
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
             "with_forward": sum(1 for e in ev if e.forward_days > 0),
