@@ -489,6 +489,47 @@ def split_by_plane(root: Path, drift_missing: list[str]) -> tuple[list[str], dic
     return uncovered, absorbed
 
 
+def repair_schedules(root: Path, man: object) -> list[str]:
+    """Rewrite a committed timer's OnCalendar to the manifest's, and say so.
+
+    WHY REPAIR AND NOT ONLY REPORT (2026-09-04). The schedule is declared TWICE -- once in
+    `ops/crontab.manifest` and once in a committed `ops/*.timer` -- and two sources of truth drift.
+    Measured today: the manifest was corrected to run certify_gauntlet HOURLY and committed, while
+    `ops/quant-certify-gauntlet.timer` still said `05:10:00`. An installer copies the ops/ timer
+    over the live unit, so every hand-edit to ~/.config was silently undone within the hour, three
+    times, and the gauntlet -- the job that MINTS certificates -- kept falling back to daily while
+    the desk was asked to grow hourly.
+
+    THE MANIFEST WINS, because it is the file the desk already calls its single source of truth and
+    the one a reviewer reads. This only ever rewrites the timer TO the manifest, never the reverse:
+    a schedule change is a manifest edit, reviewed and committed, and this closes the gap that let
+    an unreviewed copy override it.
+    """
+    out: list[str] = []
+    for timer in sorted((root / "ops").glob("*.timer")):
+        try:
+            text = timer.read_text("utf-8")
+        except OSError:
+            continue
+        cals = [ln.strip().removeprefix("OnCalendar=").strip()
+                for ln in text.splitlines()
+                if ln.strip().startswith("OnCalendar=")]
+        if len(cals) != 1:
+            continue
+        entries = [e for e in getattr(man, "systemd_entries", []) or []
+                   if getattr(e, "timer", "") == timer.name]
+        if len(entries) != 1:
+            continue
+        declared = getattr(entries[0], "on", "")
+        if not declared or declared == cals[0]:
+            continue
+        timer.write_text(text.replace(f"OnCalendar={cals[0]}", f"OnCalendar={declared}", 1),
+                         "utf-8")
+        out.append(f"  REPAIRED {timer.name}: OnCalendar {cals[0]!r} -> {declared!r} "
+                   f"(manifest is the source of truth)")
+    return out or ["  schedules: every committed timer already matches the manifest"]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true",
@@ -498,11 +539,16 @@ def main(argv: list[str] | None = None) -> int:
                          "(missing scripts / rotted timers still exit 2)")
     ap.add_argument("--root", type=Path, default=_ROOT,
                     help="repo root (tests point this at fixture trees)")
+    ap.add_argument("--fix-schedules", action="store_true",
+                    help="repair a committed timer whose OnCalendar disagrees with the manifest")
     args = ap.parse_args(argv)
     root: Path = args.root.resolve()
 
     man = parse_manifest(root / _MANIFEST_REL)
     missing = check_scripts_exist(root, man)
+    if args.fix_schedules:
+        for line in repair_schedules(root, man):
+            print(line)
     timer_problems = check_committed_timers(root, man)
     lock_problems = check_lock_coherence(man)
     import_problems, n_import_checks, n_thirdparty = check_imports_resolve(root, man)
