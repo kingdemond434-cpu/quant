@@ -42,6 +42,7 @@ import argparse
 import json
 import re
 import sys
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -67,7 +68,14 @@ GRAVEYARD_N = 40
 #:
 #: The PAYER lives inside `mechanism` -- the prompt's rule 1 requires a mechanism that survives
 #: "why has nobody arbitraged this?", which is the payer question asked the other way round.
-_REQUIRED = ("name", "mechanism", "data_source", "test", "kill")
+#: THE AXES ARE PART OF THE CLAIM, NOT METADATA. Measured 2026-09-04: of 1,959 refused
+#: proposals, 955 (49%) were refused for an unresolved event, direction or context -- the miner
+#: named a mechanism but never said WHEN it fires or WHICH WAY. The compiler is right to refuse
+#: (guessing 'asia' runs the experiment in a session the hypothesis never named), so the fix
+#: belongs at generation: ask for the axes and they arrive. This is the single largest conversion
+#: lever the desk has, and it needs no new data source.
+_REQUIRED = ("name", "mechanism", "data_source", "test", "kill",
+             "event", "context", "direction")
 
 
 #: PARSE FOR STRUCTURE, DO NOT STRIP PROSE. A first version tried to detect reasoning traces by
@@ -120,6 +128,27 @@ def _graveyard() -> list[str]:
     return out[:GRAVEYARD_N]
 
 
+#: The compiler's OWN vocabularies, imported rather than restated. A second copy here would drift
+#: from `compile_proposals` and start asking miners for axis values the compiler cannot resolve --
+#: which is the same refusal it exists to prevent, arriving one layer earlier.
+def _axis_words() -> tuple[list[str], list[str], list[str]]:
+    import importlib.util as ilu
+    spec = ilu.spec_from_file_location(
+        "_cp_axes", Path(__file__).resolve().parent / "compile_proposals.py")
+    if spec is None or spec.loader is None:      # pragma: no cover - file ships with this one
+        return [], [], []
+    mod = ilu.module_from_spec(spec)
+    sys.modules.setdefault("_cp_axes", mod)
+    with suppress(SystemExit):
+        spec.loader.exec_module(mod)
+    return (sorted(getattr(mod, "_EVENT_WORDS", {})),
+            sorted(getattr(mod, "_CONTEXT_WORDS", {})),
+            sorted(getattr(mod, "_DIRECTION_WORDS", {})))
+
+
+_AXIS_EVENT, _AXIS_CONTEXT, _AXIS_DIRECTION = _axis_words()
+
+
 def _parse_proposals(text: str) -> list[dict[str, str]]:
     """Pipe-delimited lines into records. Anything malformed is DROPPED, never repaired.
 
@@ -129,10 +158,10 @@ def _parse_proposals(text: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for line in text.splitlines():
         line = line.strip().lstrip("-*0123456789. ")
-        if line.count("|") < 4:
+        if line.count("|") < len(_REQUIRED) - 1:
             continue
         parts = [p.strip() for p in line.split("|")]
-        rec = dict(zip(_REQUIRED, parts[:5], strict=False))
+        rec = dict(zip(_REQUIRED, parts[:len(_REQUIRED)], strict=False))
         if all(rec.get(f) for f in _REQUIRED) and len(rec["mechanism"]) > 12:
             rows.append(rec)
     return rows
@@ -185,8 +214,17 @@ def role_generate(panel: Any) -> dict[str, Any]:
             "ALREADY DEAD OR ALREADY OWNED on this desk -- do not re-propose these:\n"
             + "\n".join(f"  - {d}" for d in dead)
             + "\n\nPropose 3 NEW hypotheses through THIS LENS ONLY. One per line, exactly:\n"
-              "NAME | MECHANISM (<=25 words) | DATA SOURCE | TEST | KILL CONDITION\n"
-              "No preamble, no reasoning, no headings. Any line without four '|' is discarded.")
+              "NAME | MECHANISM (<=25 words) | DATA SOURCE | TEST | KILL CONDITION | "
+              "EVENT | CONTEXT | DIRECTION\n"
+              "The last three are the CLAIM'S OWN AXES and must each be ONE word from these "
+              "lists, chosen because the mechanism says so -- never to fill the field:\n"
+              f"  EVENT:     {', '.join(_AXIS_EVENT)}\n"
+              f"  CONTEXT:   {', '.join(_AXIS_CONTEXT)}\n"
+              f"  DIRECTION: {', '.join(_AXIS_DIRECTION)}\n"
+              "If the mechanism genuinely does not pick one, the hypothesis is not ready -- "
+              "propose a different one rather than guessing, because a guessed axis tests a "
+              "claim nobody made.\n"
+              "No preamble, no reasoning, no headings. Any line without seven '|' is discarded.")
         try:
             r = panel.ask("generation", system, user, max_tokens=1200, temperature=0.95)
         except Exception:

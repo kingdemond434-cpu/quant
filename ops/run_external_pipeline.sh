@@ -112,7 +112,13 @@ echo "[$(date -u +%FT%TZ)] stage 0: sync remotely-executed modules to the desk b
 # while every fence read green. Someone put the file on the box by hand on 2026-08-30 and
 # the sleeves recovered, but nothing in this list guaranteed it, so a rebuild would have
 # silently reproduced the outage.
-REMOTE_MODULES="desks/mt5/mt5desk/family_inputs.py desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py desks/mt5/mt5desk/families_edge_queue.py desks/mt5/mt5desk/family_generic.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py"
+# THE FORWARD ENGINE'S OWN MODULES SHIP TOO (2026-09-04). sleeve_registry.py was NOT in this
+# list, so the box ran a copy predating `behaviour_hash` and `rebase_code`: every code edit
+# read as a strategy change and killed all 52 clocks terminally, holding 234 real forward
+# trades. The fix existed in the repo for a day and never reached the machine that runs the
+# engine. A module that is only ever shipped BY HAND is one revert away from stale, and this
+# desk measured that revert three times in one session.
+REMOTE_MODULES="desks/mt5/mt5desk/family_inputs.py desks/mt5/mt5desk/families.py desks/mt5/mt5desk/families_orthogonal.py desks/mt5/mt5desk/families_edge_queue.py desks/mt5/mt5desk/family_generic.py libs/research/bar_span.py desks/mt5/research/job_lock.py desks/mt5/research/orthogonal_sweep.py desks/mt5/research/edge_search.py desks/mt5/scripts/external_gauntlet.py desks/mt5/research/sleeve_registry.py desks/mt5/research/shadow_forward.py desks/mt5/research/forward_reconcile.py desks/mt5/research/h1_source.py"
 # NEVER SHIP A TRAMPLED MODULE (2026-08-27): a replayer reverts working-tree code to ancient
 # copies roughly hourly, the moneypath fence heals within 10 minutes -- but this sync fires at
 # :05, INSIDE the trample window, and shipped ancient engines to the desk twice tonight. The

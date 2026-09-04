@@ -294,7 +294,8 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
     # Read EVERY field the proposal carries. A fixed list here silently ignored `data_source`
     # and `lens` once the prompt contract changed, and the capability check reads the whole text.
     text = " ".join(str(v) for k, v in rec.items()
-                    if k in ("name", "mechanism", "data_source", "payer", "test", "kill", "lens"))
+                    if k in ("name", "mechanism", "data_source", "payer", "test", "kill",
+                             "lens", "event", "context", "direction"))
     missing = _unsupported(text)
     if missing:
         return {"name": rec.get("name"), "compiled": False, "missing_capability": missing,
