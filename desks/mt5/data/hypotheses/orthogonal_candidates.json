@@ -1,43 +1,40 @@
 {
- "swept_at": "2026-09-04T02:25:05+00:00",
- "symbols": 63,
+ "swept_at": "2026-09-04T03:10:55+00:00",
+ "symbols": 57,
  "families_ran": {
-  "correlation_regime": 61,
-  "cross_asset_residual": 61,
-  "drawdown_conditional": 60,
-  "fx_fixing_reversal": 61,
-  "generic": 17,
-  "hedging_demand_close": 18,
-  "liquidity_gamma_reversal": 60,
-  "overnight_gap_decay": 60,
-  "pca_residual": 60,
-  "relative_value": 61,
-  "turn_of_month": 61,
-  "vol_mean_reversion": 61,
-  "vol_transition": 61,
-  "lvc_asia_london": 15,
-  "session_handoff": 15,
-  "macro_conditional": 32,
-  "carry": 7,
-  "cot_positioning": 1
+  "correlation_regime": 55,
+  "cross_asset_residual": 55,
+  "drawdown_conditional": 55,
+  "fx_fixing_reversal": 55,
+  "generic": 11,
+  "hedging_demand_close": 12,
+  "liquidity_gamma_reversal": 54,
+  "macro_conditional": 55,
+  "overnight_gap_decay": 54,
+  "pca_residual": 54,
+  "relative_value": 55,
+  "turn_of_month": 55,
+  "vol_mean_reversion": 55,
+  "vol_transition": 55,
+  "lvc_asia_london": 9,
+  "session_handoff": 9,
+  "carry": 1
  },
  "input_gaps": {
-  "calendar_month:needs-source-evidence (active_month, side_bias)": 61,
+  "calendar_month:needs-source-evidence (active_month, side_bias)": 55,
   "carry:no-signals (contract/swap terms)": 54,
-  "cot_positioning:no-signals (COT net positioning)": 60,
-  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 61,
-  "event_reaction:no-signals (an economic calendar)": 61,
-  "liquidity_regime:no-signals (spread series from the tick tape)": 61,
+  "cot_positioning:no-signals (COT net positioning)": 55,
+  "discovered:not-sourced-here (the primitive is named by edge_search at search time; this sweep enumerates families, it does not run the search that would name one)": 55,
+  "event_reaction:no-signals (an economic calendar)": 55,
+  "liquidity_regime:no-signals (spread series from the tick tape)": 55,
   "lvc_asia_london:no-signals (unknown)": 46,
-  "macro_conditional:no-signals (a macro state series)": 29,
-  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 61,
+  "orderflow_imbalance:no-signals (tick-derived flow imbalance)": 55,
   "session_handoff:no-signals (price only)": 46,
   "generic:no-signals (price only)": 44,
   "hedging_demand_close:no-signals (price only)": 43,
   "liquidity_gamma_reversal:no-signals (price only)": 1,
   "overnight_gap_decay:no-signals (price only)": 1,
-  "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1,
-  "drawdown_conditional:no-signals (price only)": 1
+  "pca_residual:no-signals (4+ factor instruments' H1 (the more of the universe, the better the latent factors))": 1
  },
  "family_errors": {},
  "family_errors_note": "exceptions raised BY THIS DESK'S CODE while calling a family. Distinct from input_gaps, which are data the box does not have: an error here is a defect to FIX, and folding the two together is how 297 identical TypeErrors read as a missing feed.",
@@ -118,10 +115,7 @@
   "vol_mean_reversion:untestable (58 trading days < 60 the gates need)": 1,
   "liquidity_gamma_reversal:untestable (53 trading days < 60 the gates need)": 1,
   "drawdown_conditional:untestable (34 trading days < 60 the gates need)": 1,
-  "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (31 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (43 trading days < 60 the gates need)": 1,
-  "lvc_asia_london:untestable (33 trading days < 60 the gates need)": 1
+  "liquidity_gamma_reversal:untestable (39 trading days < 60 the gates need)": 1
  },
  "untestable_note": "cells that traded but on fewer than 60 distinct days -- the gauntlet cannot judge them (CPCV purge+embargo and walk-forward folds need the observations), so proposing them wastes the cycle. This is a TESTABILITY route, not a quality screen: nothing here rejects a cell for being weak.",
  "hypotheses": [
@@ -480,6 +474,21 @@
   },
   {
    "symbol": "AALG",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 246,
+   "exp_r": 0.1124,
+   "max_dd_r": -17.0,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AALG",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 563,
@@ -548,6 +557,21 @@
   },
   {
    "symbol": "AAOI",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 268,
+   "exp_r": 0.0117,
+   "max_dd_r": -26.86,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AAOI",
    "family": "turn_of_month",
    "params": {},
    "n": 115,
@@ -591,6 +615,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "AAPL",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 259,
+   "exp_r": 0.0246,
+   "max_dd_r": -30.27,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "AAPL",
@@ -875,6 +914,21 @@
   },
   {
    "symbol": "ABBVIE",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 232,
+   "exp_r": 0.0182,
+   "max_dd_r": -25.89,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ABBVIE",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 733,
@@ -951,6 +1005,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ABDN",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 276,
+   "exp_r": 0.0137,
+   "max_dd_r": -19.54,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ABDN",
@@ -1143,6 +1212,21 @@
   },
   {
    "symbol": "ABNB",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 201,
+   "exp_r": 0.0099,
+   "max_dd_r": -14.27,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ABNB",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 429,
@@ -1233,6 +1317,21 @@
   },
   {
    "symbol": "ABT",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 215,
+   "exp_r": 0.1791,
+   "max_dd_r": -7.89,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ABT",
    "family": "relative_value",
    "params": {
     "peer_symbol": "GBPAUD"
@@ -1301,6 +1400,21 @@
   },
   {
    "symbol": "AC",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 303,
+   "exp_r": 0.0466,
+   "max_dd_r": -19.12,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "AC",
    "family": "turn_of_month",
    "params": {},
    "n": 182,
@@ -1353,6 +1467,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ACA",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 292,
+   "exp_r": 0.0559,
+   "max_dd_r": -25.45,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ACA",
@@ -1433,6 +1562,21 @@
   },
   {
    "symbol": "ACN",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 253,
+   "exp_r": 0.0788,
+   "max_dd_r": -14.86,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ACN",
    "family": "overnight_gap_decay",
    "params": {},
    "n": 443,
@@ -1499,6 +1643,21 @@
   },
   {
    "symbol": "ADAJPY",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 832,
+   "exp_r": 0.0718,
+   "max_dd_r": -42.06,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ADAJPY",
    "family": "vol_mean_reversion",
    "params": {},
    "n": 310,
@@ -1551,6 +1710,21 @@
    "source": "orthogonal_sweep:fx_fixing_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 239,
+   "exp_r": 0.1099,
+   "max_dd_r": -11.33,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ADBE",
@@ -1641,6 +1815,21 @@
    "source": "orthogonal_sweep:liquidity_gamma_reversal",
    "mechanism_status": "NAMED",
    "mechanism_note": "price only"
+  },
+  {
+   "symbol": "ADBE.24H",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 688,
+   "exp_r": 0.0306,
+   "max_dd_r": -33.34,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ADBE.24H",
@@ -1767,6 +1956,21 @@
   },
   {
    "symbol": "ADM",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 230,
+   "exp_r": 0.0219,
+   "max_dd_r": -17.72,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
+  },
+  {
+   "symbol": "ADM",
    "family": "relative_value",
    "params": {
     "peer_symbol": "GBPAUD"
@@ -1812,6 +2016,21 @@
    "source": "orthogonal_sweep:cross_asset_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "2+ factor instruments' H1"
+  },
+  {
+   "symbol": "ADPR",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 329,
+   "exp_r": 0.0436,
+   "max_dd_r": -17.45,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ADPR",
@@ -1871,6 +2090,21 @@
    "source": "orthogonal_sweep:correlation_regime",
    "mechanism_status": "NAMED",
    "mechanism_note": "a peer instrument's H1"
+  },
+  {
+   "symbol": "ADS",
+   "family": "macro_conditional",
+   "params": {
+    "input_source": "fred:DTWEXBGS",
+    "transform": "trailing_pct_rank",
+    "publication_lag_d": 1
+   },
+   "n": 296,
+   "exp_r": 0.0532,
+   "max_dd_r": -26.03,
+   "source": "orthogonal_sweep:macro_conditional",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "a macro state series"
   },
   {
    "symbol": "ADS",
@@ -3766,208 +4000,6 @@
    "source": "orthogonal_sweep:pca_residual",
    "mechanism_status": "NAMED",
    "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "AUDHUF",
-   "family": "liquidity_gamma_reversal",
-   "params": {},
-   "n": 61,
-   "exp_r": 0.4192,
-   "max_dd_r": -7.08,
-   "source": "orthogonal_sweep:liquidity_gamma_reversal",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDHUF",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 727,
-   "exp_r": 0.1611,
-   "max_dd_r": -27.29,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDJPY",
-   "family": "carry",
-   "params": {
-    "input_symbol": "AUDJPY"
-   },
-   "n": 1875,
-   "exp_r": 0.0387,
-   "max_dd_r": -57.13,
-   "source": "orthogonal_sweep:carry",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "contract/swap terms"
-  },
-  {
-   "symbol": "AUDJPY",
-   "family": "cross_asset_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 683,
-   "exp_r": 0.0436,
-   "max_dd_r": -54.42,
-   "source": "orthogonal_sweep:cross_asset_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "2+ factor instruments' H1"
-  },
-  {
-   "symbol": "AUDJPY",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 336,
-   "exp_r": 0.109,
-   "max_dd_r": -5.68,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDJPY",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 306,
-   "exp_r": 0.0059,
-   "max_dd_r": -32.96,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "AUDNZD",
-   "family": "fx_fixing_reversal",
-   "params": {},
-   "n": 627,
-   "exp_r": 0.0122,
-   "max_dd_r": -30.97,
-   "source": "orthogonal_sweep:fx_fixing_reversal",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDNZD",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 663,
-   "exp_r": 0.1192,
-   "max_dd_r": -2.44,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDNZD",
-   "family": "turn_of_month",
-   "params": {},
-   "n": 655,
-   "exp_r": 0.1253,
-   "max_dd_r": -67.45,
-   "source": "orthogonal_sweep:turn_of_month",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDSGD",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 438,
-   "exp_r": 0.4363,
-   "max_dd_r": -2.5,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDSGD",
-   "family": "pca_residual",
-   "params": {
-    "factor_symbols": [
-     "GBPAUD",
-     "NZDJPY",
-     "BCHUSD",
-     "CHFHUF",
-     "JPN225",
-     "XAGUSD",
-     "XNGUSD",
-     "WHEAT"
-    ]
-   },
-   "n": 231,
-   "exp_r": 0.0091,
-   "max_dd_r": -16.42,
-   "source": "orthogonal_sweep:pca_residual",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "4+ factor instruments' H1 (the more of the universe, the better the latent factors)"
-  },
-  {
-   "symbol": "AUDSGD",
-   "family": "vol_transition",
-   "params": {},
-   "n": 204,
-   "exp_r": 0.0919,
-   "max_dd_r": -21.48,
-   "source": "orthogonal_sweep:vol_transition",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "cot_positioning",
-   "params": {
-    "input_source": "cot_point_in_time"
-   },
-   "n": 109,
-   "exp_r": 0.0051,
-   "max_dd_r": -13.25,
-   "source": "orthogonal_sweep:cot_positioning",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "COT net positioning"
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "overnight_gap_decay",
-   "params": {},
-   "n": 241,
-   "exp_r": 0.0443,
-   "max_dd_r": -8.32,
-   "source": "orthogonal_sweep:overnight_gap_decay",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
-  },
-  {
-   "symbol": "AUDUSD",
-   "family": "turn_of_month",
-   "params": {},
-   "n": 806,
-   "exp_r": 0.0043,
-   "max_dd_r": -24.55,
-   "source": "orthogonal_sweep:turn_of_month",
-   "mechanism_status": "NAMED",
-   "mechanism_note": "price only"
   }
  ],
  "partial": true
