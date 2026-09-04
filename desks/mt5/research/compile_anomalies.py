@@ -48,10 +48,23 @@ from libs.research.mechanism_adapters import explain  # noqa: E402
 ANOMALIES = DESK / "data" / "intelligence" / "anomalies"
 OUT = DESK / "data" / "hypotheses" / "anomaly_candidates.json"
 
-#: Per-symbol cap on emitted candidates. NOT a quality bar -- the gates are the only arbiter --
-#: but a docket where one symbol contributes a thousand near-identical bands crowds out every
-#: other symbol's best, and the gauntlet's hourly budget is finite. The strongest are kept.
-PER_SYMBOL = 25
+#: GLOBAL cap, sized to what the gauntlet actually digests -- it routinely loads a ~20,000-cell
+#: docket -- rather than to a number someone picked. NOT a quality bar: the ten gates remain the
+#: only arbiter, and nothing here rejects a cell for being weak.
+#:
+#: THE OLD CAP WAS THE FUNNEL'S REAL BOTTLENECK. `PER_SYMBOL = 25` discarded 64,625 of 68,899
+#: anomalies -- 93.8% -- so the miner's whole widening (106 -> 148 primitives, 2.6M-cell space,
+#: 71.7% daily coverage) reached the gauntlet as 725 candidates. The search was never the
+#: constraint; this line was, and it was a guess.
+GLOBAL_CAP = 6000
+
+#: Collapse near-duplicates before capping. Adjacent bands and adjacent horizons on the same
+#: (symbol, feature, side) are ONE finding measured several ways -- the same shape as the
+#: hour_w6/w12/w24 duplication the miner already fixed. Sending all of them would spend the
+#: gauntlet's docket re-testing one effect and, worse, inflate the apparent breadth of a search
+#: whose trial count is carried into deflation. The strongest member survives; the rest are
+#: counted and reported, never silently dropped.
+DEDUPE_KEY = ("symbol", "feature", "side")
 
 
 def _side(mean_bp: float) -> int:
@@ -110,10 +123,23 @@ def compile_latest() -> dict[str, Any]:
             "selection_trials": int(a.get("selection_trials") or doc.get("trials") or 0),
         })
 
-    candidates: list[dict[str, Any]] = []
+    # 1. COLLAPSE NEAR-DUPLICATES. One effect measured at five bands is one finding.
+    best: dict[tuple, dict[str, Any]] = {}
+    collapsed = 0
     for rows_ in by_symbol.values():
-        rows_.sort(key=lambda r: -abs(r["t_stat"]))
-        candidates.extend(rows_[:PER_SYMBOL])
+        for r in rows_:
+            key = (r["symbol"], r["params"]["feature"], r["params"]["side"])
+            prev = best.get(key)
+            if prev is None:
+                best[key] = r
+            else:
+                collapsed += 1
+                if abs(r["t_stat"]) > abs(prev["t_stat"]):
+                    best[key] = r
+
+    # 2. RANK GLOBALLY, then cap. Per-symbol capping let a thin symbol keep weak cells while a
+    #    rich one lost strong ones; the gauntlet does not care which symbol a cell came from.
+    candidates = sorted(best.values(), key=lambda r: -abs(r["t_stat"]))[:GLOBAL_CAP]
 
     report = {
         "compiled_at": datetime.now(UTC).isoformat(timespec="seconds"),
@@ -123,7 +149,9 @@ def compile_latest() -> dict[str, Any]:
         "symbols": len(by_symbol),
         "skipped_unexplained": skipped_unexplained,
         "skipped_no_single_feature_recipe": skipped_shape,
-        "per_symbol_cap": PER_SYMBOL,
+        "global_cap": GLOBAL_CAP,
+        "collapsed_near_duplicates": collapsed,
+        "distinct_after_dedupe": len(best),
         "candidates": candidates,
         "rule": ("Nothing is invented. feature/band/horizon are copied from the measurement and "
                  "side is the SIGN of the measured effect; the mechanism comes from an adapter "
