@@ -37,7 +37,7 @@
   "CADJPY.asia#rr=1.5": "2026-08-27T03:34:48.257086+00:00",
   "CADJPY.asia#rr=2.5": "2026-08-27T03:34:48.207994+00:00",
   "CHFDKK.overnight_gap_decay.asia": "2026-08-29T13:34:35.776887+00:00",
-  "CHFNOK.carry.asia#input_symbol=CHFNOK": "2026-08-30T23:38:10.580949+00:00",
+  "CHFNOK.carry.asia#input_symbol=CHFNOK": "2026-08-29T13:34:35.776896+00:00",
   "EURCHF.discovered.asia#band=[0.0, 0.1]_feature=hour_horizon=6_side=1": "2026-08-29T13:34:35.776927+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=1_side=-1": "2026-08-29T13:34:35.776904+00:00",
   "EURCHF.discovered.asia#band=[0.75, 0.9]_feature=dd_12_horizon=6_side=-1": "2026-08-29T13:34:35.776942+00:00",
@@ -84,8 +84,8 @@
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 11.716,
- "measured_at": "2026-09-04T07:02:07+00:00",
+ "max_clock_age_days": 11.735,
+ "measured_at": "2026-09-04T07:30:06+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0
