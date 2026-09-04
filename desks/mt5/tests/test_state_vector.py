@@ -151,6 +151,46 @@ def test_an_unknown_clock_refuses():
     assert st is None and "unknown clock" in why
 
 
+def test_an_intraday_clock_refuses_to_upsample_hourly_bars():
+    """`resample("15min")` on H1 closes keeps only the hourly stamps: H1 wearing an M15 label.
+
+    This was live for one build. XAUUSD@M15 reported age 5, identical to XAUUSD@H1, because the
+    guard used `>` and hourly bars satisfied "finer than 1h". A state vector reporting a
+    fifteen-minute regime the desk has no data for is worse than one reporting a gap.
+    """
+    hourly = _series(n=900)                                   # native step is exactly 1h
+    for clock in ("M15", "M5"):
+        st, why = fit_asset_state(hourly, "TEST", clock)
+        assert st is None, f"{clock} accepted hourly bars"
+        assert "strictly finer" in why
+
+
+def test_an_intraday_clock_accepts_bars_that_really_are_finer():
+    rng = np.random.default_rng(4)
+    idx = pd.date_range("2024-01-01", periods=6000, freq="15min", tz="UTC")
+    s = pd.Series(np.exp(np.cumsum(rng.normal(scale=0.0004, size=idx.size))) * 1.1, index=idx)
+    st, why = fit_asset_state(s, "TEST", "M15")
+    assert st is not None, why
+    assert st.clock == "M15"
+    # ...but M5 still refuses, because 15-minute bars are not finer than fifteen minutes.
+    st5, why5 = fit_asset_state(s, "TEST", "M5")
+    assert st5 is None and "strictly finer" in why5
+
+
+def test_native_step_reads_the_interval_the_bars_actually_carry():
+    from libs.regime.asset_state import native_step
+
+    idx = pd.date_range("2024-01-01", periods=50, freq="4h", tz="UTC")
+    assert native_step(idx) == pd.Timedelta("4h")
+    assert native_step(pd.DatetimeIndex([])) is None
+
+
+def test_the_builder_searches_finest_bars_first():
+    """A finer file serves every coarser clock; a coarser one cannot serve a finer clock at all."""
+    assert svb.BAR_SUFFIXES == ("M5", "M15", "H1")
+    assert set(svb.ASSET_CLOCKS) <= set(CLOCKS)
+
+
 def test_the_cache_key_moves_with_the_last_bar_and_not_with_the_wall_clock():
     s = _series().groupby(_series().index.date).last()
     k1 = cache_key("X", "daily", s)

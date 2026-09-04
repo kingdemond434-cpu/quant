@@ -44,9 +44,20 @@ import pandas as pd
 #: horizons are chosen so each clock answers over its own natural holding period: a day and a week
 #: for the daily state, a session and a day for H4, an hour to a day for H1.
 CLOCKS: dict[str, dict[str, Any]] = {
+    "weekly": {"rule": "W", "max_obs": 600, "horizons": (1, 4, 13), "min_obs": 120},
     "daily": {"rule": None, "max_obs": 2000, "horizons": (1, 2, 5, 21), "min_obs": 250},
     "H4": {"rule": "4h", "max_obs": 3000, "horizons": (1, 6, 30), "min_obs": 400},
     "H1": {"rule": "1h", "max_obs": 3000, "horizons": (1, 4, 24), "min_obs": 500},
+    # THE INTRADAY TIERS EXIST AND ARE MOSTLY DATA-BLOCKED, WHICH IS A FACT ABOUT THE PARQUETS
+    # AND NOT ABOUT THIS TABLE. `_series` resamples from whatever bars it is given, so an M15
+    # tier built from H1 bars would be H1 bars wearing a finer label -- `fit_asset_state` refuses
+    # rather than upsampling, because a state vector that reports a 15-minute regime derived from
+    # hourly closes is worse than one that reports a gap. These light up for a symbol the moment
+    # its M15/M5 parquet exists; the desk currently holds three M15 files and no M5.
+    "M15": {"rule": "15min", "max_obs": 4000, "horizons": (1, 4, 16, 96), "min_obs": 800,
+            "needs_finer_than": "1h"},
+    "M5": {"rule": "5min", "max_obs": 6000, "horizons": (1, 3, 12, 60), "min_obs": 1200,
+           "needs_finer_than": "15min"},
 }
 
 
@@ -121,9 +132,37 @@ class FitCache:
             pass
 
 
+def native_step(index: pd.DatetimeIndex) -> pd.Timedelta | None:
+    """The bar interval the input actually carries, from its own median gap."""
+    if index is None or len(index) < 3:
+        return None
+    diffs = pd.Series(index[1:]) - pd.Series(index[:-1])
+    med = diffs.median()
+    return med if pd.notna(med) and med > pd.Timedelta(0) else None
+
+
 def _series(close: pd.Series, clock: str) -> pd.Series:
+    """Resample to the clock, REFUSING to upsample past the bars actually held.
+
+    Resampling H1 closes to "15min" does not produce fifteen-minute bars; it produces hourly bars
+    with three quarters of the rows forward-filled or dropped, and a regime fitted on that reports
+    an intraday state the desk has no data for. `needs_finer_than` makes the refusal explicit, so
+    a missing M15 parquet reads as a recorded gap rather than as a confident answer.
+    """
     spec = CLOCKS[clock]
     s = close.dropna()
+    need = spec.get("needs_finer_than")
+    if need:
+        step = native_step(pd.DatetimeIndex(s.index))
+        # STRICTLY finer, and the `>=` is the whole guard. With `>`, hourly bars satisfied
+        # "finer than 1h" and M15 was accepted: `resample("15min").last().dropna()` keeps only
+        # the hourly stamps, so the result is the H1 series with an M15 label on it. Caught by
+        # reading a real build's output -- XAUUSD@M15 reported age 5, identical to XAUUSD@H1,
+        # which is what an upsampled series looks like when nothing refuses it.
+        if step is None or step >= pd.Timedelta(need):
+            raise ValueError(
+                f"{clock} needs bars strictly finer than {need}; the input carries "
+                f"{step if step is not None else 'an unreadable interval'}")
     if clock == "daily":
         s = s.groupby(s.index.date).last()
     elif spec["rule"]:

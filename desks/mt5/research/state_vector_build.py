@@ -15,9 +15,14 @@ WHAT IT BUILDS
   FACTORS   The six role instruments from `economic_drivers.ROLES` -- USDX, UST10Y, US500,
             XAUUSD, XBRUSD, XCUUSD -- on the daily clock. A "USD regime" here is USDX's regime:
             a state about something the desk can hold, not a synthesised index.
-  ASSETS    Every symbol the BOOK ACTUALLY TRADES, on daily and H4. Scoped to the book on
-            purpose -- fitting regimes for instruments nobody holds spends the budget on
-            questions nobody asked, and the scope grows by itself as the book does.
+  ASSETS    Every symbol the BOOK ACTUALLY TRADES, on weekly / daily / H4 / H1 / M15 / M5.
+            Scoped to the book on purpose -- fitting regimes for instruments nobody holds spends
+            the budget on questions nobody asked, and the scope grows by itself as the book does.
+            The intraday tiers are attempted for every symbol and REFUSED for any whose finest
+            parquet is hourly: resampling H1 closes to "15min" produces hourly bars wearing a
+            finer label, and a state vector reporting a fifteen-minute regime the desk has no
+            data for is worse than one reporting a gap. They light up by themselves when the
+            bars arrive -- this desk currently holds three M15 files and no M5.
   SESSION   The broker-stamp phase, from the same `session_phase` the evidence conditioner uses.
   EVENT     Where the market is in a scheduled release's life, from the calendar vintages.
   LIQUIDITY What execution costs right now against its own history, from the venue's tape.
@@ -60,7 +65,15 @@ CANON = BASE / "data" / "UNIVERSAL_SURVIVORS.canon.json"
 #: Clocks each scope is fitted on. Factors are daily because a dollar or real-rate regime is a
 #: daily object; asking USDX what it is doing this hour is a different question and a noisier one.
 FACTOR_CLOCKS = ("daily",)
-ASSET_CLOCKS = ("daily", "H4")
+#: Clocks attempted per book symbol, slowest to fastest. The intraday tiers are attempted for
+#: every symbol and REFUSED by `_series` for any whose finest parquet is hourly -- so they cost
+#: nothing where the data is absent and appear by themselves where it arrives. Scoping them by a
+#: hardcoded symbol list would mean a newly downloaded M15 file changed nothing until someone
+#: edited this file.
+ASSET_CLOCKS = ("weekly", "daily", "H4", "H1", "M15", "M5")
+#: Parquet suffixes searched per symbol, FINEST FIRST. A finer file serves every coarser clock by
+#: resampling; a coarser one cannot serve a finer clock at all.
+BAR_SUFFIXES = ("M5", "M15", "H1")
 
 #: Spread percentiles that name a liquidity state. Derived from the instrument's OWN recorded
 #: tape, so a wide-spread instrument is not permanently "toxic" for being itself.
@@ -72,18 +85,22 @@ EVENT_DRIFT_H = 6
 
 
 def _close(symbol: str) -> pd.Series | None:
-    path = UNI / f"{symbol}_H1.parquet"
-    if not path.exists():
-        return None
-    try:
-        df = pd.read_parquet(path, columns=["close"])
-    except (OSError, ValueError, ImportError, KeyError):
-        return None
-    if df.empty:
-        return None
-    idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-    s = pd.Series(df["close"].to_numpy(dtype=float), index=idx).dropna()
-    return s if s.size else None
+    """The finest bars this desk holds for the symbol. Finer serves coarser; never the reverse."""
+    for suffix in BAR_SUFFIXES:
+        path = UNI / f"{symbol}_{suffix}.parquet"
+        if not path.exists():
+            continue
+        try:
+            df = pd.read_parquet(path, columns=["close"])
+        except (OSError, ValueError, ImportError, KeyError):
+            continue
+        if df.empty:
+            continue
+        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
+        s = pd.Series(df["close"].to_numpy(dtype=float), index=idx).dropna()
+        if s.size:
+            return s
+    return None
 
 
 def book_symbols() -> list[str]:
@@ -195,7 +212,7 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
             return None
         close = _close(sym)
         if close is None:
-            gaps[tag] = f"no H1 parquet for {sym}"
+            gaps[tag] = f"no bars for {sym} (searched {', '.join(BAR_SUFFIXES)})"
             return None
         st, why = fit_asset_state(close, sym, clock, cache=cache)
         if st is None:
