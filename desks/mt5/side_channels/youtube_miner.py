@@ -8,6 +8,7 @@ Falls back to web scraping if no API key available.
 """
 
 import json
+import time
 import os
 import re
 from dataclasses import dataclass, field
@@ -125,7 +126,21 @@ def mine(query: str = None, max_per_query: int = 10) -> list[YTDiscovery]:
     queries = [query] if query else QUERIES
     discoveries = []
 
+    # FINISH INSIDE THE HARNESS BUDGET, OR THE HARNESS KILLS US AND WE RETURN NOTHING.
+    # run_all_miners kills a miner at QUANT_MINER_TIMEOUT_S (180s default) and a killed miner
+    # loses every discovery it had already collected. Ten queries at the 15s request timeout is
+    # 150s before any parsing, so a few slow responses put this miner over the edge -- it was
+    # reported TIMED OUT on most runs and had produced nothing for seven days. Stop issuing new
+    # queries once the budget is nearly spent and RETURN WHAT WE HAVE: partial evidence is a
+    # result, being killed is not.
+    _budget = float(os.environ.get("QUANT_MINER_TIMEOUT_S", "180"))
+    _deadline = time.monotonic() + max(20.0, _budget * 0.75)
+
     for q in queries:
+        if time.monotonic() >= _deadline:
+            print(f"youtube: budget reached, stopping after {len(discoveries)} discovery(ies) "
+                  f"from {queries.index(q)} of {len(queries)} queries")
+            break
         items = _search_api(q) if API_KEY else _search_web(q)
         for item in items:
             snippet = item.get("snippet", {})
