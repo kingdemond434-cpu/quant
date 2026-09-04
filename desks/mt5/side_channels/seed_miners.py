@@ -196,18 +196,48 @@ def _probe_wall(name: str, wall: dict) -> tuple[bool, str]:
 
 # ---------------------------------------------------------------- S9 MQL5 Signals
 def mine_mql5_signals() -> list[dict]:
-    out = []
+    """Signal-card listing: id, author, rating, growth AND the free W1 equity curve.
+
+    REPAIRED 2026-09-04 after 88 consecutive raw_capture sweeps. The old selector wanted
+    `href="/en/signals/123"` followed immediately by a text node; the live markup carries a
+    `?source=...` query string and nests the title three spans deep, so it matched nothing on a
+    page that was answering 200 with 2,446 cards on it. The repair is not just a link fix: each
+    card also ships `<input value="[ts,val,ts,val,...]">`, a weekly equity curve for the signal,
+    which the desk was fetching per-signal or not at all. A track record is the payload; the
+    link was only ever the pointer.
+    """
+    out: list[dict] = []
     for platform in ("mt5", "mt4"):
         html = fetch(f"https://www.mql5.com/en/signals/{platform}")
-        for m in re.finditer(r'href="(/en/signals/(\d+))"[^>]*>([^<]{3,80})<', html):
-            out.append(row("mql5_signals", "track_record", m.group(3).strip(),
-                           "https://www.mql5.com" + m.group(1), platform=platform))
-        if not out:
+        before = len(out)
+        for card in html.split('<div class="signal-card">')[1:]:
+            m = re.search(r'href="/en/signals/(\d+)', card)
+            if not m:
+                continue
+            sid = m.group(1)
+            title = re.search(r'signal-card__title-wrapper">([^<]{2,120})<', card)
+            author = re.search(r'signal-card__author__item">([^<]{1,80})<', card)
+            growth = re.search(r'signal-card__growth-value[^>]*>([-\d.]+)%<', card)
+            rating = re.search(r'g-rating__info">([\d.]+) \((\d+)\)<', card)
+            curve = re.search(r'<input value="\[([\d,.\-]{20,4000})\]"', card)
+            pts = []
+            if curve:
+                nums = [float(x) for x in curve.group(1).split(",") if x]
+                pts = [[int(nums[k]), nums[k + 1]] for k in range(0, len(nums) - 1, 2)]
+            out.append(row("mql5_signals", "track_record",
+                           title.group(1).strip() if title else f"signal {sid}",
+                           f"https://www.mql5.com/en/signals/{sid}",
+                           platform=platform, signal_id=sid,
+                           author=author.group(1).strip() if author else "",
+                           growth_pct=float(growth.group(1)) if growth else None,
+                           rating=float(rating.group(1)) if rating else None,
+                           rating_n=int(rating.group(2)) if rating else None,
+                           equity_w1=pts))
+        if len(out) == before:
             out.append(row("mql5_signals", "raw_capture", f"signals/{platform} page shape "
                            "drifted", f"https://www.mql5.com/en/signals/{platform}",
                            html[:1200], needs_selector_work=True))
-    return out[:80]
-
+    return out[:160]
 
 # ---------------------------------------------------------------- S10 Myfxbook outlook
 def mine_myfxbook_outlook() -> list[dict]:
@@ -229,32 +259,52 @@ def mine_myfxbook_outlook() -> list[dict]:
 
 # ---------------------------------------------------------------- S11 Darwinex
 def mine_darwinex() -> list[dict]:
-    html = fetch("https://www.darwinex.com/darwins")
-    codes = sorted(set(re.findall(r'\b([A-Z]{3,4})\.(?:\d+\.)?\d+\b', html)))[:40]
-    if codes:
-        return [row("darwinex", "track_record", f"DARWIN {c}",
-                    f"https://www.darwinex.com/darwin/{c}") for c in codes]
-    return [row("darwinex", "raw_capture", "darwins page shape drifted",
-                "https://www.darwinex.com/darwins", html[:1200],
-                needs_selector_work=True)]
+    """DARWIN population via Wayback CDX -- the live listing was destroyed at source.
 
+    RETARGETED 2026-09-04 after 88 consecutive 404s on `/darwins`. Verified the same day:
+    darwinex.com/sitemap_en.xml is a 15-URL marketing sitemap with no /darwin/ page in it, so
+    the public per-strategy listing is gone from the origin, not merely moved. CDX still holds
+    the population (OP-098), which is the technique already proven on forextsd -- an archive is
+    a live enumerator of a dead index, and a 404 repeated 88 times is not evidence of absence
+    until someone asks a second door.
+    """
+    st = _state()
+    offset = int(st.get("darwinex_cdx_offset", 0))
+    txt = fetch("http://web.archive.org/cdx/search/cdx?url=darwinex.com/darwin/*"
+                f"&output=json&limit=300&offset={offset}&collapse=urlkey", timeout=40)
+    rows_ = json.loads(txt) if txt.strip() else []
+    out = []
+    for r_ in rows_[1:]:
+        try:
+            ts, orig = r_[1], r_[2]
+        except (IndexError, TypeError):
+            continue
+        code = re.search(r"/darwin/([A-Z0-9.]{3,12})", orig)
+        out.append(row("darwinex", "track_record",
+                       f"DARWIN {code.group(1)}" if code else orig[:120],
+                       f"https://web.archive.org/web/{ts}/{orig}",
+                       darwin=code.group(1) if code else ""))
+    st["darwinex_cdx_offset"] = offset + max(len(rows_) - 1, 0)
+    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    return out[:120]
 
 # ---------------------------------------------------------------- S12 TradingView scripts
 def mine_tradingview_scripts() -> list[dict]:
-    out = []
+    """Open-source strategy scripts. Links went ABSOLUTE; the old regex wanted them relative."""
+    out, seen = [], set()
     html = fetch("https://www.tradingview.com/scripts/?script_access=open&script_type=strategies")
-    for m in re.finditer(r'href="(/script/[^"]+/)"[^>]*>([^<]{3,120})<', html):
-        out.append(row("tradingview_scripts", "strategy_source", m.group(2).strip(),
-                       "https://www.tradingview.com" + m.group(1)))
+    for m in re.finditer(r'href="(?:https://www\.tradingview\.com)?(/script/([A-Za-z0-9]+)[^"]*)"'
+                         r'[^>]*data-qa-id="ui-lib-card-link-title"[^>]*>([^<]{3,160})<', html):
+        if m.group(2) in seen:
+            continue
+        seen.add(m.group(2))
+        out.append(row("tradingview_scripts", "strategy_source", m.group(3).strip(),
+                       "https://www.tradingview.com" + m.group(1), script_id=m.group(2)))
     if not out:
-        ids = re.findall(r'"scriptIdPart":"([^"]+)"', html)[:40]
-        out = [row("tradingview_scripts", "strategy_source", i,
-                   f"https://www.tradingview.com/script/{i}/") for i in ids] or \
-              [row("tradingview_scripts", "raw_capture", "scripts page shape drifted",
+        out = [row("tradingview_scripts", "raw_capture", "scripts page shape drifted",
                    "https://www.tradingview.com/scripts/", html[:1200],
                    needs_selector_work=True)]
     return out[:60]
-
 
 # ---------------------------------------------------------------- S13 FX Blue
 def mine_fxblue() -> list[dict]:
@@ -302,15 +352,31 @@ def mine_collective2() -> list[dict]:
 
 # ---------------------------------------------------------------- S15 QuantConnect
 def mine_quantconnect() -> list[dict]:
+    """Forum threads with their SUMMARY text.
+
+    REPAIRED 2026-09-04 after 260 consecutive raw_capture sweeps -- the longest dark streak in
+    the fleet. The listing is client-rendered, so `href="/forum/discussion/..."` appears twice
+    on a page carrying dozens of threads. The bootstrap JSON carries every thread with a
+    one-line `summary`, which is worth more than the link the old selector was hunting: a
+    mechanism sentence per thread, free, without opening any of them.
+    """
     html = fetch("https://www.quantconnect.com/forum/discussions/1/newest")
-    out = []
-    for m in re.finditer(r'href="(/forum/discussion/\d+/[^"]+)"[^>]*>([^<]{3,120})<', html):
-        out.append(row("quantconnect", "strategy_thread", m.group(2).strip(),
-                       "https://www.quantconnect.com" + m.group(1)))
+    out, seen = [], set()
+    pat = (r'"summary":"((?:[^"\\]|\\.){0,400})"[^{}]{0,200}?"title":"((?:[^"\\]|\\.){3,200})"'
+           r'[^{}]{0,400}?"url":"(https:\\?/\\?/www\.quantconnect\.com\\?/forum\\?/discussion\\?/(\d+)[^"]*)"')
+    for m in re.finditer(pat, html):
+        tid = m.group(4)
+        if tid in seen:
+            continue
+        seen.add(tid)
+        out.append(row("quantconnect", "strategy_thread",
+                       m.group(2).encode().decode("unicode_escape", "ignore"),
+                       m.group(3).replace("\\/", "/"),
+                       m.group(1).encode().decode("unicode_escape", "ignore"),
+                       thread_id=tid))
     return out[:40] or [row("quantconnect", "raw_capture", "forum shape drifted",
                             "https://www.quantconnect.com/forum", html[:1200],
                             needs_selector_work=True)]
-
 
 # ---------------------------------------------------------------- S16 ForexPeaceArmy
 def mine_forexpeacearmy() -> list[dict]:
@@ -488,15 +554,28 @@ def mine_github_topics() -> list[dict]:
 
 # ---------------------------------------------------------------- S24 prop-firm boards
 def mine_propfirm_boards() -> list[dict]:
-    html = fetch("https://ftmo.com/en/leaderboards/")
-    hits = re.findall(r'>([A-Za-z .\-]{3,30})</td>\s*<td[^>]*>\s*\$?([\d,]+)', html)[:30]
-    if hits:
-        return [row("propfirm_boards", "leaderboard", f"FTMO {name.strip()}",
-                    "https://ftmo.com/en/leaderboards/", gain=g) for name, g in hits]
-    return [row("propfirm_boards", "raw_capture", "ftmo leaderboard shape drifted",
-                "https://ftmo.com/en/leaderboards/", html[:1200],
-                needs_selector_work=True)]
+    """FTMO trading-update posts via its own sitemap.
 
+    RETARGETED 2026-09-04: `/en/leaderboards/` has answered a SOFT 404 for 88 straight runs --
+    status 404 with a full 203KB marketing body, which is why a byte-count health check would
+    have read it green. FTMO's robots is `Disallow:` (allow-all) and its sitemap index exposes
+    trading-updates-sitemap.xml with 1,001 dated payout/performance posts, which is the corpus
+    the leaderboard used to summarise.
+    """
+    xml = fetch("https://ftmo.com/trading-updates-sitemap.xml", timeout=30)
+    locs = [u for u in re.findall(r"<loc>([^<]+)</loc>", xml)
+            if "/en/blog/trading-updates/trading-update-" in u]
+    if not locs:
+        return [row("propfirm_boards", "raw_capture", "ftmo trading-updates sitemap empty",
+                    "https://ftmo.com/trading-updates-sitemap.xml", xml[:1200],
+                    needs_selector_work=True)]
+    st = _state()
+    cur = int(st.get("propfirm_cursor", 0)) % len(locs)
+    take = locs[cur:cur + 30]
+    st["propfirm_cursor"] = (cur + 30) % len(locs)
+    STATE.write_text(json.dumps(st, indent=0), "utf-8")
+    return [row("propfirm_boards", "trading_update",
+                u.rstrip("/").rsplit("/", 1)[-1].replace("-", " "), u) for u in take]
 
 def mine_mql5_survivors() -> list[dict]:
     """S++ flagship: phenotype-screened MQL5 survivor hunt (own module, richest ground)."""

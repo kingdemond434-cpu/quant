@@ -10146,6 +10146,48 @@
    "commit": null,
    "due": null,
    "disposed": null
+  },
+  {
+   "id": "R0776",
+   "source": "cycle",
+   "summary": "global_frontier miner dark 88 consecutive sweeps: global_survivor_frontier.run_and_save() returns an empty discoveries list -- a module to debug, not a selector. Last unrepaired dark intake channel.",
+   "roi_bps": null,
+   "rank": 8.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-04T00:43:54.059257+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0777",
+   "source": "cycle",
+   "summary": "Frontier dig outage 5 days: ~200 scheduled unified runs aborted on 'brain mutex held'/'auth unavailable' and never re-queued within their window. Fix: DEFERRED runs re-queue, and a fence reads a streak of sub-1500b frontier logs as RED.",
+   "roi_bps": null,
+   "rank": 9.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-04T00:44:11.359796+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
+  },
+  {
+   "id": "R0778",
+   "source": "cycle",
+   "summary": "Convert the 160 MQL5 W1 equity curves/sweep (new, repaired mql5_signals) into screened track-record hypotheses: drawdown shape, martingale detection, growth-vs-rating divergence. Intake now exists; conversion does not.",
+   "roi_bps": null,
+   "rank": 7.0,
+   "roi_basis": "rank",
+   "raised": "2026-09-04T00:44:28.107106+00:00",
+   "status": "open",
+   "reason": null,
+   "commit": null,
+   "due": null,
+   "disposed": null
   }
  ]
 }

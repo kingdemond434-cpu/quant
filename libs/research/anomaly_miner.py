@@ -125,10 +125,10 @@ def _conditions(df: pd.DataFrame, symbol: str = "") -> dict[str, np.ndarray]:
         _r = str(_DESK / "research")
         if _r not in _sys.path:
             _sys.path.insert(0, _r)
-        from research.edge_search import build_primitives
+        from research.edge_search import build_primitives  # type: ignore[import-not-found]
     except ImportError:
         try:
-            from edge_search import build_primitives  # type: ignore[no-redef]
+            from edge_search import build_primitives  # type: ignore[import-not-found]
         except ImportError:
             return {}                    # UNMEASURED: no vocabulary, so no conditions at all
     # THE ACQUIRED VOCABULARY IS PART OF THE SEARCH, not a separate one. Everything price-native
@@ -140,7 +140,7 @@ def _conditions(df: pd.DataFrame, symbol: str = "") -> dict[str, np.ndarray]:
     # through this same function, which is what makes an anomaly found here executable there.
     extra: dict[str, Any] = {}
     try:
-        from research.acquire_datasets import acquired_series
+        from research.acquire_datasets import acquired_series  # type: ignore[import-not-found]
         extra = acquired_series(df.index)
     except Exception:
         extra = {}                       # no acquired data is fewer conditions, never a failure
@@ -311,7 +311,7 @@ def scan_cross_section(frames: dict[str, pd.DataFrame], *, max_pairs: int = 400
             # The condition mask is also persistent (a quantile band holds for runs of bars), so
             # n/h remains OPTIMISTIC. It is the floor of the correction, not the whole of it --
             # the gates still do the real work, and this only stops the miner lying to them.
-            n_eff = max(2.0, n / float(max(1, h)))
+            n_eff = max(2.0, n / 6.0)  # h=6: fwd is ca.shift(-6)
             t = mu / (sd / math.sqrt(n_eff))
             if abs(t) < REPORT_T:
                 continue

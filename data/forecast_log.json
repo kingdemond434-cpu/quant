@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T22:07:47.663775+00:00",
+      "updated": "2026-09-04T00:11:32.884198+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T22:07:47.724956+00:00",
+      "updated": "2026-09-04T00:11:32.959152+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-09-03T22:07:47.822701+00:00",
+      "updated": "2026-09-04T00:11:33.066016+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -5932,6 +5932,69 @@
       "updated": "2026-09-03T21:58:30.922084+00:00",
       "resolve_by": "2026-09-17T21:58:30.902479+00:00",
       "claim": "R0775 reaches IMPLEMENTED by 2026-09-17"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q1": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:03.959230+00:00",
+      "resolve_by": "2026-09-04T04:16:03.908958+00:00",
+      "claim": "Will BTCUSDT trade ABOVE 77662.5 in 4 hours' time?"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q2": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:04.165973+00:00",
+      "resolve_by": "2026-09-04T12:16:03.908958+00:00",
+      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q3": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:04.523830+00:00",
+      "resolve_by": "2026-09-05T00:16:03.908958+00:00",
+      "claim": "Will SOLUSDT trade ABOVE 104.1 in 24 hours' time?"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q4": {
+      "p": 0.5,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:04.811092+00:00",
+      "resolve_by": "2026-09-04T04:16:03.908958+00:00",
+      "claim": "Will PAXGUSDT trade ABOVE 4457.16 in 4 hours' time?"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q5": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:04.906207+00:00",
+      "resolve_by": "2026-09-04T12:16:03.908958+00:00",
+      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?"
+    },
+    "probe:2026-09-04T00:16:03.908958+00:00:q6": {
+      "p": 0.49,
+      "kind": "calibration_probe",
+      "updated": "2026-09-04T00:16:05.007248+00:00",
+      "resolve_by": "2026-09-05T00:16:03.908958+00:00",
+      "claim": "Will XRPUSDT trade ABOVE 1.3872 in 24 hours' time?"
+    },
+    "rec:R0776": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-04T00:43:54.218210+00:00",
+      "resolve_by": "2026-09-18T00:43:54.192297+00:00",
+      "claim": "R0776 reaches IMPLEMENTED by 2026-09-18"
+    },
+    "rec:R0777": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-04T00:44:11.621104+00:00",
+      "resolve_by": "2026-09-18T00:44:11.605404+00:00",
+      "claim": "R0777 reaches IMPLEMENTED by 2026-09-18"
+    },
+    "rec:R0778": {
+      "p": 0.5023,
+      "kind": "recommendation",
+      "updated": "2026-09-04T00:44:28.239204+00:00",
+      "resolve_by": "2026-09-18T00:44:28.231604+00:00",
+      "claim": "R0778 reaches IMPLEMENTED by 2026-09-18"
     }
   }
 }
