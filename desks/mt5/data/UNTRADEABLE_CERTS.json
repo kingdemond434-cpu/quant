@@ -73,7 +73,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFG.discovered.p=fb2786aabb7c21de": {
@@ -149,7 +149,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFG.discovered.p=ef2e258721b52ea3": {
@@ -225,7 +225,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFG.discovered.p=c76420808dcb4657": {
@@ -301,7 +301,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFG.discovered.p=3d2353cfa7f07a5e": {
@@ -377,7 +377,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFG.discovered.p=62c7a7478424a92f": {
@@ -453,7 +453,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFG' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFL.discovered.p=8b760805b40b5e55": {
@@ -529,7 +529,7 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFL' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   },
   "external.AFL.discovered.p=f75a215dda6b2030": {
@@ -605,9 +605,9 @@
      "side": -1
     }
    },
-   "retired_at": "2026-09-04T02:12:18+00:00",
+   "retired_at": "2026-09-04T02:17:48+00:00",
    "retired_why": "symbol 'AFL' is not in the Fusion universe (251 symbols); a forward clock can never be enrolled, so this certificate cannot become money and is not weak evidence -- it is no evidence"
   }
  },
- "updated_at": "2026-09-04T02:12:18+00:00"
+ "updated_at": "2026-09-04T02:17:48+00:00"
 }
