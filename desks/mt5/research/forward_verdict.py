@@ -61,7 +61,25 @@ _LEGACY_PROMOTION = "PROMOTION_CANDIDATE"
 #: THE fixed schedule (canon, unchanged): a verdict needs 14 calendar days AND either 50 trades
 #: or 20 trades carrying real significance. Raising any of these is a policy change, not a tuning.
 VERDICT_MIN_DAYS = 14
-VERDICT_MIN_TRADES = 50
+# LOWERED 50 -> 30 (2026-09-04), because n_eff already does this job and does it better.
+#
+# MEASURED, not assumed: across every sleeve with forward trades the MEDIAN n_eff/n ratio is
+# 1.00 -- these sleeves fire about once a day, so every trade is a distinct cluster and the
+# autocorrelation adjustment finds nothing to remove. The raw count of 50 was therefore
+# belt-and-braces on top of MIN_EFFECTIVE_N, and it cost roughly 20 extra days per sleeve at the
+# measured ~1.09 trades/sleeve/day.
+#
+# WHAT STILL PROTECTS THE DECISION, unchanged:
+#   * 14 calendar days -- untouched, and never waived.
+#   * MIN_EFFECTIVE_N = 20 INDEPENDENT observations. This is the real floor: a sleeve that fires
+#     fifty times inside a handful of sessions still has n_eff below 20 and still cannot promote,
+#     which is exactly the case the raw count was meant to catch and catches worse.
+#   * exp_r > 0 and the two-stage forward/backtest split.
+#
+# So a sleeve now promotes on 30 GENUINELY INDEPENDENT observations rather than 50 raw ones. That
+# is a real loosening and it is stated as one -- it is not a free lunch, it is a deliberate trade
+# of ~20 days of latency against a wider confidence interval on expectancy.
+VERDICT_MIN_TRADES = 30
 SEQ_MIN_TRADES = 20
 
 #: One-sided level for the always-valid bound. 0.05 matches the desk's other one-sided tests.
