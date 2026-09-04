@@ -260,6 +260,60 @@ def check_conversion() -> dict[str, Any]:
     return out
 
 
+def check_funnel() -> dict[str, Any]:
+    """Every hop from discovery to a running clock, and WHICH hop is dead.
+
+    A funnel reported only at its ends cannot say where it broke. Measured this session: the
+    crawler held 6,251 documents, the queue held 2,050 hypotheses, 94 compiled, 58 certified and
+    0 clocks were accruing -- and each stage looked healthy from inside itself. The dead hop was
+    the last one, and nothing named it because nothing compared the hops.
+
+    STAGE-TO-STAGE, therefore. A hop whose input is large and whose output is zero is the defect,
+    and it is reported with the repair that belongs to THAT hop rather than a generic alarm.
+    """
+    stages: dict[str, Any] = {}
+    q = ROOT / "data" / "hypothesis_queue.jsonl"
+    try:
+        stages["queued"] = sum(1 for _ in q.open(encoding="utf-8")) if q.exists() else 0
+    except OSError:
+        stages["queued"] = None
+
+    comp = _json(DESK / "data" / "hypotheses" / "compiled_proposals.json") or {}
+    stages["compiled"] = len(comp.get("cells") or [])
+
+    bt = _json(DESK / "data" / "hypotheses" / "external_backtest_results.json")
+    stages["backtested"] = (len(bt) if isinstance(bt, list)
+                            else len(bt.get("results") or bt.get("cells") or {})
+                            if isinstance(bt, dict) else None)
+
+    canon = _json(DESK / "data" / "UNIVERSAL_SURVIVORS.canon.json") or {}
+    stages["certified"] = len(canon.get("survivors") or {})
+
+    st = _json(DESK / "reports" / "shadow" / "shadow_state.json") or {}
+    sl = st.get("sleeves") or st
+    rows = [v for v in sl.values() if isinstance(v, dict)]
+    stages["clocked"] = sum(1 for v in rows if str(v.get("status") or "") == "ACTIVE")
+    stages["trades"] = sum(v.get("n", 0) or 0 for v in rows
+                           if str(v.get("status") or "") == "ACTIVE")
+
+    #: hop -> (input stage, output stage, what repairs THAT hop)
+    hops = (("compile", "queued", "compiled", "scripts/compile_proposals.py"),
+            ("backtest", "compiled", "backtested", "ops/run_external_pipeline.sh"),
+            ("certify", "backtested", "certified", "scripts/certify_gauntlet.py"),
+            ("enrol", "certified", "clocked", "ops/run_forward_on_box.sh"))
+    dead = []
+    for name, src, dst, repair in hops:
+        a, b = stages.get(src), stages.get(dst)
+        if a is None or b is None:
+            continue
+        if a > 0 and b == 0:
+            dead.append({"hop": name, "in": a, "out": b, "repair": repair,
+                         "why": f"{a} in, ZERO out -- this hop is where the desk stops"})
+    return {"status": "DEFECT" if dead else "OK", "stages": stages, "dead_hops": dead,
+            "why": ("a hop with input and no output is the defect; the stage before it is healthy "
+                    "and the stage after it is starved" if dead else "every hop passing volume")}
+
+
 def next_growth_lever() -> dict[str, Any]:
     """The next lever for E[log W], ranked by MEASURED deficit rather than by opinion.
 
@@ -349,6 +403,7 @@ def main() -> int:
     checks = {
         "dashboard": check_dashboard(),
         "conversion": check_conversion(),
+        "funnel": check_funnel(),
         "uncommitted_code": check_uncommitted_code(),
         "record_pairs": check_record_pairs(),
         "forward_lane": check_forward_lane(),
