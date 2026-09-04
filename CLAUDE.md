@@ -120,3 +120,9 @@ never privileged); capital is evidence-hard (nothing gets authority for sounding
   JP/KR/RU sibling forests) for verbatim claims, map instruments to MT5 analogues, and push every
   claim to the gauntlet through the deepening worker (`story_mechanism`). Grounds live in
   `desks/mt5/data/deep_forest_sources.json`; new grounds are added there, never hard-coded.
+- **AUTOMATIC PROMOTION (2026-09-04, principal standing order)** — "all promotion candidates get
+  into the live account immediately, no waiting, no permission, fully automatically, always."
+  Every forward lane (main shadow, qquant, scalp) feeds `research/promoter.py`; a candidate whose
+  exact spec holds a ten-gate certificate is written LIVE on the same cycle its clock matures,
+  the gateway trades it on its next pass, and capital is the allocator's decision by ΔE[log W].
+  No champion wait, no kill-by-comparison, no human act. Retirement stays automatic too.

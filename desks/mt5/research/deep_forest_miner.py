@@ -55,6 +55,9 @@ SOURCES = _DESK / "data" / "deep_forest_sources.json"
 CLAIMS = _DESK / "data" / "deep_forest_claims.jsonl"
 SEEN = _DESK / "data" / "deep_forest_seen.json"
 REPORT = _DESK / "reports" / "DEEP_FOREST.json"
+#: The provenance ledger every extracted claim is appended to (libs.data.datahub's own file);
+#: a constant here so a test can point it elsewhere instead of writing into the desk's ledger.
+PROVENANCE = _DESK / "data" / "mined_sources.jsonl"
 MAX_TASKS = 400
 PAGE_FETCH_PER_QUERY = 3
 DEEP_LINKS_PER_GROUND = 6
@@ -336,7 +339,8 @@ class _Run:
                                 commit=str(row.get("fetched_utc")),
                                 license_=str(row.get("license") or "WEB-PUBLIC"),
                                 file=str(row.get("route")), mechanism=str(row["claim"])[:200],
-                                code_copied=False, commercial_restriction=True)
+                                code_copied=False, commercial_restriction=True,
+                                path=PROVENANCE)
         except Exception:
             pass
 

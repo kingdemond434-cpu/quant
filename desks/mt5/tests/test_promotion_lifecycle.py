@@ -203,18 +203,28 @@ def test_a_winning_sleeve_is_not_retired(desk):
 
 # ------------------------------------------------------------- gold challengers
 
-def test_a_gold_challenger_waits_for_the_armed_book(desk):
+def test_a_gold_challenger_no_longer_waits_for_the_armed_book(desk):
+    """PRINCIPAL 2026-09-04: every promotion candidate goes live immediately, no waiting. A
+    challenger used to sit in shadow until the armed window had forward rows to compare
+    against; a certified, matured sleeve held out of the book by a comparison that had never
+    proved it raised E[log W]."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": dict(_GOOD)})
     promoter.main()
-    assert desk.sleeves() == [], "promoted with nothing to compare against"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE" and s["vs_armed"] is None
 
 
-def test_a_gold_challenger_that_loses_to_the_armed_book_is_killed_not_promoted(desk):
+def test_a_gold_challenger_that_trails_the_armed_book_is_promoted_with_the_number_recorded(desk):
+    """The comparison is MEASURED and written on the row; it no longer kills. Capital is the
+    allocator's decision by dElogW, not a promoter heuristic."""
     desk.shadow({"XAUUSD.asia.NORMAL_DAY": {**_GOOD, "exp_r": 0.10}})
     desk.ledger([{"sleeve": "gold_asia", "r_multiple": 0.40} for _ in range(6)])
     promoter.main()
-    assert desk.sleeves() == []
-    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "KILL"
+    (s,) = desk.sleeves()
+    assert s["status"] == "LIVE"
+    assert s["vs_armed"]["trails_by_more_than"] is True
+    assert s["vs_armed"]["armed_exp_r"] == pytest.approx(0.40)
+    assert desk.read_shadow()["XAUUSD.asia.NORMAL_DAY"]["status"] == "PROMOTION CANDIDATE"
 
 
 def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
@@ -223,6 +233,7 @@ def test_a_gold_challenger_that_beats_the_armed_book_promotes(desk):
     promoter.main()
     (s,) = desk.sleeves()
     assert s["name"] == "XAUUSD.asia.NORMAL_DAY" and s["state"] == "NORMAL_DAY"
+    assert s["vs_armed"]["trails_by_more_than"] is False
 
 
 def test_a_demo_fill_cannot_retire_a_live_sleeve(desk):

@@ -89,8 +89,10 @@ def test_the_books_fraction_reaches_the_venue_unshrunk() -> None:
     assert lot(1000.0, 3, 10.0, "EURUSD", None, None, None, from_book=True) == 0.0
 
 
-def test_both_promoted_lot_call_sites_pass_from_book() -> None:
-    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') == 2
+def test_every_promoted_lot_call_site_passes_from_book() -> None:
+    # Three sizing sites: the bracket loop, the family executor and (2026-09-04) the scalp
+    # executor. Each must hand the allocator book's fraction to the venue un-re-shrunk.
+    assert _GW_SRC.count('from_book=(s.get("sized_by") == "allocator_book")') == 3
     assert '_s["q_charge"] = float(_book[_s["name"]]) * decay_factor' in _GW_SRC
 
 

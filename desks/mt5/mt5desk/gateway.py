@@ -1801,6 +1801,19 @@ def sleeve_set() -> list[dict]:
                             "risk_frac": s.get("risk_frac"), "exec": "family_market",
                             "lot": "auto_ramp", "status": "LIVE"})
             continue
+        # SCALP SLEEVES (principal 2026-09-04: every promotion candidate goes live, automatically).
+        # The promoter writes the scalp lane's exact recipe -- timeframe, family, session and the
+        # ATR geometry the forward clock replayed -- and run_scalp_sleeves() executes precisely
+        # that through mt5desk/scalp_exec.py. Same arm switch as the family lane.
+        if s.get("exec") == "scalp_market":
+            sleeves.append({"name": s["name"], "symbol": s["symbol"],
+                            "timeframe": s.get("timeframe"), "family": s.get("family"),
+                            "session": s.get("session", "all"),
+                            "stop_atr": s.get("stop_atr"), "target_atr": s.get("target_atr"),
+                            "max_hold": s.get("max_hold"),
+                            "risk_frac": s.get("risk_frac"), "exec": "scalp_market",
+                            "lot": "auto_ramp", "status": "LIVE"})
+            continue
         if s.get("window") not in {w[0] for w in GOLD_WINDOWS}:
             continue  # only validated window semantics
         sleeves.append({"name": s["name"], "symbol": s["symbol"],
@@ -1992,6 +2005,230 @@ def run_family_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
             srec.pop("open_ttl_until", None)
 
 
+def _sleeve_positions(symbol: str, name: str) -> list:
+    """Open positions this sleeve owns: the order comment is the sleeve's tag."""
+    tag = f"DW{name}"[:31]
+    return [p for p in (mt5.positions_get(symbol=symbol) or [])
+            if str(getattr(p, "comment", "") or "") == tag]
+
+
+def close_sleeve_positions(st: dict, symbol: str, name: str) -> None:
+    """Close ONE sleeve's positions on a symbol, never the symbol's whole book.
+
+    `close_positions` closes every position on the symbol, which on XAUUSD would take the armed
+    gold windows down with a scalp basket's time exit. Scoped by the order comment instead.
+    """
+    if not st.get("armed"):
+        log(f"[{name}] SHADOW would close its open position(s)")
+        return
+    for p in _sleeve_positions(symbol, name):
+        tick = mt5.symbol_info_tick(symbol)
+        if tick is None:
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": symbol, "volume": p.volume,
+            "type": (mt5.ORDER_TYPE_SELL if p.type == mt5.POSITION_TYPE_BUY
+                     else mt5.ORDER_TYPE_BUY),
+            "position": p.ticket,
+            "price": tick.bid if p.type == mt5.POSITION_TYPE_BUY else tick.ask,
+            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+        })
+        log(f"[{name}] CLOSE ticket {p.ticket} -> retcode={res.retcode if res else None}")
+
+
+def _retarget_sleeve_positions(symbol: str, name: str, sl: float, tp: float) -> None:
+    """Move every slice's target to the basket's new average-entry target (stop unchanged)."""
+    for p in _sleeve_positions(symbol, name):
+        res = mt5.order_send({"action": mt5.TRADE_ACTION_SLTP, "position": p.ticket,
+                              "symbol": symbol, "sl": float(sl), "tp": float(tp),
+                              "magic": MAGIC})
+        log(f"[{name}] RETARGET ticket {p.ticket} tp={tp:.5f} -> "
+            f"retcode={res.retcode if res else None}")
+
+
+def run_scalp_sleeves(st: dict, sleeves: list[dict], equity: float) -> None:
+    """Execute promoted scalp sleeves with replay-faithful semantics (principal 2026-09-04).
+
+    FAITHFUL TO THE REPLAY OR NOT AT ALL, as for the family lane: the signal, the ATR geometry,
+    the four-slice structural basket and the time exit are `mt5desk/scalp_exec.py`'s reading
+    of `scalp_reverse_engineering.simulate`, computed on the broker's own M5/M15 bars. The one
+    stated deviation is the stop's ATR (last closed bar, since the replay's bar-i ATR cannot be
+    known at the open). Sized by `promoted_lot` like every other sleeve, so the allocator book's
+    fraction reaches the venue unshrunk; LOG-ONLY under the same arm switch as the family lane.
+    """
+    sc_sleeves = [s for s in sleeves if s.get("exec") == "scalp_market"]
+    if not sc_sleeves:
+        return
+    try:
+        from mt5desk import scalp_exec as sx
+    except Exception as exc:
+        log(f"SCALP-EXEC unavailable ({type(exc).__name__}: {exc}); "
+            f"{len(sc_sleeves)} sleeve(s) NOT traded this pass")
+        return
+    armed = bool(st.get("armed")) and GENERIC_EXEC_ENABLED.exists()
+    gstate = st.setdefault("scalp", {})
+    now_iso = datetime.now(tz=UTC).isoformat()
+    for s in sc_sleeves:
+        name, tf = s["name"], str(s.get("timeframe") or "")
+        tf_attr = sx.MT5_TIMEFRAME_ATTR.get(tf)
+        if tf_attr is None or not hasattr(mt5, tf_attr):
+            log(f"[{name}] SCALP-EXEC refused: timeframe {tf!r} has no exact executable")
+            continue
+        try:
+            family, session = str(s["family"]), str(s.get("session") or "all")
+            stop_atr, target_atr = float(s["stop_atr"]), float(s["target_atr"])
+            max_hold = int(s["max_hold"])
+        except (KeyError, TypeError, ValueError) as exc:
+            log(f"[{name}] SCALP-EXEC refused: recipe incomplete ({exc})")
+            continue
+        rates = mt5.copy_rates_from_pos(s["symbol"], getattr(mt5, tf_attr), 0, sx.BARS_NEEDED)
+        if rates is None or len(rates) < sx.MIN_BARS + 1:
+            log(f"[{name}] SCALP-EXEC: bars unavailable; skipped")
+            continue
+        try:
+            df = sx.frame_from_rates(rates)
+        except ValueError as exc:
+            log(f"[{name}] SCALP-EXEC: bars unreadable ({exc}); skipped")
+            continue
+        closed, forming = df.iloc[:-1], df.index[-1]
+        srec = gstate.setdefault(name, {})
+        basket = srec.get("basket")
+        # THE BASKET ENDS WHEN THE BROKER SAYS SO: stop, target or the day's force-close leave no
+        # position, and a basket with no position must not accept an add-on slice.
+        if basket and armed and not _sleeve_positions(s["symbol"], name):
+            srec.pop("basket", None)
+            srec.pop("open_ttl_until", None)
+            basket = None
+        # THE TIME EXIT is part of the certified strategy, not an optional tidy-up.
+        deadline = srec.get("open_ttl_until")
+        if deadline and now_iso >= deadline:
+            close_sleeve_positions(st, s["symbol"], name)
+            srec.pop("open_ttl_until", None)
+            srec.pop("basket", None)
+            basket = None
+        if srec.get("last_signal_bar") == str(forming):
+            continue                                   # this bar's open already considered
+        srec["last_signal_bar"] = str(forming)
+        tick = mt5.symbol_info_tick(s["symbol"])
+        sym = mt5.symbol_info(s["symbol"])
+        if tick is None or sym is None:
+            log(f"[{name}] SCALP-EXEC: no tick/symbol_info; skipped")
+            continue
+        from_book = (s.get("sized_by") == "allocator_book")
+        if basket:
+            # AN ADD-ON SLICE, at this bar's open, on the replay's own conditions.
+            side = int(basket["side"])
+            price = float(tick.ask if side == 1 else tick.bid)
+            try:
+                ok = sx.addon_allowed(closed, tf=tf, family=family, session=session, side=side,
+                                      stop=float(basket["stop"]), depth=len(basket["entries"]),
+                                      price=price, forming_time=forming)
+            except Exception as exc:
+                log(f"[{name}] SCALP-EXEC add-on signal failed ({exc}); skipped")
+                continue
+            if not ok or basket.get("mode") != "bounded_structural":
+                continue
+            dist = abs(price - float(basket["stop"]))
+            try:
+                lot = promoted_lot(equity, sleeve_live_n(name), dist, s["symbol"], sym,
+                                   s.get("risk_frac"), s.get("decay_faded"),
+                                   from_book=(s.get("sized_by") == "allocator_book"))
+            except Exception as exc:
+                log(f"[{name}] SCALP-EXEC: cannot price add-on risk ({exc}); skipped")
+                continue
+            per, mode = sx.slice_lot(lot, float(getattr(sym, "volume_min", 0.01) or 0.01),
+                                     float(getattr(sym, "volume_step", 0.01) or 0.01))
+            if mode != "bounded_structural" or not (per > 0):
+                continue
+            entries = [(float(p), float(u)) for p, u in basket["entries"]] + [(price, per)]
+            new_tp = sx.basket_target(entries, side, float(basket["target_atr"]),
+                                      float(basket["atr"]))
+            desc = (f"ADD {'BUY' if side == 1 else 'SELL'} {per} {s['symbol']} @market "
+                    f"sl={float(basket['stop']):.5f} tp->{new_tp:.5f} depth={len(entries)}")
+            if not armed:
+                log(f"[{name}] WOULD PLACE (scalp exec not armed): {desc}")
+                continue
+            if not margin_ok(s["symbol"], per, price):
+                log(f"[{name}] SCALP-EXEC add-on SKIPPED: margin tight (lot={per})")
+                continue
+            res = mt5.order_send({
+                "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
+                "type": mt5.ORDER_TYPE_BUY if side == 1 else mt5.ORDER_TYPE_SELL,
+                "price": price, "sl": float(basket["stop"]), "tp": float(new_tp),
+                "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+            })
+            rc = res.retcode if res else None
+            _record_intent(sleeve=name, symbol=s["symbol"],
+                           side=("buy" if side == 1 else "sell"), lot=per, intended=price,
+                           sl=float(basket["stop"]), tp=float(new_tp),
+                           ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                           slice_depth=len(entries))
+            log(f"[{name}] SCALP-EXEC ADD-ON -> retcode={rc} "
+                f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
+            if rc in (10008, 10009):
+                basket["entries"] = [[p, u] for p, u in entries]
+                basket["target"] = float(new_tp)
+                _retarget_sleeve_positions(s["symbol"], name, float(basket["stop"]),
+                                           float(new_tp))
+            continue
+        try:
+            plan = sx.plan_entry(closed, tf=tf, family=family, session=session,
+                                 stop_atr=stop_atr, target_atr=target_atr, max_hold=max_hold,
+                                 bid=float(tick.bid), ask=float(tick.ask), forming_time=forming)
+        except Exception as exc:
+            log(f"[{name}] SCALP-EXEC signal computation failed ({exc}); skipped")
+            continue
+        if plan is None:
+            continue
+        try:
+            lot = promoted_lot(equity, sleeve_live_n(name), plan.stop_dist, s["symbol"], sym,
+                               s.get("risk_frac"), s.get("decay_faded"), from_book=from_book)
+        except Exception as exc:
+            log(f"[{name}] SCALP-EXEC: cannot price risk ({exc}); skipped")
+            continue
+        if not (lot > 0):
+            log(f"[{name}] SCALP-EXEC: allocator gave this sleeve no heat; skipped")
+            continue
+        per, mode = sx.slice_lot(lot, float(getattr(sym, "volume_min", 0.01) or 0.01),
+                                 float(getattr(sym, "volume_step", 0.01) or 0.01))
+        if not (per > 0):
+            log(f"[{name}] SCALP-EXEC: lot {lot} below the symbol's minimum; skipped")
+            continue
+        policy_advice = _policy_advice(s["symbol"], plan.side, plan.entry_ref, tick, sym,
+                                       plan.stop_dist, plan)
+        desc = (f"{'BUY' if plan.side == 1 else 'SELL'} {per} {s['symbol']} @market "
+                f"sl={plan.stop:.5f} tp={plan.target:.5f} mode={mode} "
+                f"ttl_until={plan.ttl_until}")
+        if not armed:
+            log(f"[{name}] WOULD PLACE (scalp exec "
+                f"{'not armed' if st.get('armed') else 'account unarmed'}; "
+                f"enable={GENERIC_EXEC_ENABLED.name}): {desc}")
+            continue
+        if not margin_ok(s["symbol"], per, plan.entry_ref):
+            log(f"[{name}] SCALP-EXEC SKIPPED: margin tight (lot={per})")
+            continue
+        res = mt5.order_send({
+            "action": mt5.TRADE_ACTION_DEAL, "symbol": s["symbol"], "volume": per,
+            "type": mt5.ORDER_TYPE_BUY if plan.side == 1 else mt5.ORDER_TYPE_SELL,
+            "price": plan.entry_ref, "sl": float(plan.stop), "tp": float(plan.target),
+            "deviation": 20, "magic": MAGIC, "comment": f"DW{name}"[:31],
+        })
+        rc = res.retcode if res else None
+        _record_intent(sleeve=name, symbol=s["symbol"],
+                       side=("buy" if plan.side == 1 else "sell"), lot=per,
+                       intended=plan.entry_ref, sl=float(plan.stop), tp=float(plan.target),
+                       ticket=(getattr(res, "order", None) if res else None), retcode=rc,
+                       policy_advice=policy_advice, slice_depth=1)
+        log(f"[{name}] SCALP-EXEC ORDER -> retcode={rc} "
+            f"{diagnose(rc, getattr(res, 'comment', '') or '')} | {desc}")
+        if rc in (10008, 10009):
+            srec["open_ttl_until"] = plan.ttl_until
+            srec["basket"] = {"side": plan.side, "stop": float(plan.stop),
+                              "target": float(plan.target), "atr": float(plan.atr),
+                              "target_atr": target_atr, "mode": mode,
+                              "entries": [[plan.entry_ref, per]], "opened_bar": plan.bar_time}
+
+
 def main() -> None:
     if gateway_paused():
         log("gateway paused (data/GATEWAY_PAUSED present); no trading this pass")
@@ -2138,10 +2375,14 @@ def main() -> None:
         run_family_sleeves(st, sleeves, equity)
     except Exception as exc:
         log(f"FAMILY-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
+    try:
+        run_scalp_sleeves(st, sleeves, equity)
+    except Exception as exc:
+        log(f"SCALP-EXEC FAILED (bracket path unaffected): {type(exc).__name__}: {exc}")
     save_state(st)
     if st["last_bracket_date"] == day_key:
         for s in sleeves:
-            if s.get("exec") == "family_market":
+            if s.get("exec") in ("family_market", "scalp_market"):
                 continue
             if st["brackets"].get(s["name"]):
                 continue
@@ -2244,7 +2485,8 @@ def main() -> None:
         # broker API, and it is read-only: symbol_info and copy_rates, never an order.
         _vetoed = st.setdefault("vetoed_today", {})
         for s in _hibernated:
-            if s.get("exec") == "family_market" or _vetoed.get(s["name"]) == day_key:
+            if s.get("exec") in ("family_market", "scalp_market") \
+                    or _vetoed.get(s["name"]) == day_key:
                 continue
             if hour < s.get("sig_hour", 0):
                 continue

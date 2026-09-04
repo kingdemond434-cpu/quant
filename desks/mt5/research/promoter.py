@@ -2,13 +2,22 @@
 
 Runs daily at 22:00 UTC inside the gateway loop (after shadow_forward.main()).
 
-PROMOTE (fully automatic):
-  - shadow verdict == PROMOTION CANDIDATE and not yet promoted:
-    * XAUUSD challengers: promote only if their forward exp >= the armed gold
-      sleeve's forward exp (live ledger, same window) - 0.02 margin; else KILL.
-    * JPY-cross sleeves: promote directly at 3% base risk, gateway-sized and ramped.
-  - promoted sleeves are written to data/sleeves.json (status LIVE) and the
-    gateway picks them up on the next pass (< 1 min).
+PROMOTE (fully automatic, immediate -- principal 2026-09-04: "all promotion candidates get
+into the live account immediately, no waiting, no permission, always"):
+  - every lane's forward clock (shadow_forward, qquant_shadow, scalp_shadow) says
+    PROMOTION CANDIDATE and the sleeve is not yet promoted: it is written to
+    data/sleeves.json (status LIVE) on THIS run and the gateway trades it on its next
+    pass (< 1 min). The only refusal is the certificate: a candidate whose exact spec is
+    not in the ten-gate authority set is BLOCKED_UNIVERSAL_GATES, because a candidate
+    without a certificate is not a candidate.
+  - XAUUSD window challengers no longer wait for, or die to, the armed gold book. The
+    comparison against the armed window's forward expectancy is still MEASURED and written
+    on the sleeve row (`vs_armed`) for the allocator and the attribution to read; capital
+    is then the allocator's decision by dElogW, never a promoter's heuristic (growth
+    governance rule 1: a risk reduction that has not proved it raises E[log W] does not
+    gate).
+  - scalp sleeves carry their exact recipe (timeframe, family, session, ATR geometry) and
+    exec="scalp_market"; the gateway executes them through mt5desk/scalp_exec.py.
 
 RETIRE (fully automatic):
   - for each LIVE promoted sleeve: forward stats from the live ledger:
@@ -234,6 +243,78 @@ def load_qquant_shadow() -> dict:
         return {}
 
 
+def load_scalp_shadow() -> dict:
+    """The scalp lane's forward clock (research/scalp_shadow.py), rows under `sleeves`."""
+    p = SHADOW_DIR / "scalp_shadow_state.json"
+    try:
+        v = json.loads(p.read_text(encoding="utf-8"))
+        return v if isinstance(v, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def promote_scalp(sleeves: list[dict], sshadow: dict, existing: set,
+                  gate_authority: set) -> bool:
+    """The scalp lane's automatic door (principal 2026-09-04).
+
+    A scalp sleeve promotes when its own Fusion-native forward clock says PROMOTION_CANDIDATE
+    (the canon 50-trade / day-14-with-20 schedule lives in scalp_shadow.py) AND its exact spec
+    ("XAUUSD", name, None, "gold_scalp", False) is in the ten-gate authority set -- the same
+    set scalp_shadow admitted it under, re-checked here so a certificate revoked since cannot
+    be traded on. A clock fed by a proxy (non-Fusion) source carries no capital authority and
+    is skipped with the reason logged, exactly as the lane itself states.
+
+    The row carries the lane's EXACT recipe from its own state (timeframe, family, session,
+    stop/target ATR multiples, max hold) so the gateway executes what was replayed and nothing
+    else. No champion comparison: a scalp is an additive mechanism, not a challenger to a gold
+    window, and capital is the allocator's decision.
+    """
+    changed = False
+    rows = sshadow.get("sleeves") if isinstance(sshadow.get("sleeves"), dict) else {}
+    for name, row in rows.items():
+        if not isinstance(row, dict) or row.get("status") != "PROMOTION_CANDIDATE":
+            continue
+        if name in existing:
+            continue
+        if not row.get("promotion_authority"):
+            plog(f"{name}: scalp PROMOTION_CANDIDATE on a proxy feed; no capital authority")
+            continue
+        spec = ("XAUUSD", str(name), None, "gold_scalp", False)
+        if spec not in gate_authority:
+            row["status"] = "BLOCKED_UNIVERSAL_GATES"
+            row["promotion_authority"] = False
+            row["gate_reason"] = "missing exact original universal ten-gate pass"
+            plog(f"{name}: scalp candidate refused -- spec not in exact-gate authority")
+            changed = True
+            continue
+        choice = row.get("choice") if isinstance(row.get("choice"), dict) else {}
+        tf = str(row.get("timeframe") or "")
+        try:
+            recipe = {"timeframe": tf, "family": str(choice["family"]),
+                      "session": str(choice.get("session") or "all"),
+                      "stop_atr": float(choice["stop_atr"]),
+                      "target_atr": float(choice["target_atr"]),
+                      "max_hold": int(choice["max_hold"])}
+        except (KeyError, TypeError, ValueError) as exc:
+            plog(f"{name}: scalp candidate refused -- exact recipe missing from its clock "
+                 f"({type(exc).__name__}: {exc})")
+            continue
+        if not tf:
+            plog(f"{name}: scalp candidate refused -- no timeframe on its clock")
+            continue
+        sleeves.append({"name": name, "symbol": "XAUUSD", **recipe,
+                        "exec": "scalp_market", "lot": "auto_ramp",
+                        "risk_frac": PROMOTED_RISK_FRAC, "status": "LIVE",
+                        "promoted_at": datetime.now(tz=UTC).isoformat(timespec="seconds"),
+                        "shadow_exp": row.get("expectancy_r", 0.0),
+                        "shadow_n": row.get("n", 0)})
+        plog(f"AUTO-PROMOTED (scalp) {name} -> LIVE at {PROMOTED_RISK_FRAC:.0%} base risk, "
+             f"ramped, exec=scalp_market {tf} {recipe['family']}/{recipe['session']} "
+             f"(shadow exp={float(row.get('expectancy_r') or 0.0):.3f}R n={row.get('n', 0)})")
+        changed = True
+    return changed
+
+
 def load_cert_specs() -> dict[str, dict]:
     """Certificate key -> published shadow_spec, exact policy only (fail closed)."""
     from gate_policy import all_ten_pass, is_exact_policy
@@ -306,10 +387,10 @@ def main() -> None:
     changed = False
 
     qshadow = load_qquant_shadow()
-    if promote_generic(sleeves, qshadow, existing, gate_authority):
-        changed = True
-        (SHADOW_DIR / "qquant_shadow_state.json").write_text(
-            json.dumps(qshadow, indent=2), encoding="utf-8")
+    qchanged = promote_generic(sleeves, qshadow, existing, gate_authority)
+    sshadow = load_scalp_shadow()
+    schanged = promote_scalp(sleeves, sshadow, existing, gate_authority)
+    changed = changed or qchanged or schanged
 
     for key, st in shadow.items():
         if not isinstance(st, dict):
@@ -336,18 +417,23 @@ def main() -> None:
             continue
         if win not in GOLD_WINDOWS:
             continue
+        # THE ARMED-BOOK COMPARISON IS MEASURED, NOT A GATE (principal 2026-09-04). Until then a
+        # gold challenger WAITED while the armed window had no forward rows and was KILLED when
+        # its expectancy trailed the window's by CHAMPION_MARGIN. Neither had proved it raised
+        # E[log W]; both held a certified, matured sleeve out of the book. The number is kept on
+        # the row so the allocator's dElogW and the attribution can read it.
+        vs_armed = None
         if sym == "XAUUSD":
             armed_exp = armed_forward_exp(ledger, win)
-            if armed_exp is None:
-                plog(f"{key}: PROMOTION CANDIDATE, armed book has no forward data yet; wait")
-                continue
-            if st["exp_r"] < armed_exp - CHAMPION_MARGIN:
-                st["status"] = "KILL"
-                plog(f"{key}: challenger LOST to armed book "
-                     f"({st['exp_r']:.3f}R vs {armed_exp:.3f}R); KILL")
-                changed = True
-                continue
+            if armed_exp is not None:
+                vs_armed = {"armed_exp_r": round(float(armed_exp), 4),
+                            "margin_r": round(float(st.get("exp_r", 0.0)) - float(armed_exp), 4),
+                            "trails_by_more_than": bool(
+                                float(st.get("exp_r", 0.0)) < armed_exp - CHAMPION_MARGIN)}
+                plog(f"{key}: challenger vs armed {win}: {float(st.get('exp_r', 0.0)):.3f}R vs "
+                     f"{armed_exp:.3f}R -- recorded, promotion proceeds")
         sleeves.append({"name": key, "symbol": sym, "window": win,
+                        "vs_armed": vs_armed,
                         # Carried through to the gateway, which refuses to trade a conditioned
                         # sleeve whose state it cannot confirm. Without this field the gateway
                         # would trade the UNCONDITIONED strategy under this sleeve's name.
@@ -389,6 +475,13 @@ def main() -> None:
             skey = s["name"]
             if skey in shadow:
                 shadow[skey]["status"] = "KILL"
+            if isinstance(qshadow.get(skey), dict):
+                qshadow[skey]["status"] = "KILL"
+                qchanged = True
+            srows = sshadow.get("sleeves") if isinstance(sshadow.get("sleeves"), dict) else {}
+            if isinstance(srows.get(skey), dict):
+                srows[skey]["status"] = "KILL"
+                schanged = True
             plog(f"AUTO-RETIRED {s['name']} ({reason})")
             changed = True
 
@@ -433,6 +526,12 @@ def main() -> None:
             plog(f"AUTO-RETIRED {gname} ({reason}) -- gateway stops emitting this window")
             changed = True
 
+    if qchanged:
+        (SHADOW_DIR / "qquant_shadow_state.json").write_text(
+            json.dumps(qshadow, indent=2), encoding="utf-8")
+    if schanged:
+        (SHADOW_DIR / "scalp_shadow_state.json").write_text(
+            json.dumps(sshadow, indent=2), encoding="utf-8")
     if changed:
         save_sleeves(sleeves)
         (SHADOW_DIR / "shadow_state.json").write_text(
