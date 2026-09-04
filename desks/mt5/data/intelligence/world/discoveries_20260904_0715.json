@@ -1,0 +1,319 @@
+[
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download ForexSpeedUp - tool that helps to open trades with a click and save your time in trading",
+  "url": "https://forexspeedup.com/download",
+  "published": "2026-09-04T07:13:08+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexspeedup.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "89e715d3be867343c561",
+  "host": "forexspeedup.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u4e1c\u65b9\u8d22\u5bcc\u8bc1\u5238\uff1a\u8bc1\u5238\u4ea4\u6613|\u7092\u80a1|\u76ef\u76d8\u5b98\u65b9\u8f6f\u4ef6\u4e0b\u8f7d",
+  "url": "http://www.18.cn/download.html",
+  "published": "2026-09-04T07:13:22+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [
+   "https://zqcdn.eastmoneysec.com.cn/secuweb-ssr-18/static/builds/meta/0566adbc-93cf-49be-8bc7-6a320b785825.json",
+   "http://www.18.cn/download"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "8478b28106e512ed6356",
+  "host": "www.18.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "How we do Open Data: #1 - choosing development indicators",
+  "url": "https://blogs.worldbank.org/opendata/how-we-do-open-data-choosing-development-indicators",
+  "published": "2026-09-04T07:13:23+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://research.stlouisfed.org/fred2/tags/series"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "54bf7cc652872f116e43",
+  "host": "blogs.worldbank.org"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "quantmod: documentation",
+  "url": "http://www.quantmod.com/documentation",
+  "published": "2026-09-04T07:13:34+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.quantmod.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "1d6a326ead09ac164d1a",
+  "host": "www.quantmod.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "quantmod: download",
+  "url": "http://www.quantmod.com/download",
+  "published": "2026-09-04T07:13:35+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "http://www.quantmod.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "33565e62341aa9acbe18",
+  "host": "www.quantmod.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "\u6570\u636e\u5e73\u53f0-BigQuant\u91cf\u5316\u4ea4\u6613\u6570\u636e\u5e93",
+  "url": "https://bigquant.com/data/home",
+  "published": "2026-09-04T07:13:37+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "zh-CN",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "db60f27c315fd217677d",
+  "host": "bigquant.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download indicator examples | FTO Indicators DOCS",
+  "url": "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples",
+  "published": "2026-09-04T07:13:38+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://fto-2.gitbook.io/fto-indicators-docs/llms.txt",
+   "https://143033411-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FvIxxwCB45eSMhYSnbt1g%2Fuploads%2Fgit-blob-ddbb5c420ad3bf8ee836451d47744e2b51049fbe%2Fmoving-average.zip?alt=media",
+   "https://143033411-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FvIxxwCB45eSMhYSnbt1g%2Fuploads%2Fgit-blob-89f6e7c8d0b347cf934d6fda70eca804fc714258%2Findicator-skeleton.zip?alt=media",
+   "https://143033411-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FvIxxwCB45eSMhYSnbt1g%2Fuploads%2Fgit-blob-1bd27609669fdbc5b92a8f6787c2282f3bab1b42%2Fempty-indicator.zip?alt=media",
+   "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples",
+   "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples.md",
+   "https://fto-2.gitbook.io/fto-indicators-docs/download-indicator-examples/rss.xml"
+  ],
+  "n_endpoints": 7,
+  "vault_sha": "94e2e13b6241cd585138",
+  "host": "fto-2.gitbook.io"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "dataset",
+  "title": "Download Trader Workstation (TWS) | Interactive Brokers LLC",
+  "url": "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+  "published": "2026-09-04T07:13:41+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://www.interactivebrokers.com/en/trading/download-tws.php",
+   "https://www.interactivebrokers.com/en/trading/download-tws.php?menu=B",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest/tws-latest-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable/tws-stable-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/beta/tws-beta-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/latest-standalone/tws-latest-standalone-linux-x64.sh",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macos-arm.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-macosx-x64.dmg",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-windows-x64.exe",
+   "https://download2.interactivebrokers.com/installers/tws/stable-standalone/tws-stable-standalone-linux-x64.sh"
+  ],
+  "n_endpoints": 22,
+  "vault_sha": "1a7fa66935708f358730",
+  "host": "www.interactivebrokers.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Pobierz MetaTrader 4 \u2013 aplikacj\u0119 MT4 na PC i urz\u0105dzenia mobilne",
+  "url": "https://www.axi-solaris.com/pl/trading-platforms/metatrader-4",
+  "published": "2026-09-04T07:13:45+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "pl",
+  "endpoints": [
+   "https://download.mql5.com/cdn/web/metaquotes.software.corp/mt4/MetaTrader4.pkg.zip",
+   "https://download.mql5.com/cdn/web/axicorp.financial.services/mt4/axi4setup.exe"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "4d5d447899ca569d2337",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Autochartist for MT4 / Axi EU",
+  "url": "https://www.axi-solaris.com/eu/trading-tools/autochartist",
+  "published": "2026-09-04T07:13:51+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "breakout",
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "ee81ab65a5124b33d54a",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Autochartist dla MT4 / Axi PL",
+  "url": "https://www.axi-solaris.com/pl/trading-tools/autochartist",
+  "published": "2026-09-04T07:13:52+00:00",
+  "symbols": [],
+  "timeframes": [
+   "DAILY"
+  ],
+  "patterns": [
+   "volatility"
+  ],
+  "confidence": 0.55,
+  "lang": "pl",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "72768b64546b723abd2e",
+  "host": "www.axi-solaris.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "ForexSpeedUp Features - Risk calculator, Multiple orders, several stop loss and take profit templates, outside of the chart, etc.",
+  "url": "https://forexspeedup.com/features",
+  "published": "2026-09-04T07:14:08+00:00",
+  "symbols": [
+   "EURUSD",
+   "GBPUSD"
+  ],
+  "timeframes": [],
+  "patterns": [],
+  "confidence": 0.35,
+  "lang": "en",
+  "endpoints": [
+   "https://forexspeedup.com/download"
+  ],
+  "n_endpoints": 1,
+  "vault_sha": "bea54dbd4d2d7a959880",
+  "host": "forexspeedup.com"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6a5f\u80fd | \u30c8\u30c3\u30d7\u30ec\u30d9\u30eb\u306e\u9ad8\u5ea6\u306a\u6a5f\u80fd\u3092\u6709\u3057\u305f\u30c8\u30ec\u30fc\u30c9\u30bd\u30d5\u30c8\u30a6\u30a7\u30a2",
+  "url": "https://forexcopier.jp/features",
+  "published": "2026-09-04T07:15:27+00:00",
+  "symbols": [
+   "EURUSD",
+   "USDJPY"
+  ],
+  "timeframes": [],
+  "patterns": [
+   "seasonality"
+  ],
+  "confidence": 0.55,
+  "lang": "en",
+  "endpoints": [
+   "https://forexcopier.jp/download/downloadLinkTradeCopier4",
+   "https://forexcopier.jp/download/downloadLinkRemoteCopier2Provider"
+  ],
+  "n_endpoints": 2,
+  "vault_sha": "b318deb69381bfdbcb08",
+  "host": "forexcopier.jp"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "\u6731\u9e64\u65b0\uff1a\u5916\u6c47\u9886\u57df\u9ad8\u6c34\u5e73\u5f00\u653e\u670d\u52a1\u4e2d\u56fd\u5f0f\u73b0\u4ee3\u5316_\u8981\u95fb\u53d1\u5e03_\u56fd\u5bb6\u5916\u6c47\u7ba1\u7406\u5c40\u95e8\u6237\u7f51\u7ad9",
+  "url": "http://www.safe.gov.cn/safe/2026/0901/27831.html",
+  "published": "2026-09-04T07:15:30+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "momentum",
+   "orderflow"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "170241deb743bd88fb8c",
+  "host": "www.safe.gov.cn"
+ },
+ {
+  "source": "world_crawler",
+  "kind": "prose",
+  "title": "Quantifiable Edges",
+  "url": "http://feeds.feedburner.com/quantifiableedges/blog",
+  "published": "2026-09-04T07:15:46+00:00",
+  "symbols": [],
+  "timeframes": [],
+  "patterns": [
+   "correlation"
+  ],
+  "confidence": 0.35,
+  "lang": "",
+  "endpoints": [],
+  "n_endpoints": 0,
+  "vault_sha": "5c49390dedeed2335144",
+  "host": "feeds.feedburner.com"
+ }
+]
