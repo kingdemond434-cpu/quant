@@ -142,12 +142,23 @@ done
 #
 # Small, dated, read-only inputs only. Bars go the other way (ops/pull_bars.sh) because the
 # terminal that makes them lives on the box.
-for _d in data/fred_macro.json; do
+# EVERY PROPRIETARY INPUT THE BOX'S FAMILIES READ, not just the macro series. Measured
+# 2026-09-04 on the trading box: carry_state.json ABSENT (380KB of swap terms sitting on the VPS),
+# COT 13 days old, cost_surface 6 days old -- while `carry` alone sent 343 candidates to the
+# gauntlet and `cot_positioning` 10. The families run THERE; the collectors run HERE; nothing
+# carried the files between them. Exactly the fred_macro defect, three more times.
+for _d in data/fred_macro.json desks/mt5/data/carry_state.json \
+          desks/mt5/data/cost_surface.json; do
   [ -f "$_d" ] || continue
   scp -q "$_d" "contabo-mt5:C:/opt/quant/$_d" 2>>"$LOGF" \
     && echo "data sync: $_d -> desk box" \
     || echo "data sync FAILED: $_d"
 done
+# COT is a DIRECTORY of vintages, not one file. Families read the newest, so the whole set travels.
+if [ -d desks/mt5/data/cot ]; then
+  timeout 300 scp -qr desks/mt5/data/cot "contabo-mt5:C:/opt/quant/desks/mt5/data/" 2>>"$LOGF" \
+    && echo "data sync: cot/ -> desk box" || echo "data sync FAILED: cot/"
+fi
 
 _want=$(git hash-object $REMOTE_MODULES | tr -d '\r')
 _have=$(timeout 120 ssh -o ConnectTimeout=20 contabo-mt5 \

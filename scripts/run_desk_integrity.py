@@ -443,6 +443,45 @@ def check_box_code_drift(repair: bool = True) -> dict[str, Any]:
                     else "every critical module on the box matches this repo")}
 
 
+#: Proprietary inputs the box's families read, and the age past which each is a defect. These
+#: are the desk's OWN data -- self-recorded tape, its broker's swap terms, its own cost surface --
+#: which is the part no competitor has and the part nothing was watching.
+PROP_INPUTS: tuple[tuple[str, float], ...] = (
+    ("desks/mt5/data/carry_state.json", 48.0),
+    ("desks/mt5/data/cost_surface.json", 72.0),
+    ("desks/mt5/data/cot", 240.0),
+    ("data/fred_macro.json", 72.0),
+)
+
+
+def check_proprietary_data() -> dict[str, Any]:
+    """Freshness of the desk's OWN data, here and on the box that mines it.
+
+    MEASURED 2026-09-04: carry_state.json was ABSENT on the trading box while 380KB of swap terms
+    sat on the VPS; COT was 13 days old; cost_surface 6 days. Meanwhile `carry` sent 343
+    candidates to the gauntlet and `cot_positioning` 10 -- families reading inputs that were stale
+    or missing, and producing candidates anyway. Nothing errored, because a stale JSON loads
+    perfectly. This is the fred_macro defect repeated three times, and it is invisible to any
+    check that looks only at the machine the collector runs on.
+    """
+    import time as _t
+    stale = []
+    for rel, max_h in PROP_INPUTS:
+        path = ROOT / rel
+        if not path.exists():
+            stale.append({"input": rel, "state": "ABSENT_LOCALLY"})
+            continue
+        newest = path.stat().st_mtime if path.is_file() else max(
+            (f.stat().st_mtime for f in path.rglob("*") if f.is_file()), default=0.0)
+        age_h = (_t.time() - newest) / 3600.0 if newest else 1e9
+        if age_h > max_h:
+            stale.append({"input": rel, "age_h": round(age_h, 1), "limit_h": max_h})
+    return {"status": "DEFECT" if stale else "OK", "checked": len(PROP_INPUTS), "stale": stale,
+            "why": ("the desk's own data is the part no competitor has; a family reading a stale "
+                    "copy still emits candidates, and nothing errors"
+                    if stale else "every proprietary input within its freshness budget")}
+
+
 def check_failed_units() -> dict[str, Any]:
     try:
         out = subprocess.run(["systemctl", "--user", "list-units", "--state=failed",
@@ -483,6 +522,7 @@ def main() -> int:
         "conversion": check_conversion(),
         "funnel": check_funnel(),
         "box_code_drift": check_box_code_drift(repair=not a.report),
+        "proprietary_data": check_proprietary_data(),
         "uncommitted_code": check_uncommitted_code(),
         "record_pairs": check_record_pairs(),
         "forward_lane": check_forward_lane(),
