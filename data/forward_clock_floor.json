@@ -78,11 +78,12 @@
   "XAUUSD.asia#rr=2.5": "2026-08-27T03:34:49.090008+00:00",
   "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": "2026-08-23T13:51:10.738675+00:00",
   "xau_m15_anti_breakout": "2026-08-30T07:30:13.876469+00:00",
+  "xau_m15_anti_momentum": "2026-09-04T02:54:35.231693+00:00",
   "xau_m5_anti_breakout_overlap": "2026-08-30T07:30:13.876430+00:00",
   "xau_m5_anti_momentum_ny": "2026-08-30T07:30:13.876460+00:00"
  },
- "max_clock_age_days": 11.379,
- "measured_at": "2026-09-03T22:57:10+00:00",
+ "max_clock_age_days": 11.59,
+ "measured_at": "2026-09-04T04:00:53+00:00",
  "measuring_command": "scripts/check_forward_clock_ratchet.py",
  "rule": "a pre-registration boundary may only move EARLIER; moving it later without a recorded restart destroys served forward evidence and is a breach",
  "stale_after_hours": 6.0

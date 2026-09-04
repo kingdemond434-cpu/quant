@@ -15155,3 +15155,67 @@ falsifier. 0 cards, 0 clocks. Artifact: `data/brain_hunter_s58_corr_regime.json`
    URLs' citation layers.
 
 The BRAIN ground remains open.
+
+## BRAIN HUNTER s61 + s62 — 2026-09-03 — COVERAGE ROWS WRITTEN RETROSPECTIVELY BY s63 (chain repair)
+
+**Why this row exists.** Both sessions RAN, both left committed result artifacts, and **neither
+wrote a coverage row**. That is the fourth and fifth consecutive break in this chain after s56,
+s58 and s59 — the same defect s60 recorded and repaired for its predecessors. s61 at least routed
+its verdict (`docs/research/weak_signal_registry.md:706`); **s62 was written up nowhere at all**,
+so a completed 15-cell refutation with a working placebo existed only as a JSON file that no
+document referenced and no next session would have found. Recorded here so the chain is not lost,
+and see s63 below for the fix rather than the fifth consecutive re-description of the break.
+
+**s61 — the AQR pairwise-correlation conditioner is RETIRED, and the window was the finding.**
+`data/brain/s61_corr_regime_paired.py` → `data/brain_hunter_s61_corr_regime_paired.json`. It ran
+the paired test s60 owed (stationary block bootstrap, 5,000 draws, mean block 6 months, seed
+20260903; 11 cells, all reported). The breadth-vs-sizing split stays INSUFFICIENT-EVIDENCE on a
+CORRECT test rather than on the two-independent-p-values fallacy (d_ρ = +0.032, CI
+[−0.032, +0.102], p = 0.353; the arms' returns correlate 0.74). **The larger result is H2:
+extending the panel from 202 to 327 months flips ρ_unscaled from −0.107 to +0.098, and the only
+arm free of a composition confound — a fixed 15-symbol set over 360 months — is flat (+0.020,
+p = 0.711).** The declared negative sign was a property of the 2009–2026 window. Negative control
+(realvol) held. Full verdict and the L1.16a re-open bar: weak_signal_registry.md §"RESOLVED
+2026-09-03". 0 cards, 0 forward clocks.
+
+**s62 — "delay the trade, the option is free" REFUTED on the desk's own panel, placebo included.**
+Ground: AQR/FAJ 2011, Israelov & Katz, *To Trade or Not to Trade? Informed Trading with Short-Term
+Signals for Long-Term Investors* (`data/external/aqr/pdftext/`, previously unmined — one of the
+132 s60 named). Mechanism stripped of its equity wrapper: a slow sleeve's rebalance DATE is
+arbitrary, so the option to place the trade later inside a short window is already owned and
+normally discarded; a fast signal too weak to pay its own spread can still be monetised through
+it. MT5 translation: 250-day TSMOM sign positions on 244 symbols, 1999-01-05 → 2026-08-28, 316
+monthly rebalances, 6,690 trades; fast conditioner = R-day reversal, delay up to K days. Trade
+count is identical across arms by construction, so the comparison is execution timing only and no
+cost model enters (which also immunises it against the s54 zero-cost census defect).
+**15 cells, all reported** (`data/brain_hunter_s62_trade_modification.json`):
+
+| arm | best cell | mean monthly diff vs baseline | CI95 (bp) | boot p |
+|---|---|---|---|---|
+| conditional delay (9 cells) | fast5d_K5 | **−0.05 bp** | [−6.37, +6.19] | 0.985 |
+| conditional delay, worst | fast10d_K3 | −2.89 bp | [−10.42, +3.31] | 0.410 |
+| unconditional fixed delay (5 cells) | 1d | −3.50 bp | [−7.60, +0.23] | 0.081 |
+| unconditional fixed delay, worst | 5d | −8.38 bp | [−17.70, +0.15] | 0.068 |
+| placebo: random delay, same delay multiset | 200 draws | −2.55 bp (sd 1.62) | max +1.82 | p(≥obs) = 0.065 |
+
+**H1 REFUTED: every one of the nine conditional cells is NEGATIVE and none excludes zero.** The
+best cell beats the random-delay placebo at p = 0.065 — but it is still worse than trading
+immediately, so the conditioner's only measurable skill is losing slightly less than a coin flip.
+H3 is the informative part: an unconditional delay costs money at every k, and monotonically to
+5 days. **On this panel the sign at a 250-day-TSMOM rebalance is short-horizon CONTINUATION, not
+reversal** — the paper's conditioner is pointed the wrong way round for an MT5 CFD book, which is
+a statement about the venue, not about the paper's equity result. Routed to `docs/graveyard.md`.
+Baseline sleeve is 1.18 bp/month gross, so L1.57 also applies: a timing overlay on a
+barely-profitable population is not an edge either way. 0 cards, 0 forward clocks, no gate
+threshold applied, no AQR bar imported (L1.6).
+
+**§13 (both sessions).** All work on PDFs already on disk and the desk's own MT5 parquets; no live
+browsing, no account wall, no private BRAIN API, no access control touched. Video: 0 fetched,
+0 locked. 0 new external venues.
+
+**SECTION-EXHAUSTED:** `to-trade-or-not-to-trade-informed-trading-with-short-term-signals-for-long-term-investors`
+— read in full; its transferable mechanism (free timing option on an arbitrary rebalance date) is
+now tested and refuted in the delay direction on the MT5 panel. The ACCELERATION direction is not
+tested and is not testable the same way (you cannot trade before the rebalance date is reached);
+the honest untested residual is the SIGN-FLIPPED conditioner — delay when the fast signal shows
+continuation against you rather than reversal — which is 9 further declared cells.

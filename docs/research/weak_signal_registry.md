@@ -702,3 +702,36 @@ paired bootstrap on the ρ difference with the same months, plus an unscaled arm
 the sizing arm removed, it is a real conditioner and becomes a regime candidate under the regime
 specialization law; if the gap holds under a paired test, the paper's headline is its own
 construction. **0 cards, 0 forward clocks.** Artifact: `data/brain_hunter_s58_corr_regime.json`.
+
+### RESOLVED 2026-09-03 (BRAIN s61, paired test + deep panel) — the sign does not survive the window
+
+The falsifier above was written by s60, run by s61 (`data/brain/s61_corr_regime_paired.py`,
+`data/brain_hunter_s61_corr_regime_paired.json`) and never written up until now. Stationary block
+bootstrap, 5,000 draws, mean block 6 months, seed 20260903. **11 cells, all reported.**
+
+**H1 (paired ρ difference) — NOT SUPPORTED, on every arm.** The exact s58 replication reproduces
+the published pair (−0.1066 / −0.1387, n = 202) and the paired statistic is d_ρ = +0.032 with
+CI95 [−0.032, +0.102], boot p = 0.353. The two arms' monthly returns correlate 0.74, which is
+precisely why comparing their separate p-values was never a test. Free-composition deep arm
+d_ρ = +0.067, p = 0.135; fixed-composition d_ρ = +0.034, p = 0.515. **The breadth-vs-sizing split
+stays INSUFFICIENT-EVIDENCE — but now on a correct test rather than on a fallacy.** The lean
+toward sizing is real in sign and absent in significance on all three arms.
+
+**H2 (the unscaled sign survives at larger n) — REFUTED, and this is the finding.** Extending the
+panel from 202 to 327 months (175 symbols, 1999-05 → 2026-07) **flips the unscaled ρ from −0.107
+to +0.098**, and the vol-scaled arm from −0.139 to +0.031. On the free-composition 244-symbol arm
+(359 months back to 1996-09) unscaled ρ = +0.110. On the ONLY arm that answers H2 without a
+composition confound — a fixed 15-symbol set held for the whole 360 months — ρ = +0.020, p = 0.711
+unscaled and −0.014, p = 0.791 vol-scaled: **flat**.
+
+**H3 (negative control) — HELD.** The paired statistic on realvol is d_ρ = +0.020, CI
+[−0.073, +0.113], p = 0.680. So the paired machinery is not manufacturing a difference.
+
+**Verdict: RETIRED as a conditioner candidate.** The declared negative sign was a property of the
+2009–2026 window, not of the desk's panel: it is negative on 202 months, positive on 327, and
+indistinguishable from zero on the 360-month fixed-composition panel that removes the confound.
+The s58 result was never significant after multiplicity, and it does not replicate out of its own
+window — which is the strongest form this registry's "weak, not banked" verdict can resolve into.
+Re-open only on the L1.16a bar: a NAMED enabling change addressing the window dependence itself
+(e.g. a per-regime conditional formulation preregistered before measurement), never on a fresh
+sample of the same test. **0 cards, 0 forward clocks, no gate threshold applied.**
