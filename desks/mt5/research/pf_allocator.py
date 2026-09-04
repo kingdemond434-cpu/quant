@@ -106,6 +106,23 @@ IMPLAUSIBLE_ANNUAL_PCT = 5000.0
 REGIME_MIN_SHARE = 0.08
 REGIME_MAX_SHARE = 0.60
 
+#: Horizon, IN DAYS, the world population is drawn for. The regime that matters for sizing is the
+#: one that will prevail while the book is HELD, not the one holding at the instant of the solve:
+#: an edge can be excellent inside a trend and terrible around its termination.
+#:
+#: ONE DAY, AND THAT IS MEASURED RATHER THAN CHOSEN. `data/pf_forecast_log.jsonl` records the book
+#: this allocator actually solved on each pass. Over its 87 booked passes the median pass-to-pass
+#: total-variation change is 0.0006 -- the no-trade region and turnover cost make the book very
+#: sticky -- and it drifts 0.18 from its starting composition within half a day before flattening.
+#: So a book solved now is still substantially the same book a day out, and is not obviously the
+#: same book much beyond that. The log spans 1.6 days, so it cannot support a longer claim, and
+#: guessing one would be picking a number to suit an answer.
+#:
+#: `REGIME_TERM_STRUCTURE` is reported in the artifact but never used for sizing, so the horizon
+#: can be re-chosen against evidence later without anyone having to re-derive what it changes.
+REGIME_FORECAST_H = 1
+REGIME_TERM_STRUCTURE = (1, 2, 5, 21)
+
 
 def _log(msg: str) -> None:
     print(f"[{datetime.now(UTC):%H:%M:%S}] {msg}", flush=True)
@@ -248,8 +265,9 @@ def live_days_by_sleeve() -> dict[str, int]:
     return {k: len(v) for k, v in days.items()}
 
 
-def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...]]:
-    """Per-day regime label over the matrix's own clock, and today's regime probabilities.
+def regime_state(daily: pd.DataFrame,
+                 ) -> tuple[tuple[str, ...], tuple[tuple[str, float], ...], dict[str, Any]]:
+    """Per-day regime label over the matrix's own clock, and the regime mix to SIZE AGAINST.
 
     PROBABILITIES, NOT A LABEL. `libs/regime/engine.py` already cross-checks an HMM against a GMM
     and dampens confidence on disagreement; what the allocator needs from it is the POSTERIOR, so
@@ -257,12 +275,28 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
     wholesale into whichever state the classifier called this minute. A classifier that flickers
     then costs a little weight, not the whole book.
 
-    Fitted on XAUUSD daily closes -- the desk's dominant instrument and the one every sleeve's
-    session structure is defined against. Returns empty tuples when the engine cannot fit, in
-    which case `sample_worlds` draws unconditioned worlds and says so in the artifact.
+    AND NOT TODAY'S PROBABILITIES EITHER (fixed 2026-09-04). This used the FILTERED posterior --
+    P(Z_t | data now) -- so the desk sized a book it holds for days against the regime holding at
+    the instant of the solve. `GaussianHMM` has estimated a full transition matrix by Baum-Welch
+    since it was written and nothing had ever read it. `libs.regime.transitions` propagates the
+    posterior forward `REGIME_FORECAST_H` days through an age-conditioned hazard -- so a trend
+    eighteen days old and a trend two days old are no longer given the same chance of surviving --
+    and the world population is drawn from THAT distribution.
+
+    THE RISK RESPONSE IS THE OBJECTIVE'S, NOT A KNOB'S. When a transition is likely the forward
+    distribution is flatter than the filtered one, so the worlds span more regimes, so E[log W]
+    sizes down of its own accord. No entropy multiplier, no hand-set haircut around transitions:
+    the uncertainty enters where every other uncertainty on this desk enters.
+
+    STILL FITTED ON XAUUSD DAILY CLOSES, which is a real limitation and not a design: EURUSD can
+    be trending while gold ranges. A per-asset regime hierarchy is the next piece of work; this
+    function's contract does not change when it arrives. Returns empty tuples when the engine
+    cannot fit, in which case `sample_worlds` draws unconditioned worlds and says so.
     """
+    diag: dict[str, Any] = {}
     try:
         from libs.regime.engine import RegimeEngine
+        from libs.regime.transitions import forecast as regime_forecast
 
         px = pd.read_parquet(BASE / "data" / "universe" / "XAUUSD_H1.parquet")
         col = next((c for c in ("close", "Close", "c") if c in px.columns), None)
@@ -280,12 +314,31 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
         by_day = {str(d): lab[int(j)] for d, j in zip(close.index, eng.hmm_states, strict=True)}
         labels = tuple(by_day.get(str(d)[:10], "") for d in daily.index)
 
-        # Today's probabilities: the last filtered posterior, summed onto LABELS rather than
-        # latent state indices, because two states can carry the same economic label.
+        # The filtered posterior is the STARTING point, summed onto LABELS rather than latent
+        # state indices because two states can carry the same economic label.
         post = eng.posteriors[-1]
-        raw: dict[str, float] = {}
+        filtered: dict[str, float] = {}
         for j, pj in enumerate(post):
-            raw[lab[int(j)]] = raw.get(lab[int(j)], 0.0) + float(pj)
+            filtered[lab[int(j)]] = filtered.get(lab[int(j)], 0.0) + float(pj)
+
+        fc = regime_forecast(eng.hmm.transmat, post, lab, eng.hmm_states,
+                             horizons=REGIME_TERM_STRUCTURE)
+        raw = dict(fc.p_ahead.get(REGIME_FORECAST_H) or filtered)
+        diag = {
+            "horizon_days": REGIME_FORECAST_H,
+            "filtered_now": {k: round(v, 4) for k, v in filtered.items()},
+            "forward": {str(h): {k: round(v, 4) for k, v in d.items()}
+                        for h, d in fc.p_ahead.items()},
+            "p_leave": {str(h): round(v, 4) for h, v in fc.p_leave.items()},
+            "entropy": {str(h): round(v, 4) for h, v in fc.entropy.items()},
+            "regime_age_days": fc.age_bars,
+            "duration_weight": round(fc.duration_weight, 4),
+            "note": fc.note,
+        }
+        _log(f"regime age={fc.age_bars}d P(leave in {REGIME_FORECAST_H}d)="
+             f"{fc.p_leave.get(REGIME_FORECAST_H, float('nan')):.1%} "
+             f"entropy={fc.entropy.get(REGIME_FORECAST_H, 0.0):.2f} "
+             f"duration_weight={fc.duration_weight:.2f} ({fc.note})")
 
         # A FILTER POSTERIOR OF 1.0 IS A HARD SWITCH WEARING A PROBABILITY'S CLOTHES, and this
         # engine produces them: measured 2026-09-02 it returned bull/high_vol at 100.0%, which
@@ -318,16 +371,21 @@ def regime_state(daily: pd.DataFrame) -> tuple[tuple[str, ...], tuple[tuple[str,
             rest = sum(v for k, v in probs.items() if k != top) or 1.0
             probs = {k: (REGIME_MAX_SHARE if k == top else v + spill * v / rest)
                      for k, v in probs.items()}
-        _log(f"regime raw={ {k: round(v, 3) for k, v in raw.items()} } conf={conf:.2f} "
+        _log(f"regime forward({REGIME_FORECAST_H}d)="
+             f"{ {k: round(v, 3) for k, v in raw.items()} } conf={conf:.2f} "
              f"-> used={ {k: round(v, 3) for k, v in probs.items()} }")
+        diag["used"] = {k: round(v, 4) for k, v in probs.items()}
+        diag["engine_confidence"] = round(conf, 4)
         covered = sum(1 for x in labels if x)
         if covered < 0.5 * len(labels):
             _log(f"regime labels cover only {covered}/{len(labels)} matrix days; unconditioned")
-            return (), ()
-        return labels, tuple(sorted(probs.items(), key=lambda kv: -kv[1]))
+            diag["unconditioned_because"] = f"labels cover {covered}/{len(labels)} matrix days"
+            return (), (), diag
+        return labels, tuple(sorted(probs.items(), key=lambda kv: -kv[1])), diag
     except Exception as exc:
         _log(f"regime engine unavailable ({type(exc).__name__}: {exc}); worlds are unconditioned")
-    return (), ()
+        diag["unconditioned_because"] = f"{type(exc).__name__}: {exc}"
+    return (), (), diag
 
 
 def join_forward(columns: list[str], forward: dict[str, dict[str, float]],
@@ -741,7 +799,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                          trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
     dd = worst_dd_r(daily)
 
-    labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
+    labels, probs, regime_diag = (regime_state(daily) if mode in ("heavy", "normal")
+                                  else ((), (), {"skipped": f"{mode} clock"}))
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
                       # The fast clock buys its speed here and nowhere else: a smaller world
                       # population, never a shortcut through the posterior or the crisis worlds.
@@ -949,7 +1008,11 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         },
         "no_trade": nt,
         "opportunity": opp,
-        "regime": {"probabilities": dict(probs), "conditioned": bool(labels)},
+        # `probabilities` is the FORWARD mix the worlds were drawn from; `transition` carries the
+        # filtered posterior beside it, so the two can never be confused by a later reader and
+        # the size of the forward adjustment is always visible rather than inferred.
+        "regime": {"probabilities": dict(probs), "conditioned": bool(labels),
+                   "transition": regime_diag},
         "evidence": {
             "sleeves": len(ev), "rows": int(daily.shape[0]),
             "with_forward": sum(1 for e in ev if e.forward_days > 0),
