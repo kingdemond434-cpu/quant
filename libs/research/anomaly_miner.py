@@ -84,160 +84,85 @@ class Anomaly:
         return d
 
 
-#: PRIMITIVES, NOT CONDITIONS. Each entry is a way of turning bars into ONE series. The conditions
-#: are then generated from the cross product of (primitive x window x band), so the space is
-#: combinatorial and open rather than a list somebody wrote down.
+#: THE DESK'S OWN PRIMITIVE LIBRARY IS THE VOCABULARY. Not a list written here.
 #:
-#: NOTHING HERE NAMES A FAMILY OR A SESSION. An earlier version of this file enumerated
-#: `vol_top_decile`, `momentum_top_decile`, `session_asia` and six more by hand, which is the
-#: hardcoding this desk forbids: a fixed list can only ever rediscover what its author already
-#: believed, and the whole point of a data-first miner is that the DATA proposes the condition.
-#: Adding a primitive here multiplies the space; it does not enumerate a new answer.
-_PRIMITIVES: dict[str, str] = {
-    "ret": "one-bar return",
-    "absret": "absolute one-bar return",
-    "vol": "rolling stdev of returns",
-    "mom": "trailing return over the window",
-    "range": "high-low spread, normalised",
-    "gap": "open against the previous close",
-    "hour": "hour of day, as a cyclical position",
-    "dow": "day of week",
-    "volume": "traded volume where the feed carries it",
-    "close_pos": "close's position inside the window's high-low",
-    "skew": "rolling skewness of returns",
-    "kurt": "rolling kurtosis of returns",
-    "updown": "share of up-bars in the window",
-    "accel": "change in trailing return between halves of the window",
-    "vol_of_vol": "rolling stdev of the rolling vol",
-    "range_ratio": "current range against the window's mean range",
-    "streak": "signed count of consecutive same-direction bars",
-    "dist_high": "distance below the window's high",
-    "dist_low": "distance above the window's low",
-    "month": "month of year",
-    "dom": "day of month",
-}
-
-#: Which primitives actually READ the window. Everything else is window-invariant, and crossing it
-#: with five windows produces five IDENTICAL cells.
+#: This file previously defined its own 21 primitives -- skew, accel, streak, dist_high and the
+#: rest -- and generated conditions from them. They were reasonable primitives and they were
+#: USELESS, because `family_discovered` resolves a feature name through
+#: `edge_search.build_primitives`, and only 5 of the 21 existed there. The other 16 would have
+#: resolved to None at execution time, so every candidate this miner produced would have been
+#: unexecutable: thousands of anomalies, each carrying a mechanism and a falsifier, that the
+#: gauntlet could never have evaluated. Conversion would have been exactly zero, and the reason
+#: would have looked like "the gates are strict" rather than "the producer and the executor speak
+#: different languages" -- which is this desk's single most expensive defect shape and had already
+#: happened four times today.
 #:
-#: MEASURED THE MOMENT THE GENERATED SPACE FIRST RAN: hour_w6, hour_w12, hour_w24, hour_w72 and
-#: hour_w168 came back with the same t-statistic (38.4), the same n (3,720) and the same effect
-#: (-9.8bp) -- one finding wearing five names. Not merely wasteful: it inflates `trials` fivefold
-#: for seven of ten primitives, and `trials` is carried into deflated Sharpe, so the desk would
-#: charge every honest candidate a multiplicity penalty for a search width it never had. It also
-#: crowds the naming queue with duplicates, which is how a brain spends its budget explaining the
-#: same effect five times.
-_WINDOWED: frozenset[str] = frozenset({
-    "vol", "mom", "close_pos", "skew", "kurt", "updown", "accel", "vol_of_vol",
-    "range_ratio", "streak", "dist_high", "dist_low",
-})
-
-#: Lookbacks, in bars. Open-ended by construction: adding one multiplies the search, and the
-#: trial count carried to deflation grows with it, which is the honest cost.
-_WINDOWS: tuple[int, ...] = (3, 6, 12, 24, 48, 72, 120, 168, 336, 720)
-
-#: Quantile bands. A band is "this primitive sits in this part of its own recent distribution" --
-#: stated relatively so it means the same thing on gold and on a Hungarian cross.
+#: So the vocabulary is IMPORTED. build_primitives supplies 106 features, already windowed
+#: (dd_12, dd_24, kurt_96, path_efficiency_12 ...), and every one of them is by construction a
+#: name the executor can resolve. It also removes the last hardcoded list from this file: the
+#: search space is now whatever the desk can actually compute, which widens the moment a
+#: primitive is added there and needs no change here.
 _BANDS: tuple[tuple[float, float], ...] = (
     (0.0, 0.05), (0.0, 0.1), (0.1, 0.25), (0.25, 0.4), (0.4, 0.6),
     (0.6, 0.75), (0.75, 0.9), (0.9, 1.0), (0.95, 1.0),
 )
 
 
-def _primitive(df: pd.DataFrame, name: str, window: int) -> pd.Series | None:
-    """One primitive as a series, or None when this feed cannot supply it.
+def _conditions(df: pd.DataFrame, symbol: str = "") -> dict[str, np.ndarray]:
+    """Every (canonical primitive x band) mask. The vocabulary is the executor's, not ours.
 
-    NONE IS A REAL ANSWER (L1.28a). A symbol whose feed carries no volume must yield None here,
-    not zeros -- zeros would be scored as a legitimate flat condition and enter the trial count
-    as a cell that was never testable.
+    Each mask says "this primitive sits in this part of its own trailing distribution", ranked
+    over a rolling window so the condition is point-in-time and comparable across instruments.
+    The KEY is `<feature>_q<lo>-<hi>`, and `<feature>` is a name `build_primitives` supplies --
+    which is what makes the resulting anomaly directly compilable into
+    `family_discovered(feature=..., band=..., horizon=..., side=...)`.
     """
-    close = df["close"].astype(float)
-    if name == "ret":
-        return close.pct_change()
-    if name == "absret":
-        return close.pct_change().abs()
-    if name == "vol":
-        return close.pct_change().rolling(window).std()
-    if name == "mom":
-        return close.pct_change(window)
-    if name == "range":
-        return (df["high"].astype(float) - df["low"].astype(float)) / close
-    if name == "gap":
-        return df["open"].astype(float) / close.shift(1) - 1.0
-    if name == "hour":
-        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        return pd.Series(idx.hour.astype(float), index=df.index)
-    if name == "dow":
-        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        return pd.Series(idx.dayofweek.astype(float), index=df.index)
-    if name == "volume":
-        if "volume" not in df.columns:
-            return None
-        v = df["volume"].astype(float)
-        return None if not v.gt(0).any() else v
-    if name == "close_pos":
-        hi = df["high"].astype(float).rolling(window).max()
-        lo = df["low"].astype(float).rolling(window).min()
-        span = (hi - lo)
-        return (close - lo) / span.where(span > 0)
-    if name == "skew":
-        return close.pct_change().rolling(window).skew()
-    if name == "kurt":
-        return close.pct_change().rolling(window).kurt()
-    if name == "updown":
-        return (close.pct_change() > 0).rolling(window).mean()
-    if name == "accel":
-        half = max(2, window // 2)
-        return close.pct_change(half) - close.pct_change(window).div(2.0)
-    if name == "vol_of_vol":
-        return close.pct_change().rolling(max(3, window // 2)).std().rolling(window).std()
-    if name == "range_ratio":
-        rng = (df["high"].astype(float) - df["low"].astype(float)) / close
-        mean = rng.rolling(window).mean()
-        return rng / mean.where(mean > 0)
-    if name == "streak":
-        sign = np.sign(close.pct_change().fillna(0.0))
-        grp = (sign != sign.shift()).cumsum()
-        return (sign * sign.groupby(grp).cumcount().add(1)).rolling(1).mean()
-    if name == "dist_high":
-        hi = df["high"].astype(float).rolling(window).max()
-        return close / hi.where(hi > 0) - 1.0
-    if name == "dist_low":
-        lo = df["low"].astype(float).rolling(window).min()
-        return close / lo.where(lo > 0) - 1.0
-    if name == "month":
-        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        return pd.Series(idx.month.astype(float), index=df.index)
-    if name == "dom":
-        idx = pd.to_datetime(df.index, utc=True, errors="coerce")
-        return pd.Series(idx.day.astype(float), index=df.index)
-    return None
+    try:
+        import sys as _sys
+        _d = str(_DESK)
+        if _d not in _sys.path:
+            _sys.path.insert(0, _d)
+        _r = str(_DESK / "research")
+        if _r not in _sys.path:
+            _sys.path.insert(0, _r)
+        from research.edge_search import build_primitives
+    except ImportError:
+        try:
+            from edge_search import build_primitives  # type: ignore[no-redef]
+        except ImportError:
+            return {}                    # UNMEASURED: no vocabulary, so no conditions at all
+    # THE ACQUIRED VOCABULARY IS PART OF THE SEARCH, not a separate one. Everything price-native
+    # is derived from the same OHLCV, so conditions built only on it produce edges that share a
+    # driver -- which is exactly why the allocator's family cap binds at 40% on five mechanisms.
+    # Positioning, rate differentials and cross-currency reference rates are a DIFFERENT driver,
+    # and they are the raw material for the uncorrelated mechanisms the book is starved of.
+    # Passed as `extra`, so they arrive as `ext_<name>` -- names `family_discovered` resolves
+    # through this same function, which is what makes an anomaly found here executable there.
+    extra: dict[str, Any] = {}
+    try:
+        from research.acquire_datasets import acquired_series
+        extra = acquired_series(df.index)
+    except Exception:
+        extra = {}                       # no acquired data is fewer conditions, never a failure
+    try:
+        prim = build_primitives(df, symbol, extra)
+    except Exception:
+        return {}
 
-
-def _conditions(df: pd.DataFrame) -> dict[str, np.ndarray]:
-    """Every (primitive x window x band) mask. GENERATED, never enumerated.
-
-    Each mask says "this primitive currently sits in this part of its own trailing distribution",
-    ranked over a rolling window so the condition is point-in-time and comparable across
-    instruments. Nothing here is a session, a family, or a named pattern -- those are conclusions,
-    and a miner that starts from conclusions can only confirm them.
-    """
     out: dict[str, np.ndarray] = {}
-    for prim in _PRIMITIVES:
-        # A window-invariant primitive is evaluated ONCE. Crossing it with the window list emits
-        # identical cells under different names and overstates the search width.
-        windows = _WINDOWS if prim in _WINDOWED else (_WINDOWS[0],)
-        for window in windows:
-            series = _primitive(df, prim, window)
-            if series is None:
+    for name, series in prim.items():
+        try:
+            ser = pd.Series(series, index=df.index).astype(float)
+        except Exception:
+            continue
+        if not np.isfinite(ser.to_numpy()).any():
+            continue
+        rank = ser.rolling(500, min_periods=200).rank(pct=True)
+        for lo, hi in _BANDS:
+            mask = ((rank > lo) & (rank <= hi)).to_numpy()
+            if mask.sum() < MIN_N:
                 continue
-            rank = series.rolling(500, min_periods=200).rank(pct=True)
-            for lo, hi in _BANDS:
-                mask = ((rank > lo) & (rank <= hi)).to_numpy()
-                if mask.sum() < MIN_N:
-                    continue
-                tag = f"{prim}_w{window}" if prim in _WINDOWED else prim
-                out[f"{tag}_q{lo:g}-{hi:g}"] = mask
+            out[f"{name}_q{lo:g}-{hi:g}"] = mask
     return out
 
 
@@ -246,7 +171,7 @@ def scan_symbol(symbol: str, df: pd.DataFrame) -> tuple[list[Anomaly], int]:
     if df is None or len(df) < 1200:
         return [], 0
     close = df["close"].astype(float)
-    conds = _conditions(df)
+    conds = _conditions(df, symbol)
     found: list[Anomaly] = []
     trials = 0
     for h in HORIZONS:
@@ -262,11 +187,26 @@ def scan_symbol(symbol: str, df: pd.DataFrame) -> tuple[list[Anomaly], int]:
             mu, sd = float(np.nanmean(vals)), float(np.nanstd(vals, ddof=1))
             if not (sd > 0 and math.isfinite(mu)):
                 continue
-            t = mu / (sd / math.sqrt(n))
+            # OVERLAPPING FORWARD RETURNS DESTROY THE SAMPLE SIZE, and using raw n inflated
+            # every statistic this miner produced. A horizon-h forward return shares h-1 bars
+            # with its neighbour, so consecutive observations are not independent draws: the
+            # effective count is ~n/h, and t computed on n is too large by sqrt(h). At h=24 that
+            # is a factor of 4.9, which is exactly why the top hits were reading |t|=38.
+            #
+            # MEASURED 2026-09-03: 68,899 of 315,982 cells cleared |t|>=3 -- a 21.8% hit rate
+            # against a null expectation near 0.3%. Seventy times the null is not structure, it
+            # is a broken denominator, and every one of those rows would have carried its
+            # inflated statistic into the compiler, the naming queue and the trial accounting.
+            #
+            # The condition mask is also persistent (a quantile band holds for runs of bars), so
+            # n/h remains OPTIMISTIC. It is the floor of the correction, not the whole of it --
+            # the gates still do the real work, and this only stops the miner lying to them.
+            n_eff = max(2.0, n / float(max(1, h)))
+            t = mu / (sd / math.sqrt(n_eff))
             if abs(t) < REPORT_T:
                 continue
             found.append(Anomaly(
-                symbol=symbol, condition=name, horizon=h, n=n,
+                symbol=symbol, condition=name, horizon=h, n=int(n_eff),
                 mean_bp=round(mu * 1e4, 3), t_stat=round(t, 3),
                 hit_rate=round(float((vals > 0).mean()), 4), baseline_bp=round(base, 3),
                 question=(f"{symbol} returns over {h}h are {mu * 1e4:.1f}bp when "
@@ -357,7 +297,22 @@ def scan_cross_section(frames: dict[str, pd.DataFrame], *, max_pairs: int = 400
             mu, sd = float(np.nanmean(vals)), float(np.nanstd(vals, ddof=1))
             if not (sd > 0 and math.isfinite(mu)):
                 continue
-            t = mu / (sd / math.sqrt(n))
+            # OVERLAPPING FORWARD RETURNS DESTROY THE SAMPLE SIZE, and using raw n inflated
+            # every statistic this miner produced. A horizon-h forward return shares h-1 bars
+            # with its neighbour, so consecutive observations are not independent draws: the
+            # effective count is ~n/h, and t computed on n is too large by sqrt(h). At h=24 that
+            # is a factor of 4.9, which is exactly why the top hits were reading |t|=38.
+            #
+            # MEASURED 2026-09-03: 68,899 of 315,982 cells cleared |t|>=3 -- a 21.8% hit rate
+            # against a null expectation near 0.3%. Seventy times the null is not structure, it
+            # is a broken denominator, and every one of those rows would have carried its
+            # inflated statistic into the compiler, the naming queue and the trial accounting.
+            #
+            # The condition mask is also persistent (a quantile band holds for runs of bars), so
+            # n/h remains OPTIMISTIC. It is the floor of the correction, not the whole of it --
+            # the gates still do the real work, and this only stops the miner lying to them.
+            n_eff = max(2.0, n / float(max(1, h)))
+            t = mu / (sd / math.sqrt(n_eff))
             if abs(t) < REPORT_T:
                 continue
             rows.append({

@@ -32,12 +32,24 @@ from libs.research.anomaly_miner import scan  # noqa: E402
 from libs.research.mechanism_adapters import coverage, explain  # noqa: E402
 from libs.research.trajectory import from_anomaly, register  # noqa: E402
 
+sys.path.insert(0, str(DESK / "research"))
+from acquire_datasets import acquire  # noqa: E402
+from compile_anomalies import compile_latest  # noqa: E402
+
 REPORT = DESK / "reports" / "discovery_cycle.json"
 
 
 def main() -> int:
     started = time.monotonic()
     stamp = datetime.now(UTC).isoformat(timespec="seconds")
+
+    # ACQUIRE FIRST. The miner's vocabulary is whatever build_primitives can serve, and acquired
+    # series only reach it once they are on disk -- so a cycle that mined before acquiring would
+    # spend its whole pass on the price-native half and never see the external drivers.
+    try:
+        acquired = acquire()
+    except Exception as exc:             # acquisition is best-effort; mining must still run
+        acquired = {"error": f"{type(exc).__name__}: {exc}", "datasets_kept": 0}
 
     mined = scan()
     anomalies = mined.get("anomalies") or []
@@ -62,6 +74,11 @@ def main() -> int:
         if register(t, trials=trials):
             registered += 1
 
+    # COMPILE, so the chain ends in something the gauntlet can judge. Without this the cycle
+    # produces trajectories nobody can test -- structure, causes and falsifiers that stop one
+    # move short of the only arbiter the desk has.
+    compiled = compile_latest()
+
     report = {
         "ran_at": stamp,
         "elapsed_s": round(time.monotonic() - started, 1),
@@ -71,9 +88,20 @@ def main() -> int:
             "anomalies": len(anomalies),
             "cross_sectional": mined.get("cross_sectional_anomalies"),
         },
+        "acquired": {
+            "datasets_kept": acquired.get("datasets_kept"),
+            "total_series": acquired.get("total_series"),
+            "refusals": acquired.get("refusals"),
+        },
         "explained": explained,
         "unexplained": unexplained,
         "trajectories_registered": registered,
+        "compiled": {
+            "candidates_out": compiled.get("candidates_out"),
+            "symbols": compiled.get("symbols"),
+            "skipped_unexplained": compiled.get("skipped_unexplained"),
+            "skipped_no_recipe": compiled.get("skipped_no_single_feature_recipe"),
+        },
         "by_mechanism": dict(sorted(by_mechanism.items(), key=lambda kv: -kv[1])),
         "adapter_coverage": coverage(),
         "store": store.census(),
@@ -93,6 +121,10 @@ def main() -> int:
     if anomalies and explained == 0:
         breaches.append("ADAPTERS: anomalies exist and NONE was explained -- every signature "
                         "missed, which is a defect in the adapters rather than in the data")
+    if anomalies and not compiled.get("candidates_out"):
+        breaches.append("COMPILER: anomalies exist and ZERO compiled to candidates -- the chain "
+                        "stops one move short of the gauntlet, which is where it stopped for "
+                        "every prose source that ever converted at 0 of 341")
     if registered == 0 and anomalies:
         breaches.append("STORE: nothing registered from a non-empty docket -- either every "
                         "trajectory was a duplicate, or the store is not writing")
@@ -101,7 +133,8 @@ def main() -> int:
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(json.dumps(report, indent=1, default=str), encoding="utf-8")
     print(f"discovery cycle: {len(anomalies)} anomalies from {trials:,} cells, "
-          f"{explained} explained, {registered} new trajectories -> {REPORT}")
+          f"{explained} explained, {registered} new trajectories, "
+          f"{compiled.get('candidates_out', 0)} candidates -> {REPORT}")
     for b in breaches:
         print(f"  BREACH: {b}")
     return 1 if breaches else 0
