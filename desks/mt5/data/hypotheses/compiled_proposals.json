@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T05:19:22+00:00",
+ "built_at": "2026-09-04T06:20:07+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1899,6 +1899,46 @@
    "data_source": "Dukascopy FX tick data",
    "kill": "Failure to show significant ATR increase in >80% of tests (p>0.05)",
    "lens": "MECHANISM TRANSITION",
+   "promotion_authority": false
+  },
+  {
+   "name": "KZT_LONDON_TENGE_SPREAD**",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "liquidity_shock",
+    "context": "london",
+    "direction": "convergence",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "liquidity_shock|london|magnitude|convergence|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar range relative to its median is a heuristic stand-in for spread, depth, or order-book thinness. The cell may run; its result may NOT be read as evidence about liquidity_shock.",
+   "data_source": "MOEX:KZT= Deposit rates, LSEG:EURAT01= EUR tenge cross",
+   "kill": "If spread remains within transaction cost bounds 80% of time",
+   "lens": "STRUCTURAL SEGMENTATION",
+   "promotion_authority": false
+  },
+  {
+   "name": "FORCED_FLOW_CANDLE_CLUSTER_EXIT",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "overlap",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|overlap|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "free MT5 tick history via FXBlue",
+   "kill": "kill if median time-in-market > 5 bars post signal or net exit alpha < 0",
+   "lens": "MEASUREMENT ADVANTAGE",
    "promotion_authority": false
   }
  ]

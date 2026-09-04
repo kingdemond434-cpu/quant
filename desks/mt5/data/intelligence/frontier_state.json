@@ -1,5 +1,5 @@
 {
-"cursor": 210,
+"cursor": 211,
 "queries_done": {
 "zh": [
 "\u53cd\u5411\u8ddf\u5355 MT4",
@@ -434,6 +434,9 @@
 "max dd MT4",
 "max dd MT5",
 "max dd ranking",
+"maximal drawdown MT4",
+"maximal drawdown MT5",
+"maximal drawdown ranking",
 "profit MT4",
 "profit MT5",
 "profit ranking",
