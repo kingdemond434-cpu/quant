@@ -41,3 +41,15 @@ nothing bypasses the compiler or the gates; a story's own performance numbers ar
 feed the world crawler's frontier, and the crawler itself now keeps such claims (rows of kind `story`). The
 repo miner reads Gitee beside GitHub with the same grammar. Crypto-exchange grounds remain forbidden and
 the fence is counted on every report (`counts.dropped_venue`).
+
+## Promotion is automatic and immediate (principal 2026-09-04)
+
+Every forward clock -- `shadow_forward` (main lane), `qquant_shadow`, `scalp_shadow` -- feeds
+`research/promoter.py` on the same shadow cycle. A PROMOTION CANDIDATE whose exact spec is in the
+ten-gate authority set is written to `data/sleeves.json` as LIVE on that run; the gateway trades
+it on its next pass. Scalp sleeves carry their exact recipe (timeframe, family, session, ATR
+geometry) with `exec="scalp_market"` and are executed by `mt5desk/scalp_exec.py` through
+`gateway.run_scalp_sleeves()` -- replay-faithful, one stated deviation (the stop's ATR is the last
+closed bar's). The old gold-challenger wait/kill against the armed window is gone: the comparison
+is recorded on the sleeve row (`vs_armed`) and capital is the allocator's ΔE[log W] decision.
+Retirement stays automatic and kills the row in whichever lane owns it.

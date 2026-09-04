@@ -114,6 +114,7 @@ def _isolate(monkeypatch, tmp_path: Path) -> None:
     monkeypatch.setattr(dfm, "CLAIMS", tmp_path / "claims.jsonl")
     monkeypatch.setattr(dfm, "SEEN", tmp_path / "seen.json")
     monkeypatch.setattr(dfm, "REPORT", tmp_path / "DEEP_FOREST.json")
+    monkeypatch.setattr(dfm, "PROVENANCE", tmp_path / "mined_sources.jsonl")
     monkeypatch.setattr(dfm, "_feed_frontier", lambda urls: len(urls))
     queued: list = []
     import research.regime_coverage as rc
