@@ -53,6 +53,18 @@ WATCHED: dict[str, str] = {
     "desks/mt5/data/sleeve_registry.json":
         "the frozen identity and pre-registration boundary of every sleeve; a rollback here "
         "re-opens GAP 162 by a different route",
+    # OBSERVED REGRESSING, 2026-09-04. The canon IS enrolment: every forward clock is started by
+    # a certificate in this file, so a rollback here does not merely misreport the book -- it
+    # UNENROLS it. Measured today: the box's copy was overwritten at 01:28 UTC with a sweep from
+    # 2026-08-23 carrying ONE survivor, while reports/UNIVERSAL_SURVIVORS.json held the current
+    # 2026-09-03 sweep with 58. Enrolment collapsed with it and 48 clocks went RETIRED_ORPHAN,
+    # freezing 207 real forward trades -- more evidence than the identity bug had held. The
+    # rollback was invisible because the file's MTIME was current; only its `swept_at` was twelve
+    # days old, which is precisely the difference this fence reads.
+    "desks/mt5/data/UNIVERSAL_SURVIVORS.canon.json":
+        "the certificate set that IS forward enrolment; a rollback here unenrols the whole book",
+    "desks/mt5/reports/UNIVERSAL_SURVIVORS.json":
+        "the same certificate set the dashboard and the reconciler read",
     "desks/mt5/data/decay_live.json":
         "live-sleeve decay verdicts (L1.59 FADE/RETIRE)",
     "desks/mt5/reports/execution_quality.json":
@@ -74,7 +86,11 @@ WATCHED: dict[str, str] = {
 
 #: Recognised top-level generation stamps, newest wins. Producers name this field differently and
 #: none of them is wrong; what matters is that SOME declared stamp exists (L1.46).
+# `swept_at` is the certificate canon's own generation stamp. Without it here the canon reads as
+# UNMEASURABLE and this fence cannot judge the one artifact that decides enrolment -- which is how
+# a twelve-day-old sweep sat in place with a current mtime and nothing noticed.
 STAMP_KEYS = ("checked_at", "updated_at", "measured_at", "reconciled_at", "assessed_at",
+              "swept_at",
               "generated_at", "built_at", "last_run", "as_of")
 
 #: Restores before a persistent regression is called what it is: a defect at the writer.
