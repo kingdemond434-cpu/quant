@@ -108,6 +108,12 @@ _LAW_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     # construction -- it reads docs/, scripts/ and the tracked decision ledger, and judges only
     # what git TRACKS, so it means the same in CI, a fresh clone and on the box.
     ("check_birth_properties.py", ()),
+    # GROWTH GOVERNANCE (principal 2026-09-04): every risk-reduction mechanism proves it raises
+    # robust forward E[log W]; every strong opportunity may raise capital above normal; the
+    # 20% floor is flat and filled, growth free above it to 30%; the gateway deploys the book.
+    ("check_growth_governance.py", ()),
+    # IMMUTABLE EVALUATOR: research organs may change the hypothesis, never the judge.
+    ("check_immutable_evaluator.py", ()),
 )
 
 #: STATE FENCES -- box-only. They measure LIVE STATE (artifacts, ledgers, organ freshness) that
@@ -129,6 +135,7 @@ _STATE_FENCES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("check_promotion_gate.py", ()),           # L1.6 -- expansion is bought with evidence
     ("check_excitation.py", ()),               # L1.45 -- no absorbing set, no dead experiment
     ("check_clock_provenance.py", ()),         # L1.46 -- the tape declares which clock stamped it
+    ("check_heat_floor_wiring.py", ()),        # growth governance -- the 20% floor is DEPLOYED
 )
 
 

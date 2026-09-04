@@ -267,6 +267,34 @@ def main() -> int:
             deepening[key] = compact
             stats["deepening"] += 1
 
+    # THE GRAPH REMEMBERS WHAT WAS BURIED. Every compiled candidate is registered as BORN with
+    # its miner row as parent, and every one that lands in a parameter region the gauntlet has
+    # already failed carries that count on its face. It is not rejected -- the gauntlet decides
+    # -- but a proposer that keeps re-proposing a dead region is now visible, and the deepening
+    # queue's VOI ordering discounts it.
+    try:
+        from libs.research.hypothesis_graph import Graph, record_candidates
+        g = Graph()
+        for c in candidates.values():
+            pf = g.prior_failures(str(c.get("symbol")), str(c.get("family")),
+                                  dict(c.get("params") or {}))
+            if pf["n_failed"]:
+                c["prior_failures_in_region"] = pf["n_failed"]
+                c["region"] = pf["region"]
+        # THE PRE-MORTEM: which failure class this candidate most resembles dying of, and the
+        # cheap falsifier that implies. Annotation only -- the gauntlet still decides.
+        try:
+            from libs.research.graveyard_model import GraveyardModel
+            gm = GraveyardModel().fit(g.rows())
+            if gm.n:
+                for c in candidates.values():
+                    c["premortem"] = gm.premortem(c)
+        except Exception:
+            pass
+        record_candidates(candidates.values(), source="miner_candidate_compiler", graph=g)
+    except Exception as exc:
+        print(f"hypothesis graph not updated (non-fatal): {type(exc).__name__}: {exc}")
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "compiled_at": now.isoformat(timespec="seconds"),

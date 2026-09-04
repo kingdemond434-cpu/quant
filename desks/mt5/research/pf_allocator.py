@@ -52,6 +52,8 @@ for _p in (str(BASE), str(BASE / "research"), str(ROOT)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+from mt5desk.gateway_config_fallback import MAX_SLEEVE_HEAT_SHARE  # noqa: E402
+
 from libs.portfolio.robust_elog import (  # noqa: E402
     AllocationResult,
     SleeveEvidence,
@@ -479,6 +481,17 @@ def search_trials() -> dict[str, int]:
             out.update({str(k): int(n) for k, n in v.items() if isinstance(n, (int, float))})
         elif isinstance(v, (int, float)):
             out["external"] = int(v)
+    # THE LIFETIME LEDGER (Quanti's discipline): the desk's whole history of trials per family,
+    # taken as the LARGER of the gate report's count and the lifetime count. A tightening only.
+    try:
+        from libs.research.experiment_ledger import lifetime
+        life = lifetime(write=False)
+        for fam, n in (life.get("by_family") or {}).items():
+            out[f"family:{fam}"] = max(int(out.get(f"family:{fam}", 0)), int(n))
+        out["lifetime_total"] = max(int(out.get("lifetime_total", 0)),
+                                    int(life.get("lifetime_trials", 0)))
+    except Exception:                                            # noqa: BLE001
+        pass
     return out
 
 
@@ -559,10 +572,76 @@ def _state_returns(name: str, phase: str | None,
         return np.array([], dtype=float)
     try:
         from session_phase import returns_in_phase
-        return returns_in_phase(rows, phase, broker_utc_offset_h=broker_utc_offset_h)
-    except Exception as exc:                                        # noqa: BLE001
+        base = returns_in_phase(rows, phase, broker_utc_offset_h=broker_utc_offset_h)
+    except Exception as exc:
         _log(f"state conditioning unavailable for {name}: {type(exc).__name__}: {exc}")
         return np.array([], dtype=float)
+    # THE OTHER ADMITTED DIMENSIONS NARROW THE SAME BUCKET. Session was the only dimension that
+    # reached the posterior; event and weekday were judged by `state_admission` and, where not
+    # buried, may condition too. Each admitted dimension's CURRENT bucket is read from the
+    # state vector and the sleeve's trades are filtered to those whose own point-in-time label
+    # matches -- the same labellers the admission test used, so a dimension conditions here on
+    # exactly the terms it was judged on. k_state = 40 protects the narrower bucket as before.
+    extra = _admitted_extra_dims()
+    if not extra:
+        return base
+    try:
+        from session_phase import _entry_hour  # noqa: F401  (kept for parity with returns_in_phase)
+
+        from libs.regime.state_admission import Trade, build_labeller
+        keep = []
+        fns = {d: build_labeller(d) for d, _cur in extra}
+        for r in rows:
+            when = str(r.get("entry_time") or r.get("opened_at") or "")
+            if not when:
+                continue
+            t = Trade(sleeve=name, when=when, r=float(r.get("r_multiple", 0.0)))
+            ok = True
+            for d, cur in extra:
+                fn = fns.get(d)
+                if fn is None or fn(t) != cur:
+                    ok = False
+                    break
+            if ok:
+                keep.append(r)
+        if not keep:
+            return base
+        return returns_in_phase(keep, phase, broker_utc_offset_h=broker_utc_offset_h)
+    except Exception as exc:
+        _log(f"extra-dimension conditioning unavailable for {name}: "
+             f"{type(exc).__name__}: {exc}; session-only bucket used")
+        return base
+
+
+_EXTRA_DIMS_CACHE: tuple[float, tuple] = (0.0, ())
+
+
+def _admitted_extra_dims() -> tuple[tuple[str, str], ...]:
+    """(dimension, current bucket) for every admitted non-session dimension, from the artifacts.
+
+    Read once per pass (mtime-cached): the admission report says which dimensions may condition,
+    the state vector says which bucket each is in right now. A dimension missing from either is
+    simply not applied -- absence is not a claim.
+    """
+    global _EXTRA_DIMS_CACHE
+    try:
+        adm_p = BASE / "reports" / "STATE_ADMISSION.json"
+        sv_p = BASE / "data" / "state_vector.json"
+        key = adm_p.stat().st_mtime + sv_p.stat().st_mtime
+        if key == _EXTRA_DIMS_CACHE[0]:
+            return _EXTRA_DIMS_CACHE[1]
+        adm = json.loads(adm_p.read_text("utf-8"))
+        sv = json.loads(sv_p.read_text("utf-8"))
+        allowed = set(adm.get("admitted") or []) - {"session"}
+        from datetime import datetime as _dt
+        now_bucket = {"event": str((sv.get("event") or {}).get("phase") or ""),
+                      "weekday": _dt.now(UTC).strftime("%a")}
+        out = tuple((d, now_bucket[d]) for d in sorted(allowed)
+                    if now_bucket.get(d))
+        _EXTRA_DIMS_CACHE = (key, out)
+        return out
+    except Exception:
+        return ()
 
 
 def worst_dd_r(daily: pd.DataFrame) -> dict[str, float]:
@@ -626,13 +705,22 @@ def no_trade(current: dict[str, float], proposed: dict[str, float],
     names = set(current) | set(proposed)
     moved = {n: proposed.get(n, 0.0) - current.get(n, 0.0) for n in names}
     turnover = 0.5 * sum(abs(v) for v in moved.values())
-    cost = turnover * TURNOVER_COST_R
+    # THE INERTIA RAIL IS CALIBRATED BY ITS OWN LEDGER LINE. `missed_growth` bills what holding
+    # cost or saved each day; a rail that persistently costs growth has its multiplier walked
+    # down inside [0.5, 2.0] (libs.portfolio.rails), so the desk rebalances sooner. Never up.
+    try:
+        from libs.portfolio.rails import rail_multiplier as _rail_mult
+        inertia_mult = _rail_mult("position_inertia")
+    except Exception:
+        inertia_mult = 1.0
+    cost = turnover * TURNOVER_COST_R * inertia_mult
     benefit = max(gain_per_day, 0.0) * NO_TRADE_HORIZON_DAYS
     go = benefit > cost
     return {
         "verdict": "REBALANCE" if go else "NO CHANGE",
         "turnover": round(turnover, 6),
         "cost": round(cost, 8),
+        "inertia_multiplier": round(inertia_mult, 4),
         "benefit_over_horizon": round(benefit, 8),
         "horizon_days": NO_TRADE_HORIZON_DAYS,
         "largest_moves": dict(sorted(((k, round(v, 5)) for k, v in moved.items() if abs(v) > 1e-5),
@@ -709,6 +797,68 @@ def opportunity(free: AllocationResult, book: dict[str, float],
     }
 
 
+def fill_floor(book: AllocationResult, ev: list[SleeveEvidence], target: float,
+               ub: dict[str, float], family_of: dict[str, str], *,
+               cfg: WorldConfig, worlds: Worlds) -> tuple[AllocationResult, dict[str, Any]]:
+    """Hold the resolved heat; yield the per-sleeve bounds, in order, until it is funded.
+
+    FLOOR FILL (principal, 2026-09-04): the resolved heat -- 20% floor, growth above it to the
+    ceiling -- is what the book HOLDS, not what it reports as a shortfall. When the per-sleeve
+    bounds cannot fund it, the bounds yield in the order of how little each was ever proven to
+    earn: the drawdown-derived leg first, then the mechanism cap, then the single-sleeve share
+    cap, and last a proportional scale of the solved book. Every relaxation is returned in the
+    note and billed by `missed_growth` as that rail's opportunity cost. The one thing the fill
+    never overrides is the ruin guard: a candidate wiped out in a sampled world is skipped, and
+    the caller's ruin check still runs on whatever is returned.
+    """
+    note: dict[str, Any] = {"needed": False}
+    short = target - book.total_heat
+    if not (math.isfinite(book.mean_log_growth) and short > 1e-4):
+        return book, note
+    share_cap = MAX_SLEEVE_HEAT_SHARE * target
+    levels = (("drawdown_bound", dict.fromkeys(ub, share_cap), True),
+              ("family_cap", dict.fromkeys(ub, share_cap), False),
+              ("share_cap", dict.fromkeys(ub, target), False))
+    g_before = book.mean_log_growth
+    for level, bnd, keep_family in levels:
+        try:
+            cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
+                            worlds=worlds, max_per_sleeve=bnd, warm_start=book.heat or None)
+            if keep_family:
+                capped = enforce_family_cap(cand.heat, family_of, cand.total_heat)
+                if not all(math.isinf(v) for v in capped.values()):
+                    tight = {k: min(bnd.get(k, math.inf), capped.get(k, math.inf))
+                             for k in bnd}
+                    cand = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=target, cfg=cfg,
+                                    worlds=worlds, max_per_sleeve=tight,
+                                    warm_start=cand.heat or None)
+        except ValueError:
+            continue                                  # these bounds cannot fund it; next level
+        if not math.isfinite(cand.mean_log_growth):
+            continue
+        if cand.total_heat > book.total_heat + 1e-6:
+            book = cand
+            note = {"needed": True, "relaxed": level,
+                    "growth_gap": round(cand.mean_log_growth - g_before, 8)}
+        if book.total_heat >= target - 1e-4:
+            break
+    if book.total_heat > 0 and book.total_heat < target - 1e-4:
+        scale = target / book.total_heat
+        scaled = {k: v * scale for k, v in book.heat.items()}
+        sc = score_book(ev, scaled, cfg=cfg, worlds=worlds)
+        if math.isfinite(sc["mean_log_growth"]):
+            book = AllocationResult(
+                heat=scaled, total_heat=float(sum(scaled.values())),
+                robust_score=sc["robust_score"], mean_log_growth=sc["mean_log_growth"],
+                cvar_log_growth=sc["cvar_log_growth"], annual_growth_pct=sc["annual_growth_pct"],
+                prob_annual_loss=sc["prob_annual_loss"], marginal=book.marginal,
+                iterations=book.iterations, converged=book.converged,
+                note="floor filled by proportional scale of the bounded solve")
+            note = {"needed": True, "relaxed": "proportional",
+                    "growth_gap": round(sc["mean_log_growth"] - g_before, 8)}
+    return book, note
+
+
 # ---------------------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------------------
@@ -761,7 +911,7 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
             _log("state: session conditioning is in the GRAVEYARD -- measured worse out of "
                  "sample, so this pass solves without it")
             return None, {}, off
-    except Exception as exc:                                     # noqa: BLE001
+    except Exception as exc:
         _log(f"state admission unreadable ({type(exc).__name__}: {exc}); conditioning stands")
 
     # PER-SLEEVE TRADES, KEYED THE WAY THE BOOK IS KEYED. The shadow ledgers are
@@ -775,7 +925,7 @@ def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
         for f in sorted(d.glob("ledger_*.json")):
             try:
                 rows = json.loads(f.read_text("utf-8"))
-            except Exception:                                        # noqa: BLE001
+            except Exception:
                 continue
             if isinstance(rows, list) and rows:
                 trades.setdefault(f.stem[len("ledger_"):], []).extend(
@@ -819,7 +969,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         try:
             from state_vector_build import load as _load_sv
             state_vec, sv_why = _load_sv()
-        except Exception as exc:                                     # noqa: BLE001
+        except Exception as exc:
             state_vec, sv_why = None, f"{type(exc).__name__}: {exc}"
         _log(f"state vector: {sv_why}")
 
@@ -841,7 +991,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
                                  standing_vol_mult=_base.crisis_vol_mult)
         _log(f"crisis calibration: common_share={cov_cal.crisis_common_share:.3f} "
              f"vol_mult={cov_cal.crisis_vol_mult:.2f} ({cov_cal.note})")
-    except Exception as exc:                                         # noqa: BLE001
+    except Exception as exc:
         _log(f"crisis calibration unavailable ({type(exc).__name__}: {exc}); constants stand")
 
     cfg = WorldConfig(seed=seed, regime_labels=labels, regime_probs=probs,
@@ -917,6 +1067,7 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
 
     # 3. THE BOOK, at the heat the law resolved.
     fam_share: dict[str, float] = {}
+    fill_note: dict[str, Any] = {"needed": False}
     if verdict.total_heat <= 0:
         book = AllocationResult(heat={}, total_heat=0.0, robust_score=0.0, mean_log_growth=0.0,
                                 cvar_log_growth=0.0, annual_growth_pct=0.0, prob_annual_loss=0.0,
@@ -924,9 +1075,15 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     else:
         ub = {k: min(v, verdict.total_heat) for k, v in
               per_sleeve_bounds(dd, verdict.total_heat).items()}
-        book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
-                        worlds=worlds, max_per_sleeve=ub,
-                        warm_start=current_book() or None)
+        try:
+            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
+                            worlds=worlds, max_per_sleeve=ub,
+                            warm_start=current_book() or None)
+        except ValueError as exc:
+            # The bounds cannot fund the mandate at all. Not a failed pass: the floor fill below
+            # starts from the free solve and yields the bounds until the resolved heat is held.
+            _log(f"bounded solve refused ({exc}); the floor fill starts from the free optimum")
+            book = free
 
         # MECHANISM CONCENTRATION, enforced by re-solving under tightened bounds rather than
         # priced. Measured 2026-09-02 the first solved book held 97% of its heat in one family;
@@ -940,8 +1097,27 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             if all(math.isinf(v) for v in capped.values()):
                 break                                   # every mechanism already inside the cap
             tight = {k: min(ub.get(k, math.inf), capped.get(k, math.inf)) for k in ub}
-            book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat, cfg=cfg,
-                            worlds=worlds, max_per_sleeve=tight, warm_start=book.heat or None)
+            try:
+                book = optimise(ev, hard_cap=HEAT_HARD_CEILING, target=verdict.total_heat,
+                                cfg=cfg, worlds=worlds, max_per_sleeve=tight,
+                                warm_start=book.heat or None)
+            except ValueError as exc:
+                _log(f"family-capped solve refused ({exc}); the floor fill decides the cap")
+                break
+        # FLOOR FILL (principal, 2026-09-04): the resolved heat -- 20% floor, growth above it to
+        # the ceiling -- is what the book HOLDS, not what it reports as a shortfall. When the
+        # per-sleeve bounds cannot fund it, the bounds yield, in the order of how little each
+        # was ever proven to earn: the drawdown-derived leg first, then the mechanism cap, then
+        # the single-sleeve share cap, and last a proportional scale of the solved book. Every
+        # relaxation is written to the artifact and billed by `missed_growth` as that rail's
+        # opportunity cost. The one thing the fill never overrides is the ruin guard below: a
+        # filled book that is wiped out in a sampled world is still not a book.
+        held_before = book.total_heat
+        book, fill_note = fill_floor(book, ev, verdict.total_heat, ub, family_of,
+                                     cfg=cfg, worlds=worlds)
+        if fill_note.get("needed"):
+            _log(f"FLOOR FILL: bounded solve held {held_before:.2%} of the "
+                 f"{verdict.total_heat:.2%} resolved; {fill_note}")
         for name, h in book.heat.items():
             if h > 1e-6:
                 fam = family_of.get(name, "?")
@@ -1005,17 +1181,75 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     # on THESE worlds, at EQUAL total heat, before it is allowed to size a position.
     # The gateway reads the certificate this writes; without a fresh passing one it keeps
     # ranking with the optimiser and sizing with Q_OPT exactly as it does today.
+    fallback: dict[str, Any] = {}
     try:
         from libs.portfolio.allocator_proof import certify, contest
         proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds)
         certify(proof, root=ROOT, book=funded)
+        # THE FLOOR'S FALLBACK: the best baseline at the same total heat, carried on the
+        # artifact so a failed or stale proof changes who allocates the floor, never whether.
+        best = str(proof.get("best_baseline") or "")
+        fb_book = (proof.get("books") or {}).get(best) or {}
+        if best and fb_book:
+            fallback = {"name": best, "book": {k: round(float(v), 6) for k, v in fb_book.items()
+                                               if float(v) > 1e-6}}
         _log(f"proof: {'PASS' if proof['passed'] else 'FAIL'} -- {proof['why']}")
-    except Exception as exc:                                        # noqa: BLE001
+    except Exception as exc:
         # A failed contest must never take the allocation pass with it: the book is still worth
         # publishing for ranking and total heat. What it loses is the right to SIZE, which is
         # exactly the fail-closed direction.
         proof = {"passed": False, "why": f"{type(exc).__name__}: {exc}"}
         _log(f"proof: FAILED TO RUN -- {proof['why']}")
+
+    # THE AGGRESSION GOVERNOR'S AUDIT AND THE KELLY SURFACE: why the deployed heat is what it
+    # is, and how much more the worlds would bear. Report-only -- `heat_policy.resolve` is the
+    # lever -- but UNUSED_UPSIDE is a verdict `missed_growth` will not let stand.
+    ks_doc: dict[str, Any] = {}
+    aggression: dict[str, Any] = {}
+    try:
+        from mt5desk.gateway_config_fallback import MAX_DRAWDOWN_TOLERANCE as _DD_TOL
+
+        from libs.portfolio.aggression import explain as _explain
+        from libs.portfolio.kelly_surface import surface as _surface
+        if funded:
+            ks_doc = _surface(worlds, funded, tolerance=_DD_TOL, alpha=cfg.cvar_alpha)
+            ks_doc["rows"] = ks_doc.get("rows", [])[::2]          # every second grid point
+        aggression = _explain(floor=HEAT_TARGET, ceiling=HEAT_HARD_CEILING,
+                              total_heat=book.total_heat, free_optimum=free.total_heat,
+                              readiness=ready, proof_passed=bool(proof.get("passed")),
+                              surface=ks_doc, book=funded, ev=ev)
+        _log(f"aggression: A={aggression['A']:.2f} {aggression['verdict']} "
+             f"tail_max={ (aggression['components']['tail_safety'] or {}).get('heat_tail_max')}")
+    except Exception as exc:
+        aggression = {"error": f"{type(exc).__name__}: {exc}"}
+        _log(f"aggression audit unavailable: {aggression['error']}")
+    # THE FOUR HEATS AND THE WORLDS-BASED TRADE VALUE: what the nominal heat is really made of
+    # (covariance / latent-factor / tail), and what moving from the held book buys on these
+    # worlds net of turnover -- the inertia rail's own measurement.
+    effective_heat: dict[str, Any] = {}
+    trade_value: dict[str, Any] = {}
+    try:
+        from libs.portfolio.latent_factors import effective as _effective
+        from libs.portfolio.multiperiod_worlds import trade_value as _trade_value
+        if funded:
+            effective_heat = _effective(ev, funded)
+            trade_value = _trade_value(worlds, prev_book, funded)
+            _log(f"effective heat: nominal={effective_heat.get('nominal')} "
+                 f"eff={effective_heat.get('effective')} n_eff={effective_heat.get('n_eff')}; "
+                 f"trade value {trade_value.get('verdict')} ({trade_value.get('trade_value')})")
+    except Exception as exc:                                         # noqa: BLE001
+        effective_heat = {"error": f"{type(exc).__name__}: {exc}"}
+    # THE AI CAPITAL MODIFIER LEDGER: what the state conditioning claimed for each funded
+    # sleeve this pass, so each category can later prove its increment.
+    try:
+        from libs.portfolio.capital_modifiers import record as _record_modifiers
+        _mods = _record_modifiers(ev, funded, phase or "")
+        if _mods:
+            _log("capital modifiers: " + ", ".join(
+                f"{c}={sum(1 for m in _mods if m['category'] == c)}"
+                for c in ("STRONG_VETO", "REDUCE", "NORMAL", "BOOST", "STRONG_BOOST")))
+    except Exception as exc:
+        _log(f"capital modifier ledger not written: {type(exc).__name__}: {exc}")
 
     art: dict[str, Any] = {
         "generated_utc": datetime.now(UTC).isoformat(),
@@ -1036,7 +1270,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
         },
         "book": funded,
         "proof": {"passed": bool(proof.get("passed")), "why": proof.get("why", ""),
-                  "best_baseline": proof.get("best_baseline", "")},
+                  "best_baseline": proof.get("best_baseline", ""),
+                  "scores": {k: (v.get("mean_log_growth") if isinstance(v, dict) else None)
+                             for k, v in (proof.get("scores") or {}).items()}},
+        # The best baseline at the same heat: `gateway.allocator_book` sizes the floor with it
+        # whenever the dynamic weights have no fresh passing proof.
+        "book_fallback": fallback,
+        "floor_fill": fill_note,
+        "aggression": aggression,
+        "kelly_surface": ks_doc,
+        "effective_heat": effective_heat,
+        "trade_value_worlds": trade_value,
         # WHICH MECHANISMS HOLD THE BOOK. A single-family book is a single bet however many
         # sleeves it is spread across, and that is invisible from the sleeve list alone.
         "mechanism_mix": {k: round(v, 6)

@@ -1428,3 +1428,63 @@ from mt5desk.family_regime_transition import family_regime_transition  # noqa: E
 
 ORTHOGONAL_FAMILIES["regime_transition"] = family_regime_transition
 FAMILY_INPUTS["regime_transition"] = ("price only", "data/universe/*_H1.parquet")
+
+# THE MARKET'S PLUMBING AS A MECHANISM CLASS (2026-09-04). A fix, a settlement, a handoff, a
+# rollover: moments when flow is FORCED rather than chosen, which is the most reliable source of
+# temporary mispricing there is. Takes the STAMP HOUR explicitly so the certificate is exact
+# whatever anyone later believes about time zones; `plumbing_miner` does the conversion once.
+from mt5desk.family_clock_transition import family_clock_transition  # noqa: E402
+
+ORTHOGONAL_FAMILIES["clock_transition"] = family_clock_transition
+FAMILY_INPUTS["clock_transition"] = ("price only", "data/universe/*_H1.parquet")
+
+# TIME-SERIES MOMENTUM AT SEVERAL SPEEDS (2026-09-04) -- AQR's published TSMOM and Man AHL's
+# multi-speed trend, vol-scaled, with the crisis-alpha variant. The mirror of a breakout's
+# failure mode, which is what makes it the textbook pairing for an uncorrelated book.
+from mt5desk.family_multi_speed_trend import family_multi_speed_trend  # noqa: E402
+
+ORTHOGONAL_FAMILIES["multi_speed_trend"] = family_multi_speed_trend
+FAMILY_INPUTS["multi_speed_trend"] = ("price only", "data/universe/*_H1.parquet")
+
+# MANY SUB-COST PREDICTORS AS ONE CANDIDATE (2026-09-04) -- Brown's public statement of the
+# Medallion architecture. Members are ordinary cells named on the certificate; the family runs
+# them through the gauntlet's own cell builder and votes. Frozen weights, never fitted here.
+from mt5desk.family_ensemble import family_ensemble  # noqa: E402
+
+ORTHOGONAL_FAMILIES["ensemble"] = family_ensemble
+FAMILY_INPUTS["ensemble"] = ("member cells rebuilt via the gauntlet's build_cell",
+                             "reports/universal_gates_external.json")
+
+# THE BROKER'S OWN SPREAD STATE AS A MECHANISM (2026-09-04). Every H1 bar carries Fusion's
+# spread and tick_volume; every cost model read the spread only to charge it. A spread is the
+# venue saying how much it wants to be paid to take the other side, which is information.
+from mt5desk.family_spread_state import family_spread_state  # noqa: E402
+
+ORTHOGONAL_FAMILIES["spread_state"] = family_spread_state
+# No FAMILY_INPUTS entry: the spread is a COLUMN OF THE BARS the sweep already passes, not a
+# runtime input to source. The family refuses bars without it, which is the only guard needed.
+
+# FORMULAIC ALPHA (2026-09-04) -- one expression from the alpha grammar, z-scored and
+# thresholded. The expression is the recipe; `alpha_evolution` is the only proposer that names
+# one. Driver terminals (usd, rates, risk, gold, oil, growth) are supplied by family_inputs.
+from mt5desk.family_formula import family_formula  # noqa: E402
+
+ORTHOGONAL_FAMILIES["formula"] = family_formula
+FAMILY_INPUTS["formula"] = ("economic driver bars for any driver terminal the expression names",
+                            "data/universe/*_H1.parquet via economic_drivers.ROLES")
+
+# THE CROSS-ASSET INFORMATION GRAPH'S EXECUTOR (2026-09-04): trade the laggard after the
+# leader moved, at the lag the graph measured. The driver is named on the recipe.
+from mt5desk.family_lead_lag import family_lead_lag  # noqa: E402
+
+ORTHOGONAL_FAMILIES["lead_lag"] = family_lead_lag
+FAMILY_INPUTS["lead_lag"] = ("the driver instrument's bars (driver_symbol on the recipe)",
+                             "data/universe/*_H1.parquet")
+
+# AQR'S SIX STYLES AND THEIR PUBLIC COMBINATIONS (2026-09-04): trend, carry (Fusion's own
+# rollover), value, defensive (BAB against the risk driver), volatility, momentum.
+from mt5desk.family_style_premia import family_style_premia  # noqa: E402
+
+ORTHOGONAL_FAMILIES["style_premia"] = family_style_premia
+FAMILY_INPUTS["style_premia"] = ("swap_diff (broker_swaps) for carry; risk-driver bars for "
+                                 "defensive", "data/intelligence/broker_swaps + universe")

@@ -80,7 +80,8 @@ def test_a_collapse_is_named_with_both_numbers() -> None:
 
 
 def test_normal_churn_does_not_fire() -> None:
-    """Real history shrinks a little on delisting churn; a floor that fires on noise gets deleted."""
+    """Real history shrinks a little on delisting churn; a floor that fires on noise gets
+    deleted."""
     prior = {s: {"days": 2246, "rows": 53864} for s in _peers()}
     now = {s: {"rows": 53000, "days": 2200} for s in _peers()}
     breaches, _ = bf.evaluate(now, prior)

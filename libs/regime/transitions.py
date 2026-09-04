@@ -182,7 +182,7 @@ def forecast(transmat: np.ndarray, posterior: np.ndarray, state_labels: dict[int
     labels = tuple(sorted({str(v) for v in state_labels.values()}))
 
     def _onto_labels(mass: np.ndarray) -> dict[str, float]:
-        out = {lab: 0.0 for lab in labels}
+        out = dict.fromkeys(labels, 0.0)
         by_state = mass.sum(axis=1)
         for i in range(k):
             out[str(state_labels.get(i, str(i)))] = (

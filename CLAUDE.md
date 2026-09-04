@@ -94,3 +94,29 @@ ruff+mypy cannot; there is no run too small for it. Use `python -m mypy` (never 
 and top gap rows at session start, read LIVE from artifacts. If you did not see a
 `=== DESK STATE ===` block, the hook did not run — treat every number you think you know as
 UNKNOWN and read the artifacts directly.
+
+## GROWTH GOVERNANCE (principal's standing order, 2026-09-04 — binding on every session)
+
+Two rules, applied everywhere, now and in future, fenced by `scripts/check_growth_governance.py`
+at every law-gate boundary and `scripts/check_heat_floor_wiring.py` on the box. Full text:
+`docs/GROWTH_GOVERNANCE.md`.
+
+- **Rule 1.** Every risk reduction mechanism must prove that it increases robust forward E[log W].
+- **Rule 2.** Every strong opportunity must be allowed to increase capital above normal when the evidence supports it.
+
+Timid is not risk-aware. Never read restraint language (minimise, only, never, bounded) as a
+licence to do less; never add a veto, cap, shrinkage or gate without its missed-growth ledger
+line (`libs/portfolio/rails.py`, `research/missed_growth.py`); every capital modifier must be
+two-sided (`libs/portfolio/capital_modifiers.py`). The heat law: **20% floor, flat, 24/7;
+growth free above it to the 30% ceiling; the resolved heat is filled, never reported short; the
+gateway deploys the allocator's fractions un-re-shrunk and falls back to the best baseline at
+the floor when the proof is stale.** Research is anti-timid (weak public claims are hypotheses,
+never privileged); capital is evidence-hard (nothing gets authority for sounding institutional).
+- **DEEP-FOREST MINING (2026-09-04, principal standing order)** — the deep Chinese web is worth
+  mining to exhaustion: competition records (期货日报实盘大赛, 蓝海密剑), 七禾网/私募排排网 trader
+  interviews, 聚宽/优矿/米筐/BigQuant communities, 知乎/CSDN/雪球, Gitee, Bilibili transcripts,
+  微信 via 搜狗, the futures forums — because even a dubious trader story names a testable
+  mechanism. The world crawler and `desks/mt5/research/deep_forest_miner.py` mine these (and the
+  JP/KR/RU sibling forests) for verbatim claims, map instruments to MT5 analogues, and push every
+  claim to the gauntlet through the deepening worker (`story_mechanism`). Grounds live in
+  `desks/mt5/data/deep_forest_sources.json`; new grounds are added there, never hard-coded.

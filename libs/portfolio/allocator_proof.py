@@ -127,6 +127,25 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
     # is precisely whether moving at all was worth it.
     if incumbent:
         books["static_incumbent"] = dict(incumbent)
+    # THE CHALLENGER BENCH (2026-09-04): HRP, HERC, min-variance, mean-CVaR and three Kellys,
+    # all long-only at the same total heat. More rivals can only make the proof harder; the
+    # dynamic book keeps authority by beating the best of them on these worlds.
+    try:
+        from libs.portfolio.challengers import all_books
+        for k, b in all_books(ev, total).items():
+            books.setdefault(k, b)
+    except Exception:
+        pass
+    if worlds is not None:
+        try:
+            from libs.portfolio.multiperiod_worlds import plan
+            mp = plan(worlds, incumbent or {}, target=total, cap=max(total, 1e-9))
+            h_now = {k: v for k, v in mp["h_now"].items() if v > 0}
+            s = sum(h_now.values())
+            if s > 0:
+                books.setdefault("multiperiod", {k: v * total / s for k, v in h_now.items()})
+        except Exception:
+            pass
 
     scored = {k: score_book(ev, b, cfg=cfg, worlds=worlds) for k, b in books.items()}
     dyn = scored["dynamic"]["robust_score"]
@@ -147,7 +166,10 @@ def contest(ev: Sequence[SleeveEvidence], dynamic: Mapping[str, float],
         why = (f"dynamic {dyn:.6f} vs best baseline {best_name} {best:.6f} "
                f"(needs > {need:.6f}, margin {MARGIN_FRAC:.0%})")
     return {"passed": bool(passed), "why": why, "best_baseline": best_name,
-            "scores": scored, "total_heat_equalised": total}
+            "scores": scored, "total_heat_equalised": total,
+            # THE BOOKS THEMSELVES, so a failed proof can hand the floor to the best baseline
+            # rather than to nothing (gateway.allocator_book reads `book_fallback`).
+            "books": {k: {str(n): float(v) for n, v in b.items()} for k, b in books.items()}}
 
 
 def certify(result: dict[str, Any], *, root: Path, book: Mapping[str, float]) -> Path:
@@ -170,7 +192,7 @@ def certify(result: dict[str, Any], *, root: Path, book: Mapping[str, float]) ->
     return out
 
 
-def read_certificate(root: Path, *, now: float | None = None) -> tuple[dict | None, str]:
+def read_certificate(root: Path, *, now: float | None = None) -> tuple[dict[str, Any] | None, str]:
     """The live certificate, or None with the reason it may not be used. Fails closed."""
     import time as _time
     p = root / PROOF

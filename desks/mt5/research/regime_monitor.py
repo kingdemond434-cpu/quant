@@ -122,6 +122,23 @@ def _read_shadow_ledgers(shadow_dir: Path) -> dict[str, list[float]]:
     return out
 
 
+FILTER_VALUE = BASE / "reports" / "FILTER_VALUE.json"
+
+
+def _own_filter_value() -> dict[str, Any]:
+    """What the hibernate veto has been worth, from the counterfactual ledger. Never raises."""
+    try:
+        doc = json.loads(FILTER_VALUE.read_text(encoding="utf-8"))
+        row = (doc.get("filters") or {}).get("regime_hibernate")
+    except Exception:
+        return {"verdict": "UNMEASURED", "why": "FILTER_VALUE.json absent or unreadable"}
+    if not row:
+        return {"verdict": "UNMEASURED", "why": "no vetoed bracket has been replayed yet"}
+    return {"verdict": row.get("verdict"), "filter_value_r": row.get("filter_value_r"),
+            "n": row.get("n_vetoed_and_triggered"), "t": row.get("t"),
+            "as_of": doc.get("generated_utc")}
+
+
 def main() -> None:
     live, shadow_from_live = _read_live(LIVE_LEDGER)
     shadow = _read_shadow_ledgers(SHADOW_DIR)
@@ -134,6 +151,11 @@ def main() -> None:
         except Exception:
             prev = {}
     state = compute_state(live, shadow, datetime.now(UTC).isoformat())
+    # THE VETO'S OWN LEDGER LINE. `counterfactual_markout` prices every bracket this monitor's
+    # hibernate flag refused; the value is carried here so the authority that vetoes can see what
+    # its vetoes were worth. It changes no flag -- a filter is never loosened by its own report --
+    # but a COSTS_EDGE verdict is the number a human reads before re-admitting a sleeve.
+    state["hibernate_filter_value"] = _own_filter_value()
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps(state, indent=2), encoding="utf-8")
     flags = {s: v["flag"] for s, v in state["sleeves"].items() if v["flag"] != "ok"}

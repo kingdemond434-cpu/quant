@@ -99,7 +99,7 @@ class FitCache:
     """On-disk memo of fitted states, keyed by what the fit actually saw."""
 
     path: Path
-    _mem: dict[str, dict] = field(default_factory=dict)
+    _mem: dict[str, dict[str, Any]] = field(default_factory=dict)
     loaded: bool = False
 
     def _load(self) -> None:
@@ -111,12 +111,12 @@ class FitCache:
         except (OSError, ValueError):
             self._mem = {}
 
-    def get(self, key: str) -> dict | None:
+    def get(self, key: str) -> dict[str, Any] | None:
         self._load()
         v = self._mem.get(key)
         return v if isinstance(v, dict) else None
 
-    def put(self, key: str, value: dict) -> None:
+    def put(self, key: str, value: dict[str, Any]) -> None:
         self._load()
         self._mem[key] = value
 
@@ -224,7 +224,7 @@ def fit_asset_state(close: pd.Series, symbol: str, clock: str,
             engine_confidence=round(float(str(eng.current().get("confidence") or 0.0)), 6),
             note=fc.note,
         )
-    except Exception as exc:                                    # noqa: BLE001 - fail closed by name
+    except Exception as exc:
         return None, f"{type(exc).__name__}: {exc}"
 
     if cache is not None:
@@ -234,7 +234,7 @@ def fit_asset_state(close: pd.Series, symbol: str, clock: str,
     return st, "fitted"
 
 
-def _from_dict(d: dict) -> AssetState:
+def _from_dict(d: dict[str, Any]) -> AssetState:
     return AssetState(
         symbol=str(d["symbol"]), clock=str(d["clock"]), labels=tuple(d["labels"]),
         probs={str(k): float(v) for k, v in d["probs"].items()},

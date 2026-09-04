@@ -215,6 +215,12 @@ _MECH = {
     "seasonality": r"seasonal|day of week|turn of month|季节性|曜日|계절성",
     "correlation": r"correlation|相关性|相関|상관관계|корреляц",
     "orderflow": r"order flow|liquidity|流动性|オーダーフロー|유동성|ликвидн",
+    # zh practitioner register (2026-09-04): basis / calendar-spread / roll, the night session,
+    # arbitrage, positioning -- the words a 七禾网 interview or a competition write-up uses.
+    "basis": r"basis|基差|升水|贴水|跨期|换月|展期|term structure|期限结构",
+    "arbitrage": r"arbitrage|套利|跨市|跨品种|内外盘|沪伦比|金银比|金油比|cointegrat|协整",
+    "night_session": r"夜盘|night session|收盘前|尾盘|早盘|开盘后",
+    "positioning": r"positioning|持仓量|多空比|主力|cot report|净持仓",
 }
 _MECH_RE = {k: re.compile(v, re.IGNORECASE) for k, v in _MECH.items()}
 
@@ -420,6 +426,23 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
     known = _fusion_symbols()
     symbols = sorted(claimed & known) if known else sorted(claimed)
 
+    # STORY CLAIMS (2026-09-04). A page that says, in Chinese or English, "gold reverses after
+    # the night-session open when the day range is wide" names a testable mechanism even when it
+    # names no registered family. `mechanism_claims` keeps such sentences verbatim, maps the
+    # instrument to its MT5 analogue (沪金 -> XAUUSD) and drops crypto-exchange venues; the
+    # deepening worker turns a claim into an exact recipe or rejects it. The crawler still never
+    # emits a family or params.
+    claims: list[dict[str, Any]] = []
+    try:
+        from libs.research.mechanism_claims import extract_claims
+        claims = extract_claims(body, max_claims=12, universe=known or None)
+    except Exception as exc:                                     # the crawler must not die on it
+        log(f"claim extraction failed ({type(exc).__name__}: {exc}); page carried as prose")
+    for c in claims:
+        for a in (c.get("instruments") or {}).get("analogues") or []:
+            if a not in symbols:
+                symbols.append(a)
+
     return {
         "links": [(urljoin(url, href), anchor) for href, anchor in parser.links[:400]],
         "symbols": symbols[:24],
@@ -430,6 +453,7 @@ def read_page(raw: bytes, url: str) -> dict[str, Any]:
         "title": title,
         "text_len": len(body),
         "endpoints": endpoints,
+        "claims": claims,
     }
 
 
@@ -446,20 +470,24 @@ def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] 
     a symbol, a timeframe and a mechanism is worth more than one naming a symbol.
     """
     is_data = is_data_source(url, page.get("title") or "")
+    claims = list(page.get("claims") or [])
     # A DATASET IS WORTH CARRYING EVEN WHEN IT NAMES NO PATTERN. An API index or a statistics
     # portal is exactly the input class that converts (broker_swaps: 248 rows, 248 candidates),
     # and it typically contains none of the mechanism prose this filter was written around --
     # so the old rule discarded the only pages that could ever pay.
-    if not page["symbols"] and not page["patterns"] and not is_data:
+    if not page["symbols"] and not page["patterns"] and not is_data and not claims:
         return None
-    signals = (bool(page["symbols"]) + bool(page["timeframes"]) + bool(page["patterns"]))
+    signals = (bool(page["symbols"]) + bool(page["timeframes"]) + bool(page["patterns"])
+               + bool(claims))
     return {
         "source": "world_crawler",
         # WHICH CLASS OF INPUT THIS IS, on the row. Measured conversion: structured data 100%,
         # 96%, 64%; prose 0% across 341 rows and six sources. A consumer that cannot tell them
         # apart must treat a blog post and a CSV endpoint as the same evidence, which is how a
         # crawler's whole hour goes to the class that provably cannot produce a candidate.
-        "kind": "dataset" if is_data else "prose",
+        # A STORY is prose that states a mechanism sentence; it converts through the deepening
+        # worker (kind story_mechanism), which plain prose cannot.
+        "kind": "dataset" if is_data else ("story" if claims else "prose"),
         "title": page["title"] or url[:120],
         "url": url,
         "published": datetime.now(tz=UTC).isoformat(timespec="seconds"),
@@ -480,6 +508,12 @@ def to_discovery(url: str, page: dict[str, Any], digest: str) -> dict[str, Any] 
         "n_endpoints": len(page.get("endpoints") or []),
         "vault_sha": digest,
         "host": urlparse(url).netloc,
+        # THE CLAIMS THEMSELVES, verbatim with their instrument mapping, so the compiler's
+        # deepening path can ask the seat about the sentence rather than the page title.
+        "claims": [{k: c.get(k) for k in ("claim", "lang", "quantities", "direction", "horizon",
+                                          "instruments", "claimed_performance", "claim_hash")}
+                   for c in claims[:8]],
+        "n_claims": len(claims),
     }
 
 
@@ -582,6 +616,32 @@ SEEDS = (
     "https://www.mql5.com/en/code/mt5/indicators",
     "https://github.com/topics/mql5",
     "https://github.com/topics/metatrader5",
+    # ---- THE CHINESE DEEP FOREST (principal 2026-09-04): STORIES THAT NAME MECHANISMS ---------
+    #
+    # Competition records, 七禾网/期货日报 trader interviews, the quant-platform communities,
+    # Q&A and social, Gitee, Bilibili, the forums. Even a dubious trader story names a testable
+    # mechanism, and `read_page` now keeps such sentences as CLAIMS (kind "story") for the
+    # deepening worker to reverse-engineer. `research/deep_forest_miner.py` reaches the grounds
+    # a link-frontier cannot (search-engine indexes, JS shells, platform APIs) and feeds every
+    # URL it finds into this frontier, so the two grow the same ground.
+    "https://www.7hcn.com/",
+    "https://www.7hcn.com/article/list-1.html",
+    "https://www.qhrb.com.cn/",
+    "https://www.simuwang.com/",
+    "https://www.joinquant.com/view/community/list?listType=1",
+    "https://www.ricequant.com/community",
+    "https://bbs.myquant.cn/",
+    "https://bigquant.com/wiki/",
+    "https://www.jisilu.cn/explore/",
+    "https://www.taoguba.com.cn/",
+    "https://bbs.pinggu.org/forum-2196-1.html",
+    "https://gitee.com/explore/quant",
+    "https://gitee.com/search?q=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
+    "https://juejin.cn/search?query=%E9%87%8F%E5%8C%96%E4%BA%A4%E6%98%93",
+    "https://www.futuresmag.com.cn/",
+    "https://www.cfachina.org/",
+    "https://futures.hexun.com/",
+    "https://futures.eastmoney.com/",
 )
 
 
