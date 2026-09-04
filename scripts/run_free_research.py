@@ -162,6 +162,15 @@ def _parse_proposals(text: str) -> list[dict[str, str]]:
             continue
         parts = [p.strip() for p in line.split("|")]
         rec = dict(zip(_REQUIRED, parts[:len(_REQUIRED)], strict=False))
+        # THE OPTIONAL EIGHTH FIELD: a factor tree for the two shapes family_generic cannot
+        # express. Parsed here and handed to the compiler, which validates it against the DSL
+        # allowlist and only then waives the capability refusal. A malformed tree is DROPPED
+        # rather than repaired -- repairing it would invent the half the model did not supply.
+        if len(parts) > len(_REQUIRED):
+            raw = "|".join(parts[len(_REQUIRED):]).strip()
+            if raw.startswith("["):
+                with suppress(json.JSONDecodeError):
+                    rec["factor"] = json.loads(raw)
         if all(rec.get(f) for f in _REQUIRED) and len(rec["mechanism"]) > 12:
             rows.append(rec)
     return rows
@@ -224,6 +233,17 @@ def role_generate(panel: Any) -> dict[str, Any]:
               "If the mechanism genuinely does not pick one, the hypothesis is not ready -- "
               "propose a different one rather than guessing, because a guessed axis tests a "
               "claim nobody made.\n"
+              "\nIF AND ONLY IF the mechanism needs a cross-sectional rank or a multi-leg "
+              "spread -- shapes the generic family cannot express -- append an EIGHTH field: a "
+              "FACTOR TREE in JSON, e.g.\n"
+              '  ["spread",["col","close"],["sym","GBPUSD","close"]]\n'
+              '  ["rank",["col","close"]]\n'
+              '  ["resid",["col","close"],["sym","XAUUSD","close"]]\n'
+              "Operators: col, sym, lag, diff, pct, roll_mean, roll_std, roll_max, roll_min, "
+              "zscore, rank, spread, ratio, resid, add, mul, gt, lt, cond, session, decay, const. "
+              "Windows must be POSITIVE (a negative shift would read a future bar and is "
+              "refused). Omit this field entirely when the mechanism does not need it -- a tree "
+              "supplied for its own sake is complexity the gauntlet has to pay for.\n"
               "No preamble, no reasoning, no headings. Any line without seven '|' is discarded.")
         try:
             r = panel.ask("generation", system, user, max_tokens=1200, temperature=0.95)

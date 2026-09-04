@@ -297,6 +297,32 @@ def compile_proposal(rec: dict[str, Any], supported: dict[str, list[str]]) -> di
                     if k in ("name", "mechanism", "data_source", "payer", "test", "kill",
                              "lens", "event", "context", "direction"))
     missing = _unsupported(text)
+    # A VALIDATED DSL TREE WAIVES THE CAPABILITIES IT ACTUALLY EXPRESSES -- and only those.
+    # `cross_sectional_rank` and `multi_leg_spread` were refused because family_generic cannot
+    # express them, which was true and is why refusing was correct: an approximation would enter
+    # the docket as if it were the proposal. libs/research_os/dsl.py CAN express them (rank,
+    # spread, ratio, resid), so a proposal that SUPPLIES a tree is no longer approximating -- it
+    # is stating the factor exactly, in a language whose 22 operators are checked against an
+    # allowlist before any data is touched.
+    #
+    # NO TREE, NO WAIVER. A proposal that merely mentions "spread between" without supplying one
+    # is still refused, because naming a shape is not expressing it. That keeps the refusal
+    # queue meaningful: it now lists proposals that need a tree, not capabilities the desk lacks.
+    if missing:
+        _tree = rec.get("factor")
+        if _tree is not None:
+            try:
+                from libs.research_os.dsl import validate as _dsl_validate
+
+                _dsl_validate(_tree)
+                _EXPRESSIBLE = {"cross_sectional_rank", "multi_leg_spread"}
+                missing = [m for m in missing if m not in _EXPRESSIBLE]
+            except Exception as _exc:
+                return {"name": rec.get("name"), "compiled": False,
+                        "refused_for": "invalid_factor_tree", "trigger": str(_exc)[:90],
+                        "why": (f"the proposal supplied a factor tree the DSL refuses "
+                                f"({str(_exc)[:70]}). Refused by name rather than approximated -- "
+                                f"the refusal names the operator worth adding.")}
     if missing:
         return {"name": rec.get("name"), "compiled": False, "missing_capability": missing,
                 "why": (f"needs {', '.join(missing)}, which family_generic cannot express. "
