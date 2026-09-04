@@ -715,7 +715,7 @@ def _propose_capability_walk(*, name: str, source: str, mechanism: str,
     # generated ten hypotheses and cannot structure one of them into a walk has still done nine
     # tenths of its job, and the skip is recorded rather than swallowed.
     try:
-        from libs.research.capability_challenger import (  # type: ignore[import-untyped]
+        from libs.research.capability_challenger import (
             EVIDENCE_GRADES,
             Capability,
             register,

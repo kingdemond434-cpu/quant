@@ -9,7 +9,6 @@ from typing import ClassVar
 import pytest
 
 from libs.ops import deepseek_cycle as ds
-
 from libs.ops.deepseek_cycle import (
     CONTAMINATION_KEYS,
     ESCALATION_STATES,
@@ -488,7 +487,8 @@ class TestDonation:
         """Not a new pipeline -- the existing one. The compiler walks data/intelligence/*/."""
         self._run(tmp_path, monkeypatch, json.dumps({"findings": [
             {"title": "t", "mechanism": "m", "testable_claim": "c", "symbols": ["EURUSD"]}]}))
-        written = sorted((tmp_path / "data" / "intelligence" / "deepseek").glob("discoveries_*.json"))
+        written = sorted(
+            (tmp_path / "data" / "intelligence" / "deepseek").glob("discoveries_*.json"))
         assert written, "must be under data/intelligence/<source>/discoveries_*.json"
 
     def test_a_general_finding_still_publishes_and_becomes_a_deepening_task(self, tmp_path,
@@ -506,7 +506,8 @@ class TestDonation:
         assert not list((tmp_path / ds.DONATE_DIR).glob("*.json"))
 
     def test_a_missing_challenger_module_costs_the_walk_not_the_cycle(self, tmp_path, monkeypatch):
-        """The absent module raised for EVERY finding naming a source -- which the prompt asks for."""
+        """The absent module raised for EVERY finding naming a source -- which the prompt asks
+        for."""
         import builtins
         real = builtins.__import__
 
