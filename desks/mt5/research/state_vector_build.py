@@ -75,13 +75,6 @@ ASSET_CLOCKS = ("weekly", "daily", "H4", "H1", "M15", "M5")
 #: resampling; a coarser one cannot serve a finer clock at all.
 BAR_SUFFIXES = ("M5", "M15", "H1")
 
-#: Spread percentiles that name a liquidity state. Derived from the instrument's OWN recorded
-#: tape, so a wide-spread instrument is not permanently "toxic" for being itself.
-LIQ_BANDS = ((0.25, "cheap"), (0.75, "normal"), (0.95, "wide"), (1.01, "toxic"))
-#: Hours either side of a scheduled release that count as its pre/post phases.
-EVENT_PRE_H = 2
-EVENT_SHOCK_H = 1
-EVENT_DRIFT_H = 6
 
 
 def _close(symbol: str) -> pd.Series | None:
@@ -132,66 +125,144 @@ def session_state(now: datetime) -> tuple[dict, str]:
         return {}, f"session: {type(exc).__name__}: {exc}"
 
 
-def event_state(now: datetime) -> tuple[dict, str]:
-    """Where the market sits in a scheduled release's life, not merely whether vol is high.
+def event_state(now: datetime, symbols: list[str]) -> tuple[dict, str]:
+    """Where each book instrument sits in the life of a release that concerns IT.
 
-    PRE / SHOCK / DISCOVERY / DRIFT / NORMAL are qualitatively different information processes: a
-    pre-event tape is thin and one-sided, a shock is price discovery with no reliable mean, and
-    post-event drift is a different bet again. Tagging the whole window "high volatility" throws
-    the distinction away, and it is the distinction every event sleeve is actually about.
+    Delegates to `libs.regime.event_state`, which scopes releases BY CURRENCY: a Bank of England
+    print is an event for GBP pairs and an ordinary Tuesday for AUDJPY. The version this replaces
+    classified the whole desk from the nearest event on the calendar regardless of what it was
+    about, so every instrument entered SHOCK whenever anything anywhere printed.
     """
     try:
+        from libs.regime.event_state import NORMAL, classify, parse_rows, relevant
         from research import orthogonal_sweep as inputs
-        idx = inputs._event_index()
-        if idx is None or len(idx) == 0:
-            return {"phase": "NORMAL", "basis": "no calendar vintages recorded"}, ""
-        stamps = pd.DatetimeIndex(pd.to_datetime(idx, utc=True, errors="coerce")).dropna()
-        if stamps.empty:
-            return {"phase": "NORMAL", "basis": "calendar vintages carry no usable stamps"}, ""
-        delta_h = (stamps - pd.Timestamp(now)).total_seconds() / 3600.0
-        ahead = float(delta_h[delta_h > 0].min()) if (delta_h > 0).any() else float("inf")
-        behind = float(-delta_h[delta_h <= 0].max()) if (delta_h <= 0).any() else float("inf")
-        if behind <= EVENT_SHOCK_H:
-            phase = "SHOCK"
-        elif behind <= EVENT_SHOCK_H * 2:
-            phase = "DISCOVERY"
-        elif behind <= EVENT_DRIFT_H:
-            phase = "DRIFT"
-        elif ahead <= EVENT_PRE_H:
-            phase = "PRE"
-        else:
-            phase = "NORMAL"
-        return {"phase": phase, "hours_to_next": round(ahead, 2),
-                "hours_since_last": round(behind, 2), "n_events": int(stamps.size)}, ""
+
+        rows = parse_rows(_calendar_rows())
+        if not rows:
+            return {"phase": NORMAL, "basis": "no calendar vintages with usable stamps"}, ""
+        meta = _meta()
+        per: dict[str, dict] = {}
+        for sym in symbols[:24]:
+            scoped = relevant(rows, sym, meta)
+            shock, since = _event_moves(sym, now, scoped)
+            st = classify(now, [r["_stamp"] for r in scoped], symbol=sym, rows=scoped,
+                          shock_move=shock, move_since=since)
+            per[sym] = st.to_dict()
+        if not per:
+            return {"phase": NORMAL, "basis": "no book symbols to scope events to"}, ""
+        # The desk-level phase is the most urgent any book instrument is in: a book with one
+        # sleeve in SHOCK is not in NORMAL, and reporting an average would describe nobody.
+        order = {p: i for i, p in enumerate(
+            ("SHOCK", "PRICE_DISCOVERY", "POST_EVENT_REVERSAL", "POST_EVENT_DRIFT",
+             "PRE_EVENT", "NORMALIZATION", "NORMAL"))}
+        worst = min(per.values(), key=lambda d: order.get(str(d.get("phase")), 99))
+        return {"phase": worst["phase"], "n_calendar_rows": len(rows),
+                "per_symbol": per}, ""
     except Exception as exc:                                    # noqa: BLE001
         return {}, f"event: {type(exc).__name__}: {exc}"
 
 
-def liquidity_state(symbols: list[str]) -> tuple[dict, str]:
-    """Current spread against each instrument's OWN recorded history, named as a state.
+def _calendar_rows() -> list[dict]:
+    """Every calendar vintage row the miner has recorded, newest files last."""
+    root = BASE / "data" / "intelligence" / "ff_calendar_vintage"
+    out: list[dict] = []
+    seen: set[str] = set()
+    if not root.exists():
+        return out
+    for path in sorted(root.glob("*.json"))[-60:]:
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        rows = doc if isinstance(doc, list) else (doc.get("rows") or doc.get("discoveries") or [])
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            key = f"{row.get('event_date')}|{row.get('title')}"
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(row)
+    return out
 
-    The allocator can like an edge and still be right to wait: an alpha worth 0.3R is not worth
-    taking through a spread in its own 97th percentile. This measures that, per symbol, from the
-    venue's tape rather than from the registry's median.
+
+def _meta() -> dict:
+    try:
+        return json.loads((UNI / "universe.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _event_moves(symbol: str, now: datetime, scoped: list[dict]) -> tuple[float | None, float | None]:
+    """The instrument's log move during the last release's shock window, and since it.
+
+    DRIFT and REVERSAL occupy the same minutes after the same print, so only the tape can tell
+    them apart. Returns (None, None) whenever the bars cannot answer, and `classify` then reports
+    PRICE_DISCOVERY rather than guessing a direction.
+    """
+    from libs.regime.event_state import SHOCK_MIN
+
+    past = [r["_stamp"] for r in scoped if r["_stamp"] <= now]
+    if not past:
+        return None, None
+    last = max(past)
+    close = _close(symbol)
+    if close is None or close.empty:
+        return None, None
+    try:
+        before = close[close.index <= pd.Timestamp(last)]
+        shock_end = pd.Timestamp(last) + pd.Timedelta(minutes=SHOCK_MIN)
+        during = close[(close.index > pd.Timestamp(last)) & (close.index <= shock_end)]
+        after = close[close.index > shock_end]
+        if before.empty or during.empty:
+            return None, None
+        p0, p1 = float(before.iloc[-1]), float(during.iloc[-1])
+        shock = float(np.log(p1 / p0)) if p0 > 0 and p1 > 0 else None
+        since = (float(np.log(float(after.iloc[-1]) / p1))
+                 if (not after.empty and p1 > 0 and float(after.iloc[-1]) > 0) else None)
+        return shock, since
+    except (ValueError, TypeError, ZeroDivisionError):
+        return None, None
+
+
+def liquidity_state(symbols: list[str], now: datetime,
+                    event: dict | None = None) -> tuple[dict, str]:
+    """Execution conditions per instrument, named as a state by `libs.regime.liquidity_state`.
+
+    The version this replaces sorted the current spread into four percentile bands. It could not
+    say WHY an instrument was expensive, and the answer decides what to do: a rollover ends on a
+    clock, a news window ends with the release, a degraded feed means stop rather than size down.
     """
     try:
+        from libs.regime.liquidity_state import UNMEASURED, classify
         from research import orthogonal_sweep as inputs
+        from research.session_phase import broker_utc_offset_h
+
+        off, _src = broker_utc_offset_h()
+        broker_hour = ((now.hour + off) % 24) if off is not None else None
+        news_syms = set()
+        for sym, st in ((event or {}).get("per_symbol") or {}).items():
+            if str(st.get("phase")) in {"PRE_EVENT", "SHOCK", "PRICE_DISCOVERY"}:
+                news_syms.add(sym)
+
         per: dict[str, dict] = {}
         for sym in symbols[:12]:
-            hourly = pd.date_range(end=pd.Timestamp.now(tz=UTC), periods=24 * 30, freq="h")
-            spread, _flow = inputs._tape_series(sym, hourly)
-            if spread is None or spread.dropna().empty:
-                continue
-            s = spread.dropna()
-            cur = float(s.iloc[-1])
-            pct = float((s <= cur).mean())
-            state = next(name for edge, name in LIQ_BANDS if pct <= edge)
-            per[sym] = {"spread": round(cur, 8), "percentile": round(pct, 4), "state": state,
-                        "n_hours": int(s.size)}
+            hourly = pd.date_range(end=pd.Timestamp(now), periods=24 * 60, freq="h")
+            spread, flow = inputs._tape_series(sym, hourly)
+            hist = list(spread.dropna()) if spread is not None else None
+            act = list(flow.abs().dropna()) if flow is not None else None
+            mins = None
+            if spread is not None and not spread.dropna().empty:
+                mins = float((pd.Timestamp(now) - spread.dropna().index[-1]).total_seconds() / 60)
+            st = classify(sym, hist, activity_history=act, broker_hour=broker_hour,
+                          in_news_window=(sym in news_syms), minutes_since_tick=mins)
+            per[sym] = st.to_dict()
         if not per:
-            return {"state": "UNMEASURED", "basis": "no tape recorded for any book symbol"}, ""
-        worst = max(per.values(), key=lambda d: d["percentile"])
-        return {"state": worst["state"], "worst_percentile": worst["percentile"],
+            return {"state": UNMEASURED, "basis": "no book symbols to measure"}, ""
+        order = {s: i for i, s in enumerate(
+            ("BROKER_DEGRADED", "TOXIC", "NEWS", "ROLLOVER", "THIN", "NORMAL", UNMEASURED))}
+        worst = min(per.values(), key=lambda d: order.get(str(d.get("state")), 99))
+        return {"state": worst["state"], "broker_hour": broker_hour,
                 "per_symbol": per}, ""
     except Exception as exc:                                    # noqa: BLE001
         return {}, f"liquidity: {type(exc).__name__}: {exc}"
@@ -243,10 +314,12 @@ def build(budget_s: float = 900.0, symbols: list[str] | None = None) -> StateVec
     session, why = session_state(now)
     if why:
         gaps["session"] = why
-    event, why = event_state(now)
+    event, why = event_state(now, book)
     if why:
         gaps["event"] = why
-    liquidity, why = liquidity_state(book)
+    # Liquidity reads the event state: a NEWS window is an execution condition with a known cause
+    # and a known end, and classifying it as merely "wide" loses the part that decides what to do.
+    liquidity, why = liquidity_state(book, now, event)
     if why:
         gaps["liquidity"] = why
 

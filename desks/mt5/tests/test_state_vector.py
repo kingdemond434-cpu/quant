@@ -230,15 +230,22 @@ def test_an_exhausted_budget_is_recorded_rather_than_silently_truncating():
     assert any("budget" in v for v in sv.gaps.values())
 
 
-def test_event_phases_are_the_five_the_desk_reasons_about():
-    ev, why = svb.event_state(datetime.now(tz=UTC))
+def test_event_phases_are_the_ones_the_desk_reasons_about():
+    from libs.regime.event_state import PHASES
+
+    now = datetime.now(tz=UTC)
+    ev, why = svb.event_state(now, ["XAUUSD"])
     if why:
         pytest.skip(why)
-    assert ev["phase"] in {"PRE", "SHOCK", "DISCOVERY", "DRIFT", "NORMAL"}
+    assert ev["phase"] in PHASES
 
 
 def test_liquidity_reports_a_state_or_says_it_is_unmeasured():
-    liq, why = svb.liquidity_state(["XAUUSD"])
+    from libs.regime.liquidity_state import STATES, UNMEASURED
+
+    now = datetime.now(tz=UTC)
+    ev, _why = svb.event_state(now, ["XAUUSD"])
+    liq, why = svb.liquidity_state(["XAUUSD"], now, ev)
     if why:
         pytest.skip(why)
-    assert liq["state"] in {"cheap", "normal", "wide", "toxic", "UNMEASURED"}
+    assert liq["state"] in set(STATES) | {UNMEASURED}

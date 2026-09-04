@@ -1,6 +1,6 @@
 {
- "at": "2026-09-04T19:01:20.657107+00:00",
- "id": "94b3c77911fbd89e",
+ "at": "2026-09-04T19:19:33.044860+00:00",
+ "id": "bd060584965dc5aa",
  "global": {
   "symbol": "XAUUSD",
   "clock": "daily",
@@ -40,189 +40,151 @@
   "top": "bull/high_vol"
  },
  "assets": {
-  "AUDNZD@H1": {
-   "symbol": "AUDNZD",
+  "EURUSD@H1": {
+   "symbol": "EURUSD",
    "clock": "H1",
    "labels": [
-    "bear/high_vol",
-    "bull/low_vol",
+    "bear/low_vol",
+    "bull/high_vol",
     "bull/mid_vol"
    ],
    "probs": {
-    "bear/high_vol": 0.009316,
-    "bull/low_vol": 0.971445,
-    "bull/mid_vol": 0.019239
+    "bear/low_vol": 0.002316,
+    "bull/high_vol": 0.805433,
+    "bull/mid_vol": 0.192251
    },
    "filtered": {
-    "bear/high_vol": 0.000279,
-    "bull/low_vol": 0.999612,
-    "bull/mid_vol": 0.000109
+    "bull/mid_vol": 0.179248,
+    "bull/high_vol": 0.820729,
+    "bear/low_vol": 2.4e-05
    },
-   "age_bars": 35,
+   "age_bars": 6,
    "p_leave": {
-    "1": 0.028555,
-    "4": 0.105724,
-    "24": 0.458305
+    "1": 0.194567,
+    "4": 0.290803,
+    "24": 0.632026
    },
    "entropy": {
-    "1": 0.134457,
-    "4": 0.368008,
-    "24": 0.908662
+    "1": 0.459982,
+    "4": 0.60065,
+    "24": 0.923682
    },
-   "duration_weight": 0.854015,
+   "duration_weight": 0.830508,
    "n_obs": 3000,
-   "last_bar": "2026-08-14 23:00:00+00:00",
-   "engine_confidence": 1.0,
-   "note": "117 completed runs; duration weight 0.85",
-   "top": "bull/low_vol"
+   "last_bar": "2026-08-28 22:00:00+00:00",
+   "engine_confidence": 0.384,
+   "note": "98 completed runs; duration weight 0.83",
+   "top": "bull/high_vol"
   },
-  "AUDNZD@H4": {
-   "symbol": "AUDNZD",
+  "EURUSD@H4": {
+   "symbol": "EURUSD",
    "clock": "H4",
    "labels": [
-    "bear/high_vol",
-    "bull/low_vol",
+    "bear/mid_vol",
+    "bull/high_vol",
+    "bull/low_vol"
+   ],
+   "probs": {
+    "bear/mid_vol": 0.219636,
+    "bull/high_vol": 0.003812,
+    "bull/low_vol": 0.776552
+   },
+   "filtered": {
+    "bull/high_vol": 0.001444,
+    "bear/mid_vol": 0.208931,
+    "bull/low_vol": 0.789625
+   },
+   "age_bars": 108,
+   "p_leave": {
+    "1": 0.223448,
+    "6": 0.272319,
+    "30": 0.430209
+   },
+   "entropy": {
+    "1": 0.501119,
+    "6": 0.604966,
+    "30": 0.826475
+   },
+   "duration_weight": 0.81982,
+   "n_obs": 3000,
+   "last_bar": "2026-08-28 20:00:00+00:00",
+   "engine_confidence": 0.79,
+   "note": "91 completed runs; duration weight 0.82",
+   "top": "bull/low_vol"
+  },
+  "EURUSD@daily": {
+   "symbol": "EURUSD",
+   "clock": "daily",
+   "labels": [
+    "bear/low_vol",
+    "bull/high_vol",
     "bull/mid_vol"
    ],
    "probs": {
-    "bear/high_vol": 0.05407,
-    "bull/low_vol": 0.884973,
-    "bull/mid_vol": 0.060957
+    "bear/low_vol": 0.981207,
+    "bull/high_vol": 0.001868,
+    "bull/mid_vol": 0.016926
    },
    "filtered": {
-    "bull/mid_vol": 0.000226,
-    "bear/high_vol": 0.035575,
-    "bull/low_vol": 0.964199
+    "bear/low_vol": 0.999709,
+    "bull/high_vol": 8e-06,
+    "bull/mid_vol": 0.000283
+   },
+   "age_bars": 93,
+   "p_leave": {
+    "1": 0.018793,
+    "2": 0.036789,
+    "5": 0.087215,
+    "21": 0.287576
+   },
+   "entropy": {
+    "1": 0.090469,
+    "2": 0.154504,
+    "5": 0.297748,
+    "21": 0.66392
+   },
+   "duration_weight": 0.701493,
+   "n_obs": 2000,
+   "last_bar": "2026-08-28",
+   "engine_confidence": 0.49,
+   "note": "47 completed runs; duration weight 0.70",
+   "top": "bear/low_vol"
+  },
+  "EURUSD@weekly": {
+   "symbol": "EURUSD",
+   "clock": "weekly",
+   "labels": [
+    "bear/low_vol",
+    "bull/high_vol",
+    "bull/mid_vol"
+   ],
+   "probs": {
+    "bear/low_vol": 0.980466,
+    "bull/high_vol": 1e-06,
+    "bull/mid_vol": 0.019533
+   },
+   "filtered": {
+    "bull/high_vol": 0.0,
+    "bear/low_vol": 0.999963,
+    "bull/mid_vol": 3.7e-05
    },
    "age_bars": 4,
    "p_leave": {
-    "1": 0.115027,
-    "6": 0.302096,
-    "30": 0.531199
+    "1": 0.019534,
+    "4": 0.072174,
+    "13": 0.219997
    },
    "entropy": {
-    "1": 0.397248,
-    "6": 0.728886,
-    "30": 0.939422
+    "1": 0.08759,
+    "4": 0.245617,
+    "13": 0.550021
    },
-   "duration_weight": 0.863946,
-   "n_obs": 3000,
-   "last_bar": "2026-08-14 20:00:00+00:00",
-   "engine_confidence": 0.964,
-   "note": "127 completed runs; duration weight 0.86",
-   "top": "bull/low_vol"
-  },
-  "AUDNZD@M15": {
-   "symbol": "AUDNZD",
-   "clock": "M15",
-   "labels": [
-    "bear/mid_vol",
-    "bull/high_vol",
-    "bull/low_vol"
-   ],
-   "probs": {
-    "bear/mid_vol": 0.021738,
-    "bull/high_vol": 0.021587,
-    "bull/low_vol": 0.956675
-   },
-   "filtered": {
-    "bear/mid_vol": 6e-06,
-    "bull/high_vol": 0.000427,
-    "bull/low_vol": 0.999568
-   },
-   "age_bars": 59,
-   "p_leave": {
-    "1": 0.043325,
-    "4": 0.158325,
-    "16": 0.468328,
-    "96": 0.649757
-   },
-   "entropy": {
-    "1": 0.189694,
-    "4": 0.497542,
-    "16": 0.924509,
-    "96": 0.99838
-   },
-   "duration_weight": 0.905213,
-   "n_obs": 4000,
-   "last_bar": "2026-08-14 23:45:00+00:00",
-   "engine_confidence": 1.0,
-   "note": "191 completed runs; duration weight 0.91",
-   "top": "bull/low_vol"
-  },
-  "AUDNZD@daily": {
-   "symbol": "AUDNZD",
-   "clock": "daily",
-   "labels": [
-    "bear/mid_vol",
-    "bull/high_vol",
-    "bull/low_vol"
-   ],
-   "probs": {
-    "bear/mid_vol": 0.948345,
-    "bull/high_vol": 0.021011,
-    "bull/low_vol": 0.030645
-   },
-   "filtered": {
-    "bull/low_vol": 0.000633,
-    "bull/high_vol": 0.000416,
-    "bear/mid_vol": 0.99895
-   },
-   "age_bars": 36,
-   "p_leave": {
-    "1": 0.051655,
-    "2": 0.098677,
-    "5": 0.261552,
-    "21": 0.546572
-   },
-   "entropy": {
-    "1": 0.216875,
-    "2": 0.353985,
-    "5": 0.684453,
-    "21": 0.970414
-   },
-   "duration_weight": 0.677419,
-   "n_obs": 1042,
-   "last_bar": "2026-08-14",
-   "engine_confidence": 0.167,
-   "note": "42 completed runs; duration weight 0.68",
-   "top": "bear/mid_vol"
-  },
-  "AUDNZD@weekly": {
-   "symbol": "AUDNZD",
-   "clock": "weekly",
-   "labels": [
-    "bear/mid_vol",
-    "bull/high_vol",
-    "bull/low_vol"
-   ],
-   "probs": {
-    "bear/mid_vol": 0.947982,
-    "bull/high_vol": 0.031063,
-    "bull/low_vol": 0.020954
-   },
-   "filtered": {
-    "bear/mid_vol": 0.998652,
-    "bull/low_vol": 0.001348,
-    "bull/high_vol": 0.0
-   },
-   "age_bars": 12,
-   "p_leave": {
-    "1": 0.052018,
-    "4": 0.21319,
-    "13": 0.400477
-   },
-   "entropy": {
-    "1": 0.217985,
-    "4": 0.603693,
-    "13": 0.865283
-   },
-   "duration_weight": 0.2,
-   "n_obs": 210,
-   "last_bar": "2026-08-16 00:00:00+00:00",
-   "engine_confidence": 0.999,
-   "note": "5 completed runs; duration weight 0.20",
-   "top": "bear/mid_vol"
+   "duration_weight": 0.428571,
+   "n_obs": 452,
+   "last_bar": "2026-08-30 00:00:00+00:00",
+   "engine_confidence": 0.499,
+   "note": "15 completed runs; duration weight 0.43",
+   "top": "bear/low_vol"
   },
   "XAUUSD@H1": {
    "symbol": "XAUUSD",
@@ -454,23 +416,90 @@
   "broker_utc_offset_source": "unknown"
  },
  "event": {
-  "phase": "DRIFT",
-  "hours_to_next": Infinity,
-  "hours_since_last": 5.02,
-  "n_events": 86
+  "phase": "NORMALIZATION",
+  "n_calendar_rows": 117,
+  "per_symbol": {
+   "XAUUSD": {
+    "phase": "NORMALIZATION",
+    "minutes_to_next": null,
+    "minutes_since_last": 409.55,
+    "impact": "High",
+    "title": "USD Average Hourly Earnings m/m",
+    "currencies": [
+     "USD"
+    ],
+    "expected_change": 0.19999999999999998,
+    "shock_move": null,
+    "move_since": null,
+    "n_events_scoped": 9,
+    "gaps": {
+     "surprise": "calendar vintages carry forecast and previous but no `actual`, so (actual - forecast) cannot be computed; only the EXPECTED change is available and it is reported under that name"
+    }
+   },
+   "EURUSD": {
+    "phase": "NORMALIZATION",
+    "minutes_to_next": null,
+    "minutes_since_last": 409.55,
+    "impact": "High",
+    "title": "USD Average Hourly Earnings m/m",
+    "currencies": [
+     "USD"
+    ],
+    "expected_change": 0.19999999999999998,
+    "shock_move": null,
+    "move_since": null,
+    "n_events_scoped": 12,
+    "gaps": {
+     "surprise": "calendar vintages carry forecast and previous but no `actual`, so (actual - forecast) cannot be computed; only the EXPECTED change is available and it is reported under that name"
+    }
+   }
+  }
  },
  "liquidity": {
   "state": "UNMEASURED",
-  "basis": "no tape recorded for any book symbol"
+  "broker_hour": null,
+  "per_symbol": {
+   "XAUUSD": {
+    "symbol": "XAUUSD",
+    "state": "UNMEASURED",
+    "spread": null,
+    "percentile": null,
+    "cost_multiple": null,
+    "widening": false,
+    "quiet": false,
+    "minutes_since_tick": null,
+    "n_history": 0,
+    "why": "no usable spread history",
+    "gaps": {
+     "spread_history": "0 spread observations, needs 200 before percentiles of this instrument's own history mean anything"
+    }
+   },
+   "EURUSD": {
+    "symbol": "EURUSD",
+    "state": "UNMEASURED",
+    "spread": null,
+    "percentile": null,
+    "cost_multiple": null,
+    "widening": false,
+    "quiet": false,
+    "minutes_since_tick": null,
+    "n_history": 0,
+    "why": "no usable spread history",
+    "gaps": {
+     "spread_history": "0 spread observations, needs 200 before percentiles of this instrument's own history mean anything"
+    }
+   }
+  }
  },
  "gaps": {
   "factor:RATES": "none of ('UST10Y', 'UST05Y', 'UKGILT') has H1 bars here",
   "factor:RISK": "none of ('US500', 'NAS100', 'AUS200') has H1 bars here",
   "factor:OIL": "none of ('XBRUSD', 'XTIUSD') has H1 bars here",
   "factor:GROWTH": "none of ('XCUUSD', 'CHINAH', 'HK50') has H1 bars here",
-  "asset:AUDNZD@M5": "AUDNZD@M5: cannot resample to M5: ValueError: M5 needs bars strictly finer than 15min; the input carries 0 days 00:15:00",
   "asset:XAUUSD@M15": "XAUUSD@M15: cannot resample to M15: ValueError: M15 needs bars strictly finer than 1h; the input carries 0 days 01:00:00",
   "asset:XAUUSD@M5": "XAUUSD@M5: cannot resample to M5: ValueError: M5 needs bars strictly finer than 15min; the input carries 0 days 01:00:00",
+  "asset:EURUSD@M15": "EURUSD@M15: cannot resample to M15: ValueError: M15 needs bars strictly finer than 1h; the input carries 0 days 01:00:00",
+  "asset:EURUSD@M5": "EURUSD@M5: cannot resample to M5: ValueError: M5 needs bars strictly finer than 15min; the input carries 0 days 01:00:00",
   "session": "session: broker UTC offset unknown -- refusing to assume UTC"
  }
 }

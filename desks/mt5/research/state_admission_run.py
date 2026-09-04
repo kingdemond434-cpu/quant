@@ -39,10 +39,13 @@ OUT = BASE / "reports" / "STATE_ADMISSION.json"
 LEDGER_DIRS = (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers")
 LIVE = BASE / "data" / "live_ledger.jsonl"
 
-#: Dimensions judged by default. Only those reconstructible from a trade's timestamp are here;
-#: asset regime, event phase and liquidity state need the state-vector history joined to the
-#: ledgers, and labelling historical trades with today's fit would be worse than not judging them.
-DEFAULT_DIMENSIONS = ("session", "weekday")
+#: Dimensions judged by default. Only those reconstructible AT THE TRADE'S OWN MOMENT are here.
+#: `event` qualifies because the calendar carries each release's scheduled stamp, so a January
+#: trade is classified against January's releases. Asset regime needs the walk-forward decode and
+#: liquidity needs the historical tape; labelling a January trade with today's regime fit or
+#: today's spread percentile would test whether the PRESENT predicts the past, which every
+#: dimension would pass.
+DEFAULT_DIMENSIONS = ("session", "weekday", "event")
 
 
 def _entry_time(row: dict) -> str:
@@ -117,7 +120,7 @@ def label(trades: list[Trade], dimensions: tuple[str, ...]) -> tuple[list[Trade]
     for t in trades:
         buckets = {}
         for d, fn in fns.items():
-            b = fn(t.when)
+            b = fn(t)
             if b:
                 buckets[d] = b
         out.append(Trade(sleeve=t.sleeve, when=t.when, r=t.r, buckets=buckets))

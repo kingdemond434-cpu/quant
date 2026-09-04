@@ -206,9 +206,47 @@ def test_the_daily_cycle_refreshes_the_verdicts_before_shadow_runs():
 
 
 def test_a_labeller_exists_for_every_default_dimension_or_the_gap_is_named():
+    probe = Trade(sleeve="XAUUSD_session_range_breakout_asia",
+                  when="2026-09-04T13:00:00+00:00", r=0.0)
     for d in runner.DEFAULT_DIMENSIONS:
         fn = build_labeller(d)
         if fn is None:
             continue
-        out = fn("2026-09-04T13:00:00+00:00")
-        assert isinstance(out, str) and out
+        assert isinstance(fn(probe), str)
+
+
+def test_a_labeller_takes_the_trade_because_scope_needs_the_symbol():
+    """`event` must know WHICH instrument, or a GBP release becomes AUDJPY's event too."""
+    import inspect
+    src = inspect.getsource(build_labeller)
+    assert "Callable[[Trade], str]" in inspect.getsource(build_labeller).splitlines()[0] \
+        or "t: Trade" in src
+
+
+def test_a_dimension_with_one_bucket_is_unjudged_not_a_null_result():
+    """t = 0.00 from a constant label reads as 'measured, no effect'. Nothing was measured.
+
+    Seen live: `event` scored t=+0.00 over 336 predictions with buckets=1, because the calendar
+    vintages the miner keeps span days while the shadow ledgers span months, so every trade was
+    labelled NORMAL. Conditioning on a constant is arithmetically identical to not conditioning.
+    """
+    flat = [Trade(sleeve=f"S{i % 3}", when=f"2026-01-{1 + i % 28:02d}T00:00:00+00:00",
+                  r=float(i % 5), buckets={"d": "always_the_same"}) for i in range(2400)]
+    v = judge(flat, "d")
+    assert v.verdict == UNJUDGED
+    assert v.n_buckets < 2
+    assert "does not cover the trades" in v.why
+
+
+def test_the_event_dimension_is_reconstructed_at_the_trades_own_moment():
+    """Labelling a January trade with today's calendar would test whether the present predicts
+    the past, which every dimension would pass."""
+    fn = build_labeller("event")
+    if fn is None:
+        pytest.skip("no calendar vintages on this host")
+    old = Trade(sleeve="XAUUSD_session_range_breakout_asia", when="2020-01-02T03:00:00+00:00",
+                r=0.1)
+    label = fn(old)
+    assert isinstance(label, str)
+    # A trade from 2020 cannot be inside a 2026 release's shock window.
+    assert label in {"", "NORMAL"}, label
