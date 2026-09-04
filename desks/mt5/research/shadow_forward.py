@@ -679,6 +679,27 @@ def main() -> None:
                     st.pop("identity_drift", None)
                     slog(f"{key}: IDENTITY RESTORED -- {_resumed}; clock resumes on its "
                          f"original forward_start ({st.get('forward_start')}), window unbroken.")
+                elif str(st.get("status") or "").upper() == "IDENTITY_BROKEN":
+                    # THE TWO RECORDS DEADLOCKED AND THE STATE FILE WAS THE STALE ONE.
+                    # `reconcile()` returns None unless the REGISTRY row reads IDENTITY_BROKEN.
+                    # Measured 2026-09-04: the registry read LIVE for all 53 rows while
+                    # shadow_state read IDENTITY_BROKEN for 52, so reconcile had nothing to
+                    # resume and heal_identity_broken_clocks (which scans the REGISTRY) reported
+                    # "no IDENTITY_BROKEN clocks". Every recovery path keyed off whichever record
+                    # said there was nothing to do, and 52 clocks holding 234 REAL forward trades
+                    # sat terminal while behaviour_hash matched on all 53.
+                    #
+                    # Reaching this line means verify() returned NO DRIFT on this pass: the
+                    # identity is provably intact and the registry already agrees. The only stale
+                    # record is this one, so it clears. Fires only on a proven-clean verify, only
+                    # on IDENTITY_BROKEN -- never on KILL or PROMOTED -- and forward_start is
+                    # untouched, so no day is credited that was not observed.
+                    slog(f"{key}: IDENTITY_BROKEN cleared from state -- verify() finds no drift "
+                         f"and the registry already reads LIVE; the state file was the stale "
+                         f"record. forward_start unchanged ({st.get('forward_start')}).")
+                    st["status"] = "ACTIVE"
+                    st.pop("identity_drift", None)
+                    st.pop("identity_reason", None)
                 _reg.freeze(key, _ident, forward_start=st.get("forward_start"),
                             cost_fields=vars(costs))
                 st["sleeve_id"] = _ident["sleeve_id"]
