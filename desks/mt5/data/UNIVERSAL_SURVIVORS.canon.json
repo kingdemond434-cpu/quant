@@ -3727,7 +3727,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=fb2786aabb7c21de": {
       "hunt": "external_discoveries",
@@ -3801,7 +3802,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=ef2e258721b52ea3": {
       "hunt": "external_discoveries",
@@ -3875,7 +3877,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=c76420808dcb4657": {
       "hunt": "external_discoveries",
@@ -3949,7 +3952,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=3d2353cfa7f07a5e": {
       "hunt": "external_discoveries",
@@ -4023,7 +4027,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFG.discovered.p=62c7a7478424a92f": {
       "hunt": "external_discoveries",
@@ -4097,7 +4102,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFL.discovered.p=8b760805b40b5e55": {
       "hunt": "external_discoveries",
@@ -4171,7 +4177,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AFL.discovered.p=f75a215dda6b2030": {
       "hunt": "external_discoveries",
@@ -4245,7 +4252,8 @@
           "horizon": 1,
           "side": -1
         }
-      }
+      },
+      "status": "UNTRADEABLE"
     },
     "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
       "hunt": "external_discoveries",
@@ -4685,16 +4693,18 @@
     "at": "2026-09-04T16:40:25+00:00",
     "why": "gate 9 read gate 7's wf OOS; all 66 certificates carried identical values, so none had ever been tested on held-out data",
     "gate": "real lockbox: final 20% of the union calendar, carved before the program matrix",
-    "host_note": "UNVERIFIED means this host lacks the H1 parquet or the family constructor; it is NOT a pass",
+    "host_note": "UNVERIFIABLE_HERE is a statement about THIS host, never about the certificate. UNTRADEABLE is a statement about the certificate and is final.",
     "counts": {
       "PASS": 32,
       "FAIL": 12,
-      "UNVERIFIED": 22
+      "UNTRADEABLE": 8,
+      "UNVERIFIABLE_HERE": 14
     },
     "verdicts": {
       "qquant.hunt16.json.AUDNZD dav_range_filter_adx SHORT afternoon NORMAL_DAY": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "AUDNZD_H1.parquet on this host is a 479-row/20-day STUMP against a peer median of 2,246 days. The certified cell needs 60 signals at the window hour and the stump yields 2. This is a truncated artifact, not a failing edge -- see scripts/check_bar_history_floor.py, which now catches it.",
+        "symbol": "AUDNZD"
       },
       "external.XAUUSD.session_range_breakout": {
         "verdict": "PASS",
@@ -4797,56 +4807,69 @@
         "n_days": 431
       },
       "external.EURZAR.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "EURZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "EURZAR"
       },
       "external.USDZAR.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "USDZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "USDZAR"
       },
       "external.CHFNOK.carry.p=98d776f3e210d3e2": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CHFNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CHFNOK"
       },
       "external.AUDCHF.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "AUDCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "AUDCHF"
       },
       "external.CADCHF.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CADCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CADCHF"
       },
       "external.CHFDKK.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "CHFDKK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "CHFDKK"
       },
       "external.EURNOK.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "EURNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "EURNOK"
       },
       "external.GBPCHF.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPCHF is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPCHF"
       },
       "external.GBPMXN.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPMXN is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPMXN"
       },
       "external.GBPNOK.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPNOK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPNOK"
       },
       "external.GBPSEK.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPSEK is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPSEK"
       },
       "external.GBPZAR.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "GBPZAR is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "GBPZAR"
       },
       "external.USDMXN.overnight_gap_decay.p=44136fa355b3678a": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNVERIFIABLE_HERE",
+        "why": "USDMXN is tradeable (in the 251-symbol registry) but has no H1 parquet on this host. h1_source.from_yfinance is NOT a substitute: its own docstring rules it out for backtests (~730d cap, different series, no dealer spread). Verifiable only on the Windows terminal host that holds the MT5 bars.",
+        "symbol": "USDMXN"
       },
       "external.EURCHF.discovered.p=6c7943b997558157": {
         "verdict": "PASS",
@@ -4942,36 +4965,44 @@
         "n_days": 83
       },
       "external.AFG.discovered.p=fff3ce17a104b37b": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFG.discovered.p=fb2786aabb7c21de": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFG.discovered.p=ef2e258721b52ea3": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFG.discovered.p=c76420808dcb4657": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFG.discovered.p=3d2353cfa7f07a5e": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFG.discovered.p=62c7a7478424a92f": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFG is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFG"
       },
       "external.AFL.discovered.p=8b760805b40b5e55": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFL is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFL"
       },
       "external.AFL.discovered.p=f75a215dda6b2030": {
-        "verdict": "UNVERIFIED",
-        "why": "no H1 parquet or no resolvable family on this host"
+        "verdict": "UNTRADEABLE",
+        "why": "AFL is absent from the restored 251-symbol Fusion registry, so no forward clock can ever start: the certificate can never become money and a lockbox verdict on it would be meaningless. Recorded in UNTRADEABLE_CERTS.json.",
+        "symbol": "AFL"
       },
       "external.AUDCAD.discovered.p=a7324e7affe1f80a": {
         "verdict": "FAIL",
@@ -4996,6 +5027,7 @@
         "lockbox_sharpe": -0.0195,
         "n_days": 212
       }
-    }
+    },
+    "bar_history_note": "AUDNZD_H1.parquet is a 20-day stump against a 2,246-day peer median; scripts/check_bar_history_floor.py was added to catch this class."
   }
 }

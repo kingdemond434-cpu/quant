@@ -1,0 +1,110 @@
+{
+ "breaches": [
+  {
+   "days_now": 20,
+   "kind": "STUMP_VS_PEERS",
+   "peer_median_days": 2246,
+   "rows_now": 479,
+   "symbol": "AUDNZD"
+  }
+ ],
+ "measured": {
+  "AUDCAD": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "AUDJPY": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "AUDNZD": {
+   "days": 20,
+   "rows": 479
+  },
+  "AUDUSD": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "BTCUSD": {
+   "days": 2757,
+   "rows": 63246
+  },
+  "CADJPY": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "CHFJPY": {
+   "days": 2247,
+   "rows": 53865
+  },
+  "ETHUSD": {
+   "days": 2758,
+   "rows": 63268
+  },
+  "EURAUD": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "EURCHF": {
+   "days": 2246,
+   "rows": 53900
+  },
+  "EURGBP": {
+   "days": 2246,
+   "rows": 53864
+  },
+  "EURJPY": {
+   "days": 2246,
+   "rows": 53900
+  },
+  "EURUSD": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "GBPAUD": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "GBPJPY": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "GBPUSD": {
+   "days": 2246,
+   "rows": 53900
+  },
+  "NZDCAD": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "NZDJPY": {
+   "days": 2246,
+   "rows": 53898
+  },
+  "NZDUSD": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "USDCAD": {
+   "days": 2246,
+   "rows": 53900
+  },
+  "USDCHF": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "USDJPY": {
+   "days": 2246,
+   "rows": 53899
+  },
+  "XAGUSD": {
+   "days": 2181,
+   "rows": 49963
+  },
+  "XAUUSD": {
+   "days": 2181,
+   "rows": 49964
+  }
+ },
+ "symbols": 24
+}
