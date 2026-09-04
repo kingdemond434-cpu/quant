@@ -655,6 +655,67 @@ def opportunity(free: AllocationResult, book: dict[str, float],
 # MAIN
 # ---------------------------------------------------------------------------------------
 
+
+def _live_state() -> tuple[str | None, dict[str, list[dict]], int]:
+    """The phase now, each sleeve's own trades, and the broker's clock offset.
+
+    RETURNS (None, {}, 0) ON ANY DOUBT, and that is the whole safety property: an unknown state
+    yields an EMPTY conditional series, which `_posterior_mu` treats exactly as it treated every
+    solve before conditioning existed. A wrong phase would be worse than no phase -- it would
+    price every sleeve against an hour the desk is not in -- so nothing here guesses.
+
+    THE OFFSET IS READ, NEVER ASSUMED. The desk measured its own feed at broker EET, three hours
+    ahead of UTC in summer (mt5desk/families.py `_h1`, 2026-08-29). A hardcoded 0 would mislabel
+    every bucket by three hours without raising anything, so when the live terminal cannot be
+    asked the answer is "no state", not "assume UTC".
+    """
+    try:
+        from datetime import datetime as _dt
+
+        from session_phase import phase_at
+    except ImportError as exc:
+        _log(f"state: session_phase unavailable ({exc}); solving unconditioned")
+        return None, {}, 0
+
+    off = None
+    try:
+        import MetaTrader5 as _mt5
+
+        from h1_source import broker_utc_offset_hours
+        off = int(round(float(broker_utc_offset_hours(_mt5))))
+    except Exception:                                                # noqa: BLE001
+        # No terminal on this host. The RECORDED offset is the next-best answer and it is a
+        # measurement rather than a guess; absent that too, there is no state.
+        try:
+            rec = json.loads((BASE / "data" / "broker_clock.json").read_text("utf-8"))
+            off = int(round(float(rec["utc_offset_hours"])))
+        except Exception:                                            # noqa: BLE001
+            off = None
+    if off is None:
+        _log("state: broker UTC offset unknown -- solving unconditioned rather than assuming UTC")
+        return None, {}, 0
+
+    phase = phase_at(_dt.now(UTC), broker_utc_offset_h=off)
+
+    # PER-SLEEVE TRADES, KEYED THE WAY THE BOOK IS KEYED. The shadow ledgers are
+    # ledger_<SYM>_<window>.json and the allocator's columns are the sleeve names, so the join is
+    # on the file stem. A ledger that does not match a column is simply unused -- never merged
+    # into a neighbouring sleeve, which would attribute one edge's hours to another.
+    trades: dict[str, list[dict]] = {}
+    for d in (BASE / "reports" / "shadow", ROOT / "backups" / "moat" / "shadow_ledgers"):
+        if not d.is_dir():
+            continue
+        for f in sorted(d.glob("ledger_*.json")):
+            try:
+                rows = json.loads(f.read_text("utf-8"))
+            except Exception:                                        # noqa: BLE001
+                continue
+            if isinstance(rows, list) and rows:
+                trades.setdefault(f.stem[len("ledger_"):], []).extend(
+                    r for r in rows if isinstance(r, dict) and "r_multiple" in r)
+    return phase, trades, off
+
+
 def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     """One allocator pass. Returns the artifact it wrote."""
     t0 = time.time()
@@ -667,7 +728,17 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     forward, fwd_acct = join_forward([str(c) for c in daily.columns], forward)
     trials = search_trials()
     _log(f"search intensity for deflation: {trials or 'UNMEASURED (no deflation applied)'}")
-    ev = sleeve_evidence(daily, forward, live, trials)
+    # ------------------------------------------------ THE STATE THE BOOK IS BEING SOLVED FOR
+    # THE MATHEMATICS WAS WIRED AND THE CALL WAS NOT. `sleeve_evidence` grew `phase` and
+    # `trades_by_sleeve`, and `_posterior_mu` grew the state level of its hierarchy -- and this
+    # line still passed neither, so every solve ran on an empty state and the conditioning was
+    # arithmetic nobody reached. "It is London open, therefore this posterior" was true in the
+    # library and false in production, which is the desk's most repeated defect wearing new code.
+    phase, trades_by_sleeve, broker_off = _live_state()
+    _log(f"state: phase={phase or 'UNKNOWN'} broker_utc_offset={broker_off:+d}h "
+         f"sleeves_with_trades={len(trades_by_sleeve)}")
+    ev = sleeve_evidence(daily, forward, live, trials, phase=phase,
+                         trades_by_sleeve=trades_by_sleeve, broker_utc_offset_h=broker_off)
     dd = worst_dd_r(daily)
 
     labels, probs = regime_state(daily) if mode in ("heavy", "normal") else ((), ())
@@ -824,6 +895,25 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
     nt["held"] = {k: round(v, 8) for k, v in held.items()}
     opp = opportunity(free, funded, HEAT_TARGET)
 
+    # ------------------------------------------------------ THE BASELINE CONTEST, EVERY PASS
+    # A dynamic allocator sits above every edge and reallocates, so it can destroy compounding
+    # faster than any single sleeve can. It therefore has to beat the answers anyone could have
+    # written in an afternoon -- equal weight, inverse vol, risk parity, and doing nothing --
+    # on THESE worlds, at EQUAL total heat, before it is allowed to size a position.
+    # The gateway reads the certificate this writes; without a fresh passing one it keeps
+    # ranking with the optimiser and sizing with Q_OPT exactly as it does today.
+    try:
+        from libs.portfolio.allocator_proof import certify, contest
+        proof = contest(ev, funded, current_book(), cfg=cfg, worlds=worlds)
+        certify(proof, root=ROOT, book=funded)
+        _log(f"proof: {'PASS' if proof['passed'] else 'FAIL'} -- {proof['why']}")
+    except Exception as exc:                                        # noqa: BLE001
+        # A failed contest must never take the allocation pass with it: the book is still worth
+        # publishing for ranking and total heat. What it loses is the right to SIZE, which is
+        # exactly the fail-closed direction.
+        proof = {"passed": False, "why": f"{type(exc).__name__}: {exc}"}
+        _log(f"proof: FAILED TO RUN -- {proof['why']}")
+
     art: dict[str, Any] = {
         "generated_utc": datetime.now(UTC).isoformat(),
         "mode": mode,
@@ -842,6 +932,8 @@ def run(mode: str = "normal", *, seed: int = 0) -> dict[str, Any]:
             "curve": [[round(h, 4), round(g, 8)] for h, g in sorted(curve.items())],
         },
         "book": funded,
+        "proof": {"passed": bool(proof.get("passed")), "why": proof.get("why", ""),
+                  "best_baseline": proof.get("best_baseline", "")},
         # WHICH MECHANISMS HOLD THE BOOK. A single-family book is a single bet however many
         # sleeves it is spread across, and that is invisible from the sleeve list alone.
         "mechanism_mix": {k: round(v, 6)

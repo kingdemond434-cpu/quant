@@ -473,6 +473,54 @@ def allocator_heat() -> tuple[float | None, str]:
         return None, f"allocator artifact unreadable ({type(exc).__name__})"
 
 
+def allocator_book() -> tuple[dict[str, float] | None, str]:
+    """The optimiser's PER-SLEEVE target risk fractions, or None with the reason.
+
+    THE BOOK WAS SOLVED AND THEN NOT USED. `allocator_heat` takes the optimiser's TOTAL and
+    `allocator_order` takes its RANKING, and each sleeve was then sized by `q_charge` /
+    `realised_q` / Q_OPT -- so the one number the optimiser actually solves for, h_i, reached
+    nothing. A book of {A: 4.3%, B: 3.7%, C: 2.1%} became "total 10.1%, in that order", which is
+    a different allocation to the one that maximised E[log W].
+
+    AUTHORITY IS EARNED, NOT ASSUMED, and that is the whole reason this is a separate function
+    from `allocator_heat`. A dynamic allocator sits above every edge and reallocates, so it can
+    destroy compounding faster than any single sleeve. It may size positions only while a FRESH
+    certificate says it beat equal-weight, inverse-vol, risk-parity and doing-nothing on the
+    desk's own sampled worlds at equal heat. No certificate, a stale one, or a losing one all
+    return None -- and None means the existing sizing path runs exactly as it does today.
+
+    Every check `allocator_heat` makes still applies: armed, fresh, certified, finite growth.
+    This adds the proof on top; it never substitutes for them.
+    """
+    total, why = allocator_heat()
+    if total is None:
+        return None, f"no allocator book: {why}"
+    try:
+        from libs.portfolio.allocator_proof import read_certificate
+        cert, cwhy = read_certificate(BASE.parent.parent)
+    except Exception as exc:                                    # noqa: BLE001
+        return None, f"proof unreadable ({type(exc).__name__}: {exc})"
+    if cert is None:
+        return None, f"allocator may rank but not size: {cwhy}"
+    try:
+        art = json.loads((BASE / "reports" / "pf_allocation.json").read_text(encoding="utf-8"))
+        book = {str(k): float(v) for k, v in (art.get("book") or {}).items() if float(v) > 0.0}
+    except Exception as exc:                                    # noqa: BLE001
+        return None, f"pf_allocation book unreadable ({type(exc).__name__})"
+    if not book:
+        # An EMPTY book is a real answer -- "hold nothing" -- but it is not a sizing instruction,
+        # and returning {} here would read to the caller as "size everything at zero" rather than
+        # "the allocator declined to allocate". The no-new-exposure path already handles that.
+        return None, "allocator book is empty (no positive-heat sleeve)"
+    drift = abs(sum(book.values()) - total)
+    if drift > 0.005:
+        # The book and the total come from the same artifact and must agree. A disagreement means
+        # one of them was rewritten independently, and sizing on a book that does not sum to the
+        # budget the heat cap enforces would over- or under-deploy silently.
+        return None, f"book sums to {sum(book.values()):.4f}, heat says {total:.4f}"
+    return book, f"allocator book authoritative ({len(book)} sleeve(s)); {cwhy}"
+
+
 def allocator_order(sleeves: list[dict]) -> list[dict]:
     """Reorder `sleeves` by marginal dE[log W], best first; unpriced sleeves keep their place.
 
@@ -1849,6 +1897,10 @@ def main() -> None:
         ledger_rows(), _prov.current_account(mt5.account_info()),
         exposures=_exposure or None)
     log(k_why)
+    # Read ONCE per pass: the book is an artifact, and re-reading it per sleeve could size two
+    # legs of the same pass from two different solves if the allocator rewrote it mid-loop.
+    _book, _book_why = allocator_book()
+    log(f"sizing: {_book_why}")
     # EACH SLEEVE'S LAST REAL STOP, so the cap prices legs on what they actually traded rather
     # than on a house average. The gateway already records every bracket it places; not reading
     # them back meant the one number that decides how much heat a leg costs was the only number
@@ -1861,7 +1913,14 @@ def main() -> None:
         # A risk_frac sleeve is BILLED its own effective fraction (base x ramp), not the house
         # Q_OPT -- undercharging heat for the very sleeves running above Q_OPT would recreate
         # the 2.94%-believed/22.2%-true defect documented on cap_by_heat.
-        if _s.get("lot") == "auto_ramp":
+        # THE OPTIMISER'S OWN FRACTION, WHEN IT HAS EARNED THE RIGHT TO SET IT. h_i is what
+        # maximised E[log W] jointly with every other sleeve; Q_OPT and the ramp are what the
+        # desk falls back to when nothing solved for it. Only reachable behind a fresh proof
+        # certificate (see `allocator_book`), so an unproven allocator cannot resize the book.
+        if _book is not None and _s["name"] in _book:
+            _s["risk_frac"] = float(_book[_s["name"]])
+            _s["sized_by"] = "allocator_book"
+        elif _s.get("lot") == "auto_ramp":
             _ramp = 0.25 if sleeve_live_n(_s["name"]) < 50 else (
                 0.5 if sleeve_live_n(_s["name"]) < 200 else 1.0)
             _s["q_charge"] = (clamp_risk_frac(_s.get("risk_frac")) * _ramp
