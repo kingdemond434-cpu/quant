@@ -276,6 +276,41 @@ brain_quota_blocked() {
     return 0
 }
 
+# How long a successful PING is believed before another organ pays for a fresh one.
+# Deliberately short: a quota that closed inside this window costs one organ a wasted attempt,
+# which is self-correcting on its next cycle. Longer would risk organs marching into a wall.
+_BRAIN_QUOTA_OPEN_TTL_S="${_BRAIN_QUOTA_OPEN_TTL_S:-600}"
+
+# True when another organ measured the quota OPEN recently enough to believe.
+#
+# THE MEMO WAS ONE-SIDED, AND THE EXPENSIVE HALF WAS MISSING. `brain_quota_blocked` already stops
+# an organ probing into a wall someone else measured -- correct, and it saves quota. But the OPEN
+# case, which is the normal one, was never cached: every organ spawned its own
+# `claude -p 'Reply with exactly: PING-OK'` to re-learn what the previous organ learned minutes
+# earlier. That probe is a FULL CLAUDE PROCESS, measured at ~175MB, and brain_env.sh is sourced by
+# eight-plus organ scripts on their own timers.
+#
+# MEASURED 2026-09-04: the box sat at 62MB available, below its own 300MB OOM floor; the research
+# gauntlet needs 1,200MB and had not started for 15.3 hours, so no certificate was minted and the
+# AFG purge -- which lives in the gauntlet's writer -- never fired for the seventh time. A 175MB
+# process to re-answer a question already answered is not a rounding error at that margin.
+#
+# Same file, same self-healing contract: a blocked observation still clears this instantly,
+# because `brain_quota_blocked` is checked first and a wall always wins over a stale open memo.
+brain_quota_open_recent() {
+    local state epoch now age
+    [ -f "$_BRAIN_QUOTA_MEMO" ] || return 1
+    state="$(sed -n 's/.*"state"[[:space:]]*:[[:space:]]*"\([a-z]*\)".*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" | tail -1)"
+    [ "$state" = "open" ] || return 1
+    epoch="$(sed -n 's/.*"observed_at_epoch"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' \
+        "$_BRAIN_QUOTA_MEMO" | tail -1)"
+    case "$epoch" in ("" | *[!0-9]*) return 1 ;; esac
+    now="$(date -u +%s)" || return 1
+    age=$((now - epoch))
+    [ "$age" -ge 0 ] && [ "$age" -le "$_BRAIN_QUOTA_OPEN_TTL_S" ]
+}
+
 brain_auth_check() {
     # Cheap auth self-test at cycle start: fail LOUD (page), never silently no-op.
     # MODEL FALLBACK CHAIN (principal 2026-07-24): a STARVED MODEL must never kill the organ.
@@ -290,6 +325,14 @@ brain_auth_check() {
         printf '%s brain_auth_check SKIPPED -- quota memo says blocked (see %s)\n' \
             "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_BRAIN_QUOTA_MEMO" >&2
         return 1
+    fi
+    # A FRESH OPEN OBSERVATION IS AN ANSWER. Checked AFTER the blocked memo, never before, so a
+    # measured wall always beats a stale open note.
+    if brain_quota_open_recent; then
+        printf '%s brain_auth_check: quota measured OPEN within %ss by another organ -- '\
+'skipping a duplicate ~175MB probe\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$_BRAIN_QUOTA_OPEN_TTL_S" >&2
+        return 0
     fi
     for m in ${_BRAIN_MODEL_CHAIN:-claude-opus-5 claude-opus-4-8}; do
         export ANTHROPIC_MODEL="$m"
