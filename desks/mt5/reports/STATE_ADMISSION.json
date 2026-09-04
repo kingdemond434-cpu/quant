@@ -1,9 +1,9 @@
 {
- "generated_utc": "2026-09-04T19:11:40.409306+00:00",
+ "generated_utc": "2026-09-04T19:22:28.532836+00:00",
  "basis": "shadow",
  "n_trades": 487,
  "n_sleeves": 50,
- "dimensions_tried": 1,
+ "dimensions_tried": 2,
  "verdicts": {
   "weekday": {
    "dimension": "weekday",
@@ -13,14 +13,26 @@
    "t_deflated": -1.816,
    "n_test": 275,
    "n_buckets": 5,
-   "dimensions_tried": 1,
+   "dimensions_tried": 2,
    "why": "no measurable improvement; kept only by the shrinkage"
+  },
+  "event": {
+   "dimension": "event",
+   "verdict": "UNJUDGED",
+   "mse_gain": 0.0,
+   "t_paired": 0.0,
+   "t_deflated": 0.0,
+   "n_test": 336,
+   "n_buckets": 1,
+   "dimensions_tried": 2,
+   "why": "only 1 bucket ever had 15 training trades, so conditioning on this is arithmetically identical to not conditioning. NOT a null result -- the dimension's history does not cover the trades."
   }
  },
  "gaps": {
   "session": "no labeller: this dimension cannot be reconstructed from a timestamp alone, or its input (e.g. the broker clock) is unavailable here"
  },
  "admitted": [
+  "event",
   "weekday"
  ],
  "graveyard": [],

@@ -161,6 +161,18 @@ def judge(trades: Sequence[Trade], dimension: str, dimensions_tried: int = 1,
             diffs.append((y - pooled) ** 2 - (y - shrunk[b]) ** 2)
 
     n_test = len(diffs)
+    # A DIMENSION THAT NEVER VARIES IS NOT A DIMENSION. If every trade in training fell into one
+    # bucket, the "conditional" mean IS the pooled mean and the test returns t = 0.00 -- which
+    # reads as "measured, no effect" when the truth is "nothing was measured". Seen live: `event`
+    # scored t=+0.00 on 336 predictions with buckets=1, because the calendar vintages the miner
+    # keeps span days while the ledgers span months, so every trade was labelled NORMAL.
+    if len(buckets_seen) < 2:
+        return Verdict(dimension, UNJUDGED, 0.0, 0.0, 0.0, n_test, len(buckets_seen),
+                       dimensions_tried,
+                       why=(f"only {len(buckets_seen)} bucket ever had "
+                            f"{MIN_BUCKET_TRAIN} training trades, so conditioning on this is "
+                            "arithmetically identical to not conditioning. NOT a null result -- "
+                            "the dimension's history does not cover the trades."))
     if n_test < MIN_TEST_TRADES:
         return Verdict(dimension, RETAIN_SHRUNK, float(np.mean(diffs)) if diffs else 0.0,
                        0.0, 0.0, n_test, len(buckets_seen), dimensions_tried,
@@ -202,12 +214,15 @@ def admitted(verdicts: dict[str, Verdict]) -> tuple[str, ...]:
     return tuple(sorted(d for d, v in verdicts.items() if v.verdict != GRAVEYARD))
 
 
-def build_labeller(name: str) -> Callable[[str], str] | None:
-    """A function from an ISO timestamp to this dimension's bucket, or None if unavailable.
+def build_labeller(name: str) -> Callable[[Trade], str] | None:
+    """A function from a trade to this dimension's bucket, or None when it cannot be rebuilt.
 
-    Only dimensions reconstructible from a timestamp ALONE live here. An asset's regime or the
-    liquidity state at a moment needs the state-vector history to be joined instead, and inventing
-    it from today's fit would label every historical trade with today's world.
+    ONLY DIMENSIONS RECONSTRUCTIBLE AT THE TRADE'S OWN MOMENT LIVE HERE. Labelling a trade from
+    January with today's regime fit, today's spread percentile or today's calendar would test
+    whether the PRESENT predicts the past, which every dimension would pass. An asset's regime
+    needs the walk-forward decode `family_regime_transition` builds; the liquidity state needs the
+    historical tape; both are recorded as gaps until their history is joined rather than faked
+    from a current reading.
     """
     if name == "session":
         try:
@@ -218,19 +233,92 @@ def build_labeller(name: str) -> Callable[[str], str] | None:
         if off is None:
             return None
 
-        def _session(when: str) -> str:
+        def _session(t: Trade) -> str:
             from datetime import datetime
             try:
-                return phase_at(datetime.fromisoformat(when), broker_utc_offset_h=off)
+                return phase_at(datetime.fromisoformat(t.when), broker_utc_offset_h=off)
             except (TypeError, ValueError):
                 return ""
         return _session
+
     if name == "weekday":
-        def _weekday(when: str) -> str:
+        def _weekday(t: Trade) -> str:
             from datetime import datetime
             try:
-                return datetime.fromisoformat(when).strftime("%a")
+                return datetime.fromisoformat(t.when).strftime("%a")
             except (TypeError, ValueError):
                 return ""
         return _weekday
+
+    if name == "event":
+        # POINT-IN-TIME BY CONSTRUCTION. The calendar rows carry the SCHEDULED stamp of each
+        # release, so a trade from January is classified against the releases around January.
+        # This is the one new state dimension whose history the desk already holds.
+        try:
+            from libs.regime.event_state import classify, parse_rows, relevant
+        except ImportError:
+            return None
+        rows = _calendar()
+        if not rows:
+            return None
+        meta = _universe_meta()
+        parsed = parse_rows(rows)
+        if not parsed:
+            return None
+
+        def _event(t: Trade) -> str:
+            from datetime import datetime
+            try:
+                when = datetime.fromisoformat(t.when)
+            except (TypeError, ValueError):
+                return ""
+            scoped = relevant(parsed, _symbol_of(t.sleeve), meta)
+            if not scoped:
+                return ""
+            return classify(when, [r["_stamp"] for r in scoped],
+                            symbol=_symbol_of(t.sleeve), rows=scoped).phase
+        return _event
     return None
+
+
+def _symbol_of(sleeve: str) -> str:
+    """The instrument a sleeve name is about. Ledgers are `<SYM>_<family>_<window>`."""
+    head = str(sleeve or "").split("_")[0]
+    return head.upper() if head else ""
+
+
+def _calendar() -> list[dict]:
+    from pathlib import Path
+    import json
+
+    root = Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "intelligence" \
+        / "ff_calendar_vintage"
+    if not root.exists():
+        return []
+    out, seen = [], set()
+    for path in sorted(root.glob("*.json"))[-60:]:
+        try:
+            doc = json.loads(path.read_text("utf-8"))
+        except (OSError, ValueError):
+            continue
+        rows = doc if isinstance(doc, list) else (doc.get("rows") or doc.get("discoveries") or [])
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            key = f"{row.get('event_date')}|{row.get('title')}"
+            if key not in seen:
+                seen.add(key)
+                out.append(row)
+    return out
+
+
+def _universe_meta() -> dict:
+    from pathlib import Path
+    import json
+
+    p = (Path(__file__).resolve().parents[2] / "desks" / "mt5" / "data" / "universe"
+         / "universe.json")
+    try:
+        return json.loads(p.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {}
