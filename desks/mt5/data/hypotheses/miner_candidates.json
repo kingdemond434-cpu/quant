@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-04T07:15:11+00:00",
+ "compiled_at": "2026-09-04T08:22:09+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -4475,9 +4475,9 @@
    "deepening": 33
   },
   "mql5_signals": {
-   "rows": 93,
+   "rows": 94,
    "candidates": 0,
-   "deepening": 93
+   "deepening": 94
   },
   "mql5_forum": {
    "rows": 1,
@@ -4485,9 +4485,9 @@
    "deepening": 1
   },
   "quantconnect": {
-   "rows": 19,
+   "rows": 20,
    "candidates": 0,
-   "deepening": 19
+   "deepening": 20
   },
   "reddit": {
    "rows": 35,
@@ -4515,39 +4515,39 @@
    "deepening": 1
   },
   "seasonality": {
-   "rows": 130,
+   "rows": 125,
    "candidates": 2,
-   "deepening": 129
+   "deepening": 124
   },
   "trading_latam": {
-   "rows": 35,
+   "rows": 71,
    "candidates": 0,
-   "deepening": 35
+   "deepening": 71
   },
   "litefinance": {
-   "rows": 15,
+   "rows": 30,
    "candidates": 0,
-   "deepening": 15
+   "deepening": 30
   },
   "instaforex_copy": {
-   "rows": 4,
+   "rows": 8,
    "candidates": 0,
-   "deepening": 4
+   "deepening": 8
   },
   "amarkets": {
-   "rows": 112,
+   "rows": 224,
    "candidates": 0,
-   "deepening": 112
+   "deepening": 224
   },
   "fbs_tape": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "global_frontier": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "mql5_survivors": {
    "rows": 18,
@@ -4560,9 +4560,9 @@
    "deepening": 1
   },
   "darwinex": {
-   "rows": 120,
+   "rows": 1,
    "candidates": 0,
-   "deepening": 120
+   "deepening": 1
   },
   "tradingview_scripts": {
    "rows": 23,
@@ -4660,13 +4660,18 @@
    "deepening": 3
   },
   "world_crawler": {
+   "rows": 26,
+   "candidates": 0,
+   "deepening": 26
+  },
+  "youtube": {
    "rows": 23,
    "candidates": 0,
    "deepening": 23
   }
  },
- "rows_accounted": 1314,
+ "rows_accounted": 1387,
  "executable_candidates": 372,
- "deepening_tasks": 865,
+ "deepening_tasks": 769,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

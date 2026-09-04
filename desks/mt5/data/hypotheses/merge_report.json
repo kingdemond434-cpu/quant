@@ -1,10 +1,10 @@
 {
- "merged_at": "2026-09-04T06:13:17+00:00",
- "pipeline_started_at": "2026-09-04T06:05:00+00:00",
+ "merged_at": "2026-09-04T07:54:11+00:00",
+ "pipeline_started_at": "2026-09-04T07:07:07+00:00",
  "per_source": {
   "external_backtest_results.json": 147,
   "miner_candidates.json": 370,
-  "edge_search_results.json": -2,
+  "edge_search_results.json": 0,
   "orthogonal_candidates.json": -2,
   "coverage_search_results.json": -2,
   "requeue_named.json": -2
@@ -12,7 +12,7 @@
  "source_state": {
   "external_backtest_results.json": "FRESH",
   "miner_candidates.json": "FRESH",
-  "edge_search_results.json": "STALE_SKIPPED",
+  "edge_search_results.json": "FRESH",
   "orthogonal_candidates.json": "STALE_SKIPPED",
   "coverage_search_results.json": "STALE_SKIPPED",
   "requeue_named.json": "STALE_SKIPPED"
