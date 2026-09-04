@@ -126,6 +126,23 @@ fi
 for m in $REMOTE_MODULES; do
   scp -q "$m" "contabo-mt5:C:/opt/quant/$m" 2>>"$LOGF" || echo "code sync scp FAILED: $m"
 done
+# DATA THE REMOTE FAMILIES READ, not just the code that reads it. `orthogonal_sweep` runs HERE on
+# the desk box, but `_macro_series` reads `data/fred_macro.json`, which the FRED collector writes on
+# the VPS -- so the file existed, was current, and never travelled. Measured 2026-09-04: `macro`
+# loaded as None on the box and `macro_conditional` produced zero signals across the whole
+# universe, filed as `no-signals (a macro state series)` -- which reads as "the desk has no macro
+# data" while 6 series and 848 observations sat on the other machine. Same class as the bars: the
+# consumer and the producer were on different boxes and nothing carried the file between them.
+#
+# Small, dated, read-only inputs only. Bars go the other way (ops/pull_bars.sh) because the
+# terminal that makes them lives on the box.
+for _d in data/fred_macro.json; do
+  [ -f "$_d" ] || continue
+  scp -q "$_d" "contabo-mt5:C:/opt/quant/$_d" 2>>"$LOGF" \
+    && echo "data sync: $_d -> desk box" \
+    || echo "data sync FAILED: $_d"
+done
+
 _want=$(git hash-object $REMOTE_MODULES | tr -d '\r')
 _have=$(timeout 120 ssh -o ConnectTimeout=20 contabo-mt5 \
           "cd C:\opt\quant && git hash-object $REMOTE_MODULES" 2>/dev/null \
