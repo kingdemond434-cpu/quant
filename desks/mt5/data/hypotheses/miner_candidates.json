@@ -1,5 +1,5 @@
 {
- "compiled_at": "2026-09-04T01:53:38+00:00",
+ "compiled_at": "2026-09-04T02:45:14+00:00",
  "hypotheses": [
   {
    "symbol": "EURAUD",
@@ -267,6 +267,18 @@
   },
   {
    "symbol": "ADAUSD",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:forexfactory",
+   "source_url": "",
+   "source_title": "ISM Manufacturing PMI",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
+  },
+  {
+   "symbol": "ALGUSD",
    "family": "event_reaction",
    "params": {
     "input_source": "ff_calendar_vintage"
@@ -1394,6 +1406,18 @@
    "source_title": "Seasonal pattern 'sell_in_may' active (month 8)",
    "mechanism_status": "NAMED",
    "mechanism_note": "calendar-linked allocation and hedging flows can create monthly seasonality"
+  },
+  {
+   "symbol": "ADAJPY",
+   "family": "event_reaction",
+   "params": {
+    "input_source": "ff_calendar_vintage"
+   },
+   "source": "miner:ff_calendar_vintage",
+   "source_url": "",
+   "source_title": "JPY Prelim Industrial Production m/m",
+   "mechanism_status": "NAMED",
+   "mechanism_note": "scheduled information releases create conditional repricing and liquidity"
   },
   {
    "symbol": "HKDJPY",
@@ -4446,9 +4470,9 @@
  ],
  "per_source": {
   "github": {
-   "rows": 33,
+   "rows": 23,
    "candidates": 0,
-   "deepening": 33
+   "deepening": 23
   },
   "mql5_signals": {
    "rows": 93,
@@ -4472,7 +4496,7 @@
   },
   "forexfactory": {
    "rows": 44,
-   "candidates": 107,
+   "candidates": 108,
    "deepening": 0
   },
   "cot": {
@@ -4486,19 +4510,19 @@
    "deepening": 10
   },
   "arxiv": {
-   "rows": 1,
+   "rows": 2,
    "candidates": 0,
-   "deepening": 1
+   "deepening": 2
   },
   "seasonality": {
-   "rows": 79,
+   "rows": 121,
    "candidates": 2,
-   "deepening": 78
+   "deepening": 120
   },
   "trading_latam": {
-   "rows": 39,
+   "rows": 38,
    "candidates": 0,
-   "deepening": 39
+   "deepening": 38
   },
   "litefinance": {
    "rows": 15,
@@ -4562,7 +4586,7 @@
   },
   "ff_calendar_vintage": {
    "rows": 114,
-   "candidates": 6,
+   "candidates": 7,
    "deepening": 7
   },
   "forextsd_cdx": {
@@ -4636,13 +4660,13 @@
    "deepening": 3
   },
   "world_crawler": {
-   "rows": 44,
+   "rows": 52,
    "candidates": 0,
-   "deepening": 44
+   "deepening": 52
   }
  },
- "rows_accounted": 1407,
- "executable_candidates": 370,
- "deepening_tasks": 954,
+ "rows_accounted": 1447,
+ "executable_candidates": 372,
+ "deepening_tasks": 1006,
  "rule": "exact recipe or structured causal data only; no prose-to-family guessing"
 }

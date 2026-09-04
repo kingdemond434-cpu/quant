@@ -627,12 +627,12 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "n": 1625,
-    "exp_r": -0.0065,
-    "max_dd_r": -44.07,
-    "t_stat": -0.23,
+    "n": 1450,
+    "exp_r": -0.0068,
+    "max_dd_r": -44.06,
+    "t_stat": -0.22,
     "profit_factor": 0.988,
-    "win_rate": 0.4517,
+    "win_rate": 0.4469,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -643,12 +643,12 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "n": 1688,
-    "exp_r": 0.0024,
+    "n": 1509,
+    "exp_r": -0.0036,
     "max_dd_r": -52.16,
-    "t_stat": 0.08,
-    "profit_factor": 1.004,
-    "win_rate": 0.4573,
+    "t_stat": -0.12,
+    "profit_factor": 0.993,
+    "win_rate": 0.45,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -659,12 +659,12 @@
       "rr": 2.0,
       "wait_bars": 8
     },
-    "n": 1625,
-    "exp_r": 0.0248,
+    "n": 1450,
+    "exp_r": 0.0273,
     "max_dd_r": -43.39,
-    "t_stat": 0.77,
-    "profit_factor": 1.042,
-    "win_rate": 0.4154,
+    "t_stat": 0.79,
+    "profit_factor": 1.046,
+    "win_rate": 0.4103,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -675,12 +675,12 @@
       "rr": 2.0,
       "wait_bars": 12
     },
-    "n": 1688,
-    "exp_r": 0.054,
+    "n": 1509,
+    "exp_r": 0.0531,
     "max_dd_r": -44.31,
-    "t_stat": 1.71,
-    "profit_factor": 1.095,
-    "win_rate": 0.4313,
+    "t_stat": 1.58,
+    "profit_factor": 1.093,
+    "win_rate": 0.4248,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -691,12 +691,12 @@
       "rr": 2.5,
       "wait_bars": 8
     },
-    "n": 1625,
-    "exp_r": 0.0239,
-    "max_dd_r": -45.88,
-    "t_stat": 0.69,
-    "profit_factor": 1.039,
-    "win_rate": 0.3908,
+    "n": 1450,
+    "exp_r": 0.0291,
+    "max_dd_r": -43.28,
+    "t_stat": 0.78,
+    "profit_factor": 1.047,
+    "win_rate": 0.3848,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -707,12 +707,12 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "n": 1685,
-    "exp_r": 0.07,
+    "n": 1506,
+    "exp_r": 0.0724,
     "max_dd_r": -41.95,
-    "t_stat": 2.06,
-    "profit_factor": 1.12,
-    "win_rate": 0.4125,
+    "t_stat": 1.99,
+    "profit_factor": 1.123,
+    "win_rate": 0.405,
     "source": "ext_forexfactory_NAS100_session_range_breakout",
     "url": ""
   },
@@ -915,12 +915,12 @@
       "rr": 1.5,
       "wait_bars": 8
     },
-    "n": 1698,
-    "exp_r": -0.2813,
-    "max_dd_r": -481.2,
-    "t_stat": -10.14,
-    "profit_factor": 0.593,
-    "win_rate": 0.4323,
+    "n": 1480,
+    "exp_r": -0.2808,
+    "max_dd_r": -419.23,
+    "t_stat": -9.37,
+    "profit_factor": 0.599,
+    "win_rate": 0.4291,
     "source": "ext_forexfactory_US500_session_range_breakout",
     "url": ""
   },
@@ -931,60 +931,60 @@
       "rr": 1.5,
       "wait_bars": 12
     },
-    "n": 1749,
-    "exp_r": -0.24,
-    "max_dd_r": -426.03,
-    "t_stat": -8.85,
-    "profit_factor": 0.635,
-    "win_rate": 0.4523,
-    "source": "ext_forexfactory_US500_session_range_breakout",
-    "url": ""
-  },
-  {
-    "symbol": "US500",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 8
-    },
-    "n": 1698,
-    "exp_r": -0.2516,
-    "max_dd_r": -434.5,
-    "t_stat": -8.16,
-    "profit_factor": 0.653,
-    "win_rate": 0.3981,
-    "source": "ext_forexfactory_US500_session_range_breakout",
-    "url": ""
-  },
-  {
-    "symbol": "US500",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.0,
-      "wait_bars": 12
-    },
-    "n": 1749,
-    "exp_r": -0.194,
-    "max_dd_r": -353.4,
-    "t_stat": -6.43,
-    "profit_factor": 0.715,
-    "win_rate": 0.4242,
-    "source": "ext_forexfactory_US500_session_range_breakout",
-    "url": ""
-  },
-  {
-    "symbol": "US500",
-    "family": "session_range_breakout",
-    "params": {
-      "rr": 2.5,
-      "wait_bars": 8
-    },
-    "n": 1698,
+    "n": 1519,
     "exp_r": -0.2455,
-    "max_dd_r": -425.37,
-    "t_stat": -7.45,
-    "profit_factor": 0.672,
-    "win_rate": 0.3769,
+    "max_dd_r": -378.41,
+    "t_stat": -8.38,
+    "profit_factor": 0.633,
+    "win_rate": 0.4457,
+    "source": "ext_forexfactory_US500_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 8
+    },
+    "n": 1480,
+    "exp_r": -0.2472,
+    "max_dd_r": -374.78,
+    "t_stat": -7.39,
+    "profit_factor": 0.664,
+    "win_rate": 0.3926,
+    "source": "ext_forexfactory_US500_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.0,
+      "wait_bars": 12
+    },
+    "n": 1519,
+    "exp_r": -0.1953,
+    "max_dd_r": -313.79,
+    "t_stat": -5.96,
+    "profit_factor": 0.719,
+    "win_rate": 0.4161,
+    "source": "ext_forexfactory_US500_session_range_breakout",
+    "url": ""
+  },
+  {
+    "symbol": "US500",
+    "family": "session_range_breakout",
+    "params": {
+      "rr": 2.5,
+      "wait_bars": 8
+    },
+    "n": 1480,
+    "exp_r": -0.2441,
+    "max_dd_r": -371.58,
+    "t_stat": -6.83,
+    "profit_factor": 0.679,
+    "win_rate": 0.3696,
     "source": "ext_forexfactory_US500_session_range_breakout",
     "url": ""
   },
@@ -995,12 +995,12 @@
       "rr": 2.5,
       "wait_bars": 12
     },
-    "n": 1748,
-    "exp_r": -0.1759,
-    "max_dd_r": -324.04,
-    "t_stat": -5.43,
-    "profit_factor": 0.749,
-    "win_rate": 0.4068,
+    "n": 1518,
+    "exp_r": -0.1787,
+    "max_dd_r": -292.28,
+    "t_stat": -5.07,
+    "profit_factor": 0.75,
+    "win_rate": 0.3972,
     "source": "ext_forexfactory_US500_session_range_breakout",
     "url": ""
   },
@@ -2066,12 +2066,12 @@
     "params": {
       "rr": 1.5
     },
-    "n": 1254,
-    "exp_r": -0.5035,
-    "max_dd_r": -630.67,
-    "t_stat": -12.46,
-    "profit_factor": 0.438,
-    "win_rate": 0.3939,
+    "n": 1069,
+    "exp_r": -0.5048,
+    "max_dd_r": -540.19,
+    "t_stat": -12.69,
+    "profit_factor": 0.43,
+    "win_rate": 0.3835,
     "source": "ext_shipping_US500_momentum_basic",
     "url": ""
   },
@@ -2081,12 +2081,12 @@
     "params": {
       "rr": 2.0
     },
-    "n": 1254,
-    "exp_r": -0.5005,
-    "max_dd_r": -626.16,
-    "t_stat": -11.08,
-    "profit_factor": 0.481,
-    "win_rate": 0.3413,
+    "n": 1069,
+    "exp_r": -0.5004,
+    "max_dd_r": -532.96,
+    "t_stat": -11.35,
+    "profit_factor": 0.473,
+    "win_rate": 0.333,
     "source": "ext_shipping_US500_momentum_basic",
     "url": ""
   },
@@ -2096,12 +2096,12 @@
     "params": {
       "rr": 2.5
     },
-    "n": 1254,
-    "exp_r": -0.4984,
-    "max_dd_r": -623.55,
-    "t_stat": -10.2,
-    "profit_factor": 0.501,
-    "win_rate": 0.3094,
+    "n": 1069,
+    "exp_r": -0.4976,
+    "max_dd_r": -530.41,
+    "t_stat": -10.5,
+    "profit_factor": 0.495,
+    "win_rate": 0.3031,
     "source": "ext_shipping_US500_momentum_basic",
     "url": ""
   },
@@ -2111,12 +2111,12 @@
     "params": {
       "rr": 1.5
     },
-    "n": 1187,
-    "exp_r": -0.149,
-    "max_dd_r": -179.37,
-    "t_stat": -4.01,
-    "profit_factor": 0.776,
-    "win_rate": 0.3993,
+    "n": 1046,
+    "exp_r": -0.1468,
+    "max_dd_r": -164.79,
+    "t_stat": -3.79,
+    "profit_factor": 0.777,
+    "win_rate": 0.3948,
     "source": "ext_shipping_NAS100_momentum_basic",
     "url": ""
   },
@@ -2126,12 +2126,12 @@
     "params": {
       "rr": 2.0
     },
-    "n": 1187,
-    "exp_r": -0.1111,
-    "max_dd_r": -148.42,
-    "t_stat": -2.64,
-    "profit_factor": 0.842,
-    "win_rate": 0.3614,
+    "n": 1046,
+    "exp_r": -0.101,
+    "max_dd_r": -131.99,
+    "t_stat": -2.3,
+    "profit_factor": 0.854,
+    "win_rate": 0.3595,
     "source": "ext_shipping_NAS100_momentum_basic",
     "url": ""
   },
@@ -2141,12 +2141,12 @@
     "params": {
       "rr": 2.5
     },
-    "n": 1187,
-    "exp_r": -0.1179,
-    "max_dd_r": -163.95,
-    "t_stat": -2.71,
-    "profit_factor": 0.838,
-    "win_rate": 0.337,
+    "n": 1046,
+    "exp_r": -0.0955,
+    "max_dd_r": -142.44,
+    "t_stat": -2.06,
+    "profit_factor": 0.866,
+    "win_rate": 0.3365,
     "source": "ext_shipping_NAS100_momentum_basic",
     "url": ""
   },

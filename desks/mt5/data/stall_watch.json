@@ -1,31 +1,31 @@
 {
     "free_gb":  13.6,
-    "checked_at":  "2026-09-04T02:13:41.0951808Z",
+    "checked_at":  "2026-09-04T02:51:45.4925093Z",
     "actions":  [
-                    "STACKED external_gauntlet: killed duplicate pid 4512 (kept oldest 2908)",
-                    "STACKED external_gauntlet: killed duplicate pid 6040 (kept oldest 2908)",
-                    "FAILING MT5-Gauntlet: last result -1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
                     "FAILING MT5-MoatRecorder: last result 1, but its work is ALREADY RUNNING -- not re-run (a stale result is not an idle task)",
-                    "FEED LAG: 3 CLOCKED symbol(s) \u003e6h stale: USDCAD,USDCHF,XAUUSD",
-                    "FEED LAG fixer: re-selected 3 symbol(s) in MarketWatch"
+                    "RAM-LOW: 217MB free (phys 217MB / virt 19061MB, strike 1 of 2) -- holding; this is the shape of a searcher mid-symbol, not a starved box"
                 ],
-    "low_mem_strikes":  0,
+    "low_mem_strikes":  1,
     "procs":  {
                   "shadow_cycle.7220":  {
-                                            "cpu":  63.484375,
-                                            "at":  "2026-09-04T04:02:31.0420162+02:00"
-                                        },
-                  "fail.MT5-Gauntlet":  {
-                                            "cpu":  -1,
-                                            "at":  "2026-09-04T04:02:31.0420162+02:00"
+                                            "cpu":  208.875,
+                                            "at":  "2026-09-04T04:20:45.0340216+02:00"
                                         },
                   "fail.MT5-MoatRecorder":  {
                                                 "cpu":  1,
-                                                "at":  "2026-09-04T04:02:31.0420162+02:00"
+                                                "at":  "2026-09-04T04:20:45.0340216+02:00"
                                             },
-                  "external_gauntlet.2908":  {
-                                                 "cpu":  1185.515625,
-                                                 "at":  "2026-09-04T04:02:31.0420162+02:00"
-                                             }
+                  "orthogonal_sweep.988":  {
+                                               "cpu":  539.546875,
+                                               "at":  "2026-09-04T04:20:45.0340216+02:00"
+                                           },
+                  "external_gauntlet.9612":  {
+                                                 "cpu":  3.5625,
+                                                 "at":  "2026-09-04T04:20:45.0340216+02:00"
+                                             },
+                  "moat_silver.2532":  {
+                                           "cpu":  14.609375,
+                                           "at":  "2026-09-04T04:20:45.0340216+02:00"
+                                       }
               }
 }
