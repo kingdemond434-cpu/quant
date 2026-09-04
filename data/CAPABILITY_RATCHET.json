@@ -1,17 +1,17 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-09-04T06:12:58.850989+00:00",
+ "generated": "2026-09-04T06:25:38.837965+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
  "n_aspects": 26,
  "n_measured": 25,
  "n_unmeasured": 1,
- "measured_mean": 7.78,
+ "measured_mean": 7.77,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
  "last_raise_at": "2026-08-31T00:36:06.053241+00:00",
- "days_since_raise": 4.23,
+ "days_since_raise": 4.24,
  "n_raises": 18,
  "binding_constraint": {
   "state": "MEASURED",
@@ -19,10 +19,10 @@
   "component": "promotion_rung",
   "score": 0.0,
   "artifact": "data/promotion_gate.json",
-  "n_unmeasured_components": 8,
+  "n_unmeasured_components": 9,
   "detail": "granted 'PAPER at the 6% floor cap' at rung 0, blocked at 1 over 39 closed trades",
   "constraint": "+1 promotion rungs granted (0 -> 1 of 4) buys the next point",
-  "_": "LOWEST-SCORING COMPONENT DESK-WIDE: alpha_output.promotion_rung at 0.0/10 out of data/promotion_gate.json. This is the line to work first. 8 component(s) are UNMEASURED and are NOT eligible to be this minimum -- an absent measurement has no score, and letting it win here would bury every real defect under things nobody has looked at yet."
+  "_": "LOWEST-SCORING COMPONENT DESK-WIDE: alpha_output.promotion_rung at 0.0/10 out of data/promotion_gate.json. This is the line to work first. 9 component(s) are UNMEASURED and are NOT eligible to be this minimum -- an absent measurement has no score, and letting it win here would bury every real defect under things nobody has looked at yet."
  },
  "high_water": {
   "alerting_pager": 9.7,
@@ -146,7 +146,7 @@
    "score": 7.2,
    "high_water": 9.0,
    "movement": "FELL",
-   "cause": "statistical_validation.forecasts_resolved 7.9 -> 7.4 (data/calibration_status.json): status OVERDUE: 11 forecast(s) past their grading deadline -- score them; brier 0.303, 11 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
+   "cause": "statistical_validation.forecasts_resolved 7.9 -> 7.4 (data/calibration_status.json): status OVERDUE: 13 forecast(s) past their grading deadline -- score them; brier 0.303, 13 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z",
    "binding_constraint": "mutation_kill_validation_stack at 6.9 -- +10.18 % mutants killed (68.82 -> 79 of 100) buys the next point [+1 UNMEASURED component(s): mutation_kill_validation_stack::validation.py -- the score above covers only 2 of 3 components]",
    "ceiling": "the validation stack's own tests kill every mutant of it, over complete (never truncated) runs -- the desk cannot fool itself about whether an edge is real",
    "artifacts": [
@@ -175,7 +175,7 @@
      "state": "MEASURED",
      "score": 7.4,
      "artifact": "data/calibration_status.json",
-     "detail": "status OVERDUE: 11 forecast(s) past their grading deadline -- score them; brier 0.303, 11 overdue",
+     "detail": "status OVERDUE: 13 forecast(s) past their grading deadline -- score them; brier 0.303, 13 overdue",
      "constraint": "+62 logged forecasts scored against an outcome (472 -> 534 of 635) buys the next point"
     }
    ]
@@ -301,7 +301,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_drills.py is FRESH (age 2.48h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
+     "detail": "scripts/run_drills.py is FRESH (age 2.6h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -479,7 +479,7 @@
    "score": 6.7,
    "high_water": 7.5,
    "movement": "FELL",
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.61d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not",
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.62d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not",
    "binding_constraint": "ledger_dispositioned at 5.9 -- +77 ledger rows reaching a terminal verdict (460 -> 537 of 777) buys the next point",
    "ceiling": "every ledger row reaching a terminal verdict and 7-day conversion keeping pace with 7-day arrivals -- found equals fixed",
    "artifacts": [
@@ -502,7 +502,7 @@
      "state": "MEASURED",
      "score": 6.0,
      "artifact": "data/conversion_status.json",
-     "detail": "status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.61d",
+     "detail": "status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.62d",
      "constraint": "+10 of the last 7 days' arrivals dispositioned (58 -> 68 of 97) buys the next point"
     },
     {
@@ -616,15 +616,15 @@
   {
    "key": "alerting_pager",
    "state": "MEASURED",
-   "score": 9.7,
+   "score": 9.4,
    "high_water": 9.7,
-   "movement": "FLATLINE",
-   "cause": "pager_deliveries_ok at 9.4 -- +145 logged page attempts that DELIVERED (2138 -> 2283, the whole remaining gap) is the last +0.6 to 10/10",
-   "binding_constraint": "pager_deliveries_ok at 9.4 -- +145 logged page attempts that DELIVERED (2138 -> 2283, the whole remaining gap) is the last +0.6 to 10/10",
+   "movement": "FELL",
+   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.14h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
+   "binding_constraint": "pager_deliveries_ok at 9.4 -- +145 logged page attempts that DELIVERED (2138 -> 2283, the whole remaining gap) is the last +0.6 to 10/10 [+1 UNMEASURED component(s): alert_channels_not_silent -- the score above covers only 1 of 2 components]",
    "ceiling": "the pager provably delivers between incidents, on more than one channel, with the canary auditing the ledger rather than the code",
    "artifacts": [
     "data/alert_delivery.jsonl",
-    "data/ALERT_CHANNELS_SILENT"
+    "data/alert_canary_state.json"
    ],
    "components": [
     {
@@ -637,11 +637,11 @@
     },
     {
      "key": "alert_channels_not_silent",
-     "state": "MEASURED",
-     "score": 10.0,
-     "artifact": "data/ALERT_CHANNELS_SILENT",
-     "detail": "no silence flag, and the canary ran 5.93h ago (bound 6h) -- a live canary that is not complaining",
-     "constraint": "AT CEILING -- a page has landed inside the canary's own lookback AND the canary is itself alive; HOLDING it means keeping the canary on its cadence, because a silent canary and a working pager look identical from here"
+     "state": "UNMEASURED",
+     "score": null,
+     "artifact": "data/alert_canary_state.json",
+     "detail": "data/alert_canary_state.json is 6.14h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
+     "constraint": "MEASURE IT -- data/alert_canary_state.json is 6.14h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
     }
    ]
   },
@@ -673,7 +673,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.77h against its own 3.0h tolerance); evidence data/cost_hunt.json",
+     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.89h against its own 3.0h tolerance); evidence data/cost_hunt.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -681,7 +681,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_identification.py is FRESH (age 0.82h against its own 3.0h tolerance); evidence data/cost_surface.json",
+     "detail": "scripts/run_cost_identification.py is FRESH (age 0.94h against its own 3.0h tolerance); evidence data/cost_surface.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -930,7 +930,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_moat_backup.py is FRESH (age 2.23h against its own 72.0h tolerance); evidence data/backup_status.json",
+     "detail": "scripts/run_moat_backup.py is FRESH (age 2.36h against its own 72.0h tolerance); evidence data/backup_status.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -1285,7 +1285,7 @@
    "movement": "FELL",
    "score": 7.2,
    "high_water": 9.0,
-   "cause": "statistical_validation.forecasts_resolved 7.9 -> 7.4 (data/calibration_status.json): status OVERDUE: 11 forecast(s) past their grading deadline -- score them; brier 0.303, 11 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
+   "cause": "statistical_validation.forecasts_resolved 7.9 -> 7.4 (data/calibration_status.json): status OVERDUE: 13 forecast(s) past their grading deadline -- score them; brier 0.303, 13 overdue; statistical_validation.mutation_kill_validation_stack 9.0 -> 6.9 (data/mutation_score.json): 2 target(s) at bar 0.9: stepwise.py 0.90, validation.py 0.48; measured 2026-08-05T15:23:17Z"
   },
   {
    "aspect": "research_discipline",
@@ -1327,7 +1327,7 @@
    "movement": "FELL",
    "score": 6.7,
    "high_water": 7.5,
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.61d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not"
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.62d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not"
   },
   {
    "aspect": "ops_autonomy",
@@ -1335,6 +1335,13 @@
    "score": 6.3,
    "high_water": 8.0,
    "cause": "ops_autonomy.kernel_log_channels_readable 5.0 -> 0.0 (data/kernel_log_status.json): verdict UNREADABLE: NO kernel-log channel is readable -- every 'no OOM / no kernel event' conclusion on this box is VOID until this is restored (R0350); ops_autonomy.organ_comas_untreated 10.0 -> 9.0 (data/organ_er.json): 1.0 untreated coma(s) after 24.0h; treatments []; ops_autonomy.organs_healthy 10.0 -> 6.0 (data/organ_er.json): status COMA-UNTREATED: 3/5 organs healthy; 1 in coma >24h; UNTREATED: deep_sweep_meta; untreated comas ['deep_sweep_meta']; ops_autonomy.organs_producing 9.8 -> 6.4 (data/organ_liveness.json): status DARK: 3 never produced, 32 stale"
+  },
+  {
+   "aspect": "alerting_pager",
+   "movement": "FELL",
+   "score": 9.4,
+   "high_water": 9.7,
+   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.14h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
   },
   {
    "aspect": "cost_model_fidelity",
@@ -1428,11 +1435,6 @@
    "binding_constraint": "promotion_rung at 0.0 -- +1 promotion rungs granted (0 -> 1 of 4) buys the next point"
   },
   {
-   "aspect": "alerting_pager",
-   "score": 9.7,
-   "binding_constraint": "pager_deliveries_ok at 9.4 -- +145 logged page attempts that DELIVERED (2138 -> 2283, the whole remaining gap) is the last +0.6 to 10/10"
-  },
-  {
    "aspect": "dependency_environment",
    "score": 6.7,
    "binding_constraint": "optional_test_deps_importable at 3.3 -- +1 declared optional test deps importable here (1 -> 2 of 3) buys the next point"
@@ -1468,6 +1470,12 @@
    "component": "fees_attributed",
    "artifact": "docs/research/trade_forensics_latest.json",
    "why": "docs/research/trade_forensics_latest.json reports a zero denominator for of billed commission attributed to a cause -- a ratio over nothing is not a measurement and must never read as full marks"
+  },
+  {
+   "aspect": "alerting_pager",
+   "component": "alert_channels_not_silent",
+   "artifact": "data/alert_canary_state.json",
+   "why": "data/alert_canary_state.json is 6.14h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
   },
   {
    "aspect": "recorder_tape",
