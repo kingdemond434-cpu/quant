@@ -3401,7 +3401,7 @@
     "moat_persist:fut:BTCUSDT|microprice_gap|60": {
       "p": 0.0819,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T05:57:02.677820+00:00",
+      "updated": "2026-09-04T07:10:36.855700+00:00",
       "resolve_by": "2026-09-02T02:32:07.120366+00:00",
       "claim": "moat candidate fut:BTCUSDT|microprice_gap|60 survives its next screening (18/230 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3409,7 +3409,7 @@
     "moat_persist:fut:ETHUSDT|imbalance|60": {
       "p": 0.0852,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T05:57:02.694794+00:00",
+      "updated": "2026-09-04T07:10:36.894258+00:00",
       "resolve_by": "2026-09-02T02:32:07.142808+00:00",
       "claim": "moat candidate fut:ETHUSDT|imbalance|60 survives its next screening (18/221 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -3547,7 +3547,7 @@
     "moat_persist:fut:SOLUSDT|microprice_gap|60": {
       "p": 0.0685,
       "kind": "moat_persistence",
-      "updated": "2026-09-04T05:57:02.703409+00:00",
+      "updated": "2026-09-04T07:10:36.918308+00:00",
       "resolve_by": "2026-09-02T04:55:13.893386+00:00",
       "claim": "moat candidate fut:SOLUSDT|microprice_gap|60 survives its next screening (16/246 so far)",
       "resolver": "scripts/promote_moat_survivors.py grade_due_forecasts() -- reads the candidate's own forward clock and grades on re-screening outcome"
@@ -5795,7 +5795,10 @@
       "kind": "calibration_probe",
       "updated": "2026-09-03T18:16:46.461887+00:00",
       "resolve_by": "2026-09-04T06:16:46.375445+00:00",
-      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?"
+      "claim": "Will ETHUSDT trade ABOVE 2439.71 in 12 hours' time?",
+      "resolved": true,
+      "outcome": 1.0,
+      "resolved_at": "2026-09-04T07:10:37.806903+00:00"
     },
     "probe:2026-09-03T18:16:46.375445+00:00:q3": {
       "p": 0.49,
@@ -5819,7 +5822,10 @@
       "kind": "calibration_probe",
       "updated": "2026-09-03T18:16:46.611128+00:00",
       "resolve_by": "2026-09-04T06:16:46.375445+00:00",
-      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?"
+      "claim": "Will BNBUSDT trade ABOVE 691.08 in 12 hours' time?",
+      "resolved": true,
+      "outcome": 1.0,
+      "resolved_at": "2026-09-04T07:10:37.973961+00:00"
     },
     "probe:2026-09-03T18:16:46.375445+00:00:q6": {
       "p": 0.49,

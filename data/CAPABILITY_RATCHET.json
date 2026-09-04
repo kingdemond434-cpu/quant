@@ -1,7 +1,7 @@
 {
  "_": "HIGH-WATER MARKS for desk CAPABILITY, one score per named aspect on the 0-10 scale the principal's standing order is stated on. Raised automatically; NEVER lowered by code. A FALL is a defect reported with a NAMED CAUSE, a FLATLINE is reported with the binding constraint that is holding the aspect down, and UNMEASURED is its own state -- never silently a 0 and never silently a 10.",
  "law": "R0104 -- every aspect is pushed toward 10/10 every day, non-exhaustively. A rating nobody records cannot ratchet, and a score that can silently fall is not a standard.",
- "generated": "2026-09-04T07:00:19.867055+00:00",
+ "generated": "2026-09-04T07:12:23.139221+00:00",
  "status": "REGRESSED",
  "scale_max": 10.0,
  "stall_days": 7.0,
@@ -11,7 +11,7 @@
  "measured_mean": 7.77,
  "first_recorded": "2026-08-05T12:09:08.679174+00:00",
  "last_raise_at": "2026-08-31T00:36:06.053241+00:00",
- "days_since_raise": 4.27,
+ "days_since_raise": 4.28,
  "n_raises": 18,
  "binding_constraint": {
   "state": "MEASURED",
@@ -301,7 +301,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_drills.py is FRESH (age 3.14h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
+     "detail": "scripts/run_drills.py is FRESH (age 3.53h against its own 72.0h tolerance); evidence data/drill_report.json, data/drill_log.jsonl",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -479,7 +479,7 @@
    "score": 6.7,
    "high_water": 7.5,
    "movement": "FELL",
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.64d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not",
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.65d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not",
    "binding_constraint": "ledger_dispositioned at 5.9 -- +77 ledger rows reaching a terminal verdict (460 -> 537 of 777) buys the next point",
    "ceiling": "every ledger row reaching a terminal verdict and 7-day conversion keeping pace with 7-day arrivals -- found equals fixed",
    "artifacts": [
@@ -502,7 +502,7 @@
      "state": "MEASURED",
      "score": 6.0,
      "artifact": "data/conversion_status.json",
-     "detail": "status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.64d",
+     "detail": "status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.65d",
      "constraint": "+10 of the last 7 days' arrivals dispositioned (58 -> 68 of 97) buys the next point"
     },
     {
@@ -619,7 +619,7 @@
    "score": 9.4,
    "high_water": 9.7,
    "movement": "FELL",
-   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.72h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
+   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.92h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
    "binding_constraint": "pager_deliveries_ok at 9.4 -- +145 logged page attempts that DELIVERED (2138 -> 2283, the whole remaining gap) is the last +0.6 to 10/10 [+1 UNMEASURED component(s): alert_channels_not_silent -- the score above covers only 1 of 2 components]",
    "ceiling": "the pager provably delivers between incidents, on more than one channel, with the canary auditing the ledger rather than the code",
    "artifacts": [
@@ -640,8 +640,8 @@
      "state": "UNMEASURED",
      "score": null,
      "artifact": "data/alert_canary_state.json",
-     "detail": "data/alert_canary_state.json is 6.72h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
-     "constraint": "MEASURE IT -- data/alert_canary_state.json is 6.72h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
+     "detail": "data/alert_canary_state.json is 6.92h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information",
+     "constraint": "MEASURE IT -- data/alert_canary_state.json is 6.92h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information. Unmeasured is neither a 0 nor a 10; it is the state of not knowing, and it stays that until an artifact says otherwise."
     }
    ]
   },
@@ -673,7 +673,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.42h against its own 3.0h tolerance); evidence data/cost_hunt.json",
+     "detail": "scripts/run_cost_hunt.py is FRESH (age 0.82h against its own 3.0h tolerance); evidence data/cost_hunt.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -681,7 +681,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_cost_identification.py is FRESH (age 0.47h against its own 3.0h tolerance); evidence data/cost_surface.json",
+     "detail": "scripts/run_cost_identification.py is FRESH (age 0.87h against its own 3.0h tolerance); evidence data/cost_surface.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     },
     {
@@ -930,7 +930,7 @@
      "state": "MEASURED",
      "score": 10.0,
      "artifact": "data/organ_liveness.json",
-     "detail": "scripts/run_moat_backup.py is FRESH (age 2.89h against its own 72.0h tolerance); evidence data/backup_status.json",
+     "detail": "scripts/run_moat_backup.py is FRESH (age 3.29h against its own 72.0h tolerance); evidence data/backup_status.json",
      "constraint": "AT CEILING -- producing inside its own declared cadence, and the work is now HOLDING it"
     }
    ]
@@ -1225,7 +1225,7 @@
      "state": "MEASURED",
      "score": 9.4,
      "artifact": "docs/research/CONSTITUTION_RATCHET.json",
-     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-09-04T05:56:57.657528+00:00",
+     "detail": "mean 9.41/10 over 27 principles; weakest P11 at 7, updated 2026-09-04T07:10:25.877439+00:00",
      "constraint": "+0.593 of full aggression, meaned over the constitution's own marks (9.407 -> 10, the whole remaining gap) is the last +0.6 to 10/10"
     },
     {
@@ -1327,7 +1327,7 @@
    "movement": "FELL",
    "score": 6.7,
    "high_water": 7.5,
-   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.64d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not"
+   "cause": "self_improvement.conversion_flow_7d 10.0 -> 6.0 (data/conversion_status.json): status REPAIR-MODE: 58.0 dispositioned vs 97.0 raised in 7d; backlog 317, oldest 39.65d; self_improvement.ledger_dispositioned 6.1 -> 5.9 (docs/research/recommendation_ledger.json): 460 dispositioned of 777 raised (317 still open or scheduled) -- a reasoned rejection counts, silence does not"
   },
   {
    "aspect": "ops_autonomy",
@@ -1341,7 +1341,7 @@
    "movement": "FELL",
    "score": 9.4,
    "high_water": 9.7,
-   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.72h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
+   "cause": "alerting_pager.alert_channels_not_silent became UNMEASURED (stood at 10.0): data/alert_canary_state.json is 6.92h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
   },
   {
    "aspect": "cost_model_fidelity",
@@ -1475,7 +1475,7 @@
    "aspect": "alerting_pager",
    "component": "alert_channels_not_silent",
    "artifact": "data/alert_canary_state.json",
-   "why": "data/alert_canary_state.json is 6.72h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
+   "why": "data/alert_canary_state.json is 6.92h old against a 6h bound (scripts/run_alert_canary.py --interval-h default) -- the canary's own liveness, which is what makes the silence flag's ABSENCE mean anything. A stale reading is not a bad reading and not a good one: it is last week's observation wearing today's date, and scoring it either way invents information"
   },
   {
    "aspect": "recorder_tape",

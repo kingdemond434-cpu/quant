@@ -44,13 +44,13 @@
   "roi_basis_declared_share": {
     "artifact": "data/repair_metrics.json",
     "proving_command": "python scripts/check_repair_capacity.py",
-    "recorded": "2026-08-31T04:28:48Z",
-    "value": 0.2056
+    "recorded": "2026-09-04T07:17:34Z",
+    "value": 0.2441
   },
   "scripts_mypy_clean": {
     "artifact": "data/mypy_ratchet.json",
     "proving_command": "python scripts/check_mypy_ratchet.py",
-    "recorded": "2026-09-03T07:23:08Z",
+    "recorded": "2026-09-04T07:17:34Z",
     "value": 0.406844
   },
   "test_strength::libs/autodiscovery/validation.py": {
