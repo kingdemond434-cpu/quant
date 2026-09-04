@@ -1,0 +1,101 @@
+{
+ "brain": "brain_v1_prose",
+ "cutoff": "2026-08-01",
+ "candidates": [
+  {
+   "cell": "c0"
+  },
+  {
+   "cell": "c1"
+  },
+  {
+   "cell": "c2"
+  },
+  {
+   "cell": "c3"
+  },
+  {
+   "cell": "c4"
+  },
+  {
+   "cell": "c5"
+  },
+  {
+   "cell": "c6"
+  },
+  {
+   "cell": "c7"
+  },
+  {
+   "cell": "c8"
+  },
+  {
+   "cell": "c9"
+  },
+  {
+   "cell": "c10"
+  },
+  {
+   "cell": "c11"
+  },
+  {
+   "cell": "c12"
+  },
+  {
+   "cell": "c13"
+  },
+  {
+   "cell": "c14"
+  },
+  {
+   "cell": "c15"
+  },
+  {
+   "cell": "c16"
+  },
+  {
+   "cell": "c17"
+  },
+  {
+   "cell": "c18"
+  },
+  {
+   "cell": "c19"
+  },
+  {
+   "cell": "c20"
+  },
+  {
+   "cell": "c21"
+  },
+  {
+   "cell": "c22"
+  },
+  {
+   "cell": "c23"
+  },
+  {
+   "cell": "c24"
+  },
+  {
+   "cell": "c25"
+  },
+  {
+   "cell": "c26"
+  },
+  {
+   "cell": "c27"
+  },
+  {
+   "cell": "c28"
+  },
+  {
+   "cell": "c29"
+  }
+ ],
+ "effective_trials": 341,
+ "compute_seconds": 3600.0,
+ "config": {},
+ "frozen_at": "2026-09-03T17:52:50+00:00",
+ "content_hash": "29132ff176589938e26a"
+}

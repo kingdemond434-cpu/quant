@@ -1078,8 +1078,15 @@ SYSTEMD unit="quant-cro-ai.timer" on="*-*-* 08:45:00" exec="ops/run_cro_ai.sh"
 55 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/run_carry_harvest.py >> data/cro_ai_logs/run_carry_harvest.log 2>&1
 # scripts/compute_performance.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 34 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/compute_performance.py >> data/cro_ai_logs/compute_performance.log 2>&1
-# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
-10 5 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
+# scripts/certify_gauntlet.py -- runnable, no money path, no spend, local writes only -- HOURLY
+# WAS DAILY (10 5 * * *). The gauntlet is what MINTS certificates, so a daily row capped the
+# certificate count at one move per day against a 16,899-row docket while the desk was asked
+# to grow every hour. Measured over three runs: 2m19s-6m49s wall, 346M peak, so 24 passes/day
+# costs ~1.2h CPU on a 4-core box -- affordable, and the docket is the binding constraint.
+# EDIT HERE, NOT IN THE .timer: check_scheduler_manifest.py rewrites units from this manifest,
+# so a hand-edited timer silently reverts. Measured 2026-09-04: an uncommitted edit to both
+# was restored within the hour, and the gauntlet went 16.8h without a sweep.
+10 * * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/certify_gauntlet.py >> data/cro_ai_logs/certify_gauntlet.log 2>&1
 # scripts/research_alpha_optimizer.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)
 24 6 * * * cd "$QUANT_ROOT" && .venv/bin/python scripts/research_alpha_optimizer.py >> data/cro_ai_logs/research_alpha_optimizer.log 2>&1
 # scripts/run_carry_crowding.py -- runnable, no money path, no spend, local writes only -- daily (local artifacts only)

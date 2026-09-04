@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-02T02:02:13+00:00",
+  "checked_at": "2026-09-03T00:45:54+00:00",
   "live_sleeves": 0,
   "roster_state": "NO_ROSTER",
   "roster_why": "sleeves.json does not exist -- its only writer is research/promoter.py, so nothing has ever been promoted to live risk. Zero live sleeves is CORRECT here and no verdict is owed.",

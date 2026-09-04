@@ -1,5 +1,5 @@
 {
- "built_at": "2026-09-04T01:19:42+00:00",
+ "built_at": "2026-09-04T01:49:55+00:00",
  "cells": [
   {
    "name": "LIQUIDITY_FRAGILITY_RATIO",
@@ -1862,6 +1862,26 @@
    "promotion_authority": false
   },
   {
+   "name": "CENTRAL_CLEARING_MARGIN_BUYINX",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "forced_deleveraging",
+    "context": "new_york",
+    "direction": "reversal",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "forced_deleveraging|new_york|magnitude|reversal|1h",
+   "measurement_class": "HEURISTIC_PROXY",
+   "attribution_allowed": false,
+   "measurement_note": "EXPLORATION ONLY: bar return scaled by ATR is a heuristic stand-in for margin utilisation, liquidation prints, or a stop cascade. The cell may run; its result may NOT be read as evidence about forced_deleveraging.",
+   "data_source": "Free: CME Group SPAN risk arrays, OCC OCCLive data",
+   "kill": "If price deviation mean reverts to within 0.5% within 5 minutes post-call window for 20 consecutive observations",
+   "lens": "PARTICIPANT CONSTRAINT",
+   "promotion_authority": false
+  },
+  {
    "name": "audit:carry_change|continuation",
    "compiled": true,
    "family": "generic",
@@ -1873,6 +1893,21 @@
     "quality_atr": 1.0
    },
    "coordinate": "carry_change|asia|magnitude|continuation|1h",
+   "source": "cold_audit_recommendation",
+   "promotion_authority": false
+  },
+  {
+   "name": "audit:cross_market_move|continuation",
+   "compiled": true,
+   "family": "generic",
+   "params": {
+    "event": "cross_market_move",
+    "context": "asia",
+    "direction": "continuation",
+    "output": "1h",
+    "quality_atr": 1.0
+   },
+   "coordinate": "cross_market_move|asia|magnitude|continuation|1h",
    "source": "cold_audit_recommendation",
    "promotion_authority": false
   }

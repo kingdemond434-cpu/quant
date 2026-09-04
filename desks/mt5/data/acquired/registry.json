@@ -1,0 +1,311 @@
+{
+ "by_url": {
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_USD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:27+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.JPY.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_JPY_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:27+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_GBP_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:28+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.CHF.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_CHF_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:29+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.AUD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_AUD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:29+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.CAD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_CAD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:30+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.NZD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_NZD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:30+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.SEK.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_SEK_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:31+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.NOK.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_NOK_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:32+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.PLN.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_PLN_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:32+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.HUF.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_HUF_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:33+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.TRY.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_TRY_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:34+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.ZAR.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_ZAR_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:34+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.MXN.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_MXN_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:35+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.CNY.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_CNY_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:35+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.SGD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_SGD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:36+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.HKD.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_HKD_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:37+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.CZK.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_CZK_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:37+00:00"
+  },
+  "https://data-api.ecb.europa.eu/service/data/EXR/D.DKK.EUR.SP00.A?format=csvdata": {
+   "host": "data-api.ecb.europa.eu",
+   "series": [
+    "data_api_ecb_europa_eu_D_DKK_EUR_SP00_OBS_VALUE"
+   ],
+   "at": "2026-09-03T23:33:38+00:00"
+  }
+ },
+ "series": {
+  "data_api_ecb_europa_eu_D_USD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_USD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.USD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:27+00:00"
+  },
+  "data_api_ecb_europa_eu_D_JPY_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_JPY_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.JPY.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:27+00:00"
+  },
+  "data_api_ecb_europa_eu_D_GBP_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_GBP_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.GBP.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:28+00:00"
+  },
+  "data_api_ecb_europa_eu_D_CHF_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_CHF_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.CHF.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:29+00:00"
+  },
+  "data_api_ecb_europa_eu_D_AUD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_AUD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.AUD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:29+00:00"
+  },
+  "data_api_ecb_europa_eu_D_CAD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_CAD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.CAD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:30+00:00"
+  },
+  "data_api_ecb_europa_eu_D_NZD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_NZD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.NZD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:30+00:00"
+  },
+  "data_api_ecb_europa_eu_D_SEK_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_SEK_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.SEK.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:31+00:00"
+  },
+  "data_api_ecb_europa_eu_D_NOK_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_NOK_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.NOK.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:32+00:00"
+  },
+  "data_api_ecb_europa_eu_D_PLN_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_PLN_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.PLN.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:32+00:00"
+  },
+  "data_api_ecb_europa_eu_D_HUF_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_HUF_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.HUF.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:33+00:00"
+  },
+  "data_api_ecb_europa_eu_D_TRY_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_TRY_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.TRY.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:34+00:00"
+  },
+  "data_api_ecb_europa_eu_D_ZAR_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_ZAR_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.ZAR.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:34+00:00"
+  },
+  "data_api_ecb_europa_eu_D_MXN_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_MXN_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.MXN.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:35+00:00"
+  },
+  "data_api_ecb_europa_eu_D_CNY_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_CNY_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.CNY.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 6818,
+   "first": "2000-01-13 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:35+00:00"
+  },
+  "data_api_ecb_europa_eu_D_SGD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_SGD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.SGD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:36+00:00"
+  },
+  "data_api_ecb_europa_eu_D_HKD_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_HKD_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.HKD.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:37+00:00"
+  },
+  "data_api_ecb_europa_eu_D_CZK_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_CZK_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.CZK.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:37+00:00"
+  },
+  "data_api_ecb_europa_eu_D_DKK_EUR_SP00_OBS_VALUE": {
+   "path": "/home/quant/quant-platform/desks/mt5/data/acquired/data_api_ecb_europa_eu_D_DKK_EUR_SP00_OBS_VALUE.parquet",
+   "url": "https://data-api.ecb.europa.eu/service/data/EXR/D.DKK.EUR.SP00.A?format=csvdata",
+   "host": "data-api.ecb.europa.eu",
+   "rows": 7085,
+   "first": "1999-01-04 00:00:00+00:00",
+   "last": "2026-09-03 00:00:00+00:00",
+   "acquired_at": "2026-09-03T23:33:38+00:00"
+  }
+ },
+ "updated_at": "2026-09-03T23:33:41+00:00"
+}
