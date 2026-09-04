@@ -111,8 +111,26 @@ fi
 # failure mode it exists to catch.
 scp -pq "$REMOTE:C:/opt/quant/desks/mt5/reports/execution_quality.json" \
     desks/mt5/reports/execution_quality.json 2>/dev/null || true
+# NEWER-ONLY, BECAUSE THE VPS PRODUCES SOME OF THESE TOO. A blind overwrite made this pull a
+# REVERTER: forward_reconcile.py runs here every 20 minutes and writes
+# desks/mt5/data/forward_reconcile.json, and this loop then replaced it with the box's copy --
+# 21 hours old on 2026-09-04 -- roughly every 90 seconds. The desk recomputed enrolment three
+# times an hour and threw the answer away each time, while every freshness check read the stale
+# file and reported the organ dead. scp -p preserves the remote mtime, so `-nt` compares the two
+# copies honestly; the older side never wins, whichever box it came from.
 for f in sleeve_registry.json decay_live.json forward_reconcile.json daily_cycle_state.json moat_coverage.json stall_watch.json; do
-  scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "desks/mt5/data/$f" 2>/dev/null || true
+  _dst="desks/mt5/data/$f"
+  _tmp="desks/mt5/data/.$f.incoming"
+  if scp -pq "$REMOTE:C:/opt/quant/desks/mt5/data/$f" "$_tmp" 2>/dev/null; then
+    if [ ! -f "$_dst" ] || [ "$_tmp" -nt "$_dst" ]; then
+      mv -f "$_tmp" "$_dst"
+    else
+      rm -f "$_tmp"
+      echo "pull kept local $f: the box copy is not newer"
+    fi
+  else
+    rm -f "$_tmp" 2>/dev/null || true
+  fi
 done
 
 # THE UNIVERSE REGISTRY TRAVELS BACK, NEVER-SHRINKING. Only the desk box can read the terminal,
