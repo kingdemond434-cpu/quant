@@ -65,8 +65,8 @@ _COL = re.compile(r"data\.addColumn\(\s*'(\w+)'\s*,\s*\"([^\"]*)\"")
 def _get(url: str, timeout: int = 25) -> str | None:
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
-            return r.read().decode("utf-8", "replace")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return str(r.read().decode("utf-8", "replace"))
     except (urllib.error.URLError, OSError, TimeoutError):
         return None
 
@@ -174,6 +174,49 @@ def harvest_user(user: str, delay: float) -> dict[str, Any]:
     return rec
 
 
+def compact_latest(path: Path) -> tuple[int, int, int, int]:
+    """Keep only the NEWEST record per handle. Returns (rows_in, rows_out, bytes_in, bytes_out).
+
+    The rotation is a CYCLE (L1.61), so every lap re-harvests the whole population and the
+    artifact grows without bound even once the quadratic republication bug above is fixed: one
+    lap is ~5,077 records (~210 MB) every ~3.5 days on the hourly timer, which fills the
+    remaining disk in about six weeks. A track record has no history worth keeping per lap --
+    the newest snapshot per handle strictly dominates every older one -- so compaction is
+    lossless for the reader and bounds the artifact at exactly one lap.
+
+    Two streaming passes and a dict of ~5k offsets: never loads the artifact into memory, which
+    matters because this service runs under MemoryHigh=320M and the old publish step read a
+    151 MB staging file with `read_text()`.
+    """
+    if not path.exists():
+        return (0, 0, 0, 0)
+    bytes_in = path.stat().st_size
+    last: dict[str, int] = {}
+    rows_in = 0
+    with path.open("rb") as fh:
+        while True:
+            off = fh.tell()
+            line = fh.readline()
+            if not line:
+                break
+            rows_in += 1
+            try:
+                user = json.loads(line).get("user")
+            except (ValueError, UnicodeDecodeError):
+                continue
+            if isinstance(user, str):
+                last[user] = off
+    tmp = path.with_suffix(path.suffix + ".compact")
+    rows_out = 0
+    with path.open("rb") as src, tmp.open("wb") as dst:
+        for off in sorted(last.values()):
+            src.seek(off)
+            dst.write(src.readline())
+            rows_out += 1
+    tmp.replace(path)
+    return (rows_in, rows_out, bytes_in, path.stat().st_size)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=50, help="accounts to harvest this run")
@@ -188,7 +231,18 @@ def main() -> int:
                     "whole population; advanced by --limit after a successful run, wrapped at the "
                     "end, so repeated timer firings cover 100% and then start over on newer data. "
                     "Overrides --offset/--stride.")
+    ap.add_argument("--compact", action="store_true", help="after publishing, keep only the "
+                    "NEWEST record per handle in --out. Bounds the artifact at one lap of the "
+                    "rotation; lossless, since a newer track-record snapshot dominates an older.")
+    ap.add_argument("--compact-only", action="store_true",
+                    help="compact --out and exit; no harvest")
     args = ap.parse_args()
+
+    if args.compact_only:
+        target = Path(args.out) if args.out else OUT / "track_records.jsonl"
+        ri, ro, bi, bo = compact_latest(target)
+        print(f"compacted {target}: rows {ri} -> {ro}, bytes {bi} -> {bo}")
+        return 0
 
     # WRITE OUTSIDE THE TRACKED TREE, PUBLISH AT THE END (defect found 2026-08-28, live).
     # `desks/mt5/data/` is git-TRACKED and this box's automation (auto_push every 10 minutes, the
@@ -224,7 +278,16 @@ def main() -> int:
     else:
         batch = pop[args.offset :: args.stride][: args.limit]
     out_path = Path(args.out) if args.out else OUT / "track_records.jsonl"
-    stage_path = stage_dir / f"{out_path.name}.staging"
+    # PER-RUN STAGING (defect measured 2026-09-04, live). The staging path used to be a single
+    # fixed name opened in APPEND mode, and the publish step appended the WHOLE staging file to
+    # the tracked artifact. So run N republished every row from runs 1..N: growth was QUADRATIC,
+    # not linear. Measured: the timer's runs produced 99,180 rows for 4,805 distinct handles
+    # (60*(1+2+...+57) = 99,180 exactly) and 4.0 GB on a disk with 2.7 GB free -- roughly 15 more
+    # hourly runs from filling the disk and taking every organ on this box down with it.
+    # A per-run staging name keeps the orphan-safe replay property the fixed name was written for
+    # (rows still land outside the tracked tree first, and a crashed run is still replayable from
+    # its own file) while publishing exactly the rows THIS run harvested.
+    stage_path = stage_dir / f"{out_path.name}.{os.getpid()}.{int(time.time())}.staging"
 
     has_data = shell = dead = failed = 0
     # ORPHAN-SAFE: `stage_path` is outside the tracked tree by construction and the tracked
@@ -249,6 +312,10 @@ def main() -> int:
     with out_path.open("a", encoding="utf-8") as fh:
         fh.write(stage_path.read_text(encoding="utf-8"))
     print(f"published {stage_path} -> {out_path}")
+
+    if args.compact:
+        ri, ro, bi, bo = compact_latest(out_path)
+        print(f"compacted {out_path}: rows {ri} -> {ro}, bytes {bi} -> {bo}")
 
     if cursor_path is not None:
         # Advance ONLY after publication -- a cursor advanced before the write turns a crashed run
