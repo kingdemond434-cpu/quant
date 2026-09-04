@@ -29,6 +29,7 @@ count a function of its compute budget rather than of the market.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from datetime import UTC, datetime
@@ -97,10 +98,50 @@ _FAMILY_DIRECTION: dict[str, str] = {
 }
 
 
-def _coordinate_for(fam: str) -> str | None:
+# (leading-clause probe, event, direction) -- first prefix match wins. Built from the 13 distinct
+# leading clauses the edge-search / coverage producers emit. The two clauses that name no cause
+# ("no economic cause is encoded ...", "... unexplained statistical leg") are deliberately absent:
+# those rows are STATISTICAL_ONLY and must stay coordinate-less, because that refusal is real.
+_MECHANISM_AXES: tuple[tuple[str, str, str], ...] = (
+    ("information diffuses from a leading", "cross_market_move", "continuation"),
+    ("cross-instrument pricing residuals", "cross_market_move", "convergence"),
+    ("cross-sectional dispersion/breadth", "cross_market_move", "divergence"),
+    ("a declared volatility/participation regime", "volatility_shock", "volatility_expansion"),
+    ("a measurable market-state transition", "volatility_shock", "continuation"),
+    ("liquidity/inventory withdrawal", "liquidity_shock", "reversal"),
+    ("distance below a rolling peak", "forced_deleveraging", "reversal"),
+    ("distance above a rolling trough", "positioning_extreme", "reversal"),
+    ("session opens, fixes, option cuts", "session_transition", "continuation"),
+    ("an opening gap is a failed auction", "session_transition", "reversal"),
+    ("month-end rebalancing, payment cycles", "benchmark_flow", "continuation"),
+)
+
+
+def _axes_from_mechanism(note: str) -> tuple[str | None, str | None]:
+    """Derive (event, direction) from a written mechanism when the family name carries neither.
+
+    The economic claim is the LEADING clause: a "conditional interaction:" prefix is a wrapper and
+    a "; jointly with ..." tail is a conditioning leg, so both are stripped before matching.
+    """
+    lead = re.sub(r"^conditional interaction:\s*", "", str(note or "").strip())
+    lead = lead.split("; jointly with")[0].strip().lower()
+    if not lead:
+        return None, None
+    for probe, ev, dr in _MECHANISM_AXES:
+        if lead.startswith(probe):
+            return ev, dr
+    return None, None
+
+
+def _coordinate_for(fam: str, note: str = "") -> str | None:
     from libs.research.semantic_space import Coordinate
 
     ev, dr = _FAMILY_EVENT.get(fam), _FAMILY_DIRECTION.get(fam)
+    if not ev or not dr:
+        # Producer families ("discovered", "generic") name no mechanism in the family field --
+        # they carry it in the note. Reading only the family name reported 86.7% of the docket as
+        # coordinate-less when 96% of it states a cause.
+        ev, dr = _axes_from_mechanism(note)
     if not ev or not dr:
         return None
     # Context/quality/output are the conditioning axes a sweep varies; the region -- the part
@@ -132,7 +173,7 @@ def main() -> int:
         fam = h.get("family")
         if not fam:
             continue
-        c = _coordinate_for(str(fam))
+        c = _coordinate_for(str(fam), str(h.get("mechanism_note") or ""))
         if c is None:
             unmapped[str(fam)] += 1
         else:
@@ -154,7 +195,9 @@ def main() -> int:
     rungs = [
         sh.Rung("has_family", lambda c: bool(c.get("family")), 1.0,
                 "a candidate with no family cannot be reasoned about", 0.99),
-        sh.Rung("has_coordinate", lambda c: _coordinate_for(str(c.get("family"))) is not None,
+        sh.Rung("has_coordinate",
+                lambda c: _coordinate_for(
+                    str(c.get("family")), str(c.get("mechanism_note") or "")) is not None,
                 2.0, "no declared mechanism means no region and no falsifier", 0.90),
         sh.Rung("has_params", lambda c: isinstance(c.get("params"), dict), 3.0,
                 "params are the identity; without them variants collide", 0.99),
@@ -180,7 +223,9 @@ def main() -> int:
         for key, row in surv.items():
             spec = (row or {}).get("shadow_spec") or {}
             book.append({"name": key, "mechanism": spec.get("family"),
-                         "coordinate": _coordinate_for(str(spec.get("family") or ""))})
+                         "coordinate": _coordinate_for(
+                             str(spec.get("family") or ""),
+                             str(spec.get("mechanism_note") or ""))})
     except (OSError, json.JSONDecodeError):
         pass
 
@@ -190,7 +235,7 @@ def main() -> int:
     for h in survivors[:400]:                 # a sample: this is a report, not a gate
         fam = str(h.get("family") or "")
         cand = {"name": f"{h.get('symbol')}.{fam}", "mechanism": fam,
-                "coordinate": _coordinate_for(fam)}
+                "coordinate": _coordinate_for(fam, str(h.get("mechanism_note") or ""))}
         v = nv.assess(cand, book)
         checked += 1
         if v.verdict == "REDUNDANT":
