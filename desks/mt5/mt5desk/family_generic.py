@@ -71,6 +71,9 @@ _CONTEXTS = {
                        > _atr(d, 20),
     "range": lambda d: (d["close"] - d["close"].rolling(50).mean()).abs() <= _atr(d, 20),
     "month_end": lambda d: d.index.day >= 26,
+    # Every bar. A proposal that names no session makes a claim about all of them, so the
+    # mechanism is tested where it was claimed rather than in a session the compiler picked.
+    "unconditioned": lambda d: pd.Series(True, index=d.index),
 }
 
 #: DIRECTION -> sign of the trade relative to the event's sign.
